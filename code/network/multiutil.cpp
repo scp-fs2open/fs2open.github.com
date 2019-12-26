@@ -216,16 +216,16 @@ void multi_set_network_signature( ushort signature, int what_kind )
 }
 
 // multi_get_network_object() takes a net_signature and tries to locate the object in the object list
-// with that network signature.  Returns NULL if the object cannot be found
+// with that network signature.  Returns nullptr if the object cannot be found
 object *multi_get_network_object( ushort net_signature )
 {
 	object *objp;
 
 	if ( net_signature == 0 )
-		return NULL;
+		return nullptr;
 
-	if(GET_FIRST(&obj_used_list) == NULL)
-		return NULL;
+	if(GET_FIRST(&obj_used_list) == nullptr)
+		return nullptr;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 		if ( objp->net_signature == net_signature )
@@ -238,7 +238,7 @@ object *multi_get_network_object( ushort net_signature )
 				break;
 
 		if ( objp == END_OF_LIST(&obj_create_list) )
-			objp = NULL;
+			objp = nullptr;
 	}
 
 	return objp;
@@ -573,12 +573,12 @@ int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning)
 	p_object *p_objp;
 
 	// bogus
-	if(ship_name == NULL){
+	if(ship_name == nullptr){
 		return -1;
 	}
 
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) && 
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != nullptr) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) && 
 			(Objects[Net_players[idx].m_player->objnum].instance >= 0) && (Objects[Net_players[idx].m_player->objnum].instance < MAX_SHIPS) && !stricmp(ship_name, Ships[Objects[Net_players[idx].m_player->objnum].instance].ship_name) ){
 			return idx;
 		}
@@ -605,7 +605,7 @@ int multi_get_player_ship(int np_index)
 
 	// cool?
 	if(MULTI_CONNECTED(Net_players[np_index]) && !MULTI_OBSERVER(Net_players[np_index]) && !MULTI_STANDALONE(Net_players[np_index]) && 
-		(Net_players[np_index].m_player != NULL) && (Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP) && 
+		(Net_players[np_index].m_player != nullptr) && (Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP) && 
 		(Objects[Net_players[np_index].m_player->objnum].instance >= 0) && (Objects[Net_players[np_index].m_player->objnum].instance < MAX_SHIPS) ){
 
 		return Objects[Net_players[np_index].m_player->objnum].instance;
@@ -700,7 +700,7 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 	// find the parse object for this ship.  Also, set the wingman status stuff so wingman status gauge
 	// works properly.
 	Net_players[net_player_num].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
-	Assert( Net_players[net_player_num].p_info.p_objp != NULL );		// get allender -- ship should be on list
+	Assert( Net_players[net_player_num].p_info.p_objp != nullptr );		// get allender -- ship should be on list
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
@@ -842,7 +842,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 void multi_make_player_ai( object *pobj )
 {
 
-	Assert ( pobj != NULL );
+	Assert(pobj != NULL);
 
 	if ( pobj->type != OBJ_SHIP )
 		return;
@@ -898,7 +898,7 @@ void delete_player(int player_num,int kicked_reason)
 		Net_players[player_num].flags &= ~(NETINFO_FLAG_GAME_HOST);
 	
 		// am I the server
-		if ( (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		if ( (Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
 			// are we a standalone server and in a mission?
 			if((Game_mode & GM_STANDALONE_SERVER) && MULTI_IN_MISSION){			
 				// choose a new host			
@@ -1047,8 +1047,8 @@ void multi_cull_zombies()
 
 void fill_net_addr(net_addr* addr, ubyte* address, ushort port)
 {
-	Assert(addr != NULL);
-	Assert(address != NULL);
+	Assert(addr != nullptr);
+	Assert(address != nullptr);
 
 	addr->type = Multi_options_g.protocol;
 	memset( addr->addr, 0x00, 6);
@@ -1207,7 +1207,7 @@ void add_net_button_info(net_player *p,button_info *bi,int unique_id)
 	}		
 }
 
-extern int button_function_critical(int n,net_player *p = NULL);
+extern int button_function_critical(int n,net_player *p = nullptr);
 void multi_apply_ship_status(net_player *p,button_info *bi,int locally)
 {
 	int i, j;
@@ -1221,7 +1221,7 @@ void multi_apply_ship_status(net_player *p,button_info *bi,int locally)
 			// check if the bit is set. If button_function returns 1 (implying the action was taken), then unset the bit
 			if ( bi->status[i] & (1<<j) ) {
             if(locally){
-					if(button_function_critical(32*i + j,NULL))   // will apply to this console
+					if(button_function_critical(32*i + j,nullptr))   // will apply to this console
 						bi->status[i] &= ~(1<<j);
 				} else {
 					if(button_function_critical(32*i + j,p))      // will only apply to a net-player
@@ -1299,7 +1299,7 @@ int multi_is_builtin_mission()
 	cf_add_ext(name, FS_MISSION_FILE_EXT);
 
 	// if this mission is builtin	
-	if(game_find_builtin_mission(name) != NULL){
+	if(game_find_builtin_mission(name) != nullptr){
 		return 1;
 	}
 
@@ -1610,12 +1610,12 @@ active_game *multi_new_active_game( void )
 	active_game *new_game;
 
 	new_game = (active_game *)vm_malloc(sizeof(active_game));
-	if ( new_game == NULL ) {
+	if ( new_game == nullptr ) {
 		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
-		return NULL;
+		return nullptr;
 	}	
 
-	if ( Active_game_head != NULL ) {
+	if ( Active_game_head != nullptr ) {
 		new_game->next = Active_game_head->next;
 		new_game->next->prev = new_game;
 		Active_game_head->next = new_game;
@@ -1635,12 +1635,12 @@ active_game *multi_new_active_game( void )
 
 active_game *multi_update_active_games(active_game *ag)
 {
-	active_game *gp = NULL;
-	active_game *stop = NULL;		
+	active_game *gp = nullptr;
+	active_game *stop = nullptr;		
 
 	// see if we have a game from this address already -- if not, create one.  In either case, get a pointer
 	// to an active_game structure
-	if ( Active_game_head != NULL ) {	// no games on list at all
+	if ( Active_game_head != nullptr ) {	// no games on list at all
 		int on_list;
 
 		gp = Active_game_head;
@@ -1709,8 +1709,8 @@ active_game *multi_update_active_games(active_game *ag)
 	}		
 
 	// don't do anything if we don't have a game entry
-	if(gp == NULL){
-		return NULL;
+	if(gp == nullptr){
+		return nullptr;
 	}
 	
 	// update the last time we heard from him
@@ -1728,16 +1728,16 @@ void multi_free_active_games()
 	active_game *moveup,*backup;	
 
 	moveup = Active_game_head;
-	backup = NULL;
-	if(moveup != NULL){
+	backup = nullptr;
+	if(moveup != nullptr){
 		do {			
 			backup = moveup;
 			moveup = moveup->next;
 			
 			vm_free(backup);
-			backup = NULL;
+			backup = nullptr;
 		} while(moveup != Active_game_head);
-		Active_game_head = NULL;
+		Active_game_head = nullptr;
 	}	
 	Active_game_count = 0;
 }
@@ -1747,12 +1747,12 @@ server_item *multi_new_server_item( void )
 	server_item *new_game;
 
 	new_game = (server_item *)vm_malloc(sizeof(server_item));
-	if ( new_game == NULL ) {
+	if ( new_game == nullptr ) {
 		nprintf(("Network", "Cannot allocate space for new server_item structure\n"));
-		return NULL;
+		return nullptr;
 	}
 
-	if ( Game_server_head != NULL ) {
+	if ( Game_server_head != nullptr ) {
 		new_game->next = Game_server_head->next;
 		new_game->next->prev = new_game;
 		Game_server_head->next = new_game;
@@ -1770,16 +1770,16 @@ void multi_free_server_list()
 	server_item *moveup,*backup;	
 
 	moveup = Game_server_head;
-	backup = NULL;
-	if(moveup != NULL){
+	backup = nullptr;
+	if(moveup != nullptr){
 		do {			
 			backup = moveup;
 			moveup = moveup->next;
 			
 			vm_free(backup);
-			backup = NULL;
+			backup = nullptr;
 		} while(moveup != Game_server_head);
-		Game_server_head = NULL;
+		Game_server_head = nullptr;
 	}	
 }
 
@@ -1955,14 +1955,14 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 				case NETGAME_STATE_PAUSED:
 				case NETGAME_STATE_DEBRIEF:
 				case NETGAME_STATE_MISSION_SYNC:
-					send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_ALL, NULL, NULL, 1);
+					send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_ALL, nullptr, nullptr, 1);
 					multi_display_chat_msg(knock_message,0,0);
 					break;
 
 				// in game we only bother the host. 
 				case NETGAME_STATE_IN_MISSION:
 					if( MULTIPLAYER_STANDALONE ) {
-						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, NULL, 1);
+						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, nullptr, 1);
 					} else {
 						snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", knock_message);
@@ -2127,7 +2127,7 @@ void multi_warpout_all_players()
 	}
 
 	// stop my afterburners
-	if((Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER)){
+	if((Player_obj != nullptr) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER)){
 		afterburners_stop( Player_obj, 1 );
 	}
 
@@ -2302,17 +2302,16 @@ void multi_handle_state_special()
 // called by the file xfer subsytem when we start receiving a file
 void multi_file_xfer_notify(int handle)
 {
-	char *filename;
+	char *filename = nullptr;
 	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
 	// get the filename of the file we are receiving
-	filename = NULL;
 	filename = multi_xfer_get_filename(handle);
 		
 	// something is messed up
-	if(filename == NULL){
+	if(filename == nullptr){
 		return;
 	}
 
@@ -2323,7 +2322,7 @@ void multi_file_xfer_notify(int handle)
 	}		
 
 	// if this is a mission file
-	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != NULL);
+	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != nullptr);
 	
 	// determine where its going to go
 	if(is_mission){
@@ -2443,7 +2442,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
 
 		// send the accept packet here
 		send_accept_packet(net_player_num, (Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN) ? ACCEPT_OBSERVER | ACCEPT_INGAME : ACCEPT_OBSERVER);
@@ -2495,7 +2494,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}		
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
 
 		// if he's joining as a host (on the standalone)
 		if(Net_players[net_player_num].flags & NETINFO_FLAG_GAME_HOST){
@@ -2903,19 +2902,19 @@ void multi_get_mission_checksum(const char *filename)
 
 	// get the filename
 	in = cfopen(filename,"rb");
-	if(in != NULL){
+	if(in != nullptr){
 		// get the length of the file
 		Multi_current_file_length = cfilelength(in);
 		cfclose(in);
 
 		in = cfopen(filename,"rb");
-		if(in != NULL){
+		if(in != nullptr){
 			// get the checksum of the file
 			cf_chksum_short(in,&Multi_current_file_checksum);
 
 			// close the file
 			cfclose(in);
-			in = NULL;
+			in = nullptr;
 		}
 		// if the file doesn't exist, setup some special values, so the server recognizes this
 		else {
@@ -2978,9 +2977,9 @@ int multi_get_connection_speed()
 	const char *connection_speed;
 
 #ifdef _WIN32	
-	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	
+	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "");	
 #else
-	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "Fast");
+	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "Fast");
 #endif
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
@@ -3189,7 +3188,7 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 
 	} else if (dc_optional_string("respawn_chump")){
 		// set a really large # of respawns
-		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if((Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Netgame.respawn = 9999;
 			Netgame.options.respawn = 9999;
 
@@ -3201,7 +3200,7 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 
 	} else if (dc_optional_string("ss_leaders")) {
 		// only host or team captains can modify ships
-		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if((Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
 			multi_options_update_netgame();
 		}
