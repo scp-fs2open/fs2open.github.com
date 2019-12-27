@@ -5918,7 +5918,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 		count += node_size;
 		new_tree_size += node_size + 3;
 	}
-	new_tree_size += 4;
+
 	//return the SLC2 tree size
 	return new_tree_size;
 }
