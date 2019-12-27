@@ -513,7 +513,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	}		
 
 	// afterburner info
-	oo_flags &= ~PF_AFTERBURNER_ON;
+	oo_flags &= ~OO_AFTERBURNER_NEW;
 	if(objp->phys_info.flags & PF_AFTERBURNER_ON){
 		oo_flags |= OO_AFTERBURNER_NEW;
 	}
