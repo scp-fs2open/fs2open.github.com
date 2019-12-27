@@ -1025,7 +1025,7 @@ void game_do_networking()
 // load a level.   You can find this value by looking at the return value
 // of game_busy_callback(nullptr), which I conveniently print out to the
 // debug output window with the '=== ENDING LOAD ==' stuff.   
-#define COUNT_ESTIMATE 425
+#define COUNT_ESTIMATE 719
 
 int Game_loading_callback_inited = 0;
 int Game_loading_background = -1;
