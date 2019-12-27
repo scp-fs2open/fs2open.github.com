@@ -240,11 +240,11 @@ extern int Global_error_count;
 // or,
 // Error( LOCATION, "Error opening %s", filename );
 
-/*******************NEVER UNCOMMENT Assert ************************************************/
-// Please never uncomment the functionality of Assert in debug
+/*******************NEVER COMMENT Assert ************************************************/
+// Please never comment the functionality of Assert in debug
 // The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
-// Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
+// Disabling this functionality is dangerous, crazy values can run rampant unchecked, and the longer it's disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #	define Assert(expr) do { ASSUME(expr); } while (false)
@@ -261,15 +261,11 @@ extern int Global_error_count;
 // Goober5000 - define Verify for use in both release and debug mode
 #define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(false)
 
-// VerifyEx
+// Verification (like Assertion)
 #ifndef _MSC_VER   // non MS compilers
-#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(false)
+#	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(false)
 #else
-#	if _MSC_VER >= 1400	// VC 2005 or greater
-#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(false)
-#	else // everything else
-#		define VerifyEx(x, y) Verify(x)
-#	endif
+	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(false)
 #endif
 
 #if defined(NDEBUG)
