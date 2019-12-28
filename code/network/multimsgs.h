@@ -42,7 +42,9 @@ struct log_entry;
 #define ADD_UINT(d) do { static_assert(sizeof(d) == sizeof(std::uint32_t), "Size of unsigned int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define ADD_ULONG(d) do { static_assert(sizeof(d) == sizeof(std::uint64_t), "Size of unsigned long is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); std::uint64_t swap = INTEL_LONG(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define ADD_FLOAT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); float swap = INTEL_FLOAT(&d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
-#define ADD_STRING(s) do { Assert((packet_size + strlen(s) + 4) < MAX_PACKET_SIZE);int len = (int)strlen(s); int len_tmp = INTEL_INT(len); ADD_DATA(len_tmp); memcpy(data+packet_size, s, len ); packet_size += len; } while(false)
+#define ADD_STRING(s) do { Assert((packet_size + strlen(s) + sizeof(uint8_t)) < MAX_PACKET_SIZE); Assert(strlen(s) <= UINT8_MAX); uint8_t len = static_cast<uint8_t>(strlen(s)); ADD_DATA(len); memcpy(data+packet_size, s, len); packet_size += len; } while (false)
+#define ADD_STRING_16(s) do { Assert((packet_size + strlen(s) + sizeof(uint16_t)) < MAX_PACKET_SIZE); uint16_t len = static_cast<uint16_t>(strlen(s)); ADD_USHORT(len); memcpy(data+packet_size, s, static_cast<size_t>(len)); packet_size += len; } while (false)
+#define ADD_STRING_32(s) do { Assert((packet_size + strlen(s) + sizeof(int32_t)) < MAX_PACKET_SIZE); int32_t len = static_cast<int32_t>(strlen(s)); ADD_INT(len); memcpy(data+packet_size, s, static_cast<size_t>(len)); packet_size += len; } while (false)
 #define ADD_ORIENT(d) { Assert((packet_size + 17) < MAX_PACKET_SIZE); ubyte dt[17]; multi_pack_orient_matrix(dt,&d); memcpy(data+packet_size,dt,17); packet_size += 17; }
 #define ADD_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(false)
 
@@ -53,7 +55,9 @@ struct log_entry;
 #define GET_UINT(d) do { std::uint32_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
 #define GET_ULONG(d) do { std::uint64_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_LONG(swap); offset += sizeof(d); } while(false)
 #define GET_FLOAT(d) do { float swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_FLOAT(&swap); offset += sizeof(d); } while(false)
-#define GET_STRING(s) do { int len;  memcpy(&len, data+offset, sizeof(len)); len = INTEL_INT(len); offset += sizeof(len); memcpy(s, data+offset, len); offset += len; s[len] = '\0'; } while(false)
+#define GET_STRING(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING() must point to an array!"); uint8_t len; memcpy(&len, data+offset, sizeof(len)); offset += sizeof(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
+#define GET_STRING_16(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING_16() must point to an array!"); uint16_t len; GET_USHORT(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
+#define GET_STRING_32(s) do { static_assert(std::is_array<decltype(s)>::value, "GET_STRING_32() must point to an array!"); int32_t len; GET_INT(len); const auto s_len = std::min(static_cast<size_t>(len), sizeof(s)-1); memcpy(s, data+offset, s_len); offset += len; s[s_len] = '\0'; } while (false)
 #define GET_ORIENT(d) { ubyte dt[17]; memcpy(dt,data+offset,17); offset+=17; multi_unpack_orient_matrix(dt,&d); }
 #define GET_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; GET_DATA(tmpvec); d.xyz.x = INTEL_FLOAT(&tmpvec.xyz.x); d.xyz.y = INTEL_FLOAT(&tmpvec.xyz.y); d.xyz.z = INTEL_FLOAT(&tmpvec.xyz.z); } while(false)
 

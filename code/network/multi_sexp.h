@@ -236,8 +236,12 @@ public:
     /**
     * Attempts to remove a string from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
     */
-    bool get_string(char *buffer);
+	bool get_string(char *buffer, const size_t buf_len);
     bool get_string(SCP_string &buffer);
+	template<size_t size>
+	inline bool get_string(char (&buffer)[size]) {
+		return get_string(buffer, size);
+	}
 
     /**
     * Attempts to remove a boolean from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
