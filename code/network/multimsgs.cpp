@@ -296,15 +296,19 @@ int lzw_expand( ubyte *outputbuf, ubyte *inputbuf )
 void add_join_request(ubyte *data, int *size, join_request *jr)
 {
 	int packet_size = *size;
-	join_request jr_tmp;
 
-	memcpy(&jr_tmp, jr, sizeof(join_request));
-
-	jr_tmp.tracker_id = INTEL_INT(jr->tracker_id);
-	jr_tmp.player_options.flags = INTEL_INT(jr->player_options.flags);
-	jr_tmp.player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level);
-
-	ADD_DATA(jr_tmp);
+	ADD_STRING(jr->passwd);
+	ADD_STRING(jr->callsign);
+	ADD_STRING(jr->image_filename);
+	ADD_STRING(jr->squad_filename);
+	ADD_DATA(jr->player_rank);
+	ADD_DATA(jr->flags);
+	ADD_INT(jr->tracker_id);
+	ADD_INT(jr->player_options.flags);
+	ADD_INT(jr->player_options.obj_update_level);
+	ADD_DATA(jr->version);
+	ADD_DATA(jr->comp_version);
+	ADD_STRING(jr->pxo_squad_name);
 
 	*size = packet_size;
 }
@@ -314,11 +318,18 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 {
 	int offset = *size;
 
-	GET_DATA(*jr);
-
-	jr->tracker_id = INTEL_INT(jr->tracker_id); //-V570
-	jr->player_options.flags = INTEL_INT(jr->player_options.flags); //-V570
-	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level); //-V570
+	GET_STRING(jr->passwd);
+	GET_STRING(jr->callsign);
+	GET_STRING(jr->image_filename);
+	GET_STRING(jr->squad_filename);
+	GET_DATA(jr->player_rank);
+	GET_DATA(jr->flags);
+	GET_INT(jr->tracker_id);
+	GET_INT(jr->player_options.flags);
+	GET_INT(jr->player_options.obj_update_level);
+	GET_DATA(jr->version);
+	GET_DATA(jr->comp_version);
+	GET_STRING(jr->pxo_squad_name);
 
 	*size = offset;
 }
