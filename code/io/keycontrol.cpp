@@ -334,7 +334,9 @@ int Normal_key_set[] = {
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+
+	TARGET_CLOSEST_HOSTILE_FIGHTER
 };
 
 int Dead_key_set[] = {
@@ -376,7 +378,9 @@ int Dead_key_set[] = {
 	MULTI_OBSERVER_ZOOM_TO,
 
 	TIME_SPEED_UP,
-	TIME_SLOW_DOWN
+	TIME_SLOW_DOWN,
+
+	TARGET_CLOSEST_HOSTILE_FIGHTER
 };
 
 int Critical_key_set[] = {	
@@ -474,7 +478,9 @@ int Non_critical_key_set[] = {
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+
+	TARGET_CLOSEST_HOSTILE_FIGHTER
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2065,6 +2071,7 @@ int button_function_critical(int n, net_player *p = NULL)
 	    case CUSTOM_CONTROL_3:
 	    case CUSTOM_CONTROL_4:
 	    case CUSTOM_CONTROL_5:
+	    case TARGET_CLOSEST_HOSTILE_FIGHTER:
 			return 0;
 
 		default :
@@ -2224,6 +2231,7 @@ bool key_is_targeting(int n)
 		case TARGET_SUBOBJECT_IN_RETICLE:
 		case TARGET_PREV_SUBOBJECT:
 		case TARGET_NEXT_SUBOBJECT:
+	    case TARGET_CLOSEST_HOSTILE_FIGHTER:
 			return true;
 
 		default:
@@ -2299,6 +2307,7 @@ int button_function(int n)
 			case TARGET_NEXT_LIVE_TURRET:
 			case TARGET_PREV_LIVE_TURRET:
 			case TARGET_NEXT_ESCORT_SHIP:
+		    case TARGET_CLOSEST_HOSTILE_FIGHTER:
 				control_used(n);	// set the timestamp for when we used the control, in case we need it
 				return 1;			// pretend we took the action: if we return 0, strange stuff may happen
 		}
@@ -2705,6 +2714,11 @@ int button_function(int n)
 		case STOP_TARGETING_SUBSYSTEM:
 			hud_cease_subsystem_targeting();
 			break;
+
+		// target the cloest hostile fighter
+	    case TARGET_CLOSEST_HOSTILE_FIGHTER:
+		    hud_target_hostile_fighter(Player_obj, 1);
+		    break;
 			
 		case TARGET_NEXT_BOMB:
 			hud_target_missile(Player_obj, 1);

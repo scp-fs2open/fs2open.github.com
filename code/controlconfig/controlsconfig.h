@@ -279,6 +279,10 @@ enum IoActionId  {
 	CUSTOM_CONTROL_4								= 122,
 	CUSTOM_CONTROL_5								= 123,
 
+	//!< @n
+	//!< Additional targetting controls
+	//!< ----------------------------
+	TARGET_CLOSEST_HOSTILE_FIGHTER					= 124,	  //!< target the next closest hostile fighter
 	/*!
 	 * This must always be below the last defined item
 	 */

@@ -1554,6 +1554,67 @@ void hud_target_missile(object *source_obj, int next_flag)
 	}
 }
 
+void hud_target_hostile_fighter(object* source_obj, int next_flag)
+{
+	object *A, *target_objp;
+	ai_info* aip;
+	int target_found = 0;
+
+	if (source_obj->type != OBJ_SHIP)
+		return;
+
+	Assert(Ships[source_obj->instance].ai_index != -1);
+	aip = &Ai_info[Ships[source_obj->instance].ai_index];
+
+	ship_obj *startShip, *so;
+
+	if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) &&
+		(Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags[Ship::Info_Flags::Fighter])) {
+		int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
+		startShip = get_ship_obj_ptr_from_index(index);
+	} else {
+		startShip = GET_FIRST(&Ship_obj_list);
+	}
+
+	for (so = advance_ship(startShip, next_flag); so != startShip; so = advance_ship(so, next_flag)) {
+		A = &Objects[so->objnum];
+
+		// don't look at header
+		if (so == &Ship_obj_list) {
+			continue;
+		}
+
+		// only allow targeting of hostiles
+		if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
+			continue;
+		}
+
+		if (hud_target_invalid_awacs(A)) {
+			continue;
+		}
+
+		// check if ship type is fighter
+		if (!(Ship_info[Ships[A->instance].ship_info_index].flags[Ship::Info_Flags::Fighter])) {
+			continue;
+		}
+
+		// check if ignore
+		if (should_be_ignored(&Ships[A->instance])) {
+			continue;
+		}
+
+		// found a good one
+		target_found = 1;
+		set_target_objnum(aip, OBJ_INDEX(A));
+		hud_shield_hit_reset(A);
+		break;
+	}
+
+	if (target_found) {
+		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f);
+	}
+}
+
 // Return !0 if shipp can be scanned, otherwise return 0
 int hud_target_ship_can_be_scanned(ship *shipp)
 {
