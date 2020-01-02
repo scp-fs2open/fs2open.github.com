@@ -14636,7 +14636,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 				for ( shipnum = 0; shipnum < Wings[wingnum].current_count; shipnum++ ) {
 					ship_index = Wings[wingnum].ship_index[shipnum];
 					Assert( ship_index != -1 );
-                    Ships[ship_index].flags.set(Ship::Ship_Flags::No_builtin_messages, enable_messages);
+                    Ships[ship_index].flags.set(Ship::Ship_Flags::No_builtin_messages, !enable_messages);
 				}
 			}
 		}
