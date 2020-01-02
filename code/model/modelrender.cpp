@@ -5,33 +5,32 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
-#include <algorithm>
+#include "model/modelrender.h"
 
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropenglshader.h"
-#include "graphics/tmapper.h"
-#include "graphics/matrix.h"
 #include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
+#include "graphics/tmapper.h"
 #include "graphics/uniforms.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "math/staticrand.h"
 #include "mod_table/mod_table.h"
-#include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
-#include "math/staticrand.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "tracing/tracing.h"
 #include "weapon/weapon.h"
+
+#include <algorithm>
 
 extern int Model_texturing;
 extern int Model_polys;

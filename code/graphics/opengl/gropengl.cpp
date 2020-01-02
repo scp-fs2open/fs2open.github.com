@@ -834,21 +834,6 @@ void gr_opengl_zbias(int bias)
 	}
 }
 
-void gr_opengl_push_texture_matrix(int  /*unit*/)
-{
-
-}
-
-void gr_opengl_pop_texture_matrix(int  /*unit*/)
-{
-
-}
-
-void gr_opengl_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
-{
-
-}
-
 void gr_opengl_set_line_width(float width)
 {
 	if (width <= 1.0f) {
@@ -1153,10 +1138,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_clear_color	= gr_opengl_set_clear_color;
 
 	gr_screen.gf_preload			= gr_opengl_preload;
-
-	gr_screen.gf_push_texture_matrix		= gr_opengl_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix			= gr_opengl_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix	= gr_opengl_translate_texture_matrix;
 
 	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_opengl_zbias;

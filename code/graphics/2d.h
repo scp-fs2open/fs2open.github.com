@@ -67,6 +67,9 @@ extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
 
+extern bool Deferred_lighting;
+extern bool High_dynamic_range;
+
 class material;
 class model_material;
 class particle_material;
@@ -162,8 +165,6 @@ enum primitive_type {
 	PRIM_TYPE_TRIS,
 	PRIM_TYPE_TRISTRIP,
 	PRIM_TYPE_TRIFAN,
-	PRIM_TYPE_QUADS,
-	PRIM_TYPE_QUADSTRIP
 };
 
 enum shader_type {
@@ -260,7 +261,6 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
-		WORLD_MATRIX,
 	};
 
 	vertex_format format_type;
@@ -754,10 +754,6 @@ typedef struct screen {
 	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int handle, int face);
 
-	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
-	void (*gf_push_texture_matrix)(int unit);
-	void (*gf_pop_texture_matrix)(int unit);
-
 	void (*gf_set_texture_addressing)(int);
 
 	int (*gf_create_buffer)(BufferType type, BufferUsageHint usage);
@@ -919,8 +915,6 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 // Returns the height of the current font
 extern int gr_get_font_height();
 
-extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128 = 0);
-
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
@@ -947,8 +941,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 
-void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
-
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
@@ -973,11 +965,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
-
-#define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
-#define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
-#define gr_pop_texture_matrix			GR_CALL(gr_screen.gf_pop_texture_matrix)
-
 
 // Here be the bitmap functions
 #define gr_bm_free_data				GR_CALL(gr_screen.gf_bm_free_data)
@@ -1031,7 +1018,6 @@ inline void gr_post_process_restore_zbuffer() {
 
 #define gr_maybe_create_shader			GR_CALL(gr_screen.gf_maybe_create_shader)
 #define gr_recompile_all_shaders		GR_CALL(gr_screen.gf_recompile_all_shaders)
-#define gr_set_animated_effect			GR_CALL(gr_screen.gf_set_animated_effect)
 
 #define gr_clear_states					GR_CALL(gr_screen.gf_clear_states)
 
@@ -1153,7 +1139,6 @@ inline void gr_sync_delete(gr_sync sync) {
 }
 
 // color functions
-void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
@@ -1163,33 +1148,10 @@ void gr_set_color_fast(color *dst);
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
-uint gr_determine_model_shader_flags(
-	bool lighting,
-	bool fog,
-	bool textured,
-	bool in_shadow_map,
-	bool thruster_scale,
-	bool transform,
-	bool team_color_set,
-	int tmap_flags,
-	int spec_map,
-	int glow_map,
-	int normal_map,
-	int height_map,
-	int ambient_map,
-	int env_map,
-	int misc_map
-);
-
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
-
-// texture update functions
-ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
-void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

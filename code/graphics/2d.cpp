@@ -29,7 +29,6 @@
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
-#include "graphics/opengl/gropengldraw.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
@@ -51,6 +50,7 @@
 #endif
 
 #include "SDL_surface.h"
+#include "material.h"
 
 const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
 
@@ -104,6 +104,9 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+bool Deferred_lighting = false;
+bool High_dynamic_range = false;
 
 static int videodisplay_deserializer(const json_t* value)
 {
@@ -969,17 +972,6 @@ void gr_set_palette_internal( const char * /*name*/, ubyte * palette, int  /*res
 			memmove(palette, Gr_current_palette, 768);
 		}
 	}
-}
-
-
-void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
-{
-	char *p;
-	strcpy_s( Gr_current_palette_name, name );
-	p = strchr( Gr_current_palette_name, '.' );
-	if ( p ) *p = 0;
-	gr_screen.signature = Gr_signature++;
-	gr_set_palette_internal( name, palette, restrict_font_to_128 );
 }
 
 void gr_screen_resize(int width, int height)
@@ -2381,15 +2373,6 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 	} else {
 		return a < b;
 	}
-}
-
-void gr_shield_icon(coord2d coords[6], int resize_mode)
-{
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-	
-	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
 }
 
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)

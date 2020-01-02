@@ -46,9 +46,6 @@ int Distortion_switch = 0;
 int Scene_texture_initialized;
 bool Scene_framebuffer_in_frame;
 
-bool Deferred_lighting = false;
-bool High_dynamic_range = false;
-
 int Scene_texture_width;
 int Scene_texture_height;
 
