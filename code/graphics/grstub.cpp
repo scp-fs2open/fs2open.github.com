@@ -86,19 +86,11 @@ void gr_stub_get_region(int  /*front*/, int  /*w*/, int  /*h*/, ubyte * /*data*/
 {
 }
 
-void gr_stub_pop_texture_matrix(int  /*unit*/)
-{
-}
-
 void gr_stub_preload_init()
 {
 }
 
 void gr_stub_print_screen(const char * /*filename*/)
-{
-}
-
-void gr_stub_push_texture_matrix(int  /*unit*/)
 {
 }
 
@@ -166,10 +158,6 @@ void gr_stub_stuff_fog_coord(vertex * /*v*/)
 }
 
 void gr_stub_stuff_secondary_color(vertex * /*v*/, ubyte  /*fr*/, ubyte  /*fg*/, ubyte  /*fb*/)
-{
-}
-
-void gr_stub_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
 {
 }
 
@@ -462,10 +450,6 @@ bool gr_stub_init()
 	gr_screen.gf_set_clear_color	= gr_stub_set_clear_color;
 
 	gr_screen.gf_preload			= gr_stub_preload;
-
-	gr_screen.gf_push_texture_matrix		= gr_stub_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix			= gr_stub_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix	= gr_stub_translate_texture_matrix;
 
 	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_stub_zbias_stub;

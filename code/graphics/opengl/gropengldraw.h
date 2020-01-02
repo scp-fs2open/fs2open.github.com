@@ -32,9 +32,6 @@ extern GLuint Scene_stencil_buffer;
 
 void gr_opengl_update_distortion();
 
-void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);
-void opengl_reset_spec_mapping();
-
 void gr_opengl_sphere(material *material_def, float rad);
 
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient);
@@ -95,10 +92,5 @@ extern int Scene_texture_height;
 
 extern float Scene_texture_u_scale;
 extern float Scene_texture_v_scale;
-
-extern bool Deferred_lighting;
-extern bool High_dynamic_range;
-
-extern bool Use_Shaders_for_effect_rendering;
 
 #endif	// !GR_OPENGLDRAW_H
