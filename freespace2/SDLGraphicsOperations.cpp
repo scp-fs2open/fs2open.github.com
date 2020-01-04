@@ -3,8 +3,13 @@
 
 #include "SDLGraphicsOperations.h"
 
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+#include <SDL_vulkan.h>
+#endif
+
 namespace {
-void setOGLProperties(const os::ViewPortProperties& props) {
+void setOGLProperties(const os::ViewPortProperties& props)
+{
 	SDL_GL_ResetAttributes();
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, props.pixel_format.red_size);
@@ -147,12 +152,18 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
-std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
+std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
+{
 	uint32_t windowflags = SDL_WINDOW_SHOWN;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;
 		setOGLProperties(props);
 	}
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+	if (props.enable_vulkan) {
+		windowflags |= SDL_WINDOW_VULKAN;
+	}
+#endif
 	if (props.flags[os::ViewPortFlags::Borderless]) {
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
