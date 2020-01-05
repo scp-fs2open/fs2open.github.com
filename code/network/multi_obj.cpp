@@ -40,13 +40,12 @@
 float oo_arrive_time[MAX_SHIPS][5];				// the last 5 arrival times for each ship
 int oo_arrive_time_count[MAX_SHIPS];			// size of the arrival queue
 float oo_arrive_time_avg_diff[MAX_SHIPS];		// the average time between arrivals
-float oo_arrive_time_next[MAX_SHIPS];			// how many seconds have gone by. should be equal to oo_arrive_time_avg_diff[] the next time we get an update
 
 // interp stuff
 int oo_interp_count[MAX_SHIPS];
 vec3d oo_interp_points[MAX_SHIPS][2];
-bez_spline oo_interp_splines[MAX_SHIPS][2];
-void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info);
+bez_spline oo_interp_splines[MAX_SHIPS];
+void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info);
 
 // HACK!!!
 bool Multi_oo_afterburn_hack = false;
@@ -784,8 +783,6 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			}
 			oo_arrive_time_avg_diff[shipp - Ships] /= 5.0f;
 		}
-		// next expected arrival time
-		oo_arrive_time_next[shipp - Ships] = 0.0f;
 
 		// int r1 = multi_pack_unpack_position( 0, data + offset, &pobjp->pos );
 		int r1 = multi_pack_unpack_position( 0, data + offset, &new_pos );
@@ -834,7 +831,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			oo_interp_points[shipp - Ships][0] = oo_interp_points[shipp - Ships][1];
 			oo_interp_points[shipp - Ships][1] = new_pos;			
 
-			multi_oo_calc_interp_splines(SHIP_INDEX(shipp), &pobjp->pos, &pobjp->orient, &pobjp->phys_info, &new_pos, &new_orient, &new_phys_info);
+			multi_oo_calc_interp_splines(SHIP_INDEX(shipp), &pobjp->pos, &pobjp->phys_info, &new_pos, &new_orient, &new_phys_info);
 		}
 		
 		pobjp->phys_info.vel = new_phys_info.vel;		
@@ -1873,48 +1870,55 @@ void multi_oo_interp(object *objp)
 		return;
 	}	
 
-	// increment his approx "next" time
-	oo_arrive_time_next[objp->instance] += flFrametime;
-
-	// do stream weapon firing for this ship
+	// Now that we know we have a valid ship, do stream weapon firing for this ship before we do anything else that makes us abort
 	Assert(objp != Player_obj);
-	if(objp != Player_obj){
+	if (objp != Player_obj) {
 		ship_fire_primary(objp, 1, 0);
 	}
 
-	// if this ship doesn't have enough data points yet, skip it
-	if((oo_interp_count[objp->instance] < 2) || (oo_arrive_time_count[objp->instance] < 5)){
+	// if this ship doesn't have enough data points yet, pretend it's a normal ship and skip it
+	if(oo_interp_count[objp->instance] < 2){
+		physics_sim(&objp->pos, &objp->orient, &objp->phys_info, flFrametime);
 		return;
 	}
 
-	// store the magnitude of his velocity
-	// float vel_mag = vm_vec_mag(&objp->phys_info.vel);
+	extern fix game_get_overall_frametime();
 
-	// determine how far along we are (0.0 to 1.0) until we should be getting the next packet
-	float t = oo_arrive_time_next[objp->instance] / oo_arrive_time_avg_diff[objp->instance];
+	// Cyborg17 - Here's the new timing calculation: we subtract the last packet's arrival time oo_arrive_time[objp->instance][oo_arrive_time_count[objp->instance] - 1]
+	// from the current frame time (f2fl(game_get_overall_frametime()) to see how long it's been, and then we divide by the average difference in time.  This gives us a
+	// percent that tells us, for example, "35% of the time has elapsed until the next packet."
+	float t = (f2fl(game_get_overall_frametime()) - oo_arrive_time[objp->instance][oo_arrive_time_count[objp->instance] - 1]) / oo_arrive_time_avg_diff[objp->instance];
 
 	// gr_set_color_fast(&Color_bright);
 	// gr_printf(100, 10, "%f\n", t);
 	
 	// we've overshot. hmm. just keep the sim running I guess	
-	if(t > 1.0f){
+	// Cyborg17 - I've adjusted this percentage up to 125% because we should at least have a little wiggle room for slightly late packets.
+	// For example, if I have 4 previous packets all arrive with the same timing and this one is the tiniest bit slower than them, having the cutoff
+	// just at average would not let us consider those packets.
+	if(t > 1.25f){
 		physics_sim(&objp->pos, &objp->orient, &objp->phys_info, flFrametime);
 		return;
+	// in case they are slightly late, we'll just use the last good point.
+	} else if (t > 1.0f) {
+		t = 1.0f;
 	}	
 
-	// otherwise, blend the two curves together to get the new point
+	// Cyborg17 - we are no longer blending the two curves.  I'm not sure *how*, but they were somehow making the interpolation look 
+	// less erratic when the timing was messed up in the first place.  Now we take the *good* curve at its word. 
+
 	float u = 0.5f + (t * 0.5f);
-	vec3d p_bad, p_good;
-	oo_interp_splines[objp->instance][0].bez_get_point(&p_bad, u);
-	oo_interp_splines[objp->instance][1].bez_get_point(&p_good, u);		
-	vm_vec_scale(&p_good, t);
-	vm_vec_scale(&p_bad, 1.0f - t);
-	vm_vec_add(&objp->pos, &p_bad, &p_good);	
+	vec3d interp_point;
+	oo_interp_splines[objp->instance].bez_get_point(&interp_point, u);
+	vm_vec_scale(&interp_point, t);
+	//vm_vec_scale(&p_bad, 1.0f - t);
+	objp->pos = interp_point;	
 
 	// set new velocity
 	// vm_vec_sub(&objp->phys_info.vel, &objp->pos, &objp->last_pos);
 	
 	// run the sim for rotation	
+	// TODO: add a bezier for rot_vel.  It was working really well previously, but now it looks slightly choppy.
 	physics_sim_rot(&objp->orient, &objp->phys_info, flFrametime);
 
 	// blend velocity vectors together with an average weight
@@ -1966,7 +1970,7 @@ DCF(oo_error, "Sets error factor for flight path prediction physics (Multiplayer
 	dc_printf("oo_error set to %f", oo_error);
 }
 
-void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
+void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
 {
 	vec3d a, b, c;
 	matrix m_copy;
@@ -1987,15 +1991,6 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 			*new_pos = *cur_pos;
 		}
 	}
-	
-	// get the spline representing our "bad" movement. its better to be little bit off than to overshoot altogether
-	a = oo_interp_points[ship_index][0];
-	b = *cur_pos;
-	c = *cur_pos;
-	m_copy = *cur_orient;
-	p_copy = *cur_phys_info;
-	physics_sim(&c, &m_copy, &p_copy, avg_diff * oo_error);			// next point, assuming we followed our current path
-	oo_interp_splines[ship_index][0].bez_set_points(3, pts);
 
 	// get the spline representing where this new point tells us we'd be heading
 	a = oo_interp_points[ship_index][0]; //-V519
@@ -2004,10 +1999,8 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	m_copy = *new_orient;
 	p_copy = *new_phys_info;
 	physics_sim(&c, &m_copy, &p_copy, avg_diff);			// next point, given this new info
-	oo_interp_splines[ship_index][1].bez_set_points(3, pts);	
+	oo_interp_splines[ship_index].bez_set_points(3, pts);	
 
-	// now we've got a spline representing our "new" path and where we would've gone had we been perfect before
-	// we'll modify our velocity to move along a blend of these splines.
 }
 
 void oo_update_time()
