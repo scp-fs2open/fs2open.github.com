@@ -10200,14 +10200,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
 	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running)) {
 		Objects[sp->objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
-		// set initial velocity to z of temp velocity vector
-		vec3d temp_vel = ZERO_VECTOR;
-		temp_vel.xyz.z = Objects[sp->objnum].phys_info.speed;
-		// convert to global coordinates and set to ship velocity
-		vm_vec_unrotate(&Objects[sp->objnum].phys_info.vel, &temp_vel, &Objects[sp->objnum].orient);
-		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
 		// prev_ramp_vel needs to be in local coordinates
-		Objects[sp->objnum].phys_info.prev_ramp_vel = temp_vel;
+		vm_vec_zero(&Objects[sp->objnum].phys_info.prev_ramp_vel);
+		// set z of prev_ramp_vel to initial velocity
+		Objects[sp->objnum].phys_info.prev_ramp_vel.xyz.z = Objects[sp->objnum].phys_info.speed;
+		// convert to global coordinates and set to ship velocity and desired velocity
+		vm_vec_unrotate(&Objects[sp->objnum].phys_info.vel, &Objects[sp->objnum].phys_info.prev_ramp_vel, &Objects[sp->objnum].orient);
+		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
 	}
 
 	// Goober5000 - if we're changing to a ship class that has a different default set of orders, update the orders
