@@ -2372,9 +2372,14 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!(Game_mode & GM_IN_MISSION) || (Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM || Warp_params[shipp->warpin_params_index].warp_type == WT_HYPERSPACE))
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
-			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
-			Objects[objnum].phys_info.prev_ramp_vel = Objects[objnum].phys_info.vel;
+			// prev_ramp_vel needs to be in local coordinates
+			vm_vec_zero(&Objects[objnum].phys_info.prev_ramp_vel);
+			// set z of prev_ramp_vel to initial velocity
+			Objects[objnum].phys_info.prev_ramp_vel.xyz.z = Objects[objnum].phys_info.speed;
+			// convert to global coordinates and set to ship velocity and desired velocity
+			vm_vec_unrotate(&Objects[objnum].phys_info.vel, &Objects[objnum].phys_info.prev_ramp_vel, &Objects[objnum].orient);
 			Objects[objnum].phys_info.desired_vel = Objects[objnum].phys_info.vel;
+
 		}
 
 		// recalculate damage of subsystems
