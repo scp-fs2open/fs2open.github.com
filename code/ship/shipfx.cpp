@@ -4218,10 +4218,10 @@ int WE_Hyperspace::warpStart()
 			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
 			dock_function_info dfi;
 			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+			// docked objects use speed to find the object that controls movement; therefore the warping in dock leader must have the highest speed!
+			objp->phys_info.speed = (scale_factor / params->time)*1000.0f;
 		}
 		objp->phys_info.flags |= PF_WARP_IN;
-		objp->phys_info.vel.xyz.z = (scale_factor / params->time)*1000.0f;
-		objp->phys_info.speed = objp->phys_info.vel.xyz.z;  // docked objects use speed to find the object that controls movement; therefore the warping in dock leader must have the highest speed!
 		objp->flags.remove(Object::Object_Flags::Physics);
 	}
 	else if(direction == WarpDirection::WARP_OUT)
@@ -4260,17 +4260,9 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
-		if(direction == WarpDirection::WARP_OUT)
-			objp->phys_info.vel.xyz.z = 0.0f;
-		else
-		{
-			vec3d vel;
-			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, initial_velocity );
-			objp->phys_info.vel = vel;
-			objp->phys_info.desired_vel = vel;
-			objp->phys_info.speed = vel.xyz.z;
-			// warpEnd() removes Arriving_* Ship_Flags; no need to set any here
+		if (direction == WarpDirection::WARP_OUT) {
+			// this needs to be prev_ramp_vel because that is in local coord
+			objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
 		}
         objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();

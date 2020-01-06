@@ -10201,8 +10201,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running)) {
 		Objects[sp->objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 		// prev_ramp_vel needs to be in local coordinates
-		vm_vec_zero(&Objects[sp->objnum].phys_info.prev_ramp_vel);
 		// set z of prev_ramp_vel to initial velocity
+		vm_vec_zero(&Objects[sp->objnum].phys_info.prev_ramp_vel);
 		Objects[sp->objnum].phys_info.prev_ramp_vel.xyz.z = Objects[sp->objnum].phys_info.speed;
 		// convert to global coordinates and set to ship velocity and desired velocity
 		vm_vec_unrotate(&Objects[sp->objnum].phys_info.vel, &Objects[sp->objnum].phys_info.prev_ramp_vel, &Objects[sp->objnum].orient);
