@@ -1678,7 +1678,12 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		wait *= wip->burst_delay;
 		turret->weapons.burst_counter[weapon_num]++;
 	} else {
-		wait *= wip->fire_wait;
+		// Random fire delay (DahBlount) used in ship_fire_primary(), added here by wookieejedi to correct oversight
+		if (wip->max_delay != 0.0f && wip->min_delay != 0.0f) {
+			wait *= (((float)rand()) / (((float)RAND_MAX + 1.0f) * (wip->max_delay - wip->min_delay + 1.0f) + wip->min_delay));
+		} else {
+			wait *= wip->fire_wait;
+		}
 		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 			turret->weapons.burst_counter[weapon_num] = (myrand() % wip->burst_shots);
 		} else {
