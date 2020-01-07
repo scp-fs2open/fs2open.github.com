@@ -4192,9 +4192,6 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, WarpDirection n_direction)
 	scale_factor = 750.0f * objp->radius;
 	
 	initial_velocity = 1.0f;
-	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
-	if (p_objp != NULL)
-		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 	
 	//*****Sound
 	snd_range_factor = 1.0f * objp->radius;
@@ -4212,6 +4209,11 @@ int WE_Hyperspace::warpStart()
 	
 	if(direction == WarpDirection::WARP_IN)
 	{
+		p_object* p_objp = mission_parse_get_parse_object(shipp->ship_name);
+		if (p_objp != NULL) {
+			initial_velocity = (float)p_objp->initial_velocity * sip->max_speed / 100.0f;
+		}
+
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		// dock leader needs to handle dockees
 		if (object_is_docked(objp)) {
@@ -4226,7 +4228,9 @@ int WE_Hyperspace::warpStart()
 	}
 	else if(direction == WarpDirection::WARP_OUT)
 	{
-        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
+		// wookieejedi - if the ship is already in the mission the initial_velocity for warpout should be the ship's current speed
+		initial_velocity = objp->phys_info.fspeed;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 	}
 	else
 	{
@@ -4260,10 +4264,6 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
-		if (direction == WarpDirection::WARP_OUT) {
-			// this needs to be prev_ramp_vel because that is in local coord
-			objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
-		}
         objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();
 	}
