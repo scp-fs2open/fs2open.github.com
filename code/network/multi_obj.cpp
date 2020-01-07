@@ -1991,10 +1991,6 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, physics_info *
 
 }
 
-void oo_update_time()
-{	
-}
-
 int display_oo_bez = 0;
 DCF(bez, "Toggles rendering of player ship trajectory interpolation splines (Multiplayer) *disabled*")
 {

@@ -1219,10 +1219,6 @@ void multi_do_frame()
 	// while in the mission, send my PlayerControls to the host so that he can process
 	// my movement
 	if ( Game_mode & GM_IN_MISSION ) {
-		// tickers
-		extern void oo_update_time();
-		oo_update_time();
-
 
 		if ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){					
 			if(Net_player->flags & NETINFO_FLAG_OBSERVER){
