@@ -4210,7 +4210,7 @@ int WE_Hyperspace::warpStart()
 	if(direction == WarpDirection::WARP_IN)
 	{
 		p_object* p_objp = mission_parse_get_parse_object(shipp->ship_name);
-		if (p_objp != NULL) {
+		if (p_objp != nullptr) {
 			initial_velocity = (float)p_objp->initial_velocity * sip->max_speed / 100.0f;
 		}
 
