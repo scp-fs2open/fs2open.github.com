@@ -2373,13 +2373,12 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			// prev_ramp_vel needs to be in local coordinates
-			vm_vec_zero(&Objects[objnum].phys_info.prev_ramp_vel);
 			// set z of prev_ramp_vel to initial velocity
+			vm_vec_zero(&Objects[objnum].phys_info.prev_ramp_vel);
 			Objects[objnum].phys_info.prev_ramp_vel.xyz.z = Objects[objnum].phys_info.speed;
 			// convert to global coordinates and set to ship velocity and desired velocity
 			vm_vec_unrotate(&Objects[objnum].phys_info.vel, &Objects[objnum].phys_info.prev_ramp_vel, &Objects[objnum].orient);
 			Objects[objnum].phys_info.desired_vel = Objects[objnum].phys_info.vel;
-
 		}
 
 		// recalculate damage of subsystems
@@ -5769,8 +5768,9 @@ bool post_process_mission()
 	Player_ai->targeted_subsys_parent = -1;
 
 	// determine if player start has initial velocity and set forward cruise percent to relect this
-	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
-		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
+	// this should check prev_ramp_vel because that is in local coordinates --wookieejedi
+	if ( Player_obj->phys_info.prev_ramp_vel.xyz.z > 0.0f )
+		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
 	// set up wing indexes
 	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {

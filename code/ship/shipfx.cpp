@@ -4192,9 +4192,6 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, WarpDirection n_direction)
 	scale_factor = 750.0f * objp->radius;
 	
 	initial_velocity = 1.0f;
-	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
-	if (p_objp != NULL)
-		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 	
 	//*****Sound
 	snd_range_factor = 1.0f * objp->radius;
@@ -4212,21 +4209,28 @@ int WE_Hyperspace::warpStart()
 	
 	if(direction == WarpDirection::WARP_IN)
 	{
+		p_object* p_objp = mission_parse_get_parse_object(shipp->ship_name);
+		if (p_objp != nullptr) {
+			initial_velocity = (float)p_objp->initial_velocity * sip->max_speed / 100.0f;
+		}
+
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		// dock leader needs to handle dockees
 		if (object_is_docked(objp)) {
 			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
 			dock_function_info dfi;
 			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+			// docked objects use speed to find the object that controls movement; therefore the warping in dock leader must have the highest speed!
+			objp->phys_info.speed = (scale_factor / params->time)*1000.0f;
 		}
 		objp->phys_info.flags |= PF_WARP_IN;
-		objp->phys_info.vel.xyz.z = (scale_factor / params->time)*1000.0f;
-		objp->phys_info.speed = objp->phys_info.vel.xyz.z;  // docked objects use speed to find the object that controls movement; therefore the warping in dock leader must have the highest speed!
 		objp->flags.remove(Object::Object_Flags::Physics);
 	}
 	else if(direction == WarpDirection::WARP_OUT)
 	{
-        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
+		// wookieejedi - if the ship is already in the mission the initial_velocity for warpout should be the ship's current speed
+		initial_velocity = objp->phys_info.fspeed;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 	}
 	else
 	{
@@ -4260,18 +4264,6 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
-		if(direction == WarpDirection::WARP_OUT)
-			objp->phys_info.vel.xyz.z = 0.0f;
-		else
-		{
-			vec3d vel;
-			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, initial_velocity );
-			objp->phys_info.vel = vel;
-			objp->phys_info.desired_vel = vel;
-			objp->phys_info.speed = vel.xyz.z;
-			// warpEnd() removes Arriving_* Ship_Flags; no need to set any here
-		}
         objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();
 	}
