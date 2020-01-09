@@ -1199,21 +1199,9 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 
 	// if position or orientation haven't changed	
 	if((shipp->np_updates[player_index].pos_chksum != 0) && (shipp->np_updates[player_index].pos_chksum == cur_pos_chksum)){
-		// if we otherwise would have been sending it, keep track of it (debug only)
-#ifndef NDEBUG
-		if(oo_flags & OO_POS_NEW){
-			multi_rate_add(player_index, "skp_p", OO_POS_RET_SIZE + OO_VEL_RET_SIZE);
-		}		
-#endif
 		oo_flags &= ~(OO_POS_NEW);
 	}
 	if((shipp->np_updates[player_index].orient_chksum != 0) && (shipp->np_updates[player_index].orient_chksum == cur_orient_chksum)){
-		// if we otherwise would have been sending it, keep track of it (debug only)
-#ifndef NDEBUG
-		if(oo_flags & OO_ORIENT_NEW){
-			multi_rate_add(player_index, "skp_o", OO_ORIENT_RET_SIZE + OO_ROTVEL_RET_SIZE);
-		}		
-#endif
 		oo_flags &= ~(OO_ORIENT_NEW);
 	}
 	shipp->np_updates[player_index].pos_chksum = cur_pos_chksum;
