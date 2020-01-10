@@ -621,7 +621,7 @@ struct fs2_game_chat_packet
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, int server_msg)
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, ubyte server_msg)
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
@@ -633,7 +633,7 @@ void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_
 	ADD_SHORT(from->player_id);
 
 	// add the message mode and if in MSG_TARGET mode, add who the target is
-	ADD_INT(server_msg);
+	ADD_DATA(server_msg);
 	mode = (ubyte)msg_mode;	
 	ADD_DATA(mode);
 	switch(mode){
@@ -726,8 +726,8 @@ void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_
 void process_game_chat_packet( ubyte *data, header *hinfo )
 {
 	int offset;
-	ubyte mode;
-	int color_index,player_index,to_player_index,should_display,server_msg;	
+	ubyte mode, server_msg;
+	int color_index, player_index, to_player_index, should_display;
 	char msg[MULTI_MSG_MAX_TEXT_LEN+CALLSIGN_LEN+2];
 	char expr[255];
 	short from, to;
@@ -738,7 +738,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	GET_SHORT(from);
 	
 	// determine if this is a server message
-	GET_INT(server_msg);
+	GET_DATA(server_msg);
 
 	// get the mode
 	GET_DATA(mode);
