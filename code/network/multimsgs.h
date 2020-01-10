@@ -534,7 +534,7 @@ void send_bytes_recvd_packet(net_player *pl);
 void process_bytes_recvd_packet(ubyte *data, header *hinfo);
 
 // host transfer
-void send_host_captain_change_packet(short player_id, int captain_change);
+void send_host_captain_change_packet(short player_id, bool captain_change);
 void process_host_captain_change_packet(ubyte *data, header *hinfo);
 
 // self destruct

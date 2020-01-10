@@ -8588,15 +8588,16 @@ void process_bytes_recvd_packet(ubyte *data, header *hinfo)
 }
 
 // host transfer
-void send_host_captain_change_packet(short player_id, int captain_change)
+void send_host_captain_change_packet(short player_id, bool captain_change)
 {
-	ubyte data[MAX_PACKET_SIZE];
+	ubyte data[MAX_PACKET_SIZE], val;
 	int packet_size = 0;
 
 	// build the packet
 	BUILD_HEADER(TRANSFER_HOST);
 	ADD_SHORT(player_id);
-	ADD_INT(captain_change);
+	val = captain_change ? 1 : 0;
+	ADD_DATA(val);
 
 	// send to all
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8605,12 +8606,13 @@ void send_host_captain_change_packet(short player_id, int captain_change)
 void process_host_captain_change_packet(ubyte *data, header *hinfo)
 {
 	int offset = HEADER_LENGTH;
-	int idx, found_player, captain_change;
+	int idx, found_player;
 	short player_id;
+	ubyte captain_change;
 
 	// get the player id
 	GET_SHORT(player_id);
-	GET_INT(captain_change);
+	GET_DATA(captain_change);
 	PACKET_SET_SIZE();
 
 	// captain change
