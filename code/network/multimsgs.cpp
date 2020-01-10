@@ -1045,7 +1045,8 @@ void send_new_player_packet(int new_player_num,net_player *target)
 	BUILD_HEADER( NOTIFY_NEW_PLAYER );
 
 	// add the new player's info
-	ADD_INT(new_player_num);
+	val = static_cast<ubyte>(new_player_num);
+	ADD_DATA(val);
 //	ADD_DATA(Net_players[new_player_num].p_info.addr);
 	add_net_addr(data, &packet_size, &Net_players[new_player_num].p_info.addr);
 	ADD_SHORT(Net_players[new_player_num].player_id);
@@ -1072,20 +1073,20 @@ void send_new_player_packet(int new_player_num,net_player *target)
 void process_new_player_packet(ubyte* data, header* hinfo)
 {
 	int already_in_game = 0;
-	int offset, new_player_num,player_num,new_flags;
+	int offset, player_num, new_flags;
 	net_addr new_addr;	
 	char new_player_name[CALLSIGN_LEN+2] = "";
 	char new_player_image[MAX_FILENAME_LEN+1] = "";
 	char new_player_squad[MAX_FILENAME_LEN+1] = "";
 	char new_player_pxo_squad[LOGIN_LEN+1] = "";
 	char notify_string[256];
-	ubyte team;
+	ubyte team, new_player_num;
 	short new_id;
 
 	offset = HEADER_LENGTH;
 
 	// get the new players information
-	GET_INT(new_player_num);
+	GET_DATA(new_player_num);
 //	GET_DATA(new_addr);
 	get_net_addr(data, &offset, &new_addr);
 	GET_SHORT(new_id);
@@ -1205,7 +1206,7 @@ struct fs2_accept_player_data
 void send_accept_player_data( net_player *npp, int is_ingame )
 {
 	int packet_size;	
-	int i;
+	uint8_t i;
 	ubyte data[MAX_PACKET_SIZE], stop;
 
 	BUILD_HEADER(ACCEPT_PLAYER_DATA);
@@ -1227,7 +1228,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 		ADD_DATA(stop);
 
 		// add the player's number
-		ADD_INT(i);		
+		ADD_DATA(i);
 
 		// add the player's address
 	//	ADD_DATA(Net_players[i].p_info.addr);
@@ -1277,7 +1278,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 // process the player data from the server
 void process_accept_player_data( ubyte *data, header *hinfo )
 {
-	int offset, player_num, player_slot_num, new_flags;
+	int offset, player_slot_num, new_flags;
 	char name[CALLSIGN_LEN + 1] = "";
 	char image_name[MAX_FILENAME_LEN + 1] = "";
 	char squad_name[MAX_FILENAME_LEN + 1] = "";
@@ -1286,6 +1287,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 	net_addr addr;
 	ubyte stop;
 	ushort ig_signature;
+	uint8_t player_num;
 
 	offset = HEADER_LENGTH;
 
@@ -1295,7 +1297,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		Assert(player_slot_num != -1);
 
 		// get the player's number
-		GET_INT(player_num);
+		GET_DATA(player_num);
 
 		// add the player's address
 	//	GET_DATA(addr);
@@ -1508,7 +1510,8 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	ADD_INT(Game_skill_level);
 
 	// add this guys player num 
-	ADD_INT(new_player_num);
+	val = static_cast<ubyte>(new_player_num);
+	ADD_DATA(val);
 
 	// add his player id
 	ADD_SHORT(Net_players[new_player_num].player_id);
@@ -1555,8 +1558,8 @@ extern int Select_default_ship;
 
 void process_accept_packet(ubyte* data, header* hinfo)
 {
-	int code, my_player_num, offset;
-	ubyte val,team = 0;
+	int code, offset;
+	ubyte val, team = 0, my_player_num;
 	short player_id;
 	
 	// get the accept code
@@ -1602,7 +1605,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	}
 
 	// get my netplayer number
-	GET_INT(my_player_num);
+	GET_DATA(my_player_num);
 
 	// get my id #
 	GET_SHORT(player_id);
