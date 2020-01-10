@@ -1680,7 +1680,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 	} else {
 		// Random fire delay (DahBlount) used in ship_fire_primary(), added here by wookieejedi to correct oversight
 		if (wip->max_delay != 0.0f && wip->min_delay != 0.0f) {
-			wait *= (((float)rand()) / (((float)RAND_MAX + 1.0f) * (wip->max_delay - wip->min_delay + 1.0f) + wip->min_delay));
+			wait *= frand_range(wip->min_delay, wip->max_delay);
 		} else {
 			wait *= wip->fire_wait;
 		}
