@@ -2731,8 +2731,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		if(!something_was_ok_to_fire)
 		{
-			mprintf(("nothing ok to fire\n"));
-            
 			if (ss->turret_best_weapon >= 0) {
 				//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
 				turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
