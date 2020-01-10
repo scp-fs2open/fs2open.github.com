@@ -2308,12 +2308,6 @@ void process_game_query(ubyte*  /*data*/, header* hinfo)
 
 	PACKET_SET_SIZE();
 
-	// check to be sure that we don't capture our own broadcast message
-	fill_net_addr(&addr, hinfo->addr, hinfo->port);
-	if ( psnet_is_local_addr(&addr) ) {
-		return;
-	}
-
 	// if I am not a server of a game, don't send a reply!!!
 	if ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
 		return;
@@ -2322,6 +2316,12 @@ void process_game_query(ubyte*  /*data*/, header* hinfo)
 	// if the game options are being selected, then ignore the request
 	// also, if Netgame.max_players == -1, the host has not chosen a mission yet and we should wait
 	if((Netgame.game_state == NETGAME_STATE_STD_HOST_SETUP) || (Netgame.game_state == NETGAME_STATE_HOST_SETUP) || (Netgame.game_state == 0) || (Netgame.max_players == -1)){
+		return;
+	}
+
+	// check to be sure that we don't capture our own broadcast message
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
+	if ( psnet_is_local_addr(&addr) ) {
 		return;
 	}
 
