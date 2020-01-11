@@ -449,9 +449,7 @@ int required_string(const char *pstr)
 	}
 
 	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
-		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
-        throw parse::ParseException("Required string not found");
+		throw parse::ParseException("Required string not found");
 	}
 
 	Mp += strlen(pstr);
@@ -666,8 +664,6 @@ int required_string_either(const char *str1, const char *str2)
 		ignore_white_space();
 	}
 
-	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-	Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
 	throw parse::ParseException("Required string not found");
 }
 
@@ -2653,7 +2649,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 		else
 		{
 			*b = false;
-			Warning(LOCATION, "Boolean '%s' type unknown; assuming 'no/false'",token);
+			error_display(0, "Boolean '%s' type unknown; assuming 'no/false'",token);
 		}
 	}
 
@@ -3017,7 +3013,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// no ships from the current tables (when swapping mods) so don't report that as an error.
 		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
 			// print a warning in debug mode
-			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+			error_display(0, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
 			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
 
@@ -3028,14 +3024,14 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
 		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
 			clean_loadout_list_entry();
-			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
+			error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
 		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
 			clean_loadout_list_entry();
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )
-				Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
+				error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
 			continue;
 		}
 
