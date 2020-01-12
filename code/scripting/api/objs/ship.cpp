@@ -1682,6 +1682,31 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 	return ade_set_args(L, "s", shipp->get_display_string());
 }
 
+ADE_VIRTVAR(FlagGunConvergence, l_Ship, "boolean", "Checks for the \"gun convergence\" flag", "boolean",
+            "True if flag is set, false if flag is not set and nil on error")
+{
+	object_h* objh = nullptr;
+	bool set       = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp    = &Ships[objh->objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	if (ADE_SETTING_VAR) {
+		sip->flags.set(Ship::Info_Flags::Gun_convergence, set);
+	}
+
+	if (sip->flags[Ship::Info_Flags::Gun_convergence])
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 
 }
 }
