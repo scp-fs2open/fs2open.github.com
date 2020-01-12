@@ -18,6 +18,8 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::nanovg_draw_data);
 	case uniform_block_type::DecalInfo:
 		return sizeof(graphics::decal_info);
+	case uniform_block_type::Matrices:
+		return sizeof(graphics::matrix_uniforms);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		UNREACHABLE("Invalid block type encountered!");
@@ -34,6 +36,7 @@ size_t getHeaderSize(uniform_block_type type)
 		return sizeof(graphics::decal_globals);
 	case uniform_block_type::ModelData:
 	case uniform_block_type::NanoVGData:
+	case uniform_block_type::Matrices:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
@@ -196,5 +199,7 @@ void UniformBufferManager::submitData(void* buffer, size_t data_size, size_t off
 	}
 }
 int UniformBufferManager::getActiveBufferHandle() { return _active_uniform_buffer; }
+size_t UniformBufferManager::getBufferSize() { return _active_buffer_size; }
+size_t UniformBufferManager::getCurrentlyUsedSize() { return _segment_offset; }
 } // namespace util
 } // namespace graphics

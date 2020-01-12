@@ -249,6 +249,7 @@ Flag exe_params[] =
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 	{ "-profile_frame_time","Profile engine subsystems",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-debug_window",		"Enable the debug window",					true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
+	{ "-gr_debug",		"Output graphics debug information",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gr_debug", },
 };
 // clang-format on
 
@@ -478,6 +479,7 @@ cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_pr
 cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
+cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
 
 
 char *Cmdline_start_mission = NULL;
@@ -507,6 +509,7 @@ bool Cmdline_json_profiling = false;
 bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
+bool Cmdline_graphics_debug_output = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -2131,6 +2134,10 @@ bool SetCmdlineParams()
 
 	if (debug_window_arg.found()) {
 		Cmdline_debug_window = true;
+	}
+
+	if (graphics_debug_output_arg.found()) {
+		Cmdline_graphics_debug_output = true;
 	}
 
 	if (show_video_info.found())

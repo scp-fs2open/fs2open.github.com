@@ -8,7 +8,12 @@ out float fragRadius;
 out vec4 fragPosition;
 out vec4 fragTexCoord;
 out vec4 fragColor;
-uniform mat4 projMatrix;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
 void main(void)
 {
 	vec3 forward_vec = vec3(0.0, 0.0, 1.0);

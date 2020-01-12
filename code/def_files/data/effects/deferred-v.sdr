@@ -2,8 +2,11 @@
 #include "lighting.sdr"
 
 in vec4 vertPosition;
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
 
 layout (std140) uniform lightData {
 	vec3 diffuseLightColor;

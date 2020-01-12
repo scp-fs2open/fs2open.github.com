@@ -18,8 +18,12 @@ in float vertRadius;
 out float fragOffset;
 uniform float use_offset;
 #endif
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
 void main()
 {
 	#ifdef FLAG_EFFECT_GEOMETRY

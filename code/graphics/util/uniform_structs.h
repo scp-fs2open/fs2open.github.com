@@ -204,4 +204,9 @@ struct decal_info {
 	float pad;
 };
 
+struct matrix_uniforms {
+	matrix4 modelViewMatrix;
+	matrix4 projMatrix;
+};
+
 }

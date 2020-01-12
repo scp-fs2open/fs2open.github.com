@@ -240,6 +240,7 @@ enum class uniform_block_type {
 	DecalInfo = 3,
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
+	Matrices = 6,
 
 	NUM_BLOCK_TYPES
 };
