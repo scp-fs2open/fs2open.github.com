@@ -2186,7 +2186,7 @@ bool SetCmdlineParams()
 	}
 
 	if (deprecated_no_emissive_arg.found()) {
-		Cmdline_emissive = 1;
+		Cmdline_emissive = 0;
 	}
  
 	return true; 
