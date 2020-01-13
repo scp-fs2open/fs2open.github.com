@@ -197,7 +197,9 @@ ushort multi_get_next_network_signature( int what_kind )
 // and is used mainly for firing weapons.  what_kind tells us permanent or non-permanent signature
 void multi_set_network_signature( ushort signature, int what_kind )
 {
-	Assert( signature != 0 );
+	Assertion(signature != 0, "Invalid net signature of 0 requested in multi_set_network_signature().");
+	Assertion(what_kind > 0, "Invalid net signature type of value %d requested in multi_set_network_signature().", what_kind);  // get Allender
+	Assertion(what_kind < 5, "Invalid net signature type of value %d requested in multi_set_network_signature().", what_kind);
 
 	if ( what_kind == MULTI_SIG_SHIP ) {
 		Assert( (signature >= SHIP_SIG_MIN) && (signature <= SHIP_SIG_MAX) );
@@ -208,11 +210,16 @@ void multi_set_network_signature( ushort signature, int what_kind )
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
 		Assert( (signature >= ASTEROID_SIG_MIN) && (signature <= ASTEROID_SIG_MAX) );
 		Next_asteroid_signature = signature;
-	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		Assert( (signature >= NPERM_SIG_MIN) /*&& (signature <= NPERM_SIG_MAX)*/ );
-		Next_non_perm_signature = signature;
-	} else
-		Int3();			// get Allender
+	} else if (what_kind == MULTI_SIG_NON_PERMANENT) {
+		// Cyborg17 - spawn weapons can set this past the max and overflow the short
+		if (signature >= NPERM_SIG_MIN) {
+			Next_non_perm_signature = signature;
+		// so if they did, just add it to the minimum, because that's where we need to be, anyway.
+		} else {
+			Next_non_perm_signature = NPERM_SIG_MIN + signature;
+			Assertion(Next_non_perm_signature >= NPERM_SIG_MIN,"Somehow the non permanent signatures in multi_set_network_signature overflowed the short *twice*, and we cannot code around this.\n\n The likely cause is having spawn weapons with too many children.");
+		}
+	} 			
 }
 
 // multi_get_network_object() takes a net_signature and tries to locate the object in the object list
