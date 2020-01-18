@@ -325,7 +325,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
-bool Gr_post_processing_enabled = false;
+bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption =
     options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
