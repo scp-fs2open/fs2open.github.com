@@ -55,6 +55,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+bool Use_engine_wash_intensity;
 
 void parse_mod_table(const char *filename)
 {
@@ -503,6 +504,10 @@ void parse_mod_table(const char *filename)
 			if (Dinky_shockwave_default_multiplier != 1.0f) {
 				mprintf(("Game Settings Table: Setting default dinky shockwave multiplier to %.2f.\n", Dinky_shockwave_default_multiplier));
 			}
+		}
+
+		if (optional_string("$Use Engine Wash Intensity:")) {
+			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
 		required_string("#END");

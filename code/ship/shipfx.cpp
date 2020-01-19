@@ -23,6 +23,7 @@
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "math/fvi.h"
+#include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -2526,7 +2527,7 @@ void engine_wash_ship_process(ship *shipp)
 	float dist_sqr, inset_depth, dot_to_ship, max_ship_intensity;
 	polymodel *pm;
 
-	float max_wash_dist, half_angle, radius_mult;
+	float max_wash_dist, half_angle, radius_mult, wash_intensity;
 
 	// if this is not a fighter or bomber, we don't care
 	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) ) {
@@ -2613,6 +2614,12 @@ void engine_wash_ship_process(ship *shipp)
 			engine_wash_info *ewp = bank->wash_info_pointer;
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
+			if (Use_engine_wash_intensity) {
+				wash_intensity = ewp->intensity;
+			} else {
+				wash_intensity = 1.0f;
+			}
+			
 
 
 			// If bank is attached to a submodel, prepare to account for rotations
@@ -2665,7 +2672,7 @@ void engine_wash_ship_process(ship *shipp)
 						if ( dist_sqr < ((radius_mult * radius_mult) * (bank->points[j].radius * bank->points[j].radius)) ) {
 							vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 							vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
-							ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
+							ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist)) * wash_intensity;
 							if (!do_damage) {
 								if (dist_sqr < 0.25 * max_wash_dist * max_wash_dist) {
 									do_damage = 1;
@@ -2682,7 +2689,7 @@ void engine_wash_ship_process(ship *shipp)
 							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cosf(half_angle)) {
 								vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
-								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
+								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist)) * wash_intensity;
 								if (!do_damage) {
 									if (dist_sqr < 0.25 * max_wash_dist * max_wash_dist) {
 										do_damage = 1;
