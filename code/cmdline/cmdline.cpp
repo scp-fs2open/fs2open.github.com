@@ -527,6 +527,7 @@ cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
 cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NONE);
 cmdline_parm deprecated_no_emissive_arg("-no_emissive_light", "Deprecated", AT_NONE);
+cmdline_parm deprecated_postprocess_arg("-post_process", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -538,6 +539,7 @@ int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
 bool Cmdline_deprecated_missile_lighting = false;
 bool Cmdline_deprecated_cache_bitmaps = false;
+bool Cmdline_deprecated_postprocess = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -611,6 +613,10 @@ void cmdline_debug_print_cmdline()
 
 	if (Cmdline_deprecated_cache_bitmaps) {
 		mprintf(("Deprecated flag '-cache_bitmaps' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_postprocess) {
+		mprintf(("Deprecated flag '-post_process' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -2184,6 +2190,10 @@ bool SetCmdlineParams()
 
 	if (deprecated_no_emissive_arg.found()) {
 		Cmdline_emissive = 0;
+	}
+
+	if (deprecated_postprocess_arg.found()) {
+		Cmdline_deprecated_postprocess = true;
 	}
  
 	return true; 
