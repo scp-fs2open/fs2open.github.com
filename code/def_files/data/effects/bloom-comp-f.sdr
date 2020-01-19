@@ -1,8 +1,15 @@
+
 in vec4 fragTexCoord;
+
 out vec4 fragOut0;
+
 uniform sampler2D bloomed;
-uniform float bloom_intensity;
-uniform int levels;
+
+layout (std140) uniform genericData {
+	float bloom_intensity;
+	int levels;
+};
+
 void main() {
 	vec4 color_out = vec4(0.0, 0.0, 0.0, 1.0);
 	float factor = 0.0;

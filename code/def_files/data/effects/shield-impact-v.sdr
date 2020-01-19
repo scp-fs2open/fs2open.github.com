@@ -1,15 +1,26 @@
+
 in vec4 vertPosition;
 in vec3 vertNormal;
+
 out vec4 fragImpactUV;
 out float fragNormOffset;
 
-uniform vec3 hitNormal;
-uniform mat4 shieldModelViewMatrix;
-uniform mat4 shieldProjMatrix;
 
 layout (std140) uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
+};
+
+layout (std140) uniform genericData {
+	mat4 shieldModelViewMatrix;
+	mat4 shieldProjMatrix;
+
+	vec3 hitNormal;
+	int srgb;
+
+	vec4 color;
+
+	int shieldMapIndex;
 };
 
 void main()

@@ -1,9 +1,11 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
+
 in vec3 geoUvec[];
 in float geoRadius[];
 in vec4 geoColor[];
 in float geoArrayIndex[];
+
 out float fragRadius;
 out vec4 fragPosition;
 out vec4 fragTexCoord;

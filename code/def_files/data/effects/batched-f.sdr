@@ -3,9 +3,15 @@
 
 in vec4 fragTexCoord;
 in vec4 fragColor;
+
 out vec4 fragOut0;
+
 uniform sampler2DArray baseMap;
-uniform float intensity;
+
+layout (std140) uniform genericData {
+	vec4 color;
+	float intensity;
+};
 
 void main()
 {

@@ -209,4 +209,157 @@ struct matrix_uniforms {
 	matrix4 projMatrix;
 };
 
-}
+namespace generic_data {
+
+struct passthrough_data {
+	int noTexturing;
+	int srgb;
+
+	float pad[2];
+};
+
+struct default_material_data {
+	matrix4 modelMatrix;
+
+	vec4 color;
+
+	vec4 clipEquation;
+
+	int baseMapIndex;
+	int alphaTexture;
+	int noTexturing;
+	int srgb;
+
+	float intensity;
+	float alphaThreshold;
+	int clipEnabled;
+	float pad;
+};
+
+struct tonemapping_data {
+	float exposure;
+
+	float pad[3];
+};
+
+struct smaa_data {
+	vec2d smaa_rt_metrics;
+
+	float pad[2];
+};
+
+struct shield_impact_data {
+	matrix4 shieldModelViewMatrix;
+	matrix4 shieldProjMatrix;
+
+	vec3d hitNormal;
+	int srgb;
+
+	vec4 color;
+
+	int shieldMapIndex;
+
+	float pad[3];
+};
+
+struct rocketui_data {
+	matrix4 modelViewMatrix;
+	matrix4 projMatrix;
+
+	int textured;
+	int baseMapIndex;
+
+	float pad[2];
+};
+
+struct lightshaft_data {
+	vec2d sun_pos;
+	float density;
+	float weight;
+
+	float falloff;
+	float intensity;
+	float cp_intensity;
+
+	float pad[1];
+};
+
+struct fxaa_data {
+	float rt_w;
+	float rt_h;
+
+	float pad[2];
+};
+
+struct fog_data {
+	vec3d fog_color;
+	float fog_start;
+
+	float fog_scale;
+	float zNear;
+	float zFar;
+
+	float pad[1];
+};
+
+struct blur_data {
+	float texSize;
+	int level;
+
+	float pad[2];
+};
+
+struct bloom_composition_data {
+	float bloom_intensity;
+	int levels;
+
+	float pad[2];
+};
+
+struct effect_data {
+	float window_width;
+	float window_height;
+	float nearZ;
+	float farZ;
+
+	int linear_depth;
+	int srgb;
+	int blend_alpha;
+
+	float pad[1];
+};
+
+struct effect_distort_data {
+	float window_width;
+	float window_height;
+	float use_offset;
+
+	float pad[1];
+};
+
+struct batched_data {
+	vec4 color;
+
+	float intensity;
+
+	float pad[3];
+};
+
+struct post_data {
+	float timer;
+	float noise_amount;
+	float saturation;
+	float brightness;
+
+	float contrast;
+	float film_grain;
+	float tv_stripes;
+	float cutoff;
+
+	vec3d tint;
+	float dither;
+};
+
+} // namespace generic_data
+
+} // namespace graphics

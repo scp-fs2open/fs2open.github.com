@@ -173,8 +173,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/deferred-v.sdr
 	def_files/data/effects/effect-distort-f.sdr
 	def_files/data/effects/effect-distort-v.sdr
-	def_files/data/effects/effect-particle-f.sdr
-	def_files/data/effects/effect-screen-g.sdr
+	def_files/data/effects/effect-f.sdr
+	def_files/data/effects/effect-g.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
@@ -195,8 +195,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
-	def_files/data/effects/shadowdebug-f.sdr
-	def_files/data/effects/shadowdebug-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr

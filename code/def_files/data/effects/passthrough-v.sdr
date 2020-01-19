@@ -9,11 +9,9 @@ layout (std140) uniform matrixData {
 	mat4 projMatrix;
 };
 
-uniform vec4 color;
-
 void main()
 {
 	fragTexCoord = vertTexCoord;
-	fragColor = vertColor * color;
+	fragColor = vertColor;
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 }

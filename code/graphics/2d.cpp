@@ -2447,9 +2447,9 @@ static void uniform_buffer_managers_init() { UniformBufferManager.reset(new grap
 static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
 static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
 
-graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements)
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
 {
-	return UniformBufferManager->getUniformBuffer(type, num_elements);
+	return UniformBufferManager->getUniformBuffer(type, num_elements, element_size_override);
 }
 
 SCP_vector<DisplayData> gr_enumerate_displays()
