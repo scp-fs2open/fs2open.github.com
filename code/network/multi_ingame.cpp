@@ -279,9 +279,6 @@ void multi_ingame_sync_init()
 	// everyone should re-initialize these 
 	init_multiplayer_stats();
 
-	// reset all sequencing info
-	multi_oo_reset_sequencing();
-
 	// send the file signature to the host for possible mission file transfer
 	strcpy_s(Netgame.mission_name,Game_current_mission_filename);
 	send_file_sig_packet(Multi_current_file_checksum,Multi_current_file_length);

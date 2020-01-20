@@ -8110,9 +8110,6 @@ void multi_sync_post_init()
 	// everyone should re-initialize these 
 	init_multiplayer_stats();
 
-	// reset all sequencing info
-	multi_oo_reset_sequencing();
-
 	// if I am not the master of the game, then send the firing information for my ship
 	// to the host
 	if ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){

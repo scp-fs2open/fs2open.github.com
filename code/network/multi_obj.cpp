@@ -1800,11 +1800,6 @@ void multi_oo_update_server_rate()
 	OO_client_rate = (int)(((float)OO_server_rate / (float)OO_gran) / (float)num_connections);
 }
 
-// reset all sequencing info (obsolete for new object update stuff)
-void multi_oo_reset_sequencing()
-{		
-}
-
 // is this object one which needs to go through the interpolation
 int multi_oo_is_interp_object(object *objp)
 {	
