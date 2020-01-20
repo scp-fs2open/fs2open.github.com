@@ -2527,7 +2527,7 @@ void engine_wash_ship_process(ship *shipp)
 	float dist_sqr, inset_depth, dot_to_ship, max_ship_intensity;
 	polymodel *pm;
 
-	float max_wash_dist, half_angle, radius_mult, wash_intensity;
+	float max_wash_dist, half_angle, radius_mult;
 
 	// if this is not a fighter or bomber, we don't care
 	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) ) {
@@ -2614,6 +2614,7 @@ void engine_wash_ship_process(ship *shipp)
 			engine_wash_info *ewp = bank->wash_info_pointer;
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
+			float wash_intensity;
 			if (Use_engine_wash_intensity) {
 				wash_intensity = ewp->intensity;
 			} else {
