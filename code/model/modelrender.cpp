@@ -425,11 +425,6 @@ void model_draw_list::reset()
 	Current_scale.xyz.y = 1.0f;
 	Current_scale.xyz.z = 1.0f;
 
-	if (_dataBuffer) {
-		_dataBuffer->finished();
-		_dataBuffer = nullptr;
-	}
-
 	Render_initialized = false;
 }
 
@@ -540,10 +535,8 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 	GR_DEBUG_SCOPE("Render buffer");
 	TRACE_SCOPE(tracing::RenderBuffer);
 
-	gr_bind_uniform_buffer(uniform_block_type::ModelData,
-						   render_elements.uniform_buffer_offset,
-						   sizeof(graphics::model_uniform_data),
-						   _dataBuffer->bufferHandle());
+	gr_bind_uniform_buffer(uniform_block_type::ModelData, render_elements.uniform_buffer_offset,
+	                       sizeof(graphics::model_uniform_data), _dataBuffer.bufferHandle());
 
 	gr_render_model(&render_elements.render_material, render_elements.vert_src, render_elements.buffer, render_elements.texi);
 }
@@ -795,7 +788,7 @@ void model_draw_list::build_uniform_buffer() {
 
 	TRACE_SCOPE(tracing::BuildModelUniforms);
 
-	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData);
+	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData, Render_keys.size());
 
 	for (auto render_index : Render_keys) {
 		auto& queued_draw = Render_elements[render_index];
@@ -809,18 +802,18 @@ void model_draw_list::build_uniform_buffer() {
 			Scene_light_handler.resetLightState();
 		}
 
-		auto element = _dataBuffer->aligner().addTypedElement<graphics::model_uniform_data>();
+		auto element = _dataBuffer.aligner().addTypedElement<graphics::model_uniform_data>();
 		graphics::uniforms::convert_model_material(element,
 												   queued_draw.render_material,
 												   queued_draw.transform,
 												   queued_draw.scale,
 												   queued_draw.transform_buffer_offset);
-		queued_draw.uniform_buffer_offset = _dataBuffer->aligner().getCurrentOffset();
+		queued_draw.uniform_buffer_offset = _dataBuffer.getCurrentAlignerOffset();
 	}
 
 	TRACE_SCOPE(tracing::UploadModelUniforms);
 
-	_dataBuffer->submitData();
+	_dataBuffer.submitData();
 }
 model_draw_list::~model_draw_list() {
 	reset();

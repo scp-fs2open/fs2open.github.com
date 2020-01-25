@@ -1147,6 +1147,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
 	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
+	gr_screen.gf_map_buffer                 = gr_opengl_map_buffer;
+	gr_screen.gf_flush_mapped_buffer        = gr_opengl_flush_mapped_buffer;
 	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
@@ -1607,6 +1609,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
+	case CAPABILITY_PERSISTENT_BUFFER_MAPPING:
+		return GLAD_GL_ARB_buffer_storage != 0;
 	}
 
 	return false;

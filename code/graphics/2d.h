@@ -321,6 +321,7 @@ typedef enum gr_capability {
 	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
+	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 } gr_capability;
 
 enum class gr_property {
@@ -623,11 +624,7 @@ enum class BufferType {
 	Uniform
 };
 
-enum class BufferUsageHint {
-	Static,
-	Dynamic,
-	Streaming
-};
+enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 
 /**
  * @brief Type of a graphics sync object
@@ -759,8 +756,10 @@ typedef struct screen {
 	int (*gf_create_buffer)(BufferType type, BufferUsageHint usage);
 	void (*gf_delete_buffer)(int handle);
 
-	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
-	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, void* data);
+	void (*gf_update_buffer_data)(int handle, size_t size, const void* data);
+	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, const void* data);
+	void* (*gf_map_buffer)(int handle);
+	void (*gf_flush_mapped_buffer)(int handle, size_t offset, size_t size);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 
 	// postprocessing effects
@@ -990,6 +989,11 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
 #define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
+inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
+inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
+	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
+}
 #define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
 
 #define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
@@ -1208,7 +1212,13 @@ enum AnimatedShader {
 	ANIMATED_SHADER_CLOAK = 2,
 };
 
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type);
+/**
+ * @brief Retreives a uniform buffer for storing uniform block data
+ * @param type The type of uniform data that will be stored in the buffer
+ * @param num_elements The number of elements that will be used in the buffer
+ * @return A structure which gives access to a memory buffer where the uniform data can be stored
+ */
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements);
 
 struct VideoModeData {
 	uint32_t width = 0;

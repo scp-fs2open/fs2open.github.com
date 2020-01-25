@@ -11,7 +11,6 @@ matrix4 gr_last_view_matrix;
 matrix4 gr_texture_matrix;
 
 matrix4 gr_env_texture_matrix;
-static bool gr_env_texture_matrix_set = false;
 
 bool gr_htl_projection_matrix_set = false;
 
@@ -154,8 +153,6 @@ void gr_set_view_matrix(const vec3d *pos, const matrix *orient)
 	gr_model_view_matrix = gr_view_matrix;
 
 	if (Cmdline_env) {
-		gr_env_texture_matrix_set = true;
-
 		// setup the texture matrix which will make the the envmap keep lined
 		// up properly with the environment
 
@@ -189,7 +186,6 @@ void gr_end_view_matrix()
 
 	modelview_matrix_depth = 1;
 	htl_view_matrix_set = false;
-	gr_env_texture_matrix_set = false;
 }
 
 // set a view and projection matrix for a 2D element

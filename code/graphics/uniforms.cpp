@@ -41,7 +41,7 @@ void convert_model_material(model_uniform_data* data_out,
 
 	data_out->modelMatrix = scaled_matrix;
 	data_out->viewMatrix = gr_view_matrix;
-	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &data_out->viewMatrix, &data_out->modelMatrix);
+	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
 	data_out->projMatrix = gr_projection_matrix;
 	data_out->textureMatrix = gr_texture_matrix;
 
