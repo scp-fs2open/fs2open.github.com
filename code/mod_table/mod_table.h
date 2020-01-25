@@ -46,6 +46,7 @@ extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+extern bool Use_engine_wash_intensity;
 
 void mod_table_init();
 

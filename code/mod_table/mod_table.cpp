@@ -55,6 +55,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+bool Use_engine_wash_intensity;
 
 void parse_mod_table(const char *filename)
 {
@@ -505,6 +506,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use Engine Wash Intensity:")) {
+			stuff_boolean(&Use_engine_wash_intensity);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -572,4 +577,5 @@ void mod_table_reset() {
 	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	Use_engine_wash_intensity = false;
 }
