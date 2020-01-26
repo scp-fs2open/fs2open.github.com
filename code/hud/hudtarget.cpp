@@ -6013,6 +6013,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + Weapon_pname_offset_x, name_y);
 		} else {
+			end_string_at_first_hash_symbol(name);
 			renderPrintf(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, "%s", name);
 		}
 
@@ -6105,6 +6106,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
+		end_string_at_first_hash_symbol(ammo_str);
 		hud_num_make_mono(ammo_str, font_num);
 		gr_get_string_size(&w, &h, ammo_str);
 
