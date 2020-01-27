@@ -519,7 +519,7 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 	// account for gauge RTT with cockpit here --wookieejedi
 	float clip_aspect;
 	if (gr_screen.rendering_to_texture != -1) {
-		clip_aspect = (clip_width / clip_height);
+		clip_aspect = ( i2fl(clip_width) / i2fl(clip_height) );
 	} else {
 		clip_aspect = gr_screen.clip_aspect;
 	}
