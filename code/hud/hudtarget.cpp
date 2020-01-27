@@ -6022,9 +6022,6 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
 
-			// get rid of #
-			end_string_at_first_hash_symbol(ammo_str);
-
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
 
