@@ -1800,11 +1800,6 @@ void multi_oo_update_server_rate()
 	OO_client_rate = (int)(((float)OO_server_rate / (float)OO_gran) / (float)num_connections);
 }
 
-// reset all sequencing info (obsolete for new object update stuff)
-void multi_oo_reset_sequencing()
-{		
-}
-
 // is this object one which needs to go through the interpolation
 int multi_oo_is_interp_object(object *objp)
 {	
@@ -1989,10 +1984,6 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, physics_info *
 	physics_sim(&c, &m_copy, &p_copy, avg_diff);			// next point, given this new info
 	oo_interp_splines[ship_index].bez_set_points(3, pts);	
 
-}
-
-void oo_update_time()
-{	
 }
 
 int display_oo_bez = 0;
