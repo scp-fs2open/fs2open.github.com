@@ -17,6 +17,10 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/socket.h>
+#endif
+
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "network/multi.h"
