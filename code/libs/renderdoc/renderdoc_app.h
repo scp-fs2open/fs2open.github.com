@@ -37,6 +37,8 @@
 #define RENDERDOC_CC __cdecl
 #elif defined(__linux__)
 #define RENDERDOC_CC
+#elif defined(__FreeBSD__)
+#define RENDERDOC_CC
 #elif defined(__APPLE__)
 #define RENDERDOC_CC
 #else
