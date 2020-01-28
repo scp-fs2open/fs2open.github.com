@@ -20,6 +20,10 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/socket.h>
+#endif
+
 #include "network/multi.h"
 #include "network/ptrack.h"
 #include "network/valid.h"
