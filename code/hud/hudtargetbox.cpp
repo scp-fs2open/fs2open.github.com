@@ -516,7 +516,15 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 
 	setClip(position[0] + Viewport_offsets[0], position[1] + Viewport_offsets[1], Viewport_w, Viewport_h);
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	// account for gauge RTT with cockpit here --wookieejedi
+	float clip_aspect;
+	if (gr_screen.rendering_to_texture != -1) {
+		clip_aspect = (i2fl(clip_width) / i2fl(clip_height));
+	} else {
+		clip_aspect = gr_screen.clip_aspect;
+	}
+
+	gr_set_proj_matrix(Proj_fov, clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
