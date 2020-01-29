@@ -166,6 +166,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
 	def_files/data/effects/deferred-f.sdr

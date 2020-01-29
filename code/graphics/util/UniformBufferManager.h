@@ -98,6 +98,20 @@ class UniformBufferManager {
 	 * @brief Checks the used buffer and retires any buffers that are no longer in use for later reuse
 	 */
 	void onFrameEnd();
+
+	/**
+	 * @brief Gets the current size of the uniform buffer
+	 * This is mostly for debugging purposes.
+	 * @return The size in bytes of the uniform buffer.
+	 */
+	size_t getBufferSize();
+
+	/**
+	 * @brief Gets the number of bytes used in the current segment of the buffer
+	 * This is mostly for debugging purposes.
+	 * @return The bytes used in the segment
+	 */
+	size_t getCurrentlyUsedSize();
 };
 
 }

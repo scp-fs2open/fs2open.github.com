@@ -14,16 +14,13 @@
 #include <windowsx.h>
 #endif
 
-#include <climits>
-#include <algorithm>
+#include "material.h"
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "gamesequence/gamesequence.h" //WMC - for scripting hooks in gr_flip()
+#include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/font.h"
-#include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
 #include "graphics/grstub.h"
 #include "graphics/light.h"
@@ -33,8 +30,7 @@
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
-#include "io/keycontrol.h" // m!m
-#include "io/timer.h"
+#include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
@@ -45,14 +41,16 @@
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 
-#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
+#include <SDL_surface.h>
+
+#include <algorithm>
+#include <climits>
+
+#if (SDL_VERSION_ATLEAST(1, 2, 7))
 #include "SDL_cpuinfo.h"
 #endif
 
-#include "SDL_surface.h"
-#include "material.h"
-
-const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
 
@@ -348,6 +346,8 @@ static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertica
                               .importance(70)
                               .finish();
 
+static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
+
 // Forward definitions
 static void uniform_buffer_managers_init();
 static void uniform_buffer_managers_deinit();
@@ -356,7 +356,8 @@ static void uniform_buffer_managers_retire_buffers();
 static void gpu_heap_init();
 static void gpu_heap_deinit();
 
-void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
+void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h,
+                         bool force_stretch)
 {
 	bool do_zoom = zoom_w > 0 && zoom_h > 0 && (zoom_w != w || zoom_h != h);
 
@@ -2381,25 +2382,50 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)
 {
-	gr_screen.current_alpha = alpha;
+	gr_screen.current_alpha           = alpha;
 	gr_screen.current_alphablend_mode = alphablend_mode;
-	gr_screen.current_bitblt_mode = bitblt_mode;
-	gr_screen.current_bitmap = bitmap_num;
+	gr_screen.current_bitblt_mode     = bitblt_mode;
+	gr_screen.current_bitmap          = bitmap_num;
+}
+
+static void output_uniform_debug_data()
+{
+	int line_height = gr_get_font_height() + 1;
+
+	gr_set_color_fast(&Color_bright_white);
+
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
+	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
+	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
 }
 
 void gr_flip(bool execute_scripting)
 {
+	TRACE_SCOPE(tracing::PageFlip);
+
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	if (execute_scripting && !popup_active()) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
-		//WMC - Do conditional hooks. Yippee!
+		// WMC - Do conditional hooks. Yippee!
 		Script_system.RunCondition(CHA_ONFRAME);
-		//WMC - Do scripting reset stuff
+		// WMC - Do scripting reset stuff
 		Script_system.EndFrame();
 	}
 
 	gr_reset_immediate_buffer();
+
+	// Do per frame operations on the matrix state
+	gr_matrix_on_frame();
+
+	gr_reset_clip();
+
+	mouse_reset_deltas();
+
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();
@@ -2417,9 +2443,6 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 	gr_string(x, y, time.c_str(), resize_mode);
 }
-
-static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
-
 static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
 static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
 static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }

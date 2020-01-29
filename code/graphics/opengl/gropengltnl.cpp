@@ -767,8 +767,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 		if (!clip_params.enabled) {
 			GL_state.ClipDistance(0, false);
 		} else {
-			Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
-				|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+			Assertion(Current_shader != nullptr && (Current_shader->shader == SDR_TYPE_MODEL
 				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
 					  "Clip planes are not supported by this shader!");
 
@@ -946,8 +945,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
@@ -979,11 +977,9 @@ void opengl_tnl_set_material_batched(batched_bitmap_material* material_info) {
 	opengl_tnl_set_material(material_info, true);
 
 	Current_shader->program->Uniforms.setUniformf("intensity", material_info->get_color_scale());
-
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 }
@@ -992,8 +988,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
@@ -1026,8 +1021,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 void opengl_tnl_set_material_movie(movie_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
 	Current_shader->program->Uniforms.setUniformi("ytex", 0);
 	Current_shader->program->Uniforms.setUniformi("utex", 1);

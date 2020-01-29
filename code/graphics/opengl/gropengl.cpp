@@ -1,6 +1,7 @@
 
 
 #include "gropengl.h"
+
 #include "gropenglbmpman.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
@@ -11,29 +12,21 @@
 #include "gropenglsync.h"
 #include "gropengltexture.h"
 #include "gropengltnl.h"
+
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
-#include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/line.h"
 #include "graphics/matrix.h"
-#include "graphics/paths/PathRenderer.h"
-#include "io/mouse.h"
-#include "io/timer.h"
 #include "libs/renderdoc/renderdoc.h"
 #include "math/floating.h"
 #include "model/model.h"
-#include "nebula/neb.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
-#include "popup/popup.h"
-#include "render/3d.h"
-#include "tracing/tracing.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -190,14 +183,8 @@ void gr_opengl_clear()
 
 void gr_opengl_flip()
 {
-	if ( !GL_initted )
+	if (!GL_initted)
 		return;
-
-	TRACE_SCOPE(tracing::PageFlip);
-
-	gr_reset_clip();
-
-	mouse_reset_deltas();
 
 	if (Cmdline_gl_finish)
 		glFinish();
