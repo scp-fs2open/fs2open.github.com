@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [19.0.0-RC1] - 2019-08-29 ([Thread](https://www.hard-light.net/forums/index.php?topic=95868.0))
+## [19.0.0] - 2020-01-25 ([Thread](https://www.hard-light.net/forums/index.php?topic=96226.0))
 ### Meta
 - With this release we decided to drop the "`3.Major_revision.Minor_revision`" versioning scheme in favor of a year based scheme since the Major and Minor versions did not have much meaning anymore. Instead the scheme will now be "`<year>.<number that is incremented every release>.0`". The last 0 is still there because some of our systems expect that. It will be gone at some point.
 ### Added
@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Model uniforms get sent to the GPU using uniform buffers for less overhead
   - Various other minor changes
 - Converted pilot files from custom binary format to JSON
+- Replaced Blinn-Phong BRDF with GGX BRDF
 ### Fixed
 - Refactored bitmap slot handling and removed the fixed upper limit on the number of bitmaps. No more bmpman corruption!
 
