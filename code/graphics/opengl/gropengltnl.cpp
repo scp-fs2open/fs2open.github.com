@@ -90,7 +90,8 @@ static opengl_vertex_bind GL_array_binding_data[] =
 struct opengl_buffer_object {
 	GLuint buffer_id;
 	GLenum type;
-	GLenum usage;
+	GLenum gl_usage;
+	BufferUsageHint usage;
 	size_t size;
 
 	GLuint texture;	// for texture buffer objects
@@ -121,7 +122,9 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 			return GL_DYNAMIC_DRAW;
 		case BufferUsageHint::Streaming:
 			return GL_STREAM_DRAW;
-		default:
+	    case BufferUsageHint::PersistentMapping:
+		    return GL_NONE; // Dummy value
+	    default:
 			UNREACHABLE("Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
@@ -186,12 +189,16 @@ static GLenum convertComparisionFunction(ComparisionFunction func) {
 	return mode;
 }
 
-int opengl_create_buffer_object(GLenum type, GLenum usage)
+int opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
 
+	Assertion(usage != BufferUsageHint::PersistentMapping || GLAD_GL_ARB_buffer_storage != 0,
+	          "Persistent mapping is not supported by this OpenGL implementation!");
+
 	opengl_buffer_object buffer_obj;
 
+	buffer_obj.gl_usage = gl_usage;
 	buffer_obj.usage = usage;
 	buffer_obj.type = type;
 	buffer_obj.size = 0;
@@ -242,7 +249,7 @@ GLuint opengl_buffer_get_id(GLenum expected_type, int handle) {
 	return buffer_obj.buffer_id;
 }
 
-void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
+void gr_opengl_update_buffer_data(int handle, size_t size, const void* data)
 {
 	// This has to be verified by the caller or else we will run into OPenGL errors
 	Assertion(size > 0, "Buffer updates must include some data!");
@@ -256,31 +263,20 @@ void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 
 	opengl_bind_buffer_object(handle);
 
-	if (size <= buffer_obj.size && buffer_obj.type == GL_UNIFORM_BUFFER) {
-		// Uniform buffer can use unsychronized buffer mapping since those are always synchronized by us
-		// We also don't care about the previous data and tell OpenGL to map the buffer unsynchronized.
-		auto ptr = glMapBufferRange(buffer_obj.type,
-									0,
-									size,
-									GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-		if (ptr == nullptr) {
-			// Something went wrong, try subdata instead
-			glBufferSubData(buffer_obj.type, 0, size, data);
-		} else {
-			memcpy(ptr, data, size);
-
-			glUnmapBuffer(buffer_obj.type);
-		}
+	if (buffer_obj.usage == BufferUsageHint::PersistentMapping) {
+		Assertion(buffer_obj.size == 0, "Tried to resize a buffer for persistent mapping! This is not allowed.");
+		Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping was used when it wasn't supported!");
+		glBufferStorage(buffer_obj.type, size, data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 	} else {
-		GL_vertex_data_in -= buffer_obj.size;
-		buffer_obj.size = size;
-		GL_vertex_data_in += buffer_obj.size;
-
-		glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+		glBufferData(buffer_obj.type, size, data, buffer_obj.gl_usage);
 	}
+
+	GL_vertex_data_in -= buffer_obj.size;
+	buffer_obj.size = size;
+	GL_vertex_data_in += buffer_obj.size;
 }
 
-void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
+void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, const void* data)
 {
 	GR_DEBUG_SCOPE("Update buffer data with offset");
 
@@ -289,9 +285,45 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 
 	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
 
+	Assertion(buffer_obj.usage != BufferUsageHint::PersistentMapping,
+	          "Persistently mapped buffers may not be updated!");
+
 	opengl_bind_buffer_object(handle);
 
 	glBufferSubData(buffer_obj.type, offset, size, data);
+}
+void* gr_opengl_map_buffer(int handle)
+{
+	GR_DEBUG_SCOPE("Map buffer");
+
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	auto& buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
+	          "Buffer mapping is only supported for persistently mapped buffers!");
+	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
+
+	opengl_bind_buffer_object(handle);
+	return glMapBufferRange(buffer_obj.type, 0, buffer_obj.size,
+	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+}
+void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
+	GR_DEBUG_SCOPE("Flush mapped buffer");
+
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	auto& buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
+	          "Buffer mapping is only supported for persistently mapped buffers!");
+	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
+
+	opengl_bind_buffer_object(handle);
+	glFlushMappedBufferRange(buffer_obj.type, offset, size);
 }
 
 void gr_opengl_delete_buffer(int handle)
@@ -336,7 +368,7 @@ void gr_opengl_delete_buffer(int handle)
 
 int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
 {
-	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage));
+	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage), usage);
 }
 
 void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
@@ -361,7 +393,8 @@ void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset,
 int opengl_create_texture_buffer_object()
 {
 	// create the buffer
-	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW);
+	int buffer_object_handle =
+	    opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
 
 	opengl_check_for_errors();
 
@@ -734,8 +767,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 		if (!clip_params.enabled) {
 			GL_state.ClipDistance(0, false);
 		} else {
-			Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
-				|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+			Assertion(Current_shader != nullptr && (Current_shader->shader == SDR_TYPE_MODEL
 				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
 					  "Clip planes are not supported by this shader!");
 
@@ -913,8 +945,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
@@ -946,11 +977,9 @@ void opengl_tnl_set_material_batched(batched_bitmap_material* material_info) {
 	opengl_tnl_set_material(material_info, true);
 
 	Current_shader->program->Uniforms.setUniformf("intensity", material_info->get_color_scale());
-
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 }
@@ -959,8 +988,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
@@ -993,8 +1021,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 void opengl_tnl_set_material_movie(movie_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
 	Current_shader->program->Uniforms.setUniformi("ytex", 0);
 	Current_shader->program->Uniforms.setUniformi("utex", 1);

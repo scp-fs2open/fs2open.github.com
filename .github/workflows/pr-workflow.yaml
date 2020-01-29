@@ -76,15 +76,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [MSVC, MinGW]
+        compiler: [MSVC]
         arch: [Win32, x64]
-        exclude:
-          - configuration: Debug
-            compiler: MinGW
-            arch: x64
-          - configuration: Release
-            compiler: MinGW
-            arch: x64
     name: Windows
     runs-on: windows-2019
     steps:

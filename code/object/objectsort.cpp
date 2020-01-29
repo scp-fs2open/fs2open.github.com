@@ -179,10 +179,6 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 	object *objp;
 	int i;
 	float fog_near, fog_far;
-#ifdef DYN_CLIP_DIST
-	float closest_obj = Max_draw_distance;
-	float farthest_obj = Min_draw_distance;
-#endif
 
 	objp = Objects;
 
@@ -213,16 +209,6 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 				osp.max_z = osp.z + objp->radius;
 
 				Sorted_objects.push_back(osp);
-
-#ifdef DYN_CLIP_DIST
-				if(objp != Viewer_obj)
-				{
-					if(osp->min_z < closest_obj)
-						closest_obj = osp->min_z;
-					if(osp->max_z > farthest_obj)
-						farthest_obj = osp->max_z;
-				}
-#endif
 			}
 		}	
 	}
@@ -231,16 +217,6 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 		return;
 
 	std::sort(Sorted_objects.begin(), Sorted_objects.end());
-
-#ifdef DYN_CLIP_DIST
-	if(closest_obj < Min_draw_distance)
-		closest_obj = Min_draw_distance;
-	if(farthest_obj > Max_draw_distance)
-		farthest_obj = Max_draw_distance;
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, closest_obj, farthest_obj);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-#endif
 
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 

@@ -14,10 +14,8 @@
 
 #include "globalincs/pstypes.h"
 
-#define	SEMIRAND_MAX_LOG	4
-#define	SEMIRAND_MAX		(2 << SEMIRAND_MAX_LOG)	//	Do not change this!  Change SEMIRAND_MAX_LOG!
-
-extern int Semirand[SEMIRAND_MAX];			// this array is saved by the ai code on save/restore
+constexpr unsigned int SEMIRAND_MAX_LOG = 4;
+constexpr unsigned int SEMIRAND_MAX = (2u << SEMIRAND_MAX_LOG); //Do not change this!  Change SEMIRAND_MAX_LOG!
 
 extern void init_semirand();
 extern int static_rand(int num);
@@ -25,12 +23,14 @@ extern float static_randf(int num);
 extern void static_randvec(int num, vec3d *vp);
 extern int static_rand_range(int num, int min, int max);
 extern float static_randf_range(int num, float min, float max);
-void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient = NULL);
+void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient = nullptr);
 
 // Alternate random number generator that doesn't affect rand() sequence
-
-void	init_static_rand_alt(int seed);	// Seed the random number generator
-int		static_rand_alt();				// Get a random integer between 1 and RND_MAX
-float	static_randf_alt();				// Get a random float between 0 and 1.0
+/// Get a random integer between 1 and RND_MAX
+int static_rand_alt();
+/// Seed the random number generator
+void init_static_rand_alt(int seed);
+/// Get a random float between 0 and 1.0
+float static_randf_alt();
 
 #endif

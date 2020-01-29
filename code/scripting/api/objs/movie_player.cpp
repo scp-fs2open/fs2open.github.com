@@ -104,7 +104,7 @@ ADE_FUNC(isPlaybackReady, l_MoviePlayer, nullptr,
 }
 
 ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1[, number x2, number y2]",
-         "Draws the current frame of the movie at the specified coordinates.", "nothing", "Returns nothing")
+         "Draws the current frame of the movie at the specified coordinates.", nullptr, "Returns nothing")
 {
 	movie_player_h* ph = nullptr;
 	float x1;
@@ -137,7 +137,7 @@ ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1[, number x2, number y2]
 ADE_FUNC(stop, l_MoviePlayer, nullptr,
          "Explicitly stops playback. This function should be called when the player isn't needed anymore to free up "
          "some resources.",
-         "nothing", "Returns nothing")
+         nullptr, "Returns nothing")
 {
 	movie_player_h* ph = nullptr;
 	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))

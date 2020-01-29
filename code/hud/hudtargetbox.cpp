@@ -516,7 +516,15 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 
 	setClip(position[0] + Viewport_offsets[0], position[1] + Viewport_offsets[1], Viewport_w, Viewport_h);
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	// account for gauge RTT with cockpit here --wookieejedi
+	float clip_aspect;
+	if (gr_screen.rendering_to_texture != -1) {
+		clip_aspect = (i2fl(clip_width) / i2fl(clip_height));
+	} else {
+		clip_aspect = gr_screen.clip_aspect;
+	}
+
+	gr_set_proj_matrix(Proj_fov, clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
@@ -647,7 +655,12 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		if ( Player_ai->targeted_subsys == Player_ai->last_subsys_target ) {
 			vec3d save_pos;
 
-			gr_set_screen_scale(base_w, base_h);
+			if (gr_screen.rendering_to_texture != -1) {
+				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
+			
 			save_pos = target_objp->pos;
 			target_objp->pos = obj_pos;
 			subsys_in_view = hud_targetbox_subsystem_in_view(target_objp, &sx, &sy);

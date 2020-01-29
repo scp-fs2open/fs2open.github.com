@@ -46,9 +46,6 @@ int Distortion_switch = 0;
 int Scene_texture_initialized;
 bool Scene_framebuffer_in_frame;
 
-bool Deferred_lighting = false;
-bool High_dynamic_range = false;
-
 int Scene_texture_width;
 int Scene_texture_height;
 
@@ -629,8 +626,8 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
 	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+
+	gr_matrix_set_uniforms();
 	
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }

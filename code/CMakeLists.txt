@@ -41,6 +41,8 @@ target_link_libraries(code PUBLIC discord-rpc)
 
 target_link_libraries(code PUBLIC libRocket)
 
+target_link_libraries(code PUBLIC pcp)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)

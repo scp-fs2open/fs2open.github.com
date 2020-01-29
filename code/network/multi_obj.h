@@ -61,9 +61,6 @@ void multi_oo_gameplay_init();
 void multi_oo_send_control_info();
 void multi_oo_send_changed_object(object *changedobj);
 
-// reset all sequencing info
-void multi_oo_reset_sequencing();
-
 // is this object one which needs to go through the interpolation
 int multi_oo_is_interp_object(object *objp);
 

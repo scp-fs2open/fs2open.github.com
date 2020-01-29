@@ -156,14 +156,6 @@ int opengl_compile_shader(shader_type sdr, uint flags);
 
 GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute);
 
-void opengl_program_check_info_log(GLuint program_object);
-void opengl_shader_check_info_log(GLuint shader_object);
-
-void opengl_shader_compile_deferred_light_shader();
-void opengl_shader_compile_deferred_light_clear_shader();
-
-void opengl_shader_compile_passthrough_shader();
-
 void opengl_shader_set_passthrough(bool textured, bool hdr);
 
 void opengl_shader_set_default_material(bool textured, bool alpha, vec4* clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane);

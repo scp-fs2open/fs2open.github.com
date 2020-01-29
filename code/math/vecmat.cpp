@@ -156,6 +156,7 @@ void vm_set_identity(matrix *m)
 
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
+//dest = src0 + src1
 void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = src0->xyz.x + src1->xyz.x;
@@ -165,6 +166,7 @@ void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1)
 
 //subs two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_sub2() if so
+//dest = src0 - src1
 void vm_vec_sub(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = src0->xyz.x - src1->xyz.x;
@@ -175,6 +177,7 @@ void vm_vec_sub(vec3d *dest, const vec3d *src0, const vec3d *src1)
 
 //adds one vector to another. returns ptr to dest
 //dest can equal source
+//dest += src
 void vm_vec_add2(vec3d *dest, const vec3d *src)
 {
 	dest->xyz.x += src->xyz.x;
@@ -184,6 +187,7 @@ void vm_vec_add2(vec3d *dest, const vec3d *src)
 
 //subs one vector from another, returns ptr to dest
 //dest can equal source
+//dest -= src
 void vm_vec_sub2(vec3d *dest, const vec3d *src)
 {
 	dest->xyz.x -= src->xyz.x;
@@ -192,7 +196,8 @@ void vm_vec_sub2(vec3d *dest, const vec3d *src)
 }
 
 //averages n vectors. returns ptr to dest
-//dest can equal either source
+//dest can equal any vector in src[]
+//dest = sum(src[]) / n
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 {
 	float x = 0.0f, y = 0.0f, z = 0.0f;
@@ -214,6 +219,7 @@ vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 
 //averages two vectors. returns ptr to dest
 //dest can equal either source
+//dest = (src0 + src1) * 0.5
 vec3d *vm_vec_avg(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x) * 0.5f;
@@ -223,8 +229,9 @@ vec3d *vm_vec_avg(vec3d *dest, const vec3d *src0, const vec3d *src1)
 	return dest;
 }
 
-//averages four vectors. returns ptr to dest
+//averages three vectors. returns ptr to dest
 //dest can equal any source
+//dest = (src0 + src1 + src2) *0.33
 vec3d *vm_vec_avg3(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3d *src2)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x + src2->xyz.x) * 0.333333333f;
@@ -235,6 +242,7 @@ vec3d *vm_vec_avg3(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 
 //averages four vectors. returns ptr to dest
 //dest can equal any source
+//dest = (src0 + src1 + src2 + src3) * 0.25
 vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3d *src2, const vec3d *src3)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x + src2->xyz.x + src3->xyz.x) * 0.25f;
@@ -245,6 +253,7 @@ vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 
 
 //scales a vector in place.
+//dest *= s
 void vm_vec_scale(vec3d *dest, float s)
 {
 	dest->xyz.x = dest->xyz.x * s;
@@ -253,6 +262,7 @@ void vm_vec_scale(vec3d *dest, float s)
 }
 
 //scales a 4-component vector in place.
+// dest *= s
 void vm_vec_scale(vec4 *dest, float s)
 {
 	dest->xyzw.x = dest->xyzw.x * s;
@@ -262,6 +272,7 @@ void vm_vec_scale(vec4 *dest, float s)
 }
 
 //scales and copies a vector.
+// dest = src * s
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s)
 {
 	dest->xyz.x = src->xyz.x*s;
@@ -278,8 +289,8 @@ void vm_vec_scale_add(vec3d *dest, const vec3d *src1, const vec3d *src2, float k
 	dest->xyz.z = src1->xyz.z + src2->xyz.z*k;
 }
 
-//scales a vector, subtracts it to another, and stores in a 3rd vector
-//dest = src1 - k * src2
+//scales a vector, subtracts it from another, and stores in a 3rd vector
+//dest = src1 - (k * src2)
 void vm_vec_scale_sub(vec3d *dest, const vec3d *src1, const vec3d *src2, float k)
 {
 	dest->xyz.x = src1->xyz.x - src2->xyz.x*k;
@@ -296,8 +307,8 @@ void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k)
 	dest->xyz.z += src->xyz.z*k;
 }
 
-//scales a vector and adds it to another
-//dest += k * src
+//scales a vector and subtracts it from another
+//dest -= k * src
 void vm_vec_scale_sub2(vec3d *dest, const vec3d *src, float k)
 {
 	dest->xyz.x -= src->xyz.x*k;
@@ -349,6 +360,8 @@ float vm_vec_mag_squared(const vec3d *v)
 	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
+//returns the square of the difference between v0 and v1 (the distance, squared)
+//just like vm_vec_mag_squared, but the distance between two points instead.
 float vm_vec_dist_squared(const vec3d *v0, const vec3d *v1)
 {
 	float dx, dy, dz;
@@ -457,9 +470,9 @@ float vm_vec_normalize(vec3d *v)
 }
 
 // Normalize a vector.
-//	If vector is 0,0,0, return 1,0,0.
-//	Don't generate a Warning().
-// returns mag of source vec
+// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.  
+// Otherwise return the magnitude.
+// No warning() generated for null vector.
 float vm_vec_normalize_safe(vec3d *v)
 {
 	float m;
@@ -486,7 +499,7 @@ float vm_vec_normalize_safe(vec3d *v)
 
 
 //returns approximation of 1/magnitude of a vector
-static float vm_vec_imag(const vec3d *v)
+static float vm_vec_inv_mag_quick(const vec3d *v)
 {
 #if _M_IX86_FP < 1
 	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
@@ -506,7 +519,7 @@ float vm_vec_copy_normalize_quick(vec3d *dest,const vec3d *src)
 //	return vm_vec_copy_normalize(dest, src);
 	float im;
 
-	im = vm_vec_imag(src);
+	im = vm_vec_inv_mag_quick(src);
 
 	Assert(im > 0.0f);
 
@@ -524,7 +537,7 @@ float vm_vec_normalize_quick(vec3d *src)
 
 	float im;
 
-	im = vm_vec_imag(src);
+	im = vm_vec_inv_mag_quick(src);
 
 	Assert(im > 0.0f);
 
@@ -694,6 +707,7 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	return a;
 }
 
+// helper function that fills in matrix m based on provided sine and cosine values. 
 static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {
 	float sbsh,cbch,cbsh,sbch;
@@ -1015,7 +1029,13 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 	else											//cosine is larger, so use it
 		cosp = m->vec.fvec.xyz.z*cosh;
 
-	a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
+	//using the fvec_xz_distance extracts the correct pitch from the matrix --wookieejedi
+	//previously cosp was used as the denominator, but this resulted in some incorrect pitch extractions
+	float fvec_xz_distance;
+
+	fvec_xz_distance = fl_sqrt( ( (m->vec.fvec.xyz.x)*(m->vec.fvec.xyz.x) ) + ( (m->vec.fvec.xyz.z)*(m->vec.fvec.xyz.z) ) );
+
+	a->p = atan2_safe(-m->vec.fvec.xyz.y, fvec_xz_distance);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 

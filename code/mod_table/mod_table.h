@@ -39,12 +39,14 @@ extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;
 extern bool Weapon_shockwaves_respect_huge;
 extern bool Using_in_game_options;
+extern float Dinky_shockwave_default_multiplier;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+extern bool Use_engine_wash_intensity;
 
 void mod_table_init();
 

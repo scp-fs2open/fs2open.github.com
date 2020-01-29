@@ -68,7 +68,7 @@ typedef struct physics_info {
 
 	// These get changed by the control code.  The physics uses these
 	// as input values when doing physics.
-	vec3d	prev_ramp_vel;				// follows the user's desired velocity
+	vec3d	prev_ramp_vel;				// follows the user's desired velocity, in local coord
 	vec3d	desired_vel;				// in world coord
 	vec3d	desired_rotvel;			// in local coord
 	float		forward_thrust;			// How much the forward thruster is applied.  0-1.

@@ -536,9 +536,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-object-orientation",			OP_SET_OBJECT_ORIENTATION,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-object-facing",				OP_SET_OBJECT_FACING,					4,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-object-facing-object",		OP_SET_OBJECT_FACING_OBJECT,			2,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
-	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
-	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
 	{ "ship-maneuver",					OP_SHIP_MANEUVER,						10, 11,			SEXP_ACTION_OPERATOR,	},	// Wanderer
 	{ "ship-rot-maneuver",				OP_SHIP_ROT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
 	{ "ship-lat-maneuver",				OP_SHIP_LAT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
@@ -7254,6 +7254,7 @@ int sexp_num_within_box(int n)
 }	
 
 // Goober5000
+// wookieejedi - this sexp is deprecated in favor of sexp_set_ship_man
 void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 {
 	Assert(axis >= 0 && axis <= 2);
@@ -7278,6 +7279,7 @@ void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 }
 
 // Goober5000
+// wookieejedi - this sexp is deprecated in favor of sexp_set_ship_man 
 void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
@@ -7859,7 +7861,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == WING_INDEX(oswpt->wingp))
-					sexp_set_orient_sub(&oswpt->p_objp->orient, &oswpt->p_objp->pos, location);
+					sexp_set_orient_sub(&p_objp->orient, &p_objp->pos, location);
 			}
 			break;
 		}
@@ -11375,7 +11377,7 @@ void sexp_close_sound_from_file(int n)
 
 void multi_sexp_close_sound_from_file()
 {
-	bool fade = false;
+	bool fade = true;
 	int sexp_var = -1;
 
 	Current_sexp_network_packet.get_bool(fade);
@@ -14634,7 +14636,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 				for ( shipnum = 0; shipnum < Wings[wingnum].current_count; shipnum++ ) {
 					ship_index = Wings[wingnum].ship_index[shipnum];
 					Assert( ship_index != -1 );
-                    Ships[ship_index].flags.set(Ship::Ship_Flags::No_builtin_messages, enable_messages);
+                    Ships[ship_index].flags.set(Ship::Ship_Flags::No_builtin_messages, !enable_messages);
 				}
 			}
 		}
@@ -17200,17 +17202,15 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	// Set the number of weapons
 	shipp->weapons.primary_bank_ammo[requested_bank] = requested_ammo ;
 
-	// If a rearm limit has been specified set it.
-	if (rearm_limit >= 0)
-	{
-		// Don't allow more weapons than the bank can actually hold.
-		if (rearm_limit > maximum_allowed) 
-		{
-			rearm_limit = maximum_allowed;
-		}
 
-		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
+	{
+		rearm_limit = maximum_allowed;
 	}
+
+	shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+
 }
 
 // Karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
@@ -17358,17 +17358,13 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 	// Set the number of weapons
 	shipp->weapons.secondary_bank_ammo[requested_bank] = requested_ammo ;
 
-	// If a rearm limit has been specified set it.
-	if (rearm_limit >= 0)
+	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - no matter what.
+	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
 	{
-		// Don't allow more weapons than the bank can actually hold.
-		if (rearm_limit > maximum_allowed) 
-		{
-			rearm_limit = maximum_allowed;
-		}
-
-		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
+		rearm_limit = maximum_allowed;
 	}
+	
+	shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
@@ -17443,25 +17439,22 @@ void sexp_set_weapon(int node, bool primary)
 			if (is_nan || is_nan_forever)
 				return;
 		}
-
-		// Set the ammo
-		if (primary) {
-			set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-		}
-		else {
-			set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-		}
 	}
 	else {
 		// read the data 
 		if (primary) {
 			requested_ammo = shipp->weapons.primary_bank_ammo[requested_bank];
-			rearm_limit = shipp->weapons.primary_bank_start_ammo[requested_bank];
 		}
 		else {
 			requested_ammo = shipp->weapons.secondary_bank_ammo[requested_bank];
-			rearm_limit = shipp->weapons.secondary_bank_start_ammo[requested_bank];
 		}
+	}
+
+	// Set the ammo -- No matter what - Cyborg17
+	if (primary) {
+		set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
+	} else {
+		set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
 	}
 
 	// Now pass this info on to clients.
@@ -31774,21 +31767,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_BITWISE_XOR, "bitwise-xor\r\n"
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
+	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the X speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
+	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the Y speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
+	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the Z speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"

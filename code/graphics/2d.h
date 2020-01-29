@@ -67,6 +67,9 @@ extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
 
+extern bool Deferred_lighting;
+extern bool High_dynamic_range;
+
 class material;
 class model_material;
 class particle_material;
@@ -162,8 +165,6 @@ enum primitive_type {
 	PRIM_TYPE_TRIS,
 	PRIM_TYPE_TRISTRIP,
 	PRIM_TYPE_TRIFAN,
-	PRIM_TYPE_QUADS,
-	PRIM_TYPE_QUADSTRIP
 };
 
 enum shader_type {
@@ -239,6 +240,7 @@ enum class uniform_block_type {
 	DecalInfo = 3,
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
+	Matrices = 6,
 
 	NUM_BLOCK_TYPES
 };
@@ -260,7 +262,6 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
-		WORLD_MATRIX,
 	};
 
 	vertex_format format_type;
@@ -321,6 +322,7 @@ typedef enum gr_capability {
 	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
+	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 } gr_capability;
 
 enum class gr_property {
@@ -623,11 +625,7 @@ enum class BufferType {
 	Uniform
 };
 
-enum class BufferUsageHint {
-	Static,
-	Dynamic,
-	Streaming
-};
+enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 
 /**
  * @brief Type of a graphics sync object
@@ -754,17 +752,15 @@ typedef struct screen {
 	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int handle, int face);
 
-	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
-	void (*gf_push_texture_matrix)(int unit);
-	void (*gf_pop_texture_matrix)(int unit);
-
 	void (*gf_set_texture_addressing)(int);
 
 	int (*gf_create_buffer)(BufferType type, BufferUsageHint usage);
 	void (*gf_delete_buffer)(int handle);
 
-	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
-	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, void* data);
+	void (*gf_update_buffer_data)(int handle, size_t size, const void* data);
+	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, const void* data);
+	void* (*gf_map_buffer)(int handle);
+	void (*gf_flush_mapped_buffer)(int handle, size_t offset, size_t size);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 
 	// postprocessing effects
@@ -919,8 +915,6 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 // Returns the height of the current font
 extern int gr_get_font_height();
 
-extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128 = 0);
-
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
@@ -947,8 +941,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 
-void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
-
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
@@ -974,11 +966,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
 
-#define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
-#define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
-#define gr_pop_texture_matrix			GR_CALL(gr_screen.gf_pop_texture_matrix)
-
-
 // Here be the bitmap functions
 #define gr_bm_free_data				GR_CALL(gr_screen.gf_bm_free_data)
 #define gr_bm_create				GR_CALL(gr_screen.gf_bm_create)
@@ -1003,6 +990,11 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
 #define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
+inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
+inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
+	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
+}
 #define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
 
 #define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
@@ -1031,7 +1023,6 @@ inline void gr_post_process_restore_zbuffer() {
 
 #define gr_maybe_create_shader			GR_CALL(gr_screen.gf_maybe_create_shader)
 #define gr_recompile_all_shaders		GR_CALL(gr_screen.gf_recompile_all_shaders)
-#define gr_set_animated_effect			GR_CALL(gr_screen.gf_set_animated_effect)
 
 #define gr_clear_states					GR_CALL(gr_screen.gf_clear_states)
 
@@ -1153,7 +1144,6 @@ inline void gr_sync_delete(gr_sync sync) {
 }
 
 // color functions
-void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
@@ -1163,33 +1153,10 @@ void gr_set_color_fast(color *dst);
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
-uint gr_determine_model_shader_flags(
-	bool lighting,
-	bool fog,
-	bool textured,
-	bool in_shadow_map,
-	bool thruster_scale,
-	bool transform,
-	bool team_color_set,
-	int tmap_flags,
-	int spec_map,
-	int glow_map,
-	int normal_map,
-	int height_map,
-	int ambient_map,
-	int env_map,
-	int misc_map
-);
-
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
-
-// texture update functions
-ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
-void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
@@ -1246,7 +1213,13 @@ enum AnimatedShader {
 	ANIMATED_SHADER_CLOAK = 2,
 };
 
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type);
+/**
+ * @brief Retreives a uniform buffer for storing uniform block data
+ * @param type The type of uniform data that will be stored in the buffer
+ * @param num_elements The number of elements that will be used in the buffer
+ * @return A structure which gives access to a memory buffer where the uniform data can be stored
+ */
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements);
 
 struct VideoModeData {
 	uint32_t width = 0;

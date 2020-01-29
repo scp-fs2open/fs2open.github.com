@@ -188,6 +188,7 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
+SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
 QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
 	return QIcon(node_image_to_resource_name(image));
@@ -210,6 +211,8 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree::handleNewItemSelected);
 }
+
+sexp_tree::~sexp_tree() = default;
 
 // clears out the tree, so all the nodes are unused.
 void sexp_tree::clear_tree(const char* op) {
@@ -1679,7 +1682,7 @@ int sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 {
 	char str[80];
 	int node1, node2;
-	
+
 	expand_operator(item_index);
 	node1 = allocate_node(item_index);
 	node2 = allocate_node(node1);
@@ -1835,7 +1838,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_FLEXIBLE_ARGUMENT:
 				if (type2 != OPR_FLEXIBLE_ARGUMENT)
 					return node_error(node, "Flexible argument return type expected here", bypass);
-				
+
 				break;
 
 			case OPF_ANYTHING:
@@ -2009,7 +2012,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 				char* text_ptr;
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
-					// special case for SEXPs which can modify a variable 
+					// special case for SEXPs which can modify a variable
 					if (type == OPF_VARIABLE_NAME) {
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
@@ -2062,7 +2065,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 					ptr = ptr->next;
 				}
 
-				if (!ptr) {  // argument isn't in list of valid choices, 
+				if (!ptr) {  // argument isn't in list of valid choices,
 					if (list->op >= 0) {
 						replace_operator(list->text.c_str());
 					} else {
@@ -2094,7 +2097,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 		}
 
 		//fix the node if it is the argument for modify-variable
-		if (is_variable_arg //&& 
+		if (is_variable_arg //&&
 			//	!(tree_nodes[item_index].type & SEXPT_OPERATOR || tree_nodes[item_index].type & SEXPT_VARIABLE )
 			) {
 			switch (type) {
@@ -2218,7 +2221,7 @@ void sexp_tree::replace_operator(const char* op) {
 	h = tree_nodes[item_index].handle;
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
-	
+
 	node = allocate_node(item_index);
 	set_node(item_index, SEXPT_OPERATOR, op);
 	set_node(node, type, data);
@@ -2406,7 +2409,7 @@ const char* sexp_tree::help(int code) {
 int sexp_tree::get_type(QTreeWidgetItem* h) {
 	uint i;
 
-	// get index into sexp_tree 
+	// get index into sexp_tree
 	for (i = 0; i < tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
 			break;
@@ -4957,6 +4960,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
 					case OP_STRING_CONCATENATE:
+					case OP_SET_OBJECT_SPEED_X:
+					case OP_SET_OBJECT_SPEED_Y:
+					case OP_SET_OBJECT_SPEED_Z:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -5018,6 +5024,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
 					case OP_STRING_CONCATENATE:
+					case OP_SET_OBJECT_SPEED_X:
+					case OP_SET_OBJECT_SPEED_Y:
+					case OP_SET_OBJECT_SPEED_Z:					
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

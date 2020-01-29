@@ -1,6 +1,7 @@
 
 
 #include "gropengl.h"
+
 #include "gropenglbmpman.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
@@ -11,29 +12,21 @@
 #include "gropenglsync.h"
 #include "gropengltexture.h"
 #include "gropengltnl.h"
+
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
-#include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/line.h"
 #include "graphics/matrix.h"
-#include "graphics/paths/PathRenderer.h"
-#include "io/mouse.h"
-#include "io/timer.h"
 #include "libs/renderdoc/renderdoc.h"
 #include "math/floating.h"
 #include "model/model.h"
-#include "nebula/neb.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
-#include "popup/popup.h"
-#include "render/3d.h"
-#include "tracing/tracing.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -190,14 +183,8 @@ void gr_opengl_clear()
 
 void gr_opengl_flip()
 {
-	if ( !GL_initted )
+	if (!GL_initted)
 		return;
-
-	TRACE_SCOPE(tracing::PageFlip);
-
-	gr_reset_clip();
-
-	mouse_reset_deltas();
 
 	if (Cmdline_gl_finish)
 		glFinish();
@@ -834,21 +821,6 @@ void gr_opengl_zbias(int bias)
 	}
 }
 
-void gr_opengl_push_texture_matrix(int  /*unit*/)
-{
-
-}
-
-void gr_opengl_pop_texture_matrix(int  /*unit*/)
-{
-
-}
-
-void gr_opengl_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
-{
-
-}
-
 void gr_opengl_set_line_width(float width)
 {
 	if (width <= 1.0f) {
@@ -1154,10 +1126,6 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_preload			= gr_opengl_preload;
 
-	gr_screen.gf_push_texture_matrix		= gr_opengl_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix			= gr_opengl_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix	= gr_opengl_translate_texture_matrix;
-
 	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_opengl_zbias;
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
@@ -1166,6 +1134,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
 	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
+	gr_screen.gf_map_buffer                 = gr_opengl_map_buffer;
+	gr_screen.gf_flush_mapped_buffer        = gr_opengl_flush_mapped_buffer;
 	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
@@ -1626,6 +1596,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
+	case CAPABILITY_PERSISTENT_BUFFER_MAPPING:
+		return GLAD_GL_ARB_buffer_storage != 0;
 	}
 
 	return false;

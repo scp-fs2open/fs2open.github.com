@@ -1313,16 +1313,10 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		GET_INT(new_flags);
 		
 		if (Net_players[player_num].flags & NETINFO_FLAG_OBSERVER) {
-			if (!multi_obs_create_player(player_num, name, &addr, &Players[player_slot_num])) {
-				Int3();
-			}
+			multi_obs_create_player(player_num, name, &addr, &Players[player_slot_num]);
 
 		} else {
-			//  the error handling here is less than stellar.  We should probably put up a popup and go
-			// back to the main menu.  But then again, this should never ever happen!
-			if ( !multi_create_player(player_num, &Players[player_slot_num],name, &addr, -1, player_id) ) {
-				Int3();
-			}
+			multi_create_player(player_num, &Players[player_slot_num], name, &addr, -1, player_id);
 		}
 
 		// copy his image filename

@@ -62,7 +62,7 @@ typedef struct config_item {
 	short key_default;		//!< default key bound to action
 	short joy_default;		//!< default joystick button bound to action
 	char tab;				//!< what tab (category) it belongs in
-	bool hasXSTR;			//!< whether we should translate this with an XSTR
+	int indexXSTR;			//!< what string index we should use to translate this with an XSTR
 	const char *text;		//!< describes the action in the config screen
 	char type;				//!< manner control should be checked in
 	short key_id;			//!< actual key bound to action
@@ -269,6 +269,15 @@ enum IoActionId  {
 	//!< Additional weapon controls
 	//!< ----------------------------
 	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
+
+	//!< @n
+	//!< Custom control slots
+	//!< ----------------------------
+	CUSTOM_CONTROL_1								= 119,
+	CUSTOM_CONTROL_2								= 120,
+	CUSTOM_CONTROL_3								= 121,
+	CUSTOM_CONTROL_4								= 122,
+	CUSTOM_CONTROL_5								= 123,
 
 	/*!
 	 * This must always be below the last defined item

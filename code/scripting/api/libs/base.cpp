@@ -223,7 +223,7 @@ ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL",
 	}
 }
 
-ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control info", "control info handle")
+ADE_FUNC(getControlInfo, l_Base, nullptr, "Gets the control info handle.", "control_info", "control info handle")
 {
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
@@ -245,7 +245,9 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getGameDifficulty, l_Base, NULL, "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)", "integer", "Difficulty level as integer")
+ADE_FUNC(getGameDifficulty, l_Base, nullptr,
+         "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)",
+         "number", "Difficulty level as integer")
 {
 	return ade_set_args(L, "i", Game_skill_level+1);
 }

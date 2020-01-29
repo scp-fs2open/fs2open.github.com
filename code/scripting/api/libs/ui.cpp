@@ -117,7 +117,7 @@ ADE_VIRTVAR(ErrorCount, l_UserInterface_PilotSelect, nullptr, "The amount of err
 }
 
 ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
-         "Lists all pilots available for the pilot selection<br>", "table{ name... }",
+         "Lists all pilots available for the pilot selection<br>", ade_type_array("string"),
          "A table containing the pilots (without a file extension) or nil on error")
 {
 	using namespace luacpp;
@@ -135,7 +135,7 @@ ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
 ADE_FUNC(getLastPilot, l_UserInterface_PilotSelect, nullptr,
          "Reads the last active pilot from the config file and returns some information about it. callsign is the name "
          "of the player and is_multi indicates whether the pilot was last active as a multiplayer pilot.",
-         "string callsign", "The pilot name or nil if there was no last pilot")
+         "string", "The pilot name or nil if there was no last pilot")
 {
 	using namespace luacpp;
 
@@ -160,7 +160,7 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
 }
 
 ADE_FUNC(selectPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi",
-         "Selects the pilot with the specified callsign and advances the game to the main menu.", "nil", "nothing")
+         "Selects the pilot with the specified callsign and advances the game to the main menu.", nullptr, "nothing")
 {
 	const char* callsign;
 	bool is_multi;
@@ -213,7 +213,7 @@ ADE_LIB_DERIV(l_UserInterface_MainHall, "MainHall", nullptr,
               "API for the new UI system. This should not be used by other code and may be removed in the future!",
               l_UserInterface);
 
-ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambient mainhall sound.", "nil", "nothing")
+ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambient mainhall sound.", nullptr, "nothing")
 {
 	(void)L;
 	main_hall_start_ambient();
@@ -227,7 +227,7 @@ ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
-         "table {string...}", "The list of pilot filenames or nil on error")
+         ade_type_array("string"), "The list of pilot filenames or nil on error")
 {
 	pilot_load_pic_list();
 
@@ -241,7 +241,7 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
-         "table {string...}", "The list of squad filenames or nil on error")
+         ade_type_array("string"), "The list of squad filenames or nil on error")
 {
 	pilot_load_squad_pic_list();
 

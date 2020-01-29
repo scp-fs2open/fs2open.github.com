@@ -1211,9 +1211,10 @@ void pilotfile::csg_write_cutscenes() {
 	startSection(Section::Cutscenes);
 
 	size_t viewableScenes = 0;
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
-			viewableScenes ++;
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
+			viewableScenes++;
+		}
 	}
 
 	// Check for possible overflow because we can only write 32 bit integers
@@ -1221,9 +1222,10 @@ void pilotfile::csg_write_cutscenes() {
 
 	cfwrite_uint((uint)viewableScenes, cfp);
 
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			cfwrite_string_len(cut->filename, cfp);
+		}
 	}
 
 	endSection();

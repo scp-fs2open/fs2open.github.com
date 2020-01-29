@@ -166,6 +166,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
 	def_files/data/effects/deferred-f.sdr
@@ -778,6 +779,8 @@ add_file_folder("Network"
 	network/multi_ping.h
 	network/multi_pmsg.cpp
 	network/multi_pmsg.h
+	network/multi_portfwd.cpp
+	network/multi_portfwd.h
 	network/multi_pxo.cpp
 	network/multi_pxo.h
 	network/multi_rate.cpp
@@ -1122,6 +1125,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/model_path.cpp
+	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
 	scripting/api/objs/movie_player.h
 	scripting/api/objs/object.cpp
@@ -1130,6 +1135,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/parse_object.cpp
+	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp
 	scripting/api/objs/particle.h
 	scripting/api/objs/physics_info.cpp
@@ -1366,11 +1373,5 @@ add_file_folder("Weapon"
 # Windows stubs files
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
+	windows_stub/stubs.cpp
 )
-
-IF(UNIX)
-	add_file_folder("Windows Stubs"
-		${file_root_windows_stubs}
-		windows_stub/stubs.cpp
-	)
-ENDIF(UNIX)

@@ -135,7 +135,7 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: Control Info
-ADE_OBJ(l_Control_Info, int, "control info", "control info handle");
+ADE_OBJ(l_Control_Info, int, "control_info", "control info handle");
 
 ADE_VIRTVAR(Pitch, l_Control_Info, "number", "Pitch of the player ship", "number", "Pitch")
 {
@@ -298,7 +298,8 @@ ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button contro
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(getButtonInfo, l_Control_Info, nullptr, "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];
@@ -313,7 +314,9 @@ ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields contain
 	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
 }
 
-ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number",
+         "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];
@@ -420,7 +423,8 @@ ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(pollAllButtons, l_Control_Info, nullptr, "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];

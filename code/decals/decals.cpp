@@ -468,10 +468,9 @@ void renderAll() {
 		return;
 	}
 
-
-	graphics::decal_draw_list draw_list;
 	auto mission_time = f2fl(Missiontime);
 
+	graphics::decal_draw_list draw_list(active_decals.size());
 	for (auto& decal : active_decals) {
 		int diffuse_bm = -1;
 		int glow_bm = -1;

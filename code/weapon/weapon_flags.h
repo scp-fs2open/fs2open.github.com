@@ -81,7 +81,7 @@ namespace Weapon {
 		Apply_Recoil,						// Apply Recoil using weapon and ship info
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
-		
+
         NUM_VALUES
 	};
 
@@ -96,11 +96,12 @@ namespace Weapon {
 		Spawned,					//Spawned from a spawning type weapon
 		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
+		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
 
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Burst_Flags) { 
+	FLAG_LIST(Burst_Flags) {
 		Fast_firing,
 		Random_length,
 

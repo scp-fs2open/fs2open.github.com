@@ -53,7 +53,9 @@ ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [integer red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
+ADE_FUNC(setHUDGaugeColor, l_HUD,
+         "number (index number of the gauge), [number red, number green, number blue, number alpha]",
+         "Color used to draw the gauge", "boolean", "If the operation was successful")
 {
 	int idx = -1;
 	int r = 0;
@@ -72,7 +74,8 @@ ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [integer 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color used to draw the gauge", "number, number, number, number", "Red, green, blue, and alpha of the gauge")
+ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color used to draw the gauge",
+         ade_type_info({"number", "number", "number", "number"}), "Red, green, blue, and alpha of the gauge")
 {
 	int idx = -1;
 

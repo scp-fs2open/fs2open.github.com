@@ -2,11 +2,16 @@ in vec4 vertPosition;
 in vec3 vertNormal;
 out vec4 fragImpactUV;
 out float fragNormOffset;
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
+
 uniform vec3 hitNormal;
 uniform mat4 shieldModelViewMatrix;
 uniform mat4 shieldProjMatrix;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
 void main()
 {
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;

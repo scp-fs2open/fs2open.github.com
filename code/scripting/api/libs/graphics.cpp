@@ -250,7 +250,8 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[integer red, number green, number blue, number alpha]", "Clears the screen to black, or the color specified.", NULL, NULL)
+ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
+         "Clears the screen to black, or the color specified.", nullptr, nullptr)
 {
 	int r,g,b,a;
 	r=g=b=0;
@@ -467,7 +468,8 @@ ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "integer Red, number Green, number Blue, [integer Alpha]", "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", NULL, NULL)
+ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [integer Alpha]",
+         "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -713,7 +715,10 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation - Use with extreme care, may not work properly in all scripting hooks.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
+         "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
+         "properly in all scripting hooks.",
+         "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -779,7 +784,10 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [integer Flags]", "Draws the given model with the specified position and orientation - Use with extreme care, designed to operate properly only in On Object Render hooks.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [number Flags]",
+         "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
+         "operate properly only in On Object Render hooks.",
+         "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -817,9 +825,11 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orienta
 
 // Aardwolf's targeting brackets function
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
-		 "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
-		 "number,number,number,number",
-		 "Left, top, right, and bottom positions of the brackets, or nil if invalid")
+         "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
+         "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
+         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+         ade_type_info({"number", "number", "number", "number"}),
+         "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
 	if(!Gr_inited) {
 		return ADE_RETURN_NIL;
@@ -916,10 +926,12 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
-ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
-		 "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
-		 "number,number,number,number",
-		 "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
+ADE_FUNC(
+    drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
+    "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
+    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
+    ade_type_info({"number", "number", "number", "number"}),
+    "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
 	if(!Gr_inited) {
 		return ADE_RETURN_NIL;
@@ -933,7 +945,7 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 		return ADE_RETURN_NIL;
 	}
 
-	if (!sshp->IsValid())
+	if (!sshp->isSubsystemValid())
 	{
 		return ADE_RETURN_NIL;
 	}
@@ -966,9 +978,11 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 }
 
 ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true, boolean setColor=false]",
-		 "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the coordinates will be returned in either case. The indicator will be drawn using the current color if setColor=true and using the IFF color of the object if setColor=false.",
-		 "number,number",
-		 "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
+         "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
+         "coordinates will be returned in either case. The indicator will be drawn using the current color if "
+         "setColor=true and using the IFF color of the object if setColor=false.",
+         ade_type_info({"number", "number"}),
+         "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
 {
 	object_h *objh = NULL;
 	bool draw = false;
@@ -1467,6 +1481,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		return ade_set_error(L, "b", false);
 
 	int bit = 0;
+	static bool VM_EXTERNAL_CAMERA_LOCKED_WARNED = false;
 
 	switch(type->index)
 	{
@@ -1491,6 +1506,13 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 			break;
 
 		case LE_VM_EXTERNAL_CAMERA_LOCKED:
+		    if (!VM_EXTERNAL_CAMERA_LOCKED_WARNED) {
+			    Warning(LOCATION, "The enumeration VM_EXTERNAL_CAMERA_LOCKED has been deprecated for lua function "
+			                      "hasViewmode()! To ensure future compatibility, please check for either "
+			                      "VM_CAMERA_LOCKED, VM_EXTERNAL, or both, instead.");		    
+				VM_EXTERNAL_CAMERA_LOCKED_WARNED = true;
+			}
+
 			return ade_set_args(L, "b", ((Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL)) != 0);
 			break;
 

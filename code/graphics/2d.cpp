@@ -14,28 +14,23 @@
 #include <windowsx.h>
 #endif
 
-#include <climits>
-#include <algorithm>
+#include "material.h"
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "gamesequence/gamesequence.h" //WMC - for scripting hooks in gr_flip()
+#include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/font.h"
-#include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
 #include "graphics/grstub.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
-#include "graphics/opengl/gropengldraw.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
-#include "io/keycontrol.h" // m!m
-#include "io/timer.h"
+#include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
@@ -46,13 +41,16 @@
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 
-#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
+#include <SDL_surface.h>
+
+#include <algorithm>
+#include <climits>
+
+#if (SDL_VERSION_ATLEAST(1, 2, 7))
 #include "SDL_cpuinfo.h"
 #endif
 
-#include "SDL_surface.h"
-
-const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
 
@@ -104,6 +102,9 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+bool Deferred_lighting = false;
+bool High_dynamic_range = false;
 
 static int videodisplay_deserializer(const json_t* value)
 {
@@ -322,7 +323,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
-bool Gr_post_processing_enabled = false;
+bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption =
     options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
@@ -345,6 +346,8 @@ static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertica
                               .importance(70)
                               .finish();
 
+static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
+
 // Forward definitions
 static void uniform_buffer_managers_init();
 static void uniform_buffer_managers_deinit();
@@ -353,7 +356,8 @@ static void uniform_buffer_managers_retire_buffers();
 static void gpu_heap_init();
 static void gpu_heap_deinit();
 
-void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
+void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h,
+                         bool force_stretch)
 {
 	bool do_zoom = zoom_w > 0 && zoom_h > 0 && (zoom_w != w || zoom_h != h);
 
@@ -971,17 +975,6 @@ void gr_set_palette_internal( const char * /*name*/, ubyte * palette, int  /*res
 	}
 }
 
-
-void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
-{
-	char *p;
-	strcpy_s( Gr_current_palette_name, name );
-	p = strchr( Gr_current_palette_name, '.' );
-	if ( p ) *p = 0;
-	gr_screen.signature = Gr_signature++;
-	gr_set_palette_internal( name, palette, restrict_font_to_128 );
-}
-
 void gr_screen_resize(int width, int height)
 {
 	gr_screen.save_center_w = gr_screen.center_w = gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = width;
@@ -1375,6 +1368,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	uniform_buffer_managers_init();
 
 	gpu_heap_init();
+
+	mprintf(("Checking graphics capabilities:\n"));
+	mprintf(("  Persistent buffer mapping: %s\n",
+	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
@@ -2383,36 +2380,52 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 	}
 }
 
-void gr_shield_icon(coord2d coords[6], int resize_mode)
-{
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-	
-	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
-}
-
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)
 {
-	gr_screen.current_alpha = alpha;
+	gr_screen.current_alpha           = alpha;
 	gr_screen.current_alphablend_mode = alphablend_mode;
-	gr_screen.current_bitblt_mode = bitblt_mode;
-	gr_screen.current_bitmap = bitmap_num;
+	gr_screen.current_bitblt_mode     = bitblt_mode;
+	gr_screen.current_bitmap          = bitmap_num;
+}
+
+static void output_uniform_debug_data()
+{
+	int line_height = gr_get_font_height() + 1;
+
+	gr_set_color_fast(&Color_bright_white);
+
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
+	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
+	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
 }
 
 void gr_flip(bool execute_scripting)
 {
+	TRACE_SCOPE(tracing::PageFlip);
+
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	if (execute_scripting && !popup_active()) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
-		//WMC - Do conditional hooks. Yippee!
+		// WMC - Do conditional hooks. Yippee!
 		Script_system.RunCondition(CHA_ONFRAME);
-		//WMC - Do scripting reset stuff
+		// WMC - Do scripting reset stuff
 		Script_system.EndFrame();
 	}
 
 	gr_reset_immediate_buffer();
+
+	// Do per frame operations on the matrix state
+	gr_matrix_on_frame();
+
+	gr_reset_clip();
+
+	mouse_reset_deltas();
+
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();
@@ -2430,32 +2443,13 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 	gr_string(x, y, time.c_str(), resize_mode);
 }
+static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
+static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
+static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
 
-static std::unique_ptr<graphics::util::UniformBufferManager>
-	uniform_buffer_managers[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
-
-static void uniform_buffer_managers_init() {
-	for (size_t i = 0; i < static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
-		auto enumVal = static_cast<uniform_block_type>(i);
-
-		uniform_buffer_managers[i].reset(new graphics::util::UniformBufferManager(enumVal));
-	}
-}
-static void uniform_buffer_managers_deinit() {
-	for (auto& manager: uniform_buffer_managers) {
-		manager.reset();
-	}
-}
-static void uniform_buffer_managers_retire_buffers() {
-	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
-
-	for (auto& manager: uniform_buffer_managers) {
-		manager->retireBuffers();
-	}
-}
-
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
-	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements)
+{
+	return UniformBufferManager->getUniformBuffer(type, num_elements);
 }
 
 SCP_vector<DisplayData> gr_enumerate_displays()

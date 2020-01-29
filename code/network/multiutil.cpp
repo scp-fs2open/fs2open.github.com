@@ -197,7 +197,9 @@ ushort multi_get_next_network_signature( int what_kind )
 // and is used mainly for firing weapons.  what_kind tells us permanent or non-permanent signature
 void multi_set_network_signature( ushort signature, int what_kind )
 {
-	Assert( signature != 0 );
+	Assertion(signature != 0, "Invalid net signature of 0 requested in multi_set_network_signature().");
+	Assertion(what_kind > 0, "Invalid net signature type of value %d requested in multi_set_network_signature().", what_kind);  // get Allender
+	Assertion(what_kind < 5, "Invalid net signature type of value %d requested in multi_set_network_signature().", what_kind);
 
 	if ( what_kind == MULTI_SIG_SHIP ) {
 		Assert( (signature >= SHIP_SIG_MIN) && (signature <= SHIP_SIG_MAX) );
@@ -208,24 +210,29 @@ void multi_set_network_signature( ushort signature, int what_kind )
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
 		Assert( (signature >= ASTEROID_SIG_MIN) && (signature <= ASTEROID_SIG_MAX) );
 		Next_asteroid_signature = signature;
-	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		Assert( (signature >= NPERM_SIG_MIN) /*&& (signature <= NPERM_SIG_MAX)*/ );
-		Next_non_perm_signature = signature;
-	} else
-		Int3();			// get Allender
+	} else if (what_kind == MULTI_SIG_NON_PERMANENT) {
+		// Cyborg17 - spawn weapons can set this past the max and overflow the short
+		if (signature >= NPERM_SIG_MIN) {
+			Next_non_perm_signature = signature;
+		// so if they did, just add it to the minimum, because that's where we need to be, anyway.
+		} else {
+			Next_non_perm_signature = NPERM_SIG_MIN + signature;
+			Assertion(Next_non_perm_signature >= NPERM_SIG_MIN,"Somehow the non permanent signatures in multi_set_network_signature overflowed the short *twice*, and we cannot code around this.\n\n The likely cause is having spawn weapons with too many children.");
+		}
+	} 			
 }
 
 // multi_get_network_object() takes a net_signature and tries to locate the object in the object list
-// with that network signature.  Returns NULL if the object cannot be found
+// with that network signature.  Returns nullptr if the object cannot be found
 object *multi_get_network_object( ushort net_signature )
 {
 	object *objp;
 
 	if ( net_signature == 0 )
-		return NULL;
+		return nullptr;
 
-	if(GET_FIRST(&obj_used_list) == NULL)
-		return NULL;
+	if(GET_FIRST(&obj_used_list) == nullptr)
+		return nullptr;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 		if ( objp->net_signature == net_signature )
@@ -238,7 +245,7 @@ object *multi_get_network_object( ushort net_signature )
 				break;
 
 		if ( objp == END_OF_LIST(&obj_create_list) )
-			objp = NULL;
+			objp = nullptr;
 	}
 
 	return objp;
@@ -573,12 +580,12 @@ int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning)
 	p_object *p_objp;
 
 	// bogus
-	if(ship_name == NULL){
+	if(ship_name == nullptr){
 		return -1;
 	}
 
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) && 
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != nullptr) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) && 
 			(Objects[Net_players[idx].m_player->objnum].instance >= 0) && (Objects[Net_players[idx].m_player->objnum].instance < MAX_SHIPS) && !stricmp(ship_name, Ships[Objects[Net_players[idx].m_player->objnum].instance].ship_name) ){
 			return idx;
 		}
@@ -605,7 +612,7 @@ int multi_get_player_ship(int np_index)
 
 	// cool?
 	if(MULTI_CONNECTED(Net_players[np_index]) && !MULTI_OBSERVER(Net_players[np_index]) && !MULTI_STANDALONE(Net_players[np_index]) && 
-		(Net_players[np_index].m_player != NULL) && (Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP) && 
+		(Net_players[np_index].m_player != nullptr) && (Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP) && 
 		(Objects[Net_players[np_index].m_player->objnum].instance >= 0) && (Objects[Net_players[np_index].m_player->objnum].instance < MAX_SHIPS) ){
 
 		return Objects[Net_players[np_index].m_player->objnum].instance;
@@ -700,7 +707,7 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 	// find the parse object for this ship.  Also, set the wingman status stuff so wingman status gauge
 	// works properly.
 	Net_players[net_player_num].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
-	Assert( Net_players[net_player_num].p_info.p_objp != NULL );		// get allender -- ship should be on list
+	Assert( Net_players[net_player_num].p_info.p_objp != nullptr );		// get allender -- ship should be on list
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
@@ -725,13 +732,16 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
-int multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
+void multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
 {
 	int player_ship_class = ship_class;
 	int current_player_count;
 
-	Assert ( net_player_num < MAX_PLAYERS );				// probably shoudln't be able to even get into this routine if no room	
-	
+	Assertion ( net_player_num < MAX_PLAYERS, "FSO is attempting to create too many players in multi. This error should be prevented in the UI, please report!" );				// probably shoudln't be able to even get into this routine if no room	
+	Assertion(addr != nullptr, "A nullptr net address was passed to multi_create_player(). This is a code error, please report.");
+	Assertion(pl != nullptr, "A nullptr player was passed to multi_create_player(). This is a code error, please report.");
+	Assertion(name != nullptr, "A nullptr callsign was passed to multi_create_player(). This is a code error, please report.");
+
 	// blast _any_ old data
 	memset(&Net_players[net_player_num],0,sizeof(net_player));
 
@@ -768,7 +778,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 	}
 	
 	if ( player_ship_class >= static_cast<int>(Ship_info.size()) ) {
-		nprintf(("Network","Network ==> Ship class was %d Creating a default ship for multiplayer\n", player_ship_class));
+		nprintf(("Network","Network ==> Ship class was %d. Creating a default ship for multiplayer\n", player_ship_class));
 		player_ship_class = multi_ship_class_lookup(default_player_ship);
 	}
 
@@ -832,8 +842,6 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 	if(MULTI_IN_MISSION){
 		hud_escort_add_player(id);
 	}
-
-	return 1;
 }
 
 // next function makes a player object an ai object (also decrementing the num_players in the
@@ -842,7 +850,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 void multi_make_player_ai( object *pobj )
 {
 
-	Assert ( pobj != NULL );
+	Assertion(pobj != nullptr, "Invalid player object passed to multi_make_player_ai(). Code error, please report!");
 
 	if ( pobj->type != OBJ_SHIP )
 		return;
@@ -898,7 +906,7 @@ void delete_player(int player_num,int kicked_reason)
 		Net_players[player_num].flags &= ~(NETINFO_FLAG_GAME_HOST);
 	
 		// am I the server
-		if ( (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		if ( (Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
 			// are we a standalone server and in a mission?
 			if((Game_mode & GM_STANDALONE_SERVER) && MULTI_IN_MISSION){			
 				// choose a new host			
@@ -1041,14 +1049,14 @@ void multi_cull_zombies()
 }
 
 // -------------------------------------------------------------------------------------------------
-// fill_net_addr() calculates the checksum of a block of memory.
+// fill_net_addr() helper function that fills in the address and port for a referenced address struct
 //
 //
 
 void fill_net_addr(net_addr* addr, ubyte* address, ushort port)
 {
-	Assert(addr != NULL);
-	Assert(address != NULL);
+	Assertion(addr != nullptr, "Invalid net address struct was passed to fill_net_addr(). Code error, please report.");
+	Assertion(address != nullptr, "Invalid net address was passed to fill_net_addr()");
 
 	addr->type = Multi_options_g.protocol;
 	memset( addr->addr, 0x00, 6);
@@ -1207,7 +1215,7 @@ void add_net_button_info(net_player *p,button_info *bi,int unique_id)
 	}		
 }
 
-extern int button_function_critical(int n,net_player *p = NULL);
+extern int button_function_critical(int n,net_player *p = nullptr);
 void multi_apply_ship_status(net_player *p,button_info *bi,int locally)
 {
 	int i, j;
@@ -1221,7 +1229,7 @@ void multi_apply_ship_status(net_player *p,button_info *bi,int locally)
 			// check if the bit is set. If button_function returns 1 (implying the action was taken), then unset the bit
 			if ( bi->status[i] & (1<<j) ) {
             if(locally){
-					if(button_function_critical(32*i + j,NULL))   // will apply to this console
+					if(button_function_critical(32*i + j,nullptr))   // will apply to this console
 						bi->status[i] &= ~(1<<j);
 				} else {
 					if(button_function_critical(32*i + j,p))      // will only apply to a net-player
@@ -1275,18 +1283,6 @@ void multi_maybe_send_ship_status()
 	}
 }
 
-void multi_subsys_update_all()
-{
-	/*
-	int idx;
-	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if((Net_players[idx].flags & NETINFO_FLAG_CONNECTED) && !psnet_same(&My_addr,&Net_players[idx].addr) && !(Net_players[idx].flags & NETINFO_FLAG_OBSERVER))
-			send_subsys_update_packet(&Net_players[idx]);
-	}
-	*/
-}
-
 int multi_find_player_by_callsign(const char *callsign)
 {
 	int idx;
@@ -1311,7 +1307,7 @@ int multi_is_builtin_mission()
 	cf_add_ext(name, FS_MISSION_FILE_EXT);
 
 	// if this mission is builtin	
-	if(game_find_builtin_mission(name) != NULL){
+	if(game_find_builtin_mission(name) != nullptr){
 		return 1;
 	}
 
@@ -1622,12 +1618,12 @@ active_game *multi_new_active_game( void )
 	active_game *new_game;
 
 	new_game = (active_game *)vm_malloc(sizeof(active_game));
-	if ( new_game == NULL ) {
+	if ( new_game == nullptr ) {
 		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
-		return NULL;
+		return nullptr;
 	}	
 
-	if ( Active_game_head != NULL ) {
+	if ( Active_game_head != nullptr ) {
 		new_game->next = Active_game_head->next;
 		new_game->next->prev = new_game;
 		Active_game_head->next = new_game;
@@ -1647,12 +1643,12 @@ active_game *multi_new_active_game( void )
 
 active_game *multi_update_active_games(active_game *ag)
 {
-	active_game *gp = NULL;
-	active_game *stop = NULL;		
+	active_game *gp = nullptr;
+	active_game *stop = nullptr;		
 
 	// see if we have a game from this address already -- if not, create one.  In either case, get a pointer
 	// to an active_game structure
-	if ( Active_game_head != NULL ) {	// no games on list at all
+	if ( Active_game_head != nullptr ) {	// no games on list at all
 		int on_list;
 
 		gp = Active_game_head;
@@ -1721,8 +1717,8 @@ active_game *multi_update_active_games(active_game *ag)
 	}		
 
 	// don't do anything if we don't have a game entry
-	if(gp == NULL){
-		return NULL;
+	if(gp == nullptr){
+		return nullptr;
 	}
 	
 	// update the last time we heard from him
@@ -1740,16 +1736,16 @@ void multi_free_active_games()
 	active_game *moveup,*backup;	
 
 	moveup = Active_game_head;
-	backup = NULL;
-	if(moveup != NULL){
+	backup = nullptr;
+	if(moveup != nullptr){
 		do {			
 			backup = moveup;
 			moveup = moveup->next;
 			
 			vm_free(backup);
-			backup = NULL;
+			backup = nullptr;
 		} while(moveup != Active_game_head);
-		Active_game_head = NULL;
+		Active_game_head = nullptr;
 	}	
 	Active_game_count = 0;
 }
@@ -1759,12 +1755,12 @@ server_item *multi_new_server_item( void )
 	server_item *new_game;
 
 	new_game = (server_item *)vm_malloc(sizeof(server_item));
-	if ( new_game == NULL ) {
+	if ( new_game == nullptr ) {
 		nprintf(("Network", "Cannot allocate space for new server_item structure\n"));
-		return NULL;
+		return nullptr;
 	}
 
-	if ( Game_server_head != NULL ) {
+	if ( Game_server_head != nullptr ) {
 		new_game->next = Game_server_head->next;
 		new_game->next->prev = new_game;
 		Game_server_head->next = new_game;
@@ -1782,16 +1778,16 @@ void multi_free_server_list()
 	server_item *moveup,*backup;	
 
 	moveup = Game_server_head;
-	backup = NULL;
-	if(moveup != NULL){
+	backup = nullptr;
+	if(moveup != nullptr){
 		do {			
 			backup = moveup;
 			moveup = moveup->next;
 			
 			vm_free(backup);
-			backup = NULL;
+			backup = nullptr;
 		} while(moveup != Game_server_head);
-		Game_server_head = NULL;
+		Game_server_head = nullptr;
 	}	
 }
 
@@ -1967,14 +1963,14 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 				case NETGAME_STATE_PAUSED:
 				case NETGAME_STATE_DEBRIEF:
 				case NETGAME_STATE_MISSION_SYNC:
-					send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_ALL, NULL, NULL, 1);
+					send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_ALL, nullptr, nullptr, 1);
 					multi_display_chat_msg(knock_message,0,0);
 					break;
 
 				// in game we only bother the host. 
 				case NETGAME_STATE_IN_MISSION:
 					if( MULTIPLAYER_STANDALONE ) {
-						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, NULL, 1);
+						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, nullptr, 1);
 					} else {
 						snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", knock_message);
@@ -2139,7 +2135,7 @@ void multi_warpout_all_players()
 	}
 
 	// stop my afterburners
-	if((Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER)){
+	if((Player_obj != nullptr) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER)){
 		afterburners_stop( Player_obj, 1 );
 	}
 
@@ -2314,17 +2310,16 @@ void multi_handle_state_special()
 // called by the file xfer subsytem when we start receiving a file
 void multi_file_xfer_notify(int handle)
 {
-	char *filename;
+	char *filename = nullptr;
 	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
 	// get the filename of the file we are receiving
-	filename = NULL;
 	filename = multi_xfer_get_filename(handle);
 		
 	// something is messed up
-	if(filename == NULL){
+	if(filename == nullptr){
 		return;
 	}
 
@@ -2335,7 +2330,7 @@ void multi_file_xfer_notify(int handle)
 	}		
 
 	// if this is a mission file
-	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != NULL);
+	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != nullptr);
 	
 	// determine where its going to go
 	if(is_mission){
@@ -2415,9 +2410,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 	// if he is requesting to join as an observer
 	if(jr->flags & JOIN_FLAG_AS_OBSERVER){			
 		// create the (permanently) observer player
-		if(!multi_obs_create_player(net_player_num, jr->callsign, who_from, &Players[player_num])){
-			Int3();
-		}
+		multi_obs_create_player(net_player_num, jr->callsign, who_from, &Players[player_num]);
 
 		// copy his pilot image filename
 		if(jr->image_filename[0] != '\0'){
@@ -2455,15 +2448,13 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
 
 		// send the accept packet here
 		send_accept_packet(net_player_num, (Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN) ? ACCEPT_OBSERVER | ACCEPT_INGAME : ACCEPT_OBSERVER);
 	} else {
 		// create the player object	
-		if(!multi_create_player( net_player_num, &Players[player_num], jr->callsign, who_from, -1, id_num )){
-			Int3();
-		}
+		multi_create_player(net_player_num, &Players[player_num], jr->callsign, who_from, -1, id_num);
 		
 		// copy his pilot image filename
 		if(jr->image_filename[0] != '\0'){
@@ -2507,7 +2498,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}		
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(nullptr);
 
 		// if he's joining as a host (on the standalone)
 		if(Net_players[net_player_num].flags & NETINFO_FLAG_GAME_HOST){
@@ -2632,7 +2623,7 @@ int multi_process_restricted_keys(int k)
 	
 	// illegal mode
 	default :
-		Int3();
+		Error(LOCATION, "An invalid value for Multi_join_restr_mode was set, probably by a corrupted packet or by some other packet error.");
 	}	
 
 	// check the keypress
@@ -2669,7 +2660,6 @@ int multi_process_restricted_keys(int k)
 		// illegal mode
 		default :
 			team_val = -1;	// JAS: Get rid of optimized warning
-			Int3();
 		}				
 
 		// perform the proper response	
@@ -2915,19 +2905,19 @@ void multi_get_mission_checksum(const char *filename)
 
 	// get the filename
 	in = cfopen(filename,"rb");
-	if(in != NULL){
+	if(in != nullptr){
 		// get the length of the file
 		Multi_current_file_length = cfilelength(in);
 		cfclose(in);
 
 		in = cfopen(filename,"rb");
-		if(in != NULL){
+		if(in != nullptr){
 			// get the checksum of the file
 			cf_chksum_short(in,&Multi_current_file_checksum);
 
 			// close the file
 			cfclose(in);
-			in = NULL;
+			in = nullptr;
 		}
 		// if the file doesn't exist, setup some special values, so the server recognizes this
 		else {
@@ -2945,14 +2935,13 @@ void multi_get_mission_checksum(const char *filename)
 
 char multi_unit_to_char(float unit)
 {
+	Assertion((unit > 1.0f) && (unit < -1.0f), "Newly implemented function multi_unit_to_char() was passed a value %f, that it cannot handle.", unit);
 	char ret;
 	
 	if(unit > 1.0f){
-		Int3();
 		unit = 1.0f;
 	}
 	if(unit < -1.0f){
-		Int3();
 		unit = -1.0f;
 	}
 
@@ -2962,15 +2951,14 @@ char multi_unit_to_char(float unit)
 
 float multi_char_to_unit(float val)
 {
+	Assertion((val > 127.0f) && (val < -127.0f), "Newly implemented function multi_char_to_unit() was passed a value %f, that it cannot handle.", val);
 	float ret;
 
 	ret = (float)val / 127.0f;
 	if(ret > 1.0f){
-		Int3();
 		ret = 1.0f;
 	}
 	if(ret < -1.0f){
-		Int3();
 		ret = -1.0f;
 	}
 
@@ -2990,9 +2978,9 @@ int multi_get_connection_speed()
 	const char *connection_speed;
 
 #ifdef _WIN32	
-	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	
+	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "");	
 #else
-	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "Fast");
+	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "Fast");
 #endif
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
@@ -3201,7 +3189,7 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 
 	} else if (dc_optional_string("respawn_chump")){
 		// set a really large # of respawns
-		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if((Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Netgame.respawn = 9999;
 			Netgame.options.respawn = 9999;
 
@@ -3213,7 +3201,7 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 
 	} else if (dc_optional_string("ss_leaders")) {
 		// only host or team captains can modify ships
-		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if((Net_player != nullptr) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
 			multi_options_update_netgame();
 		}
@@ -3445,7 +3433,6 @@ int bitbuffer_get_signed( bitbuffer *bitbuf, int bit_count )
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
-// #define OO_POS_RET_SIZE							9
 int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 {
 	bitbuffer buf;
@@ -3486,57 +3473,8 @@ int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 	}
 }
 
-int degenerate_count = 0;
-int non_degenerate_count = 0;
-
-/*
-hack = ((ushort)orient->vec.fvec.x * 32767);
-			memcpy(&hack, &orient->vec.fvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.fvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.fvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );
-
-			memcpy(&hack, &orient->vec.uvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.uvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.uvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );
-
-			memcpy(&hack, &orient->vec.rvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.rvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.rvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );*/
-
-/*
-hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.z, &hack, 4);
-
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.z, &hack, 4);
-
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.z, &hack, 4);*/
-
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
-// #define OO_ORIENT_RET_SIZE						6
 int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 {
 	bitbuffer buf;
@@ -3561,7 +3499,6 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 		// degenerate case - send the whole orient matrix
 		vm_extract_angles_matrix(&ang, orient);	
 		if((ang.h > 3.130) && (ang.h < 3.150)){
-			degenerate_count++;
 
 			flag = 0xff;
 			
@@ -3596,7 +3533,6 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
 		} else {
-			non_degenerate_count++;
 				
 			vm_matrix_to_rot_axis_and_angle(orient, &theta, &rot_axis);		
 			// Have theta, which is an angle between 0 and PI.
@@ -3673,86 +3609,8 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 	}
 }
 
-
-// Packs/unpacks an orientation matrix.
-// Returns number of bytes read or written.
-// #define OO_ORIENT_RET_SIZE						6
-/*
-int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
-{
-	bitbuffer buf;
-
-	bitbuffer_init(&buf,data);
-
-	vec3d rot_axis;	
-	float theta;
-	int a, b, c, d;
-
-	if ( write )	{
-
-		// if our heading is 3.14 radians
-		//angles ang;
-		//vm_extract_angles_matrix(&a, orient);
-		//if((ang.h > 3.1300) && (ang.h < 3.1500)){			
-		//} else {
-
-			util_matrix_to_rot_axis_and_angle(orient, &theta, &rot_axis);		
-			// Have theta, which is an angle between 0 and PI.
-			// Convert it to be between -1.0f and 1.0f
-			theta = theta*2.0f/PI-1.0f;
-
-			#define SCALE 2048.0f
-
-			#define MAX_RANGE 2047
-			#define MIN_RANGE -2048
-
-			// -1 to 1
-			a = fl2i(rot_axis.x*SCALE); 
-			b = fl2i(rot_axis.y*SCALE);
-			c = fl2i(rot_axis.z*SCALE);
-			d = fl2i(theta*SCALE);
-
-			CAP(a,MIN_RANGE,MAX_RANGE);
-			CAP(b,MIN_RANGE,MAX_RANGE);
-			CAP(c,MIN_RANGE,MAX_RANGE);
-			CAP(d,MIN_RANGE,MAX_RANGE);
-		//}
-		
-		bitbuffer_put( &buf, (uint)a, 12 );
-		bitbuffer_put( &buf, (uint)b, 12 );
-		bitbuffer_put( &buf, (uint)c, 12 );
-		bitbuffer_put( &buf, (uint)d, 12 );
-
-		return bitbuffer_write_flush(&buf);
-
-	} else {
-
-		a = bitbuffer_get_signed(&buf,12);
-		b = bitbuffer_get_signed(&buf,12);
-		c = bitbuffer_get_signed(&buf,12);
-		d = bitbuffer_get_signed(&buf,12);
-
-		// special case		
-		rot_axis.x = i2fl(a)/SCALE;
-		rot_axis.y = i2fl(b)/SCALE;
-		rot_axis.z = i2fl(c)/SCALE;
-		theta = i2fl(d)/SCALE;
-			
-		// Convert theta back to range 0-PI
-		theta = (theta+1.0f)*PI_2;
-			
-		vm_quaternion_rotate(orient, theta, &rot_axis);		
-
-		vm_orthogonalize_matrix(orient);		
-
-		return bitbuffer_read_flush(&buf);
-	}
-}
-*/
-
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
-// #define OO_VEL_RET_SIZE							4
 int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
@@ -3800,7 +3658,6 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos
 
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
-// #define OO_DESIRED_VEL_RET_SIZE				3
 int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
@@ -3900,7 +3757,6 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d
 
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
-// #define OO_ROTVEL_RET_SIZE						4
 int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
@@ -3940,7 +3796,6 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d
 
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
-// #define OO_DESIRED_ROTVEL_RET_SIZE			3
 int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;

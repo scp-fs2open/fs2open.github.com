@@ -1,6 +1,10 @@
 
 #include "matrix.h"
 
+#include "graphics/util/UniformBuffer.h"
+
+#include <graphics/util/uniform_structs.h>
+
 transform_stack gr_model_matrix_stack;
 matrix4 gr_view_matrix;
 matrix4 gr_model_view_matrix;
@@ -11,16 +15,17 @@ matrix4 gr_last_view_matrix;
 matrix4 gr_texture_matrix;
 
 matrix4 gr_env_texture_matrix;
-static bool gr_env_texture_matrix_set = false;
 
 bool gr_htl_projection_matrix_set = false;
 
 static int modelview_matrix_depth = 1;
-static bool htl_view_matrix_set = false;
-static int htl_2d_matrix_depth = 0;
-static bool htl_2d_matrix_set = false;
+static bool htl_view_matrix_set   = false;
+static int htl_2d_matrix_depth    = 0;
+static bool htl_2d_matrix_set     = false;
 
-static matrix4 create_view_matrix(const vec3d *pos, const matrix *orient)
+static bool matrix_uniform_up_to_date = false;
+
+static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
 	vec3d scaled_pos;
 	vec3d inv_pos;
@@ -82,6 +87,8 @@ void gr_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	modelview_matrix_depth++;
+
+	matrix_uniform_up_to_date = false;
 }
 
 void gr_start_angles_instance_matrix(const vec3d *pos, const angles *rotation)
@@ -104,6 +111,8 @@ void gr_end_instance_matrix()
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
 
 	modelview_matrix_depth--;
+
+	matrix_uniform_up_to_date = false;
 }
 
 // the projection matrix; fov, aspect ratio, near, far
@@ -127,6 +136,8 @@ void gr_set_proj_matrix(float fov, float aspect, float z_near, float z_far) {
 	}
 
 	gr_htl_projection_matrix_set = true;
+
+	matrix_uniform_up_to_date = false;
 }
 
 void gr_end_proj_matrix() {
@@ -142,6 +153,8 @@ void gr_end_proj_matrix() {
 	}
 
 	gr_htl_projection_matrix_set = false;
+
+	matrix_uniform_up_to_date = false;
 }
 
 void gr_set_view_matrix(const vec3d *pos, const matrix *orient)
@@ -154,8 +167,6 @@ void gr_set_view_matrix(const vec3d *pos, const matrix *orient)
 	gr_model_view_matrix = gr_view_matrix;
 
 	if (Cmdline_env) {
-		gr_env_texture_matrix_set = true;
-
 		// setup the texture matrix which will make the the envmap keep lined
 		// up properly with the environment
 
@@ -177,6 +188,8 @@ void gr_set_view_matrix(const vec3d *pos, const matrix *orient)
 
 	modelview_matrix_depth = 2;
 	htl_view_matrix_set = true;
+
+	matrix_uniform_up_to_date = false;
 }
 
 void gr_end_view_matrix()
@@ -189,7 +202,8 @@ void gr_end_view_matrix()
 
 	modelview_matrix_depth = 1;
 	htl_view_matrix_set = false;
-	gr_env_texture_matrix_set = false;
+
+	matrix_uniform_up_to_date = false;
 }
 
 // set a view and projection matrix for a 2D element
@@ -228,6 +242,8 @@ void gr_set_2d_matrix(/*int x, int y, int w, int h*/)
 
 	htl_2d_matrix_set = true;
 	htl_2d_matrix_depth++;
+
+	matrix_uniform_up_to_date = false;
 }
 
 // ends a previously set 2d view and projection matrix
@@ -252,6 +268,8 @@ void gr_end_2d_matrix()
 
 	htl_2d_matrix_set = false;
 	htl_2d_matrix_depth = 0;
+
+	matrix_uniform_up_to_date = false;
 }
 
 static bool scale_matrix_set = false;
@@ -269,6 +287,8 @@ void gr_push_scale_matrix(const vec3d *scale_factor)
 
 	auto model_matrix = gr_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&gr_model_view_matrix, &gr_view_matrix, &model_matrix);
+
+	matrix_uniform_up_to_date = false;
 }
 
 void gr_pop_scale_matrix()
@@ -283,6 +303,8 @@ void gr_pop_scale_matrix()
 
 	modelview_matrix_depth--;
 	scale_matrix_set = false;
+
+	matrix_uniform_up_to_date = false;
 }
 void gr_setup_viewport() {
 	if (Gr_inited) {
@@ -300,6 +322,8 @@ void gr_setup_viewport() {
 	} else {
 		create_orthographic_projection_matrix(&gr_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1, 1);
 	}
+
+	matrix_uniform_up_to_date = false;
 }
 void gr_reset_matrices() {
 	vm_matrix4_set_identity(&gr_projection_matrix);
@@ -312,12 +336,43 @@ void gr_reset_matrices() {
 	gr_model_matrix_stack.clear();
 
 	vm_matrix4_set_identity(&gr_texture_matrix);
+
+	matrix_uniform_up_to_date = false;
 }
 
-void gr_set_texture_panning(float u, float v, bool enable) {
+void gr_set_texture_panning(float u, float v, bool enable)
+{
 	vm_matrix4_set_identity(&gr_texture_matrix);
 	if (enable) {
 		gr_texture_matrix.a2d[3][0] = u;
 		gr_texture_matrix.a2d[3][1] = v;
 	}
+}
+
+void gr_matrix_on_frame()
+{
+	// The old uniform state is now out of date and should not be used anymore
+	matrix_uniform_up_to_date = false;
+}
+void gr_matrix_set_uniforms()
+{
+	if (matrix_uniform_up_to_date) {
+		// No changes since last time, no need to update
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Updating matrix uniforms");
+
+	auto uniform_buffer = gr_get_uniform_buffer(uniform_block_type::Matrices, 1);
+	auto& aligner       = uniform_buffer.aligner();
+
+	auto matrix_data             = aligner.addTypedElement<graphics::matrix_uniforms>();
+	matrix_data->modelViewMatrix = gr_model_view_matrix;
+	matrix_data->projMatrix      = gr_projection_matrix;
+
+	uniform_buffer.submitData();
+	gr_bind_uniform_buffer(uniform_block_type::Matrices, uniform_buffer.getBufferOffset(0),
+	                       sizeof(graphics::matrix_uniforms), uniform_buffer.bufferHandle());
+
+	matrix_uniform_up_to_date = true;
 }

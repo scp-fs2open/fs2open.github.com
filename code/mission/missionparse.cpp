@@ -2372,8 +2372,12 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!(Game_mode & GM_IN_MISSION) || (Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM || Warp_params[shipp->warpin_params_index].warp_type == WT_HYPERSPACE))
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
-			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
-			Objects[objnum].phys_info.prev_ramp_vel = Objects[objnum].phys_info.vel;
+			// prev_ramp_vel needs to be in local coordinates
+			// set z of prev_ramp_vel to initial velocity
+			vm_vec_zero(&Objects[objnum].phys_info.prev_ramp_vel);
+			Objects[objnum].phys_info.prev_ramp_vel.xyz.z = Objects[objnum].phys_info.speed;
+			// convert to global coordinates and set to ship velocity and desired velocity
+			vm_vec_unrotate(&Objects[objnum].phys_info.vel, &Objects[objnum].phys_info.prev_ramp_vel, &Objects[objnum].orient);
 			Objects[objnum].phys_info.desired_vel = Objects[objnum].phys_info.vel;
 		}
 
@@ -4869,19 +4873,33 @@ void parse_event(mission * /*pm*/)
 
 	if ( optional_string("+Repeat Count:")){
 		stuff_int( &(event->repeat_count) );
+
+		// sanity check on the repeat count variable
+		// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
+		if ( event->repeat_count == 0 ){
+			Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			event->repeat_count = 1;
+		}
 	} else {
 		event->repeat_count = 1;
 	}
 
 	if ( optional_string("+Trigger Count:")){
 		stuff_int( &(event->trigger_count) );
+		event->flags |= MEF_USING_TRIGGER_COUNT; 
+
 		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
 		if (event->repeat_count == 1) {
 			event->repeat_count = -1;
 		}
-		event->flags |= MEF_USING_TRIGGER_COUNT; 
-	} 
-	else {
+
+		// sanity check on the trigger count variable
+		// negative trigger count is also legal
+		if ( event->trigger_count == 0 ){
+			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			event->trigger_count = 1;
+		}
+	} else {
 		event->trigger_count = 1;
 	}
 
@@ -4945,12 +4963,6 @@ void parse_event(mission * /*pm*/)
 	}
 
 	event->timestamp = timestamp(-1);
-
-	// sanity check on the repeat count variable
-	// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
-	if ( event->repeat_count == 0 ){
-		Error (LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!", event->name );
-	}
 }
 
 void parse_events(mission *pm)
@@ -5756,8 +5768,9 @@ bool post_process_mission()
 	Player_ai->targeted_subsys_parent = -1;
 
 	// determine if player start has initial velocity and set forward cruise percent to relect this
-	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
-		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
+	// this should check prev_ramp_vel because that is in local coordinates --wookieejedi
+	if ( Player_obj->phys_info.prev_ramp_vel.xyz.z > 0.0f )
+		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
 	// set up wing indexes
 	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {

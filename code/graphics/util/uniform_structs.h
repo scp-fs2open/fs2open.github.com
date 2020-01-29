@@ -22,7 +22,6 @@ struct deferred_global_data {
 	float middist;
 	float fardist;
 
-	float specFactor;
 	float invScreenWidth;
 	float invScreenHeight;
 
@@ -203,6 +202,11 @@ struct decal_info {
 	int glow_blend_mode;
 
 	float pad;
+};
+
+struct matrix_uniforms {
+	matrix4 modelViewMatrix;
+	matrix4 projMatrix;
 };
 
 }

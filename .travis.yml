@@ -87,7 +87,7 @@ matrix:
             - g++-9
             - *global_deps
     - os: linux
-      env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCLANG_USE_LIBCXX=ON"
       addons:
         apt:
           sources:
@@ -97,9 +97,18 @@ matrix:
           packages:
             - *global_deps
             - clang-4.0
-            - clang-tidy-8
             - libc++-dev
             - libc++abi-dev
+    - os: linux
+      env: CONFIGURATION="Debug" CC=clang-9 CXX=clang++-9 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-xenial'
+          packages:
+            - *global_deps
+            - g++-9
       script:
         - ./ci/travis/script.sh
         - ./ci/travis/clang_tidy.sh
@@ -132,23 +141,42 @@ matrix:
             - g++-9
             - *global_deps
     - os: linux
-      env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0
+      env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCLANG_USE_LIBCXX=ON"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-4
+            - llvm-toolchain-xenial-8
             - sourceline: 'ppa:beineri/opt-qt571-xenial'
           packages:
             - *global_deps
             - clang-4.0
             - libc++-dev
             - libc++abi-dev
+    - os: linux
+      env: CONFIGURATION="Release" CC=clang-9 CXX=clang++-9 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-xenial'
+          packages:
+            - *global_deps
+            - g++-9
+      script:
+        - ./ci/travis/script.sh
+        - ./ci/travis/clang_tidy.sh
     - os: osx
       env: CONFIGURATION="Release"
 
     - os: windows
       env: CONFIGURATION="Release" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+    - os: windows
+      env: CONFIGURATION="Release" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
+  # There is a GCC compiler bug with MinGW that causes compilation failures on Windows at the moment
+  allow_failures:
+    - os: windows
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
     - os: windows
       env: CONFIGURATION="Release" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
   fast_finish: true

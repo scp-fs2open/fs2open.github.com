@@ -24,7 +24,6 @@ layout (std140) uniform globalDeferredData {
 	float middist;
 	float fardist;
 
-	float specFactor;
 	float invScreenWidth;
 	float invScreenHeight;
 };

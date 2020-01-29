@@ -25,6 +25,7 @@
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -1132,7 +1133,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(first_time)
 	{
 		wip->dinky_shockwave = wip->shockwave;
-		wip->dinky_shockwave.damage /= 4.0f;
+		wip->dinky_shockwave.damage *= Dinky_shockwave_default_multiplier;
 	}
 
 	if(optional_string("$Dinky shockwave:"))
@@ -4224,94 +4225,98 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		vm_vec_zero(&target_pos);
 
-		// the homing missile may be seeking a subsystem on a ship.  If so, we need to calculate the
-		// world coordinates of that subsystem so the homing missile can seek it out.
-		//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
-		//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
-		if ( (wp->homing_subsys != NULL) && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) && hobjp->type == OBJ_SHIP) {
-			get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
-			wp->homing_pos = target_pos;	// store the homing position in weapon data
-			Assert( !vm_is_vec_nan(&wp->homing_pos) );
+		if (wp->weapon_flags[Weapon::Weapon_Flags::Overridden_homing]) {
+			target_pos = wp->homing_pos;
 		} else {
-			float	fov;
-			float	dist;
+			// the homing missile may be seeking a subsystem on a ship.  If so, we need to calculate the
+			// world coordinates of that subsystem so the homing missile can seek it out.
+			//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
+			//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
+			if ((wp->homing_subsys != nullptr) && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) &&
+			    hobjp->type == OBJ_SHIP) {
+				get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
+				wp->homing_pos = target_pos; // store the homing position in weapon data
+				Assert(!vm_is_vec_nan(&wp->homing_pos));
+			} else {
+				float fov;
+				float dist;
 
-			dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-			if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure]))
-			{
-				if (dist < hobj_infop->cm_detonation_rad)
-				{
-					//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
-					if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
-						detonate_nearby_missiles(hobjp, obj);
-						return;
-					}
-				}
-			}
-
-			fov = -1.0f;
-
-			int pick_homing_point = 0;
-			if ( IS_VEC_NULL(&wp->homing_pos) ) {
-				pick_homing_point = 1;
-			}
-
-			//	Update homing position if it hasn't been set, you're within 500 meters, or every half second, approximately.
-			//	For large objects, don't lead them.
-			if (hobjp->radius < 40.0f) {
-				target_pos = hobjp->pos;
-				wp->homing_pos = target_pos;
-			} else if ( pick_homing_point || (dist < 500.0f) || (rand_chance(flFrametime, 2.0f)) ) {
-
-				if (hobjp->type == OBJ_SHIP) {
-					if ( !pick_homing_point ) {
-						// ensure that current attack point is only updated in world coords (ie not pick a different vertex)
-						wp->pick_big_attack_point_timestamp = 0;
-					}
-
-					if ( pick_homing_point && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) ) {
-						// If *any* player is parent of homing missile, then use position where lock indicator is
-						if ( Objects[obj->parent].flags[Object::Object_Flags::Player_ship] ) {
-							player *pp;
-
-							// determine the player
-							pp = Player;
-
-							if ( Game_mode & GM_MULTIPLAYER ) {
-								int pnum;
-
-								pnum = multi_find_player_by_object( &Objects[obj->parent] );
-								if ( pnum != -1 ){
-									pp = Net_players[pnum].m_player;
-								}
-							}
-
-							// If player has apect lock, we don't want to find a homing point on the closest
-							// octant... setting the timestamp to 0 ensures this.
-							if (wip->is_locked_homing()) {
-								wp->pick_big_attack_point_timestamp = 0;
-							} else {
-								wp->pick_big_attack_point_timestamp = 1;
-							}
-
-							if ( pp && pp->locking_subsys ) {
-								wp->big_attack_point = pp->locking_subsys->system_info->pnt;
-							} else {
-								vm_vec_zero(&wp->big_attack_point);
-							}
+				dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
+				if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure])) {
+					if (dist < hobj_infop->cm_detonation_rad) {
+						//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
+						if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
+							detonate_nearby_missiles(hobjp, obj);
+							return;
 						}
 					}
-
-					ai_big_pick_attack_point(hobjp, obj, &target_pos, fov);
-
-				} else {
-					target_pos = hobjp->pos;
 				}
 
-				wp->homing_pos = target_pos;
-				Assert( !vm_is_vec_nan(&wp->homing_pos) );
-			} else
-				target_pos = wp->homing_pos;
+				fov = -1.0f;
+
+				int pick_homing_point = 0;
+				if (IS_VEC_NULL(&wp->homing_pos)) {
+					pick_homing_point = 1;
+				}
+
+				//	Update homing position if it hasn't been set, you're within 500 meters, or every half second,
+				//approximately. 	For large objects, don't lead them.
+				if (hobjp->radius < 40.0f) {
+					target_pos     = hobjp->pos;
+					wp->homing_pos = target_pos;
+				} else if (pick_homing_point || (dist < 500.0f) || (rand_chance(flFrametime, 2.0f))) {
+
+					if (hobjp->type == OBJ_SHIP) {
+						if (!pick_homing_point) {
+							// ensure that current attack point is only updated in world coords (ie not pick a different
+							// vertex)
+							wp->pick_big_attack_point_timestamp = 0;
+						}
+
+						if (pick_homing_point && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing])) {
+							// If *any* player is parent of homing missile, then use position where lock indicator is
+							if (Objects[obj->parent].flags[Object::Object_Flags::Player_ship]) {
+								player* pp;
+
+								// determine the player
+								pp = Player;
+
+								if (Game_mode & GM_MULTIPLAYER) {
+									int pnum;
+
+									pnum = multi_find_player_by_object(&Objects[obj->parent]);
+									if (pnum != -1) {
+										pp = Net_players[pnum].m_player;
+									}
+								}
+
+								// If player has apect lock, we don't want to find a homing point on the closest
+								// octant... setting the timestamp to 0 ensures this.
+								if (wip->is_locked_homing()) {
+									wp->pick_big_attack_point_timestamp = 0;
+								} else {
+									wp->pick_big_attack_point_timestamp = 1;
+								}
+
+								if (pp && pp->locking_subsys) {
+									wp->big_attack_point = pp->locking_subsys->system_info->pnt;
+								} else {
+									vm_vec_zero(&wp->big_attack_point);
+								}
+							}
+						}
+
+						ai_big_pick_attack_point(hobjp, obj, &target_pos, fov);
+
+					} else {
+						target_pos = hobjp->pos;
+					}
+
+					wp->homing_pos = target_pos;
+					Assert(!vm_is_vec_nan(&wp->homing_pos));
+				} else
+					target_pos = wp->homing_pos;
+			}
 		}
 
 		//	Couldn't find a lock.
@@ -5530,10 +5535,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	weapon_update_state(wp);
 
-	object* weapon_obj = &Objects[objnum];
-	Script_system.SetHookObjects(1, "Weapon", weapon_obj);
-	Script_system.RunCondition(CHA_ONWEAPONCREATED, weapon_obj);
-	Script_system.RemHookVars(1, "Weapon");
+	Script_system.SetHookObject("Weapon", &Objects[objnum]);
+	Script_system.RunCondition(CHA_ONWEAPONCREATED);
+	Script_system.RemHookVar("Weapon");
 
 	return objnum;
 }

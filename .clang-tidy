@@ -4,7 +4,8 @@ modernize-*,\
 -modernize-raw-string-literal,\
 -modernize-use-using,\
 -modernize-make-unique,\
--modernize-use-trailing-return-type\
+-modernize-use-trailing-return-type,\
+-modernize-avoid-c-arrays,\
 performance-*,\
 -performance-type-promotion-in-math-fn,\
 misc-*,\
@@ -12,7 +13,7 @@ misc-*,\
 -misc-misplaced-widening-cast,\
 -misc-static-assert,\
 -misc-unused-parameters,\
--modernize-make-unique,\
+-misc-non-private-member-variables-in-classes,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'

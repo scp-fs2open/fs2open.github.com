@@ -45,6 +45,7 @@
 #include "network/multi_campaign.h"
 #include "network/multi_team.h"
 #include "network/multi_pinfo.h"
+#include "network/multi_portfwd.h"
 #include "network/multi_observer.h"
 #include "network/multi_voice.h"
 #include "network/multi_endgame.h"
@@ -4141,7 +4142,10 @@ void multi_create_do_netstuff()
 void multi_create_init_as_server()
 {
 	// set me up as the host and master
-	Net_player->flags |= (NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_GAME_HOST);		
+	Net_player->flags |= (NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_GAME_HOST);
+
+	// setup port forwarding
+	multi_port_forward_init();
 }
 
 // if on a standalone
@@ -8105,9 +8109,6 @@ void multi_sync_post_init()
 
 	// everyone should re-initialize these 
 	init_multiplayer_stats();
-
-	// reset all sequencing info
-	multi_oo_reset_sequencing();
 
 	// if I am not the master of the game, then send the firing information for my ship
 	// to the host

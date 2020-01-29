@@ -48,12 +48,14 @@ SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
+float Dinky_shockwave_default_multiplier;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+bool Use_engine_wash_intensity;
 
 void parse_mod_table(const char *filename)
 {
@@ -497,6 +499,17 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Dinky Shockwave Default Multiplier:")) {
+			stuff_float(&Dinky_shockwave_default_multiplier);
+			if (Dinky_shockwave_default_multiplier != 1.0f) {
+				mprintf(("Game Settings Table: Setting default dinky shockwave multiplier to %.2f.\n", Dinky_shockwave_default_multiplier));
+			}
+		}
+
+		if (optional_string("$Use Engine Wash Intensity:")) {
+			stuff_boolean(&Use_engine_wash_intensity);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -557,10 +570,12 @@ void mod_table_reset() {
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = false;
+	Dinky_shockwave_default_multiplier = 1.0f;
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
 	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	Use_engine_wash_intensity = false;
 }

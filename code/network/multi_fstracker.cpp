@@ -117,6 +117,9 @@ static pxo_net_game_data Multi_tracker_game_data;
 static vmt_stats_struct Multi_tracker_fs_pilot;
 static squad_war_response Multi_tracker_sw_response;
 
+#define PXO_DEFAULT_TRACKER "tracker.pxo.nottheeye.com"
+#define PXO_WEBSITE_URL "http://pxo.nottheeye.com"	// NOTE: *must* be http: for compatiblity
+
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER DEFINITIONS
 //
@@ -1526,3 +1529,53 @@ int multi_fs_tracker_store_sw(squad_war_result *sw_res, char * /*bad_reply*/, co
 	return 0;
 }
 
+// verify and possibly update Multi_options_g with sane PXO values
+void multi_fs_tracker_verify_options()
+{
+	bool override = false;
+
+	// if any tracker ip is missing, force update
+	if ( !strlen(Multi_options_g.user_tracker_ip) || !strlen(Multi_options_g.game_tracker_ip)
+		 || !strlen(Multi_options_g.pxo_ip)	)
+	{
+		override = true;
+	}
+
+	// if user tracker ip is set to retail setting, force update
+	if ( !override && !strcmp(Multi_options_g.user_tracker_ip, "ut.pxo.net") ) {
+		override = true;
+	}
+
+	// if user tracker ip is set to FS2NetD, force update
+	if ( !override && !strcmp(Multi_options_g.user_tracker_ip, "fs2netd.game-warden.com") ) {
+		override = true;
+	}
+
+	if ( !override ) {
+		return;
+	}
+
+	//
+	// update required options
+	//
+
+	strcpy_s(Multi_options_g.user_tracker_ip, PXO_DEFAULT_TRACKER);
+	strcpy_s(Multi_options_g.game_tracker_ip, PXO_DEFAULT_TRACKER);
+	strcpy_s(Multi_options_g.pxo_ip, PXO_DEFAULT_TRACKER);
+
+	//
+	// update optional urls
+	//
+
+	strcpy_s(Multi_options_g.pxo_rank_url, PXO_WEBSITE_URL);
+	strcat_s(Multi_options_g.pxo_rank_url, "/rankings");
+
+	strcpy_s(Multi_options_g.pxo_create_url, PXO_WEBSITE_URL);
+	strcat_s(Multi_options_g.pxo_create_url, "/register");
+
+	strcpy_s(Multi_options_g.pxo_verify_url, PXO_WEBSITE_URL);
+	strcat_s(Multi_options_g.pxo_verify_url, "/account");
+
+	strcpy_s(Multi_options_g.pxo_banner_url, PXO_WEBSITE_URL);
+	strcat_s(Multi_options_g.pxo_banner_url, "/files/banners");
+}

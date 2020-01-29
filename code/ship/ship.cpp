@@ -4738,27 +4738,46 @@ static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
 	return NULL;
 }
 
-static void parse_ship_type()
+static void parse_ship_type(const char *filename, const bool replace)
 {
 	char name_buf[NAME_LENGTH];
-	bool nocreate = false;
-	ship_type_info stp_buf, *stp = NULL;
+	bool create_if_not_found = true;
+	ship_type_info *stp = nullptr;
 
 	required_string("$Name:");
 	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 
 	if(optional_string("+nocreate")) {
-		nocreate = true;
+		if(!replace) {
+			Warning(LOCATION, "+nocreate flag used for ship type '%s' in non-modular table", name_buf);
+		}
+		create_if_not_found = false;
 	}
 
 	int idx = ship_type_name_lookup(name_buf);
 	if (idx >= 0)
 	{
+		if (!replace)
+		{
+			Warning(LOCATION, "ship type '%s' already exists in %s; ship type names must be unique.", name_buf, filename);
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+				Int3();
+			}
+			return;
+		}
 		stp = &Ship_types[idx];
 	}
 	else
 	{
-		stp = &stp_buf;
+		if (!create_if_not_found && replace)
+		{
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+				Int3();
+			}
+			return;
+		}
+		Ship_types.push_back(ship_type_info());
+		stp = &Ship_types.back();
 		strcpy_s(stp->name, name_buf);
 	}
 
@@ -4776,7 +4795,7 @@ static void parse_ship_type()
 	}
 
 	if (ship_type != NULL) {
-		Warning(LOCATION, "Bad ship type name in objecttypes.tbl\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin objecttypes.tbl to fix this.\n", stp->name, ship_type);
+		Warning(LOCATION, "Bad ship type name in %s\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin %s to fix this.\n", filename, stp->name, ship_type, filename);
 	}
 
 	//Okay, now we should have the values to parse
@@ -4810,7 +4829,7 @@ static void parse_ship_type()
 				}
 			}
 			if (i == num_groups) {
-				Warning(LOCATION,"Unidentified priority group '%s' set for objecttype '%s'\n", target_group_strings[j].c_str(), stp->name);
+				Warning(LOCATION,"Unidentified priority group '%s' set for ship type '%s' in %s\n", target_group_strings[j].c_str(), stp->name, filename);
 			}
 		}
 	}
@@ -4953,14 +4972,11 @@ static void parse_ship_type()
 		stuff_float(&stp->vaporize_chance);
 		if (stp->vaporize_chance < 0.0f || stp->vaporize_chance > 100.0f) {
 			stp->vaporize_chance = 0.0f;
-			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f). Setting to 0.", stp->vaporize_chance);
+			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 100.0 (read %f) for ship type '%s' in %s. Setting to 0.", stp->vaporize_chance, stp->name, filename);
 		}
 		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 		stp->vaporize_chance /= 100.0;
 	}
-
-	if (!nocreate)
-		Ship_types.push_back(stp_buf);
 }
 
 static void parse_shiptype_tbl(const char *filename)
@@ -4993,7 +5009,7 @@ static void parse_shiptype_tbl(const char *filename)
 		if (optional_string("#Ship Types"))
 		{
 			while (required_string_either("#End", "$Name:"))
-				parse_ship_type();
+				parse_ship_type(filename ? filename : "built-in objecttypes.tbl", Parsing_modular_table);
 
 			required_string("#End");
 		}
@@ -9372,7 +9388,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
 	// or if specified ship has exited, use a default name
-	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
+	// Cyborg17 - The final check here was supposed to prevent duplicate names from being on the mission log and causing chaos,
+	// but it breaks multi, so there will just be a warning on debug instead.
+	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
 		char suffix[NAME_LENGTH];
 		sprintf(suffix, NOX(" %d"), n);
 
@@ -9383,6 +9401,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
 		strcpy(shipp->ship_name + name_len, suffix);
 	} else {
+		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
+			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);
+		}
 		strcpy_s(shipp->ship_name, ship_name);
 	}
 
@@ -10179,8 +10200,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
 	if (!(Game_mode & GM_IN_MISSION) && !(Fred_running)) {
 		Objects[sp->objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
-		Objects[sp->objnum].phys_info.vel.xyz.z = Objects[sp->objnum].phys_info.speed;
-		Objects[sp->objnum].phys_info.prev_ramp_vel = Objects[sp->objnum].phys_info.vel;
+		// prev_ramp_vel needs to be in local coordinates
+		// set z of prev_ramp_vel to initial velocity
+		vm_vec_zero(&Objects[sp->objnum].phys_info.prev_ramp_vel);
+		Objects[sp->objnum].phys_info.prev_ramp_vel.xyz.z = Objects[sp->objnum].phys_info.speed;
+		// convert to global coordinates and set to ship velocity and desired velocity
+		vm_vec_unrotate(&Objects[sp->objnum].phys_info.vel, &Objects[sp->objnum].phys_info.prev_ramp_vel, &Objects[sp->objnum].orient);
 		Objects[sp->objnum].phys_info.desired_vel = Objects[sp->objnum].phys_info.vel;
 	}
 
@@ -10806,7 +10831,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			if (winfo_p->burst_flags[Weapon::Burst_Flags::Fast_firing])
 				fast_firing = true;
 		} else if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) {			// Random fire delay (DahBlount)
-			next_fire_delay = (((float)rand()) / (((float)RAND_MAX + 1.0f) * (winfo_p->max_delay - winfo_p->min_delay + 1.0f) + winfo_p->min_delay)) * 1000.0f;
+			next_fire_delay = frand_range(winfo_p->min_delay, winfo_p->max_delay) * 1000.0f;
 		} else {
 			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;

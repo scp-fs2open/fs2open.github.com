@@ -59,53 +59,56 @@ extern bool script_hook_valid(script_hook *hook);
 #define CHC_APPLICATION		11
 
 //Actions
-#define CHA_NONE			-1
-#define CHA_WARPOUT			0
-#define CHA_WARPIN			1
-#define CHA_DEATH			2
-#define CHA_ONFRAME			3
-#define CHA_COLLIDESHIP		4
-#define CHA_COLLIDEWEAPON	5
-#define CHA_COLLIDEDEBRIS	6
-#define CHA_COLLIDEASTEROID	7
-#define CHA_HUDDRAW			8
-#define CHA_OBJECTRENDER	9
-#define CHA_SPLASHSCREEN	10
-#define CHA_GAMEINIT		11
-#define CHA_MISSIONSTART	12
-#define CHA_MISSIONEND		13
-#define CHA_MOUSEMOVED		14
-#define CHA_MOUSEPRESSED	15
-#define CHA_MOUSERELEASED	16
-#define CHA_KEYPRESSED		17
-#define CHA_KEYRELEASED		18
-#define CHA_ONSTATESTART	19
-#define CHA_ONSTATEEND		20
-#define CHA_ONWEAPONDELETE	21
-#define CHA_ONWPEQUIPPED	22
-#define CHA_ONWPFIRED		23
-#define CHA_ONWPSELECTED	24
-#define CHA_ONWPDESELECTED	25
-#define CHA_GAMEPLAYSTART	26
-#define CHA_ONTURRETFIRED	27
-#define CHA_PRIMARYFIRE		28
-#define CHA_SECONDARYFIRE	29
-#define CHA_ONSHIPARRIVE	30
-#define CHA_COLLIDEBEAM		31
-#define CHA_ONACTION		32
-#define CHA_ONACTIONSTOPPED	33
-#define CHA_MSGRECEIVED		34
-#define CHA_HUDMSGRECEIVED	35
-#define CHA_AFTERBURNSTART	36
-#define CHA_AFTERBURNEND    37
-#define CHA_BEAMFIRE        38
-#define CHA_SIMULATION      39
-#define CHA_LOADSCREEN      40
-#define CHA_CMISSIONACCEPT  41
-#define CHA_ONSHIPDEPART	42
-#define CHA_ONWEAPONCREATED	43
-#define CHA_ONWAYPOINTSDONE	44
-#define CHA_ONSUBSYSDEATH	45
+enum ConditionalActions {
+	CHA_NONE            = -1,
+	CHA_WARPOUT         = 0,
+	CHA_WARPIN          = 1,
+	CHA_DEATH           = 2,
+	CHA_ONFRAME         = 3,
+	CHA_COLLIDESHIP     = 4,
+	CHA_COLLIDEWEAPON   = 5,
+	CHA_COLLIDEDEBRIS   = 6,
+	CHA_COLLIDEASTEROID = 7,
+	CHA_HUDDRAW         = 8,
+	CHA_OBJECTRENDER    = 9,
+	CHA_SPLASHSCREEN    = 10,
+	CHA_GAMEINIT        = 11,
+	CHA_MISSIONSTART    = 12,
+	CHA_MISSIONEND      = 13,
+	CHA_MOUSEMOVED      = 14,
+	CHA_MOUSEPRESSED    = 15,
+	CHA_MOUSERELEASED   = 16,
+	CHA_KEYPRESSED      = 17,
+	CHA_KEYRELEASED     = 18,
+	CHA_ONSTATESTART    = 19,
+	CHA_ONSTATEEND      = 20,
+	CHA_ONWEAPONDELETE  = 21,
+	CHA_ONWPEQUIPPED    = 22,
+	CHA_ONWPFIRED       = 23,
+	CHA_ONWPSELECTED    = 24,
+	CHA_ONWPDESELECTED  = 25,
+	CHA_GAMEPLAYSTART   = 26,
+	CHA_ONTURRETFIRED   = 27,
+	CHA_PRIMARYFIRE     = 28,
+	CHA_SECONDARYFIRE   = 29,
+	CHA_ONSHIPARRIVE    = 30,
+	CHA_COLLIDEBEAM     = 31,
+	CHA_ONACTION        = 32,
+	CHA_ONACTIONSTOPPED = 33,
+	CHA_MSGRECEIVED     = 34,
+	CHA_HUDMSGRECEIVED  = 35,
+	CHA_AFTERBURNSTART  = 36,
+	CHA_AFTERBURNEND    = 37,
+	CHA_BEAMFIRE        = 38,
+	CHA_SIMULATION      = 39,
+	CHA_LOADSCREEN      = 40,
+	CHA_CMISSIONACCEPT  = 41,
+	CHA_ONSHIPDEPART    = 42,
+	CHA_ONWEAPONCREATED = 43,
+	CHA_ONWAYPOINTSDONE = 44,
+	CHA_ONSUBSYSDEATH   = 45,
+	CHA_ONGOALSCLEARED  = 46,
+};
 
 // management stuff
 void scripting_state_init();
@@ -154,6 +157,58 @@ public:
 	bool Run(class script_state* sys, int action);
 };
 
+enum class ElementType {
+	Unknown,
+	Library,
+	Class,
+	Function,
+	Operator,
+	Property,
+};
+
+struct DocumentationElement {
+	ElementType type = ElementType::Unknown;
+
+	SCP_string name;
+	SCP_string shortName;
+
+	SCP_string description;
+
+	SCP_vector<std::unique_ptr<DocumentationElement>> children;
+};
+
+struct DocumentationElementClass : public DocumentationElement {
+	SCP_string superClass;
+};
+
+struct DocumentationElementProperty : public DocumentationElement {
+	scripting::ade_type_info getterType;
+	SCP_string setterType;
+
+	SCP_string returnDocumentation;
+};
+
+struct DocumentationElementFunction : public DocumentationElement {
+	scripting::ade_type_info returnType;
+	SCP_string parameters;
+
+	SCP_string returnDocumentation;
+};
+
+struct DocumentationEnum {
+	SCP_string name;
+	int value;
+};
+
+struct ScriptingDocumentation {
+	SCP_vector<SCP_string> conditions;
+	SCP_vector<SCP_string> actions;
+
+	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
+
+	SCP_vector<DocumentationEnum> enumerations;
+};
+
 //**********Main script_state function
 class script_state
 {
@@ -175,7 +230,8 @@ private:
 	void SetLuaSession(struct lua_State *L);
 
 	void OutputLuaMeta(FILE *fp);
-	
+	void OutputLuaDocumentation(ScriptingDocumentation& doc);
+
 	//Lua private helper functions
 	bool OpenHookVarTable();
 	bool CloseHookVarTable();
@@ -207,6 +263,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
+	ScriptingDocumentation OutputDocumentation();
 	int OutputMeta(const char *filename);
 
 	//***Moves data
@@ -381,6 +438,7 @@ void script_init();
 //**********Script globals
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
+extern bool Output_scripting_json;
 
 //*************************Conditional scripting*************************
 

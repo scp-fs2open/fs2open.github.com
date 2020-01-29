@@ -1103,8 +1103,8 @@ void pilotfile_convert::csg_export_cutscenes() {
 	size_t size = Cutscenes.size();
 	size_t viewableScenes = 0;
 	for (size_t j=0; j<size && j<32; ++j) {
-		if ( csg->cutscenes & (1<<j) ) {
-			Cutscenes.at(j).viewable = true;
+		if ( (j < Cutscenes.size()) && (csg->cutscenes & (1<<j)) ) {
+			Cutscenes.at(j).flags.set(Cutscene::Cutscene_Flags::Viewable);
 			viewableScenes++;
 		}
 	}
@@ -1115,9 +1115,10 @@ void pilotfile_convert::csg_export_cutscenes() {
 	// output cutscene data in new format
 	cfwrite_uint((uint)viewableScenes, cfp);
 
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			cfwrite_string_len(cut->filename, cfp);
+		}
 	}
 
 	endSection();

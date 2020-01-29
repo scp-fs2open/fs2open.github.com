@@ -116,7 +116,8 @@ ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation"
 	return ade_set_args(L, "s", sah->ga.filename);
 }
 
-ADE_FUNC(getFrameCount, l_streaminganim, NULL, "Get the number of frames in the animation.", "integer", "Total number of frames")
+ADE_FUNC(getFrameCount, l_streaminganim, nullptr, "Get the number of frames in the animation.", "number",
+         "Total number of frames")
 {
 	streaminganim_h* sah;
 
@@ -129,7 +130,8 @@ ADE_FUNC(getFrameCount, l_streaminganim, NULL, "Get the number of frames in the 
 	return ade_set_args(L, "i", sah->ga.num_frames);
 }
 
-ADE_FUNC(getFrameIndex, l_streaminganim, NULL, "Get the current frame index of the animation", "integer", "Current frame index")
+ADE_FUNC(getFrameIndex, l_streaminganim, nullptr, "Get the current frame index of the animation", "number",
+         "Current frame index")
 {
 	streaminganim_h* sah;
 
@@ -147,7 +149,8 @@ ADE_FUNC(getFrameIndex, l_streaminganim, NULL, "Get the current frame index of t
 	return ade_set_args(L, "i", ++cframe); // C++ to LUA array index
 }
 
-ADE_FUNC(getHeight, l_streaminganim, NULL, "Get the height of the animation in pixels", "integer", "Height or nil if invalid")
+ADE_FUNC(getHeight, l_streaminganim, nullptr, "Get the height of the animation in pixels", "number",
+         "Height or nil if invalid")
 {
 	streaminganim_h* sah;
 
@@ -160,7 +163,8 @@ ADE_FUNC(getHeight, l_streaminganim, NULL, "Get the height of the animation in p
 	return ade_set_args(L, "i", sah->ga.height);
 }
 
-ADE_FUNC(getWidth, l_streaminganim, NULL, "Get the width of the animation in pixels", "integer", "Width or nil if invalid")
+ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in pixels", "number",
+         "Width or nil if invalid")
 {
 	streaminganim_h* sah;
 
@@ -240,7 +244,7 @@ ADE_FUNC(reset, l_streaminganim, "[none]", "Reset a streaming animation back to 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(timeLeft, l_streaminganim, NULL, "Get the amount of time left in the animation, in seconds", "float", "Time left in secs or nil if invalid")
+ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the animation, in seconds", "number", "Time left in secs or nil if invalid")
 {
 	streaminganim_h* sah;
 

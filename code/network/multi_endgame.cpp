@@ -22,6 +22,7 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
+#include "network/multi_portfwd.h"
 #include "hud/hudconfig.h"
 #include "network/multi_fstracker.h"
 
@@ -386,6 +387,9 @@ void multi_endgame_cleanup()
 		if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
 			multi_fs_tracker_logout();
 		}
+
+		// stop port forwarding
+		multi_port_forward_close();
 
 		// if we're in Parallax Online mode, log back in there	
 		if (Multi_options_g.pxo == 1) {

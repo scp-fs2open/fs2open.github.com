@@ -70,6 +70,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
 	{ uniform_block_type::DecalInfo, "decalInfoData" },
 	{ uniform_block_type::DecalGlobals, "decalGlobalData" },
 	{ uniform_block_type::DeferredGlobals, "globalDeferredData" },
+	{ uniform_block_type::Matrices, "matrixData" },
 };
 
 /**
@@ -129,7 +130,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps" },
 
-	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", nullptr,
+	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material-v.sdr", "default-material-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material" },
 
 	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
@@ -1022,8 +1023,7 @@ void opengl_shader_set_passthrough(bool textured, bool hdr)
 
 	Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 }
 
 void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
@@ -1055,7 +1055,7 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 
 	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);
 
-	if ( clr != NULL ) {
+	if ( clr != nullptr ) {
 		Current_shader->program->Uniforms.setUniform4f("color", *clr);
 	} else {
 		Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -1076,7 +1076,6 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 	}
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 }
 

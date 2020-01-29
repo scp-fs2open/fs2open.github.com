@@ -1,28 +1,32 @@
-#include <cstdio>
-#include <cstdarg>
+#include "scripting/scripting.h"
+
+#include "ade.h"
+#include "freespace.h"
 
 #include "bmpman/bmpman.h"
 #include "controlconfig/controlsconfig.h"
-#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
 #include "hud/hud.h"
 #include "io/key.h"
+#include "libs/jansson.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "scripting/ade_args.h"
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-#include "ade.h"
+
+#include <cstdarg>
+#include <cstdio>
 
 using namespace scripting;
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
+bool Output_scripting_json = false;
 
 flag_def_list Script_conditions[] = 
 {
@@ -42,7 +46,8 @@ flag_def_list Script_conditions[] =
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
 
-flag_def_list Script_actions[] = 
+// clang-format off
+flag_def_list Script_actions[] =
 {
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
@@ -85,12 +90,14 @@ flag_def_list Script_actions[] =
 	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
 	{ "On Simulation",			CHA_SIMULATION,		0 },
 	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
-	{ "On Campaign Mission Accept", 	CHA_CMISSIONACCEPT,	0 },
+	{ "On Campaign Mission Accept", CHA_CMISSIONACCEPT,	0 },
     { "On Ship Depart",			CHA_ONSHIPDEPART,	0 },
 	{ "On Weapon Created",		CHA_ONWEAPONCREATED, 0},
 	{ "On Waypoints Done",		CHA_ONWAYPOINTSDONE, 0},
 	{ "On Subsystem Destroyed",	CHA_ONSUBSYSDEATH,	0},
+    {"On Goals Cleared",		CHA_ONGOALSCLEARED, 0},
 };
+// clang-format on
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 int scripting_state_inited = 0;
@@ -173,6 +180,140 @@ void script_parse_table(const char *filename)
 	}
 }
 
+static void json_doc_generate_class(json_t* elObj, const DocumentationElementClass* lib)
+{
+	json_object_set_new(elObj, "superClass", json_string(lib->superClass.c_str()));
+}
+static json_t* json_doc_generate_return_type(const scripting::ade_type_info& type_info)
+{
+	switch (type_info.getType()) {
+	case ade_type_info_type::Empty:
+		return json_string("void");
+	case ade_type_info_type::Simple:
+		return json_string(type_info.getSimpleName());
+	case ade_type_info_type::Tuple: {
+		json_t* tupleTypes = json_array();
+
+		for (const auto& type : type_info.elements()) {
+			json_array_append_new(tupleTypes, json_doc_generate_return_type(type));
+		}
+
+		return json_pack("{ssso}", "type", "tuple", "elements", tupleTypes);
+	}
+	case ade_type_info_type::Array: {
+		return json_pack("{ssso}",
+		                 "type",
+		                 "list",
+		                 "element",
+		                 json_doc_generate_return_type(type_info.elements().front()));
+	}
+	default:
+		UNREACHABLE("Unknown type type!");
+		return nullptr;
+	}
+
+}
+static void json_doc_generate_function(json_t* elObj, const DocumentationElementFunction* lib)
+{
+	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
+	json_object_set_new(elObj, "parameters", json_string(lib->parameters.c_str()));
+	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+}
+static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
+{
+	json_object_set_new(elObj, "getterType", json_doc_generate_return_type(lib->getterType));
+	json_object_set_new(elObj, "setterType", json_string(lib->setterType.c_str()));
+	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+}
+static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<DocumentationElement>>& elements);
+static json_t* json_doc_generate_element(const std::unique_ptr<DocumentationElement>& element)
+{
+	json_t* elementsObj = json_object();
+
+	json_object_set_new(elementsObj, "name", json_string(element->name.c_str()));
+	json_object_set_new(elementsObj, "shortName", json_string(element->shortName.c_str()));
+	json_object_set_new(elementsObj, "description", json_string(element->description.c_str()));
+
+	switch (element->type) {
+	case ElementType::Library:
+		json_object_set_new(elementsObj, "type", json_string("library"));
+		break;
+	case ElementType::Class:
+		json_object_set_new(elementsObj, "type", json_string("class"));
+		json_doc_generate_class(elementsObj, static_cast<DocumentationElementClass*>(element.get()));
+		break;
+	case ElementType::Function:
+		json_object_set_new(elementsObj, "type", json_string("function"));
+		json_doc_generate_function(elementsObj, static_cast<DocumentationElementFunction*>(element.get()));
+		break;
+	case ElementType::Operator:
+		json_object_set_new(elementsObj, "type", json_string("operator"));
+		json_doc_generate_function(elementsObj, static_cast<DocumentationElementFunction*>(element.get()));
+		break;
+	case ElementType::Property:
+		json_object_set_new(elementsObj, "type", json_string("property"));
+		json_doc_generate_property(elementsObj, static_cast<DocumentationElementProperty*>(element.get()));
+		break;
+	default:
+		json_object_set_new(elementsObj, "type", json_string("unknown"));
+		break;
+	}
+
+	json_object_set_new(elementsObj, "children", json_doc_generate_elements(element->children));
+
+	return elementsObj;
+}
+
+static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<DocumentationElement>>& elements)
+{
+	json_t* elementsArray = json_array();
+
+	for (const auto& el : elements) {
+		json_array_append_new(elementsArray, json_doc_generate_element(el));
+	}
+
+	return elementsArray;
+}
+
+static void documentation_to_json(const ScriptingDocumentation& doc)
+{
+	std::unique_ptr<json_t> root(json_object());
+
+	{
+		json_t* actionArray = json_array();
+
+		for (const auto& action : doc.actions) {
+			json_array_append_new(actionArray, json_string(action.c_str()));
+		}
+
+		json_object_set_new(root.get(), "actions", actionArray);
+	}
+	{
+		json_t* conditionArray = json_array();
+
+		for (const auto& cond : doc.conditions) {
+			json_array_append_new(conditionArray, json_string(cond.c_str()));
+		}
+
+		json_object_set_new(root.get(), "conditions", conditionArray);
+	}
+	{
+		json_t* enumObject = json_object();
+
+		for (const auto& enumVal : doc.enumerations) {
+			json_object_set_new(enumObject, enumVal.name.c_str(), json_integer(enumVal.value));
+		}
+
+		json_object_set_new(root.get(), "enums", enumObject);
+	}
+	json_object_set_new(root.get(), "elements", json_doc_generate_elements(doc.elements));
+
+	const auto jsonStr = json_dump_string(root.get(), JSON_INDENT(2) | JSON_SORT_KEYS);
+
+	std::ofstream outStr("scripting.json");
+	outStr << jsonStr;
+}
+
 //Initializes the (global) scripting system, as well as any subsystems.
 //script_close is handled by destructors
 void script_init()
@@ -182,10 +323,17 @@ void script_init()
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
 
-	if(Output_scripting_meta)
-	{
-		mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
-		Script_system.OutputMeta("scripting.html");
+	if (Output_scripting_meta || Output_scripting_json) {
+		const auto doc = Script_system.OutputDocumentation();
+
+		if (Output_scripting_meta) {
+			mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
+			Script_system.OutputMeta("scripting.html");
+		}
+		if (Output_scripting_json) {
+			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
+			documentation_to_json(doc);
+		}
 	}
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
 	script_parse_table("scripting.tbl");
@@ -422,7 +570,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									return false;
 								break;
 							}
-
+							default:
+								break;
 						}
 					} // case CHC_WEAPONCLASS
 					break;
@@ -540,6 +689,10 @@ void script_state::SetHookObject(const char *name, object *objp)
 
 void script_state::SetHookObjects(int num, ...)
 {
+	if (LuaState == nullptr) {
+		return;
+	}
+
 	va_list vl;
 	va_start(vl, num);
 	if(this->OpenHookVarTable())
@@ -639,7 +792,7 @@ void script_state::RemHookVar(const char *name)
 
 void script_state::RemHookVars(unsigned int num, ...)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
@@ -700,6 +853,11 @@ void script_state::UnloadImages()
 int script_state::RunCondition(int action, object* objp, int more_data)
 {
 	int num = 0;
+
+	if (LuaState == nullptr) {
+		return num;
+	}
+
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp, more_data))
@@ -735,7 +893,7 @@ void script_state::Clear()
 	// Free all lua value references
 	ConditionalHooks.clear();
 
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
 
 		lua_close(LuaState);
@@ -766,17 +924,40 @@ script_state::~script_state()
 
 void script_state::SetLuaSession(lua_State *L)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		lua_close(LuaState);
 	}
 	LuaState = L;
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
 		Langs |= SC_LUA;
 	}
 	else if(Langs & SC_LUA) {
 		Langs &= ~SC_LUA;
 	}
+}
+
+ScriptingDocumentation script_state::OutputDocumentation()
+{
+	ScriptingDocumentation doc;
+
+	// Conditions
+	doc.conditions.reserve(static_cast<size_t>(Num_script_conditions));
+	for (int32_t i = 0; i < Num_script_conditions; i++) {
+		doc.conditions.emplace_back(Script_conditions[i].name);
+	}
+
+	// Actions
+	doc.actions.reserve(static_cast<size_t>(Num_script_actions));
+	for (int32_t i = 0; i < Num_script_actions; i++) {
+		doc.actions.emplace_back(Script_actions[i].name);
+	}
+
+	if (Langs & SC_LUA) {
+		OutputLuaDocumentation(doc);
+	}
+
+	return doc;
 }
 
 int script_state::OutputMeta(const char *filename)

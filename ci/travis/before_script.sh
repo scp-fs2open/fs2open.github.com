@@ -18,10 +18,6 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
     CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
-    if [[ "$CC" =~ ^clang.*$ ]]; then
-        CXXFLAGS="$CXXFLAGS -stdlib=libc++"
-    fi
-
     export CXXFLAGS
     export CFLAGS
     CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON $CMAKE_OPTIONS"

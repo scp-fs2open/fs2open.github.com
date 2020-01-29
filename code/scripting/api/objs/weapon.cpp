@@ -148,7 +148,7 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh && newh->isSubsystemValid())
 		{
 			if(wp->turret_subsys != newh->ss)
 			{
@@ -254,7 +254,7 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh && newh->isSubsystemValid())
 		{
 			if(wp->target_sig != newh->sig)
 			{
@@ -293,6 +293,28 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 	return ade_set_args(L, "o", l_Team.Set(wp->team));
 }
 
+ADE_VIRTVAR(OverrideHoming, l_Weapon, "boolean",
+            "Whether homing is overridden for this weapon. When homing is overridden then the engine will not update "
+            "the homing position of the weapon which means that it can be handled by scripting.",
+            "boolean", "true if homing is overridden")
+{
+	object_h* oh = nullptr;
+	bool new_val = false;
+	if (!ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &new_val))
+		return ade_set_error(L, "b", false);
+
+	if (!oh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	weapon* wp = &Weapons[oh->objp->instance];
+
+	if (ADE_SETTING_VAR) {
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Overridden_homing, new_val);
+	}
+
+	return ade_set_args(L, "b", wp->weapon_flags[Weapon::Weapon_Flags::Overridden_homing]);
+}
+
 ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is armed.", "boolean", "boolean value of the weapon arming status")
 {
 	object_h *oh = NULL;
@@ -311,7 +333,8 @@ ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is arm
 	return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getCollisionInformation, l_Weapon, NULL, "Returns the collision information for this weapon", "collision info", "The collision information or invalid handle if none")
+ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision information for this weapon",
+         "collision_info", "The collision information or invalid handle if none")
 {
 	object_h *oh=NULL;
 	if(!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))

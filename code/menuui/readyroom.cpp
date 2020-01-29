@@ -1551,33 +1551,25 @@ void campaign_room_commit()
 	}
 
 	// new campaign selected?
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename) != 0) {
-		// Goober5000 - reinitialize tech database if needed
-		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
-		{
-			// reset tech database to what's in the tables
-			tech_reset_to_default();
-		}
+	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename) != 0)
+	{
+		strcpy_s(Player->current_campaign, Campaign_file_names[Selected_campaign_index]);  // track new campaign for player
 
+		// attempt to load the campaign
 		int load_status = mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
 
-		if (load_status == 0) {
-			strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
-
-			// sanity check: if we just loaded a savefile, but we have no next mission,
-			// then we are switching back to an old campaign that we previously completed,
-			// and we want to clear it to start afresh
-			if (Campaign.next_mission == -1) {
-				mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
-				Campaign.next_mission = 0;
+		// see if we successfully loaded this campaign and it's at the beginning
+		if (load_status == 0 && Campaign.prev_mission < 0)
+		{
+			// Goober5000 - reinitialize tech database if needed
+			if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2"))
+			{
+				// reset tech database to what's in the tables
+				tech_reset_to_default();
 			}
 		}
-		// TODO: other return values were never checked previously; do we need to check them???
-	}
 
-	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		return;
+		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the campaign in the ready room
 	}
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);

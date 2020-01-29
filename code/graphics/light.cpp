@@ -28,7 +28,7 @@ struct gr_light
 	// spotlight direction (for tube lights)
 	vec3d SpotDir;
 
-	float SpotExp, SpotCutOff;
+	float SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
 	int type;
@@ -70,8 +70,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->SpotDir.xyz.x = 0.0f;
 	GLLight->SpotDir.xyz.y = 0.0f;
 	GLLight->SpotDir.xyz.z = -1.0f;
-	// spot exponent
-	GLLight->SpotExp = Cmdline_ogl_spec * 0.5f;
 	// spot cutoff
 	GLLight->SpotCutOff = 180.0f; // special value, light in all directions
 	// defaults to disable attenuation
@@ -256,7 +254,6 @@ void gr_set_center_alpha(int type) {
 	glight.SpotDir.xyz.x = 0.0f;
 	glight.SpotDir.xyz.y = 0.0f;
 	glight.SpotDir.xyz.z = -1.0f;
-	glight.SpotExp = Cmdline_ogl_spec * 0.5f;
 	glight.SpotCutOff = 180.0f;
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;

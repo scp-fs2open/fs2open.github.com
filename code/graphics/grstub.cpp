@@ -86,19 +86,11 @@ void gr_stub_get_region(int  /*front*/, int  /*w*/, int  /*h*/, ubyte * /*data*/
 {
 }
 
-void gr_stub_pop_texture_matrix(int  /*unit*/)
-{
-}
-
 void gr_stub_preload_init()
 {
 }
 
 void gr_stub_print_screen(const char * /*filename*/)
-{
-}
-
-void gr_stub_push_texture_matrix(int  /*unit*/)
 {
 }
 
@@ -118,13 +110,9 @@ void gr_stub_save_mouse_area(int  /*x*/, int  /*y*/, int  /*w*/, int  /*h*/)
 {
 }
 
-void gr_stub_update_buffer_data(int  /*handle*/, size_t  /*size*/, void*  /*data*/)
-{
-}
+void gr_stub_update_buffer_data(int /*handle*/, size_t /*size*/, const void* /*data*/) {}
 
-void gr_stub_update_buffer_data_offset(int  /*handle*/, size_t  /*offset*/, size_t  /*size*/, void*  /*data*/)
-{
-}
+void gr_stub_update_buffer_data_offset(int /*handle*/, size_t /*offset*/, size_t /*size*/, const void* /*data*/) {}
 
 void gr_stub_update_transform_buffer(void*  /*data*/, size_t  /*size*/)
 {
@@ -166,10 +154,6 @@ void gr_stub_stuff_fog_coord(vertex * /*v*/)
 }
 
 void gr_stub_stuff_secondary_color(vertex * /*v*/, ubyte  /*fr*/, ubyte  /*fg*/, ubyte  /*fb*/)
-{
-}
-
-void gr_stub_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
 {
 }
 
@@ -361,6 +345,15 @@ bool gr_stub_is_capable(gr_capability  /*capability*/)
 {
 	return false;
 }
+bool gr_stub_get_property(gr_property p, void* dest)
+{
+	if (p == gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT) {
+		// This is required by the startup code of the uniform buffer manager
+		*reinterpret_cast<int*>(dest) = 4;
+		return true;
+	}
+	return false;
+};
 
 void gr_stub_push_debug_group(const char*){
 }
@@ -463,10 +456,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_preload			= gr_stub_preload;
 
-	gr_screen.gf_push_texture_matrix		= gr_stub_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix			= gr_stub_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix	= gr_stub_translate_texture_matrix;
-
 	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_stub_zbias_stub;
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
@@ -477,6 +466,8 @@ bool gr_stub_init()
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
+	gr_screen.gf_map_buffer                 = [](int) -> void* { return nullptr; };
+	gr_screen.gf_flush_mapped_buffer        = [](int, size_t, size_t) {};
 
 	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
@@ -520,7 +511,7 @@ bool gr_stub_init()
 	gr_screen.gf_render_rocket_primitives     = gr_stub_render_rocket_primitives;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
-	gr_screen.gf_get_property = [](gr_property,void*) { return false; };
+	gr_screen.gf_get_property = gr_stub_get_property;
 
 	gr_screen.gf_push_debug_group = gr_stub_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_stub_pop_debug_group;

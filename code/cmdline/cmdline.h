@@ -53,9 +53,7 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
-extern float Cmdline_ogl_spec;
 extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
@@ -70,7 +68,7 @@ extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
 extern int Cmdline_no_deferred_lighting;
-extern int Cmdline_no_emissive;
+extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 
 // Game Speed related
@@ -103,6 +101,7 @@ extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
 extern int Cmdline_objupd;
+extern char *Cmdline_gateway_ip;
 
 // Launcher related options
 extern bool Cmdline_portable_mode;
@@ -148,5 +147,6 @@ extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;
 extern bool Cmdline_debug_window;
+extern bool Cmdline_graphics_debug_output;
 
 #endif
