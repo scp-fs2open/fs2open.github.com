@@ -2234,11 +2234,8 @@ void process_netgame_descript_packet( ubyte *data, header *hinfo )
 void broadcast_game_query()
 {
 	int packet_size;
-	net_addr addr;	
 	server_item *s_moveup;
 	ubyte data[MAX_PACKET_SIZE];
-
-	BUILD_HEADER(GAME_QUERY);
 
 	if (MULTI_IS_TRACKER_GAME) {
 		// check with MT
@@ -2255,12 +2252,11 @@ void broadcast_game_query()
 		}
 	}
 
-	fill_net_addr(&addr, Psnet_my_addr.addr, DEFAULT_GAME_PORT);
-
 	// send out a broadcast if our options allow us
 	if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
+		BUILD_HEADER(GAME_QUERY);
 		psnet_broadcast(data, packet_size);
-	}		
+	}
 }
 
 // send an individual query to an address to see if there is an active game
