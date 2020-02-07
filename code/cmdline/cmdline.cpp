@@ -171,7 +171,6 @@ Flag exe_params[] =
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enable_shadows"},
 
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,									EASY_DEFAULT,					"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
-	{ "-no_fps_capping",	"Don't limit frames-per-second",			true,	0,									EASY_DEFAULT,					"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_fps_capping", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,									EASY_DEFAULT,					"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-dualscanlines",		"Add another pair of scanning lines",		true,	0,									EASY_DEFAULT,					"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dualscanlines", },
