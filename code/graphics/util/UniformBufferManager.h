@@ -69,9 +69,10 @@ class UniformBufferManager {
 	 *
 	 * @param type The type of the uniform data
 	 * @param num_elements The number of elements to be stored in that buffer
+	 * @param element_size_override Override the elemnt size
 	 * @return A uniform buffer which can be used for building the uniform buffer data
 	 */
-	UniformBuffer getUniformBuffer(uniform_block_type type, size_t num_elements);
+	UniformBuffer getUniformBuffer(uniform_block_type type, size_t num_elements, size_t element_size_override);
 
 	/**
 	 * @brief Submit finished uniform data to this manager

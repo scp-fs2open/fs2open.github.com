@@ -9,11 +9,22 @@ layout (std140) uniform matrixData {
 	mat4 projMatrix;
 };
 
-uniform vec4 color;
+layout (std140) uniform genericData {
+	mat4 modelMatrix;
 
-uniform mat4 modelMatrix;
-uniform bool clipEnabled;
-uniform vec4 clipEquation;
+	vec4 color;
+
+	vec4 clipEquation;
+
+	int baseMapIndex;
+	int alphaTexture;
+	int noTexturing;
+	int srgb;
+
+	float intensity;
+	float alphaThreshold;
+	bool clipEnabled;
+};
 
 void main()
 {

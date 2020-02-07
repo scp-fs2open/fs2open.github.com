@@ -1,14 +1,27 @@
 
 #include "gamma.sdr"
 
+const float EMISSIVE_GAIN = 2.0;
+
 in vec4 fragImpactUV;
 in float fragNormOffset;
-uniform vec4 color;
-uniform sampler2DArray shieldMap;
-uniform int shieldMapIndex;
-uniform int srgb;
+
 out vec4 fragOut0;
-#define EMISSIVE_GAIN 2.0
+
+uniform sampler2DArray shieldMap;
+
+layout (std140) uniform genericData {
+	mat4 shieldModelViewMatrix;
+	mat4 shieldProjMatrix;
+
+	vec3 hitNormal;
+	int srgb;
+
+	vec4 color;
+
+	int shieldMapIndex;
+};
+
 void main()
 {
 	if(fragNormOffset < 0.0) discard;

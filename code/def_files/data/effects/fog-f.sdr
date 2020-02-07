@@ -2,16 +2,20 @@
 #include "gamma.sdr"
 
 in vec4 fragTexCoord;
+
 out vec4 fragOut0;
 
 uniform sampler2D tex;
 uniform sampler2D depth_tex;
 
-uniform float fog_start;
-uniform float fog_scale;
-uniform vec3 fog_color;
-uniform float zNear;
-uniform float zFar;
+layout (std140) uniform genericData {
+	vec3 fog_color;
+	float fog_start;
+
+	float fog_scale;
+	float zNear;
+	float zFar;
+};
 
 void main()
 {

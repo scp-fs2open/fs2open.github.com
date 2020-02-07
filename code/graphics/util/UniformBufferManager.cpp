@@ -37,6 +37,7 @@ size_t getHeaderSize(uniform_block_type type)
 	case uniform_block_type::ModelData:
 	case uniform_block_type::NanoVGData:
 	case uniform_block_type::Matrices:
+	case uniform_block_type::GenericData:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
@@ -129,9 +130,13 @@ void UniformBufferManager::onFrameEnd()
 		}
 	}
 }
-UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, size_t num_elements)
+UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, size_t num_elements,
+                                                     size_t element_size_override)
 {
-	auto size = UniformAligner::getBufferSize(num_elements, (size_t)_offset_alignment, getElementSize(type),
+	if (element_size_override == 0) {
+		element_size_override = getElementSize(type);
+	}
+	auto size = UniformAligner::getBufferSize(num_elements, (size_t)_offset_alignment, element_size_override,
 	                                          getHeaderSize(type));
 
 	auto end_offset = _segment_offset + size;
@@ -146,7 +151,7 @@ UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, si
 		changeSegmentSize(_segment_size * 2);
 
 		// Try the stuff above again.
-		return getUniformBuffer(type, num_elements);
+		return getUniformBuffer(type, num_elements, element_size_override);
 	}
 
 	auto data_offset = _segment_size * _active_segment + _segment_offset;
@@ -155,7 +160,7 @@ UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, si
 	// Even in the persistent mapping case we still use a temporary buffer since writing to GPU memory is not very fast
 	// when doing a lot of small writes (e.g. when building model uniform data). Instead we use a shadow buffer and
 	// do a single memcpy when we are done
-	return UniformBuffer(this, data_offset, _shadow_uniform_buffer.get() + data_offset, size, getElementSize(type),
+	return UniformBuffer(this, data_offset, _shadow_uniform_buffer.get() + data_offset, size, element_size_override,
 	                     getHeaderSize(type), static_cast<size_t>(_offset_alignment));
 }
 void UniformBufferManager::changeSegmentSize(size_t new_size)

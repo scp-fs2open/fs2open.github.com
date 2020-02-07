@@ -241,6 +241,7 @@ enum class uniform_block_type {
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
 	Matrices = 6,
+	GenericData = 7,
 
 	NUM_BLOCK_TYPES
 };
@@ -1217,9 +1218,12 @@ enum AnimatedShader {
  * @brief Retreives a uniform buffer for storing uniform block data
  * @param type The type of uniform data that will be stored in the buffer
  * @param num_elements The number of elements that will be used in the buffer
+ * @param element_size_override Override what the size of the element should be instead of relying on the preconfigured
+ * size for that block type
  * @return A structure which gives access to a memory buffer where the uniform data can be stored
  */
-graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements);
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements,
+                                                    size_t element_size_override = 0);
 
 struct VideoModeData {
 	uint32_t width = 0;

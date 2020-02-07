@@ -1,36 +1,25 @@
 in vec4 fragTexCoord;
+
 out vec4 fragOut0;
+
 uniform sampler2D tex;
-uniform float timer;
-#ifdef FLAG_DISTORT_NOISE
-uniform float noise_amount;
-#endif
-#ifdef FLAG_SATURATION
-uniform float saturation;
-#endif
-#ifdef FLAG_BRIGHTNESS
-uniform float brightness;
-#endif
-#ifdef FLAG_CONTRAST
-uniform float contrast;
-#endif
-#ifdef FLAG_GRAIN
-uniform float film_grain;
-#endif
-#ifdef FLAG_STRIPES
-uniform float tv_stripes;
-#endif
-#ifdef FLAG_CUTOFF
-uniform float cutoff;
-#endif
-#ifdef FLAG_DITH
-uniform float dither;
-#endif
-#ifdef FLAG_TINT
-uniform vec3 tint;
-#endif
-uniform sampler2D blurred_tex;
 uniform sampler2D depth_tex;
+
+layout (std140) uniform genericData {
+	float timer;
+	float noise_amount;
+	float saturation;
+	float brightness;
+
+	float contrast;
+	float film_grain;
+	float tv_stripes;
+	float cutoff;
+
+	vec3 tint;
+	float dither;
+};
+
 void main()
 {
  #ifdef FLAG_DISTORT_NOISE

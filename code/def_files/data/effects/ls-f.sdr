@@ -1,13 +1,20 @@
+
 in vec4 fragTexCoord;
+
 out vec4 fragOut0;
+
 uniform sampler2D scene;
 uniform sampler2D cockpit;
-uniform vec2 sun_pos;
-uniform float density;
-uniform float weight;
-uniform float falloff;
-uniform float intensity;
-uniform float cp_intensity;
+
+layout (std140) uniform genericData {
+	vec2 sun_pos;
+	float density;
+	float weight;
+	float falloff;
+	float intensity;
+	float cp_intensity;
+};
+
 void main()
 {
 	vec2 step = vec2( fragTexCoord.st - sun_pos.xy );
