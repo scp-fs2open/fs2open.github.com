@@ -54,6 +54,7 @@ static auto WarpOption = options::OptionBuilder<bool>("Graphics.3dWarp", "3D War
                              .bind_to(&Fireball_use_3d_warp)
                              .importance(65)
                              .finish();
+
 /**
  * Play warp in sound for warp effect
  */

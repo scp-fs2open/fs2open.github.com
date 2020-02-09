@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 
 extern int Mouse_sensitivity;
-extern int Use_mouse_to_fly;
+extern bool Use_mouse_to_fly;
 
 // call once to init the mouse
 void mouse_init();

@@ -18,6 +18,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
 #include "render/3d.h"
@@ -216,6 +217,24 @@ neb2_detail *Nd = &Neb2_detail[MAX_DETAIL_LEVEL - 2];
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
 int Neb2_regen = 0;
+
+const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
+                                                                  { 1, "Low" },
+                                                                  { 2, "Medium" },
+                                                                  { 3, "High" },
+                                                                  { 4, "Ultra" }, };
+
+const auto ModelDetailOption = options::OptionBuilder<int>("Graphics.NebulaDetail",
+                                                           "Nebula Detail",
+                                                           "Detail level of nebulas").category("Graphics").values(
+	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool initial) {
+	Detail.nebula_detail = val;
+	if (!initial) {
+		// This is only needed for changes after the game startup
+		neb2_set_detail_level(Detail.nebula_detail);
+	}
+	return true;
+}).finish();
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FORWARD DECLARATIONS

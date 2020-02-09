@@ -38,6 +38,8 @@ class OptionsManager {
 
 	const SCP_vector<std::unique_ptr<const options::OptionBase>>& getOptions();
 
+	bool persistOptionChanges(const options::OptionBase* option);
+
 	/**
 	 * @brief Persists changes to the disk
 	 *

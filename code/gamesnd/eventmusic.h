@@ -129,4 +129,10 @@ int	event_music_player_respawn();
 int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
 
+/**
+ * @brief Sets the master music volume to the specified value
+ * @param volume The new music volume value. Must be in the range [0, 1].
+ */
+void event_music_set_volume(float volume);
+
 #endif /* __EVENT_MUSIC_H__  */

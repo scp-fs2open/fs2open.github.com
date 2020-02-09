@@ -121,6 +121,10 @@ extern float aav_voice_volume;
 extern float aav_music_volume;
 extern float aav_effect_volume;
 
+void snd_set_effects_volume(float volume);
+
+void snd_set_voice_volume(float volume);
+
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
 sound_load_id snd_load(game_snd_entry* entry, int flags, int allow_hardware_load = 0);
 

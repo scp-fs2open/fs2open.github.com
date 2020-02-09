@@ -46,16 +46,16 @@ FLAG_LIST(FramebufferEffects){Thrusters = 0, Shockwaves, NUM_VALUES};
 extern flagset<FramebufferEffects> Gr_framebuffer_effects;
 
 enum class AntiAliasMode {
-	None,
+	None = 0,
 
-	FXAA_Low,
-	FXAA_Medium,
-	FXAA_High,
+	FXAA_Low = 1,
+	FXAA_Medium = 2,
+	FXAA_High = 3,
 
-	SMAA_Low,
-	SMAA_Medium,
-	SMAA_High,
-	SMAA_Ultra,
+	SMAA_Low = 4,
+	SMAA_Medium = 5,
+	SMAA_High = 6,
+	SMAA_Ultra = 7,
 };
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
@@ -725,9 +725,6 @@ typedef struct screen {
 	// Frees up a saved screen.
 	void (*gf_free_screen)(int id);
 
-	// Sets the gamma
-	void (*gf_set_gamma)(float gamma);
-
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
@@ -954,8 +951,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)
 #define gr_free_screen		GR_CALL(gr_screen.gf_free_screen)
-
-#define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
@@ -1268,6 +1263,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
  * @param data_offset The offset at which the data is stored.
  */
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
+
+
+void gr_set_gamma(float gamma);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

@@ -14,8 +14,9 @@
 #include <windowsx.h>
 #endif
 
-#include "io/mouse.h"
 #include "graphics/2d.h"
+#include "io/mouse.h"
+#include "options/Option.h"
 #include "scripting/scripting.h"
 
 #define THREADED	// to use the proper set of macros
@@ -51,7 +52,26 @@ int Mouse_dy = 0;
 int Mouse_dz = 0;
 
 int Mouse_sensitivity = 4;
-int Use_mouse_to_fly = 0;
+
+static auto MouseSensitivityOption =
+    options::OptionBuilder<int>("Input.MouseSensitivity", "Sensitivity", "The sentitivity of the mouse input.")
+        .category("Input")
+        .range(0, 9)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(4)
+        .bind_to(&Mouse_sensitivity)
+        .importance(0)
+        .finish();
+
+bool Use_mouse_to_fly = false;
+
+static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
+                                 .category("Input")
+                                 .level(options::ExpertLevel::Beginner)
+                                 .default_val(false)
+                                 .bind_to(&Use_mouse_to_fly)
+                                 .importance(1)
+                                 .finish();
 
 namespace
 {

@@ -1,17 +1,15 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "gamesnd/eventmusic.h"
 
 #include "cmdline/cmdline.h"
-#include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -19,11 +17,11 @@
 #include "mission/missiongoals.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "sound/sound.h"
-
 
 #ifdef _MSC_VER
 #pragma optimize("", off)
@@ -37,6 +35,23 @@
 int Event_Music_battle_started = 0;
 float Default_music_volume = 0.5f;							// range is 0->1
 float Master_event_music_volume = Default_music_volume;
+
+static bool music_volume_change_listener(float new_val, bool /*initial*/)
+{
+	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+
+	event_music_set_volume(new_val);
+
+	return true;
+}
+
+static auto MusicVolumeOption = options::OptionBuilder<float>("Audio.Music", "Music", "Volume used for playing music")
+                                    .category("Audio")
+                                    .default_val(Default_music_volume)
+                                    .range(0.0f, 1.0f)
+                                    .change_listener(music_volume_change_listener)
+                                    .importance(1)
+                                    .finish();
 
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
@@ -1704,6 +1719,20 @@ void event_music_reset_choices()
 void event_music_hostile_ship_destroyed()
 {
 	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+}
+
+void event_music_set_volume(float volume)
+{
+	Assertion(volume >= 0.0f && volume <= 1.0f, "Invalid event music volume %f!", volume);
+
+	Master_event_music_volume = volume;
+	event_music_set_volume_all(Master_event_music_volume);
+
+	if (Master_event_music_volume > 0.0f) {
+		event_music_enable();
+	} else {
+		event_music_disable();
+	}
 }
 
 #ifdef _MSC_VER

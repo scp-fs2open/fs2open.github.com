@@ -111,6 +111,32 @@ const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::ge
 	}
 	return _options;
 }
+bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
+{
+	auto iter = _changed_values.find(option->getConfigKey());
+
+	if (iter == _changed_values.end()) {
+		// No changes for this option
+		return true;
+	}
+
+	auto parts = parse_key(iter->first);
+	if (parts.first.empty()) {
+		// Invalid key
+		return false;
+	}
+
+	auto val = json_dump_string(iter->second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
+
+	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+
+	auto changed = option->valueChanged(iter->second.get());
+
+	// Always erase even if it wasn't actually changed so later persistChanges() calls don't try to save the value again
+	_changed_values.erase(iter);
+
+	return changed;
+}
 SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 {
 	for (auto& entry : _changed_values) {

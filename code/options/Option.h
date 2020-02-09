@@ -4,6 +4,7 @@
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
 #include "options/OptionsManager.h"
+
 #include <functional>
 #include <utility>
 
@@ -14,6 +15,21 @@ enum class OptionType { Range, Selection };
 enum class ExpertLevel { Beginner, Advanced, Expert };
 
 enum class PresetKind { Basic, Low, Medium, High, Ultra };
+
+// clang-format off
+FLAG_LIST(OptionFlags) {
+	/**
+	 * @brief Force the option menu to display this as a multi value selection.
+	 *
+	 * This can be useful if an option typically has multiple values but it is also possible for
+	 * this option to have exactly two values which may cause the option menu to display it as a
+	 * boolean option even though the option is not designed for that.
+	 */
+	ForceMultiValueSelection = 0,
+
+	NUM_VALUES
+};
+// clang-format on
 
 struct ValueDescription {
 	const SCP_string display;
@@ -38,6 +54,8 @@ class OptionBase {
 
 	SCP_unordered_map<PresetKind, SCP_string> _preset_values;
 
+	flagset<OptionFlags> _flags;
+
 	std::unique_ptr<json_t> getConfigValue() const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
@@ -54,11 +72,16 @@ class OptionBase {
 	int getImportance() const;
 	void setImportance(int importance);
 
+	const flagset<OptionFlags>& getFlags() const;
+	void setFlags(const flagset<OptionFlags>& flags);
+
 	const SCP_string& getConfigKey() const;
 	const SCP_string& getTitle() const;
 	const SCP_string& getDescription() const;
 
 	void setPreset(PresetKind preset, const SCP_string& value);
+
+	bool persistChanges() const;
 
 	virtual bool valueChanged(const json_t* val) const = 0;
 
@@ -321,6 +344,9 @@ template <>
 void set_defaults<float>(Option<float>& opt);
 
 template <>
+void set_defaults<int>(Option<int>& opt);
+
+template <>
 void set_defaults<bool>(Option<bool>& opt);
 
 template <typename T>
@@ -468,8 +494,9 @@ class OptionBuilder {
 	OptionBuilder& range(T min, T max)
 	{
 		Assertion(min <= max, "Invalid number range!");
-		_instance.setInterpolator([min, max](T f) { return min + (max - min) * f; },
-		                          [min, max](T f) { return (f - min) / (max - min); });
+		_instance.setInterpolator(
+		    [min, max](float f) { return min + static_cast<T>((max - min) * f); },
+		    [min, max](T f) { return static_cast<float>(f - min) / static_cast<float>(max - min); });
 		return *this;
 	}
 
@@ -482,6 +509,12 @@ class OptionBuilder {
 	OptionBuilder& importance(int value)
 	{
 		_instance.setImportance(value);
+		return *this;
+	}
+
+	OptionBuilder& flags(const flagset<OptionFlags>& flags)
+	{
+		_instance.setFlags(flags);
 		return *this;
 	}
 
