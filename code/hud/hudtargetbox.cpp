@@ -814,7 +814,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
-	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
 
@@ -866,11 +865,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_normalize(&projection_vec);
 		}
 
-		if ( missile_view == FALSE )
-			factor = 2*target_objp->radius;
-		else
-			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
-
 		// use the viewer's up vector, and construct the viewers orientation matrix
 		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
 			vec3d tempv;
@@ -889,6 +883,11 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
 		// the objects position
 		if (missile_view == FALSE) {
+			float factor = 2*target_objp->radius;
+			// small radius missiles need a bigger factor otherwise they are rendered larger than the targetbox
+			if (factor < 8.0f) {
+				factor = 8.0f;
+			}
 			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 		} else {
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
