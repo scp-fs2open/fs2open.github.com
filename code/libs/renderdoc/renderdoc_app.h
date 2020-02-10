@@ -37,7 +37,7 @@
 #define RENDERDOC_CC __cdecl
 #elif defined(__linux__)
 #define RENDERDOC_CC
-#elif defined(__FreeBSD__)
+#elif defined(SCP_BSD)
 #define RENDERDOC_CC
 #elif defined(__APPLE__)
 #define RENDERDOC_CC
