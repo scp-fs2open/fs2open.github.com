@@ -20,7 +20,7 @@
 #define WSAGetLastError()  (errno)
 #endif
 
-#ifdef __FreeBSD__
+#ifdef SCP_BSD
 #include <sys/socket.h>
 #endif
 
