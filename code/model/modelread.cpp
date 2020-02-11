@@ -5394,6 +5394,9 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 	}
 
 	return;
+#else
+(void)pm;
+(void)model_ptr;
 #endif
 }
 
@@ -5439,6 +5442,8 @@ void swap_sldc_data(ubyte * buffer)
 			shld_polys[i] = INTEL_INT(shld_polys[i]);
 		}			
 	}
+#else
+(void)buffer;
 #endif
 }
 
