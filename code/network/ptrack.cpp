@@ -18,6 +18,10 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#ifdef SCP_BSD
+#include <sys/socket.h>
+#endif
+
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "network/multi.h"
