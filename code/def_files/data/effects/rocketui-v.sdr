@@ -10,7 +10,7 @@ layout (std140) uniform genericData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 
-	int textured;
+	bool textured;
 	int baseMapIndex;
 };
 
