@@ -212,6 +212,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();
 
+void common_fire_stage_script_hook(int old_stage, int new_stage);
+
 ///////////////////////////////////////////////////////////
 // NEWSTUFF END
 ///////////////////////////////////////////////////////////

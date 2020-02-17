@@ -44,6 +44,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
 #include "weapon/weapon.h"
@@ -1035,6 +1036,18 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 		return 1;
 	}
 	return 0;
+}
+
+void common_fire_stage_script_hook(int old_stage, int new_stage)
+{
+	if (old_stage == new_stage)
+		return;
+
+	// call a scripting hook for switching stages
+	Script_system.SetHookVar("OldStage", 'i', old_stage);
+	Script_system.SetHookVar("NewStage", 'i', new_stage);
+	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
+	Script_system.RemHookVars(2, "OldStage", "NewStage");
 }
 
 // NEWSTUFF BEGIN

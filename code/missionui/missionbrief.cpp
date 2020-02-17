@@ -362,8 +362,7 @@ void brief_skip_training_pressed()
 //
 void brief_do_next_pressed(int play_sound)
 {
-	int now;
-	now = timer_get_milliseconds();
+	int now = timer_get_milliseconds();
 
 	if ( (now - Brief_last_auto_advance) < 500 ) {
 		return;
@@ -380,7 +379,6 @@ void brief_do_next_pressed(int play_sound)
 			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		}
 	}
-
 	Assert(Current_brief_stage >= 0);
 }
 
@@ -1645,6 +1643,7 @@ void brief_do_frame(float frametime)
 	if ( !Background_playing ) {
 		int time = -1;
 		int check_jump_flag = 1;
+
 		if ( Current_brief_stage != Last_brief_stage ) {
 
 			// Check if we have a quick transition pending
@@ -1697,6 +1696,9 @@ void brief_do_frame(float frametime)
 				Int3();
 				Current_brief_stage=0;
 			}
+
+			// fire the script hook
+			common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
 
 			// set the camera target
 			brief_set_new_stage(&Briefing->stages[Current_brief_stage].camera_pos,

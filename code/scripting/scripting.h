@@ -108,6 +108,7 @@ enum ConditionalActions {
 	CHA_ONWAYPOINTSDONE = 44,
 	CHA_ONSUBSYSDEATH   = 45,
 	CHA_ONGOALSCLEARED  = 46,
+	CHA_ONBRIEFSTAGE	= 47,
 };
 
 // management stuff
