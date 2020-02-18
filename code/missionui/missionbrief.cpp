@@ -961,6 +961,9 @@ void brief_init()
 		brief_reset_icons(Current_brief_stage);
 	}
 
+	// fire the script hook, since when we first start the briefing there isn't a "new stage" function like there is for cbriefs
+	common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
+
 	Brief_playing_fade_sound = 0;
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
@@ -1460,7 +1463,6 @@ void brief_do_frame(float frametime)
 	if ( red_alert_mission() ) {
 		return;
 	}
-
 
 	if ( !Brief_inited ){
 		brief_init();

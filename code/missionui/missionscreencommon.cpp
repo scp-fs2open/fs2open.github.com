@@ -1040,9 +1040,6 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
-	if (old_stage == new_stage)
-		return;
-
 	// call a scripting hook for switching stages
 	Script_system.SetHookVar("OldStage", 'i', old_stage);
 	Script_system.SetHookVar("NewStage", 'i', new_stage);
