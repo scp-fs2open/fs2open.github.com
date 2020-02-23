@@ -24,7 +24,7 @@ void outwnd_debug_window_init();
 void outwnd_debug_window_do_frame(float frametime);
 void outwnd_debug_window_deinit();
 
-extern int Log_debug_output_to_file;
+extern bool Log_debug_output_to_file;
 
 #endif	// NDEBUG
 
