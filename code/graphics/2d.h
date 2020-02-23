@@ -70,6 +70,8 @@ extern bool Gr_enable_vsync;
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
 
+extern os::ViewportState Gr_configured_window_state;
+
 class material;
 class model_material;
 class particle_material;
@@ -847,7 +849,8 @@ typedef struct screen {
 // # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
 #define GR_DEFAULT				(-1)		// set to use default settings
 #define GR_STUB					(100)
-#define GR_OPENGL				(104)		// Use OpenGl hardware renderer
+#define GR_OPENGL (104) // Use OpenGl hardware renderer
+#define GR_VULKAN (105) // Use Vulkan hardware renderer
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
 #define GR_NUM_RESOLUTIONS			2

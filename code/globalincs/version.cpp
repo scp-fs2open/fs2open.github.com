@@ -147,6 +147,9 @@ SCP_string get_version_string()
 	case GR_OPENGL:
 		str += " OpenGL";
 		break;
+	case GR_VULKAN:
+		str += " Vulkan";
+		break;
 	}
 
 	return str;

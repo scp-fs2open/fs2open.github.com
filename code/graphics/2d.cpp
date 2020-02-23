@@ -14,22 +14,23 @@
 #include <windowsx.h>
 #endif
 
+#include "2d.h"
+#include "grinternal.h"
+#include "grstub.h"
+#include "light.h"
 #include "material.h"
+#include "matrix.h"
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
-#include "graphics/2d.h"
-#include "graphics/grinternal.h"
-#include "graphics/grstub.h"
-#include "graphics/light.h"
-#include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
+#include "graphics/vulkan/gr_vulkan.h"
 #include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -120,20 +121,55 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto LightingOption = options::OptionBuilder<int>("Graphics.Lighting",
-                                                        "Lighting",
-                                                        "Level of detail of the lighting").importance(1).category(
-	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool initial) {
-	Detail.lighting = val;
-	if (!initial) {
-		gr_recompile_all_shaders(nullptr);
+const auto LightingOption = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
+		.importance(1)
+		.category("Graphics")
+		.values(DetailLevelValues)
+		.default_val(MAX_DETAIL_LEVEL)
+		.change_listener([](int val, bool initial) {
+			Detail.lighting = val;
+			if (!initial) {
+				gr_recompile_all_shaders(nullptr);
+			}
+			return true;
+		})
+		.finish();
+
+os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
+
+static bool mode_change_func(os::ViewportState state, bool initial)
+{
+	Gr_configured_window_state = state;
+
+	if (initial) {
+		return false;
 	}
+
+	auto window = os::getMainViewport();
+	if (window == nullptr) {
+		return false;
+	}
+
+	window->setState(state);
+
 	return true;
-}).finish();
+}
+
+static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
+																		 "Controls how the game window is created.")
+								   .category("Graphics")
+								   .level(options::ExpertLevel::Beginner)
+								   .values({{os::ViewportState::Fullscreen, "Fullscreen"},
+											{os::ViewportState::Borderless, "Borderless"},
+											{os::ViewportState::Windowed, "Windowed"}})
+								   .importance(98)
+								   .default_val(os::ViewportState::Fullscreen)
+								   .change_listener(mode_change_func)
+								   .finish();
 
 // z-buffer stuff
-int gr_zbuffering = 0;
-int gr_zbuffering_mode = 0;
+int gr_zbuffering        = 0;
+int gr_zbuffering_mode   = 0;
 int gr_global_zbuffering = 0;
 
 // stencil buffer stuff
@@ -1083,12 +1119,108 @@ int gr_get_resolution_class(int width, int height)
 	}
 }
 
-static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
+static void init_colors()
+{
+	int bpp = gr_screen.bits_per_pixel;
+
+	Assertion((bpp == 16) || (bpp == 32), "Invalid bits-per-pixel value %d!", bpp);
+
+	// screen format
+	switch (bpp) {
+	case 16: {
+		Gr_red.bits  = 5;
+		Gr_red.shift = 11;
+		Gr_red.scale = 8;
+		Gr_red.mask  = 0xF800;
+
+		Gr_green.bits  = 6;
+		Gr_green.shift = 5;
+		Gr_green.scale = 4;
+		Gr_green.mask  = 0x7E0;
+
+		Gr_blue.bits  = 5;
+		Gr_blue.shift = 0;
+		Gr_blue.scale = 8;
+		Gr_blue.mask  = 0x1F;
+
+		break;
+	}
+
+	case 32: {
+		Gr_red.bits  = 8;
+		Gr_red.shift = 16;
+		Gr_red.scale = 1;
+		Gr_red.mask  = 0xff0000;
+
+		Gr_green.bits  = 8;
+		Gr_green.shift = 8;
+		Gr_green.scale = 1;
+		Gr_green.mask  = 0x00ff00;
+
+		Gr_blue.bits  = 8;
+		Gr_blue.shift = 0;
+		Gr_blue.scale = 1;
+		Gr_blue.mask  = 0x0000ff;
+
+		Gr_alpha.bits  = 8;
+		Gr_alpha.shift = 24;
+		Gr_alpha.mask  = 0xff000000;
+		Gr_alpha.scale = 1;
+
+		break;
+	}
+	}
+
+	// texture format
+	Gr_t_red.bits  = 5;
+	Gr_t_red.mask  = 0x7c00;
+	Gr_t_red.shift = 10;
+	Gr_t_red.scale = 8;
+
+	Gr_t_green.bits  = 5;
+	Gr_t_green.mask  = 0x03e0;
+	Gr_t_green.shift = 5;
+	Gr_t_green.scale = 8;
+
+	Gr_t_blue.bits  = 5;
+	Gr_t_blue.mask  = 0x001f;
+	Gr_t_blue.shift = 0;
+	Gr_t_blue.scale = 8;
+
+	Gr_t_alpha.bits  = 1;
+	Gr_t_alpha.mask  = 0x8000;
+	Gr_t_alpha.scale = 255;
+	Gr_t_alpha.shift = 15;
+
+	// alpha-texture format
+	Gr_ta_red.bits  = 4;
+	Gr_ta_red.mask  = 0x0f00;
+	Gr_ta_red.shift = 8;
+	Gr_ta_red.scale = 17;
+
+	Gr_ta_green.bits  = 4;
+	Gr_ta_green.mask  = 0x00f0;
+	Gr_ta_green.shift = 4;
+	Gr_ta_green.scale = 17;
+
+	Gr_ta_blue.bits  = 4;
+	Gr_ta_blue.mask  = 0x000f;
+	Gr_ta_blue.shift = 0;
+	Gr_ta_blue.scale = 17;
+
+	Gr_ta_alpha.bits  = 4;
+	Gr_ta_alpha.mask  = 0xf000;
+	Gr_ta_alpha.shift = 12;
+	Gr_ta_alpha.scale = 17;
+}
+
+static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
+						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
 
-	memset( &gr_screen, 0, sizeof(screen) );
+	memset(&gr_screen, 0, sizeof(screen));
 
 	float aspect_ratio = (float)width / (float)height;
 
@@ -1173,26 +1305,31 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) * 0.5f;
 
 	if (gr_screen.custom_size) {
-		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
-		gr_unsize_screen_pos( &gr_screen.max_w_unscaled_zoomed, &gr_screen.max_h_unscaled_zoomed );
-		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
-		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
+		gr_unsize_screen_pos(&gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled);
+		gr_unsize_screen_pos(&gr_screen.max_w_unscaled_zoomed, &gr_screen.max_h_unscaled_zoomed);
+		gr_unsize_screen_pos(&gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled);
+		gr_unsize_screen_pos(&gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled);
 	}
 
-	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
-	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
+	gr_screen.save_max_w_unscaled        = gr_screen.max_w_unscaled;
+	gr_screen.save_max_h_unscaled        = gr_screen.max_h_unscaled;
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
-	
+
+	init_colors();
+
 	switch (mode) {
-		case GR_OPENGL:
-			rc = gr_opengl_init(std::move(graphicsOps));
-			break;
-		case GR_STUB: 
-			rc = gr_stub_init();
-			break;
-		default:
-			Int3();		// Invalid graphics mode
+	case GR_OPENGL:
+		rc = gr_opengl_init(std::move(graphicsOps));
+		break;
+	case GR_VULKAN:
+		rc = graphics::vulkan::initialize(std::move(graphicsOps));
+		break;
+	case GR_STUB:
+		rc = gr_stub_init();
+		break;
+	default:
+		Int3(); // Invalid graphics mode
 	}
 
 	if ( !rc ) {
@@ -1313,6 +1450,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			//       If the format of that string changes you'll have to change this too!!!
 			if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
 				Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+			}
+
+			// Get the first 4 characters of the video string which is the chosen API
+			SCP_string videoApi(ptr, ptr + 4);
+
+			if (videoApi == "OGL ") {
+				d_mode = GR_OPENGL; // GR_OPENGL;
+			} else if (videoApi == "VK  ") {
+				d_mode = GR_VULKAN;
+			} else {
+				ReleaseWarning(LOCATION, "Unknown video API '%s'", videoApi.c_str());
 			}
 		}
 
@@ -1493,15 +1641,6 @@ void gr_force_windowed()
 		return;
 	}
 
-	switch( gr_screen.mode ) {
-		case GR_OPENGL:
-			break;
-		case GR_STUB: 
-			break;
-		default:
-			Int3();		// Invalid graphics mode
-	}
-
 	if ( Os_debugger_running ) {
 		os_sleep(1000);
 	}
@@ -1521,7 +1660,7 @@ void gr_activate(int active)
 	}
 
 	if (active) {
-		if (Cmdline_fullscreen_window||Cmdline_window) {
+		if (Cmdline_fullscreen_window || Cmdline_window) {
 			os::getMainViewport()->restore();
 		} else {
 			os::getMainViewport()->setState(os::ViewportState::Fullscreen);
@@ -1530,17 +1669,11 @@ void gr_activate(int active)
 		os::getMainViewport()->minimize();
 	}
 
-	switch( gr_screen.mode ) {
-		case GR_OPENGL:
-			extern void gr_opengl_activate(int active);
-			gr_opengl_activate(active);
-			break;
-		case GR_STUB: 
-			break;
-		default:
-			Int3();		// Invalid graphics mode
+	if (active) {
+		if (!Cmdline_fullscreen_window && !Cmdline_window) {
+			gr_set_gamma(Gr_gamma);
+		}
 	}
-
 }
 
 // color stuff
@@ -2687,7 +2820,8 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
 	handle_out = gpuHeap->bufferHandle();
 }
 
-void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset) {
+void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
+{
 	TRACE_SCOPE(tracing::GpuHeapDeallocate);
 
 	auto gpuHeap = get_gpu_heap(heap_type);
@@ -2766,7 +2900,7 @@ void gr_set_gamma(float gamma)
 				Cmdline_no_set_gamma = 1;
 			} else {
 				SDL_GetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-				                       (Gr_original_gamma_ramp + 512));
+									   (Gr_original_gamma_ramp + 512));
 			}
 		}
 

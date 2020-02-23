@@ -28,6 +28,9 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 	case GR_OPENGL:
 		graphicsAPI = QString::fromUtf8("OpenGL");
 		break;
+	case GR_VULKAN:
+		graphicsAPI = QString::fromUtf8("Vulkan");
+		break;
 	}
 
 	ui->labelVersion->setText(tr("qtFRED - FreeSpace Editor, Version %1 %2").arg(FS_VERSION_FULL, graphicsAPI));

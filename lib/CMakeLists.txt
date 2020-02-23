@@ -34,3 +34,5 @@ add_subdirectory(discord)
 include(libRocket.cmake)
 
 add_subdirectory(libpcp)
+
+add_subdirectory(vulkan-hpp)

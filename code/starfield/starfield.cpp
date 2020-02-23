@@ -2834,16 +2834,16 @@ void stars_setup_environment_mapping(camid cid) {
 
 	// face 3 (py / up)
 	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
+	new_orient.vec.fvec.xyz.y =  1.0f;
+	new_orient.vec.uvec.xyz.z =  -1.0f;
 	new_orient.vec.rvec.xyz.x =  1.0f;
 	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 4 (ny / down)
 	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
+	new_orient.vec.fvec.xyz.y =  -1.0f;
+	new_orient.vec.uvec.xyz.z =  1.0f ;
 	new_orient.vec.rvec.xyz.x =  1.0f;
 	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
