@@ -403,7 +403,7 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				abort();
+				buttonId = 1; // No action
 			}
 
 			switch (buttonId)
