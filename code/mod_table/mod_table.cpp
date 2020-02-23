@@ -225,10 +225,11 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Enable External Shaders:")) {
 			stuff_boolean(&Enable_external_shaders);
-			if (Enable_external_shaders)
+			if (Enable_external_shaders) {
 				mprintf(("Game Settings Table: External shaders are enabled\n"));
-			else
+			} else {
 				mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+			}
 		}
 
 		if (optional_string("$Default Detail Level:")) {

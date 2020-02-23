@@ -1601,10 +1601,10 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
-	
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 
 	// init os stuff next
 	if ( !Is_standalone ) {
@@ -1712,11 +1712,9 @@ void game_init()
 		return;
 	}
 
-#ifndef NDEBUG
-	if (Cmdline_debug_window) {
+	if (LoggingEnabled && Cmdline_debug_window) {
 		outwnd_debug_window_init();
 	}
-#endif
 
 	// This needs to happen after graphics initialization
 	tracing::init();
@@ -6186,12 +6184,10 @@ void game_do_state(int state)
 
    } // end switch(gs_current_state)
 
-#ifndef NDEBUG
-	if (Cmdline_debug_window) {
+	if (LoggingEnabled && Cmdline_debug_window) {
 		// Do a frame for the debug window here since this code is always executed
 		outwnd_debug_window_do_frame(flFrametime);
 	}
-#endif
 }
 
 
@@ -6544,9 +6540,9 @@ void game_shutdown(void)
 
 	tracing::shutdown();
 
-#ifndef NDEBUG
-	outwnd_debug_window_deinit();
-#endif
+	if (LoggingEnabled) {
+		outwnd_debug_window_deinit();
+	}
 
 	gr_close();
 

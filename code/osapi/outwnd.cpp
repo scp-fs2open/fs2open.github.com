@@ -7,10 +7,6 @@
  *
 */
 
-
-
-#ifndef NDEBUG
-
 #include <cstdio>
 #include <cstdarg>
 #include <cstring>
@@ -320,5 +316,3 @@ void outwnd_debug_window_do_frame(float frametime) {
 void outwnd_debug_window_deinit() {
 	debugWindow.reset();
 }
-
-#endif //NDEBUG

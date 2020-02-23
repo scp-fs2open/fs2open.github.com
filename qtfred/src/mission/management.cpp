@@ -266,9 +266,9 @@ void shutdown() {
 
 	os_cleanup();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 }
 
 

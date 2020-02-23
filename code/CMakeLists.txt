@@ -81,6 +81,10 @@ else()
 	ENDIF()
 endif()
 
+if (FSO_RELEASE_LOGGING)
+	target_compile_definitions(code PUBLIC SCP_RELEASE_LOGGING)
+endif()
+
 include(util)
 configure_cotire(code)
 

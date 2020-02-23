@@ -327,9 +327,9 @@ void os_cleanup()
 {
 	os_deinit_registry_stuff();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	os_deinit();
 }

@@ -175,9 +175,9 @@ CFREDApp::CFREDApp() {
 
 	SCP_mspdbcs_Initialise();
 
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 }
 
 CFREDApp::~CFREDApp() {
