@@ -135,14 +135,14 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: Control Info
-ADE_OBJ(l_Control_Info, int, "control info", "control info handle");
+ADE_OBJ(l_Control_Info, int, "control_info", "control info handle");
 
 ADE_VIRTVAR(Pitch, l_Control_Info, "number", "Pitch of the player ship", "number", "Pitch")
 {
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -157,7 +157,7 @@ ADE_VIRTVAR(Heading, l_Control_Info, "number", "Heading of the player ship", "nu
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -172,7 +172,7 @@ ADE_VIRTVAR(Bank, l_Control_Info, "number", "Bank of the player ship", "number",
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -187,7 +187,7 @@ ADE_VIRTVAR(Vertical, l_Control_Info, "number", "Vertical control of the player 
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -202,7 +202,7 @@ ADE_VIRTVAR(Sideways, l_Control_Info, "number", "Sideways control of the player 
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -217,7 +217,7 @@ ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player sh
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -232,7 +232,7 @@ ADE_VIRTVAR(ForwardCruise, l_Control_Info, "number", "Forward control of the pla
 	int idx;
 	float new_ci = 0.0f;
 
-	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci) || Player == nullptr)
 		return ade_set_error(L, "f", new_ci);
 
 	if(ADE_SETTING_VAR) {
@@ -247,7 +247,7 @@ ADE_VIRTVAR(PrimaryCount, l_Control_Info, "number", "Number of primary weapons t
 	int idx;
 	int new_pri = 0;
 
-	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_pri))
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_pri) || Player == nullptr)
 		return ade_set_error(L, "i", new_pri);
 
 	if(ADE_SETTING_VAR) {
@@ -262,7 +262,7 @@ ADE_VIRTVAR(SecondaryCount, l_Control_Info, "number", "Number of secondary weapo
 	int idx;
 	int new_sec = 0;
 
-	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_sec))
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_sec) || Player == nullptr)
 		return ade_set_error(L, "i", new_sec);
 
 	if(ADE_SETTING_VAR) {
@@ -277,7 +277,7 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 	int idx;
 	int new_cm = 0;
 
-	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_cm))
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_cm) || Player == nullptr)
 		return ade_set_error(L, "i", new_cm);
 
 	if(ADE_SETTING_VAR) {
@@ -291,15 +291,22 @@ ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button contro
 {
 	(void)L; // unused parameter
 
-	button_info_clear(&Player->lua_bi);
+	if (Player != nullptr) {
+		button_info_clear(&Player->lua_bi);
+	}
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(getButtonInfo, l_Control_Info, nullptr, "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];
+
+	if (Player == nullptr) {
+		return ade_set_error(L, "iiii", 0, 0, 0, 0);
+	}
 
 	for(i=0;i<4;i++)
 		bi_status[i] = Player->lua_bi.status[i];
@@ -307,7 +314,9 @@ ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields contain
 	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
 }
 
-ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number",
+         "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];
@@ -315,7 +324,7 @@ ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Ac
 	for(i=0;i<4;i++)
 		bi_status[i] = 0;
 
-	if(!ade_get_args(L, "|iiii", &bi_status[0], &bi_status[1], &bi_status[2], &bi_status[3]))
+	if(!ade_get_args(L, "|iiii", &bi_status[0], &bi_status[1], &bi_status[2], &bi_status[3]) || Player == nullptr)
 		return ADE_RETURN_NIL;
 
 	if(ADE_SETTING_VAR) {
@@ -332,9 +341,9 @@ ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Ac
 ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
 {
 	int index;
-	char *buf = NULL;
+	const char* buf = nullptr;
 
-	if(!ade_get_args(L, "i|s", &index, &buf))
+	if(!ade_get_args(L, "i|s", &index, &buf) || Player == nullptr)
 		return ADE_RETURN_NIL;
 
 	if(index != -1) {
@@ -353,7 +362,7 @@ ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined b
 		for(i=0; i<num_plr_commands; i++) {
 			if(!(strcmp(buf, plr_commands[i].name))) {
 				int a;
-				a = plr_commands[i].def / 32;
+				a = plr_commands[i].def % 32;
 				Player->lua_bi.status[plr_commands[i].var] |= (1<<a);
 				break;
 			}
@@ -379,7 +388,7 @@ ADE_FUNC(getButtonControlName, l_Control_Info, "number", "Gives the name of the 
 ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of the command corresponding with the given string", "number", "Number of the command")
 {
 	int i;
-	char *buf;
+	const char* buf;
 
 	if(!ade_get_args(L, "s", &buf))
 		return ade_set_error(L, "i", -1);
@@ -414,12 +423,13 @@ ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+ADE_FUNC(pollAllButtons, l_Control_Info, nullptr, "Access the four bitfields containing the button info",
+         ade_type_info({"number", "number", "number", "number"}), "Four bitfields")
 {
 	int i;
 	int bi_status[4];
 
-	if(!(lua_game_control & LGC_B_POLL_ALL))
+	if(!(lua_game_control & LGC_B_POLL_ALL) || Player == nullptr)
 		return ADE_RETURN_NIL;
 
 	for(i=0;i<4;i++)

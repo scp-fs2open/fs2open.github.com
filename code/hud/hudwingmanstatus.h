@@ -20,9 +20,7 @@ class p_object;
 
 void	hud_init_wingman_status_gauge();
 void	hud_wingman_status_update();
-void	hud_wingman_status_render();
 void	hud_wingman_status_init_flash();
-int	hud_wingman_status_maybe_flash(int wing_index, int wing_pos);
 void	hud_set_wingman_status_dead(int wing_index, int wing_pos);
 void	hud_set_wingman_status_departed(int wing_index, int wing_pos);
 void	hud_set_wingman_status_alive( int wing_index, int wing_pos);

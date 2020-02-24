@@ -141,45 +141,6 @@ void draw_asteroid_field() {
 	}
 }
 
-vec3d* get_subsystem_world_pos2(object* parent_obj, ship_subsys* subsys, vec3d* world_pos) {
-	if (subsys == NULL) {
-		*world_pos = parent_obj->pos;
-		return world_pos;
-	}
-
-	vm_vec_unrotate(world_pos, &subsys->system_info->pnt, &parent_obj->orient);
-	vm_vec_add2(world_pos, &parent_obj->pos);
-
-	return world_pos;
-}
-
-int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int* x2, int* y1, int* y2) {
-	if (subsys != NULL) {
-		vertex subobj_vertex;
-		vec3d subobj_pos;
-
-		get_subsystem_world_pos2(ship_obj, subsys, &subobj_pos);
-
-		g3_rotate_vertex(&subobj_vertex, &subobj_pos);
-
-		g3_project_vertex(&subobj_vertex);
-		if (subobj_vertex.flags & PF_OVERFLOW) { // if overflow, no point in drawing brackets
-			return 0;
-		}
-
-		int bound_rc;
-
-		bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &ship_obj->orient, &subobj_pos, x1, y1, x2, y2);
-		if (bound_rc != 0) {
-			return 0;
-		}
-
-		return 1;
-	}
-
-	return 0;
-}
-
 void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_render& Render_subsys) {
 	vertex text_center;
 	polymodel* pm = model_get(Ship_info[Ships[s2r->ship_obj->instance].ship_info_index].model_num);
@@ -561,33 +522,6 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 			}
 		}
 	}
-}
-
-int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int* x2, int* y1, int* y2) {
-	if (subsys != NULL) {
-		vertex subobj_vertex;
-		vec3d subobj_pos;
-
-		get_subsystem_world_pos2(ship_obj, subsys, &subobj_pos);
-
-		g3_rotate_vertex(&subobj_vertex, &subobj_pos);
-
-		g3_project_vertex(&subobj_vertex);
-		if (subobj_vertex.flags & PF_OVERFLOW) { // if overflow, no point in drawing brackets
-			return 0;
-		}
-
-		int bound_rc;
-
-		bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &ship_obj->orient, &subobj_pos, x1, y1, x2, y2);
-		if (bound_rc != 0) {
-			return 0;
-		}
-
-		return 1;
-	}
-
-	return 0;
 }
 
 void FredRenderer::render_compass() {

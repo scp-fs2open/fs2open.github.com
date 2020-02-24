@@ -41,7 +41,7 @@ void convert_model_material(model_uniform_data* data_out,
 
 	data_out->modelMatrix = scaled_matrix;
 	data_out->viewMatrix = gr_view_matrix;
-	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &data_out->viewMatrix, &data_out->modelMatrix);
+	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
 	data_out->projMatrix = gr_projection_matrix;
 	data_out->textureMatrix = gr_texture_matrix;
 
@@ -89,7 +89,7 @@ void convert_model_material(model_uniform_data* data_out,
 		CLAMP(data_out->ambientFactor.xyz.y, 0.02f, 1.0f);
 		CLAMP(data_out->ambientFactor.xyz.z, 0.02f, 1.0f);
 
-		if (material.get_light_factor() > 0.25f && !Cmdline_no_emissive) {
+		if (material.get_light_factor() > 0.25f && Cmdline_emissive) {
 			data_out->emissionFactor.xyz.x = gr_light_emission[0];
 			data_out->emissionFactor.xyz.y = gr_light_emission[1];
 			data_out->emissionFactor.xyz.z = gr_light_emission[2];

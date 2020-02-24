@@ -34,7 +34,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 	}
 	else
 	{
-		char *s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "s", &s))
 			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
 
@@ -56,16 +56,16 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 
 ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound file", "soundfile", "A soundfile handle")
 {
-	char* fileName = NULL;
+	const char* fileName = nullptr;
 
 	if (!ade_get_args(L, "s", &fileName))
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h(sound_load_id::invalid())));
 
 	game_snd_entry tmp_gs;
 	strcpy_s( tmp_gs.filename, fileName );
 	auto n = snd_load(&tmp_gs, 0, 0);
 
-	return ade_set_error(L, "o", l_Soundfile.Set(n));
+	return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h(n)));
 }
 
 ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "sound", "A handle to the playing sound")
@@ -110,7 +110,10 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	}
 }
 
-ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]", "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current viewposition", "3Dsound", "A handle to the playing sound")
+ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
+         "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current "
+         "viewposition",
+         "sound3D", "A handle to the playing sound")
 {
 	sound_entry_h *seh = NULL;
 	vec3d *source = &vmd_zero_vector;
@@ -180,9 +183,29 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	}
 }
 
+ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
+         "Plays a sound from #Interface Sounds in sounds.tbl by specifying the name of the sound entry. Sounds using "
+         "the retail sound syntax can be accessed by specifying the index number as a string.",
+         "boolean", "True if sound was played, false if not")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ade_set_error(L, "b", false);
+
+	auto gamesnd_idx = gamesnd_get_by_iface_name(name);
+
+	if (gamesnd_idx.isValid()) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound name %s in playInterfaceSoundByName()", name);
+		return ADE_RETURN_FALSE;
+	}
+}
+
 ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
-	char *s;
+	const char* s;
 	float volume = 1.0f;
 	bool loop = true;
 	if (!ade_get_args(L, "s|fb", &s, &volume, &loop))
@@ -203,7 +226,7 @@ ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'bri
 {
 	int ah;
 	bool fade = false;
-	char *music_type = NULL;
+	const char* music_type = nullptr;
 
 	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;

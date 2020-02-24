@@ -147,6 +147,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_PLAY_DEAD:
 			eh_idx = LE_ORDER_PLAY_DEAD;
 			break;
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
+			eh_idx = LE_ORDER_PLAY_DEAD_PERSISTENT;
+			break;
 		case AI_GOAL_FLY_TO_SHIP:
 			eh_idx = LE_ORDER_FLY_TO;
 			break;
@@ -330,7 +333,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
+		if(newh && newh->isSubsystemValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 		{
 			objp = &Objects[newh->ss->parent_objnum];
 			if(!stricmp(Ships[objp->instance].ship_name, ohp->aigp->target_name)) {

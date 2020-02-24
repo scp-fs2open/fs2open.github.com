@@ -1,34 +1,29 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
-
+ */
 
 #ifndef _GROPENGLSHADER_H
 #define _GROPENGLSHADER_H
 
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "graphics/opengl/gropengl.h"
 #include "graphics/material.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/util/UniformBuffer.h"
 
-#include <string>
 #include <glad/glad.h>
 
 namespace opengl {
 // Forward definition to avoid cyclic dependency
 class ShaderProgram;
-}
+} // namespace opengl
 
-enum shader_stage {
-	SDR_STAGE_VERTEX,
-	SDR_STAGE_FRAGMENT,
-	SDR_STAGE_GEOMETRY
-};
+enum shader_stage { SDR_STAGE_VERTEX, SDR_STAGE_FRAGMENT, SDR_STAGE_GEOMETRY };
 
 struct opengl_vert_attrib {
 	enum attrib_id {
@@ -156,17 +151,22 @@ int opengl_compile_shader(shader_type sdr, uint flags);
 
 GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute);
 
-void opengl_program_check_info_log(GLuint program_object);
-void opengl_shader_check_info_log(GLuint shader_object);
-
-void opengl_shader_compile_deferred_light_shader();
-void opengl_shader_compile_deferred_light_clear_shader();
-
-void opengl_shader_compile_passthrough_shader();
-
-void opengl_shader_set_passthrough(bool textured = true);
+void opengl_shader_set_passthrough(bool textured, bool hdr);
 
 void opengl_shader_set_default_material(bool textured, bool alpha, vec4* clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane);
 
+template <typename T, typename DataCallback>
+void opengl_set_generic_uniform_data(DataCallback cb)
+{
+	auto buffer = gr_get_uniform_buffer(uniform_block_type::GenericData, 1, sizeof(T));
+
+	auto bufferPtr = buffer.aligner().addTypedElement<T>();
+	cb(bufferPtr);
+
+	buffer.submitData();
+
+	gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0), sizeof(T),
+	                       buffer.bufferHandle());
+}
 
 #endif	// _GROPENGLSHADER_H

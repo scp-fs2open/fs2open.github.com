@@ -71,7 +71,7 @@ class NanoVGRenderer {
 	int _vertexBuffer = -1;
 	vertex_layout _vertexLayout;
 
-	util::UniformBuffer* _uniformBuffer = nullptr;
+	util::UniformBuffer _uniformBuffer;
 
 	nanovg_material _trianglesMaterial;
 	nanovg_material _triangleFillMaterial;

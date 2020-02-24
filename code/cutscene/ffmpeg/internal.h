@@ -74,6 +74,8 @@ class FFMPEGStreamDecoder {
 
 	virtual void finishDecoding() = 0;
 
+	virtual void flushBuffers() = 0;
+
 	virtual FramePtr<frame_type> getFrame();
 };
 

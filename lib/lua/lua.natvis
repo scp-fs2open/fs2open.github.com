@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <!--
+    lua_State {
+         preview (
+              #(
+                   "thread top=", [$c.top-$c.base, i]
+              )
+         )
+         children (
+              #(
+                   [raw members]: [$c,!],
+                   stack size: [$c.top-$c.base, i],
+                   globals: [$c.l_gt],
+                   registry: [$c.l_G->l_registry],
+                   #array (
+                        expr: $e.ci->func,
+                        size: $e.ci->func->tt != 0,
+                   ): #( call: $e ),
+                   #array (
+                        expr: $c.base[$i],
+                        size: $c.top - $c.base,
+                        base: 1
+                   )
+              )
+         )
+    }
+    -->
+    <Type Name="lua_State">
+        <DisplayString>lua_State</DisplayString>
+        <Expand>
+            <Item Name="[stack size]">top-base</Item>
+            <IndexListItems>
+                <Size>top-base</Size>
+                <ValueNode>base[$i]</ValueNode>
+            </IndexListItems>
+            <Item Name="[globals]">l_gt</Item>
+            <Item Name="[registry]">l_G->l_registry</Item>
+            <Item Name="[call]" Condition="ci->func->tt!=0">ci->func</Item>
+        </Expand>
+    </Type>
+    <!--
+    Node {
+         preview (
+              #( $c.i_key.tvk, " = ", $c.i_val )
+         )
+         children (
+              #(
+                   key: $c.i_key.tvk,
+                   val: $c.i_val,
+                   #if( $c.i_key.nk.next != 0 ) (
+                        #( next: $c.i_key.nk.next )
+                   )
+              )
+         )
+    }
+    -->
+    <Type Name="Node">
+        <DisplayString>{i_key} = {i_val}</DisplayString>
+        <Expand>
+            <Item Name="[val]">i_val</Item>
+        </Expand>
+    </Type>
+    <!--
+    lua_TValue {
+         children (
+              #switch($c.tt)
+              #case 2 (                                   ; LUA_TLIGHTUSERDATA
+                   ptr: #((const char*)($c.value.p))
+              )
+              #case 5 (                                    ; LUA_TTABLE
+                   #(
+                        [raw]: [$c,!],
+                        array size: $c.value.gc->h.sizearray,
+                        #array (
+                             expr: $e.value.gc->h.metatable,
+                             size: $e.value.gc->h.metatable != 0,
+                        ): #( metatable: $e ),
+                        #array (
+                             expr: $c.value.gc->h.array[$i],
+                             size: $c.value.gc->h.sizearray,
+                             base: 1
+                        ),
+                        #array (
+                             expr: #( $c.value.gc->h.node[$i], 2 ),
+                             size: (1<<$c.value.gc->h.lsizenode),
+                             base: 1
+                        ): #( hash part: $e )
+                   )
+              )
+              #case 6 (                                   ; LUA_TFUNCTION
+                   #if ($c.value.gc->cl.c.isC) (
+                        #(
+                             env: $c.value.gc->cl.c.env,
+                             #array (
+                                  expr: $e.value.gc->cl.c.upvalue[$i],
+                                  size: $e.value.gc->cl.c.nupvalues,
+                             ): #( upvalues: $e )
+                        )
+                   ) #else (
+                        #($c.value.gc->cl.l)
+                   )
+              )
+              #case 7 (                                   ; LUA_TUSERDATA
+                   #(
+                        #array (
+                             expr: $e.value.gc->u.uv.metatable,
+                             size: $e.value.gc->u.uv.metatable != 0,
+                        ): #( metatable: $e ),
+                        env: $c.value.gc->u.uv.env,
+                        ptr: #((const char*)((&$c.value.gc->u)+1)),
+                        size: $c.value.gc->u.uv.len
+                   )
+              )
+              #case 8 ( #($c.value.gc->th) )          ; LUA_TTHREAD
+         )
+         preview (
+              #switch($c.tt)
+              #case 0 ( "nil" )                         ; LUA_TNIL
+              #case 1 (
+                   #if ($c.value.b == 0) (
+                        "false"
+                   ) #else (
+                        "true"
+                   )
+              )
+              #case 2 (                                   ; LUA_TLIGHTUSERDATA
+               #($c.value.p, " lightuserdata") )
+              #case 3 (                                   ; LUA_TNUMBER
+               #("number=", $c.value.n) )
+              #case 4 (                                   ; LUA_TSTRING
+               #( $c.value.gc->ts) )
+              #case 5 (      ; LUA_TTABLE
+                   #( "table" )
+              )
+              #case 6 ( #($c.value.gc->cl) )          ; LUA_TFUNCTION
+              #case 7 ( #($c.value.gc->u) )          ; LUA_TUSERDATA
+              #case 8 ( #($c.value.gc->th) )          ; LUA_TTHREAD
+              #default ( "empty" )
+              )
+         )
+    }
+    -->
+    <Type Name="lua_TValue">
+        <DisplayString Condition="tt==0">nil</DisplayString>
+        <DisplayString Condition="tt==1">{(bool)value.b}</DisplayString>
+        <DisplayString Condition="tt==2">{value.p} lightuserdata</DisplayString>
+        <DisplayString Condition="tt==3">number={value.n}</DisplayString>
+        <DisplayString Condition="tt==4">{value.gc->ts}</DisplayString>
+        <DisplayString Condition="tt==5">{value.gc->h}</DisplayString>
+        <DisplayString Condition="tt==6">function {value.gc->cl}</DisplayString>
+        <DisplayString Condition="tt==7">userdata {value.gc->u}</DisplayString>
+        <DisplayString Condition="tt==8">thread {value.gc->th}</DisplayString>
+        <DisplayString>empty</DisplayString>
+        <Expand>
+            <Item Name="[lightuserdata]" Condition="tt==2">(const char *)value.p</Item>
+            <Item Name="[table]" Condition="tt==5">value.gc->h</Item>
+            <Item Name="[function]" Condition="tt==6">value.gc->cl</Item>
+            <Item Name="[userdata]" Condition="tt==7">value.gc->u</Item>
+            <Item Name="[thread]" Condition="tt==8">value.gc->th</Item>
+        </Expand>
+    </Type>
+    <!--
+    Udata {
+         preview (
+              #( "userdata size=", $c.uv.len, " ptr=", #((void*)((&$c)+1)) )
+         )
+    }
+    -->
+    <Type Name="Udata">
+        <DisplayString>userdata</DisplayString>
+    </Type>
+    <!--
+    CClosure {
+         preview (
+              $c.f
+         )
+    }
+    -->
+    <Type Name="CClosure">
+        <DisplayString>{f}</DisplayString>
+    </Type>
+    <!--
+    LClosure {
+         preview (
+              "Lua function"
+         )
+    }
+    -->
+    <Type Name="LClosure">
+        <DisplayString>Lua function</DisplayString>
+    </Type>
+    <!--
+    Closure {
+         preview (
+              #if ($c.c.isC) ( #($c.c) )
+              #else ( #($c.value.gc->cl.l) )
+         )
+    }
+    -->
+    <Type Name="Closure">
+        <DisplayString Condition="c.isC">{c}</DisplayString>
+        <DisplayString Condition="!c.isC">{value.gc->cl.l}</DisplayString>
+    </Type>
+    <!--
+    Table {
+         children (
+                   #(
+                        [raw]: [$c,!],
+                        [array size]: $c.sizearray,
+                        #array (
+                             expr: $e.metatable,
+                             size: $e.metatable != 0,
+                        ): #( metatable: $e ),
+                        #array (
+                             expr: $c.array[$i],
+                             size: $c.sizearray,
+                             base: 1
+                        ),
+                        #array (
+                             expr: #( $c.node[$i], 2 ),
+                             size: (1<<$c.lsizenode),
+                             base: 1
+                        ): #( key: $e )
+                   )
+         )
+         preview (
+              #( "table" )
+         )
+    }
+    -->
+    <Type Name="Table">
+        <DisplayString>table</DisplayString>
+        <Expand>
+            <Item Name="[array size]">sizearray</Item>
+            <Item Name="metatable" Condition="metatable!=0">metatable</Item>
+            <IndexListItems>
+                <Size>sizearray</Size>
+                <ValueNode>array[$i]</ValueNode>
+            </IndexListItems>
+            <IndexListItems>
+                <Size>1&lt;&lt;lsizenode</Size>
+                <ValueNode>node[$i]</ValueNode>
+            </IndexListItems>
+        </Expand>
+    </Type>
+    <!--
+    TString {
+         preview (
+              #( (const char *) (&($c.tsv)+1) )
+         )
+    }
+    -->
+    <Type Name="TString">
+        <DisplayString>{(const char *)(&amp;tsv+sizeof(*this)/sizeof(tsv)),s}</DisplayString>
+    </Type>
+    <Type Name="TKey">
+        <DisplayString>{tvk}</DisplayString>
+    </Type>
+</AutoVisualizer>

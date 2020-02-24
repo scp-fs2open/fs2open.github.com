@@ -38,11 +38,6 @@ extern int Num_weapon_subtypes;
 #define	WRT_LASER	1
 #define	WRT_POF		2
 
-//	Bitflags controlling weapon behavior
-#define	MAX_WEAPON_FLAGS	18						//	Maximum number of different bit flags legal to specify in a single weapons.tbl Flags line
-
-#define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
-
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -52,7 +47,6 @@ extern int Num_weapon_subtypes;
 #define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
 
 #define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
-#define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
@@ -299,6 +293,7 @@ typedef struct weapon_info {
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
+	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 
     // spawn weapons
@@ -582,7 +577,6 @@ void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
-int cmeasure_name_lookup(char *name);
 void spawn_child_weapons( object *objp );
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
@@ -592,7 +586,6 @@ void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *b
 int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 
-void	missile_obj_list_rebuild();	// called by save/restore code only
 missile_obj *missile_obj_return_address(int index);
 void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list);
 

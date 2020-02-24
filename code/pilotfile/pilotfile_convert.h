@@ -34,51 +34,6 @@ static const unsigned short MAX_JOY_AXES_CONV = 5;
 static const int MAX_WSS_SLOTS_CONV = 12;   // 3 wings * 4 slots
 static const int MAX_SHIP_WEAPONS_CONV = 7; // 3 primary + 4 secondary
 
-typedef struct index_list_t {
-	SCP_string name;
-	int index;
-	int val;
-
-	index_list_t() :
-		index(-1), val(0)
-	{
-	}
-} index_list_t;
-
-// special stats struct, since our use here is not content specific
-typedef struct scoring_special_t {
-	int score;
-	int rank;
-	int assists;
-	int kill_count;
-	int kill_count_ok;
-	int bonehead_kills;
-
-	unsigned int p_shots_fired;
-	unsigned int p_shots_hit;
-	unsigned int p_bonehead_hits;
-
-	unsigned int s_shots_fired;
-	unsigned int s_shots_hit;
-	unsigned int s_bonehead_hits;
-
-	unsigned int missions_flown;
-	unsigned int flight_time;
-	_fs_time_t last_flown;
-	_fs_time_t last_backup;
-
-	SCP_vector<index_list_t> ship_kills;
-	SCP_vector<index_list_t> medals_earned;
-
-	scoring_special_t() :
-		score(0), rank(RANK_ENSIGN), assists(0), kill_count(0), kill_count_ok(0),
-		bonehead_kills(0), p_shots_fired(0), p_shots_hit(0), p_bonehead_hits(0),
-		s_shots_fired(0), s_shots_hit(0), s_bonehead_hits(0), missions_flown(0),
-		flight_time(0), last_flown(0), last_backup(0)
-	{
-	}
-} scoring_special_t;
-
 typedef struct cmission_conv_t {
 	int index;			// index into Campaign.missions[]
 	int flags;
@@ -269,27 +224,25 @@ class pilotfile_convert {
 		scoring_special_t multi_stats;
 
 		// sections of a pilot file. includes both plr and csg sections
-		struct Section {
-			enum id {
-				Flags			= 0x0001,
-				Info			= 0x0002,
-				Loadout			= 0x0003,
-				Controls		= 0x0004,
-				Multiplayer		= 0x0005,
-				Scoring			= 0x0006,
-				ScoringMulti	= 0x0007,
-				Techroom		= 0x0008,
-				HUD				= 0x0009,
-				Settings		= 0x0010,
-				RedAlert		= 0x0011,
-				Variables		= 0x0012,
-				Missions		= 0x0013,
-				Cutscenes		= 0x0014,
-			};
+		enum class Section {
+			Flags			= 0x0001,
+			Info			= 0x0002,
+			Loadout			= 0x0003,
+			Controls		= 0x0004,
+			Multiplayer		= 0x0005,
+			Scoring			= 0x0006,
+			ScoringMulti	= 0x0007,
+			Techroom		= 0x0008,
+			HUD				= 0x0009,
+			Settings		= 0x0010,
+			RedAlert		= 0x0011,
+			Variables		= 0x0012,
+			Missions		= 0x0013,
+			Cutscenes		= 0x0014,
 		};
 
 		// for writing files, sets/updates section info
-		void startSection(Section::id section_id);
+		void startSection(Section section_id);
 		void endSection();
 		// file offset of the size value for the current section (set with startSection())
 		size_t m_size_offset;

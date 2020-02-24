@@ -354,6 +354,9 @@ void cmd_brief_new_stage(int stage)
 	// Make sure that the text wrapping and the rendering code use the same font
 	font::set_font(font::FONT1);
 
+	// fire the script hook
+	common_fire_stage_script_hook(stage, Cur_stage);
+
 	Cur_stage = stage;
 	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD], default_command_briefing_color);
 

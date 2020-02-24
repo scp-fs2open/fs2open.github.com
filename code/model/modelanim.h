@@ -12,6 +12,8 @@
 #ifndef _MODELANIM_H
 #define _MODELANIM_H
 
+#include "gamesnd/gamesnd.h"
+#include "globalincs/pstypes.h"
 #include <climits>
 
 #define MAX_TRIGGERED_ANIMATIONS 15
@@ -149,7 +151,7 @@ void model_anim_set_initial_states(ship *shipp);
 void model_anim_fix_reverse_times(ship_info *sip);
 
 // gets animation type index from string name
-int model_anim_match_type(char *p);
+int model_anim_match_type(const char* p);
 
 // starts an animation of a certan type that may be assosiated with a submodel of a ship (returns true if an animation was started)
 bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant = false);	// for a specific subsystem

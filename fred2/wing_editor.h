@@ -109,4 +109,7 @@ protected:
 
 	// Aux functions
 	int calc_max_wave_treshold();
+public:
+	afx_msg void OnBnClickedCustomWarpinParams();
+	afx_msg void OnBnClickedCustomWarpoutParams();
 };

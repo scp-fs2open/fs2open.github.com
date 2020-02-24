@@ -31,7 +31,6 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 
-#define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
 #define MAX_HULL_PIECES			MAX_DEBRIS_PIECES // limit the number of hull debris chunks that can exist. 
@@ -51,10 +50,6 @@ int Debris_num_submodels = 0;
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris)
-
-#define	MAX_SPEED_SMALL_DEBRIS		200					// maximum velocity of small debris piece
-#define	MAX_SPEED_BIG_DEBRIS			150					// maximum velocity of big debris piece
-#define	MAX_SPEED_CAPITAL_DEBRIS	100					// maximum velocity of capital debris piece
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -270,13 +265,8 @@ void debris_process_post(object * obj, float frame_time)
 
 			vec3d v1, v2, v3, v4;
 
-			if ( Cmdline_old_collision_sys ) {
-				submodel_get_two_random_points( db->model_num, db->submodel_num, &v1, &v2 );
-				submodel_get_two_random_points( db->model_num, db->submodel_num, &v3, &v4 );
-			} else {
-				submodel_get_two_random_points_better( db->model_num, db->submodel_num, &v1, &v2 );
-				submodel_get_two_random_points_better( db->model_num, db->submodel_num, &v3, &v4 );
-			}
+			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
+			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v3, &v4);
 
 			n = 0;
 
@@ -352,12 +342,8 @@ void debris_process_post(object * obj, float frame_time)
 				if ( mr < RAND_MAX/5 )	{
 					vec3d v1, v2;
 
-					if ( Cmdline_old_collision_sys ) {
-						submodel_get_two_random_points( db->model_num, db->submodel_num, &v1, &v2 );
-					} else {
-						submodel_get_two_random_points_better( db->model_num, db->submodel_num, &v1, &v2 );
-					}
-					
+					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
+
 					db->arc_pts[i][mr % 2] = v1;
 				}
 			}
@@ -505,7 +491,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->flags |= DEBRIS_USED;
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
-	db->source_sig = source_obj->signature;
 	db->damage_type_idx = shipp->debris_damage_type_idx;
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;
@@ -989,8 +974,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		// SET PHYSICS PARAMETERS
 		// already have (hitpos - heavy) and light_cm_pos
-		// get heavy cm pos - already have light_cm_pos
-		debris_hit_info->heavy_collision_cm_pos = zero;
 
 		// get r_heavy and r_light
 		debris_hit_info->r_heavy = debris_hit_info->hit_pos;

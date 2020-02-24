@@ -336,7 +336,12 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 	return ade_set_args(L, "o", l_Vector.Set(v1));
 }
 
-ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector, collision info", "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
+ADE_FUNC(
+    checkRayCollision, l_Object, "vector Start Point, vector End Point[, boolean Local=false]",
+    "Checks the collisions between the polygons of the current object and a ray. Start and end vectors are in world "
+    "coordinates",
+    ade_type_info({"vector", "collision_info"}),
+    "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
 {
 	object_h *objh = NULL;
 	object *obj = NULL;
@@ -404,16 +409,16 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	if (local)
-		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point), l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point), l_ColInfo.Set(mc_info_h(hull_check)));
 	else
-		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(hull_check)));
 }
 
 ADE_FUNC(addPreMoveHook, l_Object, "function(object) callback",
          "Registers a callback on this object which is called every time <i>before</i> the physics rules are applied "
          "to the object. The callback is attached to this specific object and will not be called anymore once the "
          "object is deleted. The parameter of the function is the object that is being moved.",
-         "nothing", "Returns nothing.")
+         nullptr, "Returns nothing.")
 {
 	object_h* objh = nullptr;
 	luacpp::LuaFunction callback;
@@ -437,7 +442,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object) callback",
          "Registers a callback on this object which is called every time <i>after</i> the physics rules are applied "
          "to the object. The callback is attached to this specific object and will not be called anymore once the "
          "object is deleted. The parameter of the function is the object that is being moved.",
-         "nothing", "Returns nothing.")
+         nullptr, "Returns nothing.")
 {
 	object_h* objh = nullptr;
 	luacpp::LuaFunction callback;

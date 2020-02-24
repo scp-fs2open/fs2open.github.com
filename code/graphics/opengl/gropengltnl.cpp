@@ -12,28 +12,29 @@
 #include <windows.h>
 #endif
 
+#include "ShaderProgram.h"
+#include "gropengldeferred.h"
+#include "gropengldraw.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropengltexture.h"
+#include "gropengltnl.h"
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
-#include "gropengldraw.h"
-#include "gropenglshader.h"
-#include "gropenglstate.h"
-#include "gropengltexture.h"
-#include "gropengldeferred.h"
-#include "gropengltnl.h"
+#include "graphics/light.h"
+#include "graphics/material.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
+#include "options/Option.h"
+#include "particle/particle.h"
 #include "render/3d.h"
 #include "weapon/trails.h"
-#include "particle/particle.h"
-#include "graphics/shadows.h"
-#include "graphics/material.h"
-#include "graphics/light.h"
-#include "ShaderProgram.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -61,6 +62,7 @@ GLint GL_max_elements_indices = 4096;
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
+int Shadow_texture_size = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
@@ -88,7 +90,8 @@ static opengl_vertex_bind GL_array_binding_data[] =
 struct opengl_buffer_object {
 	GLuint buffer_id;
 	GLenum type;
-	GLenum usage;
+	GLenum gl_usage;
+	BufferUsageHint usage;
 	size_t size;
 
 	GLuint texture;	// for texture buffer objects
@@ -119,7 +122,9 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 			return GL_DYNAMIC_DRAW;
 		case BufferUsageHint::Streaming:
 			return GL_STREAM_DRAW;
-		default:
+	    case BufferUsageHint::PersistentMapping:
+		    return GL_NONE; // Dummy value
+	    default:
 			UNREACHABLE("Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
@@ -184,12 +189,16 @@ static GLenum convertComparisionFunction(ComparisionFunction func) {
 	return mode;
 }
 
-int opengl_create_buffer_object(GLenum type, GLenum usage)
+int opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
 
+	Assertion(usage != BufferUsageHint::PersistentMapping || GLAD_GL_ARB_buffer_storage != 0,
+	          "Persistent mapping is not supported by this OpenGL implementation!");
+
 	opengl_buffer_object buffer_obj;
 
+	buffer_obj.gl_usage = gl_usage;
 	buffer_obj.usage = usage;
 	buffer_obj.type = type;
 	buffer_obj.size = 0;
@@ -240,7 +249,7 @@ GLuint opengl_buffer_get_id(GLenum expected_type, int handle) {
 	return buffer_obj.buffer_id;
 }
 
-void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
+void gr_opengl_update_buffer_data(int handle, size_t size, const void* data)
 {
 	// This has to be verified by the caller or else we will run into OPenGL errors
 	Assertion(size > 0, "Buffer updates must include some data!");
@@ -254,31 +263,20 @@ void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 
 	opengl_bind_buffer_object(handle);
 
-	if (size <= buffer_obj.size && buffer_obj.type == GL_UNIFORM_BUFFER) {
-		// Uniform buffer can use unsychronized buffer mapping since those are always synchronized by us
-		// We also don't care about the previous data and tell OpenGL to map the buffer unsynchronized.
-		auto ptr = glMapBufferRange(buffer_obj.type,
-									0,
-									size,
-									GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-		if (ptr == nullptr) {
-			// Something went wrong, try subdata instead
-			glBufferSubData(buffer_obj.type, 0, size, data);
-		} else {
-			memcpy(ptr, data, size);
-
-			glUnmapBuffer(buffer_obj.type);
-		}
+	if (buffer_obj.usage == BufferUsageHint::PersistentMapping) {
+		Assertion(buffer_obj.size == 0, "Tried to resize a buffer for persistent mapping! This is not allowed.");
+		Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping was used when it wasn't supported!");
+		glBufferStorage(buffer_obj.type, size, data, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 	} else {
-		GL_vertex_data_in -= buffer_obj.size;
-		buffer_obj.size = size;
-		GL_vertex_data_in += buffer_obj.size;
-
-		glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+		glBufferData(buffer_obj.type, size, data, buffer_obj.gl_usage);
 	}
+
+	GL_vertex_data_in -= buffer_obj.size;
+	buffer_obj.size = size;
+	GL_vertex_data_in += buffer_obj.size;
 }
 
-void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
+void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, const void* data)
 {
 	GR_DEBUG_SCOPE("Update buffer data with offset");
 
@@ -287,9 +285,45 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 
 	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
 
+	Assertion(buffer_obj.usage != BufferUsageHint::PersistentMapping,
+	          "Persistently mapped buffers may not be updated!");
+
 	opengl_bind_buffer_object(handle);
 
 	glBufferSubData(buffer_obj.type, offset, size, data);
+}
+void* gr_opengl_map_buffer(int handle)
+{
+	GR_DEBUG_SCOPE("Map buffer");
+
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	auto& buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
+	          "Buffer mapping is only supported for persistently mapped buffers!");
+	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
+
+	opengl_bind_buffer_object(handle);
+	return glMapBufferRange(buffer_obj.type, 0, buffer_obj.size,
+	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+}
+void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
+	GR_DEBUG_SCOPE("Flush mapped buffer");
+
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	auto& buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
+	          "Buffer mapping is only supported for persistently mapped buffers!");
+	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
+
+	opengl_bind_buffer_object(handle);
+	glFlushMappedBufferRange(buffer_obj.type, offset, size);
 }
 
 void gr_opengl_delete_buffer(int handle)
@@ -334,7 +368,7 @@ void gr_opengl_delete_buffer(int handle)
 
 int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
 {
-	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage));
+	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage), usage);
 }
 
 void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
@@ -359,7 +393,8 @@ void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset,
 int opengl_create_texture_buffer_object()
 {
 	// create the buffer
-	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW);
+	int buffer_object_handle =
+	    opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
 
 	opengl_check_for_errors();
 
@@ -412,70 +447,112 @@ void opengl_destroy_all_buffers()
 	GL_vertex_buffers_in_use = 0;
 }
 
+static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
+{
+	mprintf(("Trying to create %dx%d %d-bit shadow framebuffer\n", size, size, color_format == GL_RGBA32F ? 32 : 16));
+
+	glGenFramebuffers(1, &shadow_fbo);
+	GL_state.BindFrameBuffer(shadow_fbo);
+
+	glGenTextures(1, &Shadow_map_depth_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
+	GL_state.Texture.Enable(Shadow_map_depth_texture);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
+
+	glGenTextures(1, &Shadow_map_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
+	GL_state.Texture.Enable(Shadow_map_texture);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
+
+	auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GL_state.BindFrameBuffer(0);
+
+	if (status == GL_FRAMEBUFFER_COMPLETE) {
+		// Everything is fine
+		mprintf(("Shadow framebuffer created successfully.\n"));
+		Shadow_texture_size = size;
+		return true;
+	}
+
+	// Clean up resources
+	glDeleteTextures(1, &Shadow_map_texture);
+	glDeleteTextures(1, &Shadow_map_depth_texture);
+	glDeleteFramebuffers(1, &shadow_fbo);
+
+	Shadow_map_texture       = 0;
+	Shadow_map_depth_texture = 0;
+	shadow_fbo               = 0;
+
+	const char* error;
+	switch (status) {
+	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+		error = "Incomplete framebuffer attachment";
+		break;
+	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+		error = "Framebuffer is missing an attachment";
+		break;
+	case GL_FRAMEBUFFER_UNSUPPORTED:
+		error = "Framebuffer configuration is unsupported";
+		break;
+	default:
+		error = "Unknown framebuffer status";
+		break;
+	}
+
+	mprintf(("Failed to create framebuffer: %s\n", error));
+	return false;
+}
+
 void opengl_tnl_init()
 {
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
-	if(Cmdline_shadow_quality)
-	{
-		//Setup shadow map framebuffer
-		glGenFramebuffers(1, &shadow_fbo);
-		GL_state.BindFrameBuffer(shadow_fbo);
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		int size;
+		switch (Shadow_quality) {
+		case ShadowQuality::Low:
+			size = 512;
+			break;
+		case ShadowQuality::Medium:
+			size = 1024;
+			break;
+		case ShadowQuality::High:
+			size = 2048;
+			break;
+		case ShadowQuality::Ultra:
+			size = 4096;
+			break;
+		default:
+			size = 256;
+			break;
+		}
 
-		glGenTextures(1, &Shadow_map_depth_texture);
-
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-		GL_state.Texture.Enable(Shadow_map_depth_texture);
-		opengl_set_object_label(GL_TEXTURE, Shadow_map_depth_texture, "Scene shadow depth map");
-
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		//glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_REF_DEPTH_TO_TEXTURE_EXT);
-		//glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
-		//glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
-		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
-		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Shadow_map_depth_texture, 0);
-
-		glGenTextures(1, &Shadow_map_texture);
-
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-		GL_state.Texture.Enable(Shadow_map_texture);
-		opengl_set_object_label(GL_TEXTURE, Shadow_map_texture, "Scene shadow map");
-
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, size, size, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
-		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Shadow_map_texture, 0);
-
-		GL_state.BindFrameBuffer(0);
-
-		opengl_check_for_errors("post_init_framebuffer()");
+		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
+			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
+				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
+				Shadow_quality = ShadowQuality::Disabled;
+			}
+		}
 	}
 
 	gr_opengl_deferred_init();
@@ -604,7 +681,7 @@ extern bool gr_htl_projection_matrix_set;
 
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient)
 {
-	if ( !Cmdline_shadow_quality )
+	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
 
 	GL_state.PushFramebufferState();
@@ -628,8 +705,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 	*shadow_view_matrix = gr_view_matrix;
 
-	int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-	glViewport(0, 0, size, size);
+	glViewport(0, 0, Shadow_texture_size, Shadow_texture_size);
 }
 
 void gr_opengl_shadow_map_end()
@@ -691,8 +767,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 		if (!clip_params.enabled) {
 			GL_state.ClipDistance(0, false);
 		} else {
-			Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
-				|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+			Assertion(Current_shader != nullptr && (Current_shader->shader == SDR_TYPE_MODEL
 				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
 					  "Clip planes are not supported by this shader!");
 
@@ -744,7 +819,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 void opengl_tnl_set_model_material(model_material *material_info)
 {
 	float u_scale, v_scale;
-	int render_pass = 0;
 
 	opengl_tnl_set_material(material_info, false, false);
 
@@ -766,98 +840,78 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	uint32_t array_index;
 	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 0);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sGlowmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 1);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sSpecmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
 
 		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 2);
 		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 2);
 		}
-		++render_pass;
 
 		if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
-			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
+			Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
 
-			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);
+			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
 			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
-
-			++render_pass;
 		}
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 4);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 5);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 6);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 7);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOWS ) {
-		Current_shader->program->Uniforms.setUniformi("shadow_map", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
 
-		GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
-
-		++render_pass; // bump!
+		GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
-		Current_shader->program->Uniforms.setUniformi("sFramebuffer", render_pass);
+		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 
 		if ( Scene_framebuffer_in_frame ) {
-			GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D, Scene_effect_texture);
+			GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_effect_texture);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		} else {
-			GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
+			GL_state.Texture.Enable(9, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
 		}
-
-		++render_pass;
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
-		Current_shader->program->Uniforms.setUniformi("transform_tex", render_pass);
-		GL_state.Texture.Enable(render_pass, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
-
-		++render_pass;
+		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 	}
 
 	if ( Deferred_lighting ) {
@@ -870,25 +924,28 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
-	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
-	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
-	Current_shader->program->Uniforms.setUniformf("window_width", (float)gr_screen.max_w);
-	Current_shader->program->Uniforms.setUniformf("window_height", (float)gr_screen.max_h);
-	Current_shader->program->Uniforms.setUniformf("nearZ", Min_draw_distance);
-	Current_shader->program->Uniforms.setUniformf("farZ", Max_draw_distance);
-	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
-	Current_shader->program->Uniforms.setUniformi("blend_alpha", material_info->get_blend_mode() != ALPHA_BLEND_ADDITIVE);
+	opengl_set_generic_uniform_data<graphics::generic_data::effect_data>(
+		[&](graphics::generic_data::effect_data* data) {
+			data->window_width  = (float)gr_screen.max_w;
+			data->window_height = (float)gr_screen.max_h;
+			data->nearZ         = Min_draw_distance;
+			data->farZ          = Max_draw_distance;
+			data->srgb          = High_dynamic_range ? 1 : 0;
+			data->blend_alpha   = material_info->get_blend_mode() != ALPHA_BLEND_ADDITIVE;
 
-	if ( Cmdline_no_deferred_lighting ) {
-		Current_shader->program->Uniforms.setUniformi("linear_depth", 0);
-	} else {
-		Current_shader->program->Uniforms.setUniformi("linear_depth", 1);
-	}
+			if (Cmdline_no_deferred_lighting) {
+				data->linear_depth = 0;
+			} else {
+				data->linear_depth = 1;
+			}
+		});
 
-	if ( !Cmdline_no_deferred_lighting ) {
+	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
+	Current_shader->program->Uniforms.setTextureUniform("depthMap", 1);
+
+	if (!Cmdline_no_deferred_lighting) {
 		Assert(Scene_position_texture != 0);
 
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);
@@ -898,48 +955,52 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 	}
 }
-void opengl_tnl_set_material_batched(batched_bitmap_material* material_info) {
+void opengl_tnl_set_material_batched(batched_bitmap_material* material_info)
+{
 	// This material assumes that the array index is supplied via the vertex attributes
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformf("intensity", material_info->get_color_scale());
+	opengl_set_generic_uniform_data<graphics::generic_data::batched_data>(
+		[&](graphics::generic_data::batched_data* data) {
+			data->intensity = material_info->get_color_scale();
+			data->color     = material_info->get_color();
+		});
 
-	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
+	gr_matrix_set_uniforms();
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
-
-	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
 }
 
 void opengl_tnl_set_material_distortion(distortion_material* material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
-	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
-	Current_shader->program->Uniforms.setUniformi("depthMap", 1);
-	Current_shader->program->Uniforms.setUniformf("window_width", (float)gr_screen.max_w);
-	Current_shader->program->Uniforms.setUniformf("window_height", (float)gr_screen.max_h);
-	Current_shader->program->Uniforms.setUniformf("nearZ", Min_draw_distance);
-	Current_shader->program->Uniforms.setUniformf("farZ", Max_draw_distance);
-	Current_shader->program->Uniforms.setUniformi("frameBuffer", 2);
+	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
+	Current_shader->program->Uniforms.setTextureUniform("depthMap", 1);
 
+	opengl_set_generic_uniform_data<graphics::generic_data::effect_distort_data>(
+		[&](graphics::generic_data::effect_distort_data* data) {
+			data->window_width  = (float)gr_screen.max_w;
+			data->window_height = (float)gr_screen.max_h;
+
+			if (material_info->get_thruster_rendering()) {
+				data->use_offset = 1.0f;
+			} else {
+				data->use_offset = 0.0f;
+			}
+		});
+
+	Current_shader->program->Uniforms.setTextureUniform("frameBuffer", 2);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_effect_texture);
 
-	Current_shader->program->Uniforms.setUniformi("distMap", 3);
-
-	if(material_info->get_thruster_rendering()) {
+	Current_shader->program->Uniforms.setTextureUniform("distMap", 3);
+	if (material_info->get_thruster_rendering()) {
 		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch]);
-
-		Current_shader->program->Uniforms.setUniformf("use_offset", 1.0f);
 	} else {
 		// Disable this texture unit
 		GL_state.Texture.Enable(3, GL_TEXTURE_2D, 0);
-
-		Current_shader->program->Uniforms.setUniformf("use_offset", 0.0f);
 	}
 
 	Assert(Scene_depth_texture != 0);
@@ -950,12 +1011,11 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 void opengl_tnl_set_material_movie(movie_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_on_frame();
 
-	Current_shader->program->Uniforms.setUniformi("ytex", 0);
-	Current_shader->program->Uniforms.setUniformi("utex", 1);
-	Current_shader->program->Uniforms.setUniformi("vtex", 2);
+	Current_shader->program->Uniforms.setTextureUniform("ytex", 0);
+	Current_shader->program->Uniforms.setTextureUniform("utex", 1);
+	Current_shader->program->Uniforms.setTextureUniform("vtex", 2);
 
 	float u_scale, v_scale;
 	uint32_t index;
@@ -972,8 +1032,9 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 void opengl_tnl_set_material_nanovg(nanovg_material* material_info) {
 	opengl_tnl_set_material(material_info, true);
 
-	Current_shader->program->Uniforms.setUniformi("nvg_tex", 0);
+	Current_shader->program->Uniforms.setTextureUniform("nvg_tex", 0);
 }
+
 void opengl_tnl_set_material_decal(decal_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
@@ -986,7 +1047,7 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 							 &v_scale,
 							 &array_index,
 							 0)) {
-		Current_shader->program->Uniforms.setUniformi("diffuseMap", 0);
+		Current_shader->program->Uniforms.setTextureUniform("diffuseMap", 0);
 	}
 
 	if (gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE),
@@ -995,7 +1056,7 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 							 &v_scale,
 							 &array_index,
 							 1)) {
-		Current_shader->program->Uniforms.setUniformi("glowMap", 1);
+		Current_shader->program->Uniforms.setTextureUniform("glowMap", 1);
 	}
 
 	if (gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE),
@@ -1004,16 +1065,48 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 							 &v_scale,
 							 &array_index,
 							 2)) {
-		Current_shader->program->Uniforms.setUniformi("normalMap", 2);
+		Current_shader->program->Uniforms.setTextureUniform("normalMap", 2);
 	}
 
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_depth_texture);
-	Current_shader->program->Uniforms.setUniformi("gDepthBuffer", 3);
+	Current_shader->program->Uniforms.setTextureUniform("gDepthBuffer", 3);
 
 	if (Current_shader->flags & SDR_FLAG_DECAL_USE_NORMAL_MAP) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D, Scene_normal_texture);
-		Current_shader->program->Uniforms.setUniformi("gNormalBuffer", 4);
+		Current_shader->program->Uniforms.setTextureUniform("gNormalBuffer", 4);
 	}
+}
+
+void opengl_tnl_set_rocketui_material(interface_material* material_info)
+{
+	vec3d offset = vmd_zero_vector;
+	offset.xyz.x = material_info->get_offset().x;
+	offset.xyz.y = material_info->get_offset().y;
+
+	matrix4 modelViewMatrix;
+	vm_matrix4_set_transform(&modelViewMatrix, &vmd_identity_matrix, &offset);
+
+	opengl_tnl_set_material(material_info, false);
+
+	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
+
+	uint32_t baseMapIndex = 0;
+	if (material_info->is_textured()) {
+		float u_scale, v_scale;
+		if (!gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(),
+								  &u_scale, &v_scale, &baseMapIndex)) {
+			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
+		}
+	}
+
+	opengl_set_generic_uniform_data<graphics::generic_data::rocketui_data>(
+		[&](graphics::generic_data::rocketui_data* data) {
+			data->modelViewMatrix = modelViewMatrix;
+			data->projMatrix      = gr_projection_matrix;
+
+			data->textured     = material_info->is_textured() ? GL_TRUE : GL_FALSE;
+			data->baseMapIndex = baseMapIndex;
+		});
 }
 
 void gr_opengl_set_viewport(int x, int y, int width, int height) {

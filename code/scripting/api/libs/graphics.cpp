@@ -2,16 +2,19 @@
 //
 
 #include "graphics.h"
+
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/movie_player.h"
 #include "scripting/api/objs/object.h"
+#include "scripting/api/objs/particle.h"
 #include "scripting/api/objs/streaminganim.h"
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
 #include <debris/debris.h>
@@ -58,7 +61,7 @@ ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
 ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Camera.Set(camid()));
 
@@ -103,14 +106,14 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 
 		if (realIdx < 0 || realIdx >= font::FontManager::numberOfFonts())
 		{
-			LuaError(L, "Invalid font index %d specified, must be between 1 and %d!", index, font::FontManager::numberOfFonts());
+			return ade_set_error(L, "o", l_Font.Set(font_h()));
 		}
 
 		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
 	}
 	else
 	{
-		char *s = NULL;
+		const char* s = nullptr;
 
 		if(!ade_get_args(L, "*s", &s))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
@@ -134,9 +137,9 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 }
 
 //****SUBLIBRARY: Graphics/PostEffects
-ADE_LIB_DERIV(l_Graphics_Posteffects, "PostEffects", NULL, "Post processing effects", l_Graphics);
+ADE_LIB_DERIV(l_Graphics_Posteffects, "PostEffects", nullptr, "Post-processing effects", l_Graphics);
 
-ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specified post processing index", "string", "post processing name or empty string on error")
+ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specified post-processing index", "string", "post-processing name or empty string on error")
 {
 	int index = -1;
 	if(!ade_get_args(L, "*i", &index))
@@ -157,7 +160,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 	return ade_set_args(L, "s", const_cast<char*>(names[index].c_str()));
 }
 
-ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post processing effects", "number", "number of post processing effects or 0 on error")
+ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")
 {
 	SCP_vector<SCP_string> names;
 	get_post_process_effect_names(names);
@@ -166,16 +169,16 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post processing effect. Optionally sets RGB values for post effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post-processing effect. Optionally sets RGB values for effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
 {
-	char* name = NULL;
+	const char* name     = nullptr;
 	int intensity = 0;
 	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
 
 	if (!ade_get_args(L, "s|ifff", &name, &intensity, &rgb.xyz.x, &rgb.xyz.y, &rgb.xyz.z))
 		return ADE_RETURN_FALSE;
 
-	if (name == NULL || intensity < 0)
+	if (name == nullptr || intensity < 0)
 		return ADE_RETURN_FALSE;
 
 	CAP(rgb.xyz.x, 0.0f, 1.0f);
@@ -187,7 +190,7 @@ ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(resetPostEffects, l_Graphics, NULL, "Resets all post effects to their default values", "boolean", "true if successful, false otherwise")
+ADE_FUNC(resetPostEffects, l_Graphics, nullptr, "Resets all post-processing effects to their default values", "boolean", "true if successful, false otherwise")
 {
 	gr_post_process_set_defaults();
 
@@ -224,31 +227,31 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 
 ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering target", "texture", "Current rendering target, or invalid texture handle if screen is render target")
 {
-	int newtx = -1;
+	texture_h* newtx = nullptr;
 
 	if(ADE_SETTING_VAR && lua_isnil(L, 2))
 	{
 		bm_set_render_target(-1);
-		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
 	else
 	{
-
-		if(!ade_get_args(L, "*|o", l_Texture.Get(&newtx)))
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+		if (!ade_get_args(L, "*|o", l_Texture.GetPtr(&newtx)))
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 		if(ADE_SETTING_VAR) {
-			if(newtx > -1 && bm_is_valid(newtx))
-				bm_set_render_target(newtx, 0);
+			if (newtx != nullptr && newtx->isValid())
+				bm_set_render_target(newtx->handle, 0);
 			else
 				bm_set_render_target(-1);
 		}
 
-		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[integer red, number green, number blue, number alpha]", "Clears the screen to black, or the color specified.", NULL, NULL)
+ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
+         "Clears the screen to black, or the color specified.", nullptr, nullptr)
 {
 	int r,g,b,a;
 	r=g=b=0;
@@ -280,7 +283,7 @@ ADE_FUNC(createCamera, l_Graphics,
 		 "camera",
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
 {
-	char *s = NULL;
+	const char* s = nullptr;
 	vec3d *v = &vmd_zero_vector;
 	matrix_h *mh = NULL;
 	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
@@ -298,9 +301,9 @@ ADE_FUNC(createCamera, l_Graphics,
 ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interface is stretched", "boolean", "True if stretched, false if aspect ratio is maintained")
 {
 	if(!Gr_inited)
-		return ade_set_error(L, "b", 0);
+		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", Cmdline_stretch_menu);
+	return ade_set_args(L, "b", Cmdline_stretch_menu != 0);
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
@@ -437,10 +440,15 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
-	int idx = -1;
-	ade_get_args(L, "|o", l_Texture.Get(&idx));
+	texture_h* idx = nullptr;
+	ade_get_args(L, "|o", l_Texture.GetPtr(&idx));
 
-	return ade_set_args(L, "b", bm_set_render_target(idx, 0));
+	if (idx == nullptr) {
+		return ade_set_args(L, "b", bm_set_render_target(-1, 0));
+	}
+	else {
+		return ade_set_args(L, "b", bm_set_render_target(idx->isValid() ? idx->handle : -1, 0));
+	}
 }
 
 ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
@@ -460,7 +468,8 @@ ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "integer Red, number Green, number Blue, [integer Alpha]", "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", NULL, NULL)
+ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [integer Alpha]",
+         "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -599,15 +608,15 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 
 ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=nil, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
 {
-	int tdx = -1;
+	texture_h* tdx = nullptr;
 	vec3d pos = vmd_zero_vector;
 	matrix_h *mh = NULL;
 	float width = 1.0f;
 	float height = 1.0f;
-	if(!ade_get_args(L, "o|ooff", l_Texture.Get(&tdx), l_Vector.Get(&pos), l_Matrix.GetPtr(&mh), &width, &height))
+	if (!ade_get_args(L, "o|ooff", l_Texture.GetPtr(&tdx), l_Vector.Get(&pos), l_Matrix.GetPtr(&mh), &width, &height))
 		return ADE_RETURN_NIL;
 
-	if(!bm_is_valid(tdx))
+	if (!tdx->isValid())
 		return ADE_RETURN_FALSE;
 
 	matrix *orip = &vmd_identity_matrix;
@@ -622,7 +631,8 @@ ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, or
 	//gr_set_bitmap(tdx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
 	//g3_draw_polygon(&pos, orip, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	material mat_params;
-	material_set_unlit(&mat_params, tdx, lua_Opacity, lua_Opacity_type == GR_ALPHABLEND_FILTER ? true : false, false);
+	material_set_unlit(&mat_params, tdx->handle, lua_Opacity, lua_Opacity_type == GR_ALPHABLEND_FILTER ? true : false,
+	                   false);
 	g3_render_rect_oriented(&mat_params, &pos, orip, width, height);
 
 	if(!in_frame)
@@ -705,7 +715,10 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation - Use with extreme care, may not work properly in all scripting hooks.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
+         "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
+         "properly in all scripting hooks.",
+         "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -771,7 +784,10 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [integer Flags]", "Draws the given model with the specified position and orientation - Use with extreme care, designed to operate properly only in On Object Render hooks.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [number Flags]",
+         "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
+         "operate properly only in On Object Render hooks.",
+         "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -809,9 +825,11 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orienta
 
 // Aardwolf's targeting brackets function
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
-		 "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
-		 "number,number,number,number",
-		 "Left, top, right, and bottom positions of the brackets, or nil if invalid")
+         "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
+         "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
+         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+         ade_type_info({"number", "number", "number", "number"}),
+         "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
 	if(!Gr_inited) {
 		return ADE_RETURN_NIL;
@@ -908,10 +926,12 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
-ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
-		 "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
-		 "number,number,number,number",
-		 "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
+ADE_FUNC(
+    drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
+    "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
+    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
+    ade_type_info({"number", "number", "number", "number"}),
+    "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
 	if(!Gr_inited) {
 		return ADE_RETURN_NIL;
@@ -925,7 +945,7 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 		return ADE_RETURN_NIL;
 	}
 
-	if (!sshp->IsValid())
+	if (!sshp->isSubsystemValid())
 	{
 		return ADE_RETURN_NIL;
 	}
@@ -958,9 +978,11 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 }
 
 ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true, boolean setColor=false]",
-		 "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the coordinates will be returned in either case. The indicator will be drawn using the current color if setColor=true and using the IFF color of the object if setColor=false.",
-		 "number,number",
-		 "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
+         "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
+         "coordinates will be returned in either case. The indicator will be drawn using the current color if "
+         "setColor=true and using the IFF color of the object if setColor=false.",
+         ade_type_info({"number", "number"}),
+         "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
 {
 	object_h *objh = NULL;
 	bool draw = false;
@@ -1150,7 +1172,7 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1168,7 +1190,7 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 		 "streaminganim",
 		 "Streaming animation handle, or invalid handle if animation couldn't be loaded")
 {
-	char *s;
+	const char* s;
 	int rc = -1;
 	bool loop = false, reverse = false, pause = false, cache = true;
 
@@ -1188,9 +1210,11 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 	rc = generic_anim_stream(&sah.ga, cache);
 
 	if(rc < 0)
-		return ade_set_args(L, "o", l_streaminganim.Set(sah)); // this object should be "invalid", matches loadTexture behaviour
+		return ade_set_args(
+		    L, "o",
+		    l_streaminganim.Set(std::move(sah))); // this object should be "invalid", matches loadTexture behaviour
 
-	return ade_set_args(L, "o", l_streaminganim.Set(sah));
+	return ade_set_args(L, "o", l_streaminganim.Set(std::move(sah)));
 }
 
 ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enumeration Type=TEXTURE_DYNAMIC]",
@@ -1218,9 +1242,9 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	int idx = bm_make_render_target(w, h, t);
 
 	if(idx < 0)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(idx));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
@@ -1231,13 +1255,13 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
-	char *s;
+	const char* s;
 	int idx=-1;
 	bool b=false;
 	bool d=false;
 
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if(b == true) {
 		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
@@ -1247,9 +1271,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	}
 
 	if(idx < 0)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(idx));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
 ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
@@ -1275,7 +1299,7 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 
 	if(lua_isstring(L, 1))
 	{
-		char *s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
 			return ade_set_error(L, "b", false);
 
@@ -1286,8 +1310,16 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	}
 	else
 	{
-		if(!ade_get_args(L, "o|iiiifffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
+		texture_h* th = nullptr;
+		if (!ade_get_args(L, "o|iiiifffff", l_Texture.GetPtr(&th), &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2,
+		                  &alpha))
 			return ade_set_error(L, "b", false);
+
+		if (!th->isValid()) {
+			return ade_set_error(L, "b", false);
+		}
+
+		idx = th->handle;
 	}
 
 	if(!bm_is_valid(idx))
@@ -1326,7 +1358,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 
 	if(lua_isstring(L, 1))
 	{
-		char *s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "sii|iif", &s,&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
 
@@ -1337,8 +1369,15 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|iif", l_Texture.Get(&idx),&x,&y,&x2,&y2,&alpha))
+		texture_h* th = nullptr;
+		if(!ade_get_args(L, "oii|iif", l_Texture.GetPtr(&th),&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
+
+		if (!th->isValid()) {
+			return ade_set_error(L, "b", false);
+		}
+
+		idx = th->handle;
 	}
 
 	if(!bm_is_valid(idx))
@@ -1368,7 +1407,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 
 ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "number", "Image width, or 0 if filename is invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1385,7 +1424,7 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 
 ADE_FUNC(getImageHeight, l_Graphics, "Image name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1417,7 +1456,7 @@ ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flas
 
 ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
 {
-	char *s;
+	const char* s;
 	int model_num = -1;
 
 	if(!ade_get_args(L, "s", &s))
@@ -1442,6 +1481,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		return ade_set_error(L, "b", false);
 
 	int bit = 0;
+	static bool VM_EXTERNAL_CAMERA_LOCKED_WARNED = false;
 
 	switch(type->index)
 	{
@@ -1466,7 +1506,14 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 			break;
 
 		case LE_VM_EXTERNAL_CAMERA_LOCKED:
-			return ade_set_args(L, "b", (Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL));
+		    if (!VM_EXTERNAL_CAMERA_LOCKED_WARNED) {
+			    Warning(LOCATION, "The enumeration VM_EXTERNAL_CAMERA_LOCKED has been deprecated for lua function "
+			                      "hasViewmode()! To ensure future compatibility, please check for either "
+			                      "VM_CAMERA_LOCKED, VM_EXTERNAL, or both, instead.");		    
+				VM_EXTERNAL_CAMERA_LOCKED_WARNED = true;
+			}
+
+			return ade_set_args(L, "b", ((Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL)) != 0);
 			break;
 
 		case LE_VM_CAMERA_LOCKED:
@@ -1541,24 +1588,164 @@ ADE_FUNC(resetClip, l_Graphics, NULL, "Resets the clipping region that might hav
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(openMovie, l_Graphics, "string name",
+ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
          "Opens the movie with the specified name. If the name has an extension it will be removed. This function will "
          "try all movie formats supported by the engine and use the first that is found.",
          "movie_player", "The cutscene player handle or invalid handle if cutscene could not be opened.")
 {
 	const char* name = nullptr;
-	if (!ade_get_args(L, "s", &name)) {
-		return ade_set_error(L, "o", l_MoviePlayer.Set(nullptr));
+	bool looping = false;
+	if (!ade_get_args(L, "s|b", &name, &looping)) {
+		return ade_set_error(L, "o", l_MoviePlayer.Set(movie_player_h()));
 	}
 
 	// Audio is disabled for scripted movies at the moment
-	auto player = cutscene::Player::newPlayer(name, false);
+	cutscene::PlaybackProperties props;
+	props.with_audio = false;
+	props.looping = looping;
+
+	auto player = cutscene::Player::newPlayer(name, props);
 
 	if (!player) {
-		return ade_set_args(L, "o", l_MoviePlayer.Set(nullptr));
+		return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h()));
 	}
 
-	return ade_set_args(L, "o", l_MoviePlayer.Set(new movie_player_h(std::move(player))));
+	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
+}
+
+ADE_FUNC(createPersistentParticle, l_Graphics,
+         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
+         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+         "Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
+         "function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
+         "the returned handle is not required. Use PARTICLE_* enumerations for type."
+         "Reverse reverse animation, if one is specified"
+         "Attached object specifies object that Position will be (and always be) relative to.",
+         "particle", "Handle to the created particle")
+{
+	particle::particle_info pi;
+	pi.type            = particle::PARTICLE_DEBUG;
+	pi.optional_data   = -1;
+	pi.attached_objnum = -1;
+	pi.attached_sig    = -1;
+	pi.reverse         = false;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			pi.type = particle::PARTICLE_DEBUG;
+			break;
+		case LE_PARTICLE_FIRE:
+			pi.type = particle::PARTICLE_FIRE;
+			break;
+		case LE_PARTICLE_SMOKE:
+			pi.type = particle::PARTICLE_SMOKE;
+			break;
+		case LE_PARTICLE_SMOKE2:
+			pi.type = particle::PARTICLE_SMOKE2;
+			break;
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return ADE_RETURN_NIL;
+			} else {
+				pi.optional_data = texture->handle;
+				pi.type          = particle::PARTICLE_BITMAP;
+			}
+			break;
+		}
+	}
+
+	if (rev)
+		pi.reverse = false;
+
+	if (objh != nullptr && objh->IsValid()) {
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
+		pi.attached_sig    = objh->objp->signature;
+	}
+
+	particle::WeakParticlePtr p = particle::createPersistent(&pi);
+
+	if (!p.expired())
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+	else
+		return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createParticle, l_Graphics,
+         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
+         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+         "Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
+         "Reverse reverse animation, if one is specified"
+         "Attached object specifies object that Position will be (and always be) relative to.",
+         "boolean", "true if particle was created, false otherwise")
+{
+	particle::particle_info pi;
+	pi.type            = particle::PARTICLE_DEBUG;
+	pi.optional_data   = -1;
+	pi.attached_objnum = -1;
+	pi.attached_sig    = -1;
+	pi.reverse         = false;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return ADE_RETURN_FALSE;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			pi.type = particle::PARTICLE_DEBUG;
+			break;
+		case LE_PARTICLE_FIRE:
+			pi.type = particle::PARTICLE_FIRE;
+			break;
+		case LE_PARTICLE_SMOKE:
+			pi.type = particle::PARTICLE_SMOKE;
+			break;
+		case LE_PARTICLE_SMOKE2:
+			pi.type = particle::PARTICLE_SMOKE2;
+			break;
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return ADE_RETURN_NIL;
+			} else {
+				pi.optional_data = texture->handle;
+				pi.type          = particle::PARTICLE_BITMAP;
+			}
+			break;
+		}
+	}
+
+	if (rev)
+		pi.reverse = false;
+
+	if (objh != nullptr && objh->IsValid()) {
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
+		pi.attached_sig    = objh->objp->signature;
+	}
+
+	particle::create(&pi);
+
+	return ADE_RETURN_TRUE;
 }
 
 } // namespace api

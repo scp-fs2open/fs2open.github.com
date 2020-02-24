@@ -362,8 +362,7 @@ void brief_skip_training_pressed()
 //
 void brief_do_next_pressed(int play_sound)
 {
-	int now;
-	now = timer_get_milliseconds();
+	int now = timer_get_milliseconds();
 
 	if ( (now - Brief_last_auto_advance) < 500 ) {
 		return;
@@ -380,7 +379,6 @@ void brief_do_next_pressed(int play_sound)
 			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		}
 	}
-
 	Assert(Current_brief_stage >= 0);
 }
 
@@ -965,6 +963,9 @@ void brief_init()
 		brief_reset_icons(Current_brief_stage);
 	}
 
+	// fire the script hook, since when we first start the briefing there isn't a "new stage" function like there is for cbriefs
+	common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
+
 	Brief_playing_fade_sound = 0;
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
@@ -1465,7 +1466,6 @@ void brief_do_frame(float frametime)
 		return;
 	}
 
-
 	if ( !Brief_inited ){
 		brief_init();
 	}
@@ -1647,6 +1647,7 @@ void brief_do_frame(float frametime)
 	if ( !Background_playing ) {
 		int time = -1;
 		int check_jump_flag = 1;
+
 		if ( Current_brief_stage != Last_brief_stage ) {
 
 			// Check if we have a quick transition pending
@@ -1699,6 +1700,9 @@ void brief_do_frame(float frametime)
 				Int3();
 				Current_brief_stage=0;
 			}
+
+			// fire the script hook
+			common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
 
 			// set the camera target
 			brief_set_new_stage(&Briefing->stages[Current_brief_stage].camera_pos,

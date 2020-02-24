@@ -59,8 +59,6 @@ object obj_create_list;
 object *Player_obj = NULL;
 object *Viewer_obj = NULL;
 
-extern int Cmdline_old_collision_sys;
-
 //Data for objects
 object Objects[MAX_OBJECTS];
 
@@ -324,6 +322,14 @@ float get_shield_pct(object *objp)
 	return shield_get_strength(objp) / total_strength;
 }
 
+static void on_script_state_destroy(lua_State*) {
+	// Since events are mostly used for scripting, we clear the event handlers when the Lua state is destroyed
+	for (auto& obj : Objects) {
+		obj.pre_move_event.clear();
+		obj.post_move_event.clear();
+	}
+}
+
 /**
  * Sets up the free list & init player & whatever else
  */
@@ -352,11 +358,9 @@ void obj_init()
 	Num_objects = 0;
 	Highest_object_index = 0;
 
-	if ( Cmdline_old_collision_sys ) {
-		obj_reset_pairs();
-	} else {
-		obj_reset_colliders();
-	}
+	obj_reset_colliders();
+
+	Script_system.OnStateDestroy.add(on_script_state_destroy);
 }
 
 void obj_shutdown()
@@ -559,12 +563,8 @@ void obj_delete(int objnum)
 	};	
 
 	// Remove all object pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_remove_pairs( objp );
-	} else {
-		obj_remove_collider(objnum);
-	}
-	
+	obj_remove_collider(objnum);
+
 	switch( objp->type )	{
 	case OBJ_WEAPON:
 		weapon_delete( objp );
@@ -685,11 +685,7 @@ void obj_merge_created_list(void)
 		list_remove( obj_create_list, objp );
 
 		// Add it to the object pairs array
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(OBJ_INDEX(objp));
-		} else {
-			obj_add_collider(OBJ_INDEX(objp));
-		}
+		obj_add_collider(OBJ_INDEX(objp));
 
 		// Then add it to the object used list
 		list_append( &obj_used_list, objp );
@@ -968,8 +964,6 @@ obj_maybe_fire:
 }
 
 
-#define IMPORTANT_FLAGS (OF_COLLIDES)
-
 #ifdef OBJECT_CHECK 
 
 void obj_check_object( object *obj )
@@ -1033,11 +1027,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 	// turning collision detection off
 	if ( (obj->flags[Object::Object_Flags::Collides]) && (!(new_flags[Object::Object_Flags::Collides])))	{
 		// Remove all object pairs
-		if ( Cmdline_old_collision_sys ) {
-			obj_remove_pairs( obj );
-		} else {
-			obj_remove_collider(objnum);
-		}
+		obj_remove_collider(objnum);
 
 		// update object flags properly		
 		obj->flags = new_flags;
@@ -1063,12 +1053,8 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 		obj->flags.set(Object::Object_Flags::Collides);
 
 		// Turn on collision detection
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(objnum);
-		} else {
-			obj_add_collider(objnum);
-		}
-				
+		obj_add_collider(objnum);
+
 		obj->flags = new_flags;
         obj->flags.remove(Object::Object_Flags::Not_in_coll);
 #ifdef OBJECT_CHECK
@@ -1321,9 +1307,9 @@ void obj_move_all_post(object *objp, float frametime)
 					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
 					
 					float intensity = 1.0f;
-					if(fireball_is_warp(objp))
+					if (fireball_is_warp(objp))
 					{
-						intensity = fireball_wormhole_intensity(objp); // Valathil: Get wormhole radius for lighting
+						intensity = fireball_wormhole_intensity(&Fireballs[objp->instance]); // Valathil: Get wormhole radius for lighting
 						rad = objp->radius;
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
@@ -1521,9 +1507,9 @@ void obj_move_all(float frametime)
 				target = &Objects[Player_ai->target_objnum];
 
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 		}
-		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
@@ -1581,11 +1567,7 @@ void obj_move_all(float frametime)
 
 	if ( Collisions_enabled ) {
 		TRACE_SCOPE(tracing::CollisionDetection);
-		if ( Cmdline_old_collision_sys ) {
-			obj_check_all_collisions();
-		} else {
-			obj_sort_and_collide();
-		}
+		obj_sort_and_collide();
 	}
 
 	turret_swarm_check_validity();
@@ -1638,8 +1620,8 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
 	
 	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-	
+	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+
 	Script_system.RemHookVar("Self");
 
 	if (skip_render) {
@@ -1770,11 +1752,7 @@ void obj_client_post_interpolate()
 	}	
 
 	// check collisions
-	if ( Cmdline_old_collision_sys ) {
-		obj_check_all_collisions();
-	} else {
-		obj_sort_and_collide();
-	}
+	obj_sort_and_collide();
 
 	// do post-collision stuff for beam weapons
 	beam_move_all_post();
@@ -1886,91 +1864,10 @@ int obj_team(object *objp)
 }
 
 /**
- * Add an element to the CheckObjects[] array, and update the
- * object pairs.  This is called from obj_create(), and the restore
- * save-game code.
- */
-void obj_add_pairs(int objnum)
-{
-	object	*objp;
-
-	Assert(objnum != -1);
-	objp = &Objects[objnum];	
-
-	// don't do anything if its already in the object pair list
-	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
-		return;
-	}
-
-#ifdef OBJECT_CHECK 
-	CheckObjects[objnum].type = objp->type;
-	CheckObjects[objnum].signature = objp->signature;
-    CheckObjects[objnum].flags = objp->flags;
-    CheckObjects[objnum].flags.remove(Object::Object_Flags::Not_in_coll);
-	CheckObjects[objnum].parent_sig = objp->parent_sig;
-	CheckObjects[objnum].parent_type = objp->parent_type;
-#endif	
-
-	// Find all the objects that can collide with this and add 
-	// it to the collision pair list. 
-	object * A;
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) )	{
-		obj_add_pair( objp, A );
-	}
-	
-	objp->flags.remove(Object::Object_Flags::Not_in_coll);
-}
-
-/**
  * Removes any occurances of object 'a' from
  * the pairs list.
  */
 extern int Num_pairs;
-extern obj_pair pair_used_list;
-extern obj_pair pair_free_list;
-void obj_remove_pairs( object * a )
-{
-	obj_pair *parent, *tmp;
-
-	a->flags.set(Object::Object_Flags::Not_in_coll);	
-#ifdef OBJECT_CHECK 
-	CheckObjects[OBJ_INDEX(a)].flags.set(Object::Object_Flags::Not_in_coll);
-#endif	
-
-	if ( a->num_pairs < 1 )	{
-		return;
-	}
-
-	Num_pairs-=a->num_pairs;
-	
-	parent = &pair_used_list;
-	tmp = parent->next;
-
-	while( tmp != NULL )	{
-		if ( (tmp->a==a) || (tmp->b==a) )	{
-			// Hmmm... a potenial compiler optimization problem here... either tmp->a or tmp->b
-			// is equal to 'a' and we modify 'num_pairs' in one of these and then use the value
-			// stored in 'a' later one... will the optimizer find that?  Hmmm...
-			tmp->a->num_pairs--;
-			Assert( tmp->a->num_pairs > -1 );
-			tmp->b->num_pairs--;
-			Assert( tmp->b->num_pairs > -1 );
-			parent->next = tmp->next;
-			tmp->a = tmp->b = NULL;
-			tmp->next = pair_free_list.next;
-			pair_free_list.next = tmp;
-			tmp = parent->next;
-
-			if ( a->num_pairs==0 )	{
-				break;
-			}
-
-		} else {
-			parent = tmp;
-			tmp = tmp->next;
-		}
-	}
-}
 
 /**
  * Reset all collisions
@@ -1985,11 +1882,7 @@ void obj_reset_all_collisions()
 #endif
 
 	// clear object pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_reset_pairs();
-	} else {
-		obj_reset_colliders();
-	}
+	obj_reset_colliders();
 
 	// now add every object back into the object collision pairs
 	object *moveup;
@@ -1999,11 +1892,7 @@ void obj_reset_all_collisions()
 		moveup->flags.set(Object::Object_Flags::Not_in_coll);
 
 		// recalc pairs for this guy
-		if ( Cmdline_old_collision_sys ) {
-			obj_add_pairs(OBJ_INDEX(moveup));
-		} else {
-			obj_add_collider(OBJ_INDEX(moveup));
-		}
+		obj_add_collider(OBJ_INDEX(moveup));
 
 		// next
 		moveup = GET_NEXT(moveup);
@@ -2113,4 +2002,16 @@ int object_get_model(object *objp)
 	}
 
 	return -1;
+}
+bool obj_compare(object* left, object* right) {
+	if (left == right) {
+		// Same pointer
+		return true;
+	}
+	if (left == nullptr || right == nullptr) {
+		// Only one is nullptr and the other is not (since they are not equal)
+		return false;
+	}
+
+	return OBJ_INDEX(left) == OBJ_INDEX(right);
 }

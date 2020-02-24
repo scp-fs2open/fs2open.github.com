@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 
 extern int Mouse_sensitivity;
-extern int Use_mouse_to_fly;
+extern bool Use_mouse_to_fly;
 
 // call once to init the mouse
 void mouse_init();
@@ -71,10 +71,6 @@ int mouse_up_count(int n);
 void mouse_flush();
 
 int mouse_down(int btn);			// returns 1 if mouse button btn is down, 0 otherwise
-float mouse_down_time(int btn);	// returns the fraction of time btn has been down since last call
-
-void mouse_lost_focus();
-void mouse_got_focus();
 
 void mouse_reset_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);

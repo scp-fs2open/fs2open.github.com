@@ -140,8 +140,6 @@ void	mission_show_goals_init();
 void	mission_show_goals_close();
 void	mission_show_goals_do_frame(float frametime);	// displays goals on screen
 void	mission_eval_goals();									// evaluate player goals
-int	mission_ai_goal_achievable( ai_goal *aigp );	// determines if an AI goal is achievable
-void	mission_add_ai_goal( int sexp, ai_info *aip );	// adds a goal onto the given ai_info structure
 int	mission_evaluate_primary_goals(void);	// determine if the primary goals for the mission are complete -- returns one of the above defines
 int	mission_goals_met();
 

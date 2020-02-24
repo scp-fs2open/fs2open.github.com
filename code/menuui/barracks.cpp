@@ -32,16 +32,13 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "ui/ui.h"
+#include "barracks.h"
+#include "mod_table/mod_table.h"
 
-
-
-
-//Returns 0 on failure, 1 on success
-int delete_pilot_file( char *pilot_name );		// manage_pilot.cpp
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
-#define STAT_COLUMN1_W 40
+#define STAT_COLUMN1_W 40*2							// as we might use Unicode //ksotar
 #define STAT_COLUMN2_W 10
 
 static int Stat_column1_w[GR_NUM_RESOLUTIONS] =
@@ -83,6 +80,7 @@ static int Barracks_stats_coords[GR_NUM_RESOLUTIONS][4] = {
 		42, 351, 240, 400
 	}
 };
+
 
 static int Barracks_stats2_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
@@ -270,6 +268,9 @@ UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 static size_t Num_stat_lines;
 static char (*Stat_labels)[STAT_COLUMN1_W];
 static char (*Stats)[STAT_COLUMN2_W];
+static uint16_t Stats_max_width;		// If Unicode language is used then we adapt stats width for new words/strings length
+static uint16_t Stats_X2;				// And numbers position adapted as well
+
 
 static int Player_sel_mode;
 
@@ -303,7 +304,7 @@ void barracks_squad_change_popup();
 #define STRCPY1(a, b) do {	\
 	Assert(strlen(b) < STAT_COLUMN1_W); \
 	strcpy_s(a, b); \
-} while (0)
+} while (false)
 
 void barracks_init_stats(scoring_struct *stats)
 {
@@ -388,28 +389,30 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hits:", 59));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hits:", 59));
 	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary hit %:", 60));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary hit %:", 60));
 	if (stats->s_shots_fired > 0) {
-		f = (float) stats->s_shots_hit * 100.0f / (float) stats->s_shots_fired;
-	} else {
+		f = (float)stats->s_shots_hit * 100.0f / (float)stats->s_shots_fired;
+	}
+	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hit %:", 61));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hit %:", 61));
 	if (stats->s_shots_fired > 0) {
-		f = (float) stats->s_bonehead_hits * 100.0f / (float) stats->s_shots_fired;
-	} else {
+		f = (float)stats->s_bonehead_hits * 100.0f / (float)stats->s_shots_fired;
+	}
+	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -418,12 +421,12 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Total kills:", 62));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Total kills:", 62));
 	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Assists:", 63));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Assists:", 63));
 	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
 	Num_stat_lines++;
 
@@ -433,7 +436,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	strcpy_s(Stat_labels[Num_stat_lines], XSTR( "Current Score:", 1583));
+	strcpy_s(Stat_labels[Num_stat_lines], XSTR("Current Score:", 1583));
 	sprintf(Stats[Num_stat_lines], "%d", stats->score);
 	Num_stat_lines++;
 
@@ -447,7 +450,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "*Kills by Ship Type", 64));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("*Kills by Ship Type", 64));
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
@@ -482,13 +485,29 @@ void barracks_init_stats(scoring_struct *stats)
 
 	// add the score from kills
 	Assert((Num_stat_lines + 1) < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Score from kills only:", 1636));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Score from kills only:", 1636));
 	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
 	Num_stat_lines++;
 
-	for (i=0; i<Num_stat_lines; i++) {
-		font::force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD]);
-		font::force_fit_string(Stats[i], Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
+	int w;
+	Stats_max_width = 0;
+	Stats_X2	 = 0;
+	if (Unicode_text_mode && (gr_screen.res != GR_640)) {
+		for (i = 0; i < Num_stat_lines; i++) {					// Find the longest string in labels to base list appearance on that
+			gr_get_string_size(&w, nullptr, Stat_labels[i]);
+			if (Stats_max_width < w) 
+				Stats_max_width = (uint16_t)w;
+		}
+		Stats_max_width += 20;
+		Stats_X2 = Stats_max_width + 46;
+	}
+	else {
+		Stats_max_width = (uint16_t) Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD];
+		Stats_X2	 = (uint16_t) Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD];
+		for (i = 0; i < Num_stat_lines; i++) {
+			font::force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Stats_max_width);
+			font::force_fit_string(Stats[i], Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
+		}
 	}
 }
 
@@ -539,7 +558,7 @@ int barracks_new_pilot_selected()
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
 	} else {
-		if (!Pilot.load_savefile(Cur_pilot->current_campaign)) {
+		if (!Pilot.load_savefile(Cur_pilot, Cur_pilot->current_campaign)) {
 			// set single player squad image to multi if campaign can't be loaded
 			strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
 		}
@@ -665,6 +684,24 @@ int barracks_pilot_accepted()
 	os_config_write_string(NULL, "LastPlayer", Cur_pilot->callsign);
 
 	return 0;
+}
+
+void barracks_accept_pilot(player* plr) {
+	// set pilot image
+	if (Game_mode & GM_MULTIPLAYER) {
+		player_set_squad_bitmap(plr, plr->m_squad_filename, true);
+	} else {
+		player_set_squad_bitmap(plr, plr->s_squad_filename, false);
+	}
+
+	// MWA -- I think that we should be writing plr here.
+	Pilot.save_player(plr);
+
+	Player = &Players[Player_num];
+	Player->assign(plr);
+
+	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
 }
 
 // scroll up barracks pilot list one line
@@ -831,7 +868,6 @@ void barracks_delete_pilot()
 {
 	char buf[MAX_FILENAME_LEN];
 	int active = 0;
-	int del_rval;
 
 	if (!Num_pilots) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -857,7 +893,7 @@ void barracks_delete_pilot()
 
 	strcpy_s(buf, Pilots[Selected_line]);
 
-	del_rval = delete_pilot_file(buf);
+	auto del_rval = delete_pilot_file(buf);
 
 	if ( !del_rval ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));
@@ -953,7 +989,7 @@ void barracks_init_player_stuff(int mode)
 	Get_file_list_filter = barracks_pilot_filter;
 
 	Num_pilots =
-	    cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME,
+	    cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.json"), CF_SORT_TIME,
 	                                  nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	int ranks[MAX_PILOTS];
@@ -1110,6 +1146,7 @@ void barracks_button_pressed(int n)
 				// make sure we don't carry over the multi flag
 				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI) {
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 0;
 				}
 				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -1125,6 +1162,7 @@ void barracks_button_pressed(int n)
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+				Cur_pilot->player_was_multi = 1;
 				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			}
@@ -1190,18 +1228,18 @@ void barracks_display_pilot_stats()
 
 			gr_get_string_size(&w, &h, str);
 			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;			
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i, GR_RESIZE_MENU);
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w - 2, i, GR_RESIZE_MENU);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width + 1, i, Stats_X2 + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
 
 		} else {
 			gr_set_color_fast(&Color_text_normal);
 		}
 
 		gr_get_string_size(&w, NULL, str);
-		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		str = Stats[z];
 		if (*str) {
-			gr_printf_menu(Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+			gr_printf_menu(Stats_X2, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		}
 
 		y += font_height;
@@ -1267,9 +1305,11 @@ void barracks_accept_new_pilot_callsign()
 	// displayed correctly
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 		Cur_pilot->flags &= ~(PLAYER_FLAGS_IS_MULTI);
+		Cur_pilot->player_was_multi = 0;
 	} else {
 		Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
 		Cur_pilot->stats.flags |= STATS_FLAG_MULTIPLAYER;
+		Cur_pilot->player_was_multi = 1;
 	}
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
@@ -1506,11 +1546,13 @@ void barracks_do_frame(float  /*frametime*/)
 
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 1;
 					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 				} else {
 					// make sure we don't carry over the multi flag
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 0;
 					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 				}

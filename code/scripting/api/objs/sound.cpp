@@ -81,9 +81,11 @@ ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seco
 	return ade_set_args(L, "f", (i2fl(gamesnd_get_max_duration(seh->Get())) / 1000.0f));
 }
 
-ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
-	"If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
-	"The position of the listener is always the the current viewing position.", "number, number", "The volume and the panning, in that sequence, or both -1 on error")
+ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]",
+         "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
+         "If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
+         "The position of the listener is always the the current viewing position.",
+         ade_type_info({"number", "number"}), "The volume and the panning, in that sequence, or both -1 on error")
 {
 	sound_entry_h *seh = NULL;
 	vec3d *sourcePos = NULL;
@@ -305,7 +307,11 @@ ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(isValid, l_Sound, NULL, "Detects whether the whole handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+ADE_FUNC(isValid, l_Sound, nullptr,
+         "Detects whether the whole handle is valid.<br>"
+         "<b>Warning:</b> This does not work for sounds started by a "
+         "directly loaded sound file! Use isSoundValid() in that case instead.",
+         "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	sound_h *sh;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
@@ -324,8 +330,7 @@ ADE_FUNC(isSoundValid, l_Sound, NULL, "Checks if only the sound is valid, should
 	return ade_set_args(L, "b", sh->IsSoundValid());
 }
 
-
-ADE_OBJ_DERIV(l_Sound3D, sound_h, "3Dsound", "3D sound instance handle", l_Sound);
+ADE_OBJ_DERIV(l_Sound3D, sound_h, "sound3D", "3D sound instance handle", l_Sound);
 
 ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
 {
@@ -346,34 +351,36 @@ ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "U
 
 
 //**********HANDLE: Soundfile
-ADE_OBJ(l_Soundfile, sound_load_id, "soundfile", "Handle to a sound file");
+soundfile_h::soundfile_h(sound_load_id id) : idx(id) {}
+
+ADE_OBJ(l_Soundfile, soundfile_h, "soundfile", "Handle to a sound file");
 
 ADE_VIRTVAR(Duration, l_Soundfile, "number", "The duration of the sound file, in seconds", "number", "The duration or -1 on error")
 {
-	auto snd_idx = sound_load_id::invalid();
+	soundfile_h* handle = nullptr;
 
-	if (!ade_get_args(L, "o", l_Soundfile.Get(&snd_idx)))
+	if (!ade_get_args(L, "o", l_Soundfile.GetPtr(&handle)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!snd_idx.isValid())
+	if (!handle->idx.isValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	int duration = snd_get_duration(snd_idx);
+	int duration = snd_get_duration(handle->idx);
 
 	return ade_set_args(L, "f", i2fl(duration) / 1000.0f);
 }
 
 ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string", "The file name or empty string on error")
 {
-	auto snd_idx = sound_load_id::invalid();
+	soundfile_h* handle = nullptr;
 
-	if (!ade_get_args(L, "o", l_Soundfile.Get(&snd_idx)))
+	if (!ade_get_args(L, "o", l_Soundfile.GetPtr(&handle)))
 		return ade_set_error(L, "s", "");
 
-	if (!snd_idx.isValid())
+	if (!handle->idx.isValid())
 		return ade_set_error(L, "s", "");
 
-	const char* filename = snd_get_filename(snd_idx);
+	const char* filename = snd_get_filename(handle->idx);
 
 	return ade_set_args(L, "s", filename);
 }
@@ -381,14 +388,14 @@ ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string
 
 ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
 {
-	auto snd_idx  = sound_load_id::invalid();
+	soundfile_h* handle = nullptr;
 	float volume = 1.0f;
 	float panning = 0.0f;
 
-	if (!ade_get_args(L, "o|ff", l_Soundfile.Get(&snd_idx)))
+	if (!ade_get_args(L, "o|ff", l_Soundfile.GetPtr(&handle), &volume, &panning))
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	if (!snd_idx.isValid())
+	if (!handle->idx.isValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
 	if (volume < 0.0f)
@@ -397,19 +404,45 @@ ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Pl
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 	}
 
-	auto handle = snd_play_raw(snd_idx, panning, volume);
+	auto snd_handle = snd_play_raw(handle->idx, panning, volume);
 
-	return ade_set_args(L, "o", l_Sound.Set(sound_h(gamesnd_id(), handle)));
+	return ade_set_args(L, "o", l_Sound.Set(sound_h(gamesnd_id(), snd_handle)));
+}
+
+ADE_FUNC(unload, l_Soundfile, nullptr,
+         "Unloads the audio data loaded for this sound file. This invalidates the handle on which this is called!",
+         "boolean", "true if successful, false otherwise")
+{
+	soundfile_h* handle = nullptr;
+
+	if (!ade_get_args(L, "o", l_Soundfile.GetPtr(&handle)))
+		return ade_set_error(L, "b", false);
+
+	if (!handle->idx.isValid())
+		return ade_set_error(L, "b", false);
+
+	auto result = snd_unload(handle->idx);
+
+	if (result != 0) {
+		// Invalidate this handle so that the script cannot do something bad with it
+		handle->idx = sound_load_id::invalid();
+	}
+
+	return ade_set_args(L, "b", result != 0);
 }
 
 ADE_FUNC(isValid, l_Soundfile, NULL, "Checks if the soundfile handle is valid", "boolean", "true if valid, false otherwise")
 {
-	auto idx = sound_load_id::invalid();
+	soundfile_h* handle = nullptr;
 
-	if (!ade_get_args(L, "o", l_Soundfile.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Soundfile.GetPtr(&handle)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", idx.isValid());
+	if (handle == nullptr) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", handle->idx.isValid());
 }
 
 

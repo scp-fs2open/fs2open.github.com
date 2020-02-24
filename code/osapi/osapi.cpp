@@ -5,20 +5,22 @@
  * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
+ */
+
+#include "freespace.h"
+
+#include "gamesequence/gamesequence.h"
+#include "globalincs/pstypes.h"
+#include "parse/parselo.h"
 
 #include <fcntl.h>
-
-#include "globalincs/pstypes.h"
-#include "gamesequence/gamesequence.h"
-#include "freespace.h"
-#include "parse/parselo.h"
+#include <utf8.h>
 
 #ifdef SCP_UNIX
 #include <sys/stat.h>
 #elif defined(WIN32)
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 namespace
@@ -39,13 +41,36 @@ namespace
 	{
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
-			preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-			if (!preferencesPath) {
-				mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
-			}
-		}
+		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+		    if (!preferencesPath) {
+			    mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
+		    }
+#ifdef WIN32
+		    try {
+			    auto current           = preferencesPath;
+			    const auto prefPathEnd = preferencesPath + strlen(preferencesPath);
+			    while (current != prefPathEnd) {
+				    const auto cp = utf8::next(current, prefPathEnd);
+				    if (cp > 127) {
+					    // On Windows, we currently do not support Unicode paths so catch this early and let the user
+					    // know
+					    const auto invalid_end = current;
+					    utf8::prior(current, preferencesPath);
+					    Error(LOCATION,
+					          "Determined the preferences path as \"%s\". That path is not supported since it "
+					          "contains a Unicode character (%s). If possible, choose a different user name or "
+					          "use portable mode.",
+					          preferencesPath, std::string(current, invalid_end).c_str());
+				    }
+			    }
+		    } catch (const std::exception& e) {
+			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath,
+			          e.what());
+		    }
+#endif
+	    }
 
-		if (preferencesPath) {
+	    if (preferencesPath) {
 			return preferencesPath;
 		}
 		else {
@@ -248,7 +273,14 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );
 
-	mprintf(("  Initializing SDL...\n"));
+	SDL_version compiled;
+	SDL_version linked;
+
+	SDL_VERSION(&compiled);
+	SDL_GetVersion(&linked);
+
+	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n", linked.major, linked.minor, linked.patch,
+	         compiled.major, compiled.minor, compiled.patch));
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{
@@ -293,6 +325,8 @@ void os_set_title( const char * title )
 // call at program end
 void os_cleanup()
 {
+	os_deinit_registry_stuff();
+
 #ifndef NDEBUG
 	outwnd_close();
 #endif

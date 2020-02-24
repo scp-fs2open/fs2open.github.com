@@ -47,15 +47,10 @@ typedef struct _obj_snd {
 	ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
-#define VOL_PAN_UPDATE			50						// time in ms to update a persistent sound vol/pan
-#define MIN_PERSISTANT_VOL		0.10f
-#define MIN_FORWARD_SPEED		5
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
 
 static int MAX_OBJ_SOUNDS_PLAYING = -1; // initialized in obj_snd_level_init()
 static int Num_obj_sounds_playing;
-
-#define SND_CHANGE_FREQUENCY_THRESHOLD			10
 
 static	obj_snd	obj_snd_list;						// head of linked list of object sound structs
 static	int		Doppler_enabled = TRUE;
@@ -69,7 +64,6 @@ int		Obj_snd_level_inited=0;
 
 // ship flyby data
 #define	FLYBY_MIN_DISTANCE				90
-#define	FLYBY_MIN_SPEED					50
 #define	FLYBY_MIN_RELATIVE_SPEED		100
 #define	FLYBY_MIN_NEXT_TIME				1000	// in ms
 #define	FLYBY_MIN_REPEAT_TIME			4000	// in ms
@@ -305,30 +299,6 @@ void obj_snd_stop_all()
 	}
 }
 
-// ---------------------------------------------------------------------------------------
-// obj_snd_get_freq()
-//
-// Calculate the frequency of a sound to be played, based on the relative velocities
-// of the source and observor
-//
-//	returns:		frequency of the sound
-//
-int obj_snd_get_freq(int source_freq, object* source, object* observor, vec3d *source_pos)
-{
-	vec3d	v_os, v_so;	// os == observor to source, so == source to observor
-	float		vo, vs, freq;
-
-	vm_vec_normalized_dir(&v_os, source_pos, &observor->pos);
-	vm_vec_normalized_dir(&v_so, &observor->pos, source_pos);
-	
-	vo = vm_vec_dot(&v_os, &observor->phys_info.vel);
-	vs = vm_vec_dot(&v_so, &source->phys_info.vel);
-
-	freq = source_freq * ( (SPEED_SOUND + vo) / (SPEED_SOUND - vs) );
-	return fl2i(freq);
-}
-
-
 /**
  * Stop a playing object sound, if it is quieter than sound at new_distance
  *
@@ -421,18 +391,23 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 					return;
 				}
 
-				// pick a random species-based sound
+				// check to see if a flyby sound is specified in ship class
+				// if not, then pick a random species-based sound
 
-				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
+				ship_info* sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
 				game_snd *snd;
 
-				if (sip->flags[Ship::Info_Flags::Bomber])
-					snd = &Species_info[sip->species].snd_flyby_bomber;
-				else
-					snd = &Species_info[sip->species].snd_flyby_fighter;
+				if (sip->flyby_snd.isValid()) {
+					snd = gamesnd_get_game_sound(sip->flyby_snd);
+				} else {
+					if (sip->flags[Ship::Info_Flags::Bomber])
+						snd = &Species_info[sip->species].snd_flyby_bomber;
+					else
+						snd = &Species_info[sip->species].snd_flyby_fighter;
+				}
 
 				if (snd->sound_entries.empty())
-					return; //This species does not define any relevant flyby sounds
+					return; // This class or species does not define any relevant flyby sounds
 
 				// play da sound
 				snd_play_3d(snd, &closest_objp->pos, &View_position);
@@ -872,56 +847,4 @@ void obj_snd_level_close()
 	}
 	obj_snd_delete_all();
 	Obj_snd_level_inited=0;
-}
-
-// ---------------------------------------------------------------------------------------
-// obj_snd_is_playing()
-//
-// Determines if a given object-linked sound is currently playing
-//
-int obj_snd_is_playing(int object, int index)
-{
-	if (!obj_snd_return_instance(object, index).isValid())
-		return 0;
-
-	return 1;
-}
-
-// ---------------------------------------------------------------------------------------
-// obj_snd_return_instance()
-//
-// Returns the sound instance for a given object-linked sound
-//
-sound_handle obj_snd_return_instance(int objnum, int index)
-{
-	if ( objnum < 0 || objnum >= MAX_OBJECTS)
-		return sound_handle::invalid();
-
-	if ( index < 0 || index >= MAX_OBJ_SNDS )
-		return sound_handle::invalid();
-
-	object *objp = &Objects[objnum];
-	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
-
-	return osp->instance;
-}
-
-// ---------------------------------------------------------------------------------------
-// obj_snd_update_offset()
-//
-// Updates offset of the given object sound
-//
-int obj_snd_update_offset(int objnum, int index, vec3d *new_offset)
-{
-	if ( objnum < 0 || objnum >= MAX_OBJECTS)
-		return 0;
-
-	if ( index < 0 || index >= MAX_OBJ_SNDS )
-		return 0;
-
-	object *objp = &Objects[objnum];
-	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
-	osp->offset = *new_offset;
-
-	return 1;
 }

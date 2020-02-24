@@ -47,7 +47,7 @@ void ScriptingTestFixture::EvalTestScript() {
 	std::stringstream ss;
 	ss << test_info->test_case_name() << ": " << test_info->name();
 
-	auto success = _state->EvalString(content.c_str(), nullptr, nullptr, ss.str().c_str());
+	auto success = _state->EvalString(content.c_str(), ss.str().c_str());
 	if (!success) {
 		const char* error = lua_tostring(_state->GetLuaSession(), -1);
 		FAIL() << error << "\n";

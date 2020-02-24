@@ -103,24 +103,8 @@ void neb2_post_level_init();
 // shutdown nebula stuff
 void neb2_level_close();
 
-// create a nebula object, return objnum of the nebula or -1 on fail
-// NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius);
-
-// delete a nebula object
-void neb2_delete(object *objp);
-
 // call before beginning all rendering
 void neb2_render_setup(camid cid);
-
-// renders a nebula object
-void neb2_render(object *objp);
-
-// preprocess the nebula object before simulation
-void neb2_process_pre(object *objp);
-
-// process the nebula object after simulating, but before rendering
-void neb2_process_post(object *objp);
 
 // render the player nebula
 void neb2_render_player();
@@ -146,15 +130,6 @@ int neb2_skip_render(object *objp, float z_depth);
 float neb2_get_lod_scale(int objnum);
 
 // fogging stuff --------------------------------------------------
-
-// get the color of the pixel in the small pre-rendered background nebula
-void neb2_get_pixel(int x, int y, int *r, int *g, int *b);
-
-// set the background color
-void neb2_set_backg_color(int r, int g, int b);
-
-// get the color to fog the background color to
-void neb2_get_backg_color(int *r, int *g, int *b);
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
 

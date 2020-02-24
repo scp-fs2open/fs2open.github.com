@@ -103,20 +103,6 @@ typedef struct vec3d {
 	};
 } vec3d;
 
-/** Compares two vec3ds */
-inline bool operator==(const vec3d &self, const vec3d &other)
-{
-	return (self.xyz.x == other.xyz.x
-		&& self.xyz.y == other.xyz.y
-		&& self.xyz.z == other.xyz.z
-	);
-}
-
-inline bool operator!=(const vec3d &self, const vec3d &other)
-{
-	return !(self == other);
-}
-
 typedef struct vec2d {
 	float x, y;
 } vec2d;
@@ -254,11 +240,11 @@ extern int Global_error_count;
 // or,
 // Error( LOCATION, "Error opening %s", filename );
 
-/*******************NEVER UNCOMMENT Assert ************************************************/
-// Please never uncomment the functionality of Assert in debug
+/*******************NEVER COMMENT Assert ************************************************/
+// Please never comment the functionality of Assert in debug
 // The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
-// Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
+// Disabling this functionality is dangerous, crazy values can run rampant unchecked, and the longer it's disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #	define Assert(expr) do { ASSUME(expr); } while (false)
@@ -273,22 +259,18 @@ extern int Global_error_count;
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
-#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(false)
 
-// VerifyEx
+// Verification (like Assertion)
 #ifndef _MSC_VER   // non MS compilers
-#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(0)
+#	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(false)
 #else
-#	if _MSC_VER >= 1400	// VC 2005 or greater
-#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(0)
-#	else // everything else
-#		define VerifyEx(x, y) Verify(x)
-#	endif
+#	define Verification(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(false)
 #endif
 
 #if defined(NDEBUG)
 	// No debug version of Int3
-	#define Int3() do { } while (0)
+	#define Int3() do { } while (false)
 #else
 	void debug_int3(const char *file, int line);
 
@@ -403,7 +385,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 }
 
 // faster version of CAP()
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
+#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(false)
 
 //=========================================================
 // Memory management functions
@@ -464,7 +446,7 @@ SCP_string dump_stacktrace();
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // This is disabled for VS2013 and lower since that doesn't support the necessary features
 #if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
-	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && defined(HAVE_STD_IS_TRIVIALLY_COPYABLE)
+	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && HAVE_STD_IS_TRIVIALLY_COPYABLE
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -546,10 +528,16 @@ namespace std
 	#define memmove memmove_if_trivial_else_error
 
 	template<typename T, typename U>
-	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
+	inline void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
 	{
 		static_assert(trivial_check<T>::value, "memmove on non-trivial object T");
 		static_assert(trivial_check<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(memmove_dest, memmove_src, count);
+	}
+
+	// Not really needed but else clang thinks ptr_memmove isn't used
+	inline void *memmove_if_trivial_else_error(void *memmove_dest, void *memmove_src, size_t count)
+	{
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
 }

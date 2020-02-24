@@ -45,8 +45,6 @@ void init_ets(class object*){}
 
 control_info PlayerControls;
 
-char *  Game_CDROM_dir = NULL;
-
 void game_flash(float  /*r*/, float  /*g*/, float  /*b*/ )
 {
 }
@@ -173,8 +171,6 @@ void send_debris_create_packet( object * /*objp*/, ushort  /*net_sig*/, int  /*m
 int Game_subspace_effect;
 void big_explosion_flash(float  /*x*/) {}
 
-int game_do_cd_check(char *) {return 0;}
-
 void game_stop_looped_sounds() {}
 
 int Game_skill_level;
@@ -186,7 +182,7 @@ void game_set_view_clip(){}
 int Warpout_forced = 0;
 float Warpout_time;
 vec3d Dead_player_last_vel;
-int game_start_mission(){return 0;}
+bool game_start_mission() {return false;}
 int Game_weapons_tbl_valid;
 int Game_ships_tbl_valid;
 void game_level_close(){}
@@ -198,14 +194,10 @@ int Framerate_delay;
 void game_start_time(){}
 void game_stop_time(){}
 int game_get_default_skill_level(){return 0;}
-float FreeSpace_gamma;
-int set_cdrom_path(int){return 0;}
 int find_freespace_cd(char*){return 0;}
-void get_version_string(){}
 void game_do_state_common(int, int){}
 void game_set_frametime(int){}
 void game_increase_skill_level(){}
-void get_version_string(char*, int){}
 int Show_target_weapons;
 int Show_target_debug_info;
 int Game_do_state_should_skip;

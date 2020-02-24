@@ -14,24 +14,31 @@ bool streaminganim_h::IsValid() {
 streaminganim_h::streaminganim_h(const char* filename) {
 	generic_anim_init(&ga, filename);
 }
+streaminganim_h::~streaminganim_h() {
+	// don't bother to check if valid before unloading
+	// generic_anim_unload has safety checks
+	generic_anim_unload(&ga);
+}
+streaminganim_h::streaminganim_h(streaminganim_h&& other) noexcept {
+	// Copy the other data over to us
+	ga = other.ga;
+
+	// Reset the other instance so that we own the only instance
+	generic_anim_init(&other.ga, nullptr);
+}
+streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
+	generic_anim_unload(&ga);
+
+	ga = other.ga;
+
+	// Reset the other instance so that we own the only instance
+	generic_anim_init(&other.ga, nullptr);
+
+	return *this;
+}
 
 //**********HANDLE: streamingAnimation
 ADE_OBJ(l_streaminganim, streaminganim_h, "streaminganim", "Streaming Animation handle");
-
-ADE_FUNC(__gc, l_streaminganim, NULL, "Auto-deletes streaming animation", NULL, NULL)
-{
-	// NOTE: very similar to the l_streaminganim ADE_FUNC unload
-	streaminganim_h* sah;
-
-	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
-		return ADE_RETURN_NIL;
-
-	// don't bother to check if valid before unloading
-	// generic_anim_unload has safety checks
-	generic_anim_unload(&sah->ga);
-
-	return ADE_RETURN_NIL;
-}
 
 ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {
@@ -109,7 +116,8 @@ ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation"
 	return ade_set_args(L, "s", sah->ga.filename);
 }
 
-ADE_FUNC(getFrameCount, l_streaminganim, NULL, "Get the number of frames in the animation.", "integer", "Total number of frames")
+ADE_FUNC(getFrameCount, l_streaminganim, nullptr, "Get the number of frames in the animation.", "number",
+         "Total number of frames")
 {
 	streaminganim_h* sah;
 
@@ -122,7 +130,8 @@ ADE_FUNC(getFrameCount, l_streaminganim, NULL, "Get the number of frames in the 
 	return ade_set_args(L, "i", sah->ga.num_frames);
 }
 
-ADE_FUNC(getFrameIndex, l_streaminganim, NULL, "Get the current frame index of the animation", "integer", "Current frame index")
+ADE_FUNC(getFrameIndex, l_streaminganim, nullptr, "Get the current frame index of the animation", "number",
+         "Current frame index")
 {
 	streaminganim_h* sah;
 
@@ -140,7 +149,8 @@ ADE_FUNC(getFrameIndex, l_streaminganim, NULL, "Get the current frame index of t
 	return ade_set_args(L, "i", ++cframe); // C++ to LUA array index
 }
 
-ADE_FUNC(getHeight, l_streaminganim, NULL, "Get the height of the animation in pixels", "integer", "Height or nil if invalid")
+ADE_FUNC(getHeight, l_streaminganim, nullptr, "Get the height of the animation in pixels", "number",
+         "Height or nil if invalid")
 {
 	streaminganim_h* sah;
 
@@ -153,7 +163,8 @@ ADE_FUNC(getHeight, l_streaminganim, NULL, "Get the height of the animation in p
 	return ade_set_args(L, "i", sah->ga.height);
 }
 
-ADE_FUNC(getWidth, l_streaminganim, NULL, "Get the width of the animation in pixels", "integer", "Width or nil if invalid")
+ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in pixels", "number",
+         "Width or nil if invalid")
 {
 	streaminganim_h* sah;
 
@@ -233,7 +244,7 @@ ADE_FUNC(reset, l_streaminganim, "[none]", "Reset a streaming animation back to 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(timeLeft, l_streaminganim, NULL, "Get the amount of time left in the animation, in seconds", "float", "Time left in secs or nil if invalid")
+ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the animation, in seconds", "number", "Time left in secs or nil if invalid")
 {
 	streaminganim_h* sah;
 

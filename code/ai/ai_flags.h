@@ -51,14 +51,19 @@ namespace AI {
 	};
 
 	FLAG_LIST(Maneuver_Override_Flags) {
-		Full,		//	Full sexp control
+		Full_rot,	//	full sexp control over pitch/bank/heading rotation
 		Roll,		//	Sexp forced roll maneuver
 		Pitch,		//	Sexp forced pitch change
 		Heading,	//	Sexp forced heading change
 		Full_lat,	//  full control over up/side/forward movement
-		Up,			//	vertical movement
-		Sideways,	//	horizontal movement
-		Forward,	//	forward movement
+		Up,			//	Sexp forced vertical movement
+		Sideways,	//	Sexp forced horizontal movement
+		Forward,	//	Sexp forced forward movement
+
+		Dont_bank_when_turning,		// maps to CIF_DONT_BANK_WHEN_TURNING
+		Dont_clamp_max_velocity,	// maps to CIF_DONT_CLAMP_MAX_VELOCITY
+		Instantaneous_acceleration,	// maps to CIF_INSTANTANEOUS_ACCELERATION
+		Never_expire,				// don't clear the maneuver when the timestamp is up
 
 		NUM_VALUES
 	};
@@ -87,6 +92,7 @@ namespace AI {
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
         Force_beam_turret_fov,
+		Free_afterburner_use,
         Glide_decay_requires_thrust,
         Hack_improve_non_homing_swarm_turret_fire_accuracy,
         Huge_turret_weapons_ignore_bombs,
@@ -109,6 +115,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turred_tagged_only_targeting,
+		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in http://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
         Use_additive_weapon_velocity,

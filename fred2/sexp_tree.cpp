@@ -753,7 +753,7 @@ void sexp_tree::right_clicked(int mode)
 				}
 
 				// Goober5000 - certain types accept both integers and a list of strings
-				if (op_type == OPF_GAME_SND || op_type == OPF_WEAPON_BANK_NUMBER)
+						if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER)
 				{
 					item_type = SEXPT_NUMBER | SEXPT_STRING;
 				}
@@ -896,6 +896,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
 							case OP_STRING_CONCATENATE:
+							case OP_SET_OBJECT_SPEED_X:
+							case OP_SET_OBJECT_SPEED_Y:
+							case OP_SET_OBJECT_SPEED_Z:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -940,6 +943,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
 							case OP_STRING_CONCATENATE:
+							case OP_SET_OBJECT_SPEED_X:
+							case OP_SET_OBJECT_SPEED_Y:
+							case OP_SET_OBJECT_SPEED_Z:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -1228,8 +1234,9 @@ void sexp_tree::right_clicked(int mode)
 				replace_type = OPR_FLEXIBLE_ARGUMENT;
 			}
 			// Goober5000
-			else if (type == OPF_GAME_SND || type == OPF_WEAPON_BANK_NUMBER) {
-				// enable number even though we are also going to default to string
+			else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
+				// even though these default to strings, we allow replacing them with index values
+				replace_type = OPR_POSITIVE;
 				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 			}
 
@@ -2562,11 +2569,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME) )
+			else if ((Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME))
 			{
 				item->set_data("100", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_SET_SUPPORT_SHIP) )
+			else if (Operators[op].value == OP_SET_SUPPORT_SHIP)
 			{
 				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
@@ -2574,7 +2581,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
+			else if (Operators[op].value == OP_EXPLOSION_EFFECT)
 			{
 				int temp;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2611,7 +2618,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_WARP_EFFECT) )
+			else if (Operators[op].value == OP_WARP_EFFECT)
 			{
 				int temp;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2633,7 +2640,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_ADD_BACKGROUND_BITMAP))
+			else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2654,7 +2661,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_ADD_SUN_BITMAP))
+			else if (Operators[op].value == OP_ADD_SUN_BITMAP)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2665,14 +2672,21 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_MODIFY_VARIABLE))
+			else if (Operators[op].value == OP_MODIFY_VARIABLE)
 			{
 				if (get_modify_variable_type(index) == OPF_NUMBER)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
 				else
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX))
+			else if (Operators[op].value == OP_MODIFY_VARIABLE_XSTR)
+			{
+				if (i == 1)
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+				else
+					item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX)
 			{
 				if (i == 0)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
@@ -2683,7 +2697,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if (Operators[op].value == OP_MODIFY_VARIABLE_XSTR)
+			else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR)
 			{
 				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
@@ -2696,13 +2710,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 		// Goober5000 - special cases that used to be numbers but are now hybrids
 		case OPF_GAME_SND:
+		{
 			gamesnd_id sound_index;
 
-			if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
+			if ((Operators[op].value == OP_EXPLOSION_EFFECT))
 			{
 				sound_index = GameSounds::SHIP_EXPLODE_1;
 			}
-			else if ( (Operators[op].value == OP_WARP_EFFECT) )
+			else if ((Operators[op].value == OP_WARP_EFFECT))
 			{
 				sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
 			}
@@ -2719,6 +2734,39 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 			// if no hardcoded default, just use the listing default
 			break;
+		}
+
+		// Goober5000 - ditto
+		case OPF_FIREBALL:
+		{
+			int fireball_index = -1;
+
+			if (Operators[op].value == OP_EXPLOSION_EFFECT)
+			{
+				fireball_index = FIREBALL_MEDIUM_EXPLOSION;
+			}
+			else if (Operators[op].value == OP_WARP_EFFECT)
+			{
+				fireball_index = FIREBALL_WARP;
+			}
+
+			if (fireball_index >= 0)
+			{
+				char *unique_id = Fireball_info[fireball_index].unique_id;
+				if (strlen(unique_id) > 0)
+					item->set_data(unique_id, (SEXPT_STRING | SEXPT_VALID));
+				else
+				{
+					char num_str[NAME_LENGTH];
+					sprintf(num_str, "%d", fireball_index);
+					item->set_data(num_str, (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
+		}
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -2963,6 +3011,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NAV_POINT:
 		case OPF_TEAM_COLOR:
 		case OPF_GAME_SND:
+		case OPF_FIREBALL:
 		case OPF_LIST_MODIFIER:
 			return 1;
 
@@ -4850,6 +4899,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_game_snds();
 			break;
 
+		case OPF_FIREBALL:
+			list = get_listing_opf_fireball();
+			break;
+
 		case OPF_CONTAINER_NAME:
 			list = get_listing_opf_sexp_containers(SEXP_CONTAINER_ALL); 
 			break;
@@ -6034,7 +6087,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 	sexp_list_item head;
 
 	for (i=0; i<NUM_COMM_ORDER_ITEMS; i++)
-		head.add_data(Comm_orders[i].name);
+		head.add_data(Comm_orders[i].name.c_str());
 
 	return head.next;
 }
@@ -6447,6 +6500,21 @@ sexp_list_item *sexp_tree::get_listing_opf_game_snds()
 		if (!can_construe_as_integer(iter->name.c_str())) {
 			head.add_data(iter->name.c_str());
 		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_fireball()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_fireball_types; ++i)
+	{
+		char *unique_id = Fireball_info[i].unique_id;
+
+		if (strlen(unique_id) > 0)
+			head.add_data(unique_id);
 	}
 
 	return head.next;

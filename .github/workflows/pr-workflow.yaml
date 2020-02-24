@@ -1,0 +1,130 @@
+name: Check a pull request
+
+on: [pull_request]
+
+jobs:
+  build_linux:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        compiler: [gcc-5, gcc-9, clang-4.0]
+    name: Linux
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Prepare Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo add-apt-repository ppa:beineri/opt-qt571-xenial
+          sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
+          sudo apt-get -yq update
+          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-9 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
+          # Fix a header bug present in ubuntu...
+          sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        run: |
+          if [ "$COMPILER" = "gcc-5" ]; then
+            export CC=gcc-5
+            export CXX=g++-5
+          fi
+          if [ "$COMPILER" = "gcc-9" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
+          fi
+          if [ "$COMPILER" = "clang-4.0" ]; then
+            export CC=clang-4.0
+            export CXX=clang++-4.0
+          fi
+
+          CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+          CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+
+          if [[ "$CC" =~ ^clang.*$ ]]; then
+              CXXFLAGS="$CXXFLAGS -stdlib=libc++"
+          fi
+
+          mkdir build
+          cd build
+
+          export CXXFLAGS
+          export CFLAGS
+          CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON $CMAKE_OPTIONS"
+          eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=ON ..
+      - name: Compile
+        working-directory: ./build
+        run: ninja -k 20 all
+      - name: Run Tests
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          if [ "$CONFIGURATION" = "Debug" ]; then
+              valgrind --leak-check=full --error-exitcode=1 --gen-suppressions=all \
+                  --suppressions="$GITHUB_WORKSPACE/ci/travis/valgrind.supp" ./bin/unittests --gtest_shuffle
+          else
+              ./bin/unittests --gtest_shuffle
+          fi
+  build_windows:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        compiler: [MSVC]
+        arch: [Win32, x64]
+    name: Windows
+    runs-on: windows-2019
+    steps:
+      - name: Prepare Environment
+        run: choco install ninja
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake -DFSO_USE_SPEECH="OFF" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+                  -DFSO_BUILD_FRED2="OFF" -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
+          else
+              cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+                  -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+          fi
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake --build . --config "$CONFIGURATION"
+          else
+              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+          fi
+      - name: Run Tests
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+             ./bin/unittests --gtest_shuffle
+          else
+              "./bin/$CONFIGURATION/unittests" --gtest_shuffle
+          fi

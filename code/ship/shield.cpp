@@ -572,8 +572,6 @@ void visit_children(int trinum, int vertex_index, matrix *orient, shield_info *s
 			create_tris_containing(&sv->pos, orient, shieldp, tcp, centerp, radius, rvec, uvec);
 }
 
-int	Gi_max = 0;
-
 int get_free_global_shield_index()
 {
 	int	gi = 0;
@@ -882,94 +880,6 @@ void create_shield_explosion_all(object *objp)
 		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
 	}
 }
-
-int	Break_value = -1;
-
-/**
- * Draw the whole shield as a wireframe mesh, not looking at the current integrity.
- */
-#ifndef NDEBUG
-void ship_draw_shield( object *objp)
-{
-	int		model_num;
-	int		i;
-	vec3d	pnt;
-	polymodel * pm; 
-
-	if (objp->flags[Object::Object_Flags::No_shields])
-		return;
-
-	Assert(objp->instance >= 0);
-
-	model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-
-	if ( Fred_running ) return;
-
-	pm = model_get(model_num);
-
-	if (pm->shield.ntris<1) return;
-
-	//	Scan all the triangles in the mesh.
-	for (i=0; i<pm->shield.ntris; i++ )	{
-		int		j;
-		vec3d	gnorm, v2f, tri_point;
-		vertex prev_pnt, pnt0;
-		shield_tri *tri;
-
-		tri = &pm->shield.tris[i];
-
-		if (i == Break_value)
-			Int3();
-
-		//	Hack! Only works for object in identity orientation.
-		//	Need to rotate eye position into object's reference frame.
-		//	Only draw facing triangles.
-		vm_vec_rotate(&tri_point, &pm->shield.verts[tri->verts[0]].pos, &Eye_matrix);
-		vm_vec_add2(&tri_point, &objp->pos);
-
-		vm_vec_sub(&v2f, &tri_point, &Eye_position);
-		vm_vec_unrotate(&gnorm, &tri->norm, &objp->orient);
-
-		if (vm_vec_dot(&gnorm, &v2f) < 0.0f) {
-			int	intensity;
-
-			intensity = (int) (Ships[objp->instance].shield_integrity[i] * 255);
-
-			if (intensity < 0)
-				intensity = 0;
-			else if (intensity > 255)
-				intensity = 255;
-			
-			gr_set_color(0, 0, intensity);
-
-			//	Process the vertices.
-			//	Note this rotates each vertex each time it's needed, very dumb.
-			for (j=0; j<3; j++ )	{
-				vertex tmp;
-
-				// Rotate point into world coordinates
-				vm_vec_unrotate(&pnt, &pm->shield.verts[tri->verts[j]].pos, &objp->orient);
-				vm_vec_add2(&pnt, &objp->pos);
-
-				// Pnt is now the x,y,z world coordinates of this vert.
-				// For this example, I am just drawing a sphere at that
-				// point.
-				g3_rotate_vertex(&tmp, &pnt);
-
-				if (j) {
-					g3_draw_line(&prev_pnt, &tmp);
-				} else {
-					pnt0 = tmp;
-				}
-
-				prev_pnt = tmp;
-			}
-
-			g3_draw_line(&pnt0, &prev_pnt);
-		}
-	}
-}
-#endif
 
 /**
  * Returns true if the shield presents any opposition to something trying to force through it.

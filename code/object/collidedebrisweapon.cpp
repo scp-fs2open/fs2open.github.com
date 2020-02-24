@@ -19,19 +19,6 @@
 
 
 
-// placeholder struct for ship_debris collisions
-typedef struct ship_weapon_debris_struct {
-	object	*ship_object;
-	object	*debris_object;
-	vec3d	ship_collision_cm_pos;
-	vec3d	r_ship;
-	vec3d	collision_normal;
-	int		shield_hit_tri;
-	vec3d	shield_hit_tri_point;
-	float		impulse;
-} ship_weapon_debris_struct;
-
-
 /**
  * Checks debris-weapon collisions.  
  * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
@@ -40,7 +27,6 @@ typedef struct ship_weapon_debris_struct {
 int collide_debris_weapon( obj_pair * pair )
 {
 	vec3d	hitpos, hitnormal;
-	int		hit;
 	object *pdebris = pair->a;
 	object *weapon_obj = pair->b;
 
@@ -48,18 +34,20 @@ int collide_debris_weapon( obj_pair * pair )
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	// first check the bounding spheres of the two objects.
-	hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
+	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
 	if (hit) {
-		hit = debris_check_collision(pdebris, weapon_obj, &hitpos, NULL, &hitnormal );
+		hit = debris_check_collision(pdebris, weapon_obj, &hitpos, nullptr, &hitnormal );
 
 		if ( !hit )
 			return 0;
 
-		Script_system.SetHookObjects(4, "Weapon", weapon_obj, "Debris", pdebris, "Self", weapon_obj, "Object", pdebris);
+		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pdebris, "Weapon", weapon_obj, "Debris", pdebris);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, weapon_obj);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Debris");
 
-		Script_system.SetHookObjects(2, "Self", pdebris, "Object", weapon_obj);
+		Script_system.SetHookObjects(4, "Self", pdebris, "Object", weapon_obj, "Weapon", weapon_obj, "Debris", pdebris);
 		bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pdebris);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Debris");
 
 		if(!weapon_override && !debris_override)
 		{
@@ -67,15 +55,16 @@ int collide_debris_weapon( obj_pair * pair )
 			debris_hit( pdebris, weapon_obj, &hitpos, Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage );
 		}
 
-		Script_system.SetHookObjects(2, "Self", weapon_obj, "Object", pdebris);
+		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pdebris, "Weapon", weapon_obj, "Debris", pdebris);
 		if(!(debris_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEDEBRIS, '\0', NULL, weapon_obj);
+			Script_system.RunCondition(CHA_COLLIDEDEBRIS, weapon_obj);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Debris");
 
-		Script_system.SetHookObjects(2, "Self", pdebris, "Object", weapon_obj);
+		Script_system.SetHookObjects(4, "Self", pdebris, "Object", weapon_obj, "Weapon", weapon_obj, "Debris", pdebris);
 		if((debris_override && !weapon_override) || (!debris_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pdebris, Weapons[weapon_obj->instance].weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, pdebris, Weapons[weapon_obj->instance].weapon_info_index);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Debris");
 
-		Script_system.RemHookVars(4, "Weapon", "Debris", "Self", "Object");
 		return 0;
 
 	} else {
@@ -96,7 +85,6 @@ int collide_asteroid_weapon( obj_pair * pair )
 		return 0;
 
 	vec3d	hitpos, hitnormal;
-	int		hit;
 	object	*pasteroid = pair->a;
 	object	*weapon_obj = pair->b;
 
@@ -104,17 +92,19 @@ int collide_asteroid_weapon( obj_pair * pair )
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	// first check the bounding spheres of the two objects.
-	hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
+	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
 	if (hit) {
-		hit = asteroid_check_collision(pasteroid, weapon_obj, &hitpos, NULL, &hitnormal);
+		hit = asteroid_check_collision(pasteroid, weapon_obj, &hitpos, nullptr, &hitnormal);
 		if ( !hit )
 			return 0;
 
-		Script_system.SetHookObjects(4, "Weapon", weapon_obj, "Asteroid", pasteroid, "Self", weapon_obj, "Object", pasteroid);
-
+		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pasteroid, "Weapon", weapon_obj, "Asteroid", pasteroid);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, weapon_obj);
-		Script_system.SetHookObjects(2, "Self",pasteroid, "Object", weapon_obj);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Asteroid");
+
+		Script_system.SetHookObjects(4, "Self", pasteroid, "Object", weapon_obj, "Weapon", weapon_obj, "Asteroid", pasteroid);
 		bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pasteroid);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Asteroid");
 
 		if(!weapon_override && !asteroid_override)
 		{
@@ -122,15 +112,16 @@ int collide_asteroid_weapon( obj_pair * pair )
 			asteroid_hit( pasteroid, weapon_obj, &hitpos, Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage );
 		}
 
-		Script_system.SetHookObjects(2, "Self", weapon_obj, "Object", pasteroid);
+		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pasteroid, "Weapon", weapon_obj, "Asteroid", pasteroid);
 		if(!(asteroid_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEASTEROID, '\0', NULL, weapon_obj);
+			Script_system.RunCondition(CHA_COLLIDEASTEROID, weapon_obj);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Asteroid");
 
-		Script_system.SetHookObjects(2, "Self", pasteroid, "Object", weapon_obj);
+		Script_system.SetHookObjects(4, "Self", pasteroid, "Object", weapon_obj, "Weapon", weapon_obj, "Asteroid", pasteroid);
 		if((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pasteroid, Weapons[weapon_obj->instance].weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, pasteroid, Weapons[weapon_obj->instance].weapon_info_index);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "Asteroid");
 
-		Script_system.RemHookVars(4, "Weapon", "Asteroid", "Self", "Object");
 		return 0;
 
 	} else {

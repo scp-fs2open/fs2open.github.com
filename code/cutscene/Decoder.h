@@ -11,8 +11,8 @@ struct FrameSize {
 	size_t height = 0;
 	size_t stride = 0;
 
-	FrameSize(size_t width, size_t in_height, size_t in_stride);
 	FrameSize();
+	FrameSize(size_t width, size_t in_height, size_t in_stride);
 };
 
 class VideoFrame {
@@ -73,6 +73,11 @@ struct SubtitleFrame {
 };
 typedef std::unique_ptr<SubtitleFrame> SubtitleFramePtr;
 
+struct PlaybackProperties {
+	bool with_audio = true;
+	bool looping = false;
+};
+
 /**
  * @brief Abstract class for decoding a video or audio stream
  *
@@ -106,7 +111,7 @@ class Decoder {
 	 * @param fileName The name of the file that should be opened
 	 * @return @c true if the initialization was successfull, @c false otherwise
 	 */
-	virtual bool initialize(const SCP_string& fileName) = 0;
+	virtual bool initialize(const SCP_string& fileName, const PlaybackProperties& properties) = 0;
 
 	/**
 	 * @brief Returns the properties of the video
@@ -142,10 +147,6 @@ class Decoder {
 
 	bool isSubtitleQueueFull() { return m_subtitleQueue->size() == m_queueSize; }
 
-	bool isSubtitleFrameAvailable() { return !m_subtitleQueue->empty(); }
-
-	size_t getSubtitleQueueSize() { return m_subtitleQueue->size(); }
-
 	bool tryPopSubtitleData(SubtitleFramePtr&);
 
 	bool isVideoQueueFull() { return m_videoQueue->size() == m_queueSize; }
@@ -163,15 +164,9 @@ class Decoder {
  protected:
 	void initializeQueues(size_t queueSize);
 
-	bool canPushAudioData();
-
 	void pushAudioData(AudioFramePtr&& data);
 
-	bool canPushSubtitleData();
-
 	void pushSubtitleData(SubtitleFramePtr&& data);
-
-	bool canPushVideoData();
 
 	void pushFrameData(VideoFramePtr&& frame);
 };

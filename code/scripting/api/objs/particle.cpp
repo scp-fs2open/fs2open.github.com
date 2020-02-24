@@ -22,32 +22,13 @@ bool particle_h::isValid() {
 
 
 //**********HANDLE: Particle
-ADE_OBJ(l_Particle, particle_h*, "particle", "Handle to a particle");
-
-ADE_FUNC(__gc, l_Particle, NULL, "Removes the allocated reference of this handle", NULL, NULL)
-{
-	particle_h *ph = NULL;
-	if (!ade_get_args(L, "o", l_Particle.Get(&ph)))
-		return ADE_RETURN_NIL;
-
-	if (ph == NULL)
-		return ADE_RETURN_NIL;
-
-	if (!ph->isValid()) {
-		return ADE_RETURN_NIL;
-	}
-
-	// Clean up the pointer
-	delete ph;
-
-	return ADE_RETURN_NIL;
-}
+ADE_OBJ(l_Particle, particle_h, "particle", "Handle to a particle");
 
 ADE_VIRTVAR(Position, l_Particle, "vector", "The current position of the particle (world vector)", "vector", "The current position")
 {
 	particle_h *ph = NULL;
 	vec3d newVec = vmd_zero_vector;
-	if (!ade_get_args(L, "o|o", l_Particle.Get(&ph), l_Vector.Get(&newVec)))
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (ph == NULL)
@@ -68,7 +49,7 @@ ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particl
 {
 	particle_h *ph = NULL;
 	vec3d newVec = vmd_zero_vector;
-	if (!ade_get_args(L, "o|o", l_Particle.Get(&ph), l_Vector.Get(&newVec)))
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Vector.Get(&newVec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (ph == NULL)
@@ -89,7 +70,7 @@ ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "
 {
 	particle_h *ph = NULL;
 	float newAge = -1.0f;
-	if (!ade_get_args(L, "o|f", l_Particle.Get(&ph), &newAge))
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newAge))
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ph == NULL)
@@ -111,7 +92,7 @@ ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live"
 {
 	particle_h *ph = NULL;
 	float newLife = -1.0f;
-	if (!ade_get_args(L, "o|f", l_Particle.Get(&ph), &newLife))
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newLife))
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ph == NULL)
@@ -129,11 +110,35 @@ ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live"
 	return ade_set_args(L, "f", ph->Get().lock()->max_life);
 }
 
+ADE_VIRTVAR(Looping, l_Particle, "boolean",
+            "The looping status of the particle. If a particle loops then it will not be removed when its max_life "
+            "value has been reached. Instead its animation will be reset to the start. When the particle should "
+            "finally be removed then set this to false and set MaxLife to 0.",
+            "boolean", "The looping status")
+{
+	particle_h* ph = nullptr;
+	bool newloop   = false;
+	if (!ade_get_args(L, "o|b", l_Particle.GetPtr(&ph), &newloop))
+		return ADE_RETURN_FALSE;
+
+	if (ph == nullptr)
+		return ADE_RETURN_FALSE;
+
+	if (!ph->isValid())
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		ph->Get().lock()->looping = newloop;
+	}
+
+	return ade_set_args(L, "b", ph->Get().lock()->looping);
+}
+
 ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number", "The radius or -1 on error")
 {
 	particle_h *ph = NULL;
 	float newRadius = -1.0f;
-	if (!ade_get_args(L, "o|f", l_Particle.Get(&ph), &newRadius))
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newRadius))
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ph == NULL)
@@ -155,7 +160,7 @@ ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particl
 {
 	particle_h *ph = NULL;
 	float newTracer = -1.0f;
-	if (!ade_get_args(L, "o|f", l_Particle.Get(&ph), &newTracer))
+	if (!ade_get_args(L, "o|f", l_Particle.GetPtr(&ph), &newTracer))
 		return ade_set_error(L, "f", -1.0f);
 
 	if (ph == NULL)
@@ -172,7 +177,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 {
 	particle_h *ph = NULL;
 	object_h *newObj = nullptr;
-	if (!ade_get_args(L, "o|o", l_Particle.Get(&ph), l_Object.GetPtr(&newObj)))
+	if (!ade_get_args(L, "o|o", l_Particle.GetPtr(&ph), l_Object.GetPtr(&newObj)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if (ph == NULL)
@@ -183,7 +188,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 
 	if (ADE_SETTING_VAR)
 	{
-		if (newObj->IsValid())
+		if (newObj != nullptr && newObj->IsValid())
 			ph->Get().lock()->attached_objnum = newObj->objp->signature;
 	}
 
@@ -193,7 +198,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
 {
 	particle_h *ph = NULL;
-	if (!ade_get_args(L, "o", l_Particle.Get(&ph)))
+	if (!ade_get_args(L, "o", l_Particle.GetPtr(&ph)))
 		return ADE_RETURN_FALSE;
 
 	if (ph == NULL)

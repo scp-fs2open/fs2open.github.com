@@ -1513,6 +1513,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					} else {
 						pm->submodel[n].render_box_max = pm->submodel[n].max;
 					}
+
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
+					}
 				}
 
 				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
@@ -1540,6 +1545,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						pm->submodel[n].use_render_sphere_offset = true;
 					} else {
 						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+					}
+
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
 					}
 				}
 
@@ -1939,6 +1949,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					bank->type = cfread_int(fp);
 					bank->num_points = cfread_int(fp);
 					bank->points = NULL;
+					bank->glow_bitmap = -1;
+					bank->glow_neb_bitmap = -1;
 
 					if (bank->num_points > 0)
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
@@ -1953,44 +1965,44 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (length > 0)
 					{
 						auto base_length = strlen("$glow_texture=");
-						Assert(strstr( (const char *)&props, "$glow_texture=") != NULL);
-						Assert(length > base_length);
-						char *glow_texture_name = props + base_length;
-						
-						if (glow_texture_name[0] == '$')
-							glow_texture_name++;
+						char *glow_texture_start = strstr(props, "$glow_texture=");
+						if ( (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
+							char *glow_texture_name = glow_texture_start + base_length;
+							
+							if (glow_texture_name[0] == '$')
+								glow_texture_name++;
 
-						bank->glow_bitmap = bm_load(glow_texture_name);
+							bank->glow_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_bitmap < 0)
-						{
-							Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
-						}
+							if (bank->glow_bitmap < 0)
+							{
+								Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
+							}
 
-						strcat(glow_texture_name, "-neb");
-						bank->glow_neb_bitmap = bm_load(glow_texture_name);
+							strcat(glow_texture_name, "-neb");
+							bank->glow_neb_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_neb_bitmap < 0)
-						{
-							bank->glow_neb_bitmap = bank->glow_bitmap;
-							nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
-						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							if (bank->glow_neb_bitmap < 0)
+							{
+								bank->glow_neb_bitmap = bank->glow_bitmap;
+								nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
+							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							}
+						} else {
+							Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 						}
 					} 
 					else 
 					{
-						// niffiwan: no "props" string found - ensure we don't have a random texture assigned!
-						bank->glow_bitmap = -1;
-						bank->glow_neb_bitmap = -1;
-						Warning( LOCATION, "No Glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
+						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
 					for (j = 0; j < bank->num_points; j++)
@@ -2029,53 +2041,50 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						bank->obj_num = -1;
 						bank->submodel_num = -1;
+						bank->wash_info_pointer = nullptr;
 
-						if (pm->version < 2117) {
-							bank->wash_info_pointer = NULL;
-						} else {
+						if (pm->version >= 2117) {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
 							// look for $engine_subsystem=xxx
 							auto length = strlen(props);
 							if (length > 0) {
 								auto base_length = strlen("$engine_subsystem=");
-								Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
-								Assert( length > base_length );
-								char *engine_subsys_name = props + base_length;
-								if (engine_subsys_name[0] == '$') {
-									engine_subsys_name++;
-								}
+								char *engine_subsys_start = strstr(props, "$engine_subsystem=");
+								if ( (engine_subsys_start != nullptr) && (strlen(engine_subsys_start + base_length) > 0) ) {
+									char *engine_subsys_name = engine_subsys_start + base_length;
+									if (engine_subsys_name[0] == '$') {
+										engine_subsys_name++;
+									}
 
-								nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
+									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-								// set wash_info_index to invalid
-								int table_error = 1;
-								bank->wash_info_pointer = NULL;
-								for (int k=0; k<n_subsystems; k++) {
-									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-										bank->submodel_num = subsystems[k].subobj_num;
+									// start off assuming the subsys is invalid
+									int table_error = 1;
+									for (int k=0; k<n_subsystems; k++) {
+										if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+											bank->submodel_num = subsystems[k].subobj_num;
 
-										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-										if (bank->wash_info_pointer != NULL) {
-											table_error = 0;
+											bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+											if (bank->wash_info_pointer != nullptr) {
+												table_error = 0;
+											}
+											// also set what subsystem this is attached to but not if we only have one thruster bank
+											// do this so that original :V: models still work like they used to
+											if (pm->n_thrusters > 1) {
+												bank->obj_num = k;
+											}
+											break;
 										}
-										// also set what subsystem this is attached to but not if we only have one thruster bank
-										// do this so that original :V: models still work like they used to
-										if (pm->n_thrusters > 1) {
-											bank->obj_num = k;
+									}
+
+									if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
+										if (table_error) {
+										//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+										} else {
+											Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
 										}
-										break;
 									}
 								}
-
-								if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
-									if (table_error) {
-									//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-									} else {
-										Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-									}
-								}
-							} else {
-								bank->wash_info_pointer = NULL;
 							}
 						}
 
@@ -2852,15 +2861,13 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 	model_octant_create( pm );
 
-	if ( !Cmdline_old_collision_sys ) {
-		TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
+	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
-		for ( i = 0; i < pm->n_models; ++i ) {
-			if ( !(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions) ) {
-				pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-				bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-				model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
-			}
+	for (i = 0; i < pm->n_models; ++i) {
+		if (!(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions)) {
+			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+			bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
 		}
 	}
 
@@ -3328,51 +3335,6 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 	return 0;
 }
 
-
-/**
- * Find 2D bound for model
- *
- * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
- *
- * @return zero if x1,y1,x2,y2 are valid
- * @return 2 for point offscreen
- */
-int model_find_2d_bound(int model_num,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
-{
-	float t,w,h;
-	vertex pnt;
-	polymodel * po;
-
-	po = model_get(model_num);
-	float width = po->rad;
-	float height = po->rad;
-
-	g3_rotate_vertex(&pnt,pos);
-
-	if ( pnt.flags & CC_BEHIND ) 
-		return 2;
-
-	if (!(pnt.flags&PF_PROJECTED))
-		g3_project_vertex(&pnt);
-
-	if (pnt.flags & PF_OVERFLOW)
-		return 2;
-
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
-
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
-
-	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
-	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
-
-	if (x2) *x2 = fl2i(pnt.screen.xyw.x + w);
-	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
-
-	return 0;
-}
-
 /**
  * Find 2D bound for sub object
  *
@@ -3413,43 +3375,6 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
 
 	return 0;
-}
-
-
-// Given a vector that is in sub_model_num's frame of
-// reference, and given the object's orient and position,
-// return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_num, int submodel_num, matrix *objorient)
-{
-	vec3d tvec, vec;
-	matrix m;
-	int mn;
-
-	polymodel *pm = model_get(model_num);
-	vec = *m_vec;
-	mn = submodel_num;
-
-	// instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tvec, &vec, &m);
-		vec = tvec;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
 void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
@@ -4208,49 +4133,6 @@ void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_insta
 	vm_vec_add2(outpnt,objpos);
 }
 
-// Given a point in the world RF, find the corresponding point in the model RF.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-//
-// out - point in model RF
-// world_pt - point in world RF
-// pm - polygon model
-// submodel_num - submodel in whose RF we're trying to find the corresponding world point
-// orient - orient matrix of ship
-// pos - pos vector of ship
-void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos)
-{
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
-
-	vec3d tempv1, tempv2;
-	matrix m;
-
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
-
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
-	}
-
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
-
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent - KeldorKatarn
-	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-	vm_vec_rotate(out, &tempv2, &m);
-}
-
 void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	polymodel *pm = model_get(pmi->model_num);
@@ -4540,13 +4422,15 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 	}
 
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	submodel_instance *child_submodel_instance = &pmi->submodel[pm->detail[0]];
 
 	int i = child_submodel->first_child;
 	while ( i >= 0 )	{
 		child_submodel = &pm->submodel[i];
+		child_submodel_instance = &pmi->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
+		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
 			// Only look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
@@ -5098,7 +4982,7 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 // function to return an index into the docking_bays array which matches the string passed
 // Fred uses strings to identify docking positions.  This function also accepts generic strings
 // so that a desginer doesn't have to know exact names if building a mission from hand.
-int model_find_dock_name_index( int modelnum, char *name )
+int model_find_dock_name_index(int modelnum, const char* name)
 {
 	int i;
 	polymodel *pm;
@@ -5457,7 +5341,7 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 }
 #endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
+void swap_bsp_data( polymodel * pm, void * model_ptr )
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
@@ -5510,10 +5394,13 @@ void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
 	}
 
 	return;
+#else
+(void)pm;
+(void)model_ptr;
 #endif
 }
 
-void swap_sldc_data(ubyte * /*buffer*/)
+void swap_sldc_data(ubyte * buffer)
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	char *type_p = (char *)(buffer);
@@ -5555,6 +5442,8 @@ void swap_sldc_data(ubyte * /*buffer*/)
 			shld_polys[i] = INTEL_INT(shld_polys[i]);
 		}			
 	}
+#else
+(void)buffer;
 #endif
 }
 
@@ -5666,7 +5555,7 @@ void parse_glowpoint_table(const char *filename)
 
 					if (gpo.glow_bitmap < 0)
 					{
-						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint present '%s'\n", glow_texture_name, gpo.name);
+						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint preset '%s'\n", glow_texture_name, gpo.name);
 					}
 					else
 					{

@@ -40,9 +40,6 @@ static void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
 // calculate the physics of extended two body collisions
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
-int ship_hit_shield(object *obj, mc_info *mc, collision_info_struct *sshs);
-void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info);
-
 #ifndef NDEBUG
 static int Collide_friendly = 1;
 DCF_BOOL( collide_friendly, Collide_friendly )
@@ -132,7 +129,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_1] ) { 
+	if ( heavy_shipp->is_arriving(ship::warpstage::STAGE1, false) ) {
 		return 0;
 	}
 
@@ -384,8 +381,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 		// SET PHYSICS PARAMETERS
 		// already have (hitpos - heavy) and light_cm_pos
-		// get heavy cm pos - already have light_cm_pos
-		ship_ship_hit_info->heavy_collision_cm_pos = zero;
 
 		// get r_heavy and r_light
 		ship_ship_hit_info->r_heavy = ship_ship_hit_info->hit_pos;
@@ -1140,12 +1135,15 @@ int collide_ship_ship( obj_pair * pair )
 
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);
+			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
 			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
-			
-			//Yes this should be reversed.
-			Script_system.SetHookObjects(4, "Ship", B, "ShipB", A, "Self", B, "Object", A);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "ShipB");
+
+			// Yes, this should be reversed.
+			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
 			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "ShipB");
+
 			if(!a_override && !b_override)
 			{
 				float		damage;
@@ -1250,17 +1248,18 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!(b_override && !a_override))
 			{
-				Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, A);
+				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
+				Script_system.RunCondition(CHA_COLLIDESHIP, A);
+				Script_system.RemHookVars(4, "Self", "Object", "Ship", "ShipB");
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
-				//Yes this should be reversed.
-				Script_system.SetHookObjects(4, "Ship", B, "ShipB", A, "Self", B, "Object", A);
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, B);
+				// Yes, this should be reversed.
+				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
+				Script_system.RunCondition(CHA_COLLIDESHIP, B);
+				Script_system.RemHookVars(4, "Self", "Object", "Ship", "ShipB");
 			}
 
-			Script_system.RemHookVars(4, "Ship", "ShipB", "Self", "Object");
 			return 0;
 		}					
     }
@@ -1271,8 +1270,8 @@ int collide_ship_ship( obj_pair * pair )
         // if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
 
         // if ship is huge and warping in or out
-        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
-			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
+        if (((Ships[A->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
+			|| ((Ships[B->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}
@@ -1314,78 +1313,3 @@ int collide_ship_ship( obj_pair * pair )
 	
 	return 0;
 }
-
-void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info)
-{
-	// slower moving object [A] is checked at its final position (polygon and position is found on obj)
-	// faster moving object [B] is reduced to a point and a ray is drawn from its last_pos to pos
-	// collision code returns hit position and normal on [A]
-
-	// estimate location on B that contacts A
-	// first find orientation of B relative to the normal it collides against.
-	// then find an approx hit location using the position hit on the bounding box
-
-	vec3d *r_heavy = &ship_ship_hit_info->r_heavy;
-	vec3d *r_light = &ship_ship_hit_info->r_light;
-	vec3d *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
-	vec3d *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
-
-	float core_rad = model_get_core_radius(Ship_info[Ships[lighter_obj->instance].ship_info_index].model_num);
-
-	// get info needed for ship_ship_collision_physics
-	Assert(mc_info_obj->hit_dist > 0);
-
-	// get light_collide_cm_pos
-	if ( !ship_ship_hit_info->submodel_rot_hit ) {
-		vec3d displacement;
-		vm_vec_sub(&displacement, mc_info_obj->p1, mc_info_obj->p0);
-
-		*light_collide_cm_pos = *mc_info_obj->p0;
-		vm_vec_scale_add2(light_collide_cm_pos, &displacement, ship_ship_hit_info->hit_time);
-	}
-	
-	// get r_light
-	vm_vec_sub(r_light, &ship_ship_hit_info->hit_pos, light_collide_cm_pos);
-
-	float mag = float(fabs(vm_vec_mag(r_light) - core_rad));
-	if (mag > 0.1) {
-		nprintf(("Physics", "Framecount: %i |r_light - core_rad| > 0.1)\n", Framecount));
-	}
-
-	if (ship_ship_hit_info->edge_hit) {
-	// For an edge hit, just take the closest valid plane normal as the collision normal
-		vm_vec_copy_normalize(&ship_ship_hit_info->collision_normal, r_light);
-		vm_vec_negate(&ship_ship_hit_info->collision_normal);
-	}
-
-	// r dot n may not be negative if hit by moving model parts.
-	float dot = vm_vec_dot( r_light, &ship_ship_hit_info->collision_normal );
-	if ( dot > 0 )
-	{
-		nprintf(("Physics", "Framecount: %i r dot normal %f > 0\n", Framecount, dot));
-	}
-
-	vm_vec_zero(heavy_collide_cm_pos);
-
-	float q = vm_vec_dist(heavy_collide_cm_pos, light_collide_cm_pos) / (heavier_obj->radius + core_rad);
-	if (q > 1.0f) {
-		nprintf(("Physics", "Warning: q = %f.  Supposed to be <= 1.0.\n", q));
-	}
-
-	*r_heavy = ship_ship_hit_info->hit_pos;
-
-
-// sphere_sphere_case_handled separately
-#ifdef COLLIDE_DEBUG
-	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f %4.1f] vel: [%4.1f, %4.1f %4.1f]\n",
-	Framecount, Ships[heavier_obj->instance].ship_name, heavier_obj->last_pos.x, heavier_obj->last_pos.y, heavier_obj->last_pos.z,
-	heavy_collide_cm_pos.x, heavy_collide_cm_pos.y, heavy_collide_cm_pos.z,
-	heavier_obj->phys_info.vel.x, heavier_obj->phys_info.vel.y, heavier_obj->phys_info.vel.z));
-
-	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f, %4.1f] vel: [%4.1f, %4.1f, %4.1f]\n",
-	Framecount, Ships[lighter_obj->instance].ship_name, lighter_obj->last_pos.x, lighter_obj->last_pos.y, lighter_obj->last_pos.z,
-	light_collide_cm_pos.x, light_collide_cm_pos.y, light_collide_cm_pos.z,
-	lighter_obj->phys_info.vel.x, lighter_obj->phys_info.vel.y, lighter_obj->phys_info.vel.z));
-#endif
-
-}	

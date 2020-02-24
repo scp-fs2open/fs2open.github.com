@@ -26,6 +26,18 @@ namespace {
  */
 template<typename T, size_t N>
 size_t parse_number_list(T (& list)[N]) {
+	ignore_white_space();
+
+	if (*Mp != '(')
+	{
+		// Probably one a single value so stuff that and don't parse a list. This makes it easier to specify single values
+		float val;
+		stuff_float(&val);
+
+		list[0] = static_cast<T>(val);
+		return 1;
+	}
+
 	float helpList[N];
 	auto num = stuff_float_list(helpList, N);
 
@@ -53,8 +65,8 @@ class RandomRange {
 	typedef Value ValueType;
 
  private:
-	GeneratorType m_generator;
-	DistributionType m_distribution;
+	mutable GeneratorType m_generator;
+	mutable DistributionType m_distribution;
 
 	bool m_constant;
 	ValueType m_minValue;
@@ -88,7 +100,7 @@ class RandomRange {
 	 * @brief Determines the next random number of this range
 	 * @return The random number
 	 */
-	ValueType next() {
+	ValueType next() const {
 		if (m_constant) {
 			return m_minValue;
 		}

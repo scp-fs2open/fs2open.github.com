@@ -529,14 +529,6 @@ void debrief_load_voice_file(int voice_num, char *name)
 			break;
 		}
 
-		// couldn't load voice, ask user to insert CD (if necessary)
-
-		// if ( Debrief_voice_ask_for_cd ) {
-			// if ( game_do_cd_check() == 0 ) {
-				// Debrief_voice_ask_for_cd = 0;
-				// break;
-			// }
-		// }
 	}
 }
 

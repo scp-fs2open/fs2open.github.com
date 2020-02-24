@@ -48,7 +48,14 @@ DECLARE_ADE_OBJ(l_Sound3D, sound_h);
 
 
 //**********HANDLE: Soundfile
-DECLARE_ADE_OBJ(l_Soundfile, sound_load_id);
+
+struct soundfile_h {
+	sound_load_id idx;
+
+	explicit soundfile_h(sound_load_id id = sound_load_id::invalid());
+};
+
+DECLARE_ADE_OBJ(l_Soundfile, soundfile_h);
 }
 }
 

@@ -58,6 +58,9 @@
 #include "physics/physics.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "scripting/api/objs/waypoint.h"
+#include "scripting/api/objs/wing.h"
+#include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -745,6 +748,8 @@ void parse_ai_class()
 
 	set_aic_flag(aicp, "$smart afterburner management:", AI::Profile_Flags::Smart_afterburner_management);
 
+	set_aic_flag(aicp, "$free afterburner use:", AI::Profile_Flags::Free_afterburner_use);
+
 	set_aic_flag(aicp, "$allow rapid secondary dumbfire:", AI::Profile_Flags::Allow_rapid_secondary_dumbfire);
 	
 	set_aic_flag(aicp, "$huge turret weapons ignore bombs:", AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
@@ -1310,7 +1315,9 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		}
 
 		if ( aip == Player_ai ) {
-			hud_lock_reset(0.5f);
+			if (aip->last_subsys_target != aip->targeted_subsys) {
+				hud_lock_reset(0.5f);
+			}
 		}
 
 	} else {
@@ -1343,6 +1350,7 @@ void ai_object_init(object * obj, int ai_index)
 	aip->wing = -1;		//	Member of what wing? -1 means none.
 	aip->ai_class = Ship_info[Ships[obj->instance].ship_info_index].ai_class;
 	aip->behavior = AIM_NONE;
+	aip->mode = aip->behavior;
 }
 
 /**
@@ -1791,7 +1799,7 @@ float get_wing_lowest_av_ab_speed(object *objp)
 
 	wingnum = aip->wing;
 
-	if (((shipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(sip->flags[Ship::Info_Flags::Afterburner])) || (shipp->current_max_speed < 5.0f) || (objp->phys_info.afterburner_max_vel.xyz.z <= shipp->current_max_speed) || !(aip->ai_flags[AI::AI_Flags::Free_afterburner_use]))	{
+	if (((shipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(sip->flags[Ship::Info_Flags::Afterburner])) || (shipp->current_max_speed < 5.0f) || (objp->phys_info.afterburner_max_vel.xyz.z <= shipp->current_max_speed) || !(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]))	{
 		lowest_max_av_ab_speed = shipp->current_max_speed;
 	}
 	else
@@ -1816,7 +1824,7 @@ float get_wing_lowest_av_ab_speed(object *objp)
 		if ((oaip->mode == AIM_WAYPOINTS) && (oaip->wing == wingnum) && (oaip->ai_flags[AI::AI_Flags::Formation_object, AI::AI_Flags::Formation_wing])) {
 			
 			float cur_max;
-			if ((oshipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(osip->flags[Ship::Info_Flags::Afterburner]) || (o->phys_info.afterburner_max_vel.xyz.z <= oshipp->current_max_speed) || !(oaip->ai_flags[AI::AI_Flags::Free_afterburner_use])) {
+			if ((oshipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(osip->flags[Ship::Info_Flags::Afterburner]) || (o->phys_info.afterburner_max_vel.xyz.z <= oshipp->current_max_speed) || !(oaip->ai_flags[AI::AI_Flags::Free_afterburner_use] || oaip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
 				cur_max = oshipp->current_max_speed;
 			}
 			else
@@ -4413,7 +4421,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			ab_allowed = false;
 	}
 
-	if (!(sip->flags[Ship::Info_Flags::Afterburner]) || (shipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(aip->ai_flags[AI::AI_Flags::Free_afterburner_use])) {
+	if (!(sip->flags[Ship::Info_Flags::Afterburner]) || (shipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
 		ab_allowed = false;
 	}
 
@@ -4584,6 +4592,12 @@ void ai_waypoints()
 					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
 					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
+				// adds scripting hook for 'On Waypoints Done' --wookieejedi
+				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
+				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
+				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
+				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointlist");
 			}
 		}
 	}
@@ -5308,9 +5322,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
-			int	bank_index;
-
-			bank_index = swp->current_primary_bank;
+			int	bank_index = swp->current_primary_bank;
 
 			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Puncture]) 
 			{
@@ -5319,11 +5331,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 		for (int i=0; i<swp->num_primary_banks; i++) 
 		{
-			int	weapon_info_index;
+			int	weapon_info_index = swp->primary_bank_weapons[i];
 
-			weapon_info_index = swp->primary_bank_weapons[i];
-
-			if (weapon_info_index > -1)
+			if (weapon_info_index >= 0)
 			{
 				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) 
 				{
@@ -5334,44 +5344,51 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 	}
 
-	if ( (other_objp->type == OBJ_SHIP) && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) ) 
+	auto other_is_ship = (other_objp->type == OBJ_SHIP);
+	float enemy_remaining_shield = get_shield_pct(other_objp);
+
+	if ( other_is_ship && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) )
 	{
 		//Check if we have a capital+ weapon on board
 		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
 				{
-					swp->current_primary_bank = i;
-					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
-					return i;
+					// handle shielded big/huge ships (non FS-verse)
+					// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
+					if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+					{
+						swp->current_primary_bank = i;
+						nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
+						return i;
+					}
 				}
 			}
 		}
 	}
 
-	float enemy_remaining_shield = get_shield_pct(other_objp);
-
 	// Is the target shielded by say only 5%?
 	if (enemy_remaining_shield <= 0.05f)	
 	{
 		// Then it is safe to start using a heavy hull damage weapon such as the maxim
-		int i;
 		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
 		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
 
 		// Find the weapon with the highest hull * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->armor_factor) * (wip->damage)) / wip->fire_wait) > i_hullfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
+						i_hullfactor_prev = ( ((wip->armor_factor) * (wip->damage)) / wip->fire_wait );
 						i_hullfactor_prev_bank = i;
 					}
 				}
@@ -5382,6 +5399,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 			i_hullfactor_prev_bank = 0;		// Just switch to the first one
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_is_ship ? Ships[other_objp->instance].ship_name : "non-ship") ));
 		return i_hullfactor_prev_bank;							// Return
 	}
 
@@ -5390,26 +5408,23 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
-			int	bank_index;
+			auto wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
 
-			bank_index = swp->current_primary_bank;
-
-			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Capital_plus]))
+			if ((wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]))
 			{
+				nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, shipp->ship_name, wip->name));
 				return swp->current_primary_bank;
 			}
 		}
 		for (int i=0; i<swp->num_primary_banks; i++) 
 		{
-			int	weapon_info_index;
-
-			weapon_info_index = swp->primary_bank_weapons[i];
-
-			if (weapon_info_index > -1)
+			if (swp->primary_bank_weapons[i] >= 0)
 			{
-				if ((Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])) 
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]))
 				{
 					swp->current_primary_bank = i;
+					nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, shipp->ship_name, wip->name));
 					return i;
 				}
 			}
@@ -5419,61 +5434,63 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	// Is the target shielded by less then 50%?
 	if (enemy_remaining_shield <= 0.50f)	
 	{
-		// Should be using best balanced shield gun
-		int i;
-		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
-		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		// Should be using best balanced shield/hull gun
+		float i_balancedfactor_prev = 0;	// Previous weapon bank "balanced" factor (this is the safe way to do it)
+		int i_balancedfactor_prev_bank = -1;	// Bank which gave us this "balanced" factor
 		// Find the weapon with the highest average hull and shield * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->armor_factor + wip->shield_factor) * wip->damage) / wip->fire_wait) > i_balancedfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
-						i_hullfactor_prev_bank = i;
+						i_balancedfactor_prev = ((((wip->armor_factor + wip->shield_factor) * wip->damage) / wip->fire_wait));
+						i_balancedfactor_prev_bank = i;
 					}
 				}
 			}
 		}
-		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		if (i_balancedfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+			i_balancedfactor_prev_bank = 0;		// Just switch to the first one
 		}
-		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		return i_hullfactor_prev_bank;							// Return
+		swp->current_primary_bank = i_balancedfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (<50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_balancedfactor_prev_bank]].name));
+		return i_balancedfactor_prev_bank;							// Return
 	}
 	else
 	{
 		// Should be using best shield destroying gun
-		int i;
-		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
-		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		float i_shieldfactor_prev = 0;		// Previous weapon bank shield factor (this is the safe way to do it)
+		int i_shieldfactor_prev_bank = -1;	// Bank which gave us this shield factor
 		// Find the weapon with the highest average hull and shield * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->shield_factor) * wip->damage) / wip->fire_wait) > i_shieldfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
-						i_hullfactor_prev_bank = i;
+						i_shieldfactor_prev = ( ((wip->shield_factor) * (wip->damage)) / wip->fire_wait );
+						i_shieldfactor_prev_bank = i;
 					}
 				}
 			}
 		}
-		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		if (i_shieldfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+			i_shieldfactor_prev_bank = 0;		// Just switch to the first one
 		}
-		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		return i_hullfactor_prev_bank;							// Return
+		swp->current_primary_bank = i_shieldfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_shieldfactor_prev_bank]].name));
+		return i_shieldfactor_prev_bank;							// Return
 	}
 }
 
@@ -5500,7 +5517,9 @@ void set_primary_weapon_linkage(object *objp)
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
 		if ( Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_ship() ) {
 			if ( aip->targeted_subsys == NULL ) {
-                shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+				if (!sip->flags[Ship::Info_Flags::No_primary_linking] ) {
+					shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+				}
                 shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				return;
 			}
@@ -7474,32 +7493,6 @@ void ai_set_guard_wing(object *objp, int wingnum)
 
 		ai_set_guard_vec(objp, &Objects[leader_objnum]);
 	}
-}
-
-//	Make object *objp guard object *other_objp.
-//	To be called from the goals code.
-void ai_set_evade_object(object *objp, object *other_objp)
-{
-	ship		*shipp;
-	ai_info	*aip;
-	int		other_objnum;
-
-	Assert(objp->type == OBJ_SHIP);
-	Assert(objp->instance >= 0);
-
-	shipp = &Ships[objp->instance];
-
-	Assert(shipp->ai_index >= 0);
-
-	aip = &Ai_info[shipp->ai_index];
-
-	other_objnum = OBJ_INDEX(other_objp);
-	Assert(other_objnum >= 0);
-
-	Assert(other_objnum != Ships[aip->shipnum].objnum);	//	make sure not targeting self
-	aip->target_objnum = other_objnum;
-
-	aip->mode = AIM_EVADE;
 }
 
 //	Make objp guard other_objp
@@ -9943,7 +9936,7 @@ void ai_big_guard()
 		ai_turn_towards_vector(&goal_pt, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 
-		if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (cur_guard_rad > 1.1f * max_guard_dist)) {
+		if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (cur_guard_rad > 1.1f * max_guard_dist)) {
 			vec3d	v2g;
 			float	dot_to_goal_point;
 
@@ -10066,7 +10059,7 @@ void ai_guard()
 			compute_desired_rvec(&rvec, &goal_point, &Pl_objp->pos);
 			ai_turn_towards_vector(&goal_point, Pl_objp, Ship_info[shipp->ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0, &rvec);
 
-			if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
+			if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
 				if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 					afterburners_start(Pl_objp);
 					aip->afterburner_stop_time = Missiontime + 3*F1_0;
@@ -11536,53 +11529,6 @@ void render_wing_phantoms_all()
 
 #endif
 
-//	Hook from goals code to AI.
-//	Force a wing to fly in formation.
-//	Sets AIF_FORMATION bit in ai_flags.
-//	wingnum		Wing to force to fly in formation
-void ai_fly_in_formation(int wingnum)
-{
-	object	*objp;
-	ship		*shipp;
-	ship_obj	*so;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-
-		shipp = &Ships[objp->instance];
-		Assert((shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO));
-
-		if (Ai_info[shipp->ai_index].wing == wingnum) {
-			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Formation_wing);
-			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::Formation_object);
-		}
-	}
-}
-
-//	Hook from goals code to AI.
-//	Force a wing to abandon formation flying.
-//	Clears AIF_FORMATION bit in ai_flags.
-//	wingnum		Wing to force to fly in formation
-void ai_disband_formation(int wingnum)
-{
-	object	*objp;
-	ship		*shipp;
-	ship_obj	*so;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-
-		shipp = &Ships[objp->instance];
-		Assert((shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO));
-
-		if (Ai_info[shipp->ai_index].wing == wingnum) {
-			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::Formation_wing);
-		}
-	}
-}
-
 float	Leader_chaos = 0.0f;
 int Chaos_frame = -1;
 
@@ -11784,7 +11730,7 @@ int ai_formation()
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	bool ab_allowed = false;
-	if ((sip->flags[Ship::Info_Flags::Afterburner]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (aip->ai_flags[AI::AI_Flags::Free_afterburner_use])) {
+	if ((sip->flags[Ship::Info_Flags::Afterburner]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
 		ab_allowed = true;
 	} else {
 		if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
@@ -13357,7 +13303,7 @@ void ai_warp_out(object *objp)
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
 		if (timestamp_elapsed(aip->force_warp_time)
 			|| (!collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)
-			|| (Ship_info[shipp->ship_info_index].warpout_type == WT_HYPERSPACE
+			|| (Warp_params[shipp->warpout_params_index].warp_type == WT_HYPERSPACE
 				&& !collide_predict_large_ship(objp, 100000.0f)))) {
 			aip->submode = AIS_WARP_3;
 			aip->submode_start_time = Missiontime;
@@ -13400,7 +13346,7 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_WARP_4: {
 		// Only lets the ship warp after waiting for the warpout engage time
-		if ( (Missiontime / 100) >= (aip->submode_start_time / 100 + Ship_info[shipp->ship_info_index].warpout_engage_time) ) {
+		if ( (Missiontime / 100) >= (aip->submode_start_time / 100 + Warp_params[shipp->warpout_params_index].warpout_engage_time) ) {
 			shipfx_warpout_start(objp);
 			aip->submode = AIS_WARP_5;
 			aip->submode_start_time = Missiontime;
@@ -14133,53 +14079,74 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip)
+static void ai_control_info_check(ai_info *aip, physics_info *pi)
 {
-	if(aip->ai_override_flags.none_set())
+	if (aip->ai_override_flags.none_set())
 		return;
 
-	if(timestamp_elapsed(aip->ai_override_timestamp)) {
+	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Never_expire] && timestamp_elapsed(aip->ai_override_timestamp))
+	{
 		aip->ai_override_flags.reset();
-	} else {
-		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full])
+	}
+	else
+	{
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_rot])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
 			AI_ci.heading = aip->ai_override_ci.heading;
 			AI_ci.bank = aip->ai_override_ci.bank;
-		} else {
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
+		}
+		else
+		{
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
 			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
 			{
 				AI_ci.heading = aip->ai_override_ci.heading;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
 			{
 				AI_ci.bank = aip->ai_override_ci.bank;
 			}
 		}
-		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
+
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
 		{
 			AI_ci.vertical = aip->ai_override_ci.vertical;
 			AI_ci.sideways = aip->ai_override_ci.sideways;
 			AI_ci.forward = aip->ai_override_ci.forward;
-		} else {
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
+		}
+		else
+		{
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
 			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
 			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
 			{
 				AI_ci.forward = aip->ai_override_ci.forward;
 			}
 		}
+
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning])
+			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity])
+			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration])
+			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
+
+	// set physics flag according to whether we are instantaneously accelerating
+	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
+		pi->flags |= PF_NO_DAMP;
+	else
+		pi->flags &= ~PF_NO_DAMP;
 }
 
 int Last_ai_obj = -1;
@@ -14234,7 +14201,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	if (rfc == 1) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip);
+		ai_control_info_check(aip, &obj->phys_info);
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel

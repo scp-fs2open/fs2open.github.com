@@ -11,7 +11,7 @@
 
 #ifndef SCP_UNIX
 
-#include <winsock.h>
+#include <winsock2.h>
 
 #include "network/multilag.h"
 #include "io/timer.h"

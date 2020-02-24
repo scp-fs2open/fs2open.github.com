@@ -40,7 +40,7 @@ ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not", "boolean
 ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name")
 {
 	camid cid;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Camera.Get(&cid), &s))
 		return ade_set_error(L, "s", "");
 
@@ -136,7 +136,7 @@ ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", 
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->IsValid()) {
+	if(ADE_SETTING_VAR && sso && sso->isSubsystemValid()) {
 		cid.getCamera()->set_object_host(sso->objp, sso->ss->system_info->subobj_num);
 	}
 
@@ -191,7 +191,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	if(!cid.isValid())
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
-	if(ADE_SETTING_VAR && sso && sso->IsValid()) {
+	if(ADE_SETTING_VAR && sso && sso->isSubsystemValid()) {
 		cid.getCamera()->set_object_target(sso->objp, sso->ss->system_info->subobj_num);
 	}
 

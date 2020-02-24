@@ -329,7 +329,12 @@ int Normal_key_set[] = {
 	NAV_CYCLE,
 
 	TOGGLE_GLIDING,
-	CYCLE_PRIMARY_WEAPON_SEQUENCE
+	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+	CUSTOM_CONTROL_1,
+    CUSTOM_CONTROL_2,
+    CUSTOM_CONTROL_3,
+	CUSTOM_CONTROL_4,
+	CUSTOM_CONTROL_5
 };
 
 int Dead_key_set[] = {
@@ -464,7 +469,12 @@ int Non_critical_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
-	CYCLE_PRIMARY_WEAPON_SEQUENCE
+	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+    CUSTOM_CONTROL_1,
+    CUSTOM_CONTROL_2,
+    CUSTOM_CONTROL_3,
+	CUSTOM_CONTROL_4,
+	CUSTOM_CONTROL_5
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -613,8 +623,6 @@ void debug_change_song(int delta)
 }
 
 extern int Framerate_delay;
-
-extern void snd_stop_any_sound();
 
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
@@ -1424,6 +1432,10 @@ void process_player_ship_keys(int k)
 	}
 }
 
+//Cyborg17 - Linking this function to restart sound if needed. This is to avoid having to
+//check for subspace every frame.
+extern void game_start_subspace_ambient_sound();
+
 /**
  * Handler for when player hits 'ESC' during the game
  */
@@ -1439,6 +1451,7 @@ void game_do_end_mission_popup()
 		// do housekeeping things.
 		game_stop_time();
 		game_stop_looped_sounds();
+		audiostream_pause_all();
 		snd_stop_all();
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
@@ -1453,8 +1466,14 @@ void game_do_end_mission_popup()
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 			break;
 
+		// do nothing; resume game
 		default:
-			break;  // do nothing
+			// Cyborg17 - best place to check for this *one* looping sound.
+			if (Game_subspace_effect) {
+				game_start_subspace_ambient_sound();
+			}
+			audiostream_unpause_all();
+			break;
 		}
 
 		game_start_time();
@@ -1602,7 +1621,9 @@ void game_process_cheats(int k)
 				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
 		}
-				
+
+		// Cyborg17 to prevent a nullptr...
+		ship_set_warp_effects(&Objects[objnum]);
 		// warpin
 		shipfx_warpin_start(&Objects[objnum]);
 	}
@@ -2039,6 +2060,11 @@ int button_function_critical(int n, net_player *p = NULL)
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
 		case TOGGLE_GLIDING:
+	    case CUSTOM_CONTROL_1:
+	    case CUSTOM_CONTROL_2:
+	    case CUSTOM_CONTROL_3:
+	    case CUSTOM_CONTROL_4:
+	    case CUSTOM_CONTROL_5:
 			return 0;
 
 		default :
@@ -2291,6 +2317,11 @@ int button_function(int n)
 		case MAX_THROTTLE:
 		case TOGGLE_GLIDING:
 		case GLIDE_WHEN_PRESSED:
+	    case CUSTOM_CONTROL_1:
+	    case CUSTOM_CONTROL_2:
+	    case CUSTOM_CONTROL_3:
+	    case CUSTOM_CONTROL_4:
+	    case CUSTOM_CONTROL_5:
 			return 0;
 	}
 
@@ -2413,9 +2444,9 @@ int button_function(int n)
 
 			control_used(END_MISSION);
 
-			if (collide_predict_large_ship(Player_obj, 200.0f) 
-			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
-			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			if ( collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Warp_params[Ships[Player_obj->instance].warpout_params_index].warp_type == WT_HYPERSPACE 
+				&& collide_predict_large_ship(Player_obj, 100000.0f)) )
 			{
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
@@ -2425,7 +2456,7 @@ int button_function(int n)
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
-			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
+			} else if ((Player_obj != nullptr) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {
@@ -2667,7 +2698,7 @@ int button_function(int n)
 
 		// stop targeting ship
 		case STOP_TARGETING_SHIP:
-			hud_cease_targeting();
+			hud_cease_targeting(true);
 			break;
 
 		// stop targeting subsystems on ship
@@ -2771,9 +2802,9 @@ int button_function(int n)
 
 			control_used(END_MISSION);
 			
-			if (collide_predict_large_ship(Player_obj, 200.0f) 
-			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
-			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			if ( collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Warp_params[Ships[Player_obj->instance].warpout_params_index].warp_type == WT_HYPERSPACE 
+				&& collide_predict_large_ship(Player_obj, 100000.0f)) )
 			{
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
@@ -2783,7 +2814,7 @@ int button_function(int n)
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
-			} else if (Player_obj != NULL && object_get_gliding(Player_obj)) {
+			} else if ((Player_obj != nullptr) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {

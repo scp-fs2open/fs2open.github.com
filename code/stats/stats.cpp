@@ -10,22 +10,11 @@
 
 
 
-#ifdef _WIN32
-#include <io.h>
-#include <winsock.h>
-#endif
-
 #include "globalincs/systemvars.h"
 #include "hud/hud.h"
 #include "network/multi.h"
 #include "playerman/player.h"
 #include "stats/stats.h"
-
-
-#define MISSION_STATS_START_Y 80
-#define ALLTIME_STATS_START_Y 270
-#define MULTIPLAYER_LIST_START 20
-
 
 player *Active_player;
 
@@ -117,15 +106,6 @@ void show_stats_label(int stage, int sx, int sy, int dy)
 			}
 			break;
 		} // end switch
-}
-
-void stats_underline_text(int sx, int sy, char *text)
-{
-	int w,h,fh;
-
-	gr_get_string_size(&w,&h,text);
-	fh=gr_get_font_height();
-	gr_line(sx-1, sy+fh, sx+w+1, sy+fh, GR_RESIZE_MENU);
 }
 
 void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
@@ -281,23 +261,6 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			break;
 	} // end switch
 }
-
-int find_netplayer_n(int n)
-{
-	int idx;
-	int target;
-   target = n;
-	n=0;
-   for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx])){
-			n++;
-			if(n == target)
-				return idx;
-		}
-	}
-	return -1;
-}
-
 
 void show_stats_close()
 {	

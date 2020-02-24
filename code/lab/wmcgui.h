@@ -542,6 +542,7 @@ public:
 	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
+	void SetSelectedItem(TreeItem *item);
 };
 
 //*****************************Text*******************************
@@ -752,7 +753,7 @@ class Slider : public GUIObject
 
 	int GetSliderOffset();
 	float GetSliderPos(int x);
-	void UpdateSlider(int x);
+	void UpdateSlider(float x);
 protected:
 	void DoDraw(float frametime) override;
 	void DoMove(int dx, int dy) override;
@@ -764,6 +765,7 @@ public:
 	Slider(const SCP_string &in_label, float min, float max, int x_coord, int y_coord, void(*in_function)(Slider *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
 	float GetSliderValue();
+	void SetSliderValue(float raw_val);
 };
 
 //*****************************GLOBALS*******************************

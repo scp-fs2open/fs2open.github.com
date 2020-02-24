@@ -1,28 +1,32 @@
-#include <cstdio>
-#include <cstdarg>
+#include "scripting/scripting.h"
+
+#include "ade.h"
+#include "freespace.h"
 
 #include "bmpman/bmpman.h"
 #include "controlconfig/controlsconfig.h"
-#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
 #include "hud/hud.h"
 #include "io/key.h"
+#include "libs/jansson.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "scripting/ade_args.h"
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-#include "ade.h"
+
+#include <cstdarg>
+#include <cstdio>
 
 using namespace scripting;
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
+bool Output_scripting_json = false;
 
 flag_def_list Script_conditions[] = 
 {
@@ -42,7 +46,8 @@ flag_def_list Script_conditions[] =
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
 
-flag_def_list Script_actions[] = 
+// clang-format off
+flag_def_list Script_actions[] =
 {
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
@@ -79,13 +84,21 @@ flag_def_list Script_actions[] =
 	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
 	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
 	{"On Message Received",		CHA_MSGRECEIVED,	0},
-    {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
-	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
-	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
-	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
-	{ "On Simulation",			CHA_SIMULATION,		0 },
-	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
+	{"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
+	{"On Afterburner Engage",	CHA_AFTERBURNSTART, 0},
+	{"On Afterburner Stop",		CHA_AFTERBURNEND,	0},
+	{"On Beam Fire",			CHA_BEAMFIRE,		0},
+	{"On Simulation",			CHA_SIMULATION,		0},
+	{"On Load Screen",			CHA_LOADSCREEN,		0},
+	{"On Campaign Mission Accept", CHA_CMISSIONACCEPT,	0},
+	{"On Ship Depart",			CHA_ONSHIPDEPART,	0},
+	{"On Weapon Created",		CHA_ONWEAPONCREATED, 0},
+	{"On Waypoints Done",		CHA_ONWAYPOINTSDONE, 0},
+	{"On Subsystem Destroyed",	CHA_ONSUBSYSDEATH,	0},
+	{"On Goals Cleared",		CHA_ONGOALSCLEARED, 0},
+	{"On Briefing Stage",		CHA_ONBRIEFSTAGE, 0},
 };
+// clang-format on
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 int scripting_state_inited = 0;
@@ -160,16 +173,146 @@ void script_parse_table(const char *filename)
 			while (st->ParseCondition(filename));
 			required_string("#End");
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		extern void fs2netd_add_table_validation(const char *tblname);
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
+}
+
+static void json_doc_generate_class(json_t* elObj, const DocumentationElementClass* lib)
+{
+	json_object_set_new(elObj, "superClass", json_string(lib->superClass.c_str()));
+}
+static json_t* json_doc_generate_return_type(const scripting::ade_type_info& type_info)
+{
+	switch (type_info.getType()) {
+	case ade_type_info_type::Empty:
+		return json_string("void");
+	case ade_type_info_type::Simple:
+		return json_string(type_info.getSimpleName());
+	case ade_type_info_type::Tuple: {
+		json_t* tupleTypes = json_array();
+
+		for (const auto& type : type_info.elements()) {
+			json_array_append_new(tupleTypes, json_doc_generate_return_type(type));
+		}
+
+		return json_pack("{ssso}", "type", "tuple", "elements", tupleTypes);
+	}
+	case ade_type_info_type::Array: {
+		return json_pack("{ssso}",
+		                 "type",
+		                 "list",
+		                 "element",
+		                 json_doc_generate_return_type(type_info.elements().front()));
+	}
+	default:
+		UNREACHABLE("Unknown type type!");
+		return nullptr;
+	}
+
+}
+static void json_doc_generate_function(json_t* elObj, const DocumentationElementFunction* lib)
+{
+	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
+	json_object_set_new(elObj, "parameters", json_string(lib->parameters.c_str()));
+	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+}
+static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
+{
+	json_object_set_new(elObj, "getterType", json_doc_generate_return_type(lib->getterType));
+	json_object_set_new(elObj, "setterType", json_string(lib->setterType.c_str()));
+	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+}
+static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<DocumentationElement>>& elements);
+static json_t* json_doc_generate_element(const std::unique_ptr<DocumentationElement>& element)
+{
+	json_t* elementsObj = json_object();
+
+	json_object_set_new(elementsObj, "name", json_string(element->name.c_str()));
+	json_object_set_new(elementsObj, "shortName", json_string(element->shortName.c_str()));
+	json_object_set_new(elementsObj, "description", json_string(element->description.c_str()));
+
+	switch (element->type) {
+	case ElementType::Library:
+		json_object_set_new(elementsObj, "type", json_string("library"));
+		break;
+	case ElementType::Class:
+		json_object_set_new(elementsObj, "type", json_string("class"));
+		json_doc_generate_class(elementsObj, static_cast<DocumentationElementClass*>(element.get()));
+		break;
+	case ElementType::Function:
+		json_object_set_new(elementsObj, "type", json_string("function"));
+		json_doc_generate_function(elementsObj, static_cast<DocumentationElementFunction*>(element.get()));
+		break;
+	case ElementType::Operator:
+		json_object_set_new(elementsObj, "type", json_string("operator"));
+		json_doc_generate_function(elementsObj, static_cast<DocumentationElementFunction*>(element.get()));
+		break;
+	case ElementType::Property:
+		json_object_set_new(elementsObj, "type", json_string("property"));
+		json_doc_generate_property(elementsObj, static_cast<DocumentationElementProperty*>(element.get()));
+		break;
+	default:
+		json_object_set_new(elementsObj, "type", json_string("unknown"));
+		break;
+	}
+
+	json_object_set_new(elementsObj, "children", json_doc_generate_elements(element->children));
+
+	return elementsObj;
+}
+
+static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<DocumentationElement>>& elements)
+{
+	json_t* elementsArray = json_array();
+
+	for (const auto& el : elements) {
+		json_array_append_new(elementsArray, json_doc_generate_element(el));
+	}
+
+	return elementsArray;
+}
+
+static void documentation_to_json(const ScriptingDocumentation& doc)
+{
+	std::unique_ptr<json_t> root(json_object());
+
+	{
+		json_t* actionArray = json_array();
+
+		for (const auto& action : doc.actions) {
+			json_array_append_new(actionArray, json_string(action.c_str()));
+		}
+
+		json_object_set_new(root.get(), "actions", actionArray);
+	}
+	{
+		json_t* conditionArray = json_array();
+
+		for (const auto& cond : doc.conditions) {
+			json_array_append_new(conditionArray, json_string(cond.c_str()));
+		}
+
+		json_object_set_new(root.get(), "conditions", conditionArray);
+	}
+	{
+		json_t* enumObject = json_object();
+
+		for (const auto& enumVal : doc.enumerations) {
+			json_object_set_new(enumObject, enumVal.name.c_str(), json_integer(enumVal.value));
+		}
+
+		json_object_set_new(root.get(), "enums", enumObject);
+	}
+	json_object_set_new(root.get(), "elements", json_doc_generate_elements(doc.elements));
+
+	const auto jsonStr = json_dump_string(root.get(), JSON_INDENT(2) | JSON_SORT_KEYS);
+
+	std::ofstream outStr("scripting.json");
+	outStr << jsonStr;
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.
@@ -181,10 +324,17 @@ void script_init()
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
 
-	if(Output_scripting_meta)
-	{
-		mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
-		Script_system.OutputMeta("scripting.html");
+	if (Output_scripting_meta || Output_scripting_json) {
+		const auto doc = Script_system.OutputDocumentation();
+
+		if (Output_scripting_meta) {
+			mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
+			Script_system.OutputMeta("scripting.html");
+		}
+		if (Output_scripting_json) {
+			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
+			documentation_to_json(doc);
+		}
 	}
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
 	script_parse_table("scripting.tbl");
@@ -313,6 +463,9 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 							return false;
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
+					} else if (action == CHA_ONWEAPONCREATED) {
+						if (objp == nullptr || objp->type != OBJ_WEAPON)
+							return false;
 					} else {
 
 						// Okay, if we're still here, then objp is both valid and a ship
@@ -418,7 +571,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									return false;
 								break;
 							}
-
+							default:
+								break;
 						}
 					} // case CHC_WEAPONCLASS
 					break;
@@ -494,36 +648,35 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 	return true;
 }
 
-bool ConditionedHook::Run(script_state *sys, int action, char format, void *data)
+bool ConditionedHook::IsOverride(script_state* sys, int action)
 {
 	Assert(sys != NULL);
+	// bool b = false;
 
 	//Do the actions
 	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		if(sap->action_type == action)
-			sys->RunBytecode(sap->hook, format, data);
-	}
-
-	return true;
-}
-
-bool ConditionedHook::IsOverride(script_state *sys, int action)
-{
-	Assert(sys != NULL);
-	//bool b = false;
-
-	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
-	{
-		if(sap->action_type == action)
-		{
-			if(sys->IsOverride(sap->hook))
+		if (sap->action_type == action) {
+			if (sys->IsOverride(sap->hook))
 				return true;
 		}
 	}
 
 	return false;
+}
+
+bool ConditionedHook::Run(class script_state* sys, int action)
+{
+	Assert(sys != NULL);
+
+	// Do the actions
+	for (auto & Action : Actions) {
+		if (Action.action_type == action) {
+			sys->RunBytecode(Action.hook.hook_function);
+		}
+	}
+
+	return true;
 }
 
 //*************************CLASS: script_state*************************
@@ -537,6 +690,10 @@ void script_state::SetHookObject(const char *name, object *objp)
 
 void script_state::SetHookObjects(int num, ...)
 {
+	if (LuaState == nullptr) {
+		return;
+	}
+
 	va_list vl;
 	va_start(vl, num);
 	if(this->OpenHookVarTable())
@@ -629,116 +786,6 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
-void script_state::SetHookVar(const char *name, char format, const void *data)
-{
-	if(format == '\0')
-		return;
-
-	if(LuaState != NULL)
-	{
-		char fmt[2] = {format, '\0'};
-		int data_ldx = 0;
-		if(data == NULL)
-			data_ldx = lua_gettop(LuaState);
-
-		if(data_ldx < 1 && data == NULL)
-			return;
-
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-			lua_pushstring(LuaState, name);
-			//ERRORS? LOOK HERE!!!
-			//--------------------
-			//WMC - Now THIS has to be the nastiest hack I've made
-			//Basically, I tell it to copy over enough stack
-			//for a ade_odata object. If you pass
-			//_anything_ larger as a stack object, this will not work.
-			//You'll get memory corruption
-			if(data == NULL)
-			{
-				lua_pushvalue(LuaState, data_ldx);
-			}
-			else
-			{
-				switch (format) {
-					case 's':
-						ade_set_args(LuaState, fmt, data);
-						break;
-					case 'i':
-						ade_set_args(LuaState, fmt, *(int*)data);
-						break;
-					case 'b':
-						ade_set_args(LuaState, fmt, *(bool*)data);
-						break;
-					case 'f':
-						ade_set_args(LuaState, fmt, *(float*)data);
-						break;
-					default:
-						ade_set_args(LuaState, fmt, *(ade_odata*)data);
-						break;
-				}
-			}
-			//--------------------
-			//WMC - This was a separate function
-			//lua_set_arg(LuaState, format, data);
-			//WMC - switch to the scripting library
-			//lua_setglobal(LuaState, name);
-			lua_rawset(LuaState, amt_ldx);
-			
-			if(data_ldx)
-				lua_pop(LuaState, 1);
-			//Close hook var table
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
-			if(data_ldx)
-				lua_pop(LuaState, 1);
-		}
-	}
-}
-
-//WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetHookVar(const char *name, char format, void *data)
-{
-	bool got_global = false;
-	if(LuaState != NULL)
-	{
-		//Construct format string
-		char fmt[3] = {'|', format, '\0'};
-
-		//WMC - Quick and clean. :)
-		//WMC - *sigh* nostalgia
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-
-			lua_pushstring(LuaState, name);
-			lua_rawget(LuaState, amt_ldx);
-			if(!lua_isnil(LuaState, -1))
-			{
-				if(data != NULL) {
-					ade_get_args(LuaState, fmt, data);
-				}
-				got_global = true;
-			}
-			lua_pop(LuaState, 1);	//Remove data
-
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%s'", name);
-		}
-	}
-
-	return got_global;
-}
-
 void script_state::RemHookVar(const char *name)
 {
 	this->RemHookVars(1, name);
@@ -746,7 +793,7 @@ void script_state::RemHookVar(const char *name)
 
 void script_state::RemHookVars(unsigned int num, ...)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
@@ -774,41 +821,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 	}
 }
 
-//WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetGlobal(const char *name, char format, void *data)
-{
-	bool got_global = false;
-	if(LuaState != NULL)
-	{
-		//Construct format string
-		char fmt[3] = {'|', format, '\0'};
-
-		lua_getglobal(LuaState, name);
-		//Does global exist?
-		if(!lua_isnil(LuaState, -1))
-		{
-			if(data != NULL) {
-				ade_get_args(LuaState, fmt, data);
-			}
-			got_global = true;
-		}
-		lua_pop(LuaState, 1);	//Remove data
-	}
-
-	return got_global;
-}
-
-void script_state::RemGlobal(const char *name)
-{
-	if(LuaState != NULL)
-	{
-		//WMC - Quick and clean. :)
-		lua_pushnil(LuaState);
-		lua_setglobal(LuaState, name);
-	}
-}
-
-int script_state::LoadBm(char *name)
+int script_state::LoadBm(const char* name)
 {
 	for(int i = 0; i < (int)ScriptImages.size(); i++)
 	{
@@ -838,54 +851,19 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunBytecodeSub(script_function& func, char format, void *data)
-{
-	using namespace luacpp;
-
-	if (!func.function.isValid()) {
-		return 1;
-	}
-
-	GR_DEBUG_SCOPE("Lua code");
-
-	try {
-		auto ret = func.function.call();
-
-		if (data != NULL && ret.size() >= 1) {
-			auto stack_start = lua_gettop(LuaState);
-
-			auto val = ret.front();
-			val.pushValue();
-
-			char fmt[2] = {format, '\0'};
-			Ade_get_args_skip = stack_start;
-			Ade_get_args_lfunction = true;
-			ade_get_args(LuaState, fmt, data);
-			Ade_get_args_skip = 0;
-			Ade_get_args_lfunction = false;
-		}
-	} catch (const LuaException&) {
-		return 0;
-	}
-
-	return 1;
-}
-
-//returns 0 on failure (Parse error), 1 on success
-int script_state::RunBytecode(script_hook &hd, char format, void *data)
-{
-	RunBytecodeSub(hd.hook_function, format, data);
-	return 1;
-}
-
-int script_state::RunCondition(int action, char format, void *data, object *objp, int more_data)
+int script_state::RunCondition(int action, object* objp, int more_data)
 {
 	int num = 0;
+
+	if (LuaState == nullptr) {
+		return num;
+	}
+
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp, more_data))
 		{
-			chp->Run(this, action, format, data);
+			chp->Run(this, action);
 			num++;
 		}
 	}
@@ -916,7 +894,9 @@ void script_state::Clear()
 	// Free all lua value references
 	ConditionalHooks.clear();
 
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
+		OnStateDestroy(LuaState);
+
 		lua_close(LuaState);
 	}
 
@@ -945,17 +925,40 @@ script_state::~script_state()
 
 void script_state::SetLuaSession(lua_State *L)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		lua_close(LuaState);
 	}
 	LuaState = L;
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
 		Langs |= SC_LUA;
 	}
 	else if(Langs & SC_LUA) {
 		Langs &= ~SC_LUA;
 	}
+}
+
+ScriptingDocumentation script_state::OutputDocumentation()
+{
+	ScriptingDocumentation doc;
+
+	// Conditions
+	doc.conditions.reserve(static_cast<size_t>(Num_script_conditions));
+	for (int32_t i = 0; i < Num_script_conditions; i++) {
+		doc.conditions.emplace_back(Script_conditions[i].name);
+	}
+
+	// Actions
+	doc.actions.reserve(static_cast<size_t>(Num_script_actions));
+	for (int32_t i = 0; i < Num_script_actions; i++) {
+		doc.actions.emplace_back(Script_actions[i].name);
+	}
+
+	if (Langs & SC_LUA) {
+		OutputLuaDocumentation(doc);
+	}
+
+	return doc;
 }
 
 int script_state::OutputMeta(const char *filename)
@@ -1016,78 +1019,6 @@ int script_state::OutputMeta(const char *filename)
 	fclose(fp);
 
 	return 1;
-}
-
-bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
-{
-	using namespace luacpp;
-
-	size_t string_size = strlen(string);
-	char lastchar = string[string_size -1];
-
-	if(string[0] == '{')
-	{
-		return false;
-	}
-
-	if(string[0] == '[' && lastchar != ']')
-	{
-		return false;
-	}
-
-	size_t s_bufSize = string_size + 8;
-	std::string s;
-	s.reserve(s_bufSize);
-	if(string[0] != '[')
-	{
-		if(rtn != NULL)
-		{
-			s = "return ";
-		}
-		s += string;
-	}
-	else
-	{
-		s.assign(string + 1, string + string_size);
-	}
-
-	SCP_string debug_name;
-	if (debug_str == nullptr) {
-		debug_name = "String: ";
-		debug_name += s;
-	} else {
-		debug_name = debug_str;
-	}
-
-	try {
-		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
-		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
-
-		try {
-			auto ret = function.call();
-
-			if (rtn != NULL && ret.size() >= 1) {
-				auto stack_start = lua_gettop(LuaState);
-
-				auto val = ret.front();
-				val.pushValue();
-
-				Ade_get_args_skip = stack_start;
-				Ade_get_args_lfunction = true;
-				ade_get_args(LuaState, format, rtn);
-				Ade_get_args_skip = 0;
-				Ade_get_args_lfunction = false;
-			}
-		} catch (const LuaException&) {
-			return false;
-		}
-	} catch (const LuaException& e) {
-		LuaError(GetLuaSession(), "%s", e.what());
-
-		return false;
-	}
-
-	return true;
 }
 
 void script_state::ParseChunkSub(script_function& script_func, const char* debug_str)
@@ -1196,6 +1127,74 @@ void script_state::ParseChunk(script_hook *dest, const char *debug_str)
 		ParseChunkSub(dest->override_function, debug_str_over);
 		vm_free(debug_str_over);
 	}
+}
+
+bool script_state::EvalString(const char* string, const char* debug_str)
+{
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar      = string[string_size - 1];
+
+	if (string[0] == '{') {
+		return false;
+	}
+
+	if (string[0] == '[' && lastchar != ']') {
+		return false;
+	}
+
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
+	if (string[0] != '[') {
+		s += string;
+	} else {
+		s.assign(string + 1, string + string_size);
+	}
+
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
+
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
+
+		try {
+			function.call();
+		} catch (const LuaException&) {
+			return false;
+		}
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
+
+		return false;
+	}
+
+	return true;
+}
+int script_state::RunBytecode(script_function& hd)
+{
+	using namespace luacpp;
+
+	if (!hd.function.isValid()) {
+		return 1;
+	}
+
+	GR_DEBUG_SCOPE("Lua code");
+
+	try {
+		hd.function.call();
+	} catch (const LuaException&) {
+		return 0;
+	}
+
+	return 1;
 }
 
 int script_parse_condition()
@@ -1317,7 +1316,7 @@ bool script_state::IsOverride(script_hook &hd)
 		return false;
 
 	bool b=false;
-	RunBytecodeSub(hd.override_function, 'b', &b);
+	RunBytecode(hd.override_function, 'b', &b);
 
 	return b;
 }

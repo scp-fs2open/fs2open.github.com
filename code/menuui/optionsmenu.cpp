@@ -235,8 +235,8 @@ static float Backup_sound_volume;
 static float Backup_music_volume;
 static float Backup_voice_volume;
 
-static int Backup_briefing_voice_enabled;
-static int Backup_use_mouse_to_fly;
+static bool Backup_briefing_voice_enabled;
+static bool Backup_use_mouse_to_fly;
 
 static int Sound_volume_int;
 static int Music_volume_int;
@@ -250,8 +250,6 @@ char Options_notify_string[200];
 // do any processing, etc in here.
 void options_accept();
 void options_force_button_frame(int n, int frame_num);
-
-extern float FreeSpace_gamma;
 
 void options_add_notify(const char *str);
 void options_notify_do_frame();
@@ -644,29 +642,11 @@ void options_change_tab(int n)
 	gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 }
 
-void set_sound_volume()
-{
-	main_hall_reset_ambient_vol();
-}
-
-void set_music_volume()
-{
-	event_music_set_volume_all(Master_event_music_volume);
-}
-
-void set_voice_volume()
-{
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-}
-
 void options_cancel_exit()
 {
-	Master_sound_volume = Backup_sound_volume;
-	set_sound_volume();
-	Master_event_music_volume = Backup_music_volume;
-	set_music_volume();
-	Master_voice_volume = Backup_voice_volume;
-	set_voice_volume();
+	snd_set_effects_volume(Backup_sound_volume);
+	event_music_set_volume(Backup_music_volume);
+	snd_set_voice_volume(Backup_voice_volume);
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Game_skill_level = Backup_skill_level;
@@ -686,21 +666,21 @@ void options_change_gamma(float delta)
 {
 	char tmp_gamma_string[32];
 
-	FreeSpace_gamma += delta;
-	if (FreeSpace_gamma < 0.1f) {
-		FreeSpace_gamma = 0.1f;
+	auto gamma = Gr_gamma + delta;
+	if (gamma < 0.1f) {
+		gamma = 0.1f;
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
-	} else if (FreeSpace_gamma > 5.0f) {
-		FreeSpace_gamma = 5.0f;
+	} else if (gamma > 5.0f) {
+		gamma = 5.0f;
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	} else {
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
-	gr_set_gamma(FreeSpace_gamma);
-	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
+	gr_set_gamma(gamma);
+	sprintf(tmp_gamma_string, NOX("%.2f"), gamma);
 
 	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
 }
@@ -813,12 +793,12 @@ void options_button_pressed(int n)
 			break;
 
 		case BRIEF_VOICE_ON:
-			Briefing_voice_enabled = 1;
+			Briefing_voice_enabled = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case BRIEF_VOICE_OFF:
-			Briefing_voice_enabled = 0;
+			Briefing_voice_enabled = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
@@ -839,28 +819,22 @@ void options_sliders_update()
 	// sound slider
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
-		Master_sound_volume = ((float) (Sound_volume_int) / 9.0f);
-		set_sound_volume();
+		snd_set_effects_volume((float) (Sound_volume_int) / 9.0f);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	// music slider
 	if (Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos != Music_volume_int) {
 		Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos;
-		Master_event_music_volume = ((float) (Music_volume_int) / 9.0f);
-		if (Master_event_music_volume > 0.0f) {
-			event_music_enable();
-		}
+		event_music_set_volume((float) (Music_volume_int) / 9.0f);
 
-		set_music_volume();
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	// voice slider
 	if (Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos != Voice_volume_int) {
 		Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos;
-		Master_voice_volume = ((float) (Voice_volume_int) / 9.0f);
-		set_voice_volume();
+		snd_set_voice_volume((float) (Voice_volume_int) / 9.0f);
 		options_play_voice_clip();
 	}
 
@@ -929,7 +903,10 @@ void options_menu_init()
 
 	// pause all sounds, since we could get here through the game
 	weapon_pause_sounds();
-	//audiostream_pause_all();
+	// only pause music if we're in-mission; we could also be in the main hall
+	if (Game_mode & GM_IN_MISSION) {
+		audiostream_pause_all();
+	}
 
 	Tab = 0;
 	Gamma_last_set = -1;
@@ -1060,7 +1037,10 @@ void options_menu_close()
 	
 	// unpause all sounds, since we could be headed back to the game
 	weapon_unpause_sounds();
-	//audiostream_unpause_all();
+	// only unpause music if we're in-mission; we could also be in the main hall
+	if (Game_mode & GM_IN_MISSION) {
+		audiostream_unpause_all();
+	}
 	
 	Options_menu_inited = 0;
 	Options_multi_inited = 0;
@@ -1079,7 +1059,7 @@ void draw_gamma_box()
 //	ushort Gamma_data[Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD]*Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD]*2];
 	ushort Gamma_data[MAX_GAMMA_BITMAP_SIZE];
 
-	v = fl2i( pow(0.5f, 1.0f / FreeSpace_gamma) * 255.0f );
+	v = fl2i( pow(0.5f, 1.0f / Gr_gamma) * 255.0f );
 	if (v > 255){
 		v = 255;
 	} else if (v < 0){
@@ -1285,7 +1265,7 @@ void options_menu_do_frame(float  /*frametime*/)
 		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD];
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD];
 
-		gr_printf_menu(x, y, NOX("%.2f"), FreeSpace_gamma);
+		gr_printf_menu(x, y, NOX("%.2f"), Gr_gamma);
 	}
 	//==============================================================================
 

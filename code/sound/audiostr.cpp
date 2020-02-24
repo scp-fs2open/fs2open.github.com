@@ -289,8 +289,6 @@ bool AudioStream::Create (char *pszFilename)
 					OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
 				}
 
-				// Cue for playback
-				Cue();
 				Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
 			}
 			else {
@@ -393,8 +391,16 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 		for (int ib = 0; ib < MAX_STREAM_BUFFERS; ib++) {
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
 
+			// if looping then maybe reset wavefile and keep going
+			if ( (num_bytes_read < 0) && m_bLooping) {
+				m_pwavefile->Cue();
+				m_total_uncompressed_bytes_read = 0;
+				num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+			}
+
 			if (num_bytes_read < 0) {
 				m_bReadingDone = 1;
+				break;
 			} else if (num_bytes_read > 0) {
 				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], m_pwavefile->getALFormat(), uncompressed_wave_data, num_bytes_read, m_pwavefile->getSampleRate()), { fRtn = false; goto ErrorExit; } );
 				OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[ib]), { fRtn = false; goto ErrorExit; } );
@@ -411,6 +417,13 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, 1, &buffer_id) );
 
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+
+			// if looping then maybe reset wavefile and keep going
+			if ( (num_bytes_read < 0) && m_bLooping) {
+				m_pwavefile->Cue();
+				m_total_uncompressed_bytes_read = 0;
+				num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+			}
 
 			if (num_bytes_read < 0) {
 				m_bReadingDone = 1;
@@ -618,14 +631,15 @@ void AudioStream::Play (float volume, int looping)
 				Stop_and_Rewind();
 		}
 
-		// Cue for playback if necessary
-		if ( !m_fCued )
-			Cue ();
-
+		// loop flag must be set before Cue()!
 		if ( looping )
 			m_bLooping = 1;
 		else
 			m_bLooping = 0;
+
+		// Cue for playback if necessary
+		if ( !m_fCued )
+			Cue ();
 
 		OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
 

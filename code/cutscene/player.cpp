@@ -27,10 +27,10 @@ using namespace cutscene;
 
 const int MAX_AUDIO_BUFFERS = 15;
 
-std::unique_ptr<Decoder> findDecoder(const SCP_string& name) {
+std::unique_ptr<Decoder> findDecoder(const SCP_string& name, const PlaybackProperties& properties) {
 	{
 		std::unique_ptr<Decoder> ffmpeg(new ::cutscene::ffmpeg::FFMPEGDecoder());
-		if (ffmpeg->initialize(name)) {
+		if (ffmpeg->initialize(name, properties)) {
 			return ffmpeg;
 		}
 	}
@@ -50,7 +50,8 @@ void videoPlaybackInit(PlayerState* state) {
 
 	Assert(state != NULL);
 
-	if (gr_screen.mode == GR_OPENGL) {
+	if (gr_screen.mode != GR_STUB) {
+		// The video presenter is independent of the underlying graphics API
 		state->videoPresenter.reset(new VideoPresenter(state->props));
 	}
 
@@ -122,6 +123,15 @@ void processVideoData(PlayerState* state) {
 	}
 
 	while (currentTime >= state->nextFrame->frameTime) {
+		if (state->currentFrame) {
+			if (state->nextFrame->frameTime < state->currentFrame->frameTime) {
+				// We reached the end of the movie and just looped to the beginning. Now we need to reset the playback
+				// time
+				state->playback_time = 0;
+				currentTime = playbackGetTime(state);
+			}
+		}
+
 		// Move the next frame to the current frame slot
 		state->currentFrame = std::move(state->nextFrame);
 
@@ -273,7 +283,8 @@ bool shouldBeginPlayback(Decoder* decoder) {
 }
 
 namespace cutscene {
-Player::Player(std::unique_ptr<Decoder>&& decoder, bool enable_audio) : m_decoder(std::move(decoder))
+Player::Player(std::unique_ptr<Decoder>&& decoder, const PlaybackProperties& properties)
+    : m_decoder(std::move(decoder))
 {
 	Assertion(!m_state.videoInited,
 	          "Internal State has been initialized before! Create a new player for replaying a movie.");
@@ -285,7 +296,7 @@ Player::Player(std::unique_ptr<Decoder>&& decoder, bool enable_audio) : m_decode
 
 	videoPlaybackInit(&m_state);
 
-	if (enable_audio) {
+	if (properties.with_audio) {
 		audioPlaybackInit(&m_state);
 	}
 }
@@ -355,16 +366,16 @@ void Player::decoderThread() {
 	}
 }
 
-std::unique_ptr<Player> Player::newPlayer(const SCP_string& name, bool enable_audio)
+std::unique_ptr<Player> Player::newPlayer(const SCP_string& name, const PlaybackProperties& properties)
 {
 	mprintf(("Creating player for movie '%s'.\n", name.c_str()));
 
-	auto decoder = findDecoder(name);
+	auto decoder = findDecoder(name, properties);
 
 	if (decoder == nullptr) {
 		return nullptr;
 	}
-	return std::unique_ptr<Player>(new Player(std::move(decoder), enable_audio));
+	return std::unique_ptr<Player>(new Player(std::move(decoder), properties));
 }
 const PlayerState& Player::getInternalState() const {
 	return m_state;

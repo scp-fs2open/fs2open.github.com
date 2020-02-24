@@ -358,6 +358,9 @@ public:
 	int	departure_cue;						//	Index in Sexp_nodes of this sexp.
 	int	departure_delay;
 
+	int warpin_params_index;
+	int warpout_params_index;
+
 	char	misc[NAME_LENGTH];
 
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
@@ -476,9 +479,10 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
-int parse_main(const char *mission_name, int flags = 0);
+bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
+bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(const char *name);
 int parse_create_object(p_object *objp);

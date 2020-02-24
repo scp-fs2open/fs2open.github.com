@@ -942,6 +942,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	object *ptr;
 	vec3d min, max, pos;
 	brief_icon *biconp;
+	CJumpNode *jnp = nullptr;
 
 	if (Briefing->stages[m_cur_stage].num_icons >= MAX_STAGE_ICONS)
 		return;
@@ -950,7 +951,6 @@ void briefing_editor_dlg::OnMakeIcon()
 	biconp = &Briefing->stages[m_cur_stage].icons[m_cur_icon];
 	ship = waypoint = -1;
 	team = 0;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	vm_vec_make(&min, 9e19f, 9e19f, 9e19f);
 	vm_vec_make(&max, -9e19f, -9e19f, -9e19f);
@@ -979,12 +979,8 @@ void briefing_editor_dlg::OnMakeIcon()
 				case OBJ_WAYPOINT:
 					waypoint = ptr->instance;
 					break;
-				
 				case OBJ_JUMP_NODE:
-					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) { 
-						if(jnp->GetSCPObject() == ptr) 
-							break; 
-					} 
+				    jnp = jumpnode_get_by_objnum(OBJ_INDEX(ptr)); 
 					break;
 
 				default:
@@ -1030,8 +1026,9 @@ void briefing_editor_dlg::OnMakeIcon()
 		Assert(wp_list != NULL);
 		name = wp_list->get_name();
 	}
-	else if (jnp != Jump_nodes.end())
+	else if (jnp != nullptr)
 		name = jnp->GetName();
+	// Return if we didn't find anything somehow
 	else
 		return;
 
@@ -1090,29 +1087,32 @@ void briefing_editor_dlg::OnMakeIcon()
         else
             biconp->type = ICON_ASTEROID_FIELD;
 	}
-	// jumpnodes
-	else if(jnp != Jump_nodes.end()){
-		// find the first navbuoy
+	// jumpnodes -- have to use Navbuoy if clicked on during briefing because jump nodes are not in ship_info
+	else if (jnp != nullptr) {
+		// find the first navbuoy, by iterating through the ship classes
 		biconp->ship_class = -1;
-        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-        {
-            if (it->flags[Ship::Info_Flags::Navbuoy])
-            {
-                iconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
+		
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+		{
+			if (it->flags[Ship::Info_Flags::Navbuoy])
+			{
+                biconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }
+		
 		biconp->type = ICON_JUMP_NODE;
 	} 
-	// everything else
+	// everything else -- have to use Navbuoy if clicked on during briefing because waypoints etc. are not in ship_info
 	else {
 		// find the first navbuoy
 		biconp->ship_class = -1;
-        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-        {
+
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) 
+		{
             if (it->flags[Ship::Info_Flags::Navbuoy])
             {
-                iconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
+				biconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }

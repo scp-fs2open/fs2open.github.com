@@ -53,8 +53,11 @@ else()
 		file(TO_NATIVE_PATH "${PATH_TYPE}" PATH_TYPE)
 		if (MINGW)
 			# There is a bug in CMake where it thinks MinGW uses forward slashes for paths but we need backslashes for Windows builds
-			string(REPLACE "/" "\\\\" PATH_TYPE "${PATH_TYPE}")
+			string(REPLACE "/" "\\" PATH_TYPE "${PATH_TYPE}")
 		endif()
+		# Properly escape back slashes in strings
+		string(REPLACE "\\" "\\\\" PATH_TYPE "${PATH_TYPE}")
+
 		GET_FILENAME_COMPONENT(FILE_NAME "${RELATIVE_FILE_PATH}" NAME)
 
 		string(MAKE_C_IDENTIFIER "${RELATIVE_FILE_PATH}" FIELD_NAME)

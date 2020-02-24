@@ -34,7 +34,7 @@ namespace particle
 
 		ParticleSourceWrapper& operator=(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;
 
-		ParticleSourceWrapper() {}
+		ParticleSourceWrapper() = default;
 		explicit ParticleSourceWrapper(SCP_vector<ParticleSource*>&& sources);
 		explicit ParticleSourceWrapper(ParticleSource* source);
 

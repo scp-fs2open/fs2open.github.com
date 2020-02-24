@@ -130,6 +130,8 @@ set(FRED2_SOURCES
 	textviewdlg.h
 	voiceactingmanager.cpp
 	voiceactingmanager.h
+	warpparamsdlg.cpp
+	warpparamsdlg.h
 	waypointpathdlg.cpp
 	waypointpathdlg.h
 	weaponeditordlg.cpp

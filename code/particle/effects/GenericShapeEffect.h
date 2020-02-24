@@ -84,45 +84,50 @@ class GenericShapeEffect : public ParticleEffect {
 	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
-	bool processSource(const ParticleSource* source) override {
+	bool processSource(ParticleSource* source) override {
 		if (!m_timing.continueProcessing(source)) {
 			return false;
 		}
 
-		auto num = m_particleNum.next();
+		// This uses the internal features of the timing class for determining if and how many effects should be
+		// triggered this frame
+		util::EffectTiming::TimingState time_state;
+		while (m_timing.shouldCreateEffect(source, time_state)) {
+			auto num = m_particleNum.next();
 
-		vec3d dir = getNewDirection(source);
-		matrix dirMatrix;
-		vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-		for (uint i = 0; i < num; ++i) {
-			matrix velRotation = m_shape.getDisplacementMatrix();
+			vec3d dir = getNewDirection(source);
+			matrix dirMatrix;
+			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
+			for (uint i = 0; i < num; ++i) {
+				matrix velRotation = m_shape.getDisplacementMatrix();
 
-			matrix rotatedVel;
-			vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
+				matrix rotatedVel;
+				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
 
-			particle_info info;
+				particle_info info;
 
-			source->getOrigin()->applyToParticleInfo(info);
+				source->getOrigin()->applyToParticleInfo(info);
 
-			info.vel = rotatedVel.vec.fvec;
-			if (TShape::scale_velocity_deviation()) {
-				// Scale the vector with a random velocity sample and also multiply that with cos(angle between info.vel and sourceDir)
-				// That should produce good looking directions where the maximum velocity is only achieved when the particle travels directly
-				// on the normal/reflect vector
-				vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
-			}
-			vm_vec_scale(&info.vel, m_velocity.next());
+				info.vel = rotatedVel.vec.fvec;
+				if (TShape::scale_velocity_deviation()) {
+					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
+					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
+					// only achieved when the particle travels directly on the normal/reflect vector
+					vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
+				}
+				vm_vec_scale(&info.vel, m_velocity.next());
 
-			if (m_particleTrail.isValid()) {
-				auto part = m_particleProperties.createPersistentParticle(info);
+				if (m_particleTrail.isValid()) {
+					auto part = m_particleProperties.createPersistentParticle(info);
 
-				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-				trailSource.moveToParticle(part);
+					auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
+					trailSource.moveToParticle(part);
 
-				trailSource.finish();
-			} else {
-				// We don't have a trail so we don't need a persistent particle
-				m_particleProperties.createParticle(info);
+					trailSource.finish();
+				} else {
+					// We don't have a trail so we don't need a persistent particle
+					m_particleProperties.createParticle(info);
+				}
 			}
 		}
 
@@ -163,11 +168,24 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
+		bool saw_deprecated_effect_location = false;
 		if (optional_string("+Trail effect:")) {
+			// This is the deprecated location since this introduces ambiguities in the parsing process
 			m_particleTrail = internal::parseEffectElement();
+			saw_deprecated_effect_location = true;
 		}
 
 		m_timing = util::EffectTiming::parseTiming();
+
+		if (optional_string("+Trail effect:")) {
+			// This is the new and correct location. This might create duplicate effects but the warning should be clear
+			// enough to avoid that
+			if (saw_deprecated_effect_location) {
+				error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
+				                 "deprecated since that can cause issues with conflicting effect options.");
+			}
+			m_particleTrail = internal::parseEffectElement();
+		}
 	}
 
 	void initializeSource(ParticleSource& source) override {

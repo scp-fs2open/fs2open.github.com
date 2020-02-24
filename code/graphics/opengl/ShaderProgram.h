@@ -16,32 +16,12 @@ class ShaderUniforms {
 	{
 		SCP_string name;
 
-		enum data_type {
-			INT,
-			FLOAT,
-			VEC2,
-			VEC3,
-			VEC4,
-			MATRIX4
-		};
-
-		uniform_bind::data_type type;
-		size_t index;
-
-		int count;
-		int tranpose;
+		int value;
 	};
 
 	ShaderProgram* _program;
 
 	SCP_vector<uniform_bind> _uniforms;
-
-	SCP_vector<int> _uniform_data_ints;
-	SCP_vector<float> _uniform_data_floats;
-	SCP_vector<vec2d> _uniform_data_vec2d;
-	SCP_vector<vec3d> _uniform_data_vec3d;
-	SCP_vector<vec4> _uniform_data_vec4;
-	SCP_vector<matrix4> _uniform_data_matrix4;
 
 	SCP_unordered_map<SCP_string, size_t> _uniform_lookup;
 
@@ -52,20 +32,7 @@ class ShaderUniforms {
  public:
 	explicit ShaderUniforms(ShaderProgram* shaderProgram);
 
-	void setUniformi(const SCP_string &name, const int value);
-	void setUniform1iv(const SCP_string &name, const int count, const int *val);
-	void setUniformf(const SCP_string &name, const float value);
-	void setUniform2f(const SCP_string &name, const float x, const float y);
-	void setUniform2f(const SCP_string &name, const vec2d &val);
-	void setUniform3f(const SCP_string &name, const float x, const float y, const float z);
-	void setUniform3f(const SCP_string &name, const vec3d &value);
-	void setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w);
-	void setUniform4f(const SCP_string &name, const vec4 &val);
-	void setUniform1fv(const SCP_string &name, const int count, const float *val);
-	void setUniform3fv(const SCP_string &name, const int count, const vec3d *val);
-	void setUniform4fv(const SCP_string &name, const int count, const vec4 *val);
-	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
-	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
+	void setTextureUniform(const SCP_string &name, const int texture_unit);
 };
 
 enum ShaderStage {

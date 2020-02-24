@@ -26,6 +26,7 @@ struct weapon_info;
 #define MATCH_SPEED_THRESHOLD				0.1f		// minimum speed target must be moving for match speed to apply
 #define CARGO_RADIUS_DELTA					100		// distance added to radius required for cargo scanning
 #define CAPITAL_CARGO_RADIUS_DELTA		250		// distance added to radius required for cargo scanning
+const int CARGO_RADIUS_REAL_DELTA = 50;         // difference in distances used for cargo scanning of subsystems (which also uses object radius), vs whole-ship scanning
 #define CARGO_REVEAL_MIN_DIST				150		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CAP_CARGO_REVEAL_MIN_DIST		300		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CARGO_MIN_DOT_TO_REVEAL			0.95		// min dot to proceed to have cargo scanning take place
@@ -94,7 +95,6 @@ void	hud_target_subsystem_in_reticle();
 void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
-void	hud_target_closest_locked_missile(object *A);
 void	hud_target_missile(object *source_obj, int next_flag);
 void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
@@ -113,10 +113,9 @@ void hud_target_random_ship();
 
 void	hud_target_next_subobject();
 void	hud_target_prev_subobject();
-void	hud_cease_subsystem_targeting(int print_message=1);
-void	hud_cease_targeting();
+void	hud_cease_subsystem_targeting(bool print_message = true);
+void	hud_cease_targeting(bool deliberate = false);
 void	hud_restore_subsystem_target(ship* shipp);
-int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* subsystem);
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 

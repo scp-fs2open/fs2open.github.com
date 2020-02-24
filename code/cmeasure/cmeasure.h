@@ -28,7 +28,6 @@ extern int Cmeasures_homing_check;
 extern int Countermeasures_enabled;
 
 extern void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand);
-extern void cmeasure_select_next(object *objp);
 extern void cmeasure_maybe_alert_success(object *objp);
 
 #endif // _CMEASURE_H

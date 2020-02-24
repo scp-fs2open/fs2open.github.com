@@ -1,7 +1,48 @@
 
 
 
-#ifdef SCP_UNIX
+#ifdef _WIN32
+
+#if (_WIN32_WINNT < 0x0600)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+const char *inet_ntop(int af, const void *src, char *dst, int size)
+{
+	struct sockaddr_storage srcaddr;
+	size_t slen;
+
+	if (af == AF_INET) {
+		struct sockaddr_in *sa4 = reinterpret_cast<struct sockaddr_in *>(&srcaddr);
+
+		memset(sa4, 0, sizeof(struct sockaddr_in));
+		memcpy(&(sa4->sin_addr), src, sizeof(sa4->sin_addr));
+
+		slen = sizeof(struct sockaddr_in);
+	} else if (af == AF_INET6) {
+		struct sockaddr_in6 *sa6 = reinterpret_cast<struct sockaddr_in6 *>(&srcaddr);
+
+		memset(sa6, 0, sizeof(struct sockaddr_in6));
+		memcpy(&(sa6->sin6_addr), src, sizeof(sa6->sin6_addr));
+
+		slen = sizeof(struct sockaddr_in6);
+	} else {
+		return nullptr;
+	}
+
+	srcaddr.ss_family = static_cast<short>(af);
+
+	if (WSAAddressToString(reinterpret_cast<struct sockaddr *>(&srcaddr), static_cast<DWORD>(slen),
+						   0, dst, reinterpret_cast<LPDWORD>(&size)) != 0)
+	{
+		return nullptr;
+	}
+
+	return dst;
+}
+#endif	// (_WIN32_WINNT < 0x0600)
+
+#else	// ! _WIN32
 
 #include <cctype>
 #include <cerrno>
@@ -19,15 +60,15 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-#if defined(HAVE_MALLOC_H)
+#if defined(SCP_HAVE_MALLOC_H)
 #include <malloc.h>
 #endif
 
-#ifdef HAVE_EXECINFO_H
+#ifdef SCP_HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
 
-#ifdef HAVE_CXXAPI_H
+#ifdef SCP_HAVE_CXXAPI_H
 #include <cxxabi.h>
 #endif
 
@@ -49,7 +90,7 @@ int filelength(int fd)
 
 SCP_string dump_stacktrace()
 {
-#ifdef HAVE_EXECINFO_H
+#ifdef SCP_HAVE_EXECINFO_H
 	// The following is adapted from here: https://panthema.net/2008/0901-stacktrace-demangled/
 	const int ADDR_SIZE = 64;
 	void *addresses[ADDR_SIZE];
@@ -71,13 +112,15 @@ SCP_string dump_stacktrace()
 	// Demangle c++ function names to a more readable format using the ABI functions
 	// TODO: Maybe add configure time checks to check if the required features are available
 	SCP_stringstream stackstream;
-#ifdef HAVE_CXXAPI_H
+#ifdef SCP_HAVE_CXXAPI_H
 	size_t funcnamesize = 256;
 	char* funcname = reinterpret_cast<char*>(malloc(funcnamesize));
 	
 	// iterate over the returned symbol lines. skip the first, it is the
 	// address of this function.
-	for (int i = 1; i < numstrings; i++)
+	// NOTE: the numstrings type is different on different systems,
+	// so we use decltype here. See GitHub #1138.
+	for (decltype(numstrings) i = 1; i < numstrings; i++)
 	{
 		char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
 
@@ -187,7 +230,7 @@ int _mkdir(const char *path)
 	return mkdir(path, 0777);
 }
 
-void _splitpath (char *path, char * /*drive*/, char *dir, char *fname, char *ext)
+void _splitpath (const char *path, char * /*drive*/, char *dir, char *fname, char *ext)
 {
 	if ( (path == NULL) || (fname == NULL) )
 		return;
@@ -236,4 +279,4 @@ int MulDiv(int number, int numerator, int denominator)
 	return result;
 }
 
-#endif // SCP_UNIX
+#endif // _WIN32

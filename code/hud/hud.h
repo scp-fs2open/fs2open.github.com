@@ -110,6 +110,7 @@ extern int Hud_max_targeting_range;
 
 void HUD_init_colors();
 void HUD_init();
+void hud_scripting_close(lua_State*);
 void hud_close();
 void hud_level_close();
 void hud_update_frame(float frametime);		// updates hud systems not dependant on rendering
@@ -223,6 +224,7 @@ protected:
 	int flash_duration;
 	int flash_next;
 	bool flash_status;
+	bool only_render_in_chase_view;
 
 	// custom gauge specific stuff
 	bool custom_gauge;
@@ -268,7 +270,7 @@ public:
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
-
+	void initChase_view_only(bool chase_view_only);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
@@ -316,7 +318,7 @@ public:
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2);
 	void renderRect(int x, int y, int w, int h);
-	void renderCircle(int x, int y, int diameter);
+	void renderCircle(int x, int y, int diameter, bool filled = true);
 
 	void unsize(int *x, int *y);
 	void unsize(float *x, float *y);

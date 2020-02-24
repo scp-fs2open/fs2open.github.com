@@ -39,6 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -107,10 +108,13 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
+// NOTE: if this function is used with ship_recalc_subsys_strength, it MUST be called first. If
+// a child subsystem needs to be destroyed, the strength calculation needs to take it into account.
 void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos, bool no_explosion )
 {
 	ship_info *sip;
 	object *ship_objp;
+	ship_subsys *ssp;
 	model_subsystem *psub;
 	vec3d	g_subobj_pos;
 	int type, i, log_index;
@@ -121,6 +125,27 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	psub = subsys->system_info;
 	type = psub->type;
 	get_subsystem_world_pos(ship_objp, subsys, &g_subobj_pos);
+
+	// see if this subsystem is on a submodel
+	if (psub->subobj_num >= 0) {
+		polymodel *pm = model_get(sip->model_num);
+
+		// see if there are any subsystems which have this submodel as a parent
+		for (ssp = GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp)) {
+			// is it another subsys which has a submodel?
+			if (ssp != subsys && ssp->system_info->subobj_num >= 0) {
+				// is this other submodel a child of the one being destroyed?
+				if (pm->submodel[ssp->system_info->subobj_num].parent == psub->subobj_num) {
+					// is it not yet destroyed?  (this is a valid check because we already know there is a submodel)
+					if (!ssp->submodel_info_1.blown_off) {
+						// then destroy it first
+						ssp->current_hits = 0;
+						do_subobj_destroyed_stuff(ship_p, ssp, nullptr, no_explosion);
+					}
+				}
+			}
+		}
+	}
 
 	// create fireballs when subsys destroy for large ships.
 	object* objp = &Objects[ship_p->objnum];
@@ -167,7 +192,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				if(fireball_type < 0) {
 					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 				}
-				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
+				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, false, &fb_vel );
 			}
 		}
 	}
@@ -191,10 +216,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( ship_p->subsys_info[type].type_count == 1 ) {
 		ship_p->subsys_info[type].aggregate_current_hits = 0.0f;
 	} else {
-		float hits;
-		ship_subsys *ssp;
+		float hits = 0.0f;
 
-		hits = 0.0f;
 		for ( ssp=GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp) ) {
 			// type matches?
 			if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
@@ -217,13 +240,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( ship_p->ship_info_index < 65535 );
 
 	// get the "index" of this subsystem in the ship info structure.
-	for ( i = 0; i < sip->n_subsystems; i++ ) {
-		if ( &(sip->subsystems[i]) == psub )
+	int subsystem_index;
+	for (subsystem_index = 0; subsystem_index < sip->n_subsystems; ++subsystem_index ) {
+		if ( &(sip->subsystems[subsystem_index]) == psub )
 			break;
 	}
-	Assert( i < sip->n_subsystems );
-	Assert( i < 65535 );
-	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (i & 0xffff);
+	Assert( subsystem_index < sip->n_subsystems );
+	Assert( subsystem_index < 65535 );
+	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (subsystem_index & 0xffff);
 
 	// Don't log, display info, or play sounds about the activation subsytem
 	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
@@ -268,6 +292,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			ship_p->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 		}
 	}
+
+	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
+	Script_system.SetHookObject("Ship", ship_objp);
+	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
+	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
+	Script_system.RemHookVars(2, "Ship", "Subsystem");
 
 	if ( psub->subobj_num > -1 )	{
 		shipfx_blow_off_subsystem(ship_objp,ship_p,subsys,&g_subobj_pos,no_explosion);
@@ -451,7 +481,6 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
 	int				weapon_info_index;
-	ship_subsys		*subsys;
 	ship				*ship_p;
 	sublist			subsys_list[MAX_SUBSYS_LIST];
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
@@ -514,13 +543,17 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 #endif
 
 	if (!global_damage) {
-		create_subsys_debris(ship_objp, hitpos);
+		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
+
+		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) {
+			create_subsys_debris(ship_objp, hitpos);
+		}
 	}
 
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
 	int	count = 0;
-	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
+	for ( auto subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
 	{
 		model_subsystem *mss = subsys->system_info;
 
@@ -641,9 +674,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					min_index = i;
 				}
 			}
+			Assert(min_index != -1);
 		}
-
-		Assert(min_index != -1);
 
 		float	damage_to_apply = 0.0f;
 		subsystem = subsys_list[min_index].ptr;
@@ -652,6 +684,11 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
 
 		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
+
+		// Make sure this subsystem still has hitpoints.  If it's a child of a parent that was destroyed, it will have been destroyed already.
+		if (subsystem->current_hits <= 0.0f) {
+			continue;
+		}
 
 		// only do this for the closest affected subsystem
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
@@ -1353,7 +1390,6 @@ static void player_died_start(object *killer_objp)
 
 //#define	DEATHROLL_TIME						3000			//	generic deathroll is 3 seconds (3 * 1000 milliseconds) - Moved to ships.tbl
 #define	MIN_PLAYER_DEATHROLL_TIME		1000			// at least one second deathroll for a player
-#define	DEATHROLL_ROTVEL_CAP				6.3f			// maximum added deathroll rotvel in rad/sec (about 1 rev / sec)
 #define	DEATHROLL_ROTVEL_MIN				0.8f			// minimum added deathroll rotvel in rad/sec (about 1 rev / 12 sec)
 #define	DEATHROLL_MASS_STANDARD			50				// approximate mass of lightest ship
 #define	DEATHROLL_VELOCITY_STANDARD	70				// deathroll rotvel is scaled according to ship velocity
@@ -1496,16 +1532,16 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		// if added rotvel is too random, we should decrease the random component, putting a const in front of the rotvel.
 		sp->deathroll_rotvel = objp->phys_info.rotvel;
 		sp->deathroll_rotvel.xyz.x += (frand() - 0.5f) * 2.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.xyz.x, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.x, sip->death_roll_xrotation_cap);
 		sp->deathroll_rotvel.xyz.y += (frand() - 0.5f) * 3.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.xyz.y, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.y, sip->death_roll_yrotation_cap);
 		sp->deathroll_rotvel.xyz.z += (frand() - 0.5f) * 6.0f * rotvel_mag;
 		// make z component  2x larger than larger of x,y
 		float largest_mag = MAX(fl_abs(sp->deathroll_rotvel.xyz.x), fl_abs(sp->deathroll_rotvel.xyz.y));
 		if (fl_abs(sp->deathroll_rotvel.xyz.z) < 2.0f*largest_mag) {
 			sp->deathroll_rotvel.xyz.z *= (2.0f * largest_mag / fl_abs(sp->deathroll_rotvel.xyz.z));
 		}
-		saturate_fabs(&sp->deathroll_rotvel.xyz.z, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.z, sip->death_roll_zrotation_cap);
 		// nprintf(("Physics", "Frame: %i rotvel_mag: %5.2f, rotvel: (%4.2f, %4.2f, %4.2f)\n", Framecount, rotvel_mag, sp->deathroll_rotvel.x, sp->deathroll_rotvel.y, sp->deathroll_rotvel.z));
 	}
 
@@ -1544,16 +1580,11 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	Script_system.SetHookObject("Self", ship_objp);
-	if(other_obj != NULL)
-		Script_system.SetHookObject("Killer", other_obj);
-	else
-		Script_system.SetHookObject("Killer", 0);
-
 	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
-		Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
+		Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
+		Script_system.RunCondition(CHA_DEATH, ship_objp);
 		Script_system.RemHookVars(2, "Self", "Killer");
 		return;
 	}
@@ -1690,7 +1721,8 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 		ship_maybe_lament();
 	}
 
-	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
+	Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
+	Script_system.RunCondition(CHA_DEATH, ship_objp);
 	Script_system.RemHookVars(2, "Self", "Killer");
 }
 
@@ -1761,17 +1793,17 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		// looks like the fighter is doing evasive maneuvers
 		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].is_fighter_bomber()))
 		{
-			vec3d world_hit_pos, world_center_pos;
+			vec3d world_hit_pos, world_center_of_mass;
 
 			// calc world hit pos of the hit ship
 			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
 			vm_vec_add2(&world_hit_pos, &objp->pos);
 
-			// calc overall world center of ships
-			dock_calc_docked_center(&world_center_pos, objp);
+			// calc overall world center-of-mass of all ships
+			dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
-			// the new hitpos is the vector from world center to world hitpos
-			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_pos);
+			// the new hitpos is the vector from world center-of-mass to world hitpos
+			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_of_mass);
 		}
 
 		// whack it
@@ -2491,6 +2523,15 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 				Assert(wip != NULL);
 
 				if (wip->wi_flags[Weapon::Info_Flags::Training]) {
+					create_sparks = false;
+				}
+			}
+
+			if (create_sparks) {
+				auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
+
+				if (subsys != nullptr && subsys->system_info->flags[Model::Subsystem_Flags::No_sparks]) {
+					// Spark creation was explicitly disabled for this subsystem
 					create_sparks = false;
 				}
 			}

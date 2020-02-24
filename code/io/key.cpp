@@ -367,74 +367,6 @@ int key_inkey()
 	return key;
 }
 
-//	Unget a key.  Puts it back in the input queue.
-void key_outkey(int key)
-{
-	int	bufp;
-
-	if ( !key_inited ) return;
-
-	SDL_LockMutex( key_lock );		
-
-	bufp = key_data.keytail+1;
-
-	if (bufp >= KEY_BUFFER_SIZE){
-		bufp = 0;
-	}
-
-	key_data.keybuffer[key_data.keytail] = (unsigned short)key;
-
-	key_data.keytail = bufp;
-
-	SDL_UnlockMutex( key_lock );		
-}
-
-
-
-//	Return amount of time last key was held down.
-//	This is currently (July 17, 1996) bogus because our timing is
-//	not accurate.
-int key_inkey_time(uint * time)
-{
-	int key = 0;
-
-	if ( !key_inited ) {
-		*time = 0;
-		return 0;
-	}
-	
-	SDL_LockMutex( key_lock );		
-
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-		*time = key_data.time_pressed[key_data.keyhead];
-		key_data.keyhead = add_one(key_data.keyhead);
-	}
-
-	SDL_UnlockMutex( key_lock );		
-
-	return key;
-}
-
-
-//	Returns scancode of last key pressed, if any (returns 0 if no key pressed)
-//	but does not update keyhead pointer.
-int key_peekkey()
-{
-	int key = 0;
-
-	if ( !key_inited ) return 0;
-
-	SDL_LockMutex( key_lock );		
-
-	if (key_data.keytail!=key_data.keyhead)	{
-		key = key_data.keybuffer[key_data.keyhead];
-	}
-	SDL_UnlockMutex( key_lock );		
-
-	return key;
-}
-
 // If not installed, uses BIOS and returns getch();
 //	Else returns pending key (or waits for one if none waiting).
 int key_getch()
@@ -550,30 +482,6 @@ int key_down_count(int scancode)
 	SDL_UnlockMutex( key_lock );		
 
 	return n;
-}
-
-
-// Returns number of times key has went from down to up since last call.
-int key_up_count(int scancode)	
-{
-	int n;
-
-	if ( !key_inited ) return 0;
-	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
-
-	SDL_LockMutex( key_lock );		
-
-	n = key_data.NumUps[scancode];
-	key_data.NumUps[scancode] = 0;
-
-	SDL_UnlockMutex( key_lock );		
-
-	return n;
-}
-
-int key_check(int key)
-{
-	return key_data.down_check[key];
 }
 
 //	Add a key up or down code to the key buffer.  state=1 -> down, state=0 -> up

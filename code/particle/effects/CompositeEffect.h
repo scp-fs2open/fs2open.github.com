@@ -19,7 +19,7 @@ class CompositeEffect: public ParticleEffect {
  public:
 	explicit CompositeEffect(const SCP_string& name);
 
-	bool processSource(const ParticleSource* source) override;
+	bool processSource(ParticleSource* source) override;
 
 	void parseValues(bool nocreate) override;
 

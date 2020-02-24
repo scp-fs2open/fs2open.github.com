@@ -19,10 +19,9 @@ struct CFILE;
 struct mc_info;
 
 // used for ship:ship and ship:debris
-typedef struct collision_info_struct {
+struct collision_info_struct {
 	object	*heavy;
 	object	*light;
-	vec3d	heavy_collision_cm_pos;	// should be zero
 	vec3d	light_collision_cm_pos;	// relative cm collision pos
 	vec3d	r_heavy;						// relative to A
 	vec3d	r_light;						// relative to B
@@ -36,7 +35,7 @@ typedef struct collision_info_struct {
 	int		edge_hit;				// if edge is hit, need to change collision normal
 	int		submodel_rot_hit;		// if collision is against rotating submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
-} collision_info_struct;
+};
 
 //Collision physics constants
 #define COLLISION_FRICTION_FACTOR		0.0f	//Default value if not set in ships.tbl
@@ -51,44 +50,26 @@ typedef struct collision_info_struct {
 //===============================================================================
 
 // Keeps track of pairs of objects for collision detection
-typedef struct obj_pair	{
+struct obj_pair	{
 	object *a;
 	object *b;
-	int (*check_collision)( obj_pair * pair );
 	int	next_check_time;	// a timestamp that when elapsed means to check for a collision
 	struct obj_pair *next;
-} obj_pair;
+};
 
 
 #define COLLISION_OF(a,b) (((a)<<8)|(b))
-
-#define COLLISION_TYPE_NONE	0	
-#define COLLISION_TYPE_OLD		1	// checks all n objects with each other each frame
-#define COLLISION_TYPE_NEW		2	// keeps track of collision pairs.  throws out collisions that won't happen.
-
-extern int collision_type;
 
 #define SUBMODEL_NO_ROT_HIT	0
 #define SUBMODEL_ROT_HIT		1
 void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit);
 
-void obj_pairs_close();
-void obj_reset_pairs();
-void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
-
 void obj_add_collider(int obj_index);
 void obj_remove_collider(int obj_index);
 void obj_reset_colliders();
-
-void obj_check_all_collisions();
 void obj_sort_and_collide();
-void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axis);
-void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide);
-float obj_get_collider_endpoint(int obj_num, int axis, bool min);
-void obj_collide_pair(object *A, object *B);
 
 // retimes all collision pairs to be checked (in 25ms by default)
-void obj_all_collisions_retime(int checkdly=25);
 void obj_collide_retime_cached_pairs(int checkdly=25);
 
 // Returns TRUE if the weapon will never hit the other object.
@@ -144,7 +125,7 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius);
 int collide_predict_large_ship(object *objp, float distance);
 
 // function to remove old weapons when no more weapon slots available.
-int collide_remove_weapons(void);
+int collide_remove_weapons();
 
 void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved);
 void collide_ship_ship_sounds_init();

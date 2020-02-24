@@ -37,7 +37,7 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "weaponclass",  OPF_WEAPON_NAME }, };
 int get_parameter_type(const SCP_string& name) {
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
+	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
 
 	auto iter = parameter_type_mapping.find(copy);
 	if (iter == parameter_type_mapping.end()) {
@@ -52,7 +52,7 @@ SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER }
 													   { "nothing", OPR_NULL }, };
 int get_return_type(const SCP_string& name) {
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
+	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
 
 	auto iter = return_type_mapping.find(copy);
 	if (iter == return_type_mapping.end()) {
@@ -124,9 +124,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), value);
 	}
 	case OPF_NUMBER: {
-		auto res = eval_num(node);
+		bool is_nan, is_nan_forever;
+		auto res = eval_num(node, is_nan, is_nan_forever);
 		float value;
-		if (res == SEXP_NAN || res == SEXP_NAN_FOREVER) {
+		if (is_nan || is_nan_forever) {
 			value = std::numeric_limits<float>::quiet_NaN();
 		} else {
 			value = (float) res;

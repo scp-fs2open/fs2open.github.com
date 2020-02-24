@@ -129,7 +129,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 extern int Framecount;
 
-static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = NULL)
+static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
 {
 	mc_info mc, mc_shield, mc_hull;
 	ship	*shipp;
@@ -137,14 +137,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	weapon	*wp;
 	weapon_info	*wip;
 
-	Assert( ship_objp != NULL );
+	Assert( ship_objp != nullptr );
 	Assert( ship_objp->type == OBJ_SHIP );
 	Assert( ship_objp->instance >= 0 );
 
 	shipp = &Ships[ship_objp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	Assert( weapon_objp != NULL );
+	Assert( weapon_objp != nullptr );
 	Assert( weapon_objp->type == OBJ_WEAPON );
 	Assert( weapon_objp->instance >= 0 );
 
@@ -422,11 +422,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
 		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
 
-		Script_system.SetHookObjects(4, "Ship", ship_objp, "Weapon", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
+		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
+		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
 
-		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
@@ -437,15 +439,15 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
-		Script_system.SetHookObjects(2, "Self",ship_objp, "Object", weapon_objp);
+		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 		if(!(weapon_override && !ship_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, ship_objp, wp->weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, wp->weapon_info_index);
+		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
 
-		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
-			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
-
-		Script_system.RemHookVars(4, "Ship", "Weapon", "Self","Object");
+			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
+		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {

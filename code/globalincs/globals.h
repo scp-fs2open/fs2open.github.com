@@ -28,7 +28,7 @@
 #define MISSION_DESC_LENGTH		512
 
 // from player.h
-#define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
+#define CALLSIGN_LEN					(MAX_FILENAME_LEN - 4 - 1)		//	shortened from 32 to allow .json to be attached without exceeding MAX_FILENAME_LEN
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
 #define MAX_IFFS		10

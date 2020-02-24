@@ -74,6 +74,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_2d_mission = FALSE;
 	m_always_show_goals = FALSE;
 	m_end_to_mainhall = FALSE;
+	m_override_hashcommand = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -126,6 +127,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_DEACTIVATE_AUTOPILOT, m_no_autpilot);
 	DDX_Check(pDX, IDC_ALWAYS_SHOW_GOALS, m_always_show_goals);
 	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
+	DDX_Check(pDX, IDC_OVERRIDE_HASHCOMMAND, m_override_hashcommand);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -149,7 +151,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
 	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
 	//}}AFX_MSG_MAP
-	END_MESSAGE_MAP()
+END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CMissionNotesDlg message handlers
@@ -292,6 +294,9 @@ void CMissionNotesDlg::OnOK()
     // End to mainhall
     The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, m_end_to_mainhall != 0);
 
+	// Override #Command
+	The_mission.flags.set(Mission::Mission_Flags::Override_hashcommand, m_override_hashcommand != 0);
+
 	if ( flags != The_mission.flags ){
 		set_modified();
 	}
@@ -393,8 +398,10 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_no_debriefing = (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
 	m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
-	m_no_autpilot =  (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
-	m_always_show_goals =  (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
+	m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
+	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);

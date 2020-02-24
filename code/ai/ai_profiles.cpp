@@ -357,6 +357,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$smart afterburner management:", AI::Profile_Flags::Smart_afterburner_management);
 
+				set_flag(profile, "$free afterburner use:", AI::Profile_Flags::Free_afterburner_use);
+
 				set_flag(profile, "$allow rapid secondary dumbfire:", AI::Profile_Flags::Allow_rapid_secondary_dumbfire);
 
 				set_flag(profile, "$huge turret weapons ignore bombs:", AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
@@ -432,6 +434,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$countermeasures affect aspect seekers:", AI::Profile_Flags::Aspect_lock_countermeasure);
 
 				set_flag(profile, "$ai guards specific ship in wing:", AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
+
+				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
 
 				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
@@ -513,10 +517,6 @@ void parse_ai_profiles_tbl(const char *filename)
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : "<default ai_profiles.tbl>", e.what()));
 		return;
 	}
-
-	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(const char *tblname);
-	fs2netd_add_table_validation(filename);
 }
 
 void ai_profiles_init()

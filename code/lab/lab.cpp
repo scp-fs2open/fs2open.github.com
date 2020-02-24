@@ -1,20 +1,18 @@
 /*
-* lab.cpp
-* created by WMCoolmon
-*
-* You may not sell or otherwise commercially exploit the source or things you
-* create based on the source.
-*
-*/
+ * lab.cpp
+ * created by WMCoolmon
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
 
-
-
-#include "cmdline/cmdline.h"
 #include "freespace.h"
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
-#include "graphics/light.h"
 #include "hud/hudshield.h"
 #include "io/key.h"
 #include "io/timer.h"
@@ -23,59 +21,73 @@
 #include "mission/missionparse.h"
 #include "missionui/missionscreencommon.h"
 #include "model/model.h"
+#include "model/modelrender.h"
+#include "nebula/neb.h"
 #include "object/objectsnd.h"
 #include "playerman/managepilot.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
+#include "starfield/nebula.h"
+#include "starfield/starfield.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-#include "starfield/starfield.h"
-#include "starfield/nebula.h"
-#include "nebula/neb.h"
-#include "model/modelrender.h"
-#include "tracing/tracing.h"
+#include <utility>
 
 // flags
-#define LAB_FLAG_NORMAL				(0)		// default
-#define LAB_FLAG_NO_ROTATION		(1<<0)	// don't rotate models
-#define LAB_FLAG_SHOW_INSIGNIA		(1<<1)	// show ships with insignia applied
-#define LAB_FLAG_SHOW_DEBRIS		(1<<2)	// render debris instead of normal LOD
-#define LAB_FLAG_SUBMODEL_ROTATE	(1<<3)	// do rotation for any rotating ship subobjects
-#define LAB_FLAG_LIGHTNING_ARCS		(1<<4)	// show damage lightning
-#define LAB_FLAG_UNUSED				(1<<5)	// feel free to change that to something you need - Valathil
-#define LAB_FLAG_SHOW_WEAPONS		(1<<6)	// determines if external weapons models are displayed
-#define LAB_FLAG_INITIAL_ROTATION	(1<<7)	// initial rotation setting
-#define LAB_FLAG_DESTROYED_SUBSYSTEMS	(1<<8)	// render model as if all subsystems are destroyed
+#define LAB_FLAG_NORMAL (0)                    // default
+#define LAB_FLAG_NO_ROTATION (1 << 0)          // don't rotate models
+#define LAB_FLAG_SHOW_INSIGNIA (1 << 1)        // show ships with insignia applied
+#define LAB_FLAG_SHOW_DEBRIS (1 << 2)          // render debris instead of normal LOD
+#define LAB_FLAG_SUBMODEL_ROTATE (1 << 3)      // do rotation for any rotating ship subobjects
+#define LAB_FLAG_LIGHTNING_ARCS (1 << 4)       // show damage lightning
+#define LAB_FLAG_UNUSED (1 << 5)               // feel free to change that to something you need - Valathil
+#define LAB_FLAG_SHOW_WEAPONS (1 << 6)         // determines if external weapons models are displayed
+#define LAB_FLAG_INITIAL_ROTATION (1 << 7)     // initial rotation setting
+#define LAB_FLAG_DESTROYED_SUBSYSTEMS (1 << 8) // render model as if all subsystems are destroyed
 
 // modes
-#define LAB_MODE_NONE		0	// not showing anything
-#define LAB_MODE_SHIP		1	// dealing with ships
-#define LAB_MODE_WEAPON		2	// dealing with weapons
-
+#define LAB_MODE_NONE 0   // not showing anything
+#define LAB_MODE_SHIP 1   // dealing with ships
+#define LAB_MODE_WEAPON 2 // dealing with weapons
 
 // variables
-static GUIScreen *Lab_screen = NULL;
-static Window *Lab_toolbar = NULL;
-static Window *Lab_class_window = NULL;
-static Window *Lab_class_toolbar = NULL;
-static Window *Lab_flags_window = NULL;
-static Window *Lab_render_options_window = NULL;
-static Window *Lab_material_override_window = NULL;
-static Window *Lab_variables_window = NULL;
-static Window *Lab_description_window = NULL;
-static Window *Lab_background_window = NULL;
-static Text *Lab_description_text = NULL;
-static TreeItem **Lab_species_nodes = NULL;
+static GUIScreen* Lab_screen                = nullptr;
+static Window* Lab_toolbar                  = nullptr;
+static Window* Lab_class_window             = nullptr;
+static Window* Lab_class_toolbar            = nullptr;
+static Window* Lab_flags_window             = nullptr;
+static Window* Lab_render_options_window    = nullptr;
+static Window* Lab_material_override_window = nullptr;
+static Window* Lab_variables_window         = nullptr;
+static Window* Lab_description_window       = nullptr;
+static Window* Lab_background_window        = nullptr;
+static Text* Lab_description_text           = nullptr;
+static TreeItem** Lab_species_nodes         = nullptr;
+
+static Tree* ship_tree = nullptr;
+static Tree* weap_tree = nullptr;
+
+// these are here unfortunately because otherwise there's no way to reset them
+static Slider* ambient_sldr = nullptr;
+static Slider* direct_sldr = nullptr;
+static Slider* bloom_sldr = nullptr;
+
+// holds the beginning and ending indices of each specie/type of ship/weapon
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
+
+static TreeItem* Lab_last_selected_object = nullptr;
 
 static int Lab_insignia_bitmap = -1;
-static int Lab_insignia_index = -1;
+static int Lab_insignia_index  = -1;
 
-static ubyte Lab_mode = LAB_MODE_NONE;
-static int Lab_selected_index = -1;
-static int Lab_last_selected_ship = -1;
-static int Lab_selected_object = -1;
+static ubyte Lab_mode               = LAB_MODE_NONE;
+static int Lab_selected_index       = -1;
+static int Lab_last_selected_ship   = -1;
+static int Lab_selected_object      = -1;
 static int Lab_last_selected_weapon = -1;
 
 static int Lab_model_num = -1;
@@ -87,77 +99,105 @@ static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 static vec3d Lab_model_pos = ZERO_VECTOR;
 
 static matrix Lab_model_orient = vmd_identity_matrix;
-static int Lab_viewer_flags = LAB_MODE_NONE;
+static int Lab_viewer_flags    = LAB_MODE_NONE;
 
 static int Lab_detail_texture_save = 0;
 
 SCP_string Lab_selected_mission = "None";
-matrix Lab_skybox_orientation = vmd_identity_matrix;
+matrix Lab_skybox_orientation   = vmd_identity_matrix;
 
 static int anim_timer_start = 0;
 
-static float Lab_thrust_len = 1.0f;
+static float Lab_thrust_len      = 1.0f;
 static bool Lab_thrust_afterburn = false;
+
+enum class Lab_rotation_modes { Both, Yaw, Pitch, Roll };
+static Lab_rotation_modes Lab_rotation_mode    = Lab_rotation_modes::Both;
+static float Lab_manual_rotation_speed_divisor = 100.f;
 
 // Trackball_mode:
 //   1  ==  rotate	(left-mouse)
 //   2  ==  pan		(shift-left-mouse)
 //   3  ==  zoom	(right-mouse)
-static int Trackball_mode = 1;
+static int Trackball_mode   = 1;
 static int Trackball_active = 0;
 
 SCP_string Lab_team_color = "<none>";
 
+//save the original cmdline values in case we need to reset to them
+int orig_cmdline_ambient;
+float orig_cmdline_direct;
+int orig_cmdline_bloom;
+
 camid Lab_cam;
 float lab_cam_distance = 100.0f;
-float lab_cam_phi = 1.24f; // Values chosen to approximate the initial rotation used previously
-float lab_cam_theta = 2.25f;
-bool Lab_render_wireframe = false;
-bool Lab_render_without_light = false;
+float lab_cam_phi      = 0;
+float lab_cam_theta	   = 0;
+bool Lab_render_wireframe      = false;
+bool Lab_render_without_light  = false;
 bool Lab_render_show_thrusters = false;
-bool Lab_render_show_detail = false;
-bool Lab_render_show_shields = false;
-bool Lab_rotate_subobjects = true;
+bool Lab_render_show_detail    = false;
+bool Lab_render_show_shields   = false;
+bool Lab_rotate_subobjects     = true;
 
-bool Lab_Basemap_override    = false;
-bool Lab_Glowmap_override	 = false;
-bool Lab_Specmap_override	 = false;
-bool Lab_Envmap_override	 = false;
-bool Lab_Normalmap_override	 = false;
-bool Lab_Heightmap_override	 = false;
-bool Lab_Miscmap_override    = false;
-bool Lab_emissive_light_override = !Cmdline_no_emissive;
+bool Lab_Basemap_override        = false;
+bool Lab_Glowmap_override        = false;
+bool Lab_Specmap_override        = false;
+bool Lab_Envmap_override         = false;
+bool Lab_Normalmap_override      = false;
+bool Lab_Heightmap_override      = false;
+bool Lab_Miscmap_override        = false;
+bool Lab_emissive_light_override = (Cmdline_emissive != 0);
 
 fix Lab_Save_Missiontime;
 
 // functions
-void labviewer_change_ship_lod(Tree *caller);
-void labviewer_change_ship(Tree *caller);
-void labviewer_make_desc_window(Button *caller);
+void labviewer_change_ship_lod(Tree* caller);
+void labviewer_change_ship(Tree* caller);
+void labviewer_make_desc_window(Button* caller);
 void labviewer_update_flags_window();
-
 
 // ---------------------- General/Utility Functions ----------------------------
 
 void rotate_view(int dx, int dy)
 {
-	if (dx == 0 && dy == 0) return;
+	if (dx == 0 && dy == 0)
+		return;
 
 	lab_cam_theta += dx / 100.0f;
 	lab_cam_phi += dy / 100.0f;
-	
+
 	CLAMP(lab_cam_phi, 0.01f, PI - 0.01f);
 }
 
-void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
+void reset_view()
+{
+	//reset position
+	Lab_model_pos = vmd_zero_vector;
+	Lab_model_orient = vmd_identity_matrix;
+	//reset lighting
+	//if the rendering options window is close, these sliders are null
+	//we still want to be able to reset lighting in this situation though, so just set the values directly
+	if (ambient_sldr == nullptr) {
+		gr_calculate_ambient_factor(orig_cmdline_ambient);
+		static_light_factor = orig_cmdline_direct;
+		Cmdline_bloom_intensity = orig_cmdline_bloom;
+	} else {
+		ambient_sldr->SetSliderValue((float)orig_cmdline_ambient);
+		direct_sldr->SetSliderValue(orig_cmdline_direct);
+		bloom_sldr->SetSliderValue((float)orig_cmdline_bloom);
+	}
+}
+
+void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
 	int j, l;
-	ship_info *sip = NULL;
+	ship_info* sip = nullptr;
 
 	anim_timer_start = timer_get_milliseconds();
 
-	if ((model_fname != NULL) && (Lab_mode == LAB_MODE_SHIP)) {
+	if ((model_fname != nullptr) && (Lab_mode == LAB_MODE_SHIP)) {
 		if ((Lab_selected_index >= 0) && (Lab_selected_index == sel_index)) {
 			change_model = false;
 		}
@@ -187,17 +227,11 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 		}
 
 		// only load a new model if we are supposed to (so that we can use this function to reset states)
-		if (model_fname != NULL) {
-			model_subsystem *subsystems = NULL;
-			
-			Lab_model_num = model_load(model_fname, (valid_ship) ? Ship_info[sel_index].n_subsystems : 0, subsystems, 0);
+		if (model_fname != nullptr) {
+			model_subsystem* subsystems = nullptr;
 
-			if (Lab_model_num >= 0) {
-				strcpy_s(Lab_model_filename, model_fname);
-			}
-			else {
-				memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
-			}
+			Lab_model_num =
+			    model_load(model_fname, (valid_ship) ? Ship_info[sel_index].n_subsystems : 0, subsystems, 0);
 
 			if (valid_ship) {
 				if (Lab_model_num >= 0) {
@@ -208,43 +242,40 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			// do the same for weapon models if necessary
 			if (Lab_mode == LAB_MODE_SHIP) {
 				sip = &Ship_info[Lab_selected_index];
-				l = 0;
+				l   = 0;
 				for (j = 0; j < sip->num_primary_banks; j++) {
-					weapon_info *wip = &Weapon_info[sip->primary_bank_weapons[j]];
+					weapon_info* wip = &Weapon_info[sip->primary_bank_weapons[j]];
 					if (!sip->draw_primary_models[j])
 						continue;
 					Lab_weaponmodel_num[l] = -1;
 					if (strlen(wip->external_model_name)) {
-						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, NULL);
+						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, nullptr);
 					}
 					if (Lab_weaponmodel_num[l] >= 0) {
 						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
-					}
-					else {
+					} else {
 						memset(Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]));
 					}
 					l++;
 				}
 
 				for (j = 0; j < sip->num_secondary_banks; j++) {
-					weapon_info *wip = &Weapon_info[sip->secondary_bank_weapons[j]];
+					weapon_info* wip = &Weapon_info[sip->secondary_bank_weapons[j]];
 					if (!sip->draw_secondary_models[j])
 						continue;
 					Lab_weaponmodel_num[l] = -1;
 					if (strlen(wip->external_model_name)) {
-						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, NULL);
+						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, nullptr);
 					}
 					if (Lab_weaponmodel_num[l] >= 0) {
 						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
-					}
-					else {
+					} else {
 						memset(Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]));
 					}
 					l++;
 				}
 			}
-		}
-		else {
+		} else {
 			// clear out the model filename
 			memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
 			if (Lab_weaponmodel_num[0] >= 0) {
@@ -258,13 +289,12 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 	if (lod == 99) {
 		Lab_model_LOD = 0;
 		Lab_viewer_flags |= LAB_FLAG_SHOW_DEBRIS;
-	}
-	else {
+	} else {
 		Lab_model_LOD = lod;
 		Lab_viewer_flags &= ~LAB_FLAG_SHOW_DEBRIS;
 	}
 
-	if (model_fname == NULL) {
+	if (model_fname == nullptr) {
 		Lab_last_selected_ship = -1;
 	}
 
@@ -292,8 +322,7 @@ void labviewer_render_model(float frametime)
 {
 	angles rot_angles;
 	float rev_rate;
-
-	ship_info *sip = NULL;
+	ship_info* sip = nullptr;
 
 	if (Lab_selected_object != -1 && (Objects[Lab_selected_object].type == OBJ_SHIP) && (Lab_selected_index >= 0)) {
 		sip = &Ship_info[Lab_selected_index];
@@ -304,11 +333,10 @@ void labviewer_render_model(float frametime)
 	// get correct revolution rate
 	rev_rate = REVOLUTION_RATE;
 
-	if (sip != NULL) {
+	if (sip != nullptr) {
 		if (sip->is_big_ship()) {
 			rev_rate *= 1.7f;
-		}
-		else if (sip->is_huge_ship()) {
+		} else if (sip->is_huge_ship()) {
 			rev_rate *= 3.0f;
 		}
 	}
@@ -316,30 +344,51 @@ void labviewer_render_model(float frametime)
 	// rotate/pan/zoom the model as much as required for this frame
 	if (Trackball_active) {
 		int dx, dy;
-		matrix mat1, mat2;
 
 		mouse_get_delta(&dx, &dy);
 
 		if (dx || dy) {
 			// Rotate the ship
-			if (Trackball_mode == 1)
-			{
-				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &Lab_model_orient);
+			if (Trackball_mode == 1) {
+				angles rot_angle;
+				vm_extract_angles_matrix_alternate(&rot_angle, &Lab_model_orient);
 
-				Lab_model_orient = mat2;
+				if (Lab_rotation_mode == Lab_rotation_modes::Yaw) {
+					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
+				}
+				if (Lab_rotation_mode == Lab_rotation_modes::Pitch) {
+					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
+				}
+				if (Lab_rotation_mode == Lab_rotation_modes::Both) {
+					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
+					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
+				}
+				if (Lab_rotation_mode == Lab_rotation_modes::Roll) {
+					rot_angle.b += dx / Lab_manual_rotation_speed_divisor;
+				}
 
+				if (rot_angle.h < -PI)
+					rot_angle.h = PI - 0.001f;
+				if (rot_angle.h > PI)
+					rot_angle.h = -PI + 0.001f;
+
+				CLAMP(rot_angle.p, -PI_2, PI_2);
+
+				if (rot_angle.b < -PI)
+					rot_angle.b = PI - 0.001f;
+				if (rot_angle.b > PI)
+					rot_angle.b = -PI + 0.001f;
+
+				vm_angles_2_matrix(&Lab_model_orient, &rot_angle);
 			}
 			// zoom in/out
-			else if (Trackball_mode == 2)
-			{
+			else if (Trackball_mode == 2) {
 				lab_cam_distance *= 1.0f + (dy / 20.0f);
 				if (lab_cam_distance < 1.0f)
 					lab_cam_distance = 1.0f;
 			}
 			// rotate background
-			else if (Trackball_mode == 3)
-			{
+			else if (Trackball_mode == 3) {
 				rotate_view(dx, dy);
 			}
 
@@ -347,8 +396,7 @@ void labviewer_render_model(float frametime)
 		}
 	}
 	// otherwise do orient/rotation calculation, if we are supposed to
-	else if (!(Lab_viewer_flags & LAB_FLAG_NO_ROTATION))
-	{
+	else if (!(Lab_viewer_flags & LAB_FLAG_NO_ROTATION)) {
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
 		rot_angles.h = PI2 * frametime / rev_rate;
@@ -358,20 +406,20 @@ void labviewer_render_model(float frametime)
 	if (Lab_selected_object != -1)
 	{
 		auto lab_render_light_save = Lab_render_without_light;
-		auto lab_debris_override_save = Cmdline_nomotiondebris;
+		auto lab_debris_override_save = Motion_debris_enabled;
 		auto lab_envmap_override_save = Envmap_override;
-		auto lab_emissive_light_save = Cmdline_no_emissive;
+		auto lab_emissive_light_save  = Cmdline_emissive;
 
 		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
-			Cmdline_nomotiondebris = 1;
+			Motion_debris_enabled = true;
 		}
 
-		Cmdline_no_emissive = !Lab_emissive_light_override;
+		Cmdline_emissive = Lab_emissive_light_override;
 
 		object* obj = &Objects[Lab_selected_object];
 
-		obj->pos = Lab_model_pos;
+		obj->pos    = Lab_model_pos;
 		obj->orient = Lab_model_orient;
 
 		Envmap_override = Lab_Envmap_override;
@@ -393,9 +441,6 @@ void labviewer_render_model(float frametime)
 
 			Ships[obj->instance].team_name = Lab_team_color;
 		}
-		else if (obj->type == OBJ_WEAPON) 
-		{
-		}
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
@@ -408,8 +453,7 @@ void labviewer_render_model(float frametime)
 				obj->phys_info.flags |= PF_AFTERBURNER_ON;
 			else
 				obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
-		}
-		else {
+		} else {
 			obj->phys_info.forward_thrust = 0.0f;
 
 			if (obj->type == OBJ_SHIP)
@@ -421,17 +465,49 @@ void labviewer_render_model(float frametime)
 		Trail_render_override = false;
 
 		Lab_render_without_light = lab_render_light_save;
-		Cmdline_nomotiondebris = lab_debris_override_save;
-		Envmap_override = lab_envmap_override_save;
-		Cmdline_no_emissive = lab_emissive_light_save;
+		Motion_debris_enabled    = lab_debris_override_save;
+		Envmap_override          = lab_envmap_override_save;
+		Cmdline_emissive      = lab_emissive_light_save;
 
 		gr_reset_clip();
 		gr_set_color_fast(&HUD_color_debug);
 		if (Cmdline_frame_profile) {
 			tracing::frame_profile_process_frame();
 			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + gr_get_font_height() + 1,
-				tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+			          tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
 		}
+	}
+}
+
+SCP_string get_rot_mode_string(Lab_rotation_modes rotmode)
+{
+	switch (rotmode) {
+	case Lab_rotation_modes::Both:
+		return "Manual rotation mode: Pitch and Yaw";
+	case Lab_rotation_modes::Pitch:
+		return "Manual rotation mode: Pitch";
+	case Lab_rotation_modes::Yaw:
+		return "Manual rotation mode: Yaw";
+	case Lab_rotation_modes::Roll:
+		return "Manual rotation mode: Roll";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
+	}
+}
+
+SCP_string get_rot_speed_string(float speed_divisor)
+{
+	auto exp = std::lroundf(log10f(speed_divisor));
+
+	switch (exp) {
+	case 2:
+		return "Fast";
+	case 3:
+		return "Slow";
+	case 4:
+		return "Slowest";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
 	}
 }
 
@@ -449,7 +525,8 @@ void labviewer_do_render(float frametime)
 		if (strlen(Lab_model_filename)) {
 			gr_get_string_size(&w, &h, Lab_model_filename);
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w,
+			          gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
 	}
 
@@ -463,25 +540,60 @@ void labviewer_do_render(float frametime)
 	gr_set_color_fast(&Color_white);
 
 	if (frametotal != 0.0f) {
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", (int)std::lround(Framerate), lab_cam_distance);
-	}
-	else {
-		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		                    gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(),
+		                    "FPS: %3i Camera Distance: %4f", (int)std::lround(Framerate), lab_cam_distance);
+	} else {
+		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(),
+		          "FPS: ?", GR_RESIZE_NONE);
 	}
 
 	//Print FXAA preset
-	if (Cmdline_fxaa && !PostProcessing_override)
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
+	if (gr_is_fxaa_mode(Gr_aa_mode) && !PostProcessing_override) {
+		const char* fxaa_mode;
+		switch (Gr_aa_mode) {
+		case AntiAliasMode::FXAA_Low:
+			fxaa_mode = "Low";
+			break;
+		case AntiAliasMode::FXAA_Medium:
+			fxaa_mode = "Medium";
+			break;
+		case AntiAliasMode::FXAA_High:
+			fxaa_mode = "High";
+			break;
+		default:
+			fxaa_mode = "None";
+			break;
+		}
+
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %s", fxaa_mode);
+	}
 	
 	//Print current Team Color setting, if any
 	if (Lab_team_color != "<none>")
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
+		gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,
+		                    "Use T and Y to cycle through available Team Color settings. Current: %s",
+		                    Lab_team_color.c_str());
 
-	//Camera usage info
-	gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out. Use number keys to switch between FXAA presets.");
+	// Camera usage info
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
+	                    "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
+	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation "
+	                    "modes, S to cycle model rotation speeds, V to reset view.");
+
+	// Rotation mode
+	angles rot_angle;
+	vm_extract_angles_matrix(&rot_angle, &Lab_model_orient);
+	SCP_string text = get_rot_mode_string(Lab_rotation_mode);
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
+	                    "%s Rotation speed: %s", get_rot_mode_string(Lab_rotation_mode).c_str(),
+	                    get_rot_speed_string(Lab_manual_rotation_speed_divisor).c_str());
 }
 
-void labviewer_exit(Button * /*caller*/)
+void labviewer_exit(Button* /*caller*/)
 {
 	if (Lab_selected_object != -1) {
 		obj_delete(Lab_selected_object);
@@ -490,29 +602,32 @@ void labviewer_exit(Button * /*caller*/)
 }
 
 // ----------------------------  Class Window ----------------------------------
-void labviewer_close_class_window(GUIObject * /*caller*/)
+void labviewer_close_class_window(GUIObject* /*caller*/)
 {
 	if (Lab_class_toolbar) {
 		Lab_class_toolbar->DeleteChildren();
 	}
 
-	Lab_class_window = NULL;
+	Lab_class_window = nullptr;
 
 	Lab_mode = LAB_MODE_NONE;
 
 	// reset any existing model/bitmap that is showing
-	labviewer_change_model(NULL);
+	labviewer_change_model(nullptr);
 }
 
 void labviewer_set_class_window(int mode)
 {
-	if (Lab_class_window == NULL) {
-		Lab_class_window = (Window*)Lab_screen->Add(new Window("Class Window", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
+	if (Lab_class_window == nullptr) {
+		Lab_class_window = (Window*)Lab_screen->Add(
+		    new Window("Class Window", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
 		Lab_class_window->SetCloseFunction(labviewer_close_class_window);
 	}
 
-	if (Lab_class_toolbar == NULL) {
-		Lab_class_toolbar = (Window*)Lab_screen->Add(new Window("Class Toolbar", gr_screen.center_offset_x + 0, gr_screen.center_offset_y + Lab_toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+	if (Lab_class_toolbar == nullptr) {
+		Lab_class_toolbar = (Window*)Lab_screen->Add(new Window("Class Toolbar", gr_screen.center_offset_x + 0,
+		                                                        gr_screen.center_offset_y + Lab_toolbar->GetHeight(),
+		                                                        -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 	}
 
 	// clear out all existing children
@@ -522,18 +637,16 @@ void labviewer_set_class_window(int mode)
 	// set our new title
 	if (mode == LAB_MODE_SHIP) {
 		Lab_class_window->SetCaption("Ship Classes");
-	}
-	else if (mode == LAB_MODE_WEAPON) {
+	} else if (mode == LAB_MODE_WEAPON) {
 		Lab_class_window->SetCaption("Weapon Classes");
 	}
 
 	// reset any existing model/bitmap that is showing
-	labviewer_change_model(NULL);
+	labviewer_change_model(nullptr);
 }
 
-
 // ------------------------------  Flags Window --------------------------------
-template<class T>
+template <class T>
 struct lab_flag {
 	Checkbox* cb;
 	T flag;
@@ -544,7 +657,7 @@ static SCP_vector<lab_flag<Weapon::Info_Flags>> Weapon_Class_Flags;
 
 void labviewer_flags_clear()
 {
-	if (Lab_flags_window != NULL) {
+	if (Lab_flags_window != nullptr) {
 		Lab_flags_window->DeleteChildren();
 	}
 
@@ -553,11 +666,11 @@ void labviewer_flags_clear()
 }
 
 template <class T>
-void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
+void labviewer_flags_add(int* X, int* Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
 {
 	int x = 0, y = 0;
 
-	Assert((Lab_flags_window != NULL) && (flag_name != NULL));
+	Assert((Lab_flags_window != nullptr) && (flag_name != nullptr));
 
 	lab_flag<T> new_flag;
 
@@ -569,7 +682,7 @@ void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vect
 		y = *Y;
 	}
 
-	new_flag.cb = (Checkbox*)Lab_flags_window->AddChild(new Checkbox(flag_name, x, y));
+	new_flag.cb   = (Checkbox*)Lab_flags_window->AddChild(new Checkbox(flag_name, x, y));
 	new_flag.flag = flag;
 	flag_list.push_back(new_flag);
 
@@ -588,7 +701,7 @@ void labviewer_populate_flags_window()
 		return;
 	}
 
-	if (Lab_flags_window == NULL) {
+	if (Lab_flags_window == nullptr) {
 		return;
 	}
 
@@ -599,16 +712,15 @@ void labviewer_populate_flags_window()
 
 	// ship flags ...
 	if (Lab_mode == LAB_MODE_SHIP) {
-		for (size_t i = 0; i < Num_ship_flags; ++i)
-		{
+		for (size_t i = 0; i < Num_ship_flags; ++i) {
 			labviewer_flags_add<Ship::Info_Flags>(nullptr, &y, Ship_flags[i].name, Ship_flags[i].def, Ship_Class_Flags);
 		}
 	}
 	// weapon flags ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		for (size_t i = 0; i < num_weapon_info_flags; ++i)
-		{
-			labviewer_flags_add<Weapon::Info_Flags>(nullptr, &y, Weapon_Info_Flags[i].name, Weapon_Info_Flags[i].def, Weapon_Class_Flags);
+		for (size_t i = 0; i < num_weapon_info_flags; ++i) {
+			labviewer_flags_add<Weapon::Info_Flags>(nullptr, &y, Weapon_Info_Flags[i].name, Weapon_Info_Flags[i].def,
+			                                        Weapon_Class_Flags);
 		}
 	}
 }
@@ -622,43 +734,42 @@ void labviewer_update_flags_window()
 	if (Lab_mode == LAB_MODE_SHIP) {
 		auto sip = &Ship_info[Lab_selected_index];
 
-		for (auto flag_def : Ship_Class_Flags)
-		{
-			if (flag_def.flag == Ship::Info_Flags::NUM_VALUES) continue;
+		for (auto flag_def : Ship_Class_Flags) {
+			if (flag_def.flag == Ship::Info_Flags::NUM_VALUES)
+				continue;
 			flag_def.cb->SetFlag(sip->flags, flag_def.flag, sip);
 		}
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		auto wip = &Weapon_info[Lab_selected_index];
 
-		for (auto flag_def : Weapon_Class_Flags)
-		{
-			if (flag_def.flag == Weapon::Info_Flags::NUM_VALUES) continue;
+		for (auto flag_def : Weapon_Class_Flags) {
+			if (flag_def.flag == Weapon::Info_Flags::NUM_VALUES)
+				continue;
 			flag_def.cb->SetFlag(wip->wi_flags, flag_def.flag, wip);
 		}
 	}
 }
 
-void labviewer_close_flags_window(GUIObject * /*caller*/)
+void labviewer_close_flags_window(GUIObject* /*caller*/)
 {
-	Lab_flags_window = NULL;
+	Lab_flags_window = nullptr;
 
-	Ship_Class_Flags.empty();
-	Weapon_Class_Flags.empty();
+	Ship_Class_Flags.clear();
+	Weapon_Class_Flags.clear();
 }
 
-void labviewer_make_flags_window(Button * /*caller*/)
+void labviewer_make_flags_window(Button* /*caller*/)
 {
-	if (Lab_flags_window == NULL) {
-		Lab_flags_window = (Window*)Lab_screen->Add(new Window("Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
+	if (Lab_flags_window == nullptr) {
+		Lab_flags_window = (Window*)Lab_screen->Add(new Window(
+		    "Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
 		Lab_flags_window->SetCloseFunction(labviewer_close_flags_window);
 	}
 
 	// set our new title
 	if (Lab_mode == LAB_MODE_SHIP) {
 		Lab_flags_window->SetCaption("Ship Flags");
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		Lab_flags_window->SetCaption("Weapon Flags");
 	}
 
@@ -670,39 +781,41 @@ void labviewer_make_flags_window(Button * /*caller*/)
 }
 
 // -----------------------   Variables Window   --------------------------------
-#define VAR_POS_LEFTWIDTH		150
-#define VAR_POS_RIGHTWIDTH		100
-#define VAR_POS_RIGHTX			160
+#define VAR_POS_LEFTWIDTH 150
+#define VAR_POS_RIGHTWIDTH 100
+#define VAR_POS_RIGHTX 160
 
-#define VAR_ADD_HEADER(name) {	\
-	ntp = (Text*)Lab_variables_window->AddChild(new Text((name), (name), VAR_POS_RIGHTX/2, y + 8, VAR_POS_RIGHTWIDTH));	\
-	y += ntp->GetHeight() + 10;	\
-}
+#define VAR_ADD_HEADER(name)                                                                                           \
+	{                                                                                                                  \
+		ntp = (Text*)Lab_variables_window->AddChild(                                                                   \
+		    new Text((name), (name), VAR_POS_RIGHTX / 2, y + 8, VAR_POS_RIGHTWIDTH));                                  \
+		y += ntp->GetHeight() + 10;                                                                                    \
+	}
 
 static SCP_vector<Text*> Lab_variables;
 
-void labviewer_close_variables_window(GUIObject * /*caller*/)
+void labviewer_close_variables_window(GUIObject* /*caller*/)
 {
-	Lab_variables_window = NULL;
+	Lab_variables_window = nullptr;
 
 	Lab_variables.clear();
 }
 
 void labviewer_variables_clear()
 {
-	if (Lab_variables_window != NULL) {
+	if (Lab_variables_window != nullptr) {
 		Lab_variables_window->DeleteChildren();
 	}
 
 	Lab_variables.clear();
 }
 
-void labviewer_variables_add(int *Y, const char *var_name)
+void labviewer_variables_add(int* Y, const char* var_name)
 {
 	int y = 0;
-	Text *new_text;
+	Text* new_text;
 
-	Assert((Lab_variables_window != NULL) && (var_name != NULL));
+	Assert((Lab_variables_window != nullptr) && (var_name != nullptr));
 
 	if (Y) {
 		y = *Y;
@@ -711,7 +824,8 @@ void labviewer_variables_add(int *Y, const char *var_name)
 	// variable
 	Lab_variables_window->AddChild(new Text((var_name), (var_name), 0, y, VAR_POS_LEFTWIDTH));
 	// edit box
-	new_text = (Text*)Lab_variables_window->AddChild(new Text(SCP_string((var_name)) + SCP_string("Editbox"), "", VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
+	new_text = (Text*)Lab_variables_window->AddChild(new Text(SCP_string((var_name)) + SCP_string("Editbox"), "",
+	                                                          VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
 
 	if (Y) {
 		*Y += new_text->GetHeight() + 2;
@@ -722,14 +836,14 @@ void labviewer_variables_add(int *Y, const char *var_name)
 
 void labviewer_populate_variables_window()
 {
-	Text *ntp;
+	Text* ntp;
 	int y;
 
 	if (Lab_mode == LAB_MODE_NONE) {
 		return;
 	}
 
-	if (Lab_variables_window == NULL) {
+	if (Lab_variables_window == nullptr) {
 		return;
 	}
 
@@ -830,23 +944,25 @@ void labviewer_populate_variables_window()
 	}
 }
 
-#define VAR_SET_VALUE(value) {	\
-	Assert( i < Lab_variables.size() );	\
-	Lab_variables[i]->SetText((value));	\
-	i++;	\
-}
+#define VAR_SET_VALUE(value)                                                                                           \
+	{                                                                                                                  \
+		Assert(i < Lab_variables.size());                                                                              \
+		Lab_variables[i]->SetText((value));                                                                            \
+		i++;                                                                                                           \
+	}
 
-#define VAR_SET_VALUE_SAVE(value, max_size) {	\
-	Assert( i < Lab_variables.size() );	\
-	Lab_variables[i]->SetText((value));	\
-	if ((max_size) < 1) {	\
-		Assert( (max_size) == 0 );	\
-		Lab_variables[i]->SetSaveLoc(&(value), T_ST_ONENTER);	\
-	} else {	\
-		Lab_variables[i]->SetSaveLoc(&(value), T_ST_ONENTER, (max_size), 0);	\
-	}	\
-	i++;	\
-}
+#define VAR_SET_VALUE_SAVE(value, max_size)                                                                            \
+	{                                                                                                                  \
+		Assert(i < Lab_variables.size());                                                                              \
+		Lab_variables[i]->SetText((value));                                                                            \
+		if ((max_size) < 1) {                                                                                          \
+			Assert((max_size) == 0);                                                                                   \
+			Lab_variables[i]->SetSaveLoc(&(value), T_ST_ONENTER);                                                      \
+		} else {                                                                                                       \
+			Lab_variables[i]->SetSaveLoc(&(value), T_ST_ONENTER, (max_size), 0);                                       \
+		}                                                                                                              \
+		i++;                                                                                                           \
+	}
 extern SCP_vector<SCP_string> Hud_shield_filenames;
 
 void labviewer_update_variables_window()
@@ -857,7 +973,7 @@ void labviewer_update_variables_window()
 		return;
 	}
 
-	if (Lab_variables_window == NULL) {
+	if (Lab_variables_window == nullptr) {
 		return;
 	}
 
@@ -869,7 +985,7 @@ void labviewer_update_variables_window()
 	// ship variables ...
 	if (Lab_mode == LAB_MODE_SHIP) {
 		Assert(Lab_selected_index < static_cast<int>(Ship_info.size()));
-		ship_info *sip = &Ship_info[Lab_selected_index];
+		ship_info* sip = &Ship_info[Lab_selected_index];
 
 		VAR_SET_VALUE(sip->name);
 		VAR_SET_VALUE_SAVE(sip->species, (int)(Species_info.size() - 1));
@@ -882,8 +998,6 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.x, 0);
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.y, 0);
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.z, 0);
-		VAR_SET_VALUE_SAVE(sip->warpin_speed, 0);
-		VAR_SET_VALUE_SAVE(sip->warpout_speed, 0);
 
 		VAR_SET_VALUE_SAVE(sip->max_shield_strength, 0);
 		VAR_SET_VALUE_SAVE(sip->max_hull_strength, 0);
@@ -918,7 +1032,7 @@ void labviewer_update_variables_window()
 	// weapon variables ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
 		Assert(Lab_selected_index < Num_weapon_types);
-		weapon_info *wip = &Weapon_info[Lab_selected_index];
+		weapon_info* wip = &Weapon_info[Lab_selected_index];
 
 		VAR_SET_VALUE(wip->get_display_string());
 		VAR_SET_VALUE_SAVE(wip->subtype, Num_weapon_subtypes - 1);
@@ -950,19 +1064,20 @@ void labviewer_update_variables_window()
 	}
 }
 
-void labviewer_make_variables_window(Button * /*caller*/)
+void labviewer_make_variables_window(Button* /*caller*/)
 {
-	if (Lab_variables_window != NULL) {
+	if (Lab_variables_window != nullptr) {
 		return;
 	}
 
-	Lab_variables_window = (Window*)Lab_screen->Add(new Window("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - (VAR_POS_RIGHTX + VAR_POS_RIGHTWIDTH + 25), gr_screen.center_offset_y + 200));
+	Lab_variables_window = (Window*)Lab_screen->Add(new Window(
+	    "Class Variables", gr_screen.center_offset_x + gr_screen.center_w - (VAR_POS_RIGHTX + VAR_POS_RIGHTWIDTH + 25),
+	    gr_screen.center_offset_y + 200));
 
 	// set our new title
 	if (Lab_mode == LAB_MODE_SHIP) {
 		Lab_variables_window->SetCaption("Ship Variables");
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		Lab_variables_window->SetCaption("Weapon Variables");
 	}
 
@@ -976,7 +1091,7 @@ void labviewer_make_variables_window(Button * /*caller*/)
 }
 
 // --------------------   Render Options Window   ------------------------------
-void labviewer_change_detail_texture(Tree *caller)
+void labviewer_change_detail_texture(Tree* caller)
 {
 	int slider_pos = (int)(caller->GetSelectedItem()->GetData());
 	Assert((slider_pos >= 0) && (slider_pos <= MAX_DETAIL_LEVEL));
@@ -984,48 +1099,54 @@ void labviewer_change_detail_texture(Tree *caller)
 	Detail.hardware_textures = slider_pos;
 }
 
-void labviewer_close_render_options_window(GUIObject * /*caller*/)
+void labviewer_close_render_options_window(GUIObject* /*caller*/)
 {
-	Lab_render_options_window = NULL;
+	ambient_sldr = nullptr;
+	bloom_sldr = nullptr;
+	direct_sldr = nullptr;
+	Lab_render_options_window = nullptr;
 }
 
-#define ADD_RENDER_FLAG(text, flag, var) {	\
-	cbp = (Checkbox*)Lab_render_options_window->AddChild(new Checkbox((text), 2, y));	\
-	cbp->SetFlag(&(flag), (var));	\
-	y += cbp->GetHeight() + 2;	\
+#define ADD_RENDER_FLAG(text, flag, var)                                                                               \
+	{                                                                                                                  \
+		cbp = (Checkbox*)Lab_render_options_window->AddChild(new Checkbox((text), 2, y));                              \
+		cbp->SetFlag(&(flag), (var));                                                                                  \
+		y += cbp->GetHeight() + 2;                                                                                     \
+	}
+
+#define ADD_RENDER_BOOL(text, flag)                                                                                    \
+	{                                                                                                                  \
+		cbp = (Checkbox*)Lab_render_options_window->AddChild(new Checkbox((text), 2, y));                              \
+		cbp->SetBool(&(flag));                                                                                         \
+		y += cbp->GetHeight() + 1;                                                                                     \
+	}
+
+void labviewer_render_options_set_ambient_factor(Slider* caller)
+{
+	gr_calculate_ambient_factor(fl2i(caller->GetSliderValue()));
 }
 
-#define ADD_RENDER_BOOL(text, flag) {	\
-	cbp = (Checkbox*)Lab_render_options_window->AddChild(new Checkbox((text), 2, y));	\
-	cbp->SetBool(&(flag));	\
-	y += cbp->GetHeight() + 1;	\
-}
-
-void labviewer_render_options_set_ambient_factor(Slider *caller) {
-	gr_calculate_ambient_factor(fl2i( caller->GetSliderValue()));
-}
-
-void labviewer_render_options_set_static_light_factor(Slider *caller) {
+void labviewer_render_options_set_static_light_factor(Slider* caller)
+{
 	static_light_factor = caller->GetSliderValue();
 }
 
-void labviewer_render_options_set_bloom(Slider *caller) {
-	Cmdline_bloom_intensity = fl2i(caller->GetSliderValue());
-}
+void labviewer_render_options_set_bloom(Slider* caller) { Cmdline_bloom_intensity = fl2i(caller->GetSliderValue()); }
 
-void labviewer_make_render_options_window(Button * /*caller*/)
+void labviewer_make_render_options_window(Button* /*caller*/)
 {
-	Checkbox *cbp;
-	Tree *cmp;
-	TreeItem *ctip;
+	Checkbox* cbp;
+	Tree* cmp;
+	TreeItem* ctip;
 	int y = 0;
 
-	if (Lab_render_options_window != NULL) {
+	if (Lab_render_options_window != nullptr) {
 		return;
 	}
 
-	Lab_render_options_window = (Window*)Lab_screen->Add(new Window("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
-	Assert(Lab_render_options_window != NULL);
+	Lab_render_options_window = (Window*)Lab_screen->Add(new Window(
+	    "Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
+	Assert(Lab_render_options_window != nullptr);
 
 	// add all of the flags that we want/need...
 
@@ -1035,7 +1156,7 @@ void labviewer_make_render_options_window(Button * /*caller*/)
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_BOOL("Rotate Subsystems", Lab_rotate_subobjects);
 
-	if (Cmdline_postprocess) {
+	if (Gr_post_processing_enabled) {
 		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
 	}
 
@@ -1068,18 +1189,29 @@ void labviewer_make_render_options_window(Button * /*caller*/)
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
 
 	ADD_RENDER_BOOL("Emissive Lighting", Lab_emissive_light_override);
-	Slider* sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
-	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
-	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
+
+
+	ambient_sldr = new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth());
+	ambient_sldr->SetSliderValue((float)Cmdline_ambient_factor);
+	Lab_render_options_window->AddChild(ambient_sldr);
+	y += ambient_sldr->GetHeight() + 1;
+
+	direct_sldr = new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth());
+	direct_sldr->SetSliderValue(static_light_factor);
+	Lab_render_options_window->AddChild(direct_sldr);
+	y += direct_sldr->GetHeight() + 1;
+
+	bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth());
+	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	Lab_render_options_window->AddChild(bloom_sldr);
+	y += bloom_sldr->GetHeight() + 1;
 
 	// start tree
-	cmp = (Tree*)Lab_render_options_window->AddChild(new Tree("Detail Options Tree", 0, y + 2, NULL, Lab_render_options_window->GetWidth()));
+	cmp = (Tree*)Lab_render_options_window->AddChild(
+	    new Tree("Detail Options Tree", 0, y + 2, nullptr, Lab_render_options_window->GetWidth()));
 
 	// 3d hardware texture slider options
-	ctip = cmp->AddItem(NULL, "3D Hardware Textures", 0, false);
+	ctip = cmp->AddItem(nullptr, "3D Hardware Textures", 0, false);
 
 	cmp->AddItem(ctip, "Minimum", 0, false, labviewer_change_detail_texture);
 	cmp->AddItem(ctip, "Low", 1, false, labviewer_change_detail_texture);
@@ -1092,88 +1224,89 @@ void labviewer_make_render_options_window(Button * /*caller*/)
 }
 // -------------------------  Material Override Window  ------------------------------
 
-void labviewer_close_material_override_window(GUIObject * /*caller*/)
+void labviewer_close_material_override_window(GUIObject* /*caller*/)
 {
-	Lab_material_override_window = NULL;
+	Lab_material_override_window = nullptr;
 
 	Basemap_color_override_set = false;
-	Basemap_color_override[0] = 0.0f;
-	Basemap_color_override[1] = 0.0f;
-	Basemap_color_override[2] = 0.0f;
-	Basemap_color_override[3] = 1.0f;
+	Basemap_color_override[0]  = 0.0f;
+	Basemap_color_override[1]  = 0.0f;
+	Basemap_color_override[2]  = 0.0f;
+	Basemap_color_override[3]  = 1.0f;
 
 	Glowmap_color_override_set = false;
-	Glowmap_color_override[0] = 0.0f;
-	Glowmap_color_override[1] = 0.0f;
-	Glowmap_color_override[2] = 0.0f;
+	Glowmap_color_override[0]  = 0.0f;
+	Glowmap_color_override[1]  = 0.0f;
+	Glowmap_color_override[2]  = 0.0f;
 
 	Specmap_color_override_set = false;
-	Specmap_color_override[0] = 0.0f;
-	Specmap_color_override[1] = 0.0f;
-	Specmap_color_override[2] = 0.0f;
+	Specmap_color_override[0]  = 0.0f;
+	Specmap_color_override[1]  = 0.0f;
+	Specmap_color_override[2]  = 0.0f;
 }
 
-void labviewer_set_material_override_diffuse_red(Slider *caller)
+void labviewer_set_material_override_diffuse_red(Slider* caller)
 {
 	Basemap_color_override[0] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_diffuse_green(Slider *caller)
+void labviewer_set_material_override_diffuse_green(Slider* caller)
 {
 	Basemap_color_override[1] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_diffuse_blue(Slider *caller)
+void labviewer_set_material_override_diffuse_blue(Slider* caller)
 {
 	Basemap_color_override[2] = caller->GetSliderValue() / 255.0f;
 }
-void labviewer_set_material_override_glow_red(Slider *caller)
+void labviewer_set_material_override_glow_red(Slider* caller)
 {
 	Glowmap_color_override[0] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_glow_green(Slider *caller)
+void labviewer_set_material_override_glow_green(Slider* caller)
 {
 	Glowmap_color_override[1] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_glow_blue(Slider *caller)
+void labviewer_set_material_override_glow_blue(Slider* caller)
 {
 	Glowmap_color_override[2] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_specular_red(Slider *caller)
+void labviewer_set_material_override_specular_red(Slider* caller)
 {
 	Specmap_color_override[0] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_specular_green(Slider *caller)
+void labviewer_set_material_override_specular_green(Slider* caller)
 {
 	Specmap_color_override[1] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_specular_blue(Slider *caller)
+void labviewer_set_material_override_specular_blue(Slider* caller)
 {
 	Specmap_color_override[2] = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_set_material_override_specular_gloss(Slider *caller)
+void labviewer_set_material_override_specular_gloss(Slider* caller)
 {
 	Gloss_override = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_make_material_override_window(Button * /*caller*/)
+void labviewer_make_material_override_window(Button* /*caller*/)
 {
-	Checkbox *cbp;
-	Slider *sldr;
+	Checkbox* cbp;
+	Slider* sldr;
 	int y = 0;
 
-	if (Lab_material_override_window != NULL) {
+	if (Lab_material_override_window != nullptr) {
 		return;
 	}
 
-	Lab_material_override_window = (Window*)Lab_screen->Add(new Window("Material Override", gr_screen.max_w - 300, 200));
-	Assert(Lab_material_override_window != NULL);
+	Lab_material_override_window =
+	    (Window*)Lab_screen->Add(new Window("Material Override", gr_screen.max_w - 300, 200));
+	Assert(Lab_material_override_window != nullptr);
 
 	// add all of the flags that we want/need...
 
@@ -1183,13 +1316,16 @@ void labviewer_make_material_override_window(Button * /*caller*/)
 	cbp->SetBool(&Basemap_color_override_set);
 	y += cbp->GetHeight() + 1;
 
-	sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_red, 275));
+	sldr = (Slider*)Lab_material_override_window->AddChild(
+	    new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_red, 275));
 	y += sldr->GetHeight() + 1;
 
-	sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_green, 275));
+	sldr = (Slider*)Lab_material_override_window->AddChild(
+	    new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_green, 275));
 	y += sldr->GetHeight() + 1;
 
-	sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_blue, 275));
+	sldr = (Slider*)Lab_material_override_window->AddChild(
+	    new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_diffuse_blue, 275));
 	y += sldr->GetHeight() + 1;
 
 	if (Cmdline_glow) {
@@ -1197,13 +1333,16 @@ void labviewer_make_material_override_window(Button * /*caller*/)
 		cbp->SetBool(&Glowmap_color_override_set);
 		y += cbp->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_red, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_red, 275));
 		y += sldr->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_green, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_green, 275));
 		y += sldr->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_blue, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_glow_blue, 275));
 		y += sldr->GetHeight() + 1;
 	}
 	if (Cmdline_spec) {
@@ -1211,20 +1350,24 @@ void labviewer_make_material_override_window(Button * /*caller*/)
 		cbp->SetBool(&Specmap_color_override_set);
 		y += cbp->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_red, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Red", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_red, 275));
 		y += sldr->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_green, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Green", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_green, 275));
 		y += sldr->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_blue, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Blue", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_blue, 275));
 		y += sldr->GetHeight() + 1;
 
 		cbp = (Checkbox*)Lab_material_override_window->AddChild(new Checkbox("Override Gloss", 2, y));
 		cbp->SetBool(&Gloss_override_set);
 		y += cbp->GetHeight() + 1;
 
-		sldr = (Slider*)Lab_material_override_window->AddChild(new Slider("Gloss", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_gloss, 275));
+		sldr = (Slider*)Lab_material_override_window->AddChild(
+		    new Slider("Gloss", 0.0f, 255.0f, 0, y + 2, labviewer_set_material_override_specular_gloss, 275));
 		y += sldr->GetHeight() + 1;
 	}
 
@@ -1233,15 +1376,15 @@ void labviewer_make_material_override_window(Button * /*caller*/)
 }
 
 // -------------------------  Description Window  ------------------------------
-void labviewer_close_desc_window(GUIObject * /*caller*/)
+void labviewer_close_desc_window(GUIObject* /*caller*/)
 {
-	Lab_description_text = NULL;
-	Lab_description_window = NULL;
+	Lab_description_text   = nullptr;
+	Lab_description_window = nullptr;
 }
 
 void labviewer_update_desc_window()
 {
-	if ((Lab_description_window == NULL) || (Lab_description_text == NULL)) {
+	if ((Lab_description_window == nullptr) || (Lab_description_text == nullptr)) {
 		return;
 	}
 
@@ -1249,36 +1392,35 @@ void labviewer_update_desc_window()
 		if (Lab_mode == LAB_MODE_SHIP) {
 			Lab_description_window->SetCaption(Ship_info[Lab_selected_index].name);
 
-			if (Ship_info[Lab_selected_index].tech_desc != NULL) {
+			if (Ship_info[Lab_selected_index].tech_desc != nullptr) {
 				Lab_description_text->SetText(Ship_info[Lab_selected_index].tech_desc);
-			}
-			else {
+			} else {
 				Lab_description_text->SetText("No description available.");
 			}
-		}
-		else if (Lab_mode == LAB_MODE_WEAPON) {
+		} else if (Lab_mode == LAB_MODE_WEAPON) {
 			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].get_display_string());
 
-			if (Weapon_info[Lab_selected_index].tech_desc != NULL) {
+			if (Weapon_info[Lab_selected_index].tech_desc != nullptr) {
 				Lab_description_text->SetText(Weapon_info[Lab_selected_index].tech_desc);
-			}
-			else {
+			} else {
 				Lab_description_text->SetText("No description available.");
 			}
 		}
 	}
 }
 
-void labviewer_make_desc_window(Button * /*caller*/)
+void labviewer_make_desc_window(Button* /*caller*/)
 {
-	if (Lab_description_window != NULL) {
+	if (Lab_description_window != nullptr) {
 		return;
 	}
 
-	Lab_description_window = (Window*)Lab_screen->Add(new Window("Description", gr_screen.center_offset_x + gr_screen.center_w - gr_screen.center_w / 3 - 50,
-		gr_screen.center_offset_y + gr_screen.center_h - gr_screen.center_h / 6 - 50, gr_screen.center_w / 3,
-		gr_screen.center_h / 6));
-	Lab_description_text = (Text*)Lab_description_window->AddChild(new Text("Description Text", "No ship selected.", 0, 0));
+	Lab_description_window = (Window*)Lab_screen->Add(
+	    new Window("Description", gr_screen.center_offset_x + gr_screen.center_w - gr_screen.center_w / 3 - 50,
+	               gr_screen.center_offset_y + gr_screen.center_h - gr_screen.center_h / 6 - 50, gr_screen.center_w / 3,
+	               gr_screen.center_h / 6));
+	Lab_description_text =
+	    (Text*)Lab_description_window->AddChild(new Text("Description Text", "No ship selected.", 0, 0));
 
 	labviewer_update_desc_window();
 
@@ -1286,29 +1428,27 @@ void labviewer_make_desc_window(Button * /*caller*/)
 }
 
 // ------------------------   Ships Window   -----------------------------------
-void labviewer_make_ship_window(Button * /*caller*/)
+void labviewer_make_ship_window(Button* /*caller*/)
 {
-	GUIObject *cbp;
-	TreeItem *ctip, *stip;
+	GUIObject* cbp;
+	TreeItem* stip;
 	int x, idx;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		return;
 	}
 
-
 	// switch the class window to ship mode
 	labviewer_set_class_window(LAB_MODE_SHIP);
 
-	if ((Lab_class_window == NULL) || (Lab_class_toolbar == NULL)) {
+	if ((Lab_class_window == nullptr) || (Lab_class_toolbar == nullptr)) {
 		Int3();
 		Lab_mode = LAB_MODE_SHIP;
 		return;
 	}
 
-
 	// populate the class toolbar
-	x = 0;
+	x   = 0;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Description", x, 0, labviewer_make_desc_window));
 
 	x += cbp->GetWidth() + 10;
@@ -1317,48 +1457,56 @@ void labviewer_make_ship_window(Button * /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
-
 	// populate ship class window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
+	ship_tree = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
 
-	if (Lab_species_nodes != NULL) {
+	if (Lab_species_nodes != nullptr) {
 		for (idx = 0; idx < (int)Species_info.size(); idx++) {
 			Lab_species_nodes[idx]->ClearAllItems();
 		}
 
 		delete[] Lab_species_nodes;
-		Lab_species_nodes = NULL;
+		Lab_species_nodes = nullptr;
+	}
+
+	// in case the window had already been opened
+	ship_list_endpoints.clear();
+	for (int i = 0; i < (int)Species_info.size(); i++) {
+		ship_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
 	}
 
 	Lab_species_nodes = new TreeItem*[Species_info.size() + 1];
 
 	// Add species nodes
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
-		Lab_species_nodes[idx] = cmp->AddItem(NULL, Species_info[idx].species_name, 0, false);
+		Lab_species_nodes[idx] = ship_tree->AddItem(nullptr, Species_info[idx].species_name, 0, false);
 	}
 
 	// Just in case. I don't actually think this is possible though.
-	Lab_species_nodes[Species_info.size()] = cmp->AddItem(NULL, "Other", 0, false);
+	Lab_species_nodes[Species_info.size()] = ship_tree->AddItem(nullptr, "Other", 0, false);
 
 	// Now add the ships
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if ((it->species >= 0) && (it->species < (int)Species_info.size())) {
 			stip = Lab_species_nodes[it->species];
-		}
-		else {
+		} else {
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
-		cmp->AddItem(ctip, "Model", 0, false, labviewer_change_ship_lod);
-		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
+		TreeItem* new_ship_item = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false,
+		                                             labviewer_change_ship);
+		if (ship_list_endpoints[it->species].first == nullptr) {
+			ship_list_endpoints[it->species].first = new_ship_item;
+		}
+		ship_list_endpoints[it->species].second = new_ship_item;
+		// cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
 	// if any nodes are empty, just add a single "<none>" entry so we know that species doesn't have anything yet
 	// No the <= is not a mistake :)
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
 		if (!Lab_species_nodes[idx]->HasChildren()) {
-			cmp->AddItem(Lab_species_nodes[idx], "<none>", 0, false, NULL);
+			ship_tree->AddItem(Lab_species_nodes[idx], "<none>", 0, false, nullptr);
 		}
 	}
 
@@ -1366,24 +1514,24 @@ void labviewer_make_ship_window(Button * /*caller*/)
 	if (!Lab_species_nodes[Species_info.size()]->HasChildren()) {
 		delete Lab_species_nodes[Species_info.size()];
 	}
-	
+
 	// and... we're done!
 	Lab_mode = LAB_MODE_SHIP;
 
 	// populate the flags window, if it exists
 	// (NOTE: must be done *after* Lab_mode is set properly)
-	if (Lab_flags_window != NULL) {
+	if (Lab_flags_window != nullptr) {
 		Lab_flags_window->SetCaption("Ship Flags");
 
 		labviewer_populate_flags_window();
 		labviewer_update_flags_window();
 	}
 
-	if (Lab_description_window != NULL) {
+	if (Lab_description_window != nullptr) {
 		labviewer_update_desc_window();
 	}
 
-	if (Lab_variables_window != NULL) {
+	if (Lab_variables_window != nullptr) {
 		Lab_variables_window->SetCaption("Ship Variables");
 
 		labviewer_populate_variables_window();
@@ -1393,21 +1541,23 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
-	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+	if (caller == nullptr) {
+		return;
+	}
+	int ship_index = caller->GetSelectedItem()->GetData();
+
 	Assert(ship_index >= 0);
 
-	if (Lab_selected_object == -1)
-	{
-		// Goober5000 - The lab loads subsystems into its special lab-specific vector, but normally subsystems are loaded into the Ship_info
-		// entry.  Note also that models are only loaded once each.  If a lab model was previously loaded using the "lightweight" method,
-		// ship_create will not find any of the subsystems it is looking for.  So we have to make sure the model is only loaded for the purposes
-		// of error-checking and then immediately cleared so that it can be subsequently loaded the lab way.
+	if (Lab_selected_object == -1) {
+		// Goober5000 - The lab loads subsystems into its special lab-specific vector, but normally subsystems are
+		// loaded into the Ship_info entry.  Note also that models are only loaded once each.  If a lab model was
+		// previously loaded using the "lightweight" method, ship_create will not find any of the subsystems it is
+		// looking for.  So we have to make sure the model is only loaded for the purposes of error-checking and then
+		// immediately cleared so that it can be subsequently loaded the lab way.
 
 		// reset any existing model/bitmap that is showing
-		labviewer_change_model(NULL);
-	}
-	else
-	{
+		labviewer_change_model(nullptr);
+	} else {
 		obj_delete(Lab_selected_object);
 	}
 
@@ -1417,11 +1567,19 @@ void labviewer_change_ship_lod(Tree* caller)
 	lab_cam_distance = Objects[Lab_selected_object].radius * 1.6f;
 
 	Lab_last_selected_ship = Lab_selected_index;
-	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
+	labviewer_change_model(Ship_info[ship_index].pof_file, ship_index, ship_index);
+
+	// update the displayed POF filename
+	// moved out of labviewer_change_model which doesn't necessarily do much of anything after the first ship is loaded
+	if (Lab_model_num >= 0) {
+		strcpy_s(Lab_model_filename, Ship_info[ship_index].pof_file);
+	} else {
+		memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
+	}
+
 	if (Ship_info[ship_index].uses_team_colors) {
 		Lab_team_color = Ship_info[ship_index].default_team_name;
-	}
-	else {
+	} else {
 		Lab_team_color = "<none>";
 	}
 
@@ -1431,17 +1589,15 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_recalc_camera();
 }
 
-void labviewer_change_ship(Tree *caller)
+void labviewer_change_ship(Tree* caller)
 {
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
+	Lab_last_selected_object = caller->GetSelectedItem();
 
-	labviewer_update_desc_window();
-	labviewer_update_flags_window();
-	labviewer_update_variables_window();
+	labviewer_change_ship_lod(caller);
 }
 
 // ---------------------------  Weapons Window  --------------------------------
-void labviewer_show_tech_model(Tree *caller)
+void labviewer_show_tech_model(Tree* caller)
 {
 	int weap_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
 	Assert(weap_index >= 0);
@@ -1449,18 +1605,25 @@ void labviewer_show_tech_model(Tree *caller)
 	labviewer_change_model(Weapon_info[weap_index].tech_model, caller->GetSelectedItem()->GetData(), weap_index);
 }
 
-void labviewer_show_external_model(Tree *caller)
+void labviewer_show_external_model(Tree* caller)
 {
 	int weap_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
 	Assert(weap_index >= 0);
 
-	labviewer_change_model(Weapon_info[weap_index].external_model_name, caller->GetSelectedItem()->GetData(), weap_index);
+	labviewer_change_model(Weapon_info[weap_index].external_model_name, caller->GetSelectedItem()->GetData(),
+	                       weap_index);
 }
 
 extern void weapon_load_bitmaps(int weapon_index);
-void labviewer_change_weapon(Tree *caller)
+void labviewer_change_weapon(Tree* caller)
 {
-	int weap_index = (int)(caller->GetSelectedItem()->GetData());
+	if (caller == nullptr) {
+		return;
+	}
+
+	int weap_index           = caller->GetSelectedItem()->GetData();
+	Lab_last_selected_object = caller->GetSelectedItem();
+
 	Assert(weap_index >= 0);
 
 	if (Lab_selected_object != -1)
@@ -1472,7 +1635,7 @@ void labviewer_change_weapon(Tree *caller)
 
 	lab_cam_distance = Objects[Lab_selected_object].radius * 20.0f;
 
-	Lab_selected_index = weap_index;
+	Lab_selected_index       = weap_index;
 	Lab_last_selected_weapon = Lab_selected_index;
 
 	labviewer_update_desc_window();
@@ -1482,29 +1645,27 @@ void labviewer_change_weapon(Tree *caller)
 }
 
 // weapon window create function
-void labviewer_make_weap_window(Button*  /*caller*/)
+void labviewer_make_weap_window(Button* /*caller*/)
 {
-	GUIObject *cbp;
-	TreeItem *stip;
+	GUIObject* cbp;
+	TreeItem* stip;
 	int x;
 
 	if (Lab_mode == LAB_MODE_WEAPON) {
 		return;
 	}
 
-
 	// switch the class window to weapon mode
 	labviewer_set_class_window(LAB_MODE_WEAPON);
 
-	if ((Lab_class_window == NULL) || (Lab_class_toolbar == NULL)) {
+	if ((Lab_class_window == nullptr) || (Lab_class_toolbar == nullptr)) {
 		Int3();
 		Lab_mode = LAB_MODE_WEAPON;
 		return;
 	}
 
-
 	// populate the weapons toolbar
-	x = 0;
+	x   = 0;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Description", x, 0, labviewer_make_desc_window));
 
 	x += cbp->GetWidth() + 10;
@@ -1513,42 +1674,49 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
+	weap_list_endpoints.clear();
+	for (int i = 0; i < Num_weapon_subtypes; i++) {
+		weap_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
+	}
 
 	// populate the weapons window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
-
+	weap_tree = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
 	// Unfortunately these are hardcoded
-	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
+	auto type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
 
 	// Add type nodes
 	for (i = 0; i < Num_weapon_subtypes; i++) {
-		type_nodes[i] = cmp->AddItem(NULL, Weapon_subtype_names[i], 0, false);
+		type_nodes[i] = weap_tree->AddItem(nullptr, Weapon_subtype_names[i], 0, false);
 	}
 
 	// Now add the weapons
 	for (i = 0; i < Num_weapon_types; i++) {
 		if (Weapon_info[i].subtype == WP_UNUSED) {
 			continue;
-		}
-		else if (Weapon_info[i].subtype >= Num_weapon_subtypes) {
+		} else if (Weapon_info[i].subtype >= Num_weapon_subtypes) {
 			Warning(LOCATION, "Invalid weapon subtype found on weapon %s", Weapon_info[i].name);
 			continue;
 		}
 
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
-		}
-		else {
+		} else {
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		TreeItem* new_weap_item =
+		    weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
-		//if (Weapon_info[i].tech_model[0] != '\0') {
+		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
+			weap_list_endpoints[Weapon_info[i].subtype].first = new_weap_item;
+		}
+		weap_list_endpoints[Weapon_info[i].subtype].second = new_weap_item;
+
+		// if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
 		//}
-		//if (Weapon_info[i].external_model_name[0] != '\0') {
+		// if (Weapon_info[i].external_model_name[0] != '\0') {
 		//	cmp->AddItem(cwip, "External Model", 0, false, labviewer_show_external_model);
 		//}
 	}
@@ -1565,18 +1733,18 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 
 	// populate the flags window, if it exists
 	// (NOTE: must be done *after* Lab_mode is set properly)
-	if (Lab_flags_window != NULL) {
+	if (Lab_flags_window != nullptr) {
 		Lab_flags_window->SetCaption("Weapon Flags");
 
 		labviewer_populate_flags_window();
 		labviewer_update_flags_window();
 	}
 
-	if (Lab_description_window != NULL) {
+	if (Lab_description_window != nullptr) {
 		labviewer_update_desc_window();
 	}
 
-	if (Lab_variables_window != NULL) {
+	if (Lab_variables_window != nullptr) {
 		Lab_variables_window->SetCaption("Weapon Variables");
 
 		labviewer_populate_variables_window();
@@ -1586,18 +1754,18 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 
 // ----------------------------- Backgrounds -----------------------------------
 
-static TreeItem** Mission_directories = NULL;
-size_t Num_mission_directories = 0;
+static TreeItem** Mission_directories = nullptr;
+size_t Num_mission_directories        = 0;
 
 char skybox_model[MAX_FILENAME_LEN];
 int skybox_flags;
 
 int ambient_light_level;
-extern const char *Neb2_filenames[];
+extern const char* Neb2_filenames[];
 
 char envmap_name[MAX_FILENAME_LEN];
 
-const char* mission_ext_list[] = { ".fs2" };
+const char* mission_ext_list[] = {".fs2"};
 
 SCP_string get_directory_or_vp(const char* path)
 {
@@ -1606,7 +1774,7 @@ SCP_string get_directory_or_vp(const char* path)
 	// Is this a mission in a directory?
 	size_t found = result.find("data" DIR_SEPARATOR_STR "missions");
 
-	if (found == std::string::npos)  // Guess not
+	if (found == std::string::npos) // Guess not
 	{
 		found = result.find(".vp");
 	}
@@ -1616,9 +1784,8 @@ SCP_string get_directory_or_vp(const char* path)
 	result = result.substr(directory_name_pos, found - directory_name_pos);
 
 	found = result.find(DIR_SEPARATOR_CHAR);
-	//Strip directory separators
-	while (found != std::string::npos)
-	{
+	// Strip directory separators
+	while (found != std::string::npos) {
 		result.erase(found, strlen(DIR_SEPARATOR_STR));
 		found = result.find(DIR_SEPARATOR_CHAR);
 	}
@@ -1636,8 +1803,7 @@ void labviewer_change_background_actual()
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (Lab_selected_mission != "None")
-	{
+	if (Lab_selected_mission != "None") {
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
 
@@ -1650,31 +1816,27 @@ void labviewer_change_background_actual()
 		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
 
 		strcpy_s(skybox_model, "");
-		if (optional_string("$Skybox Model:"))
-		{
+		if (optional_string("$Skybox Model:")) {
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
 
-			if (optional_string("+Skybox Orientation:"))
-			{
+			if (optional_string("+Skybox Orientation:")) {
 				stuff_matrix(&skybox_orientation);
 			}
 
 			if (optional_string("+Skybox Flags:")) {
 				skybox_flags = 0;
 				stuff_int(&skybox_flags);
-			}
-			else {
+			} else {
 				skybox_flags = DEFAULT_NMODEL_FLAGS;
 			}
 
-			stars_set_background_model(skybox_model, NULL, skybox_flags);
+			stars_set_background_model(skybox_model, nullptr, skybox_flags);
 			stars_set_background_orientation(&skybox_orientation);
 
 			skip_to_start_of_string("#Background bitmaps");
 		}
 
-		if (optional_string("#Background bitmaps"))
-		{
+		if (optional_string("#Background bitmaps")) {
 			required_string("$Num stars:");
 			stuff_int(&Num_stars);
 			if (Num_stars >= MAX_STARS)
@@ -1683,14 +1845,12 @@ void labviewer_change_background_actual()
 			required_string("$Ambient light level:");
 			stuff_int(&ambient_light_level);
 
-			if (ambient_light_level == 0)
-			{
+			if (ambient_light_level == 0) {
 				ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
 			}
 
-			gr_set_ambient_light(ambient_light_level & 0xff,
-				(ambient_light_level >> 8) & 0xff,
-				(ambient_light_level >> 16) & 0xff);
+			gr_set_ambient_light(ambient_light_level & 0xff, (ambient_light_level >> 8) & 0xff,
+			                     (ambient_light_level >> 16) & 0xff);
 
 			strcpy_s(Neb2_texture_name, "Eraseme3");
 			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
@@ -1708,24 +1868,21 @@ void labviewer_change_background_actual()
 			if (flags[Mission::Mission_Flags::Fullneb]) {
 				// no regular nebula stuff
 				nebula_close();
-			}
-			else
-			{
+			} else {
 				Nebula_index = -1;
 				if (optional_string("+Nebula:")) {
 					char str[MAX_FILENAME_LEN];
 					int z;
 					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 
-					// parse the proper nebula type (full or not)	
+					// parse the proper nebula type (full or not)
 					for (z = 0; z < NUM_NEBULAS; z++) {
 						if (flags[Mission::Mission_Flags::Fullneb]) {
 							if (!stricmp(str, Neb2_filenames[z])) {
 								Nebula_index = z;
 								break;
 							}
-						}
-						else {
+						} else {
 							if (!stricmp(str, Nebula_filenames[z])) {
 								Nebula_index = z;
 								break;
@@ -1751,30 +1908,26 @@ void labviewer_change_background_actual()
 
 					if (optional_string("+Pitch:")) {
 						stuff_int(&Nebula_pitch);
-					}
-					else {
+					} else {
 						Nebula_pitch = 0;
 					}
 
 					if (optional_string("+Bank:")) {
 						stuff_int(&Nebula_bank);
-					}
-					else {
+					} else {
 						Nebula_bank = 0;
 					}
 
 					if (optional_string("+Heading:")) {
 						stuff_int(&Nebula_heading);
-					}
-					else {
+					} else {
 						Nebula_heading = 0;
 					}
 				}
 
 				if (Nebula_index >= 0) {
 					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-				}
-				else {
+				} else {
 					nebula_close();
 				}
 			}
@@ -1782,12 +1935,10 @@ void labviewer_change_background_actual()
 			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
 
 			Num_backgrounds = 0;
-			extern void parse_one_background(background_t* background);
-			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
-			{
+			extern void parse_one_background(background_t * background);
+			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:")) {
 				// don't allow overflow; just make sure the last background is the last read
-				if (Num_backgrounds >= MAX_BACKGROUNDS)
-				{
+				if (Num_backgrounds >= MAX_BACKGROUNDS) {
 					Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
 					Num_backgrounds = MAX_BACKGROUNDS - 1;
 				}
@@ -1802,11 +1953,10 @@ void labviewer_change_background_actual()
 				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
 			}
 		}
-	}
-	else {
+	} else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
 		Motion_debris_override = true;
-		Num_stars = 0;
+		Num_stars              = 0;
 	}
 }
 
@@ -1817,16 +1967,15 @@ void labviewer_change_background(Tree* caller)
 	labviewer_change_background_actual();
 }
 
-void lab_background_window_close(GUIObject*  /*caller*/) 
-{
-	Lab_background_window = NULL;
-}
+void lab_background_window_close(GUIObject* /*caller*/) { Lab_background_window = nullptr; }
 
-void labviewer_make_background_window(Button*  /*caller*/)
+void labviewer_make_background_window(Button* /*caller*/)
 {
-	if (Lab_background_window != NULL) return;
+	if (Lab_background_window != nullptr)
+		return;
 
-	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
+	Lab_background_window = (Window*)Lab_screen->Add(
+	    new Window("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
 	Lab_background_window->SetCloseFunction(lab_background_window_close);
 	SCP_vector<SCP_string> missions;
 
@@ -1845,45 +1994,147 @@ void labviewer_make_background_window(Button*  /*caller*/)
 	}
 
 	Num_mission_directories = directories.size();
-	Mission_directories = new TreeItem*[Num_mission_directories];
+	Mission_directories     = new TreeItem*[Num_mission_directories];
 
 	Tree* missiontree = (Tree*)Lab_background_window->AddChild(new Tree("Missions", 0, 0));
-	missiontree->AddItem(NULL, "None", 0, true, labviewer_change_background);
+	missiontree->AddItem(nullptr, "None", 0, true, labviewer_change_background);
 
 	int i = 0;
-	for (auto directory : directories)
-	{
+	for (auto directory : directories) {
 		auto directoryItem = Mission_directories[i];
-		directoryItem = missiontree->AddItem(NULL, directory.first);
+		directoryItem      = missiontree->AddItem(nullptr, directory.first);
 
-		for (const auto& Lab_mission : directory.second)
-		{
+		for (const auto& Lab_mission : directory.second) {
 			missiontree->AddItem(directoryItem, Lab_mission, 0, true, labviewer_change_background);
 		}
 	}
 }
 
 // ----------------------------- Lab functions ---------------------------------
+bool is_same_obj_type(int curr, int next)
+{
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Ship_info[curr].species == Ship_info[next].species) {
+			return true;
+		}
+		return false;
+	}
+
+	if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Weapon_info[curr].subtype == Weapon_info[next].subtype) {
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+int lab_get_type_idx()
+{
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_info* si = &Ship_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < (int)Species_info.size(); i++) {
+			species_info specie = Species_info[i];
+			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
+				return i;
+			}
+		}
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		weapon_info* wi = &Weapon_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < Num_weapon_subtypes; i++) {
+			if (i == wi->subtype) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
+// plieblang - scroll through entries with the arrow keys
+void lab_scroll_up()
+{
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
+	// if we're at the beginning of the list, don't do anything
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int prev_obj_idx = ((TreeItem*)Lab_last_selected_object->prev)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->prev;
+		curr_obj_idx             = prev_obj_idx;
+		prev_obj_idx             = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, prev_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+}
+
+void lab_scroll_down()
+{
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
+	// if we're at the end of the list, don't do anything
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int next_obj_idx = ((TreeItem*)Lab_last_selected_object->next)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->next;
+		curr_obj_idx             = next_obj_idx;
+		next_obj_idx             = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, next_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+}
 
 void lab_init()
 {
-	GUIObject *cbp;
+	GUIObject* cbp;
 	int x, i;
 
 	weapon_pause_sounds();
 
 	gr_set_clear_color(0, 0, 0);
 
-
-	//We start by creating the screen/toolbar
+	// We start by creating the screen/toolbar
 	Lab_screen = GUI_system.PushScreen(new GUIScreen("Lab"));
 
-	Lab_toolbar = (Window*)Lab_screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+	Lab_toolbar = (Window*)Lab_screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y,
+	                                                  -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 
 	// start filling the main toolbar
-	x = 0;
+	x   = 0;
 	cbp = Lab_toolbar->AddChild(new Button("Ships", x, 0, labviewer_make_ship_window));
-	
+
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
 
@@ -1899,15 +2150,18 @@ void lab_init()
 	x += cbp->GetWidth() + 20;
 	cbp = Lab_toolbar->AddChild(new Button("Exit", x, 0, labviewer_exit));
 
-
 	// reset some defaults, just to be sure
-	Lab_model_pos = vmd_zero_vector;
-	Lab_mode = LAB_MODE_NONE;
-	Lab_thrust_len = 1.0f;
+	Lab_model_pos        = vmd_zero_vector;
+	Lab_mode             = LAB_MODE_NONE;
+	Lab_thrust_len       = 1.0f;
 	Lab_thrust_afterburn = false;
 	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
 		Lab_weaponmodel_num[i] = -1;
 	}
+
+	orig_cmdline_ambient = Cmdline_ambient_factor;
+	orig_cmdline_direct = static_light_factor;
+	orig_cmdline_bloom = Cmdline_bloom_intensity;
 
 	// save detail options
 	Lab_detail_texture_save = Detail.hardware_textures;
@@ -1916,9 +2170,11 @@ void lab_init()
 
 	// the default insignia bitmap
 	Lab_insignia_index = 0;
-	Assert((Lab_insignia_index < Num_pilot_squad_images));
+	if (Num_pilot_squad_images > 0) {
+		Assert((Lab_insignia_index < Num_pilot_squad_images));
 
-	Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
+		Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
+	}
 
 	// enable post-processing by default in the lab
 	PostProcessing_override = false;
@@ -1928,7 +2184,7 @@ void lab_init()
 
 	obj_init();
 
-	//Reset the background
+	// Reset the background
 	labviewer_change_background_actual();
 
 	flagset<Object::Object_Flags> obs_flags;
@@ -1949,21 +2205,21 @@ void lab_init()
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 
 	lab_cam_distance = 100.0f;
-	lab_cam_phi = 1.24f;
-	lab_cam_theta = 2.25f;
+	lab_cam_phi      = 1.24f;
+	lab_cam_theta    = 2.25f;
 
-	Lab_selected_index = -1;
-	Lab_last_selected_ship = -1;
-	Lab_selected_object = -1;
+	Lab_selected_index       = -1;
+	Lab_last_selected_ship   = -1;
+	Lab_selected_object      = -1;
 	Lab_last_selected_weapon = -1;
-	Lab_model_num = -1;
+	Lab_model_num            = -1;
 
-	Lab_selected_mission = "None";
+	Lab_selected_mission   = "None";
 	Lab_skybox_orientation = vmd_identity_matrix;
 }
 
-#include "controlconfig/controlsconfig.h"
 #include "lab.h"
+#include "controlconfig/controlsconfig.h"
 void lab_do_frame(float frametime)
 {
 	GR_DEBUG_SCOPE("Lab Frame");
@@ -1978,35 +2234,33 @@ void lab_do_frame(float frametime)
 	bool test1 = (GUI_system.OnFrame(frametime, !(Trackball_active) ? true : false, false) == GSOF_NOTHINGPRESSED);
 
 	if (test1) {
-		int key = GUI_system.GetKeyPressed();
+		int key    = GUI_system.GetKeyPressed();
 		int status = GUI_system.GetStatus();
 
 		// set trackball modes
 		if (status & GST_MOUSE_LEFT_BUTTON) {
 			Trackball_active = 1;
-			Trackball_mode = 1;	// rotate viewed object
+			Trackball_mode   = 1; // rotate viewed object
 
 			if (key_get_shift_status() & KEY_SHIFTED) {
-				Trackball_mode = 2;	// zoom
+				Trackball_mode = 2; // zoom
 			}
-		}
-		else if (status & GST_MOUSE_RIGHT_BUTTON) {
+		} else if (status & GST_MOUSE_RIGHT_BUTTON) {
 			Trackball_active = 1;
-			Trackball_mode = 3;	// rotate camera
-		}
-		else if (!mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON)) {
+			Trackball_mode   = 3; // rotate camera
+		} else if (!mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON)) {
 			// reset trackball modes
 			Trackball_active = 0;
-			Trackball_mode = 0;
+			Trackball_mode   = 0;
 		}
 
-		//Due to switch scoping rules, this has to be declared here
+		// Due to switch scoping rules, this has to be declared here
 		SCP_map<SCP_string, team_color>::iterator color_itr = Team_Colors.find(Lab_team_color);
 		// handle any key presses
 		switch (key) {
 			// switch between the current insignia bitmap to render with
 		case KEY_DIVIDE: {
-			if (!(Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA)) {
+			if (!(Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA) || (Num_pilot_squad_images == 0)) {
 				break;
 			}
 
@@ -2023,7 +2277,7 @@ void lab_do_frame(float frametime)
 			break;
 		}
 
-						 // change between damage lightning effects
+			// change between damage lightning effects
 		case KEY_L:
 			// REIMPLEMENT
 			break;
@@ -2031,51 +2285,22 @@ void lab_do_frame(float frametime)
 			// Adjust FXAA presets
 		case KEY_0:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 0;
+				Gr_aa_mode = AntiAliasMode::FXAA_Low;
 			break;
 		case KEY_1:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 1;
+				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
 			break;
 		case KEY_2:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 2;
-			break;
-		case KEY_3:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 3;
-			break;
-		case KEY_4:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 4;
-			break;
-		case KEY_5:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 5;
-			break;
-		case KEY_6:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 6;
-			break;
-		case KEY_7:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 7;
-			break;
-		case KEY_8:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 8;
-			break;
-		case KEY_9:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 9;
+				Gr_aa_mode = AntiAliasMode::FXAA_High;
 			break;
 
 		case KEY_T:
 			if (color_itr == Team_Colors.begin()) {
-				color_itr = --Team_Colors.end();
+				color_itr      = --Team_Colors.end();
 				Lab_team_color = color_itr->first;
-			}
-			else {
+			} else {
 				--color_itr;
 				Lab_team_color = color_itr->first;
 			}
@@ -2088,9 +2313,44 @@ void lab_do_frame(float frametime)
 			Lab_team_color = color_itr->first;
 			break;
 
+		case KEY_V:
+			reset_view();
+			break;
+
+		case KEY_UP:
+			lab_scroll_up();
+			break;
+
+		case KEY_DOWN:
+			lab_scroll_down();
+			break;
+
+		case KEY_R:
+			switch (Lab_rotation_mode) {
+			case Lab_rotation_modes::Both:
+				Lab_rotation_mode = Lab_rotation_modes::Yaw;
+				break;
+			case Lab_rotation_modes::Yaw:
+				Lab_rotation_mode = Lab_rotation_modes::Pitch;
+				break;
+			case Lab_rotation_modes::Pitch:
+				Lab_rotation_mode = Lab_rotation_modes::Roll;
+				break;
+			case Lab_rotation_modes::Roll:
+				Lab_rotation_mode = Lab_rotation_modes::Both;
+				break;
+			}
+
+			break;
+		case KEY_S:
+			Lab_manual_rotation_speed_divisor *= 10.f;
+			if (Lab_manual_rotation_speed_divisor > 10000.f)
+				Lab_manual_rotation_speed_divisor = 100.f;
+			break;
+
 			// bail...
 		case KEY_ESC:
-			labviewer_exit(NULL);
+			labviewer_exit(nullptr);
 			break;
 
 		default: {
@@ -2119,25 +2379,24 @@ void lab_close()
 {
 	int i;
 
-	Lab_toolbar = NULL;
-	Lab_class_toolbar = NULL;
-	Lab_class_window = NULL;
-	Lab_flags_window = NULL;
-	Lab_render_options_window = NULL;
-	Lab_background_window = NULL;
+	Lab_toolbar               = nullptr;
+	Lab_class_toolbar         = nullptr;
+	Lab_class_window          = nullptr;
+	Lab_flags_window          = nullptr;
+	Lab_render_options_window = nullptr;
+	Lab_background_window     = nullptr;
 
 	delete Lab_screen;
 
-	Lab_screen = NULL;
+	Lab_screen = nullptr;
 
-
-	if (Lab_species_nodes != NULL) {
+	if (Lab_species_nodes != nullptr) {
 		for (i = 0; i < (int)Species_info.size(); i++) {
 			delete Lab_species_nodes[i];
 		}
 
 		delete[] Lab_species_nodes;
-		Lab_species_nodes = NULL;
+		Lab_species_nodes = nullptr;
 	}
 
 	if (Lab_insignia_bitmap >= 0) {
@@ -2166,29 +2425,29 @@ void lab_close()
 
 	memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
 
-	Basemap_override = false;
-	Envmap_override = false;
-	Specmap_override = false;
-	Normalmap_override = false;
-	Heightmap_override = false;
-	Glowpoint_override = false;
+	Basemap_override        = false;
+	Envmap_override         = false;
+	Specmap_override        = false;
+	Normalmap_override      = false;
+	Heightmap_override      = false;
+	Glowpoint_override      = false;
 	PostProcessing_override = false;
 
-	Lab_Basemap_override = false;
-	Lab_Glowmap_override = false;
-	Lab_Specmap_override = false;
-	Lab_Envmap_override = false;
+	Lab_Basemap_override   = false;
+	Lab_Glowmap_override   = false;
+	Lab_Specmap_override   = false;
+	Lab_Envmap_override    = false;
 	Lab_Normalmap_override = false;
 	Lab_Heightmap_override = false;
 
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;
 
-	//Reset ambient factor
+	// Reset ambient factor
 	gr_calculate_ambient_factor(Cmdline_ambient_factor);
 
 	weapon_unpause_sounds();
-	//audiostream_unpause_all();
+	// audiostream_unpause_all();
 	game_flush();
 
 	cam_delete(Lab_cam);

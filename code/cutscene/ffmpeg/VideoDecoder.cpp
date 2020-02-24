@@ -158,5 +158,8 @@ void VideoDecoder::finishDecoding() {
 	}
 #endif
 }
+void VideoDecoder::flushBuffers() {
+	avcodec_flush_buffers(m_status->videoCodecCtx);
+}
 }
 }

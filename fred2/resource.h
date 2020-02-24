@@ -20,8 +20,6 @@
 #define IDD_SHIP_CLASS_EDITOR           161
 #define IDD_AI_CLASS_EDITOR             162
 #define IDD_MESSAGE_EDITOR              163
-#define IDD_SHIP_GOALSS                 165
-#define IDD_SHIP_GOALS2                 166
 #define IDD_SHIP_GOALS                  166
 #define IDD_SHIP_GOALS_EDITOR           166
 #define IDD_MODEL_EDITOR                168
@@ -125,6 +123,7 @@
 #define IDB_CONTAINER                   316
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
+#define IDD_WARP_PARAMS                 324
 #define IDD_EDIT_CONTAINER              320
 #define IDD_ADD_NEW_CONTAINER           321
 #define IDC_SHIP_CLASS                  1003
@@ -1079,13 +1078,16 @@
 #define IDC_ALWAYS_SHOW_GOALS2          1550
 #define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
+#define IDC_OVERRIDE_HASHCOMMAND        1551
 #define IDC_TEXTURES                    1552
 #define IDC_OLD_TEXTURE_LIST            1553
 #define IDC_RESTRICT_ARRIVAL            1553
 #define IDC_ENABLE_SPECIAL_HITPOINTS    1554
 #define IDC_RESTRICT_DEPARTURE          1554
 #define IDC_SPECIAL_SHIELDS             1555
+#define IDC_CUSTOM_WARPIN_PARAMS        1555
 #define IDC_SPECIAL_HULL                1556
+#define IDC_CUSTOM_WARPOUT_PARAMS       1556
 #define IDC_LOADING_SCREEN_BUTTON1024   1557
 #define IDC_ENABLE_SPECIAL_SHIELD       1557
 #define IDC_LOADING_SCREEN640           1558
@@ -1199,12 +1201,26 @@
 #define IDC_NO_DISABLED_SELF_DESTRUCT   1644
 #define IDC_ETERNAL                     1644
 #define IDC_TYPE_ETERNAL                1645
-#define IDC_CONTAINER_NAME              1646
-#define IDC_NEW_CONTAINER_NAME          1647
-#define IDC_CONTAINER_REMOVE            1648
-#define IDC_ADD_NEW_CONTAINER           1649
-#define IDC_KEY_TYPE                    1650
-#define IDC_DELETE_CONTAINER            1651
+#define IDC_WARP_TYPE                   1646
+#define IDC_START_SOUND                 1647
+#define IDC_END_SOUND                   1648
+#define IDC_WARPOUT_ENGAGE_TIME         1649
+#define IDC_SPEED                       1650
+#define IDC_STATIC_WARPOUT_ENGAGE_TIME  1651
+#define IDC_ACCEL_EXP                   1652
+#define IDC_RADIUS                      1653
+#define IDC_ANIM                        1654
+#define IDC_PLAYER_WARPOUT_SPEED        1655
+#define IDC_WARPOUT_ENGAGE_TIME_LABEL   1656
+#define IDC_ACCEL_EXP_LABEL             1657
+#define IDC_ANIM_LABEL                  1658
+#define IDC_PLAYER_WARPOUT_SPEED_LABEL  1659
+#define IDC_CONTAINER_NAME              1660
+#define IDC_NEW_CONTAINER_NAME          1661
+#define IDC_CONTAINER_REMOVE            1662
+#define IDC_ADD_NEW_CONTAINER           1663
+#define IDC_KEY_TYPE                    1664
+#define IDC_DELETE_CONTAINER            1665
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1499,9 +1515,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        322
+#define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1651
+#define _APS_NEXT_CONTROL_VALUE         1666
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

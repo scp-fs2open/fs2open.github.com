@@ -43,7 +43,7 @@ bool cockpit_disp_info_h::isValid() {
 	return true;
 }
 
-ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h, "display info", "Ship cockpit display information handle");
+ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h, "display_info", "Ship cockpit display information handle");
 
 ADE_FUNC(getName, l_DisplayInfo, NULL, "Gets the name of this cockpit display as defined in ships.tbl", "string", "Name string or empty string on error")
 {
@@ -123,7 +123,8 @@ ADE_FUNC(getBackgroundFileName, l_DisplayInfo, NULL, "Gets the file name of the 
 	return ade_set_args(L, "s", cdi->bg_filename);
 }
 
-ADE_FUNC(getSize, l_DisplayInfo, NULL, "Gets the size of this cockpit display", "number, number", "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize, l_DisplayInfo, nullptr, "Gets the size of this cockpit display", ade_type_info({"number", "number"}),
+         "Width and height of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -141,7 +142,8 @@ ADE_FUNC(getSize, l_DisplayInfo, NULL, "Gets the size of this cockpit display", 
 	return ade_set_args(L, "ii", cdi->size[0], cdi->size[1]);
 }
 
-ADE_FUNC(getOffset, l_DisplayInfo, NULL, "Gets the offset of this cockpit display", "number, number", "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset, l_DisplayInfo, nullptr, "Gets the offset of this cockpit display",
+         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -233,10 +235,10 @@ ADE_FUNC(startRendering, l_CockpitDisplay, "[boolean setClip = true]", "Starts r
 	bool setClip = true;
 
 	if (!ade_get_args(L, "o|b", l_CockpitDisplay.GetPtr(&cdh), &setClip))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (!cdh->isValid())
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	int bm_handle = ship_start_render_cockpit_display(cdh->GetId());
 
@@ -246,7 +248,7 @@ ADE_FUNC(startRendering, l_CockpitDisplay, "[boolean setClip = true]", "Starts r
 		gr_set_clip(cd->offset[0], cd->offset[1], cd->size[0], cd->size[1], GR_RESIZE_NONE);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(bm_handle));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(bm_handle)));
 }
 
 ADE_FUNC(stopRendering, l_CockpitDisplay, NULL, "Stops rendering to this cockpit display", "boolean", "true if successfull, false otherwise")
@@ -270,17 +272,17 @@ ADE_FUNC(getBackgroundTexture, l_CockpitDisplay, NULL, "Gets the background text
 	cockpit_display_h *cdh = NULL;
 
 	if (!ade_get_args(L, "o", l_CockpitDisplay.GetPtr(&cdh)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (!cdh->isValid())
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	cockpit_display *cd = cdh->Get();
 
 	if (cd == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(cd->background));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(cd->background)));
 }
 
 ADE_FUNC(getForegroundTexture, l_CockpitDisplay, NULL, "Gets the foreground texture handle of this cockpit display<br>"
@@ -289,20 +291,21 @@ ADE_FUNC(getForegroundTexture, l_CockpitDisplay, NULL, "Gets the foreground text
 	cockpit_display_h *cdh = NULL;
 
 	if (!ade_get_args(L, "o", l_CockpitDisplay.GetPtr(&cdh)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (!cdh->isValid())
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	cockpit_display *cd = cdh->Get();
 
 	if (cd == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(cd->foreground));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(cd->foreground)));
 }
 
-ADE_FUNC(getSize, l_CockpitDisplay, NULL, "Gets the size of this cockpit display", "number, number", "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize, l_CockpitDisplay, nullptr, "Gets the size of this cockpit display",
+         ade_type_info({"number", "number"}), "Width and height of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 
@@ -320,7 +323,8 @@ ADE_FUNC(getSize, l_CockpitDisplay, NULL, "Gets the size of this cockpit display
 	return ade_set_args(L, "ii", cd->size[0], cd->size[1]);
 }
 
-ADE_FUNC(getOffset, l_CockpitDisplay, NULL, "Gets the offset of this cockpit display", "number, number", "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset, l_CockpitDisplay, nullptr, "Gets the offset of this cockpit display",
+         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 
@@ -389,7 +393,9 @@ ADE_FUNC(__len, l_CockpitDisplayInfos, NULL, "Number of cockpit displays for thi
 	return ade_set_args(L, "i", (int) cdih->Get()->displays.size());
 }
 
-ADE_INDEXER(l_CockpitDisplayInfos, "number/string", "Returns the handle at the requested index or the handle with the specified name", "display info", "display handle or invalid handle on error")
+ADE_INDEXER(l_CockpitDisplayInfos, "number/string",
+            "Returns the handle at the requested index or the handle with the specified name", "display_info",
+            "display handle or invalid handle on error")
 {
 	if (lua_isnumber(L, 2))
 	{
@@ -413,7 +419,7 @@ ADE_INDEXER(l_CockpitDisplayInfos, "number/string", "Returns the handle at the r
 	else
 	{
 		cockpit_displays_info_h *cdih = NULL;
-		char *name = NULL;
+		const char* name              = nullptr;
 
 		if (!ade_get_args(L, "os", l_CockpitDisplayInfos.GetPtr(&cdih), &name))
 		{
@@ -537,7 +543,7 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 	else
 	{
 		cockpit_displays_h *cdh = NULL;
-		char *name = NULL;
+		const char* name        = nullptr;
 
 		if (!ade_get_args(L, "os", l_CockpitDisplays.GetPtr(&cdh), &name))
 		{

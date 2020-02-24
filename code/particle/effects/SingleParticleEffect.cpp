@@ -16,17 +16,22 @@ namespace effects {
 SingleParticleEffect::SingleParticleEffect(const SCP_string& name)
 	: ParticleEffect(name) {}
 
-bool SingleParticleEffect::processSource(const ParticleSource* source) {
+bool SingleParticleEffect::processSource(ParticleSource* source) {
 	if (!m_timing.continueProcessing(source)) {
 		return false;
 	}
 
-	particle_info info;
+	// This uses the internal features of the timing class for determining if and how many effects should be triggered
+	// this frame
+	util::EffectTiming::TimingState time_state;
+	while (m_timing.shouldCreateEffect(source, time_state)) {
+		particle_info info;
 
-	source->getOrigin()->applyToParticleInfo(info);
-	info.vel = vmd_zero_vector;
+		source->getOrigin()->applyToParticleInfo(info);
+		info.vel = vmd_zero_vector;
 
-	m_particleProperties.createParticle(info);
+		m_particleProperties.createParticle(info);
+	}
 
 	// Continue processing this source
 	return true;

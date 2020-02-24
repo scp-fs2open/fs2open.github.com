@@ -62,7 +62,7 @@ typedef struct config_item {
 	short key_default;		//!< default key bound to action
 	short joy_default;		//!< default joystick button bound to action
 	char tab;				//!< what tab (category) it belongs in
-	bool hasXSTR;			//!< whether we should translate this with an XSTR
+	int indexXSTR;			//!< what string index we should use to translate this with an XSTR
 	const char *text;		//!< describes the action in the config screen
 	char type;				//!< manner control should be checked in
 	short key_id;			//!< actual key bound to action
@@ -270,6 +270,15 @@ enum IoActionId  {
 	//!< ----------------------------
 	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
 
+	//!< @n
+	//!< Custom control slots
+	//!< ----------------------------
+	CUSTOM_CONTROL_1								= 119,
+	CUSTOM_CONTROL_2								= 120,
+	CUSTOM_CONTROL_3								= 121,
+	CUSTOM_CONTROL_4								= 122,
+	CUSTOM_CONTROL_5								= 123,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -277,12 +286,6 @@ enum IoActionId  {
 };
 
 extern int Failed_key_index;
-extern int Invert_heading;
-extern int Invert_pitch;
-extern int Invert_roll;
-extern int Invert_thrust;
-extern int Disable_axis2;
-extern int Disable_axis3;
 
 extern int Axis_map_to[];
 extern int Invert_axis[];
@@ -336,7 +339,6 @@ int check_control(int id, int key = -1);
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
 void control_used(int id);
 void control_config_clear();
-void clear_key_binding(short key);
 void control_check_indicate();
 void control_config_clear_used_status();
 

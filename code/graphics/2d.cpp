@@ -14,28 +14,25 @@
 #include <windowsx.h>
 #endif
 
-#include <climits>
-#include <algorithm>
+#include "material.h"
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "gamesequence/gamesequence.h" //WMC - for scripting hooks in gr_flip()
+#include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/font.h"
-#include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
 #include "graphics/grstub.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
-#include "graphics/opengl/gropengldraw.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
-#include "io/keycontrol.h" // m!m
-#include "io/timer.h"
+#include "io/mouse.h"
+#include "libs/jansson.h"
+#include "options/Option.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "popup/popup.h"
@@ -44,13 +41,16 @@
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 
-#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
+#include <SDL_surface.h>
+
+#include <algorithm>
+#include <climits>
+
+#if (SDL_VERSION_ATLEAST(1, 2, 7))
 #include "SDL_cpuinfo.h"
 #endif
 
-#include "SDL_surface.h"
-
-const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
+const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
 
@@ -71,8 +71,65 @@ int Gr_inited = 0;
 
 uint Gr_signature = 0;
 
-float Gr_gamma = 1.8f;
-int Gr_gamma_int = 180;
+float Gr_gamma = 1.0f;
+
+static SCP_vector<float> gamma_value_enumerator()
+{
+	SCP_vector<float> vals;
+	// We want to divide the possible values into increments of 0.05
+	constexpr auto UPPER_LIMIT = (int)(5.0 / 0.05);
+
+	for (int i = 2; i <= UPPER_LIMIT; ++i) {
+		vals.push_back(0.05f * i);
+	}
+
+	return vals;
+}
+static SCP_string gamma_display(float value)
+{
+	SCP_string out;
+	sprintf(out, "%.2f", value);
+	return out;
+}
+
+static bool gamma_change_listener(float new_val, bool initial)
+{
+	if (!initial) {
+		// This is not valid for the initial config load since that happens before the graphics system is initialized
+		gr_set_gamma(new_val);
+	} else {
+		Gr_gamma = new_val;
+	}
+
+	return true;
+}
+
+static auto GammaOption =
+    options::OptionBuilder<float>("Graphics.Gamma", "Brightness", "The brighness value used for the game window")
+        .category("Graphics")
+        .default_val(1.0f)
+        .enumerator(gamma_value_enumerator)
+        .display(gamma_display)
+        .change_listener(gamma_change_listener)
+        .finish();
+
+
+const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
+                                                                  { 1, "Low" },
+                                                                  { 2, "Medium" },
+                                                                  { 3, "High" },
+                                                                  { 4, "Ultra" }, };
+
+const auto LightingOption = options::OptionBuilder<int>("Graphics.Lighting",
+                                                        "Lighting",
+                                                        "Level of detail of the lighting").importance(1).category(
+	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool initial) {
+	Detail.lighting = val;
+	if (!initial) {
+		gr_recompile_all_shaders(nullptr);
+	}
+	return true;
+}).finish();
 
 // z-buffer stuff
 int gr_zbuffering = 0;
@@ -103,6 +160,253 @@ float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
 
+bool Deferred_lighting = false;
+bool High_dynamic_range = false;
+
+static ushort* Gr_original_gamma_ramp = nullptr;
+
+static int videodisplay_deserializer(const json_t* value)
+{
+	int id;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &id) != 0) {
+		throw json_exception(err);
+	}
+
+	return id;
+}
+static json_t* videodisplay_serializer(int value) { return json_pack("i", value); }
+static SCP_vector<int> videodisplay_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < SDL_GetNumVideoDisplays(); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string videodisplay_display(int id)
+{
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, SDL_GetDisplayName(id));
+	return out;
+}
+static bool videodisplay_change(int display, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+
+	auto window = os::getSDLMainWindow();
+	if (window == nullptr) {
+		return false;
+	}
+
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	return true;
+}
+static auto VideoDisplayOption =
+    options::OptionBuilder<int>("Graphics.Display", "Primary display", "The display used for rendering.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Beginner)
+        .deserializer(videodisplay_deserializer)
+        .serializer(videodisplay_serializer)
+        .enumerator(videodisplay_enumerator)
+        .display(videodisplay_display)
+        .default_val(0)
+        .change_listener(videodisplay_change)
+        .importance(99)
+        .finish();
+
+struct ResolutionInfo {
+	uint32_t width  = 0;
+	uint32_t height = 0;
+	ResolutionInfo(uint32_t _width, uint32_t _height) : width(_width), height(_height) {}
+	ResolutionInfo() = default;
+	friend bool operator==(const ResolutionInfo& lhs, const ResolutionInfo& rhs)
+	{
+		return lhs.width == rhs.width && lhs.height == rhs.height;
+	}
+	friend bool operator!=(const ResolutionInfo& lhs, const ResolutionInfo& rhs) { return !(rhs == lhs); }
+};
+
+static ResolutionInfo resolution_deserializer(const json_t* el)
+{
+	int width;
+	int height;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)el, &err, 0, "{s:i, s:i}", "width", &width, "height", &height) != 0) {
+		throw json_exception(err);
+	}
+
+	return {(uint32_t)width, (uint32_t)height};
+}
+static json_t* resolution_serializer(const ResolutionInfo& value)
+{
+	return json_pack("{s:i, s:i}", "width", value.width, "height", value.height);
+}
+static SCP_vector<ResolutionInfo> resolution_enumerator()
+{
+	SCP_vector<ResolutionInfo> out;
+	auto display = VideoDisplayOption->getValue();
+	for (auto i = 0; i < SDL_GetNumDisplayModes(display); ++i) {
+		SDL_DisplayMode mode;
+		if (SDL_GetDisplayMode(display, i, &mode) != 0) {
+			continue;
+		}
+
+		auto res = ResolutionInfo(mode.w, mode.h);
+		if (std::find(out.begin(), out.end(), res) == out.end()) {
+			out.push_back(res);
+		}
+	}
+
+	return out;
+}
+static SCP_string resolution_display(const ResolutionInfo& info)
+{
+	SCP_string str;
+	sprintf(str, "%dx%d", info.width, info.height);
+	return str;
+}
+static ResolutionInfo resolution_default()
+{
+	SDL_DisplayMode mode;
+	if (SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue(), &mode) != 0) {
+		return {};
+	}
+	return {(uint32_t)mode.w, (uint32_t)mode.h};
+}
+static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	return false;
+	// The following code should change the size of the window properly but FSO currently can't handle that
+	/*
+	auto window = os::getSDLMainWindow();
+	if (window == nullptr) {
+	    return;
+	}
+
+	auto display = VideoDisplayOption->getValue();
+	if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
+	    SDL_DisplayMode target;
+	    target.w            = info.width;
+	    target.h            = info.height;
+	    target.format       = 0; // don't care
+	    target.refresh_rate = 0; // don't care
+	    target.driverdata   = 0; // initialize to 0
+
+	    SDL_DisplayMode closest;
+	    if (SDL_GetClosestDisplayMode(display, &target, &closest) == nullptr) {
+	        return;
+	    }
+
+	    SDL_SetWindowDisplayMode(window, &closest);
+	} else {
+	    SDL_SetWindowSize(window, info.width, info.height);
+	    // Recenter the window
+	    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	}
+	 */
+}
+static auto ResolutionOption =
+    options::OptionBuilder<ResolutionInfo>("Graphics.Resolution", "Resolution", "The rendering resolution.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Beginner)
+        .deserializer(resolution_deserializer)
+        .serializer(resolution_serializer)
+        .enumerator(resolution_enumerator)
+        .display(resolution_display)
+        .default_func(resolution_default)
+        .change_listener(resolution_change)
+        .importance(100)
+        .finish();
+
+bool Gr_enable_soft_particles = false;
+
+static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
+                                                               "Enable or disable soft particle rendering.")
+                                      .category("Graphics")
+                                      .level(options::ExpertLevel::Advanced)
+                                      .default_val(true)
+                                      .bind_to_once(&Gr_enable_soft_particles)
+                                      .importance(68)
+                                      .finish();
+
+flagset<FramebufferEffects> Gr_framebuffer_effects;
+
+static auto FramebufferEffectsOption =
+    options::OptionBuilder<flagset<FramebufferEffects>>(
+        "Graphics.FramebufferEffects", "Framebuffer effects",
+        "Controls which framebuffer effects will be applied to the scene.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Advanced)
+        .values({{{}, "None"},
+                 {{FramebufferEffects::Shockwaves}, "Shockwaves"},
+                 {{FramebufferEffects::Thrusters}, "Thrusters"},
+                 {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, "All"}})
+        .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
+        .bind_to_once(&Gr_framebuffer_effects)
+        .importance(77)
+        .finish();
+
+AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
+AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
+
+static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
+                                                             "Controls the anti aliasing mode of the engine.")
+                           .category("Graphics")
+                           .level(options::ExpertLevel::Advanced)
+                           .values({{AntiAliasMode::None, "None"},
+                                    {AntiAliasMode::FXAA_Low, "FXAA Low"},
+                                    {AntiAliasMode::FXAA_Medium, "FXAA Medium"},
+                                    {AntiAliasMode::FXAA_High, "FXAA High"},
+                                    {AntiAliasMode::SMAA_Low, "SMAA Low"},
+                                    {AntiAliasMode::SMAA_Medium, "SMAA Medium"},
+                                    {AntiAliasMode::SMAA_High, "SMAA High"},
+                                    {AntiAliasMode::SMAA_Ultra, "SMAA Ultra"}})
+                           .default_val(AntiAliasMode::None)
+                           .bind_to(&Gr_aa_mode)
+                           .importance(79)
+                           .finish();
+
+bool gr_is_fxaa_mode(AntiAliasMode mode)
+{
+	return mode == AntiAliasMode::FXAA_Low || mode == AntiAliasMode::FXAA_Medium || mode == AntiAliasMode::FXAA_High;
+}
+bool gr_is_smaa_mode(AntiAliasMode mode) {
+	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
+}
+
+bool Gr_post_processing_enabled = true;
+
+static auto PostProcessOption =
+    options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
+                                 "Controls whether post processing is enabled in the engine")
+        .category("Graphics")
+        .level(options::ExpertLevel::Advanced)
+        .default_val(false)
+        .bind_to_once(&Gr_post_processing_enabled)
+        .importance(69)
+        .finish();
+
+bool Gr_enable_vsync = true;
+
+static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertical Sync",
+                                                       "Controls how the engine does vertical synchronization")
+                              .category("Graphics")
+                              .level(options::ExpertLevel::Advanced)
+                              .default_val(true)
+                              .bind_to_once(&Gr_enable_vsync)
+                              .importance(70)
+                              .finish();
+
+static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
+
 // Forward definitions
 static void uniform_buffer_managers_init();
 static void uniform_buffer_managers_deinit();
@@ -111,7 +415,8 @@ static void uniform_buffer_managers_retire_buffers();
 static void gpu_heap_init();
 static void gpu_heap_deinit();
 
-void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
+void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h,
+                         bool force_stretch)
 {
 	bool do_zoom = zoom_w > 0 && zoom_h > 0 && (zoom_w != w || zoom_h != h);
 
@@ -650,6 +955,15 @@ void gr_close()
 		return;
 	}
 
+	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
+		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
+		                       (Gr_original_gamma_ramp + 512));
+	}
+
+	// This is valid even if Gr_original_gamma_ramp is nullptr
+	vm_free(Gr_original_gamma_ramp);
+	Gr_original_gamma_ramp = nullptr;
+
 	gpu_heap_deinit();
 
 	// Cleanup uniform buffer managers
@@ -727,17 +1041,6 @@ void gr_set_palette_internal( const char * /*name*/, ubyte * palette, int  /*res
 			memmove(palette, Gr_current_palette, 768);
 		}
 	}
-}
-
-
-void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
-{
-	char *p;
-	strcpy_s( Gr_current_palette_name, name );
-	p = strchr( Gr_current_palette_name, '.' );
-	if ( p ) *p = 0;
-	gr_screen.signature = Gr_signature++;
-	gr_set_palette_internal( name, palette, restrict_font_to_128 );
 }
 
 void gr_screen_resize(int width, int height)
@@ -953,69 +1256,77 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		}
 	}
 
-	// We cannot continue without this, quit, but try to help the user out first
-	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
+	if (Using_in_game_options) {
+		auto res = ResolutionOption->getValue();
+		width = res.width;
+		height = res.height;
+	} else {
+		// We cannot continue without this, quit, but try to help the user out first
+		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
 
-	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
-	if (ptr == NULL) {
-		// If we don't have a display mode, use SDL to get default settings
-		// We need to initialize SDL to do this
+		// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
+		if (ptr == nullptr) {
+			// If we don't have a display mode, use SDL to get default settings
+			// We need to initialize SDL to do this
 
-		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
-		{
-			int display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
-			SDL_DisplayMode displayMode;
-			if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
 			{
-				width = displayMode.w;
-				height = displayMode.h;
-				int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
+				auto display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
+				SDL_DisplayMode displayMode;
+				if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+				{
+					width = displayMode.w;
+					height = displayMode.h;
+					int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
 
-				if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
-				{
-					depth = sdlBits;
-				}
-				else
-				{
-					// Fix a few values
-					if (sdlBits == 24)
-					{
-						depth = 32;
-					}
-					else if (sdlBits == 15)
-					{
-						depth = 16;
-					}
-					else
+					if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
 					{
 						depth = sdlBits;
 					}
+					else
+					{
+						// Fix a few values
+						if (sdlBits == 24)
+						{
+							depth = 32;
+						}
+						else if (sdlBits == 15)
+						{
+							depth = 16;
+						}
+						else
+						{
+							depth = sdlBits;
+						}
+					}
+
+					SCP_string videomode;
+					sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
+
+					os_config_write_string(nullptr, NOX("VideocardFs2open"), videomode.c_str());
 				}
+			}
+		} else {
+			Assert(ptr != nullptr);
 
-				SCP_string videomode;
-				sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
-
-				os_config_write_string(NULL, NOX("VideocardFs2open"), videomode.c_str());
+			// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+			//       If the format of that string changes you'll have to change this too!!!
+			if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
+				Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
 			}
 		}
-	} else {
-		Assert(ptr != NULL);
 
-		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-		//       If the format of that string changes you'll have to change this too!!!
-		if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
-			Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+		if (Cmdline_res != nullptr) {
+			int tmp_width = 0;
+			int tmp_height = 0;
+
+			if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+				width = tmp_width;
+				height = tmp_height;
+			}
 		}
-	}
 
-	if (Cmdline_res != NULL) {
-		int tmp_width = 0;
-		int tmp_height = 0;
-
-		if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
-			width = tmp_width;
-			height = tmp_height;
-		}
+		Gr_enable_soft_particles = Cmdline_softparticles != 0;
 	}
 	if (Cmdline_center_res != NULL) {
 		int tmp_center_width = 0;
@@ -1126,6 +1437,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	gpu_heap_init();
 
+	mprintf(("Checking graphics capabilities:\n"));
+	mprintf(("  Persistent buffer mapping: %s\n",
+	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
+
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
 		if (Is_standalone) {
@@ -1155,6 +1470,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	gr_set_clear_color(0, 0, 0);
 
 	gr_set_shader(NULL);
+
+	if (!Is_standalone) {
+		if (Using_in_game_options) {
+			// The value should have been loaded into the variable already so we can use that here
+			gr_set_gamma(Gr_gamma);
+		} else {
+			// D3D's gamma system now works differently. 1.0 is the default value
+			ptr = os_config_read_string(nullptr, NOX("GammaD3D"), NOX("1.0"));
+			gr_set_gamma((float)atof(ptr));
+		}
+	}
 
 	Gr_inited = 1;
 
@@ -2133,36 +2459,52 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 	}
 }
 
-void gr_shield_icon(coord2d coords[6], int resize_mode)
-{
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-	
-	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
-}
-
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)
 {
-	gr_screen.current_alpha = alpha;
+	gr_screen.current_alpha           = alpha;
 	gr_screen.current_alphablend_mode = alphablend_mode;
-	gr_screen.current_bitblt_mode = bitblt_mode;
-	gr_screen.current_bitmap = bitmap_num;
+	gr_screen.current_bitblt_mode     = bitblt_mode;
+	gr_screen.current_bitmap          = bitmap_num;
+}
+
+static void output_uniform_debug_data()
+{
+	int line_height = gr_get_font_height() + 1;
+
+	gr_set_color_fast(&Color_bright_white);
+
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
+	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
+	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
+	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
 }
 
 void gr_flip(bool execute_scripting)
 {
+	TRACE_SCOPE(tracing::PageFlip);
+
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	if (execute_scripting && !popup_active()) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
-		//WMC - Do conditional hooks. Yippee!
+		// WMC - Do conditional hooks. Yippee!
 		Script_system.RunCondition(CHA_ONFRAME);
-		//WMC - Do scripting reset stuff
+		// WMC - Do scripting reset stuff
 		Script_system.EndFrame();
 	}
 
 	gr_reset_immediate_buffer();
+
+	// Do per frame operations on the matrix state
+	gr_matrix_on_frame();
+
+	gr_reset_clip();
+
+	mouse_reset_deltas();
+
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();
@@ -2180,32 +2522,13 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 	gr_string(x, y, time.c_str(), resize_mode);
 }
+static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
+static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
+static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
 
-static std::unique_ptr<graphics::util::UniformBufferManager>
-	uniform_buffer_managers[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
-
-static void uniform_buffer_managers_init() {
-	for (size_t i = 0; i < static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
-		auto enumVal = static_cast<uniform_block_type>(i);
-
-		uniform_buffer_managers[i].reset(new graphics::util::UniformBufferManager(enumVal));
-	}
-}
-static void uniform_buffer_managers_deinit() {
-	for (auto& manager: uniform_buffer_managers) {
-		manager.reset();
-	}
-}
-static void uniform_buffer_managers_retire_buffers() {
-	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
-
-	for (auto& manager: uniform_buffer_managers) {
-		manager->retireBuffers();
-	}
-}
-
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
-	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
+{
+	return UniformBufferManager->getUniformBuffer(type, num_elements, element_size_override);
 }
 
 SCP_vector<DisplayData> gr_enumerate_displays()
@@ -2370,4 +2693,97 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset) {
 	auto gpuHeap = get_gpu_heap(heap_type);
 
 	gpuHeap->freeGpuData(data_offset);
+}
+
+// I feel dirty...
+static void make_gamma_ramp(float gamma, ushort* ramp)
+{
+	ushort x, y;
+	ushort base_ramp[256];
+
+	Assert(ramp != nullptr);
+
+	// generate the base ramp values first off
+
+	// if no gamma set then just do this quickly
+	if (gamma <= 0.0f) {
+		memset(ramp, 0, 3 * 256 * sizeof(ushort));
+		return;
+	}
+	// identity gamma, avoid all of the math
+	else if (gamma == 1.0f || Gr_original_gamma_ramp == nullptr) {
+		if (Gr_original_gamma_ramp != nullptr) {
+			memcpy(ramp, Gr_original_gamma_ramp, 3 * 256 * sizeof(ushort));
+		}
+		// set identity if no original ramp
+		else {
+			for (x = 0; x < 256; x++) {
+				ramp[x]       = (x << 8) | x;
+				ramp[x + 256] = (x << 8) | x;
+				ramp[x + 512] = (x << 8) | x;
+			}
+		}
+
+		return;
+	}
+	// for everything else we need to actually figure it up
+	else {
+		double g = 1.0 / (double)gamma;
+		double val;
+
+		Assert(Gr_original_gamma_ramp != nullptr);
+
+		for (x = 0; x < 256; x++) {
+			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
+			CLAMP(val, 0, 65535);
+
+			base_ramp[x] = (ushort)val;
+		}
+
+		for (y = 0; y < 3; y++) {
+			for (x = 0; x < 256; x++) {
+				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
+				CLAMP(val, 0, 65535);
+
+				ramp[x + y * 256] = (ushort)val;
+			}
+		}
+	}
+}
+
+void gr_set_gamma(float gamma)
+{
+	Gr_gamma = gamma;
+
+	// new way - but not while running FRED
+	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
+		if (Gr_original_gamma_ramp == nullptr) {
+			// First time we are here so get the current (original) gamma ramp here so we can reset it later
+			Gr_original_gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
+
+			if (Gr_original_gamma_ramp == nullptr) {
+				mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
+				Cmdline_no_set_gamma = 1;
+			} else {
+				SDL_GetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
+				                       (Gr_original_gamma_ramp + 512));
+			}
+		}
+
+		auto gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
+
+		if (gamma_ramp == nullptr) {
+			Int3();
+			return;
+		}
+
+		memset(gamma_ramp, 0, 3 * 256 * sizeof(ushort));
+
+		// Create the Gamma lookup table
+		make_gamma_ramp(gamma, gamma_ramp);
+
+		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
+
+		vm_free(gamma_ramp);
+	}
 }

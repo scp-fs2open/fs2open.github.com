@@ -27,12 +27,6 @@
 
 
 
-static inline int is_power_of_two(int w, int h)
-{
-	// NOTE: OpenGL texture code has a min tex size of 16 (currently), so we need to be at least
-	//       the min size here to qualify as power-of-2 and not get resized later on
-	return ( ((w >= GL_min_texture_width) && !(w & (w-1))) && ((h >= GL_min_texture_height) && !(h & (h-1))) );
-}
 
 int get_num_mipmap_levels(int w, int h)
 {

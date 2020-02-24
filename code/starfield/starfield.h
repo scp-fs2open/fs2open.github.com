@@ -49,6 +49,8 @@ extern int Nmodel_flags;
 
 extern bool Motion_debris_override;
 
+extern bool Motion_debris_enabled;
+
 void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
 bool stars_background_empty();

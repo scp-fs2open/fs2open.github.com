@@ -61,7 +61,7 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 			"string", "The message or an empty string if handle is invalid")
 {
 	int idx = -1;
-	char* newText = NULL;
+	const char* newText = nullptr;
 	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
 		return ade_set_error(L, "s", "");
 
@@ -83,20 +83,20 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", "soundfile", "The voice file handle or invalid handle when not present")
 {
 	int idx = -1;
-	auto sndIdx = sound_load_id::invalid();
+	soundfile_h* sndIdx = nullptr;
 
-	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.Get(&sndIdx)))
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Soundfile.GetPtr(&sndIdx)))
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	if (idx < 0 && idx >= (int) Messages.size())
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	MissionMessage* msg = &Messages[idx];
 
 	if (ADE_SETTING_VAR)
 	{
-		if (sndIdx.isValid()) {
-			const char* newFilename = snd_get_filename(sndIdx);
+		if (sndIdx->idx.isValid()) {
+			const char* newFilename = snd_get_filename(sndIdx->idx);
 
 			msg->wave_info.index = add_wave(newFilename);
 		}
@@ -108,7 +108,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 
 	if (msg->wave_info.index < 0)
 	{
-		return ade_set_args(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_args(L, "o", l_Soundfile.Set(soundfile_h()));
 	}
 	else
 	{
@@ -116,7 +116,7 @@ ADE_VIRTVAR(VoiceFile, l_Message, "soundfile", "The voice file of the message", 
 		// Load the sound before using it
 		message_load_wave(index, Message_waves[index].name);
 
-		return ade_set_args(L, "o", l_Soundfile.Set(Message_waves[index].num));
+		return ade_set_args(L, "o", l_Soundfile.Set(soundfile_h(Message_waves[index].num)));
 	}
 }
 
@@ -126,10 +126,10 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	int newPersona = -1;
 
 	if (!ade_get_args(L, "o|o", l_Message.Get(&idx), l_Persona.Get(&newPersona)))
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	if (idx < 0 && idx >= (int) Messages.size())
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
 	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < Num_personas)
 	{

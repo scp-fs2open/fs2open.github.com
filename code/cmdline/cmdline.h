@@ -53,32 +53,22 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
-extern float Cmdline_fov;
-extern float Cmdline_ogl_spec;
 extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
 extern int Cmdline_glow;
-extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
-extern int Cmdline_postprocess;
 extern int Cmdline_bloom_intensity;
-extern bool Cmdline_fxaa;
-extern int Cmdline_fxaa_preset;
-extern bool Cmdline_fb_explosions;
-extern bool Cmdline_fb_thrusters;
-extern int Cmdline_shadow_quality;
 extern int Cmdline_no_deferred_lighting;
-extern int Cmdline_no_emissive;
+extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 
 // Game Speed related
@@ -101,7 +91,6 @@ extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 
 // Audio related
-extern int Cmdline_query_speech;
 extern int Cmdline_voice_recognition;
 extern int Cmdline_no_enhanced_sound;
 
@@ -111,9 +100,8 @@ extern char *Cmdline_mod;	 // DTP for mod support
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
-extern char *Cmdline_spew_mission_crcs;
-extern char *Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
+extern char *Cmdline_gateway_ip;
 
 // Launcher related options
 extern bool Cmdline_portable_mode;
@@ -140,7 +128,6 @@ extern bool Cmdline_alternate_registry_path;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
-extern int Cmdline_old_collision_sys;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern bool Cmdline_output_sexp_info;
@@ -156,10 +143,10 @@ extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_benchmark_mode;
 extern bool Cmdline_noninteractive;
-extern bool Cmdline_json_pilot;
 extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;
 extern bool Cmdline_debug_window;
+extern bool Cmdline_graphics_debug_output;
 
 #endif

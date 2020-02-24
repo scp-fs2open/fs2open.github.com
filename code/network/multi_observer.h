@@ -25,7 +25,7 @@ struct net_player;
 //
 
 // create a _permanent_ observer player 
-int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl);
+void multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl);
 
 // create an explicit observer object and assign it to the passed player
 void multi_obs_create_observer(net_player *pl);

@@ -19,6 +19,9 @@ extern float flFrametime;
 
 SCP_vector<triggered_rotation> Triggered_rotations;
 
+// forward declaration
+int model_anim_instance_get_actual_time(queued_animation *properties);
+
 const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 {
 	"initial",
@@ -35,7 +38,7 @@ const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 	"turret-fired"
 };
 
-int model_anim_match_type(char *p)
+int model_anim_match_type(const char* p)
 {	
 	int i;
 
@@ -127,7 +130,7 @@ void triggered_rotation::start(queued_animation *q)
 				slow_angle.a1d[0], slow_angle.a1d[1], slow_angle.a1d[2]));
 
 	has_started = true;
-	end_time = q->end_time;
+	end_time = timestamp( model_anim_instance_get_actual_time(q) );
 }
 
 void triggered_rotation::apply_trigger_angles(angles *submodel_angles)
@@ -245,7 +248,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 	if (new_queue.start == 0) {
 		new_queue.start_time = timestamp();
-		new_queue.end_time = timestamp( new_queue.end );
+		new_queue.end_time = timestamp( model_anim_instance_get_actual_time(&new_queue) );
 
 		// if there is no delay don't bother with the queue, just start the thing
 		start( &new_queue );
@@ -263,7 +266,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			// so this means that there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
 			// this animation needs to be started now!
 			new_queue.start_time = timestamp();
-			new_queue.end_time = timestamp( new_queue.end );
+			new_queue.end_time = timestamp( model_anim_instance_get_actual_time(&new_queue) );
 
 			// if there is no delay don't bother with the queue, just start the thing
 			start( &new_queue );
@@ -643,9 +646,13 @@ int model_anim_instance_get_actual_time(queued_animation *properties)
 	int temp = 0;
 
 	for (int a = 0; a < 3; a++) {
-		temp = fl2i( ((3.0f * properties->vel.a1d[a] * properties->vel.a1d[a]) + (2.0f * properties->accel.a1d[a] * fabs(properties->angle.a1d[a])))
+		if (properties->accel.a1d[a] > 0.0f) {
+			temp = fl2i( ((3.0f * properties->vel.a1d[a] * properties->vel.a1d[a]) + (2.0f * properties->accel.a1d[a] * fabs(properties->angle.a1d[a])))
 						/ (2.0f * properties->accel.a1d[a] * properties->vel.a1d[a]) * 1000.0f )
 						+ properties->start;
+		} else {
+			temp = properties->end;
+		}
 
 		if (temp > ret)
 			ret = temp;
@@ -775,16 +782,23 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 				int pad = real_time - psub->triggers[i].end;
 
 				for (int a = 0; a < 3; a++) {
-					float end_angle = (tr->current_ang.a1d[a]  + (((tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a]) - (tr->current_vel.a1d[a]*tr->current_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])));
+					if (tr->rot_accel.a1d[a] > 0.0f) {
+						float end_angle = (tr->current_ang.a1d[a]  + (((tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a]) - (tr->current_vel.a1d[a]*tr->current_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])));
 
-					if (end_angle > tr->slow_angle.a1d[a]) {
-						//T(total) =  (2V(maximum) - V(initial))/a + (S(turnpoint) - S(initial) + (V(initial)^2 - V(maximum)^2)/2a) / V(maximum)
-						a_time = fl2i(((((2*tr->rot_vel.a1d[a]) - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) + tr->slow_angle.a1d[a] - tr->current_ang.a1d[a] + (((tr->current_vel.a1d[a]*tr->current_vel.a1d[a]) - (tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])))*1000.0f);
-						if (ani_time < a_time)
-							ani_time = a_time;
-					} else {
-						//T(total)  = 2 * sqrt((S(final) - S(initial))/a - ( (V(initial)/a)^2 ) / 2 ) - V(initial)/a
-						a_time = fl2i((2 * fl_sqrt(((tr->end_angle.a1d[a] - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) - ((tr->current_vel.a1d[a] * tr->current_vel.a1d[a]) / (tr->rot_accel.a1d[a] * tr->rot_accel.a1d[a])) / 2) - (tr->current_vel.a1d[a] / tr->rot_accel.a1d[a]))*1000.0f);
+						if (end_angle > tr->slow_angle.a1d[a]) {
+							//T(total) =  (2V(maximum) - V(initial))/a + (S(turnpoint) - S(initial) + (V(initial)^2 - V(maximum)^2)/2a) / V(maximum)
+							a_time = fl2i(((((2*tr->rot_vel.a1d[a]) - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) + tr->slow_angle.a1d[a] - tr->current_ang.a1d[a] + (((tr->current_vel.a1d[a]*tr->current_vel.a1d[a]) - (tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])))*1000.0f);
+							if (ani_time < a_time)
+								ani_time = a_time;
+						} else {
+							//T(total)  = 2 * sqrt((S(final) - S(initial))/a - ( (V(initial)/a)^2 ) / 2 ) - V(initial)/a
+							a_time = fl2i((2 * fl_sqrt(((tr->end_angle.a1d[a] - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) - ((tr->current_vel.a1d[a] * tr->current_vel.a1d[a]) / (tr->rot_accel.a1d[a] * tr->rot_accel.a1d[a])) / 2) - (tr->current_vel.a1d[a] / tr->rot_accel.a1d[a]))*1000.0f);
+							if (ani_time < a_time)
+								ani_time = a_time;
+						}
+				} else {
+						a_time = tr->end_time - timestamp();
+
 						if (ani_time < a_time)
 							ani_time = a_time;
 					}
@@ -795,7 +809,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 			} else {
 				// if it isn't moving then it's trivial.
 				// no currently playing animation
-				ani_time = psub->triggers[i].end + psub->triggers[i].start;
+				ani_time = 0;
 			}
 
 			if (ret < ani_time)

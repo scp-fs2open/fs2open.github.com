@@ -15,6 +15,7 @@
 #include <object/waypoint.h>
 #include <parse/parselo.h>
 #include <ship/ship.h>
+#include <ship/shipfx.h>
 
 #include "mission/Editor.h"
 
@@ -379,6 +380,11 @@ class CFred_mission_save {
 	 * @returns A negative value if an error occurred
 	 */
 	int save_music();
+
+	/**
+	* Helper function for save_objects().
+	*/
+	int save_warp_params(WarpDirection direction, ship *shipp);
 
 	/**
 	 * @brief Saves object entries to a file

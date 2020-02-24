@@ -1500,8 +1500,8 @@ void message_queue_process()
 		return;
 
 	// Goober5000 - argh, don't conflate special sources with ships!
-	// NOTA BENE: don't check for != MESSAGE_SOURCE_COMMAND, because with the new command persona code, Command could be a ship
-	if ( q->source != MESSAGE_SOURCE_SPECIAL ) {
+	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
+	if ( q->source != HUD_SOURCE_IMPORTANT ) {
 		Message_shipnum = ship_name_lookup( q->who_from );
 
 		// see if we need to check if sending ship is alive
@@ -1602,14 +1602,14 @@ void message_queue_process()
 	Script_system.SetHookVar("SenderString", 's', who_from);
 
 	builtinMessage = q->builtin_type != -1;
-	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+	Script_system.SetHookVar("Builtin", 'b', builtinMessage);
 
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
 	Script_system.SetHookObject("Sender", sender);
 
-	Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+	Script_system.RunCondition(CHA_MSGRECEIVED, sender);
 
 	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
 
@@ -1861,7 +1861,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
 				who_from = (char *)data;
-				source = HUD_SOURCE_TERRAN_CMD;
+				source = HUD_SOURCE_IMPORTANT;
 			} else if ( m_source == MESSAGE_SOURCE_WINGMAN ) {
 				int m_persona, ship_index;
 
@@ -2157,7 +2157,7 @@ int message_is_playing()
 // Functions below pertain only to personas!!!!
 
 // given a character string, try to find the persona index
-int message_persona_name_lookup( char *name )
+int message_persona_name_lookup(const char* name)
 {
 	int i;
 
@@ -2306,20 +2306,6 @@ void message_maybe_distort_text(char *text, int shipnum)
 	Distort_next = 0;
 }
 
-// return 1 if a talking head animation is playing, otherwise return 0
-int message_anim_is_playing()
-{
-	int i;
-
-	for (i = 0; i < Num_messages_playing; i++ ) {
-		//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-		if(Playing_messages[i].play_anim)
-			return 1;
-	}
-
-	return 0;
-}
-
 // Load mission messages (this is called by the level paging code when running with low memory)
 void message_pagein_mission_messages()
 {
@@ -2344,7 +2330,7 @@ void message_pagein_mission_messages()
 // ---------------------------------------------------
 // Add and remove messages - used by autopilot code now, but useful elswhere
 
-bool add_message(const char *name, char *message, int persona_index, int multi_team)
+bool add_message(const char* name, const char* message, int persona_index, int multi_team)
 {
 	MissionMessage msg; 
 	strcpy_s(msg.name, name);
@@ -2359,7 +2345,7 @@ bool add_message(const char *name, char *message, int persona_index, int multi_t
 	return true;
 }
 
-bool change_message(const char *name, char *message, int persona_index, int multi_team)
+bool change_message(const char* name, const char* message, int persona_index, int multi_team)
 {
 	for (int i = Num_builtin_messages; i < Num_messages; i++) 
 	{

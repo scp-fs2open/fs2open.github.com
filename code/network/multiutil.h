@@ -49,7 +49,7 @@ extern int multi_find_player_by_callsign(const char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
 extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
-extern int multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
+extern void multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
 extern int multi_find_open_netplayer_slot();
 extern int multi_find_open_player_slot();
 extern void delete_player(int player_num, int kicked_reason = -1);
@@ -95,8 +95,6 @@ void multi_maybe_send_ship_status();
 void multi_apply_ship_status(net_player *p,button_info *bi, int locally);
 
 void multiplayer_match_target_speed(net_player *p);
-
-void multi_subsys_update_all();
 
 void server_verify_filesig(short player_id, ushort sum_sig, int length_sig);
 int server_all_filesigs_ok();

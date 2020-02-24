@@ -131,7 +131,8 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
 	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 }
+	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
+	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
 };
 
 int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);
@@ -308,7 +309,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	cfile_chdir(Fred_base_dir);
 
 	// this should enable mods - Kazan
-	parse_cmdline(__argc, __argv);
+	if (!parse_cmdline(__argc, __argv)) {
+		// Command line contained an option that terminates the program immediately
+		exit(1);
+	}
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
@@ -414,6 +418,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	parse_init();
 	techroom_intel_init();
 
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();
@@ -439,6 +447,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	libs::ffmpeg::initialize();
 
 	sexp::dynamic_sexp_init();
+
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
 
 	gr_reset_clip();
 	g3_start_frame(0);

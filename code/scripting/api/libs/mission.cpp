@@ -3,26 +3,8 @@
 
 #include "mission.h"
 
-#include "scripting/api/objs/LuaSEXP.h"
-#include "scripting/api/objs/asteroid.h"
-#include "scripting/api/objs/background_element.h"
-#include "scripting/api/objs/beam.h"
-#include "scripting/api/objs/debris.h"
-#include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/event.h"
-#include "scripting/api/objs/message.h"
-#include "scripting/api/objs/object.h"
-#include "scripting/api/objs/sexpvar.h"
-#include "scripting/api/objs/ship.h"
-#include "scripting/api/objs/shipclass.h"
-#include "scripting/api/objs/team.h"
-#include "scripting/api/objs/vecmath.h"
-#include "scripting/api/objs/waypoint.h"
-#include "scripting/api/objs/weapon.h"
-#include "scripting/api/objs/weaponclass.h"
-#include "scripting/api/objs/wing.h"
-
 #include "freespace.h"
+
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "gamesequence/gamesequence.h"
@@ -32,21 +14,41 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
+#include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
-#include "ship/ship.h"
-#include "starfield/starfield.h"
-#include "weapon/beam.h"
-#include "weapon/weapon.h"
-
-#include "scripting/lua/LuaTable.h"
-#include "scripting/lua/LuaFunction.h"
-
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/background_element.h"
+#include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/debris.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/event.h"
+#include "scripting/api/objs/message.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/parse_object.h"
+#include "scripting/api/objs/sexpvar.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/team.h"
+#include "scripting/api/objs/vecmath.h"
+#include "scripting/api/objs/waypoint.h"
+#include "scripting/api/objs/weapon.h"
+#include "scripting/api/objs/weaponclass.h"
+#include "scripting/api/objs/wing.h"
+#include "scripting/lua/LuaFunction.h"
+#include "scripting/lua/LuaTable.h"
+#include "scripting/scripting.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "starfield/starfield.h"
+#include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 extern int ships_inited;
 
@@ -76,7 +78,7 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 
 ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
 {
-	char *s;
+	const char* s;
 	int r_val;
 
 	if(!ade_get_args(L, "s", &s))
@@ -92,7 +94,7 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boo
 
 ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
 {
-	char *s;
+	const char* s;
 	int r_val;
 	char buf[8192];
 
@@ -137,7 +139,7 @@ ADE_INDEXER(l_Mission_Asteroids, "number Index", "Gets asteroid", "asteroid", "A
 	}
 	if( idx > -1 && idx < asteroid_count() ) {
 		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
-		return ade_set_args( L, "o", l_Asteroid.Set( object_h( &Objects[Asteroids[idx].objnum] ), Objects[Asteroids[idx].objnum].signature ) );
+		return ade_set_args(L, "o", l_Asteroid.Set(object_h(&Objects[Asteroids[idx].objnum])));
 	}
 
 	return ade_set_error(L, "o", l_Asteroid.Set( object_h() ) );
@@ -167,7 +169,7 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 		idx--; // Lua -> C
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
-		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum]), Objects[Debris[idx].objnum].signature));
+		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
 	}
 
 	return ade_set_error(L, "o", l_Debris.Set(object_h()));
@@ -215,7 +217,7 @@ ADE_LIB_DERIV(l_Mission_Events, "Events", NULL, "Events", l_Mission);
 
 ADE_INDEXER(l_Mission_Events, "number Index/string Name", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Event.Set(-1));
 
@@ -247,8 +249,8 @@ ADE_LIB_DERIV(l_Mission_SEXPVariables, "SEXPVariables", NULL, "SEXP Variables", 
 
 ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
-	char *name = NULL;
-	char *newval = NULL;
+	const char* name   = nullptr;
+	const char* newval = nullptr;
 	if(!ade_get_args(L, "*s|s", &name, &newval))
 		return ade_set_error(L, "o", l_SEXPVariable.Set(sexpvar_h()));
 
@@ -295,7 +297,7 @@ ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission)
 
 ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
@@ -303,7 +305,7 @@ ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "S
 
 	if(idx > -1)
 	{
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum]), Objects[Ships[idx].objnum].signature));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 	}
 	else
 	{
@@ -318,7 +320,7 @@ ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "S
 					continue;
 
 				if(count == idx) {
-					return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum]), Objects[Ships[i].objnum].signature));
+					return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum])));
 				}
 
 				count++;
@@ -388,7 +390,7 @@ ADE_LIB_DERIV(l_Mission_WaypointLists, "WaypointLists", NULL, NULL, l_Mission);
 ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
 {
 	waypointlist_h wpl;
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
@@ -482,7 +484,7 @@ ADE_LIB_DERIV(l_Mission_Wings, "Wings", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
@@ -511,7 +513,7 @@ ADE_LIB_DERIV(l_Mission_Teams, "Teams", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
@@ -553,7 +555,7 @@ ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of 
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -598,7 +600,7 @@ ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -643,7 +645,7 @@ ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mis
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Persona.Set(-1));
@@ -667,8 +669,8 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
-	char* name = NULL;
-	char* text = NULL;
+	const char* name = nullptr;
+	const char* text = nullptr;
 	int personaIdx = -1;
 
 	if (!ade_get_args(L, "ss|o", &name, &text, l_Persona.Get(&personaIdx)))
@@ -691,7 +693,7 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 			 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
 		 "boolean", "true if successfull, false otherwise")
 {
-	char* sender = NULL;
+	const char* sender = nullptr;
 	int messageIdx = -1;
 	int priority = MESSAGE_PRIORITY_NORMAL;
 	bool fromCommand = false;
@@ -795,7 +797,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
 {
-	char *name = NULL;
+	const char* name = nullptr;
 	int sclass = -1;
 	matrix_h *orient = NULL;
 	vec3d pos = vmd_zero_vector;
@@ -813,10 +815,22 @@ ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], ori
 
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
-	if(obj_idx > -1) {
+	if(obj_idx >= 0) {
 		model_page_in_textures(Ship_info[sclass].model_num, sclass);
 
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx]), Objects[obj_idx].signature));
+		ship_set_warp_effects(&Objects[obj_idx]);
+
+		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
+		}
+
+		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+
+		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+		Script_system.RemHookVars(2, "Ship", "Parent");
+
+		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
@@ -871,21 +885,28 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
 	if(obj_idx > -1)
-		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx]), Objects[obj_idx].signature));
+		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	return ade_set_args(L, "s", Game_current_mission_filename);
+	char temp[MAX_FILENAME_LEN];
+
+	// per Axem, mn.getMissionFilename() sometimes returns the filename with the .fs2 extension, and sometimes not
+	// depending if you are in a campaign or tech room
+	strcpy_s(temp, Game_current_mission_filename);
+	drop_extension(temp);
+
+	return ade_set_args(L, "s", temp);
 }
 
 ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing = true]", "Starts the defined mission", "boolean", "True, or false if the function fails")
 {
 	bool b = true;
 	char s[MAX_FILENAME_LEN];
-	char *str = s;
+	const char* str = s;
 
 	if(lua_isstring(L, 1))
 	{
@@ -913,15 +934,16 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	if (str == NULL)
 		return ade_set_args(L, "b", false);
 
-	// if mission name has extension... it needs to be removed...
-	char *file_ext;
+	char name_copy[MAX_FILENAME_LEN];
+	strcpy_s(name_copy, str);
 
-	file_ext = strrchr(str, '.');
+	// if mission name has extension... it needs to be removed...
+	auto file_ext = strrchr(name_copy, '.');
 	if (file_ext)
 		*file_ext = 0;
 
 	// game is in MP mode... or if the file does not exist... bail
-	if ((Game_mode & GM_MULTIPLAYER) || (cf_exists_full(str, CF_TYPE_MISSIONS) != 0))
+	if ((Game_mode & GM_MULTIPLAYER) || (cf_exists_full(name_copy, CF_TYPE_MISSIONS) != 0))
 		return ade_set_args(L, "b", false);
 
 	// mission is already running...
@@ -935,7 +957,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	} else {
 		// due safety checks of the game_start_mission() function allow only main menu for now.
 		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
-			strcpy_s( Game_current_mission_filename, str );
+			strcpy_s(Game_current_mission_filename, name_copy);
 			if (b == true) {
 				// start mission - go via briefing screen
 				gameseq_post_event(GS_EVENT_START_GAME);
@@ -960,7 +982,7 @@ ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the missio
 //WMC - These are in freespace.cpp
 ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "b", false);
 
@@ -972,7 +994,7 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
-	if(mission_load(s) == -1)
+	if(!mission_load(s))
 		return ADE_RETURN_FALSE;
 
 	game_post_level_init();
@@ -1220,6 +1242,29 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
 }
 
+static int arrivalListIter(lua_State* L)
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "*o", l_ParseObject.GetPtr(&poh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	const auto next = GET_NEXT(poh->getObject());
+
+	if (next == END_OF_LIST(&Ship_arrival_list)) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(next)));
+}
+
+ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ships for this mission", "iterator[parse_object]",
+            "An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+{
+	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
+	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
 //****LIBRARY: Campaign
 ADE_LIB(l_Campaign, "Campaign", "ca", "Campaign Library");
 
@@ -1242,7 +1287,7 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
 ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, or returns nil.")
 {
-	char *filename = NULL;;
+	const char* filename = nullptr;
 	bool hub = false;
 	if (!ade_get_args(L, "s|b", &filename, &hub))
 		return ADE_RETURN_NIL;

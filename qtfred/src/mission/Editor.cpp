@@ -81,7 +81,8 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
 	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 }
+	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
+	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
 };
 
 }
@@ -150,7 +151,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		}
 	}
 
-	if (parse_main(filepath.c_str(), flags)) {
+	if (!parse_main(filepath.c_str(), flags)) {
 		if (flags & MPF_IMPORT_FSM) {
 			SCP_string msg;
 			sprintf(msg, "Unable to import the file \"%s\".", filepath.c_str());
@@ -2631,6 +2632,7 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_UNDOCK:
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
 		case AI_GOAL_PLAY_DEAD:
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
 		case AI_GOAL_WARP:
 			flag = 0;
 			break;
@@ -2763,7 +2765,7 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		switch (goals[i].ai_mode) {
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 			Assert(flag == 2 && inst >= 0);
-			if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name, 1) < 0)
+			if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name) < 0)
 				return "Unknown subsystem type";
 
 			break;

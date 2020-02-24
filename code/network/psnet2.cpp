@@ -11,10 +11,7 @@
 
 
 #ifdef _WIN32
-#include <windows.h>
-#include <windowsx.h>
-#include <winsock.h>
-#include <process.h>
+#include <winsock2.h>
 #include <ras.h>
 #include <raserror.h>
 #else
@@ -293,11 +290,7 @@ int RECVFROM(SOCKET  /*s*/, char *buf, int  /*len*/, int  /*flags*/, sockaddr *f
 	switch ( Socket_type ) {
 	case NET_TCP:			
 		((SOCKADDR_IN*)from)->sin_port = htons(addr.port);
-#ifdef _WIN32
-		memcpy(&((SOCKADDR_IN*)from)->sin_addr.S_un.S_addr, addr.addr, 4);		
-#else
-		memcpy(&((SOCKADDR_IN*)from)->sin_addr.s_addr, addr.addr, 4);		
-#endif
+		memcpy(&(reinterpret_cast<SOCKADDR_IN *>(from))->sin_addr.s_addr, addr.addr, 4);
 		((SOCKADDR_IN*)from)->sin_family = AF_INET;
 		*fromlen = sizeof(SOCKADDR_IN);
 		break;
@@ -385,11 +378,7 @@ void PSNET_TOP_LAYER_PROCESS()
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
 
-#ifdef _WIN32
-		if ( select( -1, &rfds, NULL, NULL, &timeout) == SOCKET_ERROR ) {
-#else
-		if ( select( Unreliable_socket + 1, &rfds, NULL, NULL, &timeout) == SOCKET_ERROR ) {
-#endif
+		if ( select( static_cast<int>(Unreliable_socket + 1), &rfds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
 			ml_printf("Error %d doing a socket select on read", WSAGetLastError());
 			break;
 		}
@@ -419,11 +408,7 @@ void PSNET_TOP_LAYER_PROCESS()
 		case NET_TCP:			
 			from_addr.port = ntohs( ip_addr.sin_port );			
 			memset(from_addr.addr, 0x00, 6);
-#ifdef _WIN32
-			memcpy(from_addr.addr, &ip_addr.sin_addr.S_un.S_addr, 4); //-V512
-#else
 			memcpy(from_addr.addr, &ip_addr.sin_addr.s_addr, 4); //-V512
-#endif
 			break;
 
 		default:
@@ -636,11 +621,7 @@ int psnet_use_protocol( int protocol )
 		if (custom_ip != NULL) {
 			SOCKADDR_IN custom_address;
 
-#ifndef WIN32
-			if ( inet_aton(custom_ip, &custom_address.sin_addr) ) {
-#else
 			if ( (custom_address.sin_addr.s_addr = inet_addr(custom_ip)) != INADDR_NONE ) {
-#endif
 				memcpy(&ip_addr.sin_addr, &custom_address.sin_addr, sizeof(custom_address.sin_addr));
 			} else {
 				ml_printf("WARNING  =>  psnet_get_ip() custom IP is invalid: %s", custom_ip);
@@ -837,11 +818,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-#ifdef _WIN32
-	if ( SELECT( -1, NULL, &wfds, NULL, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
-#else
-	if ( SELECT( send_sock+1, NULL, &wfds, NULL, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
-#endif
+	if ( SELECT( static_cast<int>(send_sock+1), nullptr, &wfds, nullptr, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
 		ml_printf("Error on blocking select for write %d", WSAGetLastError() );
 		return 0;
 	}
@@ -1245,11 +1222,7 @@ void psnet_rel_work()
 		if(Tcp_active && (Socket_type == NET_TCP)){
 			FD_ZERO(&read_fds);
 			FD_SET(Unreliable_socket, &read_fds);    
-#ifdef _WIN32
-			udp_has_data = SELECT(0,&read_fds,NULL,NULL,&timeout, PSNET_TYPE_RELIABLE);
-#else
-			udp_has_data = SELECT(Unreliable_socket+1, &read_fds,NULL,NULL,&timeout, PSNET_TYPE_RELIABLE);
-#endif
+			udp_has_data = SELECT(static_cast<int>(Unreliable_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE);
 		}
 		bytesin = 0;
 		addrlen = sizeof(SOCKADDR);
@@ -1569,11 +1542,7 @@ int psnet_rel_check_for_listen(net_addr *from_addr)
 				memset(from_addr, 0x00, sizeof(net_addr));
 				from_addr->port = ntohs( ip_addr->sin_port );
 				from_addr->type = NET_TCP;
-#ifdef _WIN32
-				memcpy(from_addr->addr, &ip_addr->sin_addr.S_un.S_addr, 4); //-V512
-#else
 				memcpy(from_addr->addr, &ip_addr->sin_addr.s_addr, 4); //-V512
-#endif
 				break;
 			
 			default:
@@ -1626,11 +1595,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	if(Tcp_active && (Socket_type == NET_TCP)){
 		FD_ZERO(&read_fds);
 		FD_SET(Unreliable_socket, &read_fds);    
-#ifdef _WIN32
-		while(SELECT(0, &read_fds, NULL, NULL, &timeout, PSNET_TYPE_RELIABLE)){
-#else
-		while(SELECT(Unreliable_socket+1, &read_fds, NULL, NULL, &timeout, PSNET_TYPE_RELIABLE)){
-#endif
+		while(SELECT(static_cast<int>(Unreliable_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
 			addrlen = sizeof(SOCKADDR);
 			bytesin = RECVFROM(Unreliable_socket, (char *)&ack_header,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
 			if(bytesin==-1){
@@ -1679,11 +1644,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 
 		FD_ZERO(&read_fds);
 		FD_SET(typeless_sock, &read_fds);    		
-#ifdef _WIN32
-		if(SELECT(0, &read_fds, NULL,NULL,&timeout, PSNET_TYPE_RELIABLE)){
-#else
-		if(SELECT(typeless_sock+1, &read_fds, NULL,NULL,&timeout, PSNET_TYPE_RELIABLE)){
-#endif
+		if(SELECT(static_cast<int>(typeless_sock+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
 			ml_string("selected() in psnet_rel_connect_to_server()");
 
 			addrlen = sizeof(SOCKADDR);
@@ -1993,17 +1954,17 @@ unsigned int psnet_ras_status()
 		return INADDR_ANY;
 	}
 
-	pRasEnumConnections = (DWORD (__stdcall *)(LPRASCONN, LPDWORD, LPDWORD))GetProcAddress(ras_handle, "RasEnumConnectionsA");
+	pRasEnumConnections = (DWORD (__stdcall *)(LPRASCONN, LPDWORD, LPDWORD))(void*)GetProcAddress(ras_handle, "RasEnumConnectionsA");
 	if (!pRasEnumConnections)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;
 	}
-	pRasGetConnectStatus = (DWORD (__stdcall *)(HRASCONN, LPRASCONNSTATUS))GetProcAddress(ras_handle, "RasGetConnectStatusA");
+	pRasGetConnectStatus = (DWORD (__stdcall *)(HRASCONN, LPRASCONNSTATUS))(void*)GetProcAddress(ras_handle, "RasGetConnectStatusA");
 	if (!pRasGetConnectStatus)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;
 	}
-	pRasGetProjectionInfo = (DWORD (__stdcall *)(HRASCONN, RASPROJECTION, LPVOID, LPDWORD))GetProcAddress(ras_handle, "RasGetProjectionInfoA");
+	pRasGetProjectionInfo = (DWORD (__stdcall *)(HRASCONN, RASPROJECTION, LPVOID, LPDWORD))(void*)GetProcAddress(ras_handle, "RasGetProjectionInfoA");
 	if (!pRasGetProjectionInfo)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;

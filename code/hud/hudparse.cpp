@@ -19,6 +19,7 @@
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h" //Duh.
 #include "hud/hudreticle.h"
+#include "hud/hudscripting.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtarget.h"
@@ -30,6 +31,7 @@
 #include "parse/parselo.h"
 #include "radar/radar.h"
 #include "radar/radardradis.h"
+#include "radar/radarngon.h"
 #include "radar/radarorb.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h" //for ship struct
@@ -48,6 +50,8 @@ bool Scale_retail_gauges = true;
 int Force_scaling_above_res_global[2] = {-1, -1};
 
 int Hud_font = -1;
+
+bool Chase_view_only_ex = false;
 
 //WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
 int num_default_gauges = 42;
@@ -173,6 +177,7 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *hud_clr_p = NULL;
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
+	bool chase_view_only = false;
 
 	try
 	{
@@ -195,6 +200,11 @@ void parse_hud_gauges_tbl(const char *filename)
 			Hud_font = font::parse_font();
 		}
 	
+		if (optional_string("$Chase View Only:")) {
+			stuff_boolean(&chase_view_only);
+			Chase_view_only_ex = chase_view_only;
+		}
+
 		if(optional_string("$Max Directives:")) {
 			stuff_int(&Max_directives);
 		}
@@ -309,6 +319,10 @@ void parse_hud_gauges_tbl(const char *filename)
 					if (optional_string("$Font:")) {
 						ship_font = font::parse_font();
 					}
+					
+					if (optional_string("$Chase View Only:")) {
+						stuff_boolean(&chase_view_only);
+					}
 				}
 				else {
 					// can't find ship class. move on.
@@ -343,6 +357,9 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				if (optional_string("$Font:")) {
 					ship_font = font::parse_font();
+				}
+				if (optional_string("$Chase View Only:")) {
+					stuff_boolean(&chase_view_only);
 				}
 				break;
 			default:
@@ -449,6 +466,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				memcpy(settings.force_scaling_above_res, force_scaling_above_res, sizeof(settings.force_scaling_above_res));
 				settings.ship_idx = &ship_classes;
 				settings.use_clr = use_clr_p;
+				settings.chase_view_only = chase_view_only;
 
 				// if "default" is specified, then the base resolution is {-1, -1},
 				// indicating GR_640 or GR_1024 to the handlers. otherwise, change it
@@ -898,6 +916,9 @@ int parse_gauge_type()
 
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
+
+	if ( optional_string("+Scripted Gauge:") )
+		return HUD_OBJECT_SCRIPTING;
 	
 	return -1;
 }
@@ -1077,6 +1098,9 @@ void load_gauge(int gauge, gauge_settings* settings)
 		break;
 	case HUD_OBJECT_SECONDARY_WEAPONS:
 		load_gauge_secondary_weapons(settings);
+		break;
+	case HUD_OBJECT_SCRIPTING:
+		load_gauge_scripting(settings);
 		break;
 	default:
 		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
@@ -1262,6 +1286,10 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		}
 	}
 
+	if (optional_string("Chase View Only:")) {
+		stuff_boolean(&settings->chase_view_only);
+	}
+
 	if (settings->set_position) {
 		if(optional_string("Slew:")) {
 			stuff_boolean(&settings->slew);
@@ -1277,6 +1305,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 
 	instance->initBaseResolution(settings->base_res[0], settings->base_res[1]);
 	instance->initFont(settings->font_num);
+	instance->initChase_view_only(settings->chase_view_only);
 	if (settings->set_position) {
 		instance->initPosition(settings->coords[0], settings->coords[1]);
 		instance->initSlew(settings->slew);
@@ -1401,6 +1430,10 @@ void load_gauge_custom(gauge_settings* settings)
 			}
 		}
 
+		if (optional_string("Chase View Only:")) {
+			stuff_boolean(&settings->chase_view_only);
+		}
+
 		required_string("Name:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
@@ -1452,6 +1485,7 @@ void load_gauge_custom(gauge_settings* settings)
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initChase_view_only(settings->chase_view_only);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -1991,6 +2025,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	int scaleX = 15;
 	int scaleY = 10;
 	int size = 5;
+	int autoaim_frame = -1;
 	
 	settings->origin[0] = 0.5f;
 	settings->origin[1] = 0.5f;
@@ -2040,8 +2075,12 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	if (optional_string("Firepoint Y coordinate multiplier:"))
 		stuff_int(&scaleY);
 
+	if(optional_string("Autoaim Frame:"))
+		stuff_int(&autoaim_frame);
+
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
+	hud_gauge->setAutoaimFrame(autoaim_frame);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -2640,7 +2679,35 @@ void load_gauge_radar_std(gauge_settings* settings)
 		strcpy_s(fname, "2_radar1");
 	}
 
-	auto hud_gauge = gauge_load_common<HudGaugeRadarStd>(settings);
+	// Ngon radar -- Cyborg17 - to fit this into gauge_load_common, we have to have this right before origin and Offset
+	int num_sides = 0;
+	float offset  = 0.0f;
+
+	if (optional_string("Ngon Sides:")) {
+		stuff_int(&num_sides);
+		if ((num_sides < RADAR_NGON_MIN_SIDES)) {
+			Warning(LOCATION,
+			        "Invalid value for 'Ngon Sides'! Value must be greater than %i.\n Using standard radar instead.\n",
+			        RADAR_NGON_MIN_SIDES);
+			num_sides = 0;
+		}
+
+		if (optional_string("Ngon Offset:")) {
+			stuff_float(&offset);
+		}
+	}
+
+	//=======================================================================================================
+	// Cyborg17 - not using auto here is a huge pain to get exactly right and to read. If we put this in a
+	// normal if block, either auto will break or hud_gauge will go out of scope before the last block below.
+	// The ternery operator lets us circumvent this problem by allowing us to use auto, while also loading
+	// the radar, creating the unique_ptr, and staying in scope.
+
+	// did we have a normal radar? If so, load the regular radar.
+	auto hud_gauge = (num_sides == 0)
+	                     ? gauge_load_common<HudGaugeRadarStd>(settings)
+	                     // if not *construct* and then load the ngon radar
+	                     : gauge_load_common<HudGaugeRadarNgon>(settings, new HudGaugeRadarNgon(num_sides, offset));
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2660,7 +2727,7 @@ void load_gauge_radar_std(gauge_settings* settings)
 	if(optional_string("Short Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
-
+	
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
 		hud_gauge->initBitmaps(fname);
@@ -2959,6 +3026,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initFont(settings->font_num);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
+	hud_gauge->initChase_view_only(settings->chase_view_only);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -5184,6 +5252,18 @@ void load_gauge_secondary_weapons(gauge_settings* settings)
 	hud_gauge->initSecondaryReloadOffsetX(reload_x);
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
 	hud_gauge->initLinkIcon();
+
+	gauge_assign_common(settings, std::move(hud_gauge));
+}
+
+void load_gauge_scripting(gauge_settings* settings) {
+	auto hud_gauge = gauge_load_common<HudGaugeScripting>(settings);
+
+	required_string("Name:");
+	SCP_string name;
+	stuff_string(name, F_NAME);
+
+	hud_gauge->initName(name);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

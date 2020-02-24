@@ -346,8 +346,6 @@ float static_light_factor = 1.0f;
 float static_tube_factor = 1.0f;
 float static_point_factor = 1.0f;
 
-double specular_exponent_value = 16.0;
-
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_level )
 {
 	int idx;
@@ -623,11 +621,6 @@ light_indexing_info scene_lights::bufferLights()
 	light_info.num_lights = FilteredLights.size();
 
 	return light_info;
-}
-
-size_t scene_lights::getNumStaticLights()
-{
-	return StaticLightIndices.size();
 }
 
 void scene_lights::resetLightState()

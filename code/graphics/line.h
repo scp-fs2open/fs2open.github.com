@@ -20,7 +20,7 @@
     int __temp__ = (a);                                                 \
     (a) = (b);                                                          \
     (b) = __temp__;                                                     \
-} while(0)
+} while(false)
 
 //#define INT_SCALE(var,arg,num,den) ((var) = ((arg) * (num)) / (den))
 #define INT_SCALE(var,arg,num,den) ((var) = MulDiv(arg, num, den))
@@ -90,13 +90,13 @@
             WHEN_CLIPPED;                                               \
         }                                                               \
     }                                                                   \
-} while(0)
+} while(false)
 
 #define FL_EXCHG(a,b) do {                                                 \
     float __temp__ = (a);                                                 \
     (a) = (b);                                                          \
     (b) = __temp__;                                                     \
-} while(0)
+} while(false)
 
 #define FL_SCALE(var,arg,num,den) ((var) = ((arg) * (num)) / (den))
 
@@ -165,6 +165,6 @@
             WHEN_CLIPPED;                                               \
         }                                                               \
     }                                                                   \
-} while(0)
+} while(false)
 
 #endif

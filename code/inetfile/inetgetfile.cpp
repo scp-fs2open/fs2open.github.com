@@ -8,21 +8,21 @@
 */
 
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 #include "globalincs/pstypes.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#include <direct.h>
-#endif
 #include <cstdio>
 #include <cstring>
 
+#include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
 #include "inetfile/cftp.h"
 #include "inetfile/chttpget.h"
-
 #include "inetfile/inetgetfile.h"
-
+#include "osapi/osapi.h"
 
 
 #define INET_STATE_CONNECTING		1
@@ -33,49 +33,34 @@
 
 void InetGetFile::AbortGet()
 {
-#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		http->AbortGet();
 	} else {
 		ftp->AbortGet();
 	}
-#endif
 }
 
-InetGetFile::InetGetFile(char * /*URL*/, char * /*localfile*/)
+InetGetFile::InetGetFile(const char *URL, const char *filename, int cf_type)
 {
-#ifdef USE_INETFILE
 	m_HardError = 0;
 	http = NULL;
 	ftp = NULL;
 
-	if ( (URL == NULL) || (localfile == NULL) )
+	if ( (URL == nullptr) || (filename == nullptr) || !CF_TYPE_SPECIFIED(cf_type) ) {
 		m_HardError = INET_ERROR_BADPARMS;
+		return;
+	}
 
 	// create directory if not already there.
-	char dir_name[256], *end;
+	cf_create_directory(cf_type);
 
-	// make sure localfile has \ in it or we'll be here a long time.
-	if ( strstr(localfile, DIR_SEPARATOR_STR) ) {
-		strcpy_s(dir_name, localfile);
-		int len = strlen(localfile);
-		end = dir_name + len;
+	// create full path for file
+	char localfile[MAX_PATH_LEN] = "";
+	cf_create_default_path_string(localfile, MAX_PATH_LEN, cf_type, filename);
 
-		// start from end of localfile and go to first \ to get dirname
-		while ( *end != DIR_SEPARATOR_CHAR ) {
-			end--;
-		}
-
-		*end = '\0';
-
-		if ( _mkdir(dir_name) == 0 )	{
-			mprintf(( "CFILE: Created new directory '%s'\n", dir_name ));
-		}
-	}
-printf("URL: %s\n", URL);
 	if ( strstr(URL, "http:") ) {
 		m_bUseHTTP = true;
-printf("using http!\n");
+
 		// using http proxy?
 		extern char Multi_options_proxy[512];
 		extern ushort Multi_options_proxy_port;
@@ -91,7 +76,7 @@ printf("using http!\n");
 		}
 	} else if ( strstr(URL, "ftp:") ) {
 		m_bUseHTTP = FALSE;
-printf("using ftp! (%s)\n", URL);
+
 		ftp = new CFtpGet(URL,localfile);
 
 		if (ftp == NULL) {
@@ -101,8 +86,7 @@ printf("using ftp! (%s)\n", URL);
 		m_HardError = INET_ERROR_CANT_PARSE_URL;
 	}
 
-	Sleep(1000);
-#endif
+	os_sleep(1000);
 }
 
 InetGetFile::~InetGetFile()
@@ -116,7 +100,6 @@ InetGetFile::~InetGetFile()
 
 bool InetGetFile::IsConnecting()
 {
-#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -130,14 +113,10 @@ bool InetGetFile::IsConnecting()
 	} else {
 		return false;
 	}
-#else
-	return false;
-#endif
 }
 
 bool InetGetFile::IsReceiving()
 {
-#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -151,14 +130,10 @@ bool InetGetFile::IsReceiving()
 	} else {
 		return false;
 	}
-#else
-	return false;
-#endif
 }
 
 bool InetGetFile::IsFileReceived()
 {
-#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -172,14 +147,10 @@ bool InetGetFile::IsFileReceived()
 	} else {
 		return false;
 	}
-#else
-	return false;
-#endif
 }
 
 bool InetGetFile::IsFileError()
 {
-#ifdef USE_INETFILE
 	int state;
 
 	if (m_HardError)
@@ -190,7 +161,7 @@ bool InetGetFile::IsFileError()
 	} else {
 		state = ftp->GetStatus();
 	}
-printf("state: %i\n", state);
+
 	switch (state)
 	{
 		case FTP_STATE_URL_PARSING_ERROR:
@@ -212,13 +183,10 @@ printf("state: %i\n", state);
 		default:
 			return false;
 	}
-#endif
-	return false;
 }
 
 int InetGetFile::GetErrorCode()
 {
-#ifdef USE_INETFILE
 	int state;
 
 	if (m_HardError)
@@ -256,32 +224,22 @@ int InetGetFile::GetErrorCode()
 		default:
 			return INET_ERROR_NO_ERROR;
 	}
-#endif
-	return INET_ERROR_NO_ERROR;
 }
 
 int InetGetFile::GetTotalBytes()
 {
-#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		return http->GetTotalBytes();
 	} else {
 		return ftp->GetTotalBytes();
 	}
-#else
-	return 0;
-#endif
 }
 
 int InetGetFile::GetBytesIn()
 {
-#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		return http->GetBytesIn();
 	} else {
 		return ftp->GetBytesIn();
 	}
-#else
-	return 0;
-#endif
 }

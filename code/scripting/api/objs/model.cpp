@@ -167,7 +167,7 @@ ADE_VIRTVAR(BoundingBoxMin, l_Model, "vector", "Model bounding box minimum", "ve
 ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model filename, or an empty string if the handle is invalid")
 {
 	model_h *mdl = NULL;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &s))
 		return ade_set_error(L, "s", "");
 
@@ -277,16 +277,16 @@ ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", 
 ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "texture", "Model textures, or invalid modeltextures handle if model handle is invalid")
 {
 	modeltextures_h *mth = NULL;
-	int new_tex = -1;
-	char *s = NULL;
+	texture_h* new_tex   = nullptr;
+	const char* s        = nullptr;
 
-	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.Get(&new_tex)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.GetPtr(&new_tex)))
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	polymodel *pm = mth->Get();
 
 	if (!mth->IsValid() || s == NULL || pm == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	texture_info *tinfo = NULL;
 	texture_map *tmap = NULL;
@@ -297,7 +297,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		int idx = atoi(s) - 1;	//Lua->FS2
 
 		if (idx < 0 || idx >= num_textures)
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 		tmap = &pm->maps[idx / TM_NUM_TYPES];
 		tinfo = &tmap->textures[idx % TM_NUM_TYPES];
@@ -316,13 +316,13 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 	}
 
 	if(tinfo == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if (ADE_SETTING_VAR) {
-		tinfo->SetTexture(new_tex);
+	if (ADE_SETTING_VAR && new_tex != nullptr) {
+		tinfo->SetTexture(new_tex->handle);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(tinfo->GetTexture()));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(tinfo->GetTexture())));
 }
 
 ADE_FUNC(isValid, l_ModelTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -437,7 +437,7 @@ ADE_FUNC(__len, l_Thrusters, NULL, "Number of thruster banks on the model", "num
 ADE_INDEXER(l_Thrusters, "number Index", "Array of all thrusterbanks on this thruster", "thrusterbank", "Handle to the thrusterbank or invalid handle if index is invalid")
 {
 	thrusters_h *trh = NULL;
-	char *s = NULL;
+	const char* s    = nullptr;
 	thrusterbank_h newThr;
 
 	if (!ade_get_args(L, "os|o", l_Thrusters.GetPtr(&trh), &s, l_Thrusterbank.Get(&newThr)))
@@ -512,7 +512,7 @@ ADE_FUNC(__len, l_Thrusterbank, NULL, "Number of thrusters on this thrusterbank"
 ADE_INDEXER(l_Thrusterbank, "number Index", "Array of glowpoint", "glowpoint", "Glowpoint, or invalid glowpoint handle on failure")
 {
 	thrusterbank_h *tbh = NULL;
-	char *s = NULL;
+	const char* s       = nullptr;
 	glowpoint_h *glh = NULL;
 
 	if (!ade_get_args(L, "os|o", l_Thrusterbank.GetPtr(&tbh), &s, l_Glowpoint.GetPtr(&glh)))
@@ -648,7 +648,7 @@ ADE_INDEXER(l_Dockingbays, "dockingbay", "Gets a dockingbay handle from this mod
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "os|o", l_Dockingbays.GetPtr(&dbhp), &name, l_Dockingbay.GetPtr(&newVal)))
 		{
@@ -799,7 +799,11 @@ ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking 
 	return ade_set_args(L, "o", l_Vector.Set(dbp->norm[index]));
 }
 
-ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay", "Computes the final position and orientation of a docker bay that docks with this bay.", "vector, orientation", "The local location and orientation of the docker vessel in the reference to the vessel of the docking bay handle, or a nil value on error")
+ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
+         "Computes the final position and orientation of a docker bay that docks with this bay.",
+         ade_type_info({"vector", "orientation"}),
+         "The local location and orientation of the docker vessel in the reference to the vessel of the docking bay "
+         "handle, or a nil value on error")
 {
 	dockingbay_h *dockee_bay_h = NULL, *docker_bay_h = NULL;
 	vec3d final_pos;

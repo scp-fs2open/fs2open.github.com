@@ -2,10 +2,12 @@
 //
 
 #include "subsystem.h"
+#include "model_path.h"
 #include "object.h"
-#include "vecmath.h"
-#include "ship_bank.h"
 #include "ship.h"
+#include "ship_bank.h"
+#include "vecmath.h"
+#include "hud/hudtarget.h"
 #include "ship/shiphit.h"
 
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
@@ -19,9 +21,7 @@ ship_subsys_h::ship_subsys_h() : object_h() {
 ship_subsys_h::ship_subsys_h(object* objp_in, ship_subsys* sub) : object_h(objp_in) {
 	ss = sub;
 }
-bool ship_subsys_h::IsValid() {
-	return object_h::IsValid() && objp->type == OBJ_SHIP && ss != NULL;
-}
+bool ship_subsys_h::isSubsystemValid() const { return object_h::IsValid() && objp->type == OBJ_SHIP && ss != nullptr; }
 
 //**********HANDLE: Subsystem
 ADE_OBJ(l_Subsystem, ship_subsys_h, "subsystem", "Ship subsystem handle");
@@ -33,7 +33,7 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
@@ -42,13 +42,13 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	ship_subsys_h *sso;
-	char *s = NULL;
+	const char* s    = nullptr;
 	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "s", "");
 
 	ship_subsys *ssys = sso->ss;
@@ -74,7 +74,7 @@ ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity", 
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && f >= 0.0f)
@@ -90,7 +90,7 @@ ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "numbe
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && f >= 0.0f)
@@ -106,7 +106,7 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if(ADE_SETTING_VAR && mh)
@@ -124,7 +124,7 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if(ADE_SETTING_VAR && mh)
@@ -142,7 +142,7 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
@@ -167,7 +167,7 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
@@ -187,7 +187,7 @@ ADE_VIRTVAR(Position, l_Subsystem, "vector", "Subsystem position with regards to
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v != NULL)
@@ -198,6 +198,24 @@ ADE_VIRTVAR(Position, l_Subsystem, "vector", "Subsystem position with regards to
 	return ade_set_args(L, "o", l_Vector.Set(sso->ss->system_info->pnt));
 }
 
+ADE_VIRTVAR(WorldPosition, l_Subsystem, "vector",
+            "Subsystem position in world space. This handles subsystem attached to a rotating submodel properly.",
+            "vector", "Subsystem position, or null vector if subsystem handle is invalid")
+{
+	ship_subsys_h* sso;
+	vec3d* v = nullptr;
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	vec3d world_pos;
+	get_subsystem_world_pos(sso->objp, sso->ss, &world_pos);
+
+	return ade_set_args(L, "o", l_Vector.Set(world_pos));
+}
+
 ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with regards to main ship (Local vector)", "vector", "Gun position, or null vector if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
@@ -205,7 +223,7 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with reg
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
@@ -225,11 +243,11 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with reg
 ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem name, or an empty string if handle is invalid")
 {
 	ship_subsys_h *sso;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL && strlen(s))
@@ -246,7 +264,7 @@ ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subs
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", sso->ss->system_info->subobj_name);
@@ -258,12 +276,12 @@ ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapo
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &sso->ss->weapons;
 
-	if(ADE_SETTING_VAR && sso2 && sso2->IsValid()) {
+	if (ADE_SETTING_VAR && sso2 && sso2->isSubsystemValid()) {
 		ship_weapon *src = &sso2->ss->weapons;
 
 		dst->current_primary_bank = src->current_primary_bank;
@@ -288,12 +306,12 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
 	ship_weapon *dst = &sso->ss->weapons;
 
-	if(ADE_SETTING_VAR && sso2 && sso2->IsValid()) {
+	if (ADE_SETTING_VAR && sso2 && sso2->isSubsystemValid()) {
 		ship_weapon *src = &sso2->ss->weapons;
 
 		dst->current_secondary_bank = src->current_secondary_bank;
@@ -321,7 +339,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	ship_subsys *ss = sso->ss;
@@ -344,7 +362,7 @@ ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ADE_RETURN_FALSE;
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_FALSE;
 
 	if(ADE_SETTING_VAR)
@@ -365,7 +383,7 @@ ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds)
 	if (!ade_get_args(L, "o|i", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "i", -1);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "i", -1);
 
 	if (!(sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
@@ -387,7 +405,7 @@ ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrat
 	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	if(ADE_SETTING_VAR)
@@ -405,7 +423,7 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "b", false);
 
 	if(ADE_SETTING_VAR)
@@ -422,7 +440,7 @@ ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "numb
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR)
@@ -440,7 +458,7 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "b", false);
 
 	if(ADE_SETTING_VAR)
@@ -458,7 +476,7 @@ ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret 
 	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	if(ADE_SETTING_VAR)
@@ -469,6 +487,33 @@ ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret 
 	return ade_set_args(L, "f", sso->ss->turret_next_fire_stamp / 1000.0f);
 }
 
+ADE_VIRTVAR(ModelPath, l_Subsystem, "modelpath", "The model path points belonging to this subsystem", "modelpath",
+            "The model path of this subsystem")
+{
+	ship_subsys_h* sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_ModelPath.Set(model_path_h()));
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "o", l_ModelPath.Set(model_path_h()));
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting ModelPath is not supported yet!");
+	}
+
+	auto model    = model_get(sso->ss->system_info->model_num);
+	auto path_idx = sso->ss->system_info->path_num;
+
+	if (path_idx < 0) {
+		// No model path for this subsystem
+		return ade_set_args(L, "o", l_ModelPath.Set(model_path_h()));
+	}
+
+	Assertion(path_idx >= 0 && path_idx < model->n_paths, "Path index %d is invalid!", path_idx);
+
+	return ade_set_args(L, "o", l_ModelPath.Set(model_path_h(*sso, model->paths[path_idx])));
+}
+
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
@@ -476,7 +521,7 @@ ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targetin
 	if(!ade_get_args(L, "ob", l_Subsystem.GetPtr(&sso), &targetOverride))
 		return ADE_RETURN_FALSE;
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_FALSE;
 
 	ship_subsys *ss = sso->ss;
@@ -491,7 +536,7 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
 	if(sso->ss->flags[Ship::Subsystem_Flags::Has_fired]){
@@ -508,7 +553,7 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	if (!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET);
@@ -521,7 +566,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&newh)))
 		return ADE_RETURN_NIL;
 
-	if (!sso->IsValid() || !newh || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+	if (!sso->isSubsystemValid() || !newh || !newh->IsValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
 		return ADE_RETURN_NIL;
 
 	vec3d	tpos,tvec;
@@ -543,7 +588,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	if(!ade_get_args(L, "o|if", l_Subsystem.GetPtr(&sso), &wnum, &flak_range))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
 	if (sso->ss->current_hits <= 0)
@@ -601,7 +646,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d gvec;
@@ -615,14 +660,15 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
-ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
+ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type_info({"number", "number", "number"}),
+         "Standard FOV, maximum barrel elevation, turret base fov.")
 {
 	ship_subsys_h *sso;
 	float fov, fov_e, fov_y;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
 	model_subsystem *tp = sso->ss->system_info;
@@ -634,13 +680,16 @@ ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, nu
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
 
-ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position and firing normal this turret will fire from. This function returns a world position", "vector, vector", "vector or null vector on error")
+ADE_FUNC(
+    getNextFiringPosition, l_Subsystem, nullptr,
+    "Retrieves the next position and firing normal this turret will fire from. This function returns a world position",
+    ade_type_info({"vector", "vector"}), "vector or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Vector.Set(vmd_zero_vector));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Vector.Set(vmd_zero_vector));
 
 	vec3d gpos, gvec;
@@ -650,14 +699,14 @@ ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }
 
-ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
+ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turret matrix", "orientation", "Turret matrix.")
 {
 	ship_subsys_h *sso;
 	matrix m;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
 	model_subsystem *tp = sso->ss->system_info;
@@ -674,10 +723,32 @@ ADE_FUNC(getParent, l_Subsystem, NULL, "The object parent of this subsystem, is 
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Ship.GetPtr(&objhp)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(!sso->IsValid())
+	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	return ade_set_args(L, "o", l_Object.Set(object_h(sso->objp)));
+}
+
+ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
+         "Checks if the subsystem is in view from the specified position. This only checks for occlusion by the parent "
+         "object, not by other objects in the mission.",
+         "boolean", "true if in view, false otherwise")
+{
+	ship_subsys_h *sso = nullptr;
+	vec3d *from = nullptr;
+	if(!ade_get_args(L, "oo", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&from)))
+		return ADE_RETURN_FALSE;
+
+	if (!sso->isSubsystemValid())
+		return ADE_RETURN_FALSE;
+
+	vec3d world_pos;
+	get_subsystem_world_pos(sso->objp, sso->ss, &world_pos);
+
+	// Disable facing check since the HUD code does the same
+	int in_sight = ship_subsystem_in_sight(sso->objp, sso->ss, from, &world_pos, 0);
+
+	return ade_set_args(L, "b", in_sight != 0);
 }
 
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -686,7 +757,7 @@ ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", sso->IsValid());
+	return ade_set_args(L, "b", sso->isSubsystemValid());
 }
 
 }

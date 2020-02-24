@@ -31,6 +31,8 @@
 
 #include <utf8.h>
 
+using namespace parse;
+
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
@@ -40,11 +42,9 @@
 bool	Parsing_modular_table = false;
 
 char		Current_filename[MAX_PATH_LEN];
-char		Current_filename_save[MAX_PATH_LEN];
 char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
 int		Warning_count, Error_count;
-int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
 
@@ -53,7 +53,7 @@ char	*Parse_text_raw = nullptr;
 char	*Mp = NULL, *Mp_save = NULL;
 const char	*token_found;
 
-static int Parsing_paused = 0;
+SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
 
 // text allocation stuff
 void allocate_parse_text(size_t size);
@@ -449,9 +449,7 @@ int required_string(const char *pstr)
 	}
 
 	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
-		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
-        throw parse::ParseException("Required string not found");
+		throw parse::ParseException("Required string not found");
 	}
 
 	Mp += strlen(pstr);
@@ -666,8 +664,6 @@ int required_string_either(const char *str1, const char *str2)
 		ignore_white_space();
 	}
 
-	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-	Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
 	throw parse::ParseException("Required string not found");
 }
 
@@ -910,7 +906,7 @@ void copy_text_until(char *outstr, char *instr, const char *endstr, int max_char
 
 	} else {
 		nprintf(("Error", "Error.  Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
-			foundstr - instr - strlen(endstr), max_chars, endstr));
+			foundstr - instr + strlen(endstr), max_chars, endstr));
 
         throw parse::ParseException("Too much text found");
 	}
@@ -2033,7 +2029,7 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
-	if ( Parsing_paused && ((processed_text == NULL) || (raw_text == NULL)) ) {
+	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
 		Error(LOCATION, "ERROR: Neither processed_text nor raw_text may be NULL when parsing is paused!!\n");
 	}
 
@@ -2057,7 +2053,7 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	strcpy_s(Current_filename_sub, "internal default file");
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
-	if ( Parsing_paused && ((processed_text == NULL) || (raw_text == NULL)) ) {
+	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
 		Error(LOCATION, "ERROR: Neither \"processed_text\" nor \"raw_text\" may be NULL when parsing is paused!!\n");
 	}
 
@@ -2088,7 +2084,7 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 
 void stop_parse()
 {
-	Assert( !Parsing_paused );
+	Assert( Bookmarks.empty() );
 
 	if (Parse_text != nullptr) {
 		vm_free(Parse_text);
@@ -2653,7 +2649,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 		else
 		{
 			*b = false;
-			Warning(LOCATION, "Boolean '%s' type unknown; assuming 'no/false'",token);
+			error_display(0, "Boolean '%s' type unknown; assuming 'no/false'",token);
 		}
 	}
 
@@ -3017,7 +3013,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// no ships from the current tables (when swapping mods) so don't report that as an error.
 		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
 			// print a warning in debug mode
-			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+			error_display(0, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
 			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
 
@@ -3028,14 +3024,14 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
 		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
 			clean_loadout_list_entry();
-			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
+			error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
 		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
 			clean_loadout_list_entry();
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )
-				Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
+				error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
 			continue;
 		}
 
@@ -3354,35 +3350,32 @@ void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[
 // with the currently parsing file
 void pause_parse()
 {
-	Assert( !Parsing_paused );
-	if (Parsing_paused)
-		return;
+	Bookmark Mark;
 
-	Mp_save = Mp;
+	Mark.filename = Current_filename;
+	Mark.Mp = Mp;
+	Mark.Warning_count = Warning_count;
+	Mark.Error_count = Error_count;
 
-	Warning_count_save = Warning_count;
-	Error_count_save = Error_count;
-
-	strcpy_s(Current_filename_save, Current_filename);
-
-	Parsing_paused = 1;
+	Bookmarks.push_back(Mark);
 }
 
 // unpause parsing to continue with previously parsing file
 void unpause_parse()
 {
-	Assert( Parsing_paused );
-	if (!Parsing_paused)
+	Assert( !Bookmarks.empty() );
+	if (Bookmarks.empty())
 		return;
 
-	Mp = Mp_save;
+	Bookmark Mark = Bookmarks.back();
 
-	Warning_count = Warning_count_save;
-	Error_count = Error_count_save;
+	Mp = Mark.Mp;
+	Warning_count = Mark.Warning_count;
+	Error_count = Mark.Error_count;
 
-	strcpy_s(Current_filename, Current_filename_save);
+	strcpy_s(Current_filename, Mark.filename.c_str());
 
-	Parsing_paused = 0;
+	Bookmarks.pop_back();
 }
 
 void reset_parse(char *text)

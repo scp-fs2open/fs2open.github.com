@@ -29,6 +29,8 @@ extern mission The_mission;  // need to send this info to the briefing
 extern int shifted_ascii_table[];
 extern int ascii_table[];
 
+SCP_vector<SCP_string> Ignored_missions;
+
 // -----------------------------------------------
 // For recording most recent missions played
 // -----------------------------------------------
@@ -41,9 +43,9 @@ int	Num_recent_missions;
 //
 //	Update the Recent_missions[][] array
 //
-void ml_update_recent_missions(char *filename)
+void ml_update_recent_missions(const char* filename)
 {
-	char	tmp[MAX_RECENT_MISSIONS][MAX_FILENAME_LEN], *p;
+	char tmp[MAX_RECENT_MISSIONS][MAX_FILENAME_LEN];
 	int	i,j;
 	
 
@@ -52,7 +54,7 @@ void ml_update_recent_missions(char *filename)
 	}
 
 	// get a pointer to just the basename of the filename (including extension)
-	p = strrchr(filename, DIR_SEPARATOR_CHAR);
+	const char* p = strrchr(filename, DIR_SEPARATOR_CHAR);
 	if ( p == NULL ) {
 		p = filename;
 	} else {
@@ -76,12 +78,27 @@ void ml_update_recent_missions(char *filename)
 	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
 }
 
+bool mission_is_ignored(const char *filename)
+{
+	SCP_string filename_no_ext = filename;
+	drop_extension(filename_no_ext);
+	std::transform(filename_no_ext.begin(), filename_no_ext.end(), filename_no_ext.begin(),
+	               [](char c) { return (char)::tolower(c); });
+
+	for (auto &ii: Ignored_missions) {
+		if (ii == filename_no_ext) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 // Mission_load takes no parameters.
 // It sets the following global variables
 //   Game_current_mission_filename
-
-// returns -1 if failed, 0 if successful
-int mission_load(char *filename_ext)
+// returns true successful, false if failed
+bool mission_load(const char* filename_ext)
 {
 	TRACE_SCOPE(tracing::LoadMissionLoad);
 
@@ -100,6 +117,11 @@ int mission_load(char *filename_ext)
 		*ext = 0;				// remove any extension!
 	}
 
+	if (mission_is_ignored(filename)) {
+		mprintf(("MISSION LOAD: Tried to load an ignored mission!  Aborting..."));
+		return false;
+	}
+
 	strcat_s(filename, FS_MISSION_FILE_EXT);
 
 	// does the magical mission parsing
@@ -108,8 +130,8 @@ int mission_load(char *filename_ext)
 	// to choose the type of ship that he is to fly
 	// return value of 0 indicates success, other is failure.
 
-	if ( parse_main(filename) )
-		return -1;
+	if ( !parse_main(filename) )
+		return false;
 
 	if (Select_default_ship) {
 		int ret;
@@ -120,7 +142,8 @@ int mission_load(char *filename_ext)
 	ml_update_recent_missions(filename_ext);  // update recently played missions list (save the csg later)
 
 	init_hud();
-	return 0;
+
+	return true;
 }
 
 //====================================

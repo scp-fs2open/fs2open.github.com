@@ -10,7 +10,7 @@
 
 
 #ifdef _WIN32
-#include <winsock.h>
+#include <winsock2.h>
 #endif
 
 #include "network/multi_pxo.h"
@@ -39,7 +39,9 @@
 #include "parse/parselo.h"
 #include "stats/scoring.h"
 #include "playerman/player.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
+#include "network/ptrack.h"
+#include "network/gtrack.h"
 #include "menuui/mainhallmenu.h"
 #include "debugconsole/console.h"
 
@@ -845,7 +847,7 @@ UI_XSTR Multi_pxo_pinfo_text[GR_NUM_RESOLUTIONS][MULTI_PXO_PINFO_NUM_TEXT] = {
 int Multi_pxo_pinfo_bitmap = -1;
 UI_WINDOW Multi_pxo_pinfo_window;
 
-
+vmt_stats_struct Multi_pxo_pinfo;
 player Multi_pxo_pinfo_player;
 
 int Multi_pxo_retrieve_mode = -1;
@@ -1360,7 +1362,8 @@ void multi_pxo_close()
 
 // run normally (no popups)
 void multi_pxo_do_normal()
-{		
+{
+	int validate_code;
 	int k = Multi_pxo_window.process();
 	
 	// process any keypresses
@@ -1392,18 +1395,47 @@ void multi_pxo_do_normal()
 
 	// if we need to get tracker info for ourselves, do so
 	if (Multi_pxo_must_validate) {
-		// validate the current player with the master tracker (will create the pilot on the MT if necessary)
-		bool validate_code = fs2netd_login();
+		// initialize the master tracker API for Freespace
+		multi_fs_tracker_init();
 
-		if ( !validate_code ) {
-			// go back to the main hall
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		// validate game data first, for initial game/mod ident
+		multi_fs_tracker_validate_game_data();
+
+		// validate the current player with the master tracker (will create the pilot on the MT if necessary)
+		validate_code = multi_fs_tracker_validate(0);
+
+		if (validate_code != 1) {
+			// show an error popup if it failed (not cancelled by the user)
+			if (validate_code == 0) {
+				switch (popup(PF_USE_AFFIRMATIVE_ICON | PF_WEB_CURSOR_1 | PF_WEB_CURSOR_2, 3, POPUP_CANCEL,XSTR("&Create Acct",936), XSTR("&Verify Acct",937), XSTR("PXO Login not accepted.  You may visit the Parallax Online website to create or verify your login.  Or you may click Cancel to play without using the Parallax Online service.  (You may switch back to Parallax Online from the Options Menu under the Multi tab.)",938))) {
+					case 0:
+						nprintf(("Network","PXO CANCEL\n"));
+
+						// flip his "pxo" bit temporarily and push him to the join game screen
+						Multi_options_g.pxo = 0;
+						// Net_game_tcp_mode = NET_TCP;
+						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
+						break;
+
+					case 1:
+						nprintf(("Network","PXO CREATE\n"));
+						// fire up the given URL
+						multi_pxo_url(Multi_options_g.pxo_create_url);
+						break;
+
+					case 2:
+						nprintf(("Network","PXO VERIFY\n"));
+						// fire up the given URL
+						multi_pxo_url(Multi_options_g.pxo_verify_url);
+						break;
+				}
+			}
 
 			Multi_pxo_must_connect = 0;
 			Multi_pxo_must_validate = 0;
 		}
-		// now we have to conenct to PXO
-		else {			
+		// now we have to connect to PXO
+		else {
 			Multi_pxo_must_connect = 1;
 			Multi_pxo_must_validate = 0;
 		}
@@ -1415,7 +1447,7 @@ void multi_pxo_do_normal()
 		Multi_pxo_connected = multi_pxo_connect();
 
 		// if we successfully connected, send a request for a list of channels on the server
-		if(Multi_pxo_connected){
+		if (Multi_pxo_connected) {
 			multi_pxo_get_channels();
 
 			// set our status
@@ -1448,7 +1480,7 @@ void multi_pxo_blit_all()
 		} else {
 			gr_clear();
 		} 
-	} while(0);
+	} while(false);
 	if(Multi_pxo_bitmap != -1){
 		gr_set_bitmap(Multi_pxo_bitmap);
 		gr_bitmap(0,0,GR_RESIZE_MENU);
@@ -1987,8 +2019,11 @@ void multi_pxo_api_process()
 	// give some time to psnet
 	PSNET_TOP_LAYER_PROCESS();
 
-	// give some time to FS2NetD
-	fs2netd_do_frame();
+	// give some time to the game tracker API
+	IdleGameTracker();
+
+	// give some time to the user tracker API
+	PollPTrackNet();
 	
 	// get any incoming text 
 	do
@@ -2454,6 +2489,7 @@ void multi_pxo_process_channels()
 void multi_pxo_channel_refresh_servers()
 {
 	pxo_channel *lookup;
+	filter_game_list_struct filter;
 
 	// traverse the list of existing channels we know about and query the game tracker about them
 	lookup = Multi_pxo_channels;
@@ -2464,8 +2500,12 @@ void multi_pxo_channel_refresh_servers()
 
 	do {
 		if ( strlen(lookup->name) ) {
+			// copy in the info
+			memset(&filter, 0, sizeof(filter_game_list_struct));
+			SDL_strlcpy(filter.channel, lookup->name, SDL_arraysize(filter.channel));
+
 			// send the request
-			fs2netd_update_game_count(lookup->name);
+			RequestGameCountWithFilter(&filter);
 		}
 
 		// next item
@@ -2483,8 +2523,13 @@ void multi_pxo_channel_refresh_current()
 {
 	// send a request for a server count on this channel
 	if ( strlen(Multi_pxo_channel_current.name) ) {
+		// fill in the data
+		filter_game_list_struct filter;
+		memset(&filter, 0, sizeof(filter_game_list_struct));
+		SDL_strlcpy(filter.channel, Multi_pxo_channel_current.name, SDL_arraysize(filter.channel));
+
 		// send the request
-		fs2netd_update_game_count(Multi_pxo_channel_current.name);
+		RequestGameCountWithFilter(&filter);
 	}		
 }
 
@@ -4366,20 +4411,20 @@ int multi_pxo_pinfo_cond()
 			// change the popup text
 			popup_change_text(XSTR("Getting player stats",968));
 
-			switch ( fs2netd_get_pilot_info(Multi_pxo_retrieve_name, &Multi_pxo_pinfo_player, true) )
-			{
-				// there was some failure
-				case -2:
-					return 2;
+			// fill in the data
+			memset(&Multi_pxo_pinfo, 0, sizeof(Multi_pxo_pinfo));
+			SDL_strlcpy(Multi_pxo_pinfo.pilot_name, Multi_pxo_retrieve_name, SDL_arraysize(Multi_pxo_pinfo.pilot_name));
+			Multi_pxo_pinfo.tracker_id = SDL_atoi(Multi_pxo_retrieve_id);
 
-				// still processing
-				case -1:
-					Multi_pxo_retrieve_mode = 2;
-					break;
+			// make the initial call to the API
+			GetFSPilotData(reinterpret_cast<vmt_stats_struct*>(static_cast<uintptr_t>(0xffffffff)), nullptr, nullptr, 0);
 
-				// we got the data
-				case 0:
-					return 10;
+			if (GetFSPilotData(&Multi_pxo_pinfo, Multi_pxo_retrieve_name, Multi_pxo_retrieve_id, 0) != 0){
+				return 2;
+			}
+			// if the call went through, set the mode to 2
+			else {
+				Multi_pxo_retrieve_mode = 2;
 			}
 
 			break;
@@ -4388,19 +4433,20 @@ int multi_pxo_pinfo_cond()
 		// busy retrieving his stats
 		case 2:
 		{
-			switch ( fs2netd_get_pilot_info(Multi_pxo_retrieve_name, &Multi_pxo_pinfo_player, false) )
-			{
-				// there was some failure
-				case -2:
+			switch (GetFSPilotData(nullptr, nullptr, nullptr, 0)) {
+				// timeout, fail, cancel
+				case -1:
+				case 3:
+				case 2:
 					return 2;
 
-				// still processing
-				case -1:
-					break;
-
-				// we got the data
-				case 0:
+				// got the data
+				case 1:
 					return 10;
+
+				// still busy
+				case 0:
+					break;
 			}
 
 			break;
@@ -5036,7 +5082,7 @@ void multi_pxo_ban_init()
 	Multi_pxo_banner.ban_bitmap = -1;	
 
 	// are we doing banners at all?
-	if ( os_config_read_uint(NULL, "PXOBanners", 1) ) {
+	if ( os_config_read_uint(nullptr, "PXOBanners", 1) && strlen(Multi_options_g.pxo_banner_url) ) {
 		// if we're already in idle mode, we're done downloading for this instance of freespace. pick a random image we already have
 		if(Multi_pxo_ban_mode == PXO_BAN_MODE_IDLE){
 			Multi_pxo_ban_mode = PXO_BAN_MODE_CHOOSE_RANDOM;		
@@ -5072,13 +5118,13 @@ void multi_pxo_ban_process()
 	// start downloading list
 	case PXO_BAN_MODE_LIST_STARTUP:		
 		// remote file
-		sprintf(url_string, "http://www.pxo.net/files/%s", PXO_BANNERS_CONFIG_FILE);
+		sprintf(url_string, "%s/%s", Multi_options_g.pxo_banner_url, PXO_BANNERS_CONFIG_FILE);
 
 		// local file
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;
+		Multi_pxo_ban_get = new InetGetFile(url_string, local_file, CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5133,7 +5179,7 @@ void multi_pxo_ban_process()
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;
+		Multi_pxo_ban_get = new InetGetFile(Multi_pxo_banner.ban_file_url, local_file, CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5249,6 +5295,13 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 	}
 	drop_leading_white_space(file_url);
 	drop_trailing_white_space(file_url);
+
+	// verify that it's a proper url
+	if ( strncmp(file_url, "http://", 7) && strncmp(file_url, "ftp://", 6) ) {
+		cfclose(in);
+		cf_delete(PXO_BANNERS_CONFIG_FILE, CF_TYPE_MULTI_CACHE);
+		return;
+	}
 
 	// otherwise read in 		
 	num_banners = 0;

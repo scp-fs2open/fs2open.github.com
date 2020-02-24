@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/key.h"
 #include "localization/localize.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
@@ -32,15 +33,29 @@ int Failed_key_index;
 
 // Joystick configuration
 int Joy_dead_zone_size = 10;
+
+auto DeadZoneOption =
+    options::OptionBuilder<int>("Input.JoystickDeadZone", "Deadzone", "The deadzone of the selected joystick.")
+        .category("Input")
+        .range(0, 45)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(10)
+        .bind_to(&Joy_dead_zone_size)
+        .importance(1)
+        .finish();
+
 int Joy_sensitivity = 9;
 
-// assume control keys are used as modifiers until we find out 
-int Shift_is_modifier;
-int Ctrl_is_modifier;
-int Alt_is_modifier;
+auto SensitivityOption =
+    options::OptionBuilder<int>("Input.JoystickSensitivity", "Sensitivity", "The sentitivity of the selected joystick.")
+        .category("Input")
+        .range(0, 9)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(9)
+        .bind_to(&Joy_sensitivity)
+        .importance(2)
+        .finish();
 
-int Axis_enabled[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
-int Axis_enabled_defaults[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
 int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 
@@ -49,154 +64,159 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 //XSTR:OFF
 config_item Control_config[CCFG_MAX + 1] = {
 	// targeting a ship
-	{                           KEY_T,              -1, TARGET_TAB,   true,  "Target Next Ship",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_T,              -1, TARGET_TAB,   true,  "Target Previous Ship",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_H,               2, TARGET_TAB,   true,  "Target Next Closest Hostile Ship",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_H,              -1, TARGET_TAB,   true,  "Target Previous Closest Hostile Ship",   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_H,              -1, TARGET_TAB,   true,  "Toggle Auto Targeting",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_F,              -1, TARGET_TAB,   true,  "Target Next Closest Friendly Ship",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_F,              -1, TARGET_TAB,   true,  "Target Previous Closest Friendly Ship",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_Y,               4, TARGET_TAB,   true,  "Target Ship in Reticle",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_G,              -1, TARGET_TAB,   true,  "Target Target's Nearest Attacker",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_Y,              -1, TARGET_TAB,   true,  "Target Last Ship to Send Transmission",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_T,              -1, TARGET_TAB,   true,  "Turn Off Targeting",                     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_T,              -1, TARGET_TAB,   1,  "Target Next Ship",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_T,              -1, TARGET_TAB,   1,  "Target Previous Ship",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_H,               2, TARGET_TAB,   1,  "Target Next Closest Hostile Ship",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_H,              -1, TARGET_TAB,   1,  "Target Previous Closest Hostile Ship",   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_H,              -1, TARGET_TAB,   1,  "Toggle Auto Targeting",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_F,              -1, TARGET_TAB,   1,  "Target Next Closest Friendly Ship",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_F,              -1, TARGET_TAB,   1,  "Target Previous Closest Friendly Ship",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_Y,               4, TARGET_TAB,   1,  "Target Ship in Reticle",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_G,              -1, TARGET_TAB,   1,  "Target Target's Nearest Attacker",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_Y,              -1, TARGET_TAB,   1,  "Target Last Ship to Send Transmission",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_T,              -1, TARGET_TAB,   1,  "Turn Off Targeting",                     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// targeting a ship's subsystem
-	{                           KEY_V,              -1, TARGET_TAB,   true,  "Target Subsystem in Reticle",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_S,              -1, TARGET_TAB,   true,  "Target Next Subsystem",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_S,              -1, TARGET_TAB,   true,  "Target Previous Subsystem",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_S,              -1, TARGET_TAB,   true,  "Turn Off Targeting of Subsystems",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_V,              -1, TARGET_TAB,   1,  "Target Subsystem in Reticle",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_S,              -1, TARGET_TAB,   1,  "Target Next Subsystem",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_S,              -1, TARGET_TAB,   1,  "Target Previous Subsystem",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_S,              -1, TARGET_TAB,   1,  "Turn Off Targeting of Subsystems",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// matching speed
-	{                           KEY_M,              -1, COMPUTER_TAB, true,  "Match Target Speed",                     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_M,              -1, COMPUTER_TAB, true,  "Toggle Auto Speed Matching",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_M,              -1, COMPUTER_TAB, 1,  "Match Target Speed",                     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_M,              -1, COMPUTER_TAB, 1,  "Toggle Auto Speed Matching",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// weapons
-	{                           KEY_LCTRL,           0, WEAPON_TAB,   true,  "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_SPACEBAR,        1, WEAPON_TAB,   true,  "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PERIOD,         -1, WEAPON_TAB,   true,  "Cycle Forward Primary Weapon",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_COMMA,          -1, WEAPON_TAB,   true,  "Cycle Backward Primary Weapon",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_DIVIDE,         -1, WEAPON_TAB,   true,  "Cycle Secondary Weapon Bank",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_DIVIDE,         -1, WEAPON_TAB,   true,  "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_X,               3, WEAPON_TAB,   true,  "Launch Countermeasure",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_LCTRL,           0, WEAPON_TAB,   1,  "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_SPACEBAR,        1, WEAPON_TAB,   1,  "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PERIOD,         -1, WEAPON_TAB,   1,  "Cycle Forward Primary Weapon",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_COMMA,          -1, WEAPON_TAB,   1,  "Cycle Backward Primary Weapon",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_DIVIDE,         -1, WEAPON_TAB,   1,  "Cycle Secondary Weapon Bank",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_DIVIDE,         -1, WEAPON_TAB,   1,  "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_X,               3, WEAPON_TAB,   1,  "Launch Countermeasure",                  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// controls
-	{                           KEY_A,              -1, SHIP_TAB,     true,  "Forward Thrust",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_Z,              -1, SHIP_TAB,     true,  "Reverse Thrust",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD7,           -1, SHIP_TAB,     true,  "Bank Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD9,           -1, SHIP_TAB,     true,  "Bank Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD8,           -1, SHIP_TAB,     true,  "Pitch Forward",                          CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD2,           -1, SHIP_TAB,     true,  "Pitch Backward",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD4,           -1, SHIP_TAB,     true,  "Turn Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD6,           -1, SHIP_TAB,     true,  "Turn Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_A,              -1, SHIP_TAB,     1,  "Forward Thrust",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_Z,              -1, SHIP_TAB,     1,  "Reverse Thrust",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD7,           -1, SHIP_TAB,     1,  "Bank Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD9,           -1, SHIP_TAB,     1,  "Bank Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD8,           -1, SHIP_TAB,     1,  "Pitch Forward",                          CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD2,           -1, SHIP_TAB,     1,  "Pitch Backward",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD4,           -1, SHIP_TAB,     1,  "Turn Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD6,           -1, SHIP_TAB,     1,  "Turn Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 
 	// throttle controls
-	{                           KEY_BACKSP,         -1, SHIP_TAB,     true,  "Set Throttle to Zero",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_SLASH,          -1, SHIP_TAB,     true,  "Set Throttle to Max",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_LBRACKET,       -1, SHIP_TAB,     true,  "Set Throttle to One-Third",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_RBRACKET,       -1, SHIP_TAB,     true,  "Set Throttle to Two-Thirds",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_EQUAL,          -1, SHIP_TAB,     true,  "Increase Throttle 5 Percent",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_MINUS,          -1, SHIP_TAB,     true,  "Decrease Throttle 5 Percent",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_BACKSP,         -1, SHIP_TAB,     1,  "Set Throttle to Zero",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_SLASH,          -1, SHIP_TAB,     1,  "Set Throttle to Max",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_LBRACKET,       -1, SHIP_TAB,     1,  "Set Throttle to One-Third",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_RBRACKET,       -1, SHIP_TAB,     1,  "Set Throttle to Two-Thirds",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_EQUAL,          -1, SHIP_TAB,     1,  "Increase Throttle 5 Percent",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_MINUS,          -1, SHIP_TAB,     1,  "Decrease Throttle 5 Percent",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// squadmate messaging
-	{             KEY_SHIFTED | KEY_A,              -1, COMPUTER_TAB, true,  "Attack My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_Z,              -1, COMPUTER_TAB, true,  "Disarm My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_D,              -1, COMPUTER_TAB, true,  "Disable My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_V,              -1, COMPUTER_TAB, true,  "Attack My Subsystem",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_X,              -1, COMPUTER_TAB, true,  "Capture My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_E,              -1, COMPUTER_TAB, true,  "Engage Enemy",                           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_W,              -1, COMPUTER_TAB, true,  "Form on My Wing",                        CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_I,              -1, COMPUTER_TAB, true,  "Ignore My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_P,              -1, COMPUTER_TAB, true,  "Protect My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_C,              -1, COMPUTER_TAB, true,  "Cover Me",                               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_J,              -1, COMPUTER_TAB, true,  "Return to Base",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_R,              -1, COMPUTER_TAB, true,  "Rearm Me",                               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_A,              -1, COMPUTER_TAB, 1,  "Attack My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_Z,              -1, COMPUTER_TAB, 1,  "Disarm My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_D,              -1, COMPUTER_TAB, 1,  "Disable My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_V,              -1, COMPUTER_TAB, 1,  "Attack My Subsystem",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_X,              -1, COMPUTER_TAB, 1,  "Capture My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_E,              -1, COMPUTER_TAB, 1,  "Engage Enemy",                           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_W,              -1, COMPUTER_TAB, 1,  "Form on My Wing",                        CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_I,              -1, COMPUTER_TAB, 1,  "Ignore My Target",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_P,              -1, COMPUTER_TAB, 1,  "Protect My Target",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_C,              -1, COMPUTER_TAB, 1,  "Cover Me",                               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_J,              -1, COMPUTER_TAB, 1,  "Return to Base",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_R,              -1, COMPUTER_TAB, 1,  "Rearm Me",                               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
-	{                           KEY_R,               6, TARGET_TAB,   true,  "Target Closest Attacking Ship",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_R,               6, TARGET_TAB,   1,  "Target Closest Attacking Ship",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// Views
-	{                           KEY_PADMULTIPLY,    -1, COMPUTER_TAB, true,  "Chase View",                             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PADPERIOD,      -1, COMPUTER_TAB, true,  "External View",                          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PADENTER,       -1, COMPUTER_TAB, true,  "Toggle External Camera Lock",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PAD0,           -1, COMPUTER_TAB, true,  "Free Look View",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false }, // Not in use anymore (Swifty)
-	{                           KEY_PADDIVIDE,      -1, COMPUTER_TAB, true,  "Current Target View",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PADPLUS,        -1, COMPUTER_TAB, true,  "Increase View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PADMINUS,       -1, COMPUTER_TAB, true,  "Decrease View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           KEY_PAD5,           -1, COMPUTER_TAB, true,  "Center View",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           -1,                 33, COMPUTER_TAB, true,  "View Up",                                CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           -1,                 32, COMPUTER_TAB, true,  "View Rear",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           -1,                 34, COMPUTER_TAB, true,  "View Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           -1,                 35, COMPUTER_TAB, true,  "View Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PADMULTIPLY,    -1, COMPUTER_TAB, 1,  "Chase View",                             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PADPERIOD,      -1, COMPUTER_TAB, 1,  "External View",                          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PADENTER,       -1, COMPUTER_TAB, 1,  "Toggle External Camera Lock",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PAD0,           -1, COMPUTER_TAB, 1,  "Free Look View",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PADDIVIDE,      -1, COMPUTER_TAB, 1,  "Current Target View",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PADPLUS,        -1, COMPUTER_TAB, 1,  "Increase View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PADMINUS,       -1, COMPUTER_TAB, 1,  "Decrease View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_PAD5,           -1, COMPUTER_TAB, 1,  "Center View",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 33, COMPUTER_TAB, 1,  "View Up",                                CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 32, COMPUTER_TAB, 1,  "View Rear",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 34, COMPUTER_TAB, 1,  "View Left",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 35, COMPUTER_TAB, 1,  "View Right",                             CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 
-	{                           KEY_RAPOSTRO,       -1, COMPUTER_TAB, true,  "Cycle Radar Range",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_C,              -1, COMPUTER_TAB, true,  "Communications Menu",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           -1,                 -1, -1,           true,  "Show Objectives",                        CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_J,              -1, COMPUTER_TAB, true,  "Enter Subspace (End Mission)",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_J,              -1, TARGET_TAB,   true,  "Target Target's Target",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_TAB,             5, SHIP_TAB,     true,  "Afterburner",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           KEY_RAPOSTRO,       -1, COMPUTER_TAB, 1,  "Cycle Radar Range",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_C,              -1, COMPUTER_TAB, 1,  "Communications Menu",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           -1,                 -1, -1,           1,  "Show Objectives",                        CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_J,              -1, COMPUTER_TAB, 1,  "Enter Subspace (End Mission)",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_J,              -1, TARGET_TAB,   1,  "Target Target's Target",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_TAB,             5, SHIP_TAB,     1,  "Afterburner",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 	
-	{                           KEY_INSERT,         -1, COMPUTER_TAB, true,  "Increase Weapon Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_DELETE,         -1, COMPUTER_TAB, true,  "Decrease Weapon Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_HOME,           -1, COMPUTER_TAB, true,  "Increase Shield Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_END,            -1, COMPUTER_TAB, true,  "Decrease Shield Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PAGEUP,         -1, COMPUTER_TAB, true,  "Increase Engine Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PAGEDOWN,       -1, COMPUTER_TAB, true,  "Decrease Engine Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_D,              -1, COMPUTER_TAB, true,  "Equalize Energy Settings",               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_INSERT,         -1, COMPUTER_TAB, 1,  "Increase Weapon Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_DELETE,         -1, COMPUTER_TAB, 1,  "Decrease Weapon Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_HOME,           -1, COMPUTER_TAB, 1,  "Increase Shield Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_END,            -1, COMPUTER_TAB, 1,  "Decrease Shield Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PAGEUP,         -1, COMPUTER_TAB, 1,  "Increase Engine Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_PAGEDOWN,       -1, COMPUTER_TAB, 1,  "Decrease Engine Energy",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_D,              -1, COMPUTER_TAB, 1,  "Equalize Energy Settings",               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
-	{                           KEY_Q,               7, COMPUTER_TAB, true,  "Equalize Shields",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_UP,             -1, COMPUTER_TAB, true,  "Augment Forward Shield",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_DOWN,           -1, COMPUTER_TAB, true,  "Augment Rear Shield",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_LEFT,           -1, COMPUTER_TAB, true,  "Augment Left Shield",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_RIGHT,          -1, COMPUTER_TAB, true,  "Augment Right Shield",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_SCROLLOCK,      -1, COMPUTER_TAB, true,  "Transfer Energy Laser->Shield",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_SCROLLOCK,      -1, COMPUTER_TAB, true,  "Transfer Energy Shield->Laser",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_Q,               7, COMPUTER_TAB, 1,  "Equalize Shields",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_UP,             -1, COMPUTER_TAB, 1,  "Augment Forward Shield",                 CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_DOWN,           -1, COMPUTER_TAB, 1,  "Augment Rear Shield",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_LEFT,           -1, COMPUTER_TAB, 1,  "Augment Left Shield",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_RIGHT,          -1, COMPUTER_TAB, 1,  "Augment Right Shield",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_SCROLLOCK,      -1, COMPUTER_TAB, 1,  "Transfer Energy Laser->Shield",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_SCROLLOCK,      -1, COMPUTER_TAB, 1,  "Transfer Energy Shield->Laser",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 //	{                           -1,                 -1, -1,           true,  "Show Damage Popup Window" },
 
-	{                           -1,                 -1, SHIP_TAB,     false, "Glide When Pressed",                     CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 -1, SHIP_TAB,     0, "Glide When Pressed",                     CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 //Backslash -- this was a convenient place for Glide When Pressed, as Show Damage Popup isn't used
-	{                           -1,                 -1, SHIP_TAB,     true,  "Bank When Pressed",                      CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{                           -1,                 -1, -1,           true,  "Show Nav Map",                           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_E,              -1, COMPUTER_TAB, true,  "Add or Remove Escort",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED | KEY_SHIFTED | KEY_E,              -1, COMPUTER_TAB, true,  "Clear Escort List",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_E,              -1, TARGET_TAB,   true,  "Target Next Escort Ship",                CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_R,              -1, TARGET_TAB,   true,  "Target Closest Repair Ship",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           -1,                 -1, SHIP_TAB,     1,  "Bank When Pressed",                      CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{                           -1,                 -1, -1,           1,  "Show Nav Map",                           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_E,              -1, COMPUTER_TAB, 1,  "Add or Remove Escort",                   CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_E,              -1, COMPUTER_TAB, 1,  "Clear Escort List",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_E,              -1, TARGET_TAB,   1,  "Target Next Escort Ship",                CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_R,              -1, TARGET_TAB,   1,  "Target Closest Repair Ship",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
-	{                           KEY_U,              -1, TARGET_TAB,   true,  "Target Next Uninspected Cargo",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_U,              -1, TARGET_TAB,   true,  "Target Previous Uninspected Cargo",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_N,              -1, TARGET_TAB,   true,  "Target Newest Ship in Area",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_K,              -1, TARGET_TAB,   true,  "Target Next Live Turret",                CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_K,              -1, TARGET_TAB,   true,  "Target Previous Live Turret",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_U,              -1, TARGET_TAB,   1,  "Target Next Uninspected Cargo",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_U,              -1, TARGET_TAB,   1,  "Target Previous Uninspected Cargo",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_N,              -1, TARGET_TAB,   1,  "Target Newest Ship in Area",             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_K,              -1, TARGET_TAB,   1,  "Target Next Live Turret",                CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_K,              -1, TARGET_TAB,   1,  "Target Previous Live Turret",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
-	{                           KEY_B,              -1, TARGET_TAB,   true,  "Target Next Hostile Bomb or Bomber",     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_B,              -1, TARGET_TAB,   true,  "Target Previous Hostile Bomb or Bomber", CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_B,              -1, TARGET_TAB,   1,  "Target Next Hostile Bomb or Bomber",     CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_B,              -1, TARGET_TAB,   1,  "Target Previous Hostile Bomb or Bomber", CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// multiplayer messaging keys
-	{                           KEY_1,              -1, COMPUTER_TAB, true,  "(Multiplayer) Message All",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_2,              -1, COMPUTER_TAB, true,  "(Multiplayer) Message Friendly",         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_3,              -1, COMPUTER_TAB, true,  "(Multiplayer) Message Hostile",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_4,              -1, COMPUTER_TAB, true,  "(Multiplayer) Message Target",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_X,              -1, COMPUTER_TAB, true,  "(Multiplayer) Observer Zoom to Target",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_PERIOD,         -1, COMPUTER_TAB, true,  "Increase Time Compression",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_COMMA,          -1, COMPUTER_TAB, true,  "Decrease Time Compression",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_L,              -1, COMPUTER_TAB, true,  "Toggle High HUD Contrast",               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_N,              -1, COMPUTER_TAB, true,  "(Multiplayer) Toggle Network Info",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_END,            -1, COMPUTER_TAB, true,  "(Multiplayer) Self Destruct",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_1,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Message All",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_2,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Message Friendly",         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_3,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Message Hostile",          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_4,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Message Target",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_X,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Observer Zoom to Target",  CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_PERIOD,         -1, COMPUTER_TAB, 1,  "Increase Time Compression",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_COMMA,          -1, COMPUTER_TAB, 1,  "Decrease Time Compression",              CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_L,              -1, COMPUTER_TAB, 1,  "Toggle High HUD Contrast",               CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_N,              -1, COMPUTER_TAB, 1,  "(Multiplayer) Toggle Network Info",      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_END,            -1, COMPUTER_TAB, 1,  "(Multiplayer) Self Destruct",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 
 	// Misc
-	{             KEY_SHIFTED | KEY_O,              -1, COMPUTER_TAB, true,  "Toggle HUD",                             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_3,              -1, SHIP_TAB,     true,  "Right Thrust",                           CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_1,              -1, SHIP_TAB,     true,  "Left Thrust",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_PADPLUS,        -1, SHIP_TAB,     true,  "Up Thrust",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{             KEY_SHIFTED | KEY_PADENTER,       -1, SHIP_TAB,     true,  "Down Thrust",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
-	{ KEY_ALTED | KEY_SHIFTED | KEY_Q,              -1, COMPUTER_TAB, true,  "Toggle HUD Wireframe Target View",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           -1,                 -1, COMPUTER_TAB, false, "Top-Down View",                          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           -1,                 -1, COMPUTER_TAB, false, "Target Padlock View",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false }, // (Swifty) Toggle for VM_TRACK
+	{             KEY_SHIFTED | KEY_O,              -1, COMPUTER_TAB, 1,  "Toggle HUD",                             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_3,              -1, SHIP_TAB,     1,  "Right Thrust",                           CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_1,              -1, SHIP_TAB,     1,  "Left Thrust",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_PADPLUS,        -1, SHIP_TAB,     1,  "Up Thrust",                              CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{             KEY_SHIFTED | KEY_PADENTER,       -1, SHIP_TAB,     1,  "Down Thrust",                            CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_Q,              -1, COMPUTER_TAB, 1,  "Toggle HUD Wireframe Target View",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           -1,                 -1, COMPUTER_TAB, 0, "Top-Down View",                          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           -1,                 -1, COMPUTER_TAB, 0, "Target Padlock View",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false }, // (Swifty) Toggle for VM_TRACK
 	// Auto Navigation Systen
-	{ KEY_ALTED |               KEY_A,              -1, COMPUTER_TAB, false, "Toggle Auto Pilot",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_N,              -1, COMPUTER_TAB, false, "Cycle Nav Points",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{ KEY_ALTED |               KEY_G,              -1, SHIP_TAB,     false, "Toggle Gliding",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_O,              -1, WEAPON_TAB,   false, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
+	{ KEY_ALTED |               KEY_A,              -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",                      CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_N,              -1, COMPUTER_TAB, 0, "Cycle Nav Points",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_G,              -1, SHIP_TAB,     0, "Toggle Gliding",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{                           KEY_O,              -1, WEAPON_TAB,   0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_1,              -1, COMPUTER_TAB, 0, "Custom Control 1",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_2,              -1, COMPUTER_TAB, 0, "Custom Control 2",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_3,              -1, COMPUTER_TAB, 0, "Custom Control 3",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_4,              -1, COMPUTER_TAB, 0, "Custom Control 4",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
+	{ KEY_ALTED | KEY_SHIFTED | KEY_5,              -1, COMPUTER_TAB, 0, "Custom Control 5",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
+	{                           -1,                 -1, -1,           0, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
 const char *Scan_code_text_german[] = {
@@ -410,31 +430,6 @@ const char **Joy_button_text = Joy_button_text_english;
 SCP_vector<config_item*> Control_config_presets;
 SCP_vector<SCP_string> Control_config_preset_names;
 
-void set_modifier_status()
-{
-	int i;
-
-	Alt_is_modifier = 0;
-	Shift_is_modifier = 0;
-	Ctrl_is_modifier = 0;
-
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id < 0)
-			continue;
-
-		if (Control_config[i].key_id & KEY_ALTED)
-			Alt_is_modifier = 1;
-
-		if (Control_config[i].key_id & KEY_SHIFTED)
-			Shift_is_modifier = 1;
-
-		if (Control_config[i].key_id & KEY_CTRLED) {
-			Assert(0);  // get Alan
-			Ctrl_is_modifier = 1;
-		}
-	}
-}
-
 // If find_override is set to true, then this returns the index of the action
 // which has been bound to the given key. Otherwise, the index of the action
 // which has the given key as its default key will be returned.
@@ -536,7 +531,9 @@ char *translate_key(char *key)
 	// both key and joystick button are mapped to this control
 	if ((key_code >= 0 ) && (joy_code >= 0) ) {
 		strcpy_s(text, key_text);
-		strcat_s(text, " or ");
+		strcat_s(text, " ");
+		strcat_s(text, XSTR("or", 1638));
+		strcat_s(text, " ");
 		strcat_s(text, joy_text);
 	}
 	// if we only have one
@@ -616,7 +613,6 @@ void control_config_common_load_overrides();
 void control_config_common_init()
 {
 	for (int i=0; i<CCFG_MAX; i++) {
-		Control_config[i].disabled = false;
 		Control_config[i].continuous_ongoing = false;
 	}
 
@@ -873,7 +869,7 @@ void control_config_common_load_overrides()
                         * short key_default;
                         * short joy_default;
                         * char tab;
-                        * bool hasXSTR;
+                        * int indexXSTR;
                         * char type;
                         */
 
@@ -915,7 +911,7 @@ void control_config_common_load_overrides()
 
 						if (optional_string("$Has XStr:")) {
 							stuff_int(&iTemp);
-							r_ccConfig.hasXSTR = (iTemp == 1);
+							r_ccConfig.indexXSTR = iTemp;
 						}
 
 						if (optional_string("$Type:")) {

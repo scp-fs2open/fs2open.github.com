@@ -44,6 +44,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
 #include "weapon/weapon.h"
@@ -1037,6 +1038,15 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 	return 0;
 }
 
+void common_fire_stage_script_hook(int old_stage, int new_stage)
+{
+	// call a scripting hook for switching stages
+	Script_system.SetHookVar("OldStage", 'i', old_stage);
+	Script_system.SetHookVar("NewStage", 'i', new_stage);
+	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
+	Script_system.RemHookVars(2, "OldStage", "NewStage");
+}
+
 // NEWSTUFF BEGIN
 
 // save ship selection loadout to the Player_loadout struct
@@ -1780,7 +1790,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Cmdline_shadow_quality)
+			if(Shadow_quality != ShadowQuality::Disabled)
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1894,7 +1904,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		render_info->set_detail_level_lock(0);
 
-		if(Cmdline_shadow_quality)
+		if(Shadow_quality != ShadowQuality::Disabled)
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);

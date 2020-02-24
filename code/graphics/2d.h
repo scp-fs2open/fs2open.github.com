@@ -12,15 +12,15 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#include "graphics/grinternal.h"
-#include "osapi/osapi.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "globalincs/flagset.h"
 #include "globalincs/pstypes.h"
+#include "graphics/grinternal.h"
 #include "graphics/tmapper.h"
-#include "cfile/cfile.h"
-#include "math/vecmat.h"
 #include "io/cursor.h"
+#include "math/vecmat.h"
+#include "osapi/osapi.h"
 
 // Forward definition
 namespace graphics {
@@ -40,6 +40,36 @@ extern int Gr_inited;
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
 
+extern bool Gr_enable_soft_particles;
+
+FLAG_LIST(FramebufferEffects){Thrusters = 0, Shockwaves, NUM_VALUES};
+extern flagset<FramebufferEffects> Gr_framebuffer_effects;
+
+enum class AntiAliasMode {
+	None = 0,
+
+	FXAA_Low = 1,
+	FXAA_Medium = 2,
+	FXAA_High = 3,
+
+	SMAA_Low = 4,
+	SMAA_Medium = 5,
+	SMAA_High = 6,
+	SMAA_Ultra = 7,
+};
+extern AntiAliasMode Gr_aa_mode;
+extern AntiAliasMode Gr_aa_mode_last_frame;
+
+bool gr_is_fxaa_mode(AntiAliasMode mode);
+bool gr_is_smaa_mode(AntiAliasMode mode);
+
+extern bool Gr_post_processing_enabled;
+
+extern bool Gr_enable_vsync;
+
+extern bool Deferred_lighting;
+extern bool High_dynamic_range;
+
 class material;
 class model_material;
 class particle_material;
@@ -49,6 +79,7 @@ class movie_material;
 class batched_bitmap_material;
 class nanovg_material;
 class decal_material;
+class interface_material;
 
 class transform_stack {
 
@@ -134,8 +165,6 @@ enum primitive_type {
 	PRIM_TYPE_TRIS,
 	PRIM_TYPE_TRISTRIP,
 	PRIM_TYPE_TRIFAN,
-	PRIM_TYPE_QUADS,
-	PRIM_TYPE_QUADSTRIP
 };
 
 enum shader_type {
@@ -154,13 +183,20 @@ enum shader_type {
 	SDR_TYPE_DEFERRED_LIGHTING,
 	SDR_TYPE_DEFERRED_CLEAR,
 	SDR_TYPE_VIDEO_PROCESS,
-	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use SDR_TYPE_DEFAULT_MATERIAL.
+	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use
+	                             //!< SDR_TYPE_DEFAULT_MATERIAL.
 	SDR_TYPE_SHIELD_DECAL,
 	SDR_TYPE_BATCHED_BITMAP,
 	SDR_TYPE_DEFAULT_MATERIAL,
 	SDR_TYPE_NANOVG,
 	SDR_TYPE_DECAL,
 	SDR_TYPE_SCENE_FOG,
+	SDR_TYPE_ROCKET_UI,
+
+	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+	SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
+	SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING,
+
 	NUM_SHADER_TYPES
 };
 
@@ -204,6 +240,8 @@ enum class uniform_block_type {
 	DecalInfo = 3,
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
+	Matrices = 6,
+	GenericData = 7,
 
 	NUM_BLOCK_TYPES
 };
@@ -225,7 +263,6 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
-		WORLD_MATRIX,
 	};
 
 	vertex_format format_type;
@@ -286,11 +323,13 @@ typedef enum gr_capability {
 	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
+	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 } gr_capability;
 
 enum class gr_property {
 	UNIFORM_BUFFER_OFFSET_ALIGNMENT,
 	UNIFORM_BUFFER_MAX_SIZE,
+	MAX_ANISOTROPY
 };
 
 // stencil buffering stuff
@@ -587,11 +626,7 @@ enum class BufferType {
 	Uniform
 };
 
-enum class BufferUsageHint {
-	Static,
-	Dynamic,
-	Streaming
-};
+enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 
 /**
  * @brief Type of a graphics sync object
@@ -690,9 +725,6 @@ typedef struct screen {
 	// Frees up a saved screen.
 	void (*gf_free_screen)(int id);
 
-	// Sets the gamma
-	void (*gf_set_gamma)(float gamma);
-
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
@@ -718,17 +750,15 @@ typedef struct screen {
 	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int handle, int face);
 
-	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
-	void (*gf_push_texture_matrix)(int unit);
-	void (*gf_pop_texture_matrix)(int unit);
-
 	void (*gf_set_texture_addressing)(int);
 
 	int (*gf_create_buffer)(BufferType type, BufferUsageHint usage);
 	void (*gf_delete_buffer)(int handle);
 
-	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
-	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, void* data);
+	void (*gf_update_buffer_data)(int handle, size_t size, const void* data);
+	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, const void* data);
+	void* (*gf_map_buffer)(int handle);
+	void (*gf_flush_mapped_buffer)(int handle, size_t offset, size_t size);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 
 	// postprocessing effects
@@ -780,6 +810,8 @@ typedef struct screen {
 	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_nanovg)(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_decals)(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& buffers);
+	void (*gf_render_rocket_primitives)(interface_material* material_info, primitive_type prim_type,
+	                                    vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer);
 
 	bool (*gf_is_capable)(gr_capability capability);
 	bool (*gf_get_property)(gr_property property, void* destination);
@@ -806,7 +838,7 @@ typedef struct screen {
 } screen;
 
 // handy macro
-#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
+#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(false);
 
 //Window's interface to set up graphics:
 //--------------------------------------
@@ -881,8 +913,6 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 // Returns the height of the current font
 extern int gr_get_font_height();
 
-extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128 = 0);
-
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
@@ -909,8 +939,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 
-void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
-
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
@@ -924,8 +952,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)
 #define gr_free_screen		GR_CALL(gr_screen.gf_free_screen)
 
-#define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
-
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
@@ -935,11 +961,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
-
-#define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
-#define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
-#define gr_pop_texture_matrix			GR_CALL(gr_screen.gf_pop_texture_matrix)
-
 
 // Here be the bitmap functions
 #define gr_bm_free_data				GR_CALL(gr_screen.gf_bm_free_data)
@@ -965,6 +986,11 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
 #define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
+inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
+inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
+	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
+}
 #define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
 
 #define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
@@ -993,7 +1019,6 @@ inline void gr_post_process_restore_zbuffer() {
 
 #define gr_maybe_create_shader			GR_CALL(gr_screen.gf_maybe_create_shader)
 #define gr_recompile_all_shaders		GR_CALL(gr_screen.gf_recompile_all_shaders)
-#define gr_set_animated_effect			GR_CALL(gr_screen.gf_set_animated_effect)
 
 #define gr_clear_states					GR_CALL(gr_screen.gf_clear_states)
 
@@ -1037,6 +1062,12 @@ inline void gr_render_movie(movie_material* material_info, primitive_type prim_t
 __inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
+}
+
+__inline void gr_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
+                                          vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+{
+	(*gr_screen.gf_render_rocket_primitives)(material_info, prim_type, layout, n_indices, vertex_buffer, index_buffer);
 }
 
 __inline bool gr_is_capable(gr_capability capability)
@@ -1109,7 +1140,6 @@ inline void gr_sync_delete(gr_sync sync) {
 }
 
 // color functions
-void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
@@ -1119,33 +1149,10 @@ void gr_set_color_fast(color *dst);
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
-uint gr_determine_model_shader_flags(
-	bool lighting,
-	bool fog,
-	bool textured,
-	bool in_shadow_map,
-	bool thruster_scale,
-	bool transform,
-	bool team_color_set,
-	int tmap_flags,
-	int spec_map,
-	int glow_map,
-	int normal_map,
-	int height_map,
-	int ambient_map,
-	int env_map,
-	int misc_map
-);
-
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
-
-// texture update functions
-ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
-void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
@@ -1193,7 +1200,7 @@ class DebugScope {
 #ifndef NDEBUG
 #define GR_DEBUG_SCOPE(name) ::graphics::DebugScope SCP_TOKEN_CONCAT(gr_scope, __LINE__)(name)
 #else
-#define GR_DEBUG_SCOPE(name) do {} while(0)
+#define GR_DEBUG_SCOPE(name) do {} while(false)
 #endif
 
 enum AnimatedShader {
@@ -1202,7 +1209,16 @@ enum AnimatedShader {
 	ANIMATED_SHADER_CLOAK = 2,
 };
 
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type);
+/**
+ * @brief Retreives a uniform buffer for storing uniform block data
+ * @param type The type of uniform data that will be stored in the buffer
+ * @param num_elements The number of elements that will be used in the buffer
+ * @param element_size_override Override what the size of the element should be instead of relying on the preconfigured
+ * size for that block type
+ * @return A structure which gives access to a memory buffer where the uniform data can be stored
+ */
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements,
+                                                    size_t element_size_override = 0);
 
 struct VideoModeData {
 	uint32_t width = 0;
@@ -1247,6 +1263,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
  * @param data_offset The offset at which the data is stored.
  */
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
+
+
+void gr_set_gamma(float gamma);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

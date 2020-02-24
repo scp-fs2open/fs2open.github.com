@@ -83,24 +83,33 @@ void cutscene_init()
 
 			if (optional_string("$cd:"))
 			{
-				// Option isn't needed anymore. Consume the token and ignore it
-
+				// CD option isn't needed anymore. Consume the token and ignore it
 				int junk;
 				stuff_int(&junk);
 			}
 
-			cutinfo.viewable = false;
+			cutinfo.flags.reset();
 
 			if (isFirstCutscene)
 			{
 				isFirstCutscene = false;
-				// The original code assumes the first movie is the intro, so always viewable
-				cutinfo.viewable = true;
+				// The original code assumes the first movie is the intro, so make it viewable
+				cutinfo.flags.set(Cutscene::Cutscene_Flags::Viewable);
 			}
 
 			if (optional_string("$Always Viewable:"))
 			{
-				stuff_boolean(&cutinfo.viewable);
+				bool flag;
+				stuff_boolean(&flag);
+				if (flag)
+					cutinfo.flags.set(Cutscene::Cutscene_Flags::Always_viewable);
+			}
+			if (optional_string("$Never Viewable:"))
+			{
+				bool flag;
+				stuff_boolean(&flag);
+				if (flag)
+					cutinfo.flags.set(Cutscene::Cutscene_Flags::Never_viewable);
 			}
 
 			Cutscenes.push_back(cutinfo);
@@ -143,7 +152,7 @@ void cutscene_mark_viewable(const char* filename)
 		// see if the stripped filename matches the cutscene filename
 		if (strstr(cut_file, file) != NULL)
 		{
-			cut->viewable = true;
+			cut->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			return;
 		}
 		i++;
@@ -441,9 +450,9 @@ void cutscenes_screen_init()
 	Cutscene_list.clear();
 
 	int u = 0;
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, u++)
+	for (auto cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
 	{
-		if ((*cut).viewable)
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] && !cut->flags[Cutscene::Cutscene_Flags::Never_viewable])
 		{
 			Cutscene_list.push_back(u);
 		}

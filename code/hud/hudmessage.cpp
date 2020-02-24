@@ -551,24 +551,6 @@ void HUD_printf(const char *format, ...)
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
 
-void HUD_ship_sent_printf(int sh, const char *format, ...)
-{
-	va_list args;
-	char tmp[HUD_MSG_LENGTH_MAX];
-	tmp[sizeof(tmp)-1] = '\0';
-	size_t len;
-
-	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].get_display_string());
-	len = strlen(tmp);
-
-	va_start(args, format);
-	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
-	va_end(args);
-
-	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
-	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
-}
-
 // --------------------------------------------------------------------------------------
 // HUD_sourced_printf() 
 //
@@ -615,7 +597,7 @@ void hud_sourced_print(int source, const char *msg)
 
     // Invoke the scripting hook
     Script_system.SetHookVar("Text", 's', const_cast<char*>(msg));
-    Script_system.SetHookVar("SourceType", 'i', &source);
+    Script_system.SetHookVar("SourceType", 'i', source);
 
     Script_system.RunCondition(CHA_HUDMSGRECEIVED);
 
@@ -1233,26 +1215,6 @@ void HudGaugeTalkingHead::initBitmaps(const char *fname)
 	if ( Head_frame.first_frame == -1 ) {
 		Warning(LOCATION, "Could not load in ani: %s\n", fname);
 	}
-}
-
-/**
- * Create a new head animation object
- */
-anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_data)
-{
-	anim_play_struct aps;
-
-	float scale_x = i2fl(Anim_size[0]) / i2fl(anim_data->width);
-	float scale_y = i2fl(Anim_size[1]) / i2fl(anim_data->height);
-	anim_play_init(&aps, anim_data, fl2ir((position[0] + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((position[1] + Anim_offsets[1] + HUD_offset_y) / scale_y), base_w, base_h);
-	aps.start_at = anim_start_frame;
-
-	// aps.color = &HUD_color_defaults[HUD_color_alpha];
-	aps.color = &HUD_config.clr[HUD_TALKING_HEAD]; 
-	// I'd much rather use gr_init_color and retrieve the colors from this object but no, aps.color just happens to be a pointer.
-	// So, just give it the address from the player's HUD configuration. You win, aps.color. I'll take care of you next time. (Swifty)
-
-	return anim_play(&aps);
 }
 
 /**

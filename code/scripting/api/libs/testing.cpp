@@ -15,9 +15,8 @@
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "cutscene/movie.h"
+#include "network/multi_options.h"
 
-// Om_tracker_flag should already be set in FreeSpace.cpp, needed to determine if PXO is enabled from the registry
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 namespace scripting {
 namespace api {
@@ -56,12 +55,14 @@ ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-		 "Creates a particle. Use PARTICLE_* enumerations for type."
-			 "Reverse reverse animation, if one is specified"
-			 "Attached object specifies object that Position will be (and always be) relative to.",
-		 "particle",
-		 "Handle to the created particle")
+ADE_FUNC_DEPRECATED(createParticle, l_Testing,
+                    "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number "
+                    "Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+                    "Creates a particle. Use PARTICLE_* enumerations for type."
+                    "Reverse reverse animation, if one is specified"
+                    "Attached object specifies object that Position will be (and always be) relative to.",
+                    "particle", "Handle to the created particle", gameversion::version(19, 0, 0, 0),
+                    "Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
 	particle::particle_info pi;
 	pi.type = particle::PARTICLE_DEBUG;
@@ -76,7 +77,9 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
-	if(!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &temp, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
 	if(type != NULL)
@@ -96,13 +99,14 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				pi.type = particle::PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
-				if (pi.optional_data < 0)
-				{
-					LuaError(L, "Invalid texture specified for createParticle()!");
-				}
-
-				pi.type = particle::PARTICLE_BITMAP;
-				break;
+			    if (texture == nullptr || !texture->isValid()) {
+				    LuaError(L, "Invalid texture specified for createParticle()!");
+				    return ADE_RETURN_NIL;
+			    } else {
+				    pi.optional_data = texture->handle;
+				    pi.type          = particle::PARTICLE_BITMAP;
+			    }
+			    break;
 		}
 	}
 
@@ -118,7 +122,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	particle::WeakParticlePtr p = particle::createPersistent(&pi);
 
 	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
 	else
 		return ADE_RETURN_NIL;
 }
@@ -143,7 +147,7 @@ ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "Returns whether current player 
 
 ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enabled in the configuration.", "boolean", "Whether PXO is enabled or not")
 {
-	if(!(Om_tracker_flag))
+	if(!(Multi_options_g.pxo))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -152,7 +156,7 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
 {
 	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
-	char *filename;
+	const char* filename;
 
 	if (!ade_get_args(L, "s", &filename))
 		return ADE_RETURN_FALSE;

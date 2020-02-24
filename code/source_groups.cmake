@@ -166,14 +166,15 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
 	def_files/data/effects/deferred-f.sdr
 	def_files/data/effects/deferred-v.sdr
 	def_files/data/effects/effect-distort-f.sdr
 	def_files/data/effects/effect-distort-v.sdr
-	def_files/data/effects/effect-particle-f.sdr
-	def_files/data/effects/effect-screen-g.sdr
+	def_files/data/effects/effect-f.sdr
+	def_files/data/effects/effect-g.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
@@ -192,14 +193,21 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/passthrough-v.sdr
 	def_files/data/effects/post-f.sdr
 	def_files/data/effects/post-v.sdr
-	def_files/data/effects/shadowdebug-f.sdr
-	def_files/data/effects/shadowdebug-v.sdr
+	def_files/data/effects/rocketui-f.sdr
+	def_files/data/effects/rocketui-v.sdr
 	def_files/data/effects/shadows.sdr
+	def_files/data/effects/shield-impact-v.sdr
+	def_files/data/effects/shield-impact-f.sdr
+	def_files/data/effects/SMAA.sdr
+	def_files/data/effects/smaa-blend-v.sdr
+	def_files/data/effects/smaa-blend-f.sdr
+	def_files/data/effects/smaa-edge-v.sdr
+	def_files/data/effects/smaa-edge-f.sdr
+	def_files/data/effects/smaa-neighbour-v.sdr
+	def_files/data/effects/smaa-neighbour-f.sdr
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
-	def_files/data/effects/shield-impact-v.sdr
-	def_files/data/effects/shield-impact-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -270,17 +278,6 @@ add_file_folder("GameHelp"
 	gamehelp/gameplayhelp.h
 )
 
-# GameHelp -> fs2netd files
-add_file_folder("GameHelp\\\\fs2netd"
-	fs2netd/fs2netd_client.cpp
-	fs2netd/fs2netd_client.h
-	fs2netd/protocol.h
-	fs2netd/tcp_client.cpp
-	fs2netd/tcp_client.h
-	fs2netd/tcp_socket.cpp
-	fs2netd/tcp_socket.h
-)
-
 # GameSequence files
 add_file_folder("GameSequence"
 	gamesequence/gamesequence.cpp
@@ -305,6 +302,8 @@ add_file_folder("Generated Files"
 add_file_folder("GlobalIncs"
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
+	globalincs/crashdump.cpp
+	globalincs/crashdump.h
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
@@ -404,6 +403,8 @@ add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
 	graphics/opengl/gropengltexture.h
 	graphics/opengl/gropengltnl.h
 	graphics/opengl/ShaderProgram.h
+	graphics/opengl/SmaaAreaTex.h
+	graphics/opengl/SmaaSearchTex.h
 )
 
 # Graphics -> Paths
@@ -507,6 +508,8 @@ add_file_folder("Hud"
 	hud/hudparse.h
 	hud/hudreticle.cpp
 	hud/hudreticle.h
+	hud/hudscripting.cpp
+	hud/hudscripting.h
 	hud/hudshield.cpp
 	hud/hudshield.h
 	hud/hudsquadmsg.cpp
@@ -574,6 +577,8 @@ add_file_folder("Lab"
 )
 
 add_file_folder("Libs"
+	libs/jansson.cpp
+	libs/jansson.h
 )
 
 add_file_folder("Libs\\\\Discord"
@@ -738,6 +743,8 @@ add_file_folder("Nebula"
 add_file_folder("Network"
 	network/chat_api.cpp
 	network/chat_api.h
+	network/gtrack.cpp
+	network/gtrack.h
 	network/multi.cpp
 	network/multi.h
 	network/multi_campaign.cpp
@@ -748,6 +755,8 @@ add_file_folder("Network"
 	network/multi_dogfight.h
 	network/multi_endgame.cpp
 	network/multi_endgame.h
+	network/multi_fstracker.cpp
+	network/multi_fstracker.h
 	network/multi_ingame.cpp
 	network/multi_ingame.h
 	network/multi_kick.cpp
@@ -768,6 +777,8 @@ add_file_folder("Network"
 	network/multi_ping.h
 	network/multi_pmsg.cpp
 	network/multi_pmsg.h
+	network/multi_portfwd.cpp
+	network/multi_portfwd.h
 	network/multi_pxo.cpp
 	network/multi_pxo.h
 	network/multi_rate.cpp
@@ -776,6 +787,8 @@ add_file_folder("Network"
 	network/multi_respawn.h
 	network/multi_sexp.cpp
 	network/multi_sexp.h
+	network/multi_sw.cpp
+	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
 	network/multi_update.cpp
@@ -796,7 +809,11 @@ add_file_folder("Network"
 	network/multiutil.h
 	network/psnet2.cpp
 	network/psnet2.h
+	network/ptrack.cpp
+	network/ptrack.h
 	network/stand_gui.h
+	network/valid.cpp
+	network/valid.h
 )
 
 IF(WIN32)
@@ -842,6 +859,13 @@ add_file_folder("Object"
 add_file_folder("Observer"
 	observer/observer.cpp
 	observer/observer.h
+)
+
+add_file_folder("Options"
+	options/Option.cpp
+	options/Option.h
+	options/OptionsManager.cpp
+	options/OptionsManager.h
 )
 
 # OsApi files
@@ -970,6 +994,8 @@ add_file_folder("Radar"
 	radar/radar.h
 	radar/radardradis.cpp
 	radar/radardradis.h
+	radar/radarngon.cpp
+	radar/radarngon.h
 	radar/radarorb.cpp
 	radar/radarorb.h
 	radar/radarsetup.cpp
@@ -987,6 +1013,26 @@ add_file_folder("Render"
 	render/3dsetup.cpp
 	render/batching.cpp
 	render/batching.h
+)
+
+add_file_folder("ScpUi"
+	scpui/IncludeNodeHandler.cpp
+	scpui/IncludeNodeHandler.h
+	scpui/rocket_ui.cpp
+	scpui/rocket_ui.h
+	scpui/RocketFileInterface.cpp
+	scpui/RocketFileInterface.h
+	scpui/RocketRenderingInterface.cpp
+	scpui/RocketRenderingInterface.h
+	scpui/RocketSystemInterface.cpp
+	scpui/RocketSystemInterface.h
+	scpui/SoundPlugin.cpp
+	scpui/SoundPlugin.h
+)
+
+add_file_folder("ScpUi\\\\Elements"
+	scpui/elements/AnimationElement.cpp
+	scpui/elements/AnimationElement.h
 )
 
 add_file_folder("Scripting"
@@ -1022,6 +1068,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/hud.h
 	scripting/api/libs/mission.cpp
 	scripting/api/libs/mission.h
+	scripting/api/libs/options.cpp
+	scripting/api/libs/options.h
 	scripting/api/libs/parse.cpp
 	scripting/api/libs/parse.h
 	scripting/api/libs/tables.cpp
@@ -1032,6 +1080,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
     scripting/api/libs/time_lib.h
 	scripting/api/libs/utf8.cpp
 	scripting/api/libs/utf8.h
+	scripting/api/libs/ui.cpp
+	scripting/api/libs/ui.h
 )
 
 add_file_folder("Scripting\\\\Api\\\\Objs"
@@ -1075,12 +1125,18 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/model_path.cpp
+	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
 	scripting/api/objs/movie_player.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
+	scripting/api/objs/option.cpp
+	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/parse_object.cpp
+	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp
 	scripting/api/objs/particle.h
 	scripting/api/objs/physics_info.cpp
@@ -1278,6 +1334,8 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/RandomRange.h
+	utils/string_utils.cpp
+	utils/string_utils.h
 	utils/strings.h
     utils/unicode.cpp
     utils/unicode.h
@@ -1315,11 +1373,5 @@ add_file_folder("Weapon"
 # Windows stubs files
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
+	windows_stub/stubs.cpp
 )
-
-IF(UNIX)
-	add_file_folder("Windows Stubs"
-		${file_root_windows_stubs}
-		windows_stub/stubs.cpp
-	)
-ENDIF(UNIX)

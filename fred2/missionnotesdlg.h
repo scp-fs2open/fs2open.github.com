@@ -65,6 +65,7 @@ public:
 	BOOL		m_2d_mission;
 	BOOL		m_always_show_goals;
 	BOOL		m_end_to_mainhall;
+	BOOL		m_override_hashcommand;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

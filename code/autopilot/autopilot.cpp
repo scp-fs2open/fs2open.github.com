@@ -122,31 +122,6 @@ vec3d *NavPoint::GetPosition()
 	}
 }
 
-char* NavPoint::GetInternalName()
-{
-	char *NavName;
-	char strtmp[33];
-
-	if (flags & NP_WAYPOINT)
-	{
-		NavName = new char[strlen(((waypoint_list*)target_obj)->get_name())+5];
-		memset(NavName, 0, strlen(((waypoint_list*)target_obj)->get_name())+5);
-		strcpy(NavName, ((waypoint_list*)target_obj)->get_name());
-
-		strcat(NavName, ":");
-		sprintf(strtmp, "%d", waypoint_num);
-		strcat(NavName, strtmp);
-	}
-	else
-	{		
-		NavName = new char[strlen(((ship*)target_obj)->ship_name)+1];
-		memset(NavName, 0, strlen(((ship*)target_obj)->ship_name)+1);
-		strcpy(NavName, ((ship*)target_obj)->ship_name);
-	}
-
-	return NavName;
-}
-
 // ********************************************************************************************
 bool CanAutopilot(vec3d targetPos, bool send_msg)
 {
@@ -998,7 +973,6 @@ camera* nav_get_set_camera()
 	return nav_camera.getCamera();
 }
 
-extern int Cmdline_old_collision_sys;
 void nav_warp(bool prewarp=false)
 {
 	/* ok... find our end distance - norm1 is still a unit vector in the
@@ -1053,11 +1027,7 @@ void nav_warp(bool prewarp=false)
 	}
 
 	// retime all collision pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_all_collisions_retime();
-	} else {
-		obj_collide_retime_cached_pairs();
-	}
+	obj_collide_retime_cached_pairs();
 }
 
 // ********************************************************************************************
@@ -1464,22 +1434,6 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 }
 
 // ********************************************************************************************
-//Change Flags
-bool Nav_Alt_Flags(char *Nav, int flags)
-{
-	flags &= ~NP_VALIDTYPE; //clear the NP_SHIP and NP_WAYPOINT bits, make sure they haven't been set
-
-	int nav = FindNav(Nav);
-
-	if (nav != -1)
-	{
-		Navs[nav].flags &= NP_VALIDTYPE; // Clear all bits BUT NP_SHIP or NO_WAYPOINT
-		Navs[nav].flags |= flags; // merge
-	}
-
-	return (nav != -1);
-}
-
 //Get Flags
 int Nav_Get_Flags(char *Nav)
 {

@@ -246,7 +246,7 @@ enum class GameSounds {
 /**
  * Interface sounds
  */
-enum InterfaceSounds {
+enum class InterfaceSounds {
 	IFACE_MOUSE_CLICK       =0, //!< mouse click
 	ICON_PICKUP             =1, //!< pick up a ship icon (Empty in Retail)
 	ICON_DROP_ON_WING       =2, //!< drop a ship icon on a wing slot

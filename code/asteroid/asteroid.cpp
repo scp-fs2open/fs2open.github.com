@@ -1143,8 +1143,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 		// SET PHYSICS PARAMETERS
 		// already have (hitpos - heavy) and light_cm_pos
-		// get heavy cm pos - already have light_cm_pos
-		asteroid_hit_info->heavy_collision_cm_pos = zero;
 
 		// get r_heavy and r_light
 		asteroid_hit_info->r_heavy = asteroid_hit_info->hit_pos;
@@ -1263,7 +1261,7 @@ static float asteroid_create_explosion(object *objp)
 
 	fireball_scale_multiplier = asteroid_get_fireball_scale_multiplier(objp->instance);
 
-	fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, 0, &objp->phys_info.vel );
+	fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, false, &objp->phys_info.vel );
 	if ( fireball_objnum > -1 )	{
 		explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 	} else {
@@ -1547,7 +1545,7 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, '\0', NULL, pasteroid_obj);
+		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
 		Script_system.RemHookVar("Self");
 	}
 }

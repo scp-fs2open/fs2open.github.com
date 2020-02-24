@@ -80,7 +80,6 @@ void opengl_tcache_frame();
 void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
 void opengl_preload_init();
-GLfloat opengl_get_max_anisotropy();
 void opengl_kill_render_target(bitmap_slot* slot);
 int opengl_make_render_target(int handle, int *w, int *h, int *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
@@ -88,6 +87,7 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num);
 size_t opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data );
 void opengl_set_texture_target(GLenum target = GL_TEXTURE_2D);
 void opengl_set_texture_face(GLenum face = GL_TEXTURE_2D);
+void opengl_tex_array_storage(GLenum target, GLint levels, GLenum format, GLint width, GLint height, GLint frames);
 
 int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, uint32_t *array_index, int stage = 0);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
@@ -96,5 +96,7 @@ void gr_opengl_set_texture_addressing(int mode);
 GLuint opengl_get_rtt_framebuffer();
 void gr_opengl_bm_generate_mip_maps(int slot);
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale);
+
+void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 
 #endif	//_GROPENGLTEXTURE_H

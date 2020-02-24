@@ -16,6 +16,7 @@ class SubtitleDecoder: public FFMPEGStreamDecoder<SubtitleFrame> {
 
 	void finishDecoding() override;
     void pushSubtitleFrame(AVPacket* subtitle, AVSubtitle* pSubtitle);
+	void flushBuffers() override;
 };
 
 }

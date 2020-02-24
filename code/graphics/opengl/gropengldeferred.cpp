@@ -1,28 +1,32 @@
 
 
-#include "graphics/2d.h"
-#include "gropenglstate.h"
-#include "gropengldraw.h"
 #include "gropengldeferred.h"
+
+#include "ShaderProgram.h"
+#include "gropengldraw.h"
+#include "gropenglstate.h"
 #include "gropengltnl.h"
+
+#include "graphics/2d.h"
 #include "graphics/matrix.h"
 #include "graphics/util/UniformAligner.h"
-#include "graphics/util/uniform_structs.h"
 #include "graphics/util/UniformBuffer.h"
-#include "tracing/tracing.h"
+#include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
-#include "render/3d.h"
-#include "ShaderProgram.h"
-#include "nebula/neb.h"
-#include "mission/missionparse.h"
 #include "mission/mission_flags.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
-void gr_opengl_deferred_init() {
+#include <math/bitarray.h>
+
+void gr_opengl_deferred_init()
+{
 	gr_opengl_deferred_light_cylinder_init(16);
 	gr_opengl_deferred_light_sphere_init(16, 16);
 }
-void gr_opengl_deferred_shutdown() {
-}
+void gr_opengl_deferred_shutdown() {}
 
 void opengl_clear_deferred_buffers()
 {
@@ -37,7 +41,7 @@ void opengl_clear_deferred_buffers()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) );
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
 	opengl_shader_set_current();
 
@@ -115,7 +119,7 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-	if (Cmdline_shadow_quality) {
+	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 	
@@ -125,15 +129,24 @@ void gr_opengl_deferred_lighting_finish()
 	std::stable_sort(Lights.begin(), Lights.end(), light_compare_by_type);
 	using namespace graphics;
 
-	// Get a uniform buffer for out data
-	auto buffer = gr_get_uniform_buffer(uniform_block_type::Lights);
-	auto& uniformAligner = buffer->aligner();
+	// We need to precompute how many elements we are going to need
+	size_t num_data_elements = 0;
+	for (auto& l : Lights) {
+		++num_data_elements;
+		if (l.type == Light_Type::Tube) {
+			++num_data_elements;
+		}
+	}
+
+	// Get a uniform buffer for our data
+	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
+	auto& uniformAligner = buffer.aligner();
 
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
 		auto header = uniformAligner.getHeader<deferred_global_data>();
-		if (Cmdline_shadow_quality) {
+		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
 			header->shadow_mv_matrix = Shadow_view_matrix;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
@@ -149,7 +162,6 @@ void gr_opengl_deferred_lighting_finish()
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
-		header->specFactor = Cmdline_ogl_spec;
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
@@ -171,9 +183,12 @@ void gr_opengl_deferred_lighting_finish()
 			light_data->diffuseLightColor = diffuse;
 			light_data->specLightColor = spec;
 
+			// Set a default value for all lights. Only the first directional light will change this.
+			light_data->enable_shadows = false;
+
 			switch (l.type) {
 			case Light_Type::Directional:
-				if (Cmdline_shadow_quality) {
+				if (Shadow_quality != ShadowQuality::Disabled) {
 					light_data->enable_shadows = first_directional ? 1 : 0;
 				}
 				vec4 light_dir;
@@ -200,9 +215,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
 			case Light_Type::Point:
-				light_data->diffuseLightColor = diffuse;
-				light_data->specLightColor = spec;
-
 				vm_vec_scale(&light_data->specLightColor, static_point_factor);
 
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
@@ -211,7 +223,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
 				break;
 			case Light_Type::Tube: {
-				light_data->diffuseLightColor = diffuse;
 				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = LT_TUBE;
 
@@ -244,14 +255,12 @@ void gr_opengl_deferred_lighting_finish()
 		}
 
 		// Uniform data has been assembled, upload it to the GPU and issue the draw calls
-		buffer->submitData();
+		buffer.submitData();
 	}
 	{
 		GR_DEBUG_SCOPE("Render light geometry");
-		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals,
-							   0,
-							   sizeof(graphics::deferred_global_data),
-							   buffer->bufferHandle());
+		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals, buffer.getBufferOffset(0),
+		                       sizeof(graphics::deferred_global_data), buffer.bufferHandle());
 
 		size_t element_index = 0;
 		for (auto& l : Lights) {
@@ -259,27 +268,21 @@ void gr_opengl_deferred_lighting_finish()
 
 			switch (l.type) {
 			case Light_Type::Directional:
-				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
-									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 				++element_index;
 				break;
 			case Light_Type::Cone:
 			case Light_Type::Point:
-				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
-									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index;
 				break;
 			case Light_Type::Tube:
-				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
-									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				vec3d a;
 				matrix orient;
@@ -290,10 +293,8 @@ void gr_opengl_deferred_lighting_finish()
 				++element_index;
 
 				// The next two draws use the same uniform block element
-				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
-									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				gr_opengl_draw_deferred_light_sphere(&l.vec2);
@@ -303,9 +304,6 @@ void gr_opengl_deferred_lighting_finish()
 				continue;
 			}
 		}
-
-		// We don't need the buffer anymore
-		buffer->finished();
 	}
 
 	gr_end_view_matrix();
@@ -327,15 +325,20 @@ void gr_opengl_deferred_lighting_finish()
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		Current_shader->program->Uniforms.setUniformi("tex", 0);
-		Current_shader->program->Uniforms.setUniformi("depth_tex", 1);
-		Current_shader->program->Uniforms.setUniformf("fog_start", fog_near);
-		Current_shader->program->Uniforms.setUniformf("fog_scale", 1.0f / (fog_far - fog_near));
-		Current_shader->program->Uniforms.setUniform3f("fog_color", r / 255.f, g / 255.f, b / 255.f);
-		Current_shader->program->Uniforms.setUniformf("zNear", Min_draw_distance);
-		Current_shader->program->Uniforms.setUniformf("zFar", Max_draw_distance);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_set_generic_uniform_data<graphics::generic_data::fog_data>([&](graphics::generic_data::fog_data* data) {
+			data->fog_start       = fog_near;
+			data->fog_scale       = 1.0f / (fog_far - fog_near);
+			data->fog_color.xyz.x = r / 255.f;
+			data->fog_color.xyz.y = g / 255.f;
+			data->fog_color.xyz.z = b / 255.f;
+			data->zNear           = Min_draw_distance;
+			data->zFar            = Max_draw_distance;
+		});
+
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	} else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
@@ -365,8 +368,7 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	opengl_draw_sphere();
 
@@ -593,8 +595,7 @@ void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix 
 {
 	g3_start_instance_matrix(position, orient, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+	gr_matrix_set_uniforms();
 
 	vertex_layout vertex_declare;
 

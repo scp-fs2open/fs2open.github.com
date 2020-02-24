@@ -127,7 +127,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is target
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh && newh->isSubsystemValid())
 		{
 			if(bp->target_sig != newh->sig)
 			{
@@ -200,7 +200,7 @@ ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired 
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newh && newh->IsValid())
+		if(newh && newh->isSubsystemValid())
 		{
 			if(bp->sig != newh->sig)
 			{
@@ -255,7 +255,8 @@ ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the define
 	return ade_set_args(L, "o", l_Vector.Set(bp->f_collisions[idx].cinfo.hit_point_world));
 }
 
-ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision information of the specified collision", "collision info", "handle to information or invalid handle on error")
+ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision information of the specified collision",
+         "collision_info", "handle to information or invalid handle on error")
 {
 	object_h *objh;
 	int idx;
@@ -274,7 +275,7 @@ ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision informati
 		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
 	// so we have valid beam and valid indexer
-	return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(new mc_info(bp->f_collisions[idx].cinfo))));
+	return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(bp->f_collisions[idx].cinfo)));
 }
 
 ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")

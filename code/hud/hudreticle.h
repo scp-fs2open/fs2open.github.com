@@ -42,6 +42,8 @@ protected:
 	int firepoint_size;
 	int firepoint_scale_x;
 	int firepoint_scale_y;
+	int autoaim_frame_offset;
+	bool has_autoaim_lock;
 public:
 	HudGaugeReticle();
 	void render(float frametime) override;
@@ -49,6 +51,7 @@ public:
 	void pageIn() override;
 	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
 	void getFirepointStatus();
+	void setAutoaimFrame(int framenum);
 };
 
 class HudGaugeThrottle: public HudGauge
@@ -165,12 +168,5 @@ public:
 
 void hud_init_reticle();
 void hud_update_reticle( player *pp );
-
-void hud_draw_outer_reticle();
-void hud_draw_center_reticle();
-void hud_draw_throttle_gauge();
-void hud_draw_target_throttle_gauge();
-
-
 
 #endif

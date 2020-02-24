@@ -79,9 +79,9 @@ static void png_warning_fn(png_structp png_ptr, png_const_charp message)
 	png_status* status = reinterpret_cast<png_status*>(png_get_error_ptr(png_ptr));
 
 	if (status->writing) {
-		mprintf(("PNG warning while writing %s: %s\n", status->filename, message));
+		nprintf(("PNG warning", "PNG warning while writing %s: %s\n", status->filename, message));
 	} else {
-		mprintf(("PNG warning while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+		nprintf(("PNG warning", "PNG warning while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
 	}
 }
 

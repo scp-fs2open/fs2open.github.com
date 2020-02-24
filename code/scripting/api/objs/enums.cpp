@@ -135,6 +135,12 @@ flag_def_list Enumerations[] = {
 	},
 
 	{
+		"ORDER_PLAY_DEAD_PERSISTENT",
+		LE_ORDER_PLAY_DEAD_PERSISTENT,
+		0
+	},
+
+	{
 		"ORDER_REARM",
 		LE_ORDER_REARM,
 		0
@@ -467,6 +473,16 @@ flag_def_list Enumerations[] = {
 	{
 		"MESSAGE_PRIORITY_HIGH",
 		LE_MESSAGE_PRIORITY_HIGH,
+		0
+	},
+	{
+		"OPTION_TYPE_SELECTION",
+		LE_OPTION_TYPE_SELECTION,
+		0
+	},
+	{
+		"OPTION_TYPE_RANGE",
+		LE_OPTION_TYPE_RANGE,
 		0
 	},
 };

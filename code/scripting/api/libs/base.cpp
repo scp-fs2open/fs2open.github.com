@@ -3,10 +3,11 @@
 
 #include <freespace.h>
 #include <gamesequence/gamesequence.h>
-#include <network/multi.h>
-#include <playerman/player.h>
-#include <parse/parselo.h>
 #include <globalincs/version.h>
+#include <network/multi.h>
+#include <parse/parselo.h>
+#include <pilotfile/pilotfile.h>
+#include <playerman/player.h>
 
 #include "base.h"
 
@@ -117,7 +118,37 @@ ADE_FUNC(getCurrentMPStatus, l_Base, "NIL", "Gets this computers current MP stat
 
 ADE_FUNC(getCurrentPlayer, l_Base, NULL, "Gets a handle of the currently used player.<br><b>Note:</b> If there is no current player then the first player will be returned, check the game state to make sure you have a valid player handle.", "player", "Player handle")
 {
-	return ade_set_args(L, "o", l_Player.Set(Player_num));
+	return ade_set_args(L, "o", l_Player.Set(player_h(Players[Player_num])));
+}
+
+ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the specified callsign.", "player",
+         "Player handle or invalid handle on load failure")
+{
+	const char* callsign;
+	if (!ade_get_args(L, "s", &callsign)) {
+		return ade_set_error(L, "o", l_Player.Set(player_h()));
+	}
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	if (!loader.load_player(callsign, &plr)) {
+		return ade_set_error(L, "o", l_Player.Set(player_h()));
+	}
+
+	return ade_set_args(L, "o", l_Player.Set(player_h(plr)));
+}
+
+ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boolean",
+         "true of successfull, false otherwise")
+{
+	player_h* plh;
+	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	pilotfile loader;
+	return ade_set_args(L, "b", loader.save_player(plh->get()));
 }
 
 ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
@@ -182,17 +213,17 @@ ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL",
 		case LE_LUA_ADDITIVE_BUTTON_CONTROL:
 			lua_game_control |= LGC_B_ADDITIVE;
 			lua_game_control &= ~(LGC_B_NORMAL|LGC_B_OVERRIDE);
-			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
+			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
 		case LE_LUA_OVERRIDE_BUTTON_CONTROL:
 			lua_game_control |= LGC_B_OVERRIDE;
 			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_NORMAL);
-			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
+			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
 		default:
 			return ade_set_error(L, "s", "");
 	}
 }
 
-ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control info", "control info handle")
+ADE_FUNC(getControlInfo, l_Base, nullptr, "Gets the control info handle.", "control_info", "control info handle")
 {
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
@@ -214,7 +245,9 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getGameDifficulty, l_Base, NULL, "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)", "integer", "Difficulty level as integer")
+ADE_FUNC(getGameDifficulty, l_Base, nullptr,
+         "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)",
+         "number", "Difficulty level as integer")
 {
 	return ade_set_args(L, "i", Game_skill_level+1);
 }
@@ -228,7 +261,7 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	if(!gh->IsValid())
 		return ade_set_error(L, "b", false);
 
-	if (Om_tracker_flag)
+	if (Multi_options_g.pxo)
 		Multi_options_g.protocol = NET_TCP;
 	psnet_use_protocol(Multi_options_g.protocol);
 
@@ -304,12 +337,50 @@ ADE_FUNC(getCurrentLanguageExtension,
 	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
 }
 
+ADE_FUNC(getVersionString, l_Base, nullptr,
+         "Returns a string describing the version of the build that is currently running. This is mostly intended to "
+         "be displayed to the user and not processed by a script so don't rely on the exact format of the string.",
+         "string", "The version information")
+{
+	auto str = gameversion::get_version_string();
+	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",
+            "boolean",
+            "true if in multiplayer mode, false if in singleplayer. If neither is the case (e.g. on game init) nil "
+            "will be returned")
+{
+	bool b;
+	if (!ade_get_args(L, "*|b", &b)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (b) {
+			Game_mode &= ~GM_NORMAL;
+			Game_mode |= GM_MULTIPLAYER;
+		} else {
+			Game_mode &= ~GM_MULTIPLAYER;
+			Game_mode |= GM_NORMAL;
+		}
+	}
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		return ADE_RETURN_TRUE;
+	} else if (Game_mode & GM_NORMAL) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 
 ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameEvent.Set(gameevent_h()));
 
@@ -339,7 +410,7 @@ ADE_LIB_DERIV(l_Base_States, "GameStates", NULL, "Freespace 2 states", l_Base);
 
 ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameState.Set(gamestate_h()));
 

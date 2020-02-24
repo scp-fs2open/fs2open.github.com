@@ -36,7 +36,6 @@ typedef struct multi_global_options {
 
 	char		user_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of user tracker
 	char		game_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of game tracker
-	char		tracker_port[STD_NAME_LEN];						// ip address to use for user/game tracker (used for FS2NetD only)
 	int			pxo;
 	char		pxo_ip[MULTI_OPTIONS_STRING_LEN];					// ip address of pxo chat server
 	char		pxo_rank_url[MULTI_OPTIONS_STRING_LEN];			// URL of pxo rankings page
@@ -50,8 +49,6 @@ typedef struct multi_global_options {
 	int		std_voice;													// should standalone allow voice
 	char		std_passwd[STD_PASSWD_LEN+1];							// standalone host password
 	char		std_pname[STD_NAME_LEN+1];								// permanent name for the standalone - if any
-	char		std_pxo_login[MULTI_OPTIONS_STRING_LEN];				// pxo login to use
-	char		std_pxo_password[MULTI_OPTIONS_STRING_LEN];				// pxo password to use
 	int		std_framecap;												// standalone frame cap
 
 	ushort		webapiPort;
@@ -61,6 +58,7 @@ typedef struct multi_global_options {
 
 	void reset() {
 		protocol = 1;//NET_TCP
+		pxo = 0;
 
 		port = DEFAULT_GAME_PORT;
 
@@ -68,7 +66,6 @@ typedef struct multi_global_options {
 		datarate_cap = 11000;//OO_HIGH_RATE_DEFAULT;
 		strcpy_s(user_tracker_ip, "");
 		strcpy_s(game_tracker_ip, "");
-		strcpy_s(tracker_port, "");
 		strcpy_s(pxo_ip, "");
 		strcpy_s(pxo_rank_url, "");
 		strcpy_s(pxo_create_url, "");

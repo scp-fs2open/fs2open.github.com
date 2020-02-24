@@ -37,30 +37,14 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (false)
-#	else
-#		define Assertion(expr, msg)  do {} while (false)
-#	endif
+#	define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (false)
 #else
-	/*
-	 * NOTE: Assertion() can only use its proper functionality in compilers
-	 * that support variadic macros.
-	 */
-#	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)                                    \
-			do {                                                            \
-				if (!(expr)) {                                              \
-					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
-				}                                                           \
-			} while (false)
-#	else                 /* Older MSVC compilers */
-#		define Assertion(expr, msg)                        \
-			do {                                           \
-				if (!(expr)) {                             \
-					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__);  \
-			} while (false)
-#	endif
+#	define Assertion(expr, msg, ...)                                    \
+		do {                                                            \
+			if (!(expr)) {                                              \
+				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
+			}                                                           \
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
@@ -74,8 +58,8 @@
 #define SIZE_T_ARG    "%Iu"
 #define PTRDIFF_T_ARG "%Id"
 
-#define likely(x)
-#define unlikely(x)
+#define likely(x) (x)
+#define unlikely(x) (x)
 
 #define USED_VARIABLE
 

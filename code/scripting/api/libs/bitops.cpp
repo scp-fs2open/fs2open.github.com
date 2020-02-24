@@ -1,5 +1,6 @@
 
 #include "bitops.h"
+#include "scripting/ade_args.h"
 
 namespace scripting {
 namespace api {

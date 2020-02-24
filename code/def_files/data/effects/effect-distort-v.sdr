@@ -5,9 +5,18 @@ in float vertRadius;
 out vec4 fragTexCoord;
 out vec4 fragColor;
 out float fragOffset;
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
-uniform float use_offset;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
+layout (std140) uniform genericData {
+	float window_width;
+	float window_height;
+	float use_offset;
+};
+
 void main()
 {
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;

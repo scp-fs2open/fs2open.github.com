@@ -223,5 +223,8 @@ void AudioDecoder::finishDecoding() {
 	// Push the last bits of audio data into the queue
 	flushAudioBuffer();
 }
+void AudioDecoder::flushBuffers() {
+	avcodec_flush_buffers(m_status->audioCodecCtx);
+}
 }
 }

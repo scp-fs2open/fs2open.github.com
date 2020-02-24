@@ -136,13 +136,13 @@ class LuaTable: public LuaValue {
      * @param value The value to set at the index.
      */
 	template<class IndexType, class ValueType>
-	void addValue(const IndexType& index, const ValueType& value) {
+	void addValue(IndexType&& index, ValueType&& value) {
 		// Push the table onto the stack by using the reference
 		this->pushValue();
 
 		// Push the index and value onto the stac by using the template functions
-		convert::pushValue(_luaState, index);
-		convert::pushValue(_luaState, value);
+		convert::pushValue(_luaState, std::forward<IndexType>(index));
+		convert::pushValue(_luaState, std::forward<ValueType>(value));
 
 		// Set the value in the table
 		lua_settable(_luaState, -3);

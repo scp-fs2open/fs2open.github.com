@@ -21,10 +21,6 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 
-extern int Warp_model;
-extern int Warp_glow_bitmap;
-extern int Warp_ball_bitmap;
-
 void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 {
 	vec3d norm;
@@ -45,7 +41,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 	batching_add_tri(texture, vertlist); // TODO render as emissive
 }
 
-void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
+void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id)
 {
 	vec3d center;
 	vec3d vecs[5];
@@ -53,14 +49,12 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
-	verts[0].r = 255;
-	verts[0].g = 255;
-	verts[0].b = 255;
-	verts[0].a = 255;
-
+	// Cyborg17, Initialize the *whole* struct, set some starting values and share with the rest of the array.
+	verts[0] = {};
+	verts[0].r = verts[0].g = verts[0].b = verts[0].a = 255;
 	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
-	if (Warp_glow_bitmap >= 0) {
+	if (warp_glow_bitmap >= 0) {
 		float r = radius;
 		bool render_it = true;
 
@@ -99,12 +93,12 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 
-			//batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
-			batching_add_bitmap(Warp_glow_bitmap, &verts[4], 0, r, alpha);
+			//batch_add_bitmap(warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
+			batching_add_bitmap(warp_glow_bitmap, &verts[4], 0, r, alpha);
 		}
 	}
 
-	if ( (Warp_model >= 0) && (warp_3d || Cmdline_3dwarp) ) {
+	if ( (warp_model_id >= 0) && (warp_3d || Fireball_use_3d_warp) ) {
 		model_render_params render_info;
 
 		float scale = radius / 25.0f;
@@ -119,7 +113,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		render_info.set_detail_level_lock((int)(dist / (radius * 10.0f)));
 		render_info.set_flags(MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING | MR_NO_CULL | MR_NO_BATCH);
 
-		model_render_queue( &render_info, scene, Warp_model, orient, pos);
+		model_render_queue( &render_info, scene, warp_model_id, orient, pos);
 	} else {
 		float Grid_depth = radius/2.5f;
 
@@ -141,7 +135,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		vm_vec_scale_add2( &vecs[3], &orient->vec.rvec, -radius );
 		vm_vec_scale_add2( &vecs[3], &orient->vec.fvec, Grid_depth );
 
-		//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
+		//	vm_vec_scale_add( &vecs[4], center, &orient->vec.fvec, -Grid_depth );
 		vecs[4] = center;
 
 		verts[0].texture_position.u = 0.01f;
@@ -171,14 +165,14 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		warpin_batch_draw_face( texture_bitmap_num, &verts[0], &verts[3], &verts[4] );
 	}
 
-	if (Warp_ball_bitmap > -1 && Cmdline_warp_flash == 1) {
+	if (warp_ball_bitmap >= 0 && Cmdline_warp_flash) {
 		flash_ball warp_ball(20, .1f,.25f, &orient->vec.fvec, pos, 4.0f, 0.5f);
 
 		float adg = (2.0f * life_percent) - 1.0f;
 		float pct = (powf(adg, 4.0f) - powf(adg, 128.0f)) * 4.0f;
 
 		if (pct > 0.00001f) {
-			warp_ball.render(Warp_ball_bitmap, max_radius * pct * 0.5f, adg * adg, adg * adg * 6.0f);
+			warp_ball.render(warp_ball_bitmap, max_radius * pct * 0.5f, adg * adg, adg * adg * 6.0f);
 		}
 	}
 }

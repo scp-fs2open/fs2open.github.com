@@ -1,8 +1,12 @@
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 out vec4 fragTexCoord;
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
+
+layout (std140) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+
 void main()
 {
 	fragTexCoord = vertTexCoord;

@@ -1,14 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "mission/missionbriefcommon.h"
 
 #include "anim/animplay.h"
 #include "gamesnd/gamesnd.h"
@@ -19,13 +18,13 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
-#include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3d.h"
@@ -33,7 +32,6 @@
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
-
 
 // --------------------------------------------------------------------------------------
 // briefing screen
@@ -127,7 +125,16 @@ debriefing	Debriefings[MAX_TVT_TEAMS];			// there can be multiple debriefings pe
 briefing		*Briefing;							// pointer used in code -- points to correct briefing
 debriefing	*Debriefing;						// pointer to correct debriefing
 
-int			Briefing_voice_enabled=1;		// flag which turn on/off voice playback of briefings/debriefings
+bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
+
+static auto BriefingVoiceOption = options::OptionBuilder<bool>("Audio.BriefingVoice", "Briefing voice",
+                                                               "Enable or disable voice playback in the briefing.")
+                                      .category("Audio")
+                                      .level(options::ExpertLevel::Beginner)
+                                      .default_val(true)
+                                      .bind_to(&Briefing_voice_enabled)
+                                      .importance(4)
+                                      .finish();
 
 // --------------------------------------------------------------------------------------
 // Module global data
@@ -257,7 +264,6 @@ SCP_vector<briefing_icon_info> Briefing_icon_info;
 // --------------------------------------------------------------------------------------
 void	brief_render_elements(vec3d *pos, grid *gridp);
 void	brief_render_icons(int stage_num, float frametime);
-void	brief_grid_read_camera_controls( control_info * ci, float frametime );
 void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
 grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid	*brief_create_default_grid(void);
@@ -609,7 +615,8 @@ void brief_preload_icon_anim(brief_icon *bi)
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ga->first_frame == -1 ) {
 		ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames);
-		Assert(ga->first_frame >= 0);
+		if ( ga->first_frame < 0 )
+			Warning(LOCATION, "Failed to load icon %s!", ga->filename);
 	}
 }
 
@@ -624,13 +631,13 @@ void brief_preload_fade_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
-	}
 
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
+	if ( ha->first_frame >= 0 ) {
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
+	}
 }
 
 void brief_preload_highlight_anim(brief_icon *bi)
@@ -644,15 +651,15 @@ void brief_preload_highlight_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
+
+	if ( ha->first_frame >= 0 ) {
+		bi->highlight_anim = *ha;
+
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
 	}
-
-	bi->highlight_anim = *ha;
-
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
 }
 
 /**
@@ -920,7 +927,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		ga = &bii->regular;
 		if (ga->first_frame < 0) {
-			Int3();
 			return;
 		}
 
@@ -1818,50 +1824,6 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 	Brief_stage_highlight_sound_handle = sound_handle::invalid();
 	Last_new_stage = stage_num;
 }
-
-// ------------------------------------------------------------------------------------
-// camera_pos_past_target()
-//
-//
-int camera_pos_past_target(vec3d *start, vec3d *current, vec3d *dest)
-{
-	vec3d num, den;
-	float ratio;
-
-	vm_vec_sub(&num, current, start);
-	vm_vec_sub(&den, start, dest);
-
-	ratio = vm_vec_mag_quick(&num) / vm_vec_mag_quick(&den);
-	if (ratio >= 1.0f)
-		return TRUE;
-	
-	return FALSE;
-}
-
-/**
- * Interpolate between matrices.
- * elapsed_time/total_time gives percentage of interpolation between cur and goal.
- */
-void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elapsed_time, float total_time)
-{
-	vec3d fvec, rvec;
-	float	time0, time1;
-	
-	if ( !vm_matrix_cmp( goal, start ) ) {
-		return;
-	}	
-
-	time0 = elapsed_time / total_time;
-	time1 = (total_time - elapsed_time) / total_time;
-
-	vm_vec_copy_scale(&fvec, &start->vec.fvec, time1);
-	vm_vec_scale_add2(&fvec, &goal->vec.fvec, time0);
-
-	vm_vec_copy_scale(&rvec, &start->vec.rvec, time1);
-	vm_vec_scale_add2(&rvec, &goal->vec.rvec, time0);
-
-	vm_vector_2_matrix(result, &fvec, NULL, &rvec);
- }
 
 /**
  * Calculate how far the camera should have moved

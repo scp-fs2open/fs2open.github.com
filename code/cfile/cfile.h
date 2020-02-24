@@ -13,10 +13,11 @@
 #define __CFILE_H__
 
 
-#include <ctime>
 #include "globalincs/pstypes.h"
 
+#include <ctime>
 #include <stdexcept>
+#include <memory>
 
 
 #define CF_EOF (-1)
@@ -25,10 +26,8 @@
 #define CF_SEEK_CUR (1)
 #define CF_SEEK_END (2)
 
-typedef struct CFILE {
-	int		id;			// Index into cfile.cpp specific structure
-	int		version;		// version of this file
-} CFILE;
+// Opaque file handle
+struct CFILE;
 
 // extra info that can be returned when getting a file listing
 typedef struct {
@@ -79,9 +78,11 @@ typedef struct {
 #define CF_TYPE_SCRIPTS				35
 #define CF_TYPE_FICTION				36
 #define CF_TYPE_FREDDOCS			37
+#define CF_TYPE_INTERFACE_MARKUP 38
+#define CF_TYPE_INTERFACE_CSS 39
 
-#define CF_MAX_PATH_TYPES			38			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
-
+#define CF_MAX_PATH_TYPES                                                                                              \
+	40 // Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 // TRUE if type is specified and valid
 #define CF_TYPE_SPECIFIED(path_type) (((path_type)>CF_TYPE_INVALID) && ((path_type)<CF_MAX_PATH_TYPES))
@@ -153,9 +154,6 @@ enum CFileLocationFlags {
 	CF_LOCATION_ALL = CF_LOCATION_ROOT_MASK | CF_LOCATION_TYPE_MASK
 };
 
-#define cfread_fix(file) (fix)cfread_int(file)
-#define cfwrite_fix(i,file) cfwrite_int(i,file)
-
 // callback function used for get_file_list() to filter files to be added to list.  Return 1
 // to add file to list, or 0 to not add it.
 extern int (*Get_file_list_filter)(const char *filename);
@@ -173,11 +171,6 @@ extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
 //================= LOW-LEVEL FUNCTIONS ==================
 int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
 void cfile_close();
-
-// Call this if pack files got added or removed or the
-// cdrom changed.  This will refresh the list of filenames 
-// stored in packfiles and on the cdrom.
-void cfile_refresh();
 
 // add an extension to a filename if it doesn't already have it
 char *cf_add_ext(const char *filename, const char *ext);
@@ -199,10 +192,6 @@ CFILE *_cfopen_special(const char* source_file, int line, const char *file_path,
 
 // Flush the open file buffer
 int cflush(CFILE *cfile);
-
-// version number of opened file.  Will be 0 unless you put something else here after you
-// open a file.  Once set, you can use minimum version numbers with the read functions.
-void cf_set_version( CFILE * cfile, int version );
 
 // will throw an error if cfread*() functions read past this mark
 // converted to raw offsets when used, but gets passed actual length from current position
@@ -243,10 +232,6 @@ int cfread(void *buf, int elsize, int nelem, CFILE *fp);
 
 // cfwrite() writes to the file
 int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile);
-
-// Reads/writes RLE compressed data.
-int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile);
-int cfwrite_compressed(void *param_buf, int param_elsize, int param_nelem, CFILE *cfile);
 
 // Moves the file pointer
 int cfseek(CFILE *fp, int offset, int where);
@@ -299,13 +284,16 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, size_t size);
 // convenient for misc checksumming purposes ------------------------------------------
 
 //================= HIGH LEVEL FUNCTIONS ==================
-int cfexist(const char *filename);	// Returns true if file exists on disk (1) or in hog (2).
 
 // rename a file, utilizing the extension to determine where file is.
 #define CF_RENAME_SUCCESS				0					// successfully renamed the file
 #define CF_RENAME_FAIL_ACCESS			1					// new name could not be created
 #define CF_RENAME_FAIL_EXIST			2					// old name does not exist
 int cf_rename(const char *old_name, const char *name, int type = CF_TYPE_ANY );
+
+// Creates the directory path if it doesn't exist. Even creates all its
+// parent paths.
+void cf_create_directory(int dir_type, uint32_t location_flags = CF_LOCATION_ALL);
 
 // changes the attributes of a file
 void cf_attrib(const char *name, int set, int clear, int type);
@@ -317,17 +305,15 @@ int cfile_flush_dir(int type);
 // functions for reading from cfile
 // These are all high level, built up from
 // cfread.
-int cfgetc(CFILE *fp);
 char *cfgets(char *buf, size_t n, CFILE *fp);
-char cfread_char(CFILE *file, int ver = 0, char deflt = 0);
-ubyte cfread_ubyte(CFILE *file, int ver = 0, ubyte deflt = 0);
-short cfread_short(CFILE *file, int ver = 0, short deflt = 0);
-ushort cfread_ushort(CFILE *file, int ver = 0, ushort deflt = 0);
-int cfread_int(CFILE *file, int ver = 0, int deflt = 0);
-uint cfread_uint(CFILE *file, int ver = 0, uint deflt = 0);
-float cfread_float(CFILE *file, int ver = 0, float deflt = 0.0f);
-void cfread_vector(vec3d *vec, CFILE *file, int ver = 0, vec3d *deflt = NULL);
-void cfread_angles(angles *ang, CFILE *file, int ver = 0, angles *deflt = NULL);
+char cfread_char(CFILE* file, char deflt = 0);
+ubyte cfread_ubyte(CFILE* file, ubyte deflt = 0);
+short cfread_short(CFILE* file, short deflt = 0);
+ushort cfread_ushort(CFILE* file, ushort deflt = 0);
+int cfread_int(CFILE* file, int deflt = 0);
+uint cfread_uint(CFILE* file, uint deflt = 0);
+float cfread_float(CFILE* file, float deflt = 0.0f);
+void cfread_vector(vec3d* vec, CFILE* file, vec3d* deflt = nullptr);
 
 // Reads variable length, null-termined string.   Will only read up
 // to n characters.
@@ -343,6 +329,13 @@ void cfread_string(char *buf,int n, CFILE *file);
  */
 void cfread_string_len(char *buf,int n, CFILE *file);
 
+/**
+ * @brief Read a string from the file where the length is stored in the file
+ * @param file The file to read the string from
+ * @return The string that was read
+ */
+SCP_string cfread_string_len(CFILE *file);
+
 // functions for writing cfiles
 int cfwrite_char(char c, CFILE *file);
 int cfwrite_float(float f, CFILE *file);
@@ -351,8 +344,6 @@ int cfwrite_uint(uint i, CFILE *file);
 int cfwrite_short(short s, CFILE *file);
 int cfwrite_ushort(ushort s, CFILE *file);
 int cfwrite_ubyte(ubyte u, CFILE *file);
-int cfwrite_vector(vec3d *vec, CFILE *file);
-int cfwrite_angles(angles *ang, CFILE *file);
 
 // writes variable length, null-termined string.
 int cfwrite_string(const char *buf, CFILE *file);
@@ -434,6 +425,8 @@ int cfile_push_chdir(int type);
 // restore directory on top of the stack
 int cfile_pop_dir();
 
+int cfile_get_path_type(const SCP_string& dir);
+
 namespace cfile
 {
 	// exceptions and other errors
@@ -471,5 +464,18 @@ namespace cfile
 	};
 
 }
+
+// This allows to use std::unique_ptr with CFILE
+namespace std {
+template <>
+struct default_delete<CFILE> {
+	void operator()(CFILE* ptr)
+	{
+		if (cf_is_valid(ptr)) {
+			cfclose(ptr);
+		}
+	}
+};
+} // namespace std
 
 #endif	/* __CFILE_H__ */

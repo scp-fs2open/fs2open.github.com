@@ -64,9 +64,8 @@ class Player {
   private:
 	void decoderThread();
 
+	Player(std::unique_ptr<Decoder>&& decoder, const PlaybackProperties& properties);
   public:
-	explicit Player(std::unique_ptr<Decoder>&& decoder, bool enable_audio = true);
-
 	~Player();
 
 	Player(const Player&) = delete;
@@ -130,9 +129,9 @@ class Player {
 	 * @brief Creates a player
 	 * The player is configured to play the movie with the specified name
 	 * @param name The movie to play
-	 * @param enable_audio Enable audio for this player instance
+	 * @param properties A structure describing how the movie will be used
 	 * @return @c nullptr if the specified movie could not be opened, a valid Player pointer otherwise
 	 */
-	static std::unique_ptr<Player> newPlayer(const SCP_string& name, bool enable_audio = true);
+	static std::unique_ptr<Player> newPlayer(const SCP_string& name, const PlaybackProperties& properties = PlaybackProperties());
 };
 }

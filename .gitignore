@@ -26,9 +26,6 @@
 *.unsuccessfulbuild
 ipch/
 [Oo]bj/
-[Bb]in
-[Dd]ebug*/
-[Rr]elease*/
 Ankh.NoLoad
 *.VC.db
 *.VC.VC.opendb

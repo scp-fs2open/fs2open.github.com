@@ -113,11 +113,12 @@ class waypoint_list;
 #define OPF_NEBULA_PATTERN		86		// Axem - Full Nebula Background Patterns, as defined in nebula.tbl
 #define OPF_SKYBOX_FLAGS		87		// niffiwan - valid skybox flags
 #define OPF_GAME_SND			88		// m!m - A game soundflags
-#define OPF_CONTAINER_NAME		89		// Karajorma - The name of a SEXP container
-#define OPF_LIST_CONTAINER_NAME		90		// Karajorma - The name of a SEXP list container
-#define OPF_MAP_CONTAINER_NAME		91		// Karajorma - The name of a SEXP map container
-#define OPF_LIST_MODIFIER		92		// Karajorma - The possible modifiers for a SEXP list container
-#define OPF_MAP_KEY				93		// Karajorma - The keys in a SEXP map container
+#define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl// m!m - A game soundflags
+#define OPF_CONTAINER_NAME		90		// Karajorma - The 
+#define OPF_LIST_CONTAINER_NAME		91		// Karajorma - The name of a SEXP list container
+#define OPF_MAP_CONTAINER_NAME		92		// Karajorma - The name of a SEXP map container
+#define OPF_LIST_MODIFIER		93		// Karajorma - The possible modifiers for a SEXP list container
+#define OPF_MAP_KEY			94		// Karajorma - The keys in a SEXP map container
 
 
 // Operand return types
@@ -242,6 +243,8 @@ class waypoint_list;
 #define OP_UNSET_BIT						(0x0011 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_IS_BIT_SET						(0x0012 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_SIGNUM							(0x0013 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_IS_NAN							(0x0014 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_NAN_TO_NUMBER					(0x0015 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 
 #define	OP_TRUE								(0x0000 | OP_CATEGORY_LOGICAL)
@@ -262,7 +265,7 @@ class waypoint_list;
 #define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define OP_XOR								(0x0010 | OP_CATEGORY_LOGICAL)	// Goober5000
-#define OP_PERFORM_ACTIONS					(0x0011 | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_PERFORM_ACTIONS					(0x0011 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -397,17 +400,18 @@ class waypoint_list;
 #define OP_TURRET_GET_SECONDARY_AMMO		(0x0050 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
 #define OP_IS_DOCKED						(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_IN_TURRET_FOV					(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_IS_CONTAINER_EMPTY				(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_CONTAINER_SIZE				(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_HAS_DATA				(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_DATA_INDEX				(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_HAS_KEY				(0x0057 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_HOTKEY						(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // wookieejedi
+#define OP_IS_CONTAINER_EMPTY				(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_CONTAINER_SIZE				(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_DATA				(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_DATA_INDEX				(0x0057 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_KEY				(0x0058 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
 #define OP_WHEN_ARGUMENT					(0x0001 | OP_CATEGORY_CONDITIONAL)	// Goober5000
-#define OP_EVERY_TIME						(0x0002 | OP_CATEGORY_CONDITIONAL)	// Goober5000
-#define OP_EVERY_TIME_ARGUMENT				(0x0003 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_EVERY_TIME						(0x0002 | OP_CATEGORY_CONDITIONAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_EVERY_TIME_ARGUMENT				(0x0003 | OP_CATEGORY_CONDITIONAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ANY_OF							(0x0004 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_EVERY_OF							(0x0005 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_RANDOM_OF						(0x0006 | OP_CATEGORY_CONDITIONAL)	// Goober5000
@@ -420,8 +424,10 @@ class waypoint_list;
 #define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_FOR_COUNTER						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
+
 #define OP_IF_THEN_ELSE						(0x0010 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUM_VALID_ARGUMENTS				(0x0011 | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -584,9 +590,9 @@ class waypoint_list;
 #define OP_SET_SKYBOX_MODEL					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // taylor
 #define OP_SHIP_CREATE						(0X0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_WEAPON_CREATE					(0x0095	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_OBJECT_SPEED_X				(0X0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_OBJECT_SPEED_Y				(0X0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_OBJECT_SPEED_Z				(0X0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_X				(0X0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Deprecated by wookieejedi
+#define OP_SET_OBJECT_SPEED_Y				(0X0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Deprecated by wookieejedi
+#define OP_SET_OBJECT_SPEED_Z				(0X0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Deprecated by wookieejedi
 #define OP_MISSION_SET_NEBULA				(0x0099 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_ADD_BACKGROUND_BITMAP			(0x009a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_REMOVE_BACKGROUND_BITMAP			(0x009b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
@@ -749,14 +755,16 @@ class waypoint_list;
 #define OP_TURRET_SET_SECONDARY_AMMO		(0x002d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_JETTISON_CARGO_NEW				(0x002e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_STRING_CONCATENATE_BLOCK			(0x002f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_MODIFY_VARIABLE_XSTR				(0X0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// m!m
-#define OP_CONTAINER_ADD_TO_LIST			(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_ADD_TO_MAP				(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
-#define OP_CLEAR_CONTAINER					(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0036 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_MODIFY_VARIABLE_XSTR				(0X0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// m!m
+#define OP_RESET_POST_EFFECTS				(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ADD_REMOVE_HOTKEY				(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // wookieejedi
+#define OP_CONTAINER_ADD_TO_LIST			(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_ADD_TO_MAP				(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CLEAR_CONTAINER				(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_MAP_KEYS					(0x0036 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_LIST			(0x0037 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_MAP			(0x0038 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -779,6 +787,7 @@ class waypoint_list;
 #define OP_AI_IGNORE_NEW					(0x0011 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_AI_FORM_ON_WING					(0x0012 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_AI_CHASE_SHIP_CLASS				(0x0013 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_AI_PLAY_DEAD_PERSISTENT			(0x0014 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_GOALS_ID							(0x0000 | OP_CATEGORY_UNLISTED)
 #define OP_NEXT_MISSION						(0x0001 | OP_CATEGORY_UNLISTED)		// used in campaign files for branching
@@ -996,14 +1005,17 @@ typedef struct container_modifier {
 
 #define SEXP_TRUE			1
 #define SEXP_FALSE			0
+
 // Goober5000: changed these to unlikely values, because now we have sexps using negative numbers
-#define SEXP_KNOWN_FALSE	-32767	//-1
-#define SEXP_KNOWN_TRUE		-32766	//-2
-#define SEXP_UNKNOWN		-32765	//-3
-#define SEXP_NAN			-32764	//-4	// not a number -- used when ships/wing part of boolean and haven't arrived yet
-#define SEXP_NAN_FOREVER	-32763	//-5	// not a number and will never change -- used to falsify boolean sexpressions
-#define SEXP_CANT_EVAL		-32762	//-6	// can't evaluate yet for whatever reason (acts like false)
-#define SEXP_NUM_EVAL		-32761	//-7	// already completed an arithmetic operation and result is stored
+#define SEXP_KNOWN_FALSE	(INT_MIN+10)
+#define SEXP_KNOWN_TRUE		(INT_MIN+11)
+#define SEXP_UNKNOWN		(INT_MIN+12)
+#define SEXP_NAN			(INT_MIN+13)	// not a number -- used when ships/wing part of boolean and haven't arrived yet
+#define SEXP_NAN_FOREVER	(INT_MIN+14)	// not a number and will never change -- used to falsify boolean sexpressions
+#define SEXP_CANT_EVAL		(INT_MIN+15)	// can't evaluate yet for whatever reason (acts like false)
+#define SEXP_NUM_EVAL		(INT_MIN+16)	// already completed an arithmetic operation and result is stored
+// in case we want to test for any of the above
+#define SEXP_UNLIKELY_RETURN_VALUE_BOUND		(INT_MIN+17)
 
 // defines for check_sexp_syntax
 #define SEXP_CHECK_NONOP_ARGS			-1			// non-operator has arguments
@@ -1073,6 +1085,7 @@ typedef struct container_modifier {
 #define SEXP_CHECK_INVALID_SKYBOX_FLAG			-158
 #define SEXP_CHECK_INVALID_GAME_SND				-159
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
+#define SEXP_CHECK_INVALID_FIREBALL				-161
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1228,7 +1241,7 @@ extern int stuff_sexp_variable_list();
 extern void stuff_sexp_list_container();
 extern void stuff_sexp_map_container();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
-extern int eval_num(int n);
+extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
@@ -1351,7 +1364,7 @@ variable:
 extern int Sexp_hud_display_warpout;
 
 //Needed for scripting access to ship effects
-int get_effect_from_name(char* name);
+int get_effect_from_name(const char* name);
 
 void maybe_write_to_event_log(int result);
 

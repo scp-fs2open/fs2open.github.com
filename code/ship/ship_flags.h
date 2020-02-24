@@ -57,7 +57,9 @@ namespace Ship {
 		Depart_warp,				// ship is departing via warp-out
 		Depart_dockbay,				// ship is departing via docking bay
 		Arriving_stage_1,			// ship is arriving. In other words, doing warp in effect, stage 1
+		Arriving_stage_1_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
 		Arriving_stage_2,			// ship is arriving. In other words, doing warp in effect, stage 2             
+		Arriving_stage_2_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
 		Engines_on,					// engines sound should play if set
 		Dock_leader,				// Goober5000 - this guy is in charge of everybody he's docked to
 		Cargo_revealed,				// ship's cargo is revealed to all friendly ships

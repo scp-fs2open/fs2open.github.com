@@ -82,7 +82,6 @@ public:
 	void setLightFilter(int objnum, const vec3d *pos, float rad);
 	bool setLights(const light_indexing_info *info);
 	void resetLightState();
-	size_t getNumStaticLights();
 	light_indexing_info bufferLights();
 };
 

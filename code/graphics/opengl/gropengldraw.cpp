@@ -46,9 +46,6 @@ int Distortion_switch = 0;
 int Scene_texture_initialized;
 bool Scene_framebuffer_in_frame;
 
-bool Deferred_lighting = false;
-bool High_dynamic_range = false;
-
 int Scene_texture_width;
 int Scene_texture_height;
 
@@ -88,9 +85,9 @@ void opengl_setup_scene_textures()
 	Scene_texture_initialized = 0;
 
 	if ( Cmdline_no_fbo ) {
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
-		Cmdline_fb_explosions = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
+		Gr_framebuffer_effects = {};
 
 		Scene_ldr_texture = 0;
 		Scene_color_texture = 0;
@@ -338,13 +335,13 @@ void opengl_setup_scene_textures()
 		//glDeleteTextures(1, &Scene_fxaa_output_texture);
 		//Scene_fxaa_output_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
 	//Setup thruster distortion framebuffer
-    if (Cmdline_fb_thrusters || Cmdline_fb_explosions) 
+    if (Gr_framebuffer_effects.any_set())
     {
         glGenFramebuffers(1, &Distortion_framebuffer);
 		GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -392,8 +389,8 @@ void opengl_setup_scene_textures()
 		Scene_color_texture = 0;
 		Scene_depth_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
@@ -510,7 +507,7 @@ void gr_opengl_scene_texture_begin()
 
 	Scene_framebuffer_in_frame = true;
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
 		High_dynamic_range = true;
 	}
 }
@@ -533,8 +530,8 @@ void gr_opengl_scene_texture_end()
 		time_buffer = 0.0f;
 	}
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
-		gr_post_process_end();
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
+		gr_opengl_post_process_end();
 	} else {
 		GR_DEBUG_SCOPE("Draw scene texture");
 		TRACE_SCOPE(tracing::DrawSceneTexture);
@@ -551,7 +548,7 @@ void gr_opengl_scene_texture_end()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		opengl_shader_set_passthrough(true);
+		opengl_shader_set_passthrough(true, High_dynamic_range);
 
 		GL_state.Array.BindArrayBuffer(0);
 
@@ -614,24 +611,27 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
 
 	uint32_t array_index = 0;
-	if ( material_info->get_texture_map(TM_BASE_TYPE) >= 0 ) {
+	if (material_info->get_texture_map(TM_BASE_TYPE) >= 0) {
 		float u_scale, v_scale;
 
-		if ( !gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index) ) {
+		if (!gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(),
+								  &u_scale, &v_scale, &array_index)) {
 			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
 		}
 	}
 
-	Current_shader->program->Uniforms.setUniform3f("hitNormal", impact_orient.vec.fvec);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldProjMatrix", impact_projection);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
-	Current_shader->program->Uniforms.setUniformi("shieldMap", 0);
-	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
-	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
-	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
-	
+	opengl_set_generic_uniform_data<graphics::generic_data::shield_impact_data>(
+		[&](graphics::generic_data::shield_impact_data* data) {
+			data->hitNormal             = impact_orient.vec.fvec;
+			data->shieldProjMatrix      = impact_projection;
+			data->shieldModelViewMatrix = impact_transform;
+			data->shieldMapIndex        = array_index;
+			data->srgb                  = High_dynamic_range ? 1 : 0;
+			data->color                 = material_info->get_color();
+		});
+
+	gr_matrix_set_uniforms();
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
 
@@ -650,7 +650,7 @@ void gr_opengl_update_distortion()
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-	opengl_shader_set_passthrough(true);
+	opengl_shader_set_passthrough(true, High_dynamic_range);
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -695,7 +695,7 @@ void gr_opengl_update_distortion()
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, vertices, sizeof(vertex) * 4);
 
-	opengl_shader_set_passthrough(false);
+	opengl_shader_set_passthrough(false, High_dynamic_range);
 
 	vertex distortion_verts[33];
 
@@ -825,6 +825,22 @@ void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 }
+void gr_opengl_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
+                                        vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+{
+	GR_DEBUG_SCOPE("Render rocket ui primitives");
+
+	gr_set_2d_matrix();
+
+	opengl_tnl_set_rocketui_material(material_info);
+
+	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, vertex_buffer),
+	                          opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, index_buffer));
+
+	glDrawElements(opengl_primitive_type(prim_type), n_indices, GL_UNSIGNED_INT, nullptr);
+
+	gr_end_2d_matrix();
+}
 
 void opengl_draw_textured_quad(GLfloat x1,
 							   GLfloat y1,
@@ -848,7 +864,25 @@ void opengl_draw_textured_quad(GLfloat x1,
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
 	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
-	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
+	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(glVertices));
+}
+
+void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2)
+{
+	GR_DEBUG_SCOPE("Draw full screen triangle");
+
+	GLfloat glVertices[3][4] = {
+	    {-1.f, -1.f, u1, v1},
+	    {3.f, -1.f, u2 * 2.f, v1},
+	    {-1.f, 3.f, u1, v2 * 2.f},
+	};
+
+	vertex_layout vert_def;
+
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+
+	opengl_render_primitives_immediate(PRIM_TYPE_TRIS, &vert_def, 3, glVertices, sizeof(glVertices));
 }
 
 void gr_opengl_render_decals(decal_material* material_info,

@@ -78,16 +78,13 @@ float ds_get_pitch(int channel);
  * @details A pitch value of 1.0 means that the original sound is not changed.
  */
 void ds_set_pitch(int channel, float pitch);
-void ds_chg_loop_status(int channel, int loop);
 void ds_set_position(int channel, unsigned int offset);
 unsigned int ds_get_play_position(int channel);
-unsigned int ds_get_write_position(int channel);
 int ds_get_data(int sid, char *data);
 int ds_get_size(int sid, int *size);
 
 int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds);
 int ds_lock_data(int sid, unsigned char *data, int size);
-int ds_play_easy(int sid, float volume);
 void ds_stop_easy(int sid);
 int ds_get_channel_size(int channel);
 
@@ -227,7 +224,6 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 int ds_eax_set_volume(float volume);
 int ds_eax_set_decay_time(float seconds);
 int ds_eax_set_damping(float damp);
-int ds_eax_set_environment(unsigned long envid);
 int ds_eax_set_all(unsigned long id, float volume, float damping, float decay);
 int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id = -1);
 int ds_eax_is_inited();

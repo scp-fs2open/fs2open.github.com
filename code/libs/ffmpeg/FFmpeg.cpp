@@ -8,6 +8,7 @@ const int MIN_LOG_LEVEL = AV_LOG_WARNING;
 
 bool initialized = false;
 
+#ifndef NDEBUG
 void log_callback_report(void* ptr, int level, const char* fmt, va_list vl) {
 	if (level > MIN_LOG_LEVEL) {
 		return;
@@ -19,6 +20,7 @@ void log_callback_report(void* ptr, int level, const char* fmt, va_list vl) {
 
 	mprintf(("FFMPEG Log: %s", buffer)); // no \n, ffmpeg handles that
 }
+#endif
 
 void check_version(const char* libname, uint32_t current, uint32_t compiled)
 {

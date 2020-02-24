@@ -66,7 +66,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::CommandLine);
 	// this should enable mods - Kazan
-	parse_cmdline(argc, argv);
+	if (!parse_cmdline(argc, argv)) {
+		// Command line contained an option that terminates the program immediately
+		return false;
+	}
 
 #ifndef NDEBUG
 #if FS_VERSION_REVIS == 0
@@ -198,6 +201,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
 
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();
@@ -240,9 +247,15 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::DynamicSEXPs);
 	sexp::dynamic_sexp_init();
 
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
 	listener(SubSystem::ScriptingInitHook);
 	Script_system.RunCondition(CHA_GAMEINIT);
-
+	
 	return true;
 }
 

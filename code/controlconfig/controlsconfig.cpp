@@ -38,7 +38,6 @@
 
 
 
-#define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19
 #define NUM_TABS				4
 
@@ -156,11 +155,6 @@ char *Joy_axis_text[NUM_AXIS_TEXT];
 char *Mouse_button_text[NUM_MOUSE_TEXT];
 char *Mouse_axis_text[NUM_MOUSE_AXIS_TEXT];
 char *Invert_text[NUM_INVERT_TEXT];
-
-ubyte System_keys[NUM_SYSTEM_KEYS] = {
-	KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,
-	KEY_F11, KEY_F12, KEY_PRINT_SCRN
-};
 
 int Control_check_count = 0;
 
@@ -522,7 +516,9 @@ void control_config_list_prepare()
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
 		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
-			if (Control_config[z].hasXSTR) {
+			if (Control_config[z].indexXSTR > 1) {
+				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, Control_config[z].indexXSTR);
+			} else if (Control_config[z].indexXSTR == 1) {
 				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
 			} else {
 				Cc_lines[Num_cc_lines].label = Control_config[z].text;
@@ -1005,7 +1001,7 @@ void control_config_reset_defaults(int presetnum)
 		Control_config[i].key_id = preset[i].key_default;
 		Control_config[i].joy_id = preset[i].joy_default;
 		Control_config[i].tab = preset[i].tab;
-		Control_config[i].hasXSTR = preset[i].hasXSTR;
+		Control_config[i].indexXSTR = preset[i].indexXSTR;
 		Control_config[i].type = preset[i].type;
 		Control_config[i].disabled = preset[i].disabled;
 	}
@@ -1988,7 +1984,9 @@ void control_config_do_frame(float frametime)
 		gr_get_string_size(&w, NULL, str);
 		gr_printf_menu(x - w / 2, y - font_height, "%s", str);
 
-		if (Control_config[i].hasXSTR) {
+		if (Control_config[i].indexXSTR > 1) {
+			strcpy_s(buf, XSTR(Control_config[i].text, Control_config[i].indexXSTR));
+		} else if (Control_config[i].indexXSTR == 1) {
 			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
 		} else {
 			strcpy_s(buf, Control_config[i].text);
@@ -2193,17 +2191,6 @@ void control_config_do_frame(float frametime)
 	gr_flip();
 }
 
-void clear_key_binding(short key)
-{
-	int i;
-
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id == key) {
-			Control_config[i].key_id = -1;
-		}
-	}
-}
-
 float check_control_timef(int id)
 {
 	float t1, t2;
@@ -2345,7 +2332,7 @@ int check_control(int id, int key)
 		// which has just been released
 
 		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
 		Script_system.RemHookVar("Action");
 
 		Control_config[id].continuous_ongoing = false;
@@ -2419,7 +2406,7 @@ void control_used(int id)
 	if (Control_config[id].used < Last_frame_timestamp) {
 		if (!Control_config[id].continuous_ongoing) {
 			Script_system.SetHookVar("Action", 's', Control_config[id].text);
-			Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+			Script_system.RunCondition(CHA_ONACTION, nullptr, id);
 			Script_system.RemHookVar("Action");
 
 			if (Control_config[id].type == CC_TYPE_CONTINUOUS)
@@ -2447,9 +2434,4 @@ void control_config_clear()
 	for (i=0; i<CCFG_MAX; i++) {
 		Control_config[i].key_id = Control_config[i].joy_id = -1;
 	}
-}
-
-int control_config_handle_conflict()
-{
-	return 0;
 }

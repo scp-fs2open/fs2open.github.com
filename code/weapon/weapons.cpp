@@ -25,6 +25,7 @@
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -215,9 +216,11 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
-extern int compute_num_homing_objects(object *target_objp);
+// default number of missiles or bullets rearmed per load sound during rearm
+#define REARM_NUM_MISSILES_PER_BATCH 4              
+#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
 
-extern void fs2netd_add_table_validation(const char *tblname);
+extern int compute_num_homing_objects(object *target_objp);
 
 
 weapon_explosions::weapon_explosions()
@@ -498,22 +501,6 @@ void missle_obj_list_remove(int index)
 	Assert(index >= 0 && index < MAX_MISSILE_OBJS);
 	list_remove(&Missile_obj_list, &Missile_objs[index]);	
 	Missile_objs[index].flags = 0;
-}
-
-/**
- * Called by the save/restore code to rebuild Missile_obj_list
- */
-void missile_obj_list_rebuild()
-{
-	object *objp;
-
-	missile_obj_list_init();
-
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type == OBJ_WEAPON && Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE ) {
-			Weapons[objp->instance].missile_list_index = missile_obj_list_add(OBJ_INDEX(objp));
-		}
-	}
 }
 
 /**
@@ -1146,7 +1133,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(first_time)
 	{
 		wip->dinky_shockwave = wip->shockwave;
-		wip->dinky_shockwave.damage /= 4.0f;
+		wip->dinky_shockwave.damage *= Dinky_shockwave_default_multiplier;
 	}
 
 	if(optional_string("$Dinky shockwave:"))
@@ -1496,7 +1483,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+		// set the number of missles or ballistic ammo reloaded per batch
+	int reloaded_each_batch;
+	
+	if (optional_string("$Rearm Ammo Increment:")) {
+		stuff_int(&reloaded_each_batch);
 
+		if (reloaded_each_batch > 0) {
+			wip->reloaded_per_batch = reloaded_each_batch;
+		} else if (wip->reloaded_per_batch != -1) {
+			Warning(LOCATION, "Rearm increment amount of 0 or less in weapon %s, keeping at previously defined value.",
+			        wip->name);
+		} else {
+			Warning(LOCATION, "Rearm increment amount of 0 or less in weapon %s, setting to the default, 4 for missiles or 100 for ballistic primaries.", wip->name);
+		}
+	}
+	// This setting requires a default if not specified, otherwise, rearming will break. - Cyborg17
+	if (wip->reloaded_per_batch == -1) {
+		if (subtype == WP_MISSILE) {
+			wip->reloaded_per_batch = REARM_NUM_MISSILES_PER_BATCH;
+		} else {
+			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+		}
+	}
+	   
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
 	}
@@ -2093,9 +2103,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 		// now check miss factors for each IFF
 		for(iff=0; iff<Num_iffs; iff++) {
-			char miss_factor_string[NAME_LENGTH + 15];
+			SCP_string miss_factor_string;
 			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
-			if(optional_string(miss_factor_string)) {
+			if(optional_string(miss_factor_string.c_str())) {
 				// this Miss Factor applies only to the specified IFF
 				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
 					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
@@ -2893,9 +2903,6 @@ void parse_weaponstbl(const char *filename)
 		{
 			Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -3776,7 +3783,7 @@ void find_homing_object(object *weapon_objp, int num)
                     //if the homing weapon is a huge weapon and the ship that is being
                     //looked at is not huge, then don't home
                     if ((wip->wi_flags[Weapon::Info_Flags::Huge]) &&
-                        (sip->is_small_ship() || !sip->is_flyable() || sip->is_harmless()))
+                        !(sip->is_huge_ship()))
                     {
                         continue;
                     }
@@ -4218,94 +4225,98 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		vm_vec_zero(&target_pos);
 
-		// the homing missile may be seeking a subsystem on a ship.  If so, we need to calculate the
-		// world coordinates of that subsystem so the homing missile can seek it out.
-		//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
-		//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
-		if ( (wp->homing_subsys != NULL) && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) && hobjp->type == OBJ_SHIP) {
-			get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
-			wp->homing_pos = target_pos;	// store the homing position in weapon data
-			Assert( !vm_is_vec_nan(&wp->homing_pos) );
+		if (wp->weapon_flags[Weapon::Weapon_Flags::Overridden_homing]) {
+			target_pos = wp->homing_pos;
 		} else {
-			float	fov;
-			float	dist;
+			// the homing missile may be seeking a subsystem on a ship.  If so, we need to calculate the
+			// world coordinates of that subsystem so the homing missile can seek it out.
+			//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
+			//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
+			if ((wp->homing_subsys != nullptr) && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) &&
+			    hobjp->type == OBJ_SHIP) {
+				get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
+				wp->homing_pos = target_pos; // store the homing position in weapon data
+				Assert(!vm_is_vec_nan(&wp->homing_pos));
+			} else {
+				float fov;
+				float dist;
 
-			dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-			if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure]))
-			{
-				if (dist < hobj_infop->cm_detonation_rad)
-				{
-					//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
-					if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
-						detonate_nearby_missiles(hobjp, obj);
-						return;
-					}
-				}
-			}
-
-			fov = -1.0f;
-
-			int pick_homing_point = 0;
-			if ( IS_VEC_NULL(&wp->homing_pos) ) {
-				pick_homing_point = 1;
-			}
-
-			//	Update homing position if it hasn't been set, you're within 500 meters, or every half second, approximately.
-			//	For large objects, don't lead them.
-			if (hobjp->radius < 40.0f) {
-				target_pos = hobjp->pos;
-				wp->homing_pos = target_pos;
-			} else if ( pick_homing_point || (dist < 500.0f) || (rand_chance(flFrametime, 2.0f)) ) {
-
-				if (hobjp->type == OBJ_SHIP) {
-					if ( !pick_homing_point ) {
-						// ensure that current attack point is only updated in world coords (ie not pick a different vertex)
-						wp->pick_big_attack_point_timestamp = 0;
-					}
-
-					if ( pick_homing_point && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing]) ) {
-						// If *any* player is parent of homing missile, then use position where lock indicator is
-						if ( Objects[obj->parent].flags[Object::Object_Flags::Player_ship] ) {
-							player *pp;
-
-							// determine the player
-							pp = Player;
-
-							if ( Game_mode & GM_MULTIPLAYER ) {
-								int pnum;
-
-								pnum = multi_find_player_by_object( &Objects[obj->parent] );
-								if ( pnum != -1 ){
-									pp = Net_players[pnum].m_player;
-								}
-							}
-
-							// If player has apect lock, we don't want to find a homing point on the closest
-							// octant... setting the timestamp to 0 ensures this.
-							if (wip->is_locked_homing()) {
-								wp->pick_big_attack_point_timestamp = 0;
-							} else {
-								wp->pick_big_attack_point_timestamp = 1;
-							}
-
-							if ( pp && pp->locking_subsys ) {
-								wp->big_attack_point = pp->locking_subsys->system_info->pnt;
-							} else {
-								vm_vec_zero(&wp->big_attack_point);
-							}
+				dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
+				if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure])) {
+					if (dist < hobj_infop->cm_detonation_rad) {
+						//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
+						if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
+							detonate_nearby_missiles(hobjp, obj);
+							return;
 						}
 					}
-
-					ai_big_pick_attack_point(hobjp, obj, &target_pos, fov);
-
-				} else {
-					target_pos = hobjp->pos;
 				}
 
-				wp->homing_pos = target_pos;
-				Assert( !vm_is_vec_nan(&wp->homing_pos) );
-			} else
-				target_pos = wp->homing_pos;
+				fov = -1.0f;
+
+				int pick_homing_point = 0;
+				if (IS_VEC_NULL(&wp->homing_pos)) {
+					pick_homing_point = 1;
+				}
+
+				//	Update homing position if it hasn't been set, you're within 500 meters, or every half second,
+				//approximately. 	For large objects, don't lead them.
+				if (hobjp->radius < 40.0f) {
+					target_pos     = hobjp->pos;
+					wp->homing_pos = target_pos;
+				} else if (pick_homing_point || (dist < 500.0f) || (rand_chance(flFrametime, 2.0f))) {
+
+					if (hobjp->type == OBJ_SHIP) {
+						if (!pick_homing_point) {
+							// ensure that current attack point is only updated in world coords (ie not pick a different
+							// vertex)
+							wp->pick_big_attack_point_timestamp = 0;
+						}
+
+						if (pick_homing_point && !(wip->wi_flags[Weapon::Info_Flags::Non_subsys_homing])) {
+							// If *any* player is parent of homing missile, then use position where lock indicator is
+							if (Objects[obj->parent].flags[Object::Object_Flags::Player_ship]) {
+								player* pp;
+
+								// determine the player
+								pp = Player;
+
+								if (Game_mode & GM_MULTIPLAYER) {
+									int pnum;
+
+									pnum = multi_find_player_by_object(&Objects[obj->parent]);
+									if (pnum != -1) {
+										pp = Net_players[pnum].m_player;
+									}
+								}
+
+								// If player has apect lock, we don't want to find a homing point on the closest
+								// octant... setting the timestamp to 0 ensures this.
+								if (wip->is_locked_homing()) {
+									wp->pick_big_attack_point_timestamp = 0;
+								} else {
+									wp->pick_big_attack_point_timestamp = 1;
+								}
+
+								if (pp && pp->locking_subsys) {
+									wp->big_attack_point = pp->locking_subsys->system_info->pnt;
+								} else {
+									vm_vec_zero(&wp->big_attack_point);
+								}
+							}
+						}
+
+						ai_big_pick_attack_point(hobjp, obj, &target_pos, fov);
+
+					} else {
+						target_pos = hobjp->pos;
+					}
+
+					wp->homing_pos = target_pos;
+					Assert(!vm_is_vec_nan(&wp->homing_pos));
+				} else
+					target_pos = wp->homing_pos;
+			}
 		}
 
 		//	Couldn't find a lock.
@@ -4804,7 +4815,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
-			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
+			wp->lssm_warp_idx = fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, obj->radius*1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
 
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -4857,7 +4868,7 @@ void weapon_process_post(object * obj, float frame_time)
 			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
 
 			//create a warpin effect
-			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+			wp->lssm_warp_idx = fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, obj->radius*1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
 			
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -5524,6 +5535,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	weapon_update_state(wp);
 
+	Script_system.SetHookObject("Weapon", &Objects[objnum]);
+	Script_system.RunCondition(CHA_ONWEAPONCREATED);
+	Script_system.RemHookVar("Weapon");
+
 	return objnum;
 }
 
@@ -5930,7 +5945,6 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  */
 void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
-	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
 
@@ -7637,6 +7651,7 @@ void weapon_info::reset()
 	this->flyby_snd = gamesnd_id();
 
 	this->rearm_rate = 1.0f;
+	this->reloaded_per_batch = -1 ;
 
 	this->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1

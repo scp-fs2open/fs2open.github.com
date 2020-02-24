@@ -43,6 +43,7 @@
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
@@ -90,8 +91,6 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 // the campaign!!!!!
 campaign Campaign;
 
-
-bool campaign_is_ignored(const char *filename);
 
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
@@ -247,10 +246,10 @@ int mission_campaign_maybe_add(const char *filename)
 	char *desc = NULL;
 	int type, max_players;
 
-		// don't add ignored campaigns
-		if (campaign_is_ignored(filename)) {
-			return 0;
-		}
+	// don't add ignored campaigns
+	if (campaign_is_ignored(filename)) {
+		return 0;
+	}
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
@@ -421,6 +420,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 
 	if (campaign_is_ignored(filename)) {
 		Campaign_file_missing = 1;
+		Campaign_load_failure = CAMPAIGN_ERROR_IGNORED;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
 
@@ -660,6 +660,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 			return CAMPAIGN_ERROR_MISSING;
 		}
 
+		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
 		return CAMPAIGN_ERROR_CORRUPT;
 	}
 
@@ -678,7 +679,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 	if (!Fred_running && load_savefile && (Campaign.type == CAMPAIGN_TYPE_SINGLE)) {
 		// savefile can fail to load for numerous otherwise non-fatal reasons
 		// if it doesn't load in that case then it will be (re)created at save
-		if ( !Pilot.load_savefile(Campaign.filename) ) {
+		if ( !Pilot.load_savefile(pl, Campaign.filename) ) {
 			// but if the data is invalid for the savefile then it is fatal
 			if ( Pilot.is_invalid() ) {
 				Campaign.filename[0] = 0;
@@ -701,49 +702,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 	Campaign_file_missing = 0;
 
 	return 0;
-}
-
-/**
- * Loads up a freespace campaign given the filename.  
- * This routine is used to load up campaigns when a pilot file is loaded.  
- * Generally, the filename will probably be the freespace campaign file, but not necessarily.
- */
-int mission_campaign_load_by_name( char *filename )
-{
-	char name[NAME_LENGTH],test[5];
-	int type,max_players;
-
-	// make sure to tack on .fsc on the end if its not there already
-	if(filename[0] != '\0'){
-		if(strlen(filename) > 4){
-			strcpy_s(test,filename+(strlen(filename)-4));
-			if(strcmp(test, FS_CAMPAIGN_FILE_EXT)!=0){
-				strcat(filename, FS_CAMPAIGN_FILE_EXT);
-			}
-		} else {
-			strcat(filename, FS_CAMPAIGN_FILE_EXT);
-		}
-	} else {
-		Error(LOCATION,"Tried to load campaign file with illegal length/extension!");
-	}
-
-	if (!mission_campaign_get_info(filename, name, &type, &max_players)){
-		return -1;	
-	}
-
-	Num_campaigns = 0;
-	Campaign_file_names[Num_campaigns] = vm_strdup(filename);
-	Campaign_names[Num_campaigns] = vm_strdup(name);
-	Num_campaigns++;
-	mission_campaign_load(filename);		
-	return 0;
-}
-
-int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
-{
-	Game_mode |= GM_NORMAL;
-	strcpy_s(Player->callsign, callsign);
-	return mission_campaign_load_by_name( filename);
 }
 
 /*
@@ -812,22 +770,6 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
 	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
 }
 
-/**
- * The following function always only ever ever ever called by CSFE!!!!!
- */
-int campaign_savefile_save(char *pname)
-{
-	if (Campaign.type == CAMPAIGN_TYPE_SINGLE)
-		Game_mode &= ~GM_MULTIPLAYER;
-	else
-		Game_mode |= GM_MULTIPLAYER;
-
-	strcpy_s(Player->callsign, pname);
-	
-	return (int)Pilot.save_savefile();
-}
-
-
 // the below two functions is internal to this module.  It is here so that I can group the save/load
 // functions together.
 //
@@ -850,12 +792,6 @@ void mission_campaign_savefile_delete( char *cfilename )
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
 	cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-}
-
-void campaign_delete_save( char *cfn, char *pname)
-{
-	strcpy_s(Player->callsign, pname);
-	mission_campaign_savefile_delete(cfn);
 }
 
 /**
@@ -890,23 +826,6 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
-}
-
-/**
- * The following code only ever called by CSFE!!!!
- */
-void campaign_savefile_load(char *fname, char *pname)
-{
-	if (Campaign.type == CAMPAIGN_TYPE_SINGLE) {
-		Game_mode &= ~GM_MULTIPLAYER;
-		Game_mode &= GM_NORMAL;
-	}
-	else
-		Game_mode |= GM_MULTIPLAYER;
-
-	strcpy_s(Player->callsign, pname);
-
-	Pilot.load_savefile(fname);
 }
 
 /**
@@ -1220,6 +1139,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 			Pilot.save_savefile();
 		}
 
+		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
+		Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
@@ -1244,7 +1166,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		Sexp_nodes[mission_obj->formula].value = SEXP_UNKNOWN;
 	}
-
+	
 	if (do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
@@ -1659,9 +1581,11 @@ bool campaign_is_ignored(const char *filename)
 {
 	SCP_string filename_no_ext = filename;
 	drop_extension(filename_no_ext);
+	std::transform(filename_no_ext.begin(), filename_no_ext.end(), filename_no_ext.begin(),
+	               [](char c) { return (char)::tolower(c); });
 
-	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
-		if (*ii == filename_no_ext) {
+	for (auto &ii: Ignored_campaigns) {
+		if (ii == filename_no_ext) {
 			return true;
 		}
 	}
@@ -1692,12 +1616,8 @@ int mission_load_up_campaign( player *pl )
 		}
 	}
 
-	rc = mission_campaign_load(Default_campaign_file_name, pl);
-
 	// builtin...
-	if (rc < 0) {
-		rc = mission_campaign_load(Default_campaign_file_name, pl);
-	}
+	rc = mission_campaign_load(Default_campaign_file_name, pl);
 
 	// everything else...
 	if (rc < 0) {
@@ -1841,7 +1761,7 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-void mission_campaign_jump_to_mission(char *name, bool no_skip)
+void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 {
 	int i = 0, mission_num = -1;
 	char dest_name[64], *p;

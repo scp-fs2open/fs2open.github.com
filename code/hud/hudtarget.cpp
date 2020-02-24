@@ -1909,77 +1909,6 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	}
 }
 
-
-// -------------------------------------------------------------------
-// hud_target_closest_locked_missile()
-//
-// Target the closest locked missile that is locked on locked_obj
-//
-//	input:	locked_obj	=>		pointer to object that you want to find
-//										closest missile to
-//
-void hud_target_closest_locked_missile(object *locked_obj)
-{
-	object		*A, *nearest_obj=NULL;
-	weapon		*wp;
-	weapon_info	*wip;
-	float			nearest_dist, dist;
-	int			target_found = FALSE;
-	missile_obj	*mo;
-
-	nearest_dist = 10000.0f;
-
-	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-		A = &Objects[mo->objnum];
-
-		if (A->type != OBJ_WEAPON){
-			continue;
-		}
-
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
-		wp = &Weapons[A->instance];
-		wip = &Weapon_info[wp->weapon_info_index];
-
-		if ( wip->subtype != WP_MISSILE ){
-			continue;
-		}
-
-		if ( !(wip->is_homing() ) ){
-			continue;
-		}
-
-		if (wp->lssm_stage==3){
-			continue;
-		}
-
-		if(hud_target_invalid_awacs(A)){
-			continue;
-		}
-
-
-		if (wp->homing_object == locked_obj) {
-			dist = vm_vec_dist_quick(&A->pos, &locked_obj->pos);		// Find distance!
-
-			if (dist < nearest_dist) {
-				nearest_obj = A;
-				nearest_dist = dist;
-			}
-		}
-	}	// end for
-
-	if (nearest_dist < 10000.0f) {
-		Assert(nearest_obj);
-		set_target_objnum( Player_ai, OBJ_INDEX(nearest_obj) );
-		hud_shield_hit_reset(nearest_obj);
-		target_found = TRUE;
-	}
-
-	if ( !target_found ){
-		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
-	}
-}
-
 // select a new target, by auto-targeting
 void hud_target_auto_target_next()
 {
@@ -4364,7 +4293,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
 //
-void hud_cease_subsystem_targeting(int print_message)
+void hud_cease_subsystem_targeting(bool print_message)
 {
 	int ship_index;
 
@@ -4383,15 +4312,17 @@ void hud_cease_subsystem_targeting(int print_message)
 	hud_lock_reset();
 }
 
-// hud_cease_targeting() will cease all targeting (main target and subsystem)
-//
-void hud_cease_targeting()
+// hud_cease_targeting() will cease targeting main target and subsystem
+// does not turn off auto-targeting by default
+void hud_cease_targeting(bool deliberate)
 {
 	set_target_objnum( Player_ai, -1 );
-	Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
-	hud_cease_subsystem_targeting(0);
-	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating targeting system", 325));
-	hud_lock_reset();
+	hud_cease_subsystem_targeting(false);
+
+	if (deliberate) {
+		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Deactivating targeting system", 325));
+	}
 }
 
 // hud_restore_subsystem_target() will remember the last targeted subsystem
@@ -6082,6 +6013,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + Weapon_pname_offset_x, name_y);
 		} else {
+			end_string_at_first_hash_symbol(name);
 			renderPrintf(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, "%s", name);
 		}
 
@@ -6089,9 +6021,6 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
-
-			// get rid of #
-			end_string_at_first_hash_symbol(ammo_str);
 
 			hud_num_make_mono(ammo_str, font_num);
 			gr_get_string_size(&w, &h, ammo_str);
@@ -6407,6 +6336,8 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	if (eye_vertex->flags&PF_OVERFLOW) {
 		Int3();			//	This is unlikely to happen, but can if a clip goes through the player's eye.
 		Player_ai->target_objnum = -1;
+		if (!in_frame)
+			g3_end_frame();
 		return;
 	}
 
@@ -6467,6 +6398,8 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	} else {
 		Int3();
+		if (!in_frame)
+			g3_end_frame();
 		return;
 	}
 

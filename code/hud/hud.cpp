@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 #include "ai/aigoals.h"
@@ -23,9 +23,10 @@
 #include "hud/hudets.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
-#include "hud/hudnavigation.h"	//kazan
+#include "hud/hudnavigation.h"    //kazan
 #include "hud/hudobserver.h"
 #include "hud/hudreticle.h"
+#include "hud/hudscripting.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtarget.h"
@@ -50,6 +51,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "weapon/emp.h"
@@ -246,7 +248,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), custom_gauge(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -271,7 +273,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+disabled_views(_disabled_views), only_render_in_chase_view(false), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
@@ -307,8 +309,8 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true), textoffset_x(txtoffset_x),
- textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), custom_gauge(true), textoffset_x(txtoffset_x),
+textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -544,6 +546,11 @@ void HudGauge::updateActive(bool show)
 void HudGauge::initRenderStatus(bool do_render)
 {
 	off_by_default = !do_render;
+}
+
+void HudGauge::initChase_view_only(bool chase_view_only) 
+{ 
+	only_render_in_chase_view = chase_view_only; 
 }
 
 bool HudGauge::isOffbyDefault()
@@ -917,7 +924,7 @@ void HudGauge::renderRect(int x, int y, int w, int h)
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderCircle(int x, int y, int diameter) 
+void HudGauge::renderCircle(int x, int y, int diameter, bool filled) 
 {
 	int nx = 0, ny = 0;
 
@@ -935,8 +942,12 @@ void HudGauge::renderCircle(int x, int y, int diameter)
 			gr_set_screen_scale(base_w, base_h);
 		}
 	}
+	if (filled) {
+		gr_circle(x + nx, y + ny, diameter);
+	} else {
+		gr_unfilled_circle(x + nx, y + ny, diameter);
+	}
 	
-	gr_circle(x+nx, y+ny, diameter);
 	gr_reset_screen_scale();
 }
 
@@ -1082,6 +1093,10 @@ bool HudGauge::canRender()
 		return false;
 	}
 
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
 	if(pop_up) {
 		if(!popUpActive()) {
 			return false;
@@ -1221,6 +1236,25 @@ void HUD_init()
 		default_hud_gauges[j]->initialize();
 		default_hud_gauges[j]->resetTimers();
 		default_hud_gauges[j]->updateSexpOverride(false);
+	}
+
+	Script_system.OnStateDestroy.add(hud_scripting_close);
+}
+
+void hud_scripting_close(lua_State*) {
+	// Clean up Lua references so that we don't have dangling references on to the lua state in the HUD gauges
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		for (const auto& gauge : it->hud_gauges) {
+			if (gauge->getObjectType() == HUD_OBJECT_SCRIPTING) {
+				static_cast<HudGaugeScripting*>(gauge.get())->setRenderFunction(luacpp::LuaFunction());
+			}
+		}
+	}
+
+	for (const auto& gauge : default_hud_gauges) {
+		if (gauge->getObjectType() == HUD_OBJECT_SCRIPTING) {
+			static_cast<HudGaugeScripting*>(gauge.get())->setRenderFunction(luacpp::LuaFunction());
+		}
 	}
 }
 
@@ -3911,7 +3945,7 @@ void HudGaugeSupernova::render(float  /*frametime*/)
 	if (Lcl_pl) {
 		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
 	} else {
-		renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+		renderPrintf(position[0], position[1], XSTR( "Supernova Warning: %.2f s", 1639), time_left);
 	}
 }
 

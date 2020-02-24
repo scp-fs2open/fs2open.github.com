@@ -97,16 +97,12 @@ typedef struct anim_instance {
 	int		loop_count;		// starts at 0, and is incremented each time it loops
 } anim_instance;
 
-int	pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_type);
-int	pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, int compress_type);
-
 ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp);
 int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp);
 
 void	anim_init();
 anim_instance *init_anim_instance(anim *ptr, int bpp);
 void	free_anim_instance(anim_instance *inst);
-int	anim_get_next_frame(anim_instance *inst);
 ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap, int bpp);
 void	anim_set_palette(anim *a);
 void	anim_check_for_palette_change(anim_instance *inst);

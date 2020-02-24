@@ -346,6 +346,7 @@ public:
 	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
 	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+	bool    do_not_scale_detail_distances{false}; // if set should not scale boxes or spheres based on 'model detail' settings
 	bool	gun_rotation;			// for animated weapon models
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
@@ -358,8 +359,6 @@ public:
 	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
 	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
 };
-
-void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
 
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1
@@ -642,7 +641,7 @@ public:
 	bool is_transparent;
 
 	int FindTexture(int bm_handle);
-	int FindTexture(char *name);
+	int FindTexture(const char* name);
 
 	void PageIn();
 	void PageOut(bool release);
@@ -815,8 +814,6 @@ void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsys
 // This defaults to black.
 void model_set_outline_color(int r, int g, int b);
 
-void model_set_outline_color_fast(void *outline_color);
-
 // IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
 // This defaults to 0. (0=highest, larger=lower)
 void model_set_detail_level(int n);
@@ -885,13 +882,6 @@ float model_get_core_radius(int modelnum);
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
-// This function just looks at the radius, and not the orientation, so the
-// bounding box won't change depending on the obj's orient.
-extern int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
-
-// Returns zero is x1,y1,x2,y2 are valid
-// returns 1 for invalid model, 2 for point offscreen.
-// note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function looks at the object's bounding box and it's orientation,
 // so the bounds will change as the object rotates, to give the minimum bouding
 // rect.
@@ -950,7 +940,6 @@ extern void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int mode
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos);
 void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos);
 
 extern void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num);
@@ -994,10 +983,6 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
 
-// Fills in an array with points from a model.  Only gets up to max_num verts.
-// Returns number of verts found
-extern int submodel_get_points(int model_num, int submodel_num, int max_num, vec3d **nts);
-
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
 extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2);
@@ -1005,7 +990,7 @@ extern void submodel_get_two_random_points_better(int model_num, int submodel_nu
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
-extern int model_find_dock_name_index(int modelnum, char *name);
+extern int model_find_dock_name_index(int modelnum, const char* name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);
@@ -1021,16 +1006,12 @@ int model_get_dock_types(int modelnum);
 // returns index in [0, MAX_SHIP_BAY_PATHS)
 int model_find_bay_path(int modelnum, char *bay_path_name);
 
-// Returns number of verts in a submodel;
-int submodel_get_num_verts(int model_num, int submodel_num);
-
 // Returns number of polygons in a submodel;
 int submodel_get_num_polys(int model_num, int submodel_num);
 
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient);
 void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient);
 
 
@@ -1169,12 +1150,6 @@ int model_create_bsp_collision_tree();
 
 void model_collide_preprocess(matrix *orient, int model_instance_num, int detail = 0);
 
-// Sets the submodel instance data in a submodel
-// If show_damaged is true it shows only damaged submodels.
-// If it is false it shows only undamaged submodels.
-void model_show_damaged(int model_num, int show_damaged);
-
-
 //=========================== MODEL OCTANT STUFF ================================
 
 //  Models are now divided into 8 octants.    Shields too.
@@ -1203,22 +1178,6 @@ void model_show_damaged(int model_num, int show_damaged);
 // + - +  5     right bottom front
 // + + -  6     right top rear
 // + + +  7     right top front
-
-// Returns which octant point 'pnt' is closet to. This will always return 
-// a valid octant (0-7) since the point doesn't have to be in an octant.
-// If model_orient and/or model_pos are NULL, pnt is assumed to already 
-// be rotated into the model's local coordinates.  
-// If oct is not null, it will be filled in with a pointer to the octant
-// data.
-int model_which_octant_distant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
-
-// Returns which octant point 'pnt' is in. This might return
-// -1 if the point isn't in any octant.
-// If model_orient and/or model_pos are NULL, pnt is assumed to already 
-// be rotated into the model's local coordinates.
-// If oct is not null, it will be filled in with a pointer to the octant
-// data.  Or NULL if the pnt isn't in the octant.
-int model_which_octant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
 typedef struct mst_info {
 	int primary_bitmap;
@@ -1267,15 +1226,6 @@ void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 //   Also fills in outpnt with the actual closest point.
 float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos);
 
-// set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
-void model_set_insignia_bitmap(int bmap);
-
-// set model transparency for use with MR_ALL_XPARENT
-void model_set_alpha(float alpha);
-
-// set the forces bitmap
-void model_set_forced_texture(int bmap);
-
 // see if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
 int model_find_texture(int model_num, int bitmap);
 
@@ -1291,10 +1241,6 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
-
-void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
-
-void model_set_replacement_textures(int *replacement_textures);
 
 void model_do_look_at(int model_num); //Bobboau
 
@@ -1312,11 +1258,7 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
 
 void model_render_shields( polymodel * pm, uint flags );
 
-void model_draw_paths( int model_num, uint flags );
-
 void model_draw_paths_htl( int model_num, uint flags );
-
-void model_draw_bay_paths(int model_num);
 
 void model_draw_bay_paths_htl(int model_num);
 

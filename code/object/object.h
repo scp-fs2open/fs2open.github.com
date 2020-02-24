@@ -252,13 +252,7 @@ void obj_delete_all();
 void obj_merge_created_list(void);
 
 // recalculate object pairs for an object
-#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(0);
-
-// Removes any occurances of object 'a' from the pairs list.
-void obj_remove_pairs( object * a );
-
-// add an object to the pairs list
-void obj_add_pairs(int objnum);
+#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(false);
 
 //	Returns true if objects A and B are expected to collide in next duration seconds.
 //	For purposes of this check, the first object moves from current location to predicted
@@ -352,5 +346,16 @@ int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
 
 void obj_render_queue_all();
+
+/**
+ * @brief Compares two object pointers and determines if they refer to the same object
+ *
+ * @note Two @c nullptr parameters are considered equal
+ *
+ * @param left The first object pointer, may be @c nullptr
+ * @param right The second object pointer, may be @c nullptr
+ * @return @c true if the two pointers refer to the same object
+ */
+bool obj_compare(object *left, object *right);
 
 #endif

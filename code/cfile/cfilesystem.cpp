@@ -556,17 +556,40 @@ void cf_search_root_path(int root_index)
 	int i;
 	int num_files = 0;
 
-	cf_root *root = cf_get_root(root_index);
+	cf_root* root = cf_get_root(root_index);
 
-	mprintf(( "Searching root '%s' ... ", root->path ));
+	mprintf(("Searching root '%s' ... ", root->path));
+
+#ifndef WIN32
+	try {
+		auto current           = root->path;
+		const auto prefPathEnd = root->path + strlen(root->path);
+		while (current != prefPathEnd) {
+			const auto cp = utf8::next(current, prefPathEnd);
+			if (cp > 127) {
+				// On Windows, we currently do not support Unicode paths so catch this early and let the user
+				// know
+				const auto invalid_end = current;
+				utf8::prior(current, root->path);
+				Error(LOCATION,
+				      "Trying to use path \"%s\" as a data root. That path is not supported since it "
+				      "contains a Unicode character (%s). If possible, change this path to something that only uses "
+				      "ASCII characters.",
+				      root->path, std::string(current, invalid_end).c_str());
+			}
+		}
+	} catch (const std::exception& e) {
+		Error(LOCATION, "UTF-8 error while checking the root path \"%s\": %s", root->path, e.what());
+	}
+#endif
 
 	char search_path[CF_MAX_PATHNAME_LENGTH];
 #ifdef SCP_UNIX
-    // This map stores the mapping between a specific path type and the actual path that we use for it
+	// This map stores the mapping between a specific path type and the actual path that we use for it
 	SCP_unordered_map<int, SCP_string> pathTypeToRealPath;
 #endif
 
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
+	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
 
 		// we don't want to add player files to the cache - taylor
 		if ( (i == CF_TYPE_SINGLE_PLAYERS) || (i == CF_TYPE_MULTI_PLAYERS) ) {
@@ -1556,6 +1579,9 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *fi
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
+// Note that filesystem listing is always sorted by name *before* sorting by the
+// provided sort order. This isn't strictly needed on NTFS, which always provides the list
+// sorted by name. But on mac/linux it's always needed.
 int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort,
                      SCP_vector<file_list_info>* info, uint32_t location_flags)
 {
@@ -1678,6 +1704,10 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 #endif
 
+	// tcrayford: sort the filesystem listing by name by default to ensure
+	// a stable order across filesystems
+	cf_sort_filenames( list, CF_SORT_NAME, info );
+
 	bool skip_packfiles = false;
 	if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 		skip_packfiles = true;
@@ -1742,7 +1772,6 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 
 		}
 	}
-
 
 	if (sort != CF_SORT_NONE)	{
 		cf_sort_filenames( list, sort, info );

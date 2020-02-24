@@ -68,6 +68,10 @@ int press_glide = 0;
 ////////////////////////////////////////////////////////////
 static int Player_all_alone_msg_inited=0;	// flag used for initializing a player-specific voice msg
 
+float Player_warpout_speed = 40.0f;
+float Target_warpout_match_percent = 0.05f;
+float Minimum_player_warpout_time = 3.0f;
+
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
@@ -215,12 +219,13 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 
 	} else {
 		// Camera is unlocked - Pitch and Yaw axes control X and Y slew axes
-		t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
-		u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
+		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
 		playercontrol_read_stick(axis, frame_time);
 
-		h = -f2fl(axis[JOY_HEADING_AXIS]);
+		// Does the same thing as t and u but for the joystick input 
+		h = f2fl(axis[JOY_HEADING_AXIS]);
 		p = -f2fl(axis[JOY_PITCH_AXIS]);
 	}
 
@@ -1055,12 +1060,12 @@ void read_player_controls(object *objp, float frametime)
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
 				{
 					float warpout_delay;
-					ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+					int warpout_engage_time = Warp_params[Ships[objp->instance].warpout_params_index].warpout_engage_time;
 
-					if (sip->warpout_engage_time >= 0)
-						warpout_delay = sip->warpout_engage_time / 1000.0f;
+					if (warpout_engage_time >= 0)
+						warpout_delay = warpout_engage_time / 1000.0f;
 					else
-						warpout_delay = MINIMUM_PLAYER_WARPOUT_TIME;
+						warpout_delay = Minimum_player_warpout_time;
 
 					// Wait at least 3 seconds before making sure warp speed is set.
 					if ( Warpout_time > warpout_delay) {
@@ -1069,7 +1074,7 @@ void read_player_controls(object *objp, float frametime)
 						if(target_warpout_speed != 0.0f) {
 							diffSpeed = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
 						}
-						if ( diffSpeed < TARGET_WARPOUT_MATCH_PERCENT )	{
+						if ( diffSpeed < Target_warpout_match_percent)	{
 							gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE_STAGE1 );
 						}
 					}
@@ -1597,7 +1602,8 @@ int player_inspect_cargo(float frametime, char *outstr)
 	}
 
 	// see if player is within inspection range
-	if ( Player_ai->current_target_distance < MAX(CARGO_REVEAL_MIN_DIST, (cargo_objp->radius+CARGO_RADIUS_DELTA)) ) {
+	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
+	if ( Player_ai->current_target_distance < MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA)) ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1698,10 +1704,11 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	subsys_rad = subsys->system_info->radius;
 
 	// Goober5000
+	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
     if (cargo_sip->is_huge_ship()) {
-		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
+		scan_dist = MAX(player_sip->scan_range_capital, (subsys_rad + player_sip->scan_range_capital - CARGO_RADIUS_REAL_DELTA));
 	} else {
-		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
+		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
 	}
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
@@ -1987,30 +1994,6 @@ void player_maybe_play_all_alone_msg()
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
-
-void player_get_padlock_orient(matrix *eye_orient)
-{
-	Assert(Viewer_mode & VM_PADLOCK_ANY);
-
-	matrix old_eye_orient;
-	old_eye_orient = *eye_orient;
-
-	if ( Viewer_mode & VM_PADLOCK_UP ) {
-		eye_orient->vec.fvec = old_eye_orient.vec.uvec;
-		vm_vec_copy_scale( &eye_orient->vec.uvec, &old_eye_orient.vec.fvec, -1.0f );
-	} else if ( Viewer_mode & VM_PADLOCK_REAR ) {
-		vm_vec_negate(&eye_orient->vec.fvec);
-		vm_vec_negate(&eye_orient->vec.rvec);
-	} else if ( Viewer_mode & VM_PADLOCK_LEFT ) {
-		vm_vec_copy_scale( &eye_orient->vec.fvec, &old_eye_orient.vec.rvec, -1.0f );
-		eye_orient->vec.rvec = old_eye_orient.vec.fvec;
-	} else if ( Viewer_mode & VM_PADLOCK_RIGHT ) {
-		eye_orient->vec.fvec = old_eye_orient.vec.rvec;
-		vm_vec_copy_scale( &eye_orient->vec.rvec, &old_eye_orient.vec.fvec, -1.0f );
-	} else {
-		Int3();
-	}
-}
 
 void player_display_padlock_view()
 {

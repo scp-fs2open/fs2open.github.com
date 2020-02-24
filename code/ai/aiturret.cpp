@@ -856,11 +856,11 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	// flags for weapon types
 	if (beam_flag)
 		eeo.eeo_flags |= EEOF_BEAM;
-	else if (flak_flag)
+	if (flak_flag)
 		eeo.eeo_flags |= EEOF_FLAK;
-	else if (laser_flag)
+	if (laser_flag)
 		eeo.eeo_flags |= EEOF_LASER;
-	else if (missile_flag)
+	if (missile_flag)
 		eeo.eeo_flags |= EEOF_MISSILE;
 
 	eeo.enemy_team_mask = enemy_team_mask;
@@ -1290,7 +1290,9 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		model_instance_find_world_point(&tmp_pos, &avg, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		if (targetp == nullptr) {
-            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship number %d is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, ssp->parent_objnum);
+			ship* shipp = &Ships[Objects[ssp->parent_objnum].instance];
+            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship name %s is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, 
+																								(shipp->has_display_name()) ? shipp->display_name.c_str() : shipp->ship_name);
             object *lep = &Objects[ssp->turret_enemy_objnum];
 
 			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
@@ -1301,9 +1303,9 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 			weapon_info *wip = get_turret_weapon_wip(&ssp->weapons, best_weapon_tidx);
 
-			float weapon_system_strength = ship_get_subsystem_strength(&Ships[ssp->parent_objnum], SUBSYSTEM_WEAPONS);
+			float weapon_system_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
-            turret_ai_update_aim(&Ai_info[Ships[ssp->parent_objnum].ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
+            turret_ai_update_aim(&Ai_info[shipp->ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
 
 			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
@@ -1676,7 +1678,12 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		wait *= wip->burst_delay;
 		turret->weapons.burst_counter[weapon_num]++;
 	} else {
-		wait *= wip->fire_wait;
+		// Random fire delay (DahBlount) used in ship_fire_primary(), added here by wookieejedi to correct oversight
+		if (wip->max_delay != 0.0f && wip->min_delay != 0.0f) {
+			wait *= frand_range(wip->min_delay, wip->max_delay);
+		} else {
+			wait *= wip->fire_wait;
+		}
 		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 			turret->weapons.burst_counter[weapon_num] = (myrand() % wip->burst_shots);
 		} else {
@@ -1874,7 +1881,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				turret->last_fired_weapon_info_index = turret_weapon_class;
 
 				Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", &Objects[turret->turret_enemy_objnum]);
-				Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
+				Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
 				Script_system.RemHookVars(4, "Ship", "Weapon", "Beam", "Target");
 			}
 
@@ -2009,7 +2016,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					wp->turret_subsys = turret;	
 
 					Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", objp, "Beam", nullptr, "Target", &Objects[turret->turret_enemy_objnum]);
-					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
+					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
 					Script_system.RemHookVars(4, "Ship", "Weapon", "Beam", "Target");
 
 					// if the gun is a flak gun
@@ -2126,7 +2133,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
 
 		Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
-		Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[tsi->parent_objnum]);
+		Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum]);
 		Script_system.RemHookVars(4, "Ship", "Weapon", "Beam", "Target");
 
 		// muzzle flash?
@@ -2724,8 +2731,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		if(!something_was_ok_to_fire)
 		{
-			mprintf(("nothing ok to fire\n"));
-            
 			if (ss->turret_best_weapon >= 0) {
 				//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
 				turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);

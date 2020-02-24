@@ -287,6 +287,7 @@ public:
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();
+	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_sexp_containers(int type);
 	sexp_list_item *get_listing_opf_list_modifiers(bool modifier);
 	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool modifier);

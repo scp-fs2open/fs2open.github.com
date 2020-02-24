@@ -1,12 +1,18 @@
 
-#include "cmdline/cmdline.h"
+#include "gropenglpostprocessing.h"
+
+#include "ShaderProgram.h"
+#include "SmaaAreaTex.h"
+#include "SmaaSearchTex.h"
 #include "freespace.h"
-#include "def_files/def_files.h"
 #include "gropengl.h"
 #include "gropengldraw.h"
-#include "gropenglpostprocessing.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
+
+#include "cmdline/cmdline.h"
+#include "def_files/def_files.h"
+#include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "mod_table/mod_table.h"
@@ -14,52 +20,54 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
-#include "ShaderProgram.h"
-
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
 
-//Needed to track where the FXAA shaders are
-size_t fxaa_shader_id;
-//In case we don't find the shaders at all, this override is needed
+// Needed to track where the FXAA shaders are
+// In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
-int Fxaa_preset_last_frame;
-bool zbuffer_saved = false;
+bool zbuffer_saved    = false;
 
 // lightshaft parameters
-bool ls_on = false;
-bool ls_force_off = false;
-float ls_density = 0.5f;
-float ls_weight = 0.02f;
-float ls_falloff = 1.0f;
-float ls_intensity = 0.5f;
+bool ls_on           = false;
+bool ls_force_off    = false;
+float ls_density     = 0.5f;
+float ls_weight      = 0.02f;
+float ls_falloff     = 1.0f;
+float ls_intensity   = 0.5f;
 float ls_cpintensity = 0.5f * 50 * 0.02f;
-int ls_samplenum = 50;
+int ls_samplenum     = 50;
 
 const int MAX_MIP_BLUR_LEVELS = 4;
 
-typedef struct post_effect_t {
+enum class PostEffectUniformType {
+	Invalid,
+	NoiseAmount,
+	Saturation,
+	Brightness,
+	Contrast,
+	FilmGrain,
+	TvStripes,
+	Cutoff,
+	Tint,
+	Dither,
+};
+
+struct post_effect_t {
 	SCP_string name;
-	SCP_string uniform_name;
+	PostEffectUniformType uniform_type = PostEffectUniformType::Invalid;
 	SCP_string define_name;
 
-	float intensity;
-	float default_intensity;
-	float div;
-	float add;
+	float intensity{0.0f};
+	float default_intensity{0.0f};
+	float div{1.0f};
+	float add{0.0f};
 
-	vec3d rgb;
+	vec3d rgb = vmd_zero_vector;
 
-	bool always_on;
-
-	post_effect_t() :
-		intensity(0.0f), default_intensity(0.0f), div(1.0f), add(0.0f),
-		rgb(),
-		always_on(false)
-	{
-	}
-} post_effect_t;
+	bool always_on{false};
+};
 
 SCP_vector<post_effect_t> Post_effects;
 
@@ -73,28 +81,39 @@ static GLuint Bloom_framebuffer = 0;
 static GLuint Bloom_textures[2] = { 0 };
 
 static GLuint Post_framebuffer_id[2] = { 0 };
-static GLuint Post_shadow_framebuffer_id = 0;
-static GLuint Post_shadow_texture_id = 0;
-static GLuint Post_shadow_depth_texture_id = 0;
 
 static int Post_texture_width = 0;
 static int Post_texture_height = 0;
+
+static GLuint Smaa_edge_detection_fb = 0;
+static GLuint Smaa_edges_tex         = 0;
+
+static GLuint Smaa_blending_weight_fb = 0;
+static GLuint Smaa_blend_tex          = 0;
+
+static GLuint Smaa_neighborhood_blending_fb = 0;
+static GLuint Smaa_output_tex               = 0;
+
+static GLuint Smaa_search_tex = 0;
+static GLuint Smaa_area_tex   = 0;
 
 void opengl_post_pass_tonemap()
 {
 	GR_DEBUG_SCOPE("Tonemapping");
 	TRACE_SCOPE(tracing::Tonemapping);
 
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0));
 
-	Current_shader->program->Uniforms.setUniformi("tex", 0);
-	Current_shader->program->Uniforms.setUniformf("exposure", 4.0f);
+	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+
+	opengl_set_generic_uniform_data<graphics::generic_data::tonemapping_data>(
+		[](graphics::generic_data::tonemapping_data* data) { data->exposure = 4.0f; });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 }
 
 void opengl_post_pass_bloom()
@@ -125,11 +144,11 @@ void opengl_post_pass_bloom()
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BRIGHTPASS, 0));
 
-		Current_shader->program->Uniforms.setUniformi("tex", 0);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 	// ------ end bright pass ------
 
@@ -153,23 +172,25 @@ void opengl_post_pass_bloom()
 				opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL));
 			}
 
-			Current_shader->program->Uniforms.setUniformi("tex", 0);
+			Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 
 			GL_state.Texture.Enable(0, GL_TEXTURE_2D, source_tex);
 
 			for (int mipmap = 0; mipmap < MAX_MIP_BLUR_LEVELS; ++mipmap) {
-				int bloom_width = width >> mipmap;
+				int bloom_width  = width >> mipmap;
 				int bloom_height = height >> mipmap;
 
-				Current_shader->program->Uniforms.setUniformf("texSize", (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height));
-				Current_shader->program->Uniforms.setUniformi("level", mipmap);
-				Current_shader->program->Uniforms.setUniformf("tapSize", 1.0f);
+				opengl_set_generic_uniform_data<graphics::generic_data::blur_data>(
+					[&](graphics::generic_data::blur_data* data) {
+						data->texSize = (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height);
+						data->level   = mipmap;
+					});
 
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest_tex, mipmap);
 
 				glViewport(0, 0, bloom_width, bloom_height);
 
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 			}
 		}
 	}
@@ -183,9 +204,13 @@ void opengl_post_pass_bloom()
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
-		Current_shader->program->Uniforms.setUniformi("tex", 0);
-		Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
-		Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+
+		opengl_set_generic_uniform_data<graphics::generic_data::bloom_composition_data>(
+			[](graphics::generic_data::bloom_composition_data* data) {
+				data->levels          = MAX_MIP_BLUR_LEVELS;
+				data->bloom_intensity = Cmdline_bloom_intensity / 100.0f;
+			});
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
 
@@ -193,7 +218,7 @@ void opengl_post_pass_bloom()
 
 		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	}
@@ -230,8 +255,11 @@ void gr_opengl_post_process_begin()
 }
 
 void recompile_fxaa_shader() {
+	if (!gr_is_fxaa_mode(Gr_aa_mode)) {
+		return;
+	}
 
-	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
+	mprintf(("Recompiling FXAA shader...\n"));
 
 	// start recompile by grabbing deleting the current shader we have, assuming it's already created
 	opengl_delete_shader( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
@@ -239,15 +267,16 @@ void recompile_fxaa_shader() {
 	// then recreate it again. shader loading code will be updated with the new FXAA presets
 	gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0);
 
-	Fxaa_preset_last_frame = Cmdline_fxaa_preset;
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
 
-void opengl_post_pass_fxaa() {
+void opengl_post_pass_fxaa()
+{
 	GR_DEBUG_SCOPE("FXAA");
 	TRACE_SCOPE(tracing::FXAA);
 
-	//If the preset changed, recompile the shader
-	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
+	// If the preset changed, recompile the shader
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
 		recompile_fxaa_shader();
 	}
 
@@ -256,32 +285,148 @@ void opengl_post_pass_fxaa() {
 	GL_state.ColorMask(true, true, true, true);
 
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) );
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0));
 
 	// basic/default uniforms
-	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
+	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	// set and configure post shader ..
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0));
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	// basic/default uniforms
-	Current_shader->program->Uniforms.setUniformi( "tex0", 0 );
-	Current_shader->program->Uniforms.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
-	Current_shader->program->Uniforms.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
+	Current_shader->program->Uniforms.setTextureUniform("tex0", 0);
+
+	opengl_set_generic_uniform_data<graphics::generic_data::fxaa_data>([](graphics::generic_data::fxaa_data* data) {
+		data->rt_w = i2fl(Post_texture_width);
+		data->rt_h = i2fl(Post_texture_height);
+	});
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	opengl_shader_set_current();
+}
+
+static void smaa_detect_edges()
+{
+	GR_DEBUG_SCOPE("SMAA Detect Edges");
+	TRACE_SCOPE(tracing::SMAAEdgeDetection);
+
+	GL_state.BindFrameBuffer(Smaa_edge_detection_fb);
+
+	GLfloat clearValues[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	glClearBufferfv(GL_COLOR, 0, clearValues);
+
+	// Do the edge detection step
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_EDGE, 0));
+
+	// basic/default uniforms
+	Current_shader->program->Uniforms.setTextureUniform("colorTex", 0);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+}
+
+static void smaa_calculate_blending_weights()
+{
+	GR_DEBUG_SCOPE("SMAA Blending Weights calculation");
+	TRACE_SCOPE(tracing::SMAACalculateBlendingWeights);
+
+	GL_state.BindFrameBuffer(Smaa_blending_weight_fb);
+
+	GLfloat clearValues[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	glClearBufferfv(GL_COLOR, 0, clearValues);
+
+	// Do the edge detection step
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, 0));
+
+	// basic/default uniforms
+	Current_shader->program->Uniforms.setTextureUniform("edgesTex", 0);
+	Current_shader->program->Uniforms.setTextureUniform("areaTex", 1);
+	Current_shader->program->Uniforms.setTextureUniform("searchTex", 2);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Smaa_edges_tex);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_area_tex);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Smaa_search_tex);
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+}
+
+static void smaa_neighborhood_blending()
+{
+	GR_DEBUG_SCOPE("SMAA Neighborhood Blending");
+	TRACE_SCOPE(tracing::SMAANeighborhoodBlending);
+
+	GL_state.BindFrameBuffer(Smaa_neighborhood_blending_fb);
+
+	GLfloat clearValues[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	glClearBufferfv(GL_COLOR, 0, clearValues);
+
+	// Do the edge detection step
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, 0));
+
+	// basic/default uniforms
+	Current_shader->program->Uniforms.setTextureUniform("colorTex", 0);
+	Current_shader->program->Uniforms.setTextureUniform("blendTex", 1);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_blend_tex);
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+}
+
+void smaa_resolve()
+{
+	GR_DEBUG_SCOPE("SMAA Resolve");
+	TRACE_SCOPE(tracing::SMAAResolve);
+
+	opengl_shader_set_passthrough(true, false);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Smaa_output_tex);
+
+	// Copy SMAA output back to the original framebuffer
+	if (GL_rendering_to_texture) {
+		opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, 0.0f, (float)gr_screen.max_w, (float)gr_screen.max_h,
+		                          Scene_texture_u_scale, Scene_texture_v_scale);
+	} else {
+		opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w,
+		                          (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
+	}
+}
+
+void opengl_post_pass_smaa()
+{
+	GR_DEBUG_SCOPE("SMAA");
+	TRACE_SCOPE(tracing::SMAA);
+
+	GL_state.PushFramebufferState();
+
+	GL_state.ColorMask(true, true, true, true);
+
+	// All SMAA stages share the same shader data so we only need this once
+	opengl_set_generic_uniform_data<graphics::generic_data::smaa_data>([](graphics::generic_data::smaa_data* data) {
+		data->smaa_rt_metrics.x = i2fl(Post_texture_width);
+		data->smaa_rt_metrics.y = i2fl(Post_texture_height);
+	});
+
+	smaa_detect_edges();
+
+	smaa_calculate_blending_weights();
+
+	smaa_neighborhood_blending();
+
+	GL_state.PopFramebufferState();
+
+	smaa_resolve();
 }
 
 extern GLuint Shadow_map_depth_texture;
@@ -318,23 +463,31 @@ void opengl_post_lightshafts()
 			float dot;
 			if ( (dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec)) > 0.7f ) {
 
-				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI*1.5f + 0.5f; //cant get the coordinates right but this works for the limited glare fov
-				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI*1.5f*gr_screen.clip_aspect + 0.5f;
-				Current_shader->program->Uniforms.setUniform2f("sun_pos", x, y);
-				Current_shader->program->Uniforms.setUniformi("scene", 0);
-				Current_shader->program->Uniforms.setUniformi("cockpit", 1);
-				Current_shader->program->Uniforms.setUniformf("density", ls_density);
-				Current_shader->program->Uniforms.setUniformf("falloff", ls_falloff);
-				Current_shader->program->Uniforms.setUniformf("weight", ls_weight);
-				Current_shader->program->Uniforms.setUniformf("intensity", Sun_spot * ls_intensity);
-				Current_shader->program->Uniforms.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
+				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f +
+					0.5f; // cant get the coordinates right but this works for the limited glare fov
+				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+
+				opengl_set_generic_uniform_data<graphics::generic_data::lightshaft_data>(
+					[&](graphics::generic_data::lightshaft_data* data) {
+						data->sun_pos.x = x;
+						data->sun_pos.y = y;
+
+						data->density      = ls_density;
+						data->falloff      = ls_falloff;
+						data->weight       = ls_weight;
+						data->intensity    = Sun_spot * ls_intensity;
+						data->cp_intensity = Sun_spot * ls_cpintensity;
+					});
+
+				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
+				Current_shader->program->Uniforms.setTextureUniform("cockpit", 1);
 
 				GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_depth_texture);
 				GL_state.Texture.Enable(1, GL_TEXTURE_2D, Cockpit_depth_texture);
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 				GL_state.Blend(GL_FALSE);
 				break;
@@ -364,10 +517,14 @@ void gr_opengl_post_process_end()
 	// do tone mapping
 	opengl_post_pass_tonemap();
 
-    // Do FXAA
-    if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
-        opengl_post_pass_fxaa();
-    }
+	// Do Post processing AA
+	if (!GL_rendering_to_texture) {
+		if (gr_is_smaa_mode(Gr_aa_mode)) {
+			opengl_post_pass_smaa();
+		} else if (gr_is_fxaa_mode(Gr_aa_mode) && !fxaa_unavailable) {
+			opengl_post_pass_fxaa();
+		}
+	}
 
 	// render lightshafts
 	opengl_post_lightshafts();
@@ -391,7 +548,7 @@ void gr_opengl_post_process_end()
 
 	int post_sdr_handle = Post_active_shader_index;
 
-	if ( post_sdr_handle < 0 ) {
+	if (post_sdr_handle < 0) {
 		// no active shader index? use the always on shader.
 		post_sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_MAIN, flags);
 	}
@@ -399,32 +556,59 @@ void gr_opengl_post_process_end()
 	opengl_shader_set_current(post_sdr_handle);
 
 	// basic/default uniforms
-	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
-	Current_shader->program->Uniforms.setUniformi( "depth_tex", 1);
-	Current_shader->program->Uniforms.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
+	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	for (size_t idx = 0; idx < Post_effects.size(); idx++) {
-		if ( GL_shader[post_sdr_handle].flags & (1<<idx) ) {
-			const char *name = Post_effects[idx].uniform_name.c_str();
-			float value = Post_effects[idx].intensity;
+	Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-			if (!(vmd_zero_vector == Post_effects[idx].rgb)) {
-				Current_shader->program->Uniforms.setUniform3f( name, Post_effects[idx].rgb );
-			}
-			else {
-				Current_shader->program->Uniforms.setUniformf( name, value );
+	opengl_set_generic_uniform_data<graphics::generic_data::post_data>([&](graphics::generic_data::post_data* data) {
+		data->timer = i2fl(timer_get_milliseconds() % 100 + 1);
+
+		for (size_t idx = 0; idx < Post_effects.size(); idx++) {
+			if (GL_shader[post_sdr_handle].flags & (1 << idx)) {
+				float value = Post_effects[idx].intensity;
+
+				switch (Post_effects[idx].uniform_type) {
+				case PostEffectUniformType::Invalid:
+					// Invalid name specified, do nothing
+					break;
+				case PostEffectUniformType::NoiseAmount:
+					data->noise_amount = value;
+					break;
+				case PostEffectUniformType::Saturation:
+					data->saturation = value;
+					break;
+				case PostEffectUniformType::Brightness:
+					data->brightness = value;
+					break;
+				case PostEffectUniformType::Contrast:
+					data->contrast = value;
+					break;
+				case PostEffectUniformType::FilmGrain:
+					data->film_grain = value;
+					break;
+				case PostEffectUniformType::TvStripes:
+					data->tv_stripes = value;
+					break;
+				case PostEffectUniformType::Cutoff:
+					data->cutoff = value;
+					break;
+				case PostEffectUniformType::Dither:
+					data->dither = value;
+					break;
+				case PostEffectUniformType::Tint:
+					data->tint = Post_effects[idx].rgb;
+					break;
+				}
 			}
 		}
-	}
+	});
 
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
-	//GL_state.Texture.Enable(Scene_color_texture);
-	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
-
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	//Shadow Map debug window
 //#define SHADOW_DEBUG
@@ -586,6 +770,31 @@ void gr_opengl_post_process_restore_zbuffer()
 	}
 }
 
+static PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
+{
+	if (!stricmp(uniform_name.c_str(), "noise_amount")) {
+		return PostEffectUniformType::NoiseAmount;
+	} else if (!stricmp(uniform_name.c_str(), "saturation")) {
+		return PostEffectUniformType::Saturation;
+	} else if (!stricmp(uniform_name.c_str(), "brightness")) {
+		return PostEffectUniformType::Brightness;
+	} else if (!stricmp(uniform_name.c_str(), "contrast")) {
+		return PostEffectUniformType::Contrast;
+	} else if (!stricmp(uniform_name.c_str(), "film_grain")) {
+		return PostEffectUniformType::FilmGrain;
+	} else if (!stricmp(uniform_name.c_str(), "tv_stripes")) {
+		return PostEffectUniformType::TvStripes;
+	} else if (!stricmp(uniform_name.c_str(), "cutoff")) {
+		return PostEffectUniformType::Cutoff;
+	} else if (!stricmp(uniform_name.c_str(), "dither")) {
+		return PostEffectUniformType::Dither;
+	} else if (!stricmp(uniform_name.c_str(), "tint")) {
+		return PostEffectUniformType::Tint;
+	} else {
+		error_display(0, "Unknown uniform name '%s'!", uniform_name.c_str());
+		return PostEffectUniformType::Invalid;
+	}
+}
 
 static bool opengl_post_init_table()
 {
@@ -603,20 +812,19 @@ static bool opengl_post_init_table()
 
 		if (optional_string("#Effects")) {
 			while (!required_string_one_of(3, "$Name:", "#Ship Effects", "#End")) {
-				char tbuf[NAME_LENGTH + 1] = { 0 };
 				post_effect_t eff;
 
 				required_string("$Name:");
-				stuff_string(tbuf, F_NAME, NAME_LENGTH);
-				eff.name = tbuf;
+				stuff_string(eff.name, F_NAME);
 
 				required_string("$Uniform:");
-				stuff_string(tbuf, F_NAME, NAME_LENGTH);
-				eff.uniform_name = tbuf;
+
+				SCP_string tbuf;
+				stuff_string(tbuf, F_NAME);
+				eff.uniform_type = mapUniformNameToType(tbuf);
 
 				required_string("$Define:");
-				stuff_string(tbuf, F_NAME, NAME_LENGTH);
-				eff.define_name = tbuf;
+				stuff_string(eff.define_name, F_NAME);
 
 				required_string("$AlwaysOn:");
 				stuff_boolean(&eff.always_on);
@@ -707,9 +915,58 @@ static bool opengl_post_init_table()
 	}
 }
 
-void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, int flags)
+static void set_fxaa_defines(SCP_stringstream& sflags)
 {
-	if ( shader_t == SDR_TYPE_POST_PROCESS_MAIN ) {
+	// Since we require OpenGL 3.2 we always have support for GLSL 130
+	sflags << "#define FXAA_GLSL_120 0\n";
+	sflags << "#define FXAA_GLSL_130 1\n";
+
+	if (GLSL_version >= 400) {
+		// The gather function became part of the standard with GLSL 4.00
+		sflags << "#define FXAA_GATHER4_ALPHA 1\n";
+	}
+
+	switch (Gr_aa_mode) {
+	case AntiAliasMode::None:
+		sflags << "#define FXAA_QUALITY_PRESET 10\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/6.0)\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/12.0)\n";
+		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
+		break;
+	case AntiAliasMode::FXAA_Low:
+		sflags << "#define FXAA_QUALITY_PRESET 12\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/8.0)\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/16.0)\n";
+		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
+		break;
+	case AntiAliasMode::FXAA_Medium:
+		sflags << "#define FXAA_QUALITY_PRESET 26\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/12.0)\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/24.0)\n";
+		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
+		break;
+	case AntiAliasMode::FXAA_High:
+		sflags << "#define FXAA_QUALITY_PRESET 39\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/15.0)\n";
+		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/32.0)\n";
+		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
+		break;
+	default:
+		UNREACHABLE("Unhandled FXAA mode!");
+	}
+}
+void set_smaa_defines(SCP_stringstream& sflags)
+{
+	// Define what GLSL version we use
+	if (GLSL_version >= 400) {
+		sflags << "#define SMAA_GLSL_4\n";
+	} else {
+		sflags << "#define SMAA_GLSL_3\n";
+	}
+}
+void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
+{
+	if (shader_t == SDR_TYPE_POST_PROCESS_MAIN) {
 		for (size_t idx = 0; idx < Post_effects.size(); idx++) {
 			if (flags & (1 << idx)) {
 				sflags << "#define ";
@@ -717,83 +974,15 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 				sflags << "\n";
 			}
 		}
-	} else if ( shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS ) {
+	} else if (shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS) {
 		char temp[64];
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags << temp;
-	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
-		// Since we require OpenGL 3.2 we always have support for GLSL 130
-		sflags << "#define FXAA_GLSL_120 0\n";
-		sflags << "#define FXAA_GLSL_130 1\n";
-
-		if (GLSL_version >= 400) {
-			// The gather function became part of the standard with GLSL 4.00
-			sflags << "#define FXAA_GATHER4_ALPHA 1\n";
-		}
-
-		switch (Cmdline_fxaa_preset) {
-		case 0:
-			sflags << "#define FXAA_QUALITY_PRESET 10\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/6.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/12.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 1:
-			sflags << "#define FXAA_QUALITY_PRESET 11\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/7.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/14.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 2:
-			sflags << "#define FXAA_QUALITY_PRESET 12\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/8.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/16.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 3:
-			sflags << "#define FXAA_QUALITY_PRESET 13\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/9.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/18.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 4:
-			sflags << "#define FXAA_QUALITY_PRESET 14\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/10.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/20.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 5:
-			sflags << "#define FXAA_QUALITY_PRESET 25\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/11.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/22.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 6:
-			sflags << "#define FXAA_QUALITY_PRESET 26\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/12.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/24.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 7:
-			sflags << "#define FXAA_PC 1\n";
-			sflags << "#define FXAA_QUALITY_PRESET 27\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/13.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/26.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 8:
-			sflags << "#define FXAA_QUALITY_PRESET 28\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/14.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/28.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 9:
-			sflags << "#define FXAA_QUALITY_PRESET 39\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/15.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/32.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		}
+	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
+		set_fxaa_defines(sflags);
+	} else if (shader_t == SDR_TYPE_POST_PROCESS_SMAA_EDGE || shader_t == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
+	           shader_t == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
+		set_smaa_defines(sflags);
 	}
 }
 
@@ -822,11 +1011,17 @@ bool opengl_post_init_shaders()
 		Cmdline_bloom_intensity = 0;
 	}
 
-	if ( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) < 0 ||
-		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) < 0 ) {
-		Cmdline_fxaa = false;
-		fxaa_unavailable = true;
-		mprintf(("Error while compiling FXAA shaders. FXAA will be unavailable.\n"));
+	if (gr_is_fxaa_mode(Gr_aa_mode))
+	{
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0);
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0);
+	}
+
+	if (gr_is_smaa_mode(Gr_aa_mode)) {
+		// Precompile the SMAA shaders if enabled
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_EDGE, 0);
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, 0);
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, 0);
 	}
 
 	return true;
@@ -864,74 +1059,146 @@ void opengl_setup_bloom_textures()
 	GL_state.BindFrameBuffer(0);
 }
 
-static bool opengl_init_shadow_framebuffer(int size, GLenum color_format) {
-	mprintf(("Trying to create %dx%d %d-bit shadow framebuffer\n", size, size, color_format == GL_RGBA32F ? 32 : 16));
-
-	glGenFramebuffers(1, &Post_shadow_framebuffer_id);
-	GL_state.BindFrameBuffer(Post_shadow_framebuffer_id);
-
-	glGenTextures(1, &Post_shadow_texture_id);
+void setup_smaa_edges_resources()
+{
+	glGenTextures(1, &Smaa_edges_tex);
 
 	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-	GL_state.Texture.Enable(Post_shadow_texture_id);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Smaa_edges_tex);
 
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	opengl_set_object_label(GL_TEXTURE, Smaa_edges_tex, "SMAA Edge detection texture");
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Post_shadow_texture_id, 0);
-
-	glGenTextures(1, &Post_shadow_depth_texture_id);
-
-	GL_state.Texture.Enable(Post_shadow_depth_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
-
-	auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status == GL_FRAMEBUFFER_COMPLETE) {
-		// Everything is fine
-		mprintf(("Shadow framebuffer created successfully.\n"));
-		return true;
+	if (GLAD_GL_ARB_texture_storage) {
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, Post_texture_width, Post_texture_height);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+		             nullptr);
 	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	// Clean up resources
-	glDeleteTextures(1, &Post_shadow_texture_id);
-	glDeleteTextures(1, &Post_shadow_depth_texture_id);
-	glDeleteFramebuffers(1, &Post_shadow_framebuffer_id);
+	glGenFramebuffers(1, &Smaa_edge_detection_fb);
+	GL_state.BindFrameBuffer(Smaa_edge_detection_fb);
+	opengl_set_object_label(GL_FRAMEBUFFER, Smaa_edge_detection_fb, "SMAA Edge detection framebuffer");
 
-	Post_shadow_texture_id = 0;
-	Post_shadow_depth_texture_id = 0;
-	Post_shadow_framebuffer_id = 0;
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Smaa_edges_tex, 0);
 
-	const char* error;
-	switch (status) {
-	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-		error = "Incomplete framebuffer attachment";
-		break;
-	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-		error = "Framebuffer is missing an attachment";
-		break;
-	case GL_FRAMEBUFFER_UNSUPPORTED:
-		error = "Framebuffer configuration is unsupported";
-		break;
-	default:
-		error = "Unknown framebuffer status";
-		break;
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+}
+
+void setup_smaa_blending_weight_resources()
+{
+	glGenTextures(1, &Smaa_blend_tex);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Smaa_blend_tex);
+
+	opengl_set_object_label(GL_TEXTURE, Smaa_blend_tex, "SMAA Blending weight calculation texture");
+
+	if (GLAD_GL_ARB_texture_storage) {
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, Post_texture_width, Post_texture_height);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+		             nullptr);
 	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	mprintf(("Failed to create framebuffer: %s\n", error));
-	return false;
+	glGenFramebuffers(1, &Smaa_blending_weight_fb);
+	GL_state.BindFrameBuffer(Smaa_blending_weight_fb);
+	opengl_set_object_label(GL_FRAMEBUFFER, Smaa_blending_weight_fb, "SMAA Blending widght calculation framebuffer");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Smaa_blend_tex, 0);
+
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+}
+
+void setup_smaa_neighborhood_blending_resources()
+{
+	glGenTextures(1, &Smaa_output_tex);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Smaa_output_tex);
+
+	opengl_set_object_label(GL_TEXTURE, Smaa_output_tex, "SMAA output texture");
+
+	if (GLAD_GL_ARB_texture_storage) {
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, Post_texture_width, Post_texture_height);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+		             nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glGenFramebuffers(1, &Smaa_neighborhood_blending_fb);
+	GL_state.BindFrameBuffer(Smaa_neighborhood_blending_fb);
+	opengl_set_object_label(GL_FRAMEBUFFER, Smaa_neighborhood_blending_fb, "SMAA neighborhood blending framebuffer");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Smaa_output_tex, 0);
+
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+}
+
+static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, const uint8_t* pixels, const char* name)
+{
+	GLuint tex;
+	glGenTextures(1, &tex);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(tex);
+
+	opengl_set_object_label(GL_TEXTURE, tex, name);
+
+	if (GLAD_GL_ARB_texture_storage) {
+		glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+		             nullptr);
+	}
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format == GL_RG8 ? GL_RG : GL_RED, GL_UNSIGNED_BYTE, pixels);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	return tex;
+}
+
+static void setup_smaa_resources()
+{
+	GL_state.PushFramebufferState();
+
+	Smaa_area_tex = load_smaa_texture(AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG8, areaTexBytes, "SMAA Area Texture");
+	Smaa_search_tex =
+	    load_smaa_texture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, searchTexBytes, "SMAA Search Texture");
+
+	setup_smaa_edges_resources();
+
+	setup_smaa_blending_weight_resources();
+
+	setup_smaa_neighborhood_blending_resources();
+
+	GL_state.PopFramebufferState();
 }
 
 // generate and test the framebuffer and textures that we are going to use
@@ -953,15 +1220,8 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if ( Cmdline_shadow_quality ) {
-		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-
-		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
-			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
-				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
-				Cmdline_shadow_quality = 0;
-			}
-		}
+	if (gr_is_smaa_mode(Gr_aa_mode)) {
+		setup_smaa_resources();
 	}
 
 	GL_state.BindFrameBuffer(0);
@@ -1002,11 +1262,11 @@ void opengl_post_process_init()
 	//We need to read the tbl first. This is mostly for FRED's benefit, as otherwise the list of post effects for the sexp doesn't get updated.
 	if ( !opengl_post_init_table() ) {
 		mprintf(("  Unable to read post-processing table! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
-	if ( !Cmdline_postprocess ) {
+	if ( !Gr_post_processing_enabled ) {
 		return;
 	}
 
@@ -1015,19 +1275,19 @@ void opengl_post_process_init()
 	}
 
 	if ( Cmdline_no_fbo ) {
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
 	if ( !opengl_post_init_shaders() ) {
 		mprintf(("  Unable to initialize post-processing shaders! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
 	if ( !opengl_post_init_framebuffer() ) {
 		mprintf(("  Unable to initialize post-processing framebuffer! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 

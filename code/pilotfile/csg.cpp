@@ -953,6 +953,10 @@ void pilotfile::csg_read_hud()
 
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
+	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
+		Warning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		HUD_config.rp_dist = RR_INFINITY;
+	}
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
@@ -1089,29 +1093,39 @@ void pilotfile::csg_write_variables()
 void pilotfile::csg_read_settings()
 {
 	// sound/voice/music
-	Master_sound_volume = cfread_float(cfp);
-	Master_event_music_volume = cfread_float(cfp);
-	Master_voice_volume = cfread_float(cfp);
+	if (!Using_in_game_options) {
+		snd_set_effects_volume(cfread_float(cfp));
+		event_music_set_volume(cfread_float(cfp));
+		snd_set_voice_volume(cfread_float(cfp));
 
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-	audiostream_set_volume_all(Master_event_music_volume, ASF_EVENTMUSIC);
-
-	if (Master_event_music_volume > 0.0f) {
-		Event_music_enabled = 1;
+		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
-		Event_music_enabled = 0;
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
+		// correct offset
+		cfread_float(cfp);
+		cfread_float(cfp);
+		cfread_float(cfp);
+
+		cfread_int(cfp);
 	}
 
-	Briefing_voice_enabled = cfread_int(cfp);
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
 
 	// input options
-	Use_mouse_to_fly = cfread_int(cfp);
-	Mouse_sensitivity = cfread_int(cfp);
-	Joy_sensitivity = cfread_int(cfp);
-	Joy_dead_zone_size = cfread_int(cfp);
+	if (!Using_in_game_options) {
+		Use_mouse_to_fly   = cfread_int(cfp) != 0;
+		Mouse_sensitivity  = cfread_int(cfp);
+		Joy_sensitivity    = cfread_int(cfp);
+		Joy_dead_zone_size = cfread_int(cfp);
+	} else {
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+	}
 
 	if (csg_ver < 3) {
 		// detail
@@ -1139,7 +1153,7 @@ void pilotfile::csg_write_settings()
 	cfwrite_float(Master_event_music_volume, cfp);
 	cfwrite_float(Master_voice_volume, cfp);
 
-	cfwrite_int(Briefing_voice_enabled, cfp);
+	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
 	cfwrite_int(Game_skill_level, cfp);
@@ -1207,9 +1221,10 @@ void pilotfile::csg_write_cutscenes() {
 	startSection(Section::Cutscenes);
 
 	size_t viewableScenes = 0;
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
-			viewableScenes ++;
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
+			viewableScenes++;
+		}
 	}
 
 	// Check for possible overflow because we can only write 32 bit integers
@@ -1217,9 +1232,10 @@ void pilotfile::csg_write_cutscenes() {
 
 	cfwrite_uint((uint)viewableScenes, cfp);
 
-	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if(cut->viewable)
+	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			cfwrite_string_len(cut->filename, cfp);
+		}
 	}
 
 	endSection();
@@ -1343,7 +1359,7 @@ void pilotfile::csg_close()
 	m_have_info = false;
 }
 
-bool pilotfile::load_savefile(const char *campaign)
+bool pilotfile::load_savefile(player *_p, const char *campaign)
 {
 	char base[_MAX_FNAME] = { '\0' };
 	std::ostringstream buf;
@@ -1358,7 +1374,7 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	// set player ptr first thing
 	Assert( (Player_num >= 0) && (Player_num < MAX_PLAYERS) );
-	p = &Players[Player_num];
+	p = _p;
 
 	// build up filename for the savefile...
 	_splitpath((char*)campaign, NULL, NULL, base, NULL);

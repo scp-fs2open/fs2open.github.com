@@ -102,8 +102,6 @@ void	event_music_level_close();
 void	event_music_do_frame();
 void	event_music_disable();
 void	event_music_enable();
-void	event_music_pause();
-void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
 void	event_music_parse_musictbl(const char *filename);
 void	event_music_change_pattern(int new_pattern);
@@ -130,5 +128,11 @@ void	event_music_reset_choices();
 int	event_music_player_respawn();
 int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
+
+/**
+ * @brief Sets the master music volume to the specified value
+ * @param volume The new music volume value. Must be in the range [0, 1].
+ */
+void event_music_set_volume(float volume);
 
 #endif /* __EVENT_MUSIC_H__  */

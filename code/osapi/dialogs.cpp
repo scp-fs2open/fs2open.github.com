@@ -76,14 +76,6 @@ namespace
 		return filename;
 	}
 
-	char replaceNewline(char in)
-	{
-		if (in == '\n')
-			return ' ';
-
-		return in;
-	}
-
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
@@ -265,7 +257,7 @@ namespace os
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();
@@ -343,13 +335,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				abort();
 			}
 
 			switch (buttonId)
 			{
 			case 1:
-				exit(1);
+				abort();
 
 			default:
 				Int3();
@@ -364,11 +356,7 @@ namespace os
 			filename = clean_filename(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
-
-			SCP_string printfString = text;
-			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
-
-			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
 
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
@@ -376,7 +364,7 @@ namespace os
 			}
 
 			if (running_unittests) {
-				throw WarningException(printfString);
+				throw WarningException(text);
 			}
 
 			SCP_stringstream boxMsgStream;
@@ -415,13 +403,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				abort();
 			}
 
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();

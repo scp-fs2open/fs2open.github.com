@@ -129,6 +129,9 @@ void SubtitleDecoder::pushSubtitleFrame(AVPacket* packet, AVSubtitle* subtitle) 
 
 	pushFrame(std::move(frame));
 }
+void SubtitleDecoder::flushBuffers() {
+	avcodec_flush_buffers(m_status->subtitleCodecCtx);
+}
 
 }
 }

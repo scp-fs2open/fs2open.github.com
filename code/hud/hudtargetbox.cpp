@@ -516,7 +516,15 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 
 	setClip(position[0] + Viewport_offsets[0], position[1] + Viewport_offsets[1], Viewport_w, Viewport_h);
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	// account for gauge RTT with cockpit here --wookieejedi
+	float clip_aspect;
+	if (gr_screen.rendering_to_texture != -1) {
+		clip_aspect = (i2fl(clip_width) / i2fl(clip_height));
+	} else {
+		clip_aspect = gr_screen.clip_aspect;
+	}
+
+	gr_set_proj_matrix(Proj_fov, clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
@@ -647,7 +655,12 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		if ( Player_ai->targeted_subsys == Player_ai->last_subsys_target ) {
 			vec3d save_pos;
 
-			gr_set_screen_scale(base_w, base_h);
+			if (gr_screen.rendering_to_texture != -1) {
+				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
+			
 			save_pos = target_objp->pos;
 			target_objp->pos = obj_pos;
 			subsys_in_view = hud_targetbox_subsystem_in_view(target_objp, &sx, &sy);
@@ -801,7 +814,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
-	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
 
@@ -853,11 +865,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_normalize(&projection_vec);
 		}
 
-		if ( missile_view == FALSE )
-			factor = 2*target_objp->radius;
-		else
-			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
-
 		// use the viewer's up vector, and construct the viewers orientation matrix
 		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
 			vec3d tempv;
@@ -876,6 +883,11 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
 		// the objects position
 		if (missile_view == FALSE) {
+			float factor = 2*target_objp->radius;
+			// small radius missiles need a bigger factor otherwise they are rendered larger than the targetbox
+			if (factor < 8.0f) {
+				factor = 8.0f;
+			}
 			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 		} else {
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
@@ -1435,10 +1447,9 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		// Print out current orders if the targeted ship is friendly
 		// AL 12-26-97: only show orders and time to target for friendly ships
 		// Backslash: actually let's consult the IFF table.  Maybe we want to show orders for certain teams, or hide orders for friendlies
-		if (((Player_ship->team == target_shipp->team) ||
-			((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) &&
-				!(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)))
-			&& Ship_info[target_shipp->ship_info_index].is_flyable()) {
+		if (	((Player_ship->team == target_shipp->team) ||
+					((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)))
+				&& Ship_info[target_shipp->ship_info_index].is_flyable() ) {
 			extra_data_shown = 1;
 			auto orders = ship_return_orders(target_shipp);
 			if (!orders.empty()) {

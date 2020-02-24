@@ -47,7 +47,9 @@ namespace Model {
         Autorepair_if_disabled,		// Allows the subsystem to repair itself even if disabled (MageKing17)
         No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
         Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
-		
+        No_sparks,          // Subsystem does not generate sparks if hit - m!m
+		No_impact_debris,    // Don't spawn the small debris on impact - m!m
+
         NUM_VALUES
 	};
 
@@ -65,14 +67,14 @@ namespace Model {
 		No_texturing,			// Draw textures as flat-shaded polygons.
 		No_correct,				// Don't to correct texture mapping
 		No_smoothing,			// Don't perform smoothing on vertices.
-		Is_asteroid,			// When set, treat this as an asteroid.  
+		Is_asteroid,			// When set, treat this as an asteroid.
 		Is_missile,				// When set, treat this as a missilie.  No lighting, small thrusters.
-		Show_outline_preset,	// Draw the object in outline mode. Color assumed to be set already.	
+		Show_outline_preset,	// Draw the object in outline mode. Color assumed to be set already.
 		Show_invisible_faces,	// Show invisible faces as green...
 		Autocenter,				// Always use the center of the hull bounding box as the center, instead of the pivot point
 		Bay_paths,				// draw bay paths
 		All_xparent,			// render it fully transparent
-		No_zbuffer,				// switch z-buffering off completely 
+		No_zbuffer,				// switch z-buffering off completely
 		No_cull,				// don't cull backfacing poly's
 		Force_texture,			// force a given texture to always be used
 		Force_lower_detail,		// force the model to draw 1 LOD lower, if possible
@@ -84,7 +86,7 @@ namespace Model {
 		Full_detail,			// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 		Force_clamp,			// force clamp - Hery
 		Animated_shader,		// Use a animated Shader - Valathil
-		
+
 		NUM_VALUES
 	};
 }

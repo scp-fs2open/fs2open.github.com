@@ -4,6 +4,7 @@
 #include "mission/Editor.h"
 #include "FredView.h"
 
+#define WIN32_LEAN_AND_MEAN
 #include <QtGui/QOpenGLContext>
 
 namespace fso {
@@ -16,7 +17,7 @@ class QtOpenGLContext: public os::OpenGLContext {
 	~QtOpenGLContext() override;
 
 	os::OpenGLLoadProc getLoaderFunction() override;
-	void setSwapInterval(int status) override;
+	bool setSwapInterval(int status) override;
 
 	void makeCurrent(QSurface* surface);
 };

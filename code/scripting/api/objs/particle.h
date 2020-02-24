@@ -20,7 +20,7 @@ class particle_h
 	bool isValid();
 };
 
-DECLARE_ADE_OBJ(l_Particle, particle_h*);
+DECLARE_ADE_OBJ(l_Particle, particle_h);
 
 }
 }

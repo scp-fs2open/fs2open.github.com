@@ -9,11 +9,13 @@
 #include "globalincs/version.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "playerman/player.h"
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
@@ -45,6 +47,15 @@ bool Enable_scripts_in_fred; // By default FRED does not initialize the scriptin
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
+bool Using_in_game_options;
+float Dinky_shockwave_default_multiplier;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
+std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+bool Use_engine_wash_intensity;
 
 void parse_mod_table(const char *filename)
 {
@@ -121,7 +132,31 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
 				}
 
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(),
+				               [](char c) { return (char)::tolower(c); });
+
 				Ignored_campaigns.push_back(campaign_name);
+			}
+		}
+
+		// Note: this feature does not ignore missions that are contained in campaigns
+		if (optional_string("#Ignored Mission File Names")) {
+			SCP_string mission_name;
+
+			while (optional_string("$Mission File Name:")) {
+				stuff_string(mission_name, F_NAME);
+
+				// remove extension?
+				if (drop_extension(mission_name)) {
+					mprintf(("Game Settings Table: Removed extension on ignored mission file name %s\n", mission_name.c_str()));
+				}
+
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(),
+				               [](char c) { return (char)::tolower(c); });
+
+				Ignored_missions.push_back(mission_name);
 			}
 		}
 
@@ -238,6 +273,72 @@ void parse_mod_table(const char *filename)
 			stuff_int(&tmp);
 
 			mprintf(("Game Settings Table: $BMPMAN Slot Limit is deprecated and should be removed. It is not needed anymore.\n"));
+		}
+
+		if (optional_string("$EMP Arc Color:")) {
+			if (optional_string("+Primary Color Option 1:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+				} else {
+					error_display(0, "$EMP Arc Color: +Primary Color Option 1 is %i, %i, %i. "
+						"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+				}
+			}
+			if (optional_string("+Primary Color Option 2:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+				} else {
+					error_display(0, "$EMP Arc Color: +Primary Color Option 2 is %i, %i, %i. "
+					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+				}
+			}
+			if (optional_string("+Secondary Color Option 1:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+			    } else {
+				    error_display(0,"$EMP Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
+					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+			    }
+		    }
+		}
+
+		if (optional_string("$Damage Arc Color:")) {
+			if (optional_string("+Primary Color Option 1:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+		        } else {
+			        error_display(0, "Damage Arc Color: +Primary Color Option 1 is %i, %i, %i. "
+					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+		        }
+	        }
+			if (optional_string("+Primary Color Option 2:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+	            } else {
+		            error_display(0, "$Damage Arc Color: +Primary Color Option 2 is %i, %i, %i. "
+					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+	            }
+			}
+			if (optional_string("+Secondary Color Option 1:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+	            } else {
+		            error_display(0, "$Damage Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
+					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+	            }
+			}
 		}
 
 		optional_string("#NETWORK SETTINGS");
@@ -376,6 +477,39 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Player warpout speed:")) {
+			stuff_float(&Player_warpout_speed);
+		}
+		
+		if (optional_string("$Target warpout match percent:")) {
+			stuff_float(&Target_warpout_match_percent);
+		}
+
+		if (optional_string("$Minimum player warpout time:")) {
+			stuff_float(&Minimum_player_warpout_time);
+		}
+
+		if (optional_string("$Enable in-game options:")) {
+			stuff_boolean(&Using_in_game_options);
+
+			if (Using_in_game_options) {
+				mprintf(("Game Settings Table: Using in-game options system.\n"));
+			} else {
+				mprintf(("Game Settings Table: Not using in-game options system.\n"));
+			}
+		}
+
+		if (optional_string("$Dinky Shockwave Default Multiplier:")) {
+			stuff_float(&Dinky_shockwave_default_multiplier);
+			if (Dinky_shockwave_default_multiplier != 1.0f) {
+				mprintf(("Game Settings Table: Setting default dinky shockwave multiplier to %.2f.\n", Dinky_shockwave_default_multiplier));
+			}
+		}
+
+		if (optional_string("$Use Engine Wash Intensity:")) {
+			stuff_boolean(&Use_engine_wash_intensity);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -435,4 +569,13 @@ void mod_table_reset() {
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
+	Using_in_game_options = false;
+	Dinky_shockwave_default_multiplier = 1.0f;
+	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
+	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
+	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
+	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
+	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
+	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	Use_engine_wash_intensity = false;
 }

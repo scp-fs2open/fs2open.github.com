@@ -909,7 +909,7 @@ void wl_render_overhead_view(float frametime)
 				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
 			}
 
-			if(Cmdline_shadow_quality)
+			if(Shadow_quality != ShadowQuality::Disabled)
 			{
 				gr_reset_clip();
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
@@ -1276,7 +1276,7 @@ void wl_load_icons(int weapon_class)
 
 	multi_send_anti_timeout_ping();
 
-	if ( first_frame == -1 && icon->model_index == -1)
+	if ( icon->model_index == -1 && ( ( strlen(wip->tech_model) && !strlen(wip->anim_filename) ) || (first_frame == -1) ) )
 	{
 		if(strlen(wip->tech_model))
 		{
@@ -4082,8 +4082,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if ((result == 0) || (result == 2))
 			{
 				SCP_string temp;
-				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632),
-						Weapon_info[weapon_type_to_add].get_display_string());
+				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_string(), ship_name);
 				error_messages.push_back(temp);
 
 				error_flag = true;
