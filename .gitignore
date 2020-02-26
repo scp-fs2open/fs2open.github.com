@@ -257,3 +257,4 @@ CMakeSettings.json
 # This gets ignored by one of the rules above for some reason...
 !/code/scripting/lua/LuaConvert.h
 !/code/debugconsole/
+!/docker/build
