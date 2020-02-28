@@ -772,6 +772,8 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 			return;
 		}
 
+		target_subsys = new ship_subsys();
+
 		// iterate through subsystems to see if we can get a better choice
 		ss = GET_FIRST(&target_shipp->subsys_list);
 		while ( ss != END_OF_LIST( &target_shipp->subsys_list ) ) {

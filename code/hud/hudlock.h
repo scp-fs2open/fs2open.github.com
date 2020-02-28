@@ -54,7 +54,7 @@ public:
 	void initTargetBoxSize(int w, int h);
 	void initLoopLockedAnim(bool loop);
 
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderOld(float frametime);
 	void renderLockTriangles(int center_x, int center_y, float frametime);
 	void renderLockTrianglesNew(int center_x, int center_y, int start_timestamp);
