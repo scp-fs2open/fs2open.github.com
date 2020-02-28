@@ -11929,34 +11929,36 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if ( (obj == Player_obj && ( !ship_lock_present(shipp) && !( allow_swarm && (shipp->missile_locks_firing.size() > 0) ) ) )
-			|| ( !(obj == Player_obj) && aip->current_target_is_locked <= 0 ) ) {
-				if ( !Weapon_energy_cheat ) {
+		if (aip->current_target_is_locked <= 0 || shipp->missile_locks_firing.size() <= 0) {
+			if (obj == Player_obj) {
+				if (!Weapon_energy_cheat) {
 					float max_dist;
 
 					max_dist = wip->lifetime * wip->max_speed;
-					if (wip->wi_flags[Weapon::Info_Flags::Local_ssm]){
-						max_dist= wip->lssm_lock_range;
+					if (wip->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+						max_dist = wip->lssm_lock_range;
 					}
 
-					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too far from target to acquire lock", 487));
+					if ((aip->target_objnum != -1) &&
+						(vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
 						strcpy_s(missile_name, wip->get_display_string());
 						end_string_at_first_hash_symbol(missile_name);
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot fire %s without a lock", 488), missile_name);
 					}
 
-					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
-					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
+					snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)));
+					swp->next_secondary_fire_stamp[bank] = timestamp(800); // to avoid repeating messages
 					return 0;
 				}
-		} else {
-			// multiplayer clients should always fire the weapon here, so return only if not
-			// a multiplayer client.
-			if (!MULTIPLAYER_CLIENT) {
-				return 0;
+			} else {
+				// multiplayer clients should always fire the weapon here, so return only if not
+				// a multiplayer client.
+				if (!MULTIPLAYER_CLIENT) {
+					return 0;
+				}
 			}
 		}
 	}
@@ -11992,8 +11994,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
-		if ( wip->multi_lock ) {
-			shipp->num_swarm_missiles_to_fire = shipp->missile_locks_firing.size();
+		if (wip->multi_lock && obj == Player_obj) {
+			shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
 		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
@@ -12008,8 +12010,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		if ( wip->multi_lock ) {
-			shipp->num_corkscrew_to_fire = shipp->missile_locks_firing.size();
+		if (wip->multi_lock && obj == Player_obj) {
+			shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
 		}
