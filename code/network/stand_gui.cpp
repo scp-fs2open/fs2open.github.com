@@ -2261,9 +2261,9 @@ BOOL std_create_standalone_window()
 	std_reset_standalone_gui();
 
 	// initialize the debug outwindow
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 
 	Standalone_minimized = FALSE;
 

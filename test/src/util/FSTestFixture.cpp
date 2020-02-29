@@ -24,10 +24,10 @@ void test::FSTestFixture::SetUp() {
 
 	timer_init();
 
-#ifndef NDEBUG
-	outwnd_init();
-	mprintf(("TEST: Setting up test '%s.%s'\n", currentTest->test_case_name(), currentTest->name()));
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+		mprintf(("TEST: Setting up test '%s.%s'\n", currentTest->test_case_name(), currentTest->name()));
+	}
 
 	os_init("Test", "Test");
 
@@ -98,9 +98,9 @@ void test::FSTestFixture::TearDown() {
 
 	os_cleanup();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	// although the comment in cmdline.cpp said this isn't needed,
 	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner

@@ -7,25 +7,19 @@
  *
 */
 
-
-
-
 #include "network/multi_team.h"
+
 #include "globalincs/linklist.h"
-#include "network/multimsgs.h"
-#include "network/multiutil.h"
+#include "iff_defs/iff_defs.h"
+#include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multi_pmsg.h"
-#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #include "object/object.h"
-#include "ship/ship.h"
-#include "iff_defs/iff_defs.h"
-#include "stats/scoring.h"
-
-#ifndef NDEBUG
 #include "playerman/player.h"
-#endif
-
+#include "ship/ship.h"
+#include "stats/scoring.h"
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER TEAMPLAY DEFINES/VARS

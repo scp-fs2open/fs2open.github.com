@@ -12,9 +12,7 @@
 
 #include "globalincs/pstypes.h"
 
-#ifndef NDEBUG
-
-void load_filter_info(void);
+void load_filter_info();
 void outwnd_init();
 void outwnd_close();
 void outwnd_printf(const char *id, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
@@ -25,7 +23,5 @@ void outwnd_debug_window_do_frame(float frametime);
 void outwnd_debug_window_deinit();
 
 extern bool Log_debug_output_to_file;
-
-#endif	// NDEBUG
 
 #endif	// _OUTWND_H

@@ -232,12 +232,17 @@ extern int Global_error_count;
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
-#define mprintf(args) outwnd_printf2 args
-#define nprintf(args) outwnd_printf args
+constexpr bool LoggingEnabled = true;
 #else
-#define mprintf(args)
-#define nprintf(args)
+#ifdef SCP_RELEASE_LOGGING
+constexpr bool LoggingEnabled = true;
+#else
+constexpr bool LoggingEnabled = false;
 #endif
+#endif
+
+#define mprintf(args) do { if (LoggingEnabled) { outwnd_printf2 args; } } while (false)
+#define nprintf(args) do { if (LoggingEnabled) { outwnd_printf args; } } while (false)
 
 #define LOCATION __FILE__,__LINE__
 
