@@ -11929,7 +11929,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if (aip->current_target_is_locked <= 0 || shipp->missile_locks_firing.size() <= 0) {
+		if (aip->current_target_is_locked <= 0 || shipp->missile_locks.size() <= 0) {
 			if (obj == Player_obj) {
 				if (!Weapon_energy_cheat) {
 					float max_dist;
@@ -11988,7 +11988,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	if ( !allow_swarm && obj == Player_obj ) {
-		ship_queue_missile_locks(shipp, wip);
+		ship_queue_missile_locks(shipp);
 	}
 
 	// if trying to fire a swarm missile, make sure being called from right place
@@ -19400,39 +19400,23 @@ void ship_clear_lock(lock_info *slot) {
 	slot->time_to_lock = -1.0f;
 }
 
-void ship_queue_missile_locks(ship *shipp, weapon_info *wip)
+void ship_queue_missile_locks(ship *shipp)
 {
-	size_t i;
 
 	shipp->missile_locks_firing.clear();
 
 	// queue up valid missile locks
-	for ( i = 0; i < shipp->missile_locks.size(); ++i ) {
-		if ( shipp->missile_locks[i].locked ) {
-			shipp->missile_locks_firing.push_back(shipp->missile_locks[i]);
-		}
-	}
+	std::copy_if(shipp->missile_locks.begin(), shipp->missile_locks.end(),
+				 std::back_inserter(shipp->missile_locks_firing), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_lock_present(ship *shipp)
 {
-	size_t i;
-
-	for ( i = 0; i < shipp->missile_locks.size(); ++i ) {
-		if ( shipp->missile_locks[i].locked ) {
-			return true;
-		}
-	}
-
-	return false;
+	return any_of(shipp->missile_locks.begin(), shipp->missile_locks.end(), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_start_secondary_fire(object* objp)
 {
-	ship *shipp;
-	ship_info *sip;
-	ship_weapon *swp;
-	weapon_info *wip;
 
 	Assert( objp != NULL );
 
@@ -19445,9 +19429,9 @@ bool ship_start_secondary_fire(object* objp)
 	Assert( n >= 0 && n < MAX_SHIPS );
 	Assert( Ships[n].objnum == OBJ_INDEX(objp) );
 
-	shipp = &Ships[n];
-	sip = &Ship_info[shipp->ship_info_index];
-	swp = &shipp->weapons;
+	ship *shipp = &Ships[n];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon* swp = &shipp->weapons;
 
 	int bank = swp->current_secondary_bank;
 
@@ -19459,7 +19443,7 @@ bool ship_start_secondary_fire(object* objp)
 
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 
-	wip = &Weapon_info[weapon];
+	weapon_info *wip = &Weapon_info[weapon];
 
 	if ( wip->trigger_lock ) {
 		swp->flags.set(Ship::Weapon_Flags::Trigger_Lock);
