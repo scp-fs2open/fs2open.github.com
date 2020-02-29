@@ -1607,12 +1607,7 @@ void game_init()
 	}
 
 	// init os stuff next
-	if ( !Is_standalone ) {
-		os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
-	}
-	else {
-		std_init_os();
-	}
+	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 #ifndef NDEBUG
 	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
@@ -6545,6 +6540,10 @@ void game_shutdown(void)
 	}
 
 	gr_close();
+
+	if (Is_standalone) {
+		std_deinit_standalone();
+	}
 
 	os_cleanup();
 

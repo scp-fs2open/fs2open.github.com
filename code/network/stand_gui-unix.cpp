@@ -820,7 +820,10 @@ void webapi_shutdown() {
 }
 
 void std_init_standalone() {
-    atexit(webapi_shutdown);
+}
+
+void std_deinit_standalone() {
+	webapi_shutdown();
 }
 
 void std_configLoaded(multi_global_options *options) {
@@ -950,11 +953,6 @@ void std_tracker_login()
 	}
 
 	multi_fs_tracker_login_freespace();
-}
-
-void std_init_os()
-{
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name);
 }
 
 /**

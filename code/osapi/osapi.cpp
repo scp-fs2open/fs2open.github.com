@@ -125,6 +125,7 @@ namespace
 	}
 	
 	bool quit_handler(const SDL_Event&  /*e*/) {
+		mprintf(("Recevied quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}
