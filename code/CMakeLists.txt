@@ -83,6 +83,10 @@ else()
 	ENDIF()
 endif()
 
+if (FSO_RELEASE_LOGGING)
+	target_compile_definitions(code PUBLIC SCP_RELEASE_LOGGING)
+endif()
+
 if (FSO_BUILD_WITH_FFMPEG)
 	target_compile_definitions(code PUBLIC WITH_FFMPEG)
 endif()

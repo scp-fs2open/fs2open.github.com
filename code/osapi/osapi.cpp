@@ -125,6 +125,7 @@ namespace
 	}
 	
 	bool quit_handler(const SDL_Event&  /*e*/) {
+		mprintf(("Recevied quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}
@@ -327,9 +328,9 @@ void os_cleanup()
 {
 	os_deinit_registry_stuff();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	os_deinit();
 }

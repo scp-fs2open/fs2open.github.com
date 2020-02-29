@@ -3030,6 +3030,7 @@ void multi_update_valid_missions()
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_create_gen_dialog("Validating missions");
 		std_gen_set_text("Querying:", 1);
+		mprintf(("Standalone: Validating missions\n"));
 	}
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN

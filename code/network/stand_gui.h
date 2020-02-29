@@ -187,14 +187,11 @@ void std_reset_standalone_gui();
 // reset all networking/gui stuff (calls reset_standalone_gui) for the standalone
 void std_multi_standalone_reset_all();
 
-// setup registry access, etc for the standalone
-void std_init_os();
-
-// close down the standalone
-void std_deinit_standalone();
-
 // initialize the standalone
 void std_init_standalone();
+
+// Shut down the standalone
+void std_deinit_standalone();
 
 // do any gui related issues on the standalone (like periodically updating player stats, etc...)
 void std_do_gui_frame();
