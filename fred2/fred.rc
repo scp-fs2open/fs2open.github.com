@@ -2798,7 +2798,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.8.1 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 20.1.x - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE
