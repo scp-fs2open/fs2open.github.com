@@ -326,8 +326,13 @@ void HudGaugeLock::render(float frametime)
 			// show the rotating triangles if target is locked
 			renderLockTrianglesNew(sx, sy, current_lock->locked_timestamp);
 		} else {
-			sx = fl2i(lock_point.screen.xyw.x) - (current_lock->current_target_sx - current_lock->indicator_x); 
-			sy = fl2i(lock_point.screen.xyw.y) - (current_lock->current_target_sy - current_lock->indicator_y);
+			const float scaling_factor = (gr_screen.clip_center_x < gr_screen.clip_center_y)
+											 ? (gr_screen.clip_center_x / VIRTUAL_FRAME_HALF_WIDTH)
+											 : (gr_screen.clip_center_y / VIRTUAL_FRAME_HALF_HEIGHT);
+			sx = fl2i(lock_point.screen.xyw.x) -
+				 fl2i(i2fl(Player->current_target_sx - Players[Player_num].lock_indicator_x) * scaling_factor);
+			sy = fl2i(lock_point.screen.xyw.y) -
+				 fl2i(i2fl(Player->current_target_sy - Players[Player_num].lock_indicator_y) * scaling_factor);
 			gr_unsize_screen_pos(&sx, &sy);
 		}
 
@@ -743,7 +748,7 @@ void hud_do_lock_indicator(float frametime)
 	}
 }
 
-void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_subsys, weapon_info *wip)
+void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_subsys)
 {
 	ship			*target_shipp=NULL;
 	int			lock_in_range=0;
@@ -1082,7 +1087,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 					}
 				}
 			} else {
-				hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys, wip);
+				hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys);
 			}
 		}
 	} else {
@@ -1133,7 +1138,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 				}
 			}
 		} else {
-			hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys, wip);
+			hud_lock_acquire_current_target(lock_slot->obj, lock_slot->subsys);
 		}
 	}
 }
@@ -1161,8 +1166,9 @@ void hud_lock_determine_lock_point(lock_info *current_lock, weapon_info *wip)
 	if ( lock_local_pos.xyz.z > 0.0f ) {
 		// Get the location of our target in the "virtual frame" where the locking computation will be done
 		float w = 1.0f / lock_local_pos.xyz.z;
-		float sx = ((gr_screen.clip_center_x*2.0f) + (lock_local_pos.xyz.x*(gr_screen.clip_center_x*2.0f)*w))*0.5f;
-		float sy = ((gr_screen.clip_center_y*2.0f) - (lock_local_pos.xyz.y*(gr_screen.clip_center_y*2.0f)*w))*0.5f;
+		// Let's force our "virtual frame" to be 640x480. -MageKing17
+		float sx = gr_screen.clip_center_x + (lock_local_pos.xyz.x * VIRTUAL_FRAME_HALF_WIDTH * w);
+		float sy = gr_screen.clip_center_y - (lock_local_pos.xyz.y * VIRTUAL_FRAME_HALF_HEIGHT * w);
 
 		current_lock->current_target_sx = (int)sx;
 		current_lock->current_target_sy = (int)sy;

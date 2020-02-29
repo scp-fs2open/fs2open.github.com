@@ -1841,7 +1841,7 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel);
 void ship_clear_lock(lock_info *slot);
 
 // queues up locks
-void ship_queue_missile_locks(ship *shipp, weapon_info *wip);
+void ship_queue_missile_locks(ship *shipp);
 
 // snoops missile locks to see if any are ready to fire.
 bool ship_lock_present(ship *shipp);
