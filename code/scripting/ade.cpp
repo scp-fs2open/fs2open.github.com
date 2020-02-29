@@ -294,33 +294,35 @@ size_t ade_manager::addTableEntry(const ade_table_entry& entry) {
 	return _table_entries.size() - 1;
 }
 ade_table_entry& ade_manager::getEntry(size_t idx) {
-	Assertion(idx < _table_entries.size(), "Invalid index "
-		SIZE_T_ARG
-		" specified!", idx);
+	Assertion(idx < _table_entries.size(), "Invalid index " SIZE_T_ARG " specified!", idx);
 	return _table_entries[idx];
 }
-const ade_table_entry& ade_manager::getEntry(size_t idx) const {
-	Assertion(idx < _table_entries.size(), "Invalid index "
-		SIZE_T_ARG
-		" specified!", idx);
+const ade_table_entry& ade_manager::getEntry(size_t idx) const
+{
+	Assertion(idx < _table_entries.size(), "Invalid index " SIZE_T_ARG " specified!", idx);
 	return _table_entries[idx];
+}
+
+static int deprecatedFunctionHandler(lua_State* L)
+{
+	const char* functionName = lua_tostring(L, lua_upvalueindex(1));
+	LuaError(L,
+			 "Deprecated function '%s' has been called that is not available in the targetted engine version. Check "
+			 "the documentation for a possible replacement.",
+			 functionName);
+	return 0;
 }
 
 ade_table_entry::ade_table_entry() { memset(Subentries, 0, sizeof(Subentries)); }
-//Think of n_mtb_ldx as the parent metatable
-int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
-	if (DeprecationVersion.isValid() &&
-	    mod_supports_version(DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build)) {
-		// The deprecation mechanism. Do not set this or any of its children if we are past the deprecation version
-		return 1;
-	}
-
+// Think of n_mtb_ldx as the parent metatable
+int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
+{
 	uint i;
 	int cleanup_items = 0;
-	int mtb_ldx = INT_MAX;
-	int data_ldx = INT_MAX;
+	int mtb_ldx       = INT_MAX;
+	int data_ldx      = INT_MAX;
 	int desttable_ldx = INT_MAX;
-	int amt_ldx = INT_MAX;
+	int amt_ldx       = INT_MAX;
 
 	if (Instanced) {
 		//Set any actual data
@@ -329,23 +331,37 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 		case 'o': {
 			// Create an empty userdata value and use it as the value for this library
 			lua_newuserdata(L, 0);
-			//Create or get object metatable
+			// Create or get object metatable
 			luaL_getmetatable(L, Name);
-			//Set the metatable for the object
+			// Set the metatable for the object
 			lua_setmetatable(L, -2);
 			nset++;
 			break;
 		}
 		case 'u':
-		case 'v':
-			// WMC - This hack by taylor is a necessary evil.
-			// 64-bit function pointers do not get passed properly
-			// when using va_args for some reason.
-			lua_pushstring(L, "<UNNAMED FUNCTION>");
-			lua_pushboolean(L, 0);
-			lua_pushcclosure(L, Function, 2);
+		case 'v': {
+			if (DeprecationVersion.isValid() &&
+				mod_supports_version(DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build)) {
+				// The deprecation mechanism. Set a function that always errors instead.
+				if (Name != nullptr) {
+					lua_pushstring(L, Name);
+				} else if (ShortName != nullptr) {
+					lua_pushstring(L, ShortName);
+				} else {
+					lua_pushliteral(L, "<UNNAMED FUNCTION>");
+				}
+				lua_pushcclosure(L, deprecatedFunctionHandler, 1);
+			} else {
+				// WMC - This hack by taylor is a necessary evil.
+				// 64-bit function pointers do not get passed properly
+				// when using va_args for some reason.
+				lua_pushstring(L, "<UNNAMED FUNCTION>");
+				lua_pushboolean(L, 0);
+				lua_pushcclosure(L, Function, 2);
+			}
 			nset++;
 			break;
+		}
 
 		default:
 			UNREACHABLE("Unhandled value type '%c'!", Type);
