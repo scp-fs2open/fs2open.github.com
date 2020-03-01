@@ -1041,8 +1041,9 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
 	// call a scripting hook for switching stages
-	Script_system.SetHookVar("OldStage", 'i', old_stage);
-	Script_system.SetHookVar("NewStage", 'i', new_stage);
+	// note that we add 1 because Lua arrays are 1-based
+	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
+	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
 	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
 	Script_system.RemHookVars(2, "OldStage", "NewStage");
 }
