@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -59,6 +59,7 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 #include "object/objectshield.h"
+#include "sound/audiostr.h"
 
 /**
 * Natural number factor lookup class.

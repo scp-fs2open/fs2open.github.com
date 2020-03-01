@@ -27,7 +27,9 @@ add_subdirectory(utfcpp)
 
 include(freetype.cmake)
 
-include(FFmpeg.cmake)
+if (FSO_BUILD_WITH_FFMPEG)
+	include(FFmpeg.cmake)
+endif()
 
 add_subdirectory(discord)
 

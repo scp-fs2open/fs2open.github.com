@@ -13,7 +13,7 @@
 #define __DS_H__
 
 #include "globalincs/pstypes.h"
-#include "sound/ffmpeg/WaveFile.h"
+#include "sound/IAudioFile.h"
 #include "utils/id.h"
 
 // Constants that DirectSound should assign, but doesn't
@@ -56,7 +56,7 @@ using ds_sound_handle = ::util::ID<ds_sound_handle_tag, int, -1>;
 
 int ds_init();
 void ds_close();
-int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file);
+int ds_load_buffer(int *sid, int flags, sound::IAudioFile* file);
 void ds_unload_buffer(int sid);
 ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
                         float pan, int looping, bool is_voice_msg = false);

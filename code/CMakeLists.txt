@@ -28,7 +28,9 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
 
 TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
 
-TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+if (FSO_BUILD_WITH_FFMPEG)
+	TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+endif()
 
 TARGET_LINK_LIBRARIES(code PUBLIC utfcpp)
 
@@ -83,6 +85,10 @@ endif()
 
 if (FSO_RELEASE_LOGGING)
 	target_compile_definitions(code PUBLIC SCP_RELEASE_LOGGING)
+endif()
+
+if (FSO_BUILD_WITH_FFMPEG)
+	target_compile_definitions(code PUBLIC WITH_FFMPEG)
 endif()
 
 include(util)

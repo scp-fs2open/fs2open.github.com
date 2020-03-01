@@ -99,19 +99,21 @@ add_file_folder("Cutscene"
 	cutscene/VideoPresenter.h
 )
 
-# Cutscene\ffmpeg files
-add_file_folder("Cutscene\\\\ffmpeg"
-	cutscene/ffmpeg/AudioDecoder.cpp
-	cutscene/ffmpeg/AudioDecoder.h
-	cutscene/ffmpeg/FFMPEGDecoder.cpp
-	cutscene/ffmpeg/FFMPEGDecoder.h
-	cutscene/ffmpeg/internal.cpp
-	cutscene/ffmpeg/internal.h
-	cutscene/ffmpeg/SubtitleDecoder.cpp
-	cutscene/ffmpeg/SubtitleDecoder.h
-	cutscene/ffmpeg/VideoDecoder.cpp
-	cutscene/ffmpeg/VideoDecoder.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	# Cutscene\ffmpeg files
+	add_file_folder("Cutscene\\\\ffmpeg"
+		cutscene/ffmpeg/AudioDecoder.cpp
+		cutscene/ffmpeg/AudioDecoder.h
+		cutscene/ffmpeg/FFMPEGDecoder.cpp
+		cutscene/ffmpeg/FFMPEGDecoder.h
+		cutscene/ffmpeg/internal.cpp
+		cutscene/ffmpeg/internal.h
+		cutscene/ffmpeg/SubtitleDecoder.cpp
+		cutscene/ffmpeg/SubtitleDecoder.h
+		cutscene/ffmpeg/VideoDecoder.cpp
+		cutscene/ffmpeg/VideoDecoder.h
+	)
+endif()
 
 # ddsutils files
 add_file_folder("ddsutils"
@@ -593,13 +595,15 @@ add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.h
 )
 
-add_file_folder("Libs\\\\FFmpeg"
-	libs/ffmpeg/FFmpeg.cpp
-	libs/ffmpeg/FFmpeg.h
-	libs/ffmpeg/FFmpegContext.cpp
-	libs/ffmpeg/FFmpegContext.h
-	libs/ffmpeg/FFmpegHeaders.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	add_file_folder("Libs\\\\FFmpeg"
+		libs/ffmpeg/FFmpeg.cpp
+		libs/ffmpeg/FFmpeg.h
+		libs/ffmpeg/FFmpegContext.cpp
+		libs/ffmpeg/FFmpegContext.h
+		libs/ffmpeg/FFmpegHeaders.h
+	)
+endif()
 
 add_file_folder("Libs\\\\RenderDoc"
 	libs/renderdoc/renderdoc.cpp
@@ -1241,6 +1245,7 @@ add_file_folder("Sound"
 	sound/dscap.h
 	sound/fsspeech.cpp
 	sound/fsspeech.h
+	sound/IAudioFile.h
 	sound/openal.cpp
 	sound/openal.h
 	sound/phrases.xml
@@ -1254,13 +1259,15 @@ add_file_folder("Sound"
 	sound/voicerec.h
 )
 
-# Sound -> ffmpeg files
-add_file_folder("Sound\\\\FFmpeg"
-	sound/ffmpeg/FFmpegAudioReader.cpp
-	sound/ffmpeg/FFmpegAudioReader.h
-	sound/ffmpeg/WaveFile.cpp
-	sound/ffmpeg/WaveFile.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	# Sound -> ffmpeg files
+	add_file_folder("Sound\\\\FFmpeg"
+		sound/ffmpeg/FFmpegAudioReader.cpp
+		sound/ffmpeg/FFmpegAudioReader.h
+		sound/ffmpeg/FFmpegWaveFile.cpp
+		sound/ffmpeg/FFmpegWaveFile.h
+	)
+endif()
 
 # Species_Defs files
 add_file_folder("Species_Defs"

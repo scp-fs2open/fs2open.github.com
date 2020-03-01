@@ -11,6 +11,7 @@
 #include "menuui/mainhallmenu.h"
 #include "menuui/credits.h"
 #include "render/3d.h"
+#include "sound/audiostr.h"
 
 extern float Master_event_music_volume;
 

@@ -1907,8 +1907,10 @@ void game_init()
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
-	
+
+#ifdef WITH_FFMPEG
 	libs::ffmpeg::initialize();
+#endif
 
 	libs::discord::init();
 

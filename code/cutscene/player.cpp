@@ -27,13 +27,15 @@ using namespace cutscene;
 
 const int MAX_AUDIO_BUFFERS = 15;
 
-std::unique_ptr<Decoder> findDecoder(const SCP_string& name, const PlaybackProperties& properties) {
+std::unique_ptr<Decoder> findDecoder(__UNUSED const SCP_string& name, __UNUSED const PlaybackProperties& properties) {
+#ifdef WITH_FFMPEG
 	{
 		std::unique_ptr<Decoder> ffmpeg(new ::cutscene::ffmpeg::FFMPEGDecoder());
 		if (ffmpeg->initialize(name, properties)) {
 			return ffmpeg;
 		}
 	}
+#endif
 
 	return nullptr;
 }

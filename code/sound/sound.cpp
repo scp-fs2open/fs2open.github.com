@@ -24,9 +24,12 @@
 #include "sound/ds.h"
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
-#include "sound/ffmpeg/WaveFile.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+
+#ifdef WITH_FFMPEG
+#include "sound/ffmpeg/FFmpegWaveFile.h"
+#endif
 
 #include <climits>
 
@@ -34,17 +37,17 @@ const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
-typedef struct sound	{
-	int				sid;			// software id
-	char				filename[MAX_FILENAME_LEN];
-	int				sig;
-	int				flags;
-	sound_info		info;
-	int				uncompressed_size;		// size (in bytes) of sound (uncompressed)
-	int				duration;
-} sound;
+struct loaded_sound {
+	int sid; // software id
+	char filename[MAX_FILENAME_LEN];
+	int sig;
+	int flags;
+	sound_info info;
+	int uncompressed_size; // size (in bytes) of sound (uncompressed)
+	int duration;
+};
 
-SCP_vector<sound> Sounds;
+SCP_vector<loaded_sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
 size_t Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
@@ -275,6 +278,21 @@ void snd_spew_debug_info()
 	gr_printf_no_resize(sx, sy, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
+static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName)
+{
+#ifdef WITH_FFMPEG
+	{
+		std::unique_ptr<sound::IAudioFile> audio_file(new sound::ffmpeg::FFmpegWaveFile());
+
+		if (audio_file->Open(fileName, false)) {
+			return audio_file;
+		}
+	}
+#endif
+
+	return nullptr;
+}
+
 // ---------------------------------------------------------------------------------------
 // snd_load() 
 //
@@ -291,16 +309,15 @@ void snd_spew_debug_info()
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
 sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_load*/)
 {
-	int				type;
-	sound_info		*si;
-	sound			*snd;
-	size_t			n;
+	int type;
+	sound_info* si;
+	loaded_sound* snd;
+	size_t n;
 
-
-	if ( !ds_initialized )
+	if (!ds_initialized)
 		return sound_load_id::invalid();
 
-	if ( !VALID_FNAME(entry->filename) )
+	if (!VALID_FNAME(entry->filename))
 		return sound_load_id::invalid();
 
 	for (n = 0; n < Sounds.size(); n++) {
@@ -319,11 +336,11 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	}
 
 	if ( n == Sounds.size() ) {
-		sound new_sound;
-		new_sound.sid = -1;
+		loaded_sound new_sound;
+		new_sound.sid   = -1;
 		new_sound.flags = 0;
 
-		Sounds.push_back( new_sound );
+		Sounds.push_back(new_sound);
 	}
 
 	snd = &Sounds[n];
@@ -332,28 +349,30 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 
 	TRACE_SCOPE(tracing::LoadSound);
 
-	std::unique_ptr<ffmpeg::WaveFile> audio_file(new ffmpeg::WaveFile());
-
 	nprintf(("Sound", "SOUND ==> Loading '%s'\n", entry->filename));
 
-	if (!audio_file->Open(entry->filename, false)) {
+	std::unique_ptr<sound::IAudioFile> audio_file = openAudioFile(entry->filename);
+
+	if (audio_file == nullptr) {
 		return sound_load_id::invalid();
 	}
+
+	const auto fileProps = audio_file->getFileProperties();
 
 	type = 0;
 	if (flags & GAME_SND_USE_DS3D) {
 		type |= DS_3D;
 
-		if (audio_file->getNumChannels() > 1) {
+		if (fileProps.num_channels > 1) {
 			// We need to resample the audio down to one channel
-			auto current = audio_file->getAudioProperties();
-			current.channel_layout = AV_CH_LAYOUT_MONO;
+			sound::ResampleProperties resample;
+			resample.num_channels = 1;
 
-			audio_file->setAdjustedAudioProperties(current);
+			audio_file->setResamplingProperties(resample);
 
 #ifndef NDEBUG
-            // Retail has a few sounds that triggers this warning so we need to ignore those
-            const char* warning_ignore_list[] = {
+			// Retail has a few sounds that triggers this warning so we need to ignore those
+			const char* warning_ignore_list[] = {
 				"l_hit.wav",
 				"m_hit.wav",
 				"s_hit_2.wav",
@@ -373,9 +392,14 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 					// This warning was introduced in 3.8.0 and caused a few issues since a lot of mods use 3D sounds
 					// with more than one channel. This will silence the warnings for any mod that does not support
 					// 3.8.0.
-					Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", entry->filename);
+					Warning(LOCATION,
+							"Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have "
+							"one channel.",
+							entry->filename);
 				} else {
-					mprintf(("Warning: Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.\n", entry->filename));
+					mprintf(("Warning: Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may "
+							 "only have one channel.\n",
+							 entry->filename));
 				}
 			}
 #endif
@@ -383,11 +407,12 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	}
 
 	// Load was a success
-	si->n_channels			= audio_file->getNumChannels();		// 16-bit channel count (nChannels)
-	si->sample_rate			= audio_file->getSampleRate();	// 32-bit sample rate (nSamplesPerSec)
-	si->avg_bytes_per_sec	= audio_file->getSampleRate() * audio_file->getSampleByteSize();	// 32-bit average bytes per second (nAvgBytesPerSec)
-	si->bits					= audio_file->getSampleByteSize() / audio_file->getNumChannels() * 8;	// Read 16-bit bits per sample	
-	si->size					= audio_file->getTotalSamples() * audio_file->getSampleByteSize();
+	si->n_channels        = fileProps.num_channels; // 16-bit channel count (nChannels)
+	si->sample_rate       = fileProps.sample_rate;  // 32-bit sample rate (nSamplesPerSec)
+	si->avg_bytes_per_sec = fileProps.sample_rate * fileProps.bytes_per_sample *
+							fileProps.num_channels; // 32-bit average bytes per second (nAvgBytesPerSec)
+	si->bits = fileProps.bytes_per_sample * 8;      // Read 16-bit bits per sample
+	si->size = fileProps.total_samples * fileProps.bytes_per_sample * fileProps.num_channels;
 
 	snd->uncompressed_size = si->size;
 
@@ -398,7 +423,7 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	}
 
 	// NOTE: "si" values can change once loaded in the buffer
-	snd->duration = fl2i(1000.0f * audio_file->getDuration());
+	snd->duration = fl2i(1000.0f * fileProps.duration);
 
 	strcpy_s( snd->filename, entry->filename );
 	snd->flags = SND_F_USED;
@@ -533,7 +558,7 @@ MONITOR( NumSoundsLoaded )
 sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bool is_voice_msg)
 {
 	float volume;
-	sound	*snd;
+	loaded_sound* snd;
 
 	if (!Sound_enabled)
 		return sound_handle::invalid();
@@ -543,8 +568,8 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 		return sound_handle::invalid();
 	}
 
-	MONITOR_INC( NumSoundsStarted, 1 );
-	
+	MONITOR_INC(NumSoundsStarted, 1);
+
 	auto entry = gamesnd_choose_entry(gs);
 
 	if (!entry->id.isValid()) {
@@ -616,13 +641,13 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
                          int looping, float vol_scale, int priority, vec3d* /*sound_fvec*/, float range_factor,
                          int force, bool /*is_ambient*/)
 {
-	vec3d	vector_to_sound;
-	sound		*snd;
-	float		volume, distance, max_volume;
-	float		min_range, max_range;
-	float		pan;
+	vec3d vector_to_sound;
+	loaded_sound* snd;
+	float volume, distance, max_volume;
+	float min_range, max_range;
+	float pan;
 
-	if ( !Sound_enabled )
+	if (!Sound_enabled)
 		return sound_handle::invalid();
 
 	if (gs == NULL) {
@@ -825,9 +850,9 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
  */
 sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /*stop_loop*/, float vol_scale,
                               int scriptingUpdateVolume)
-{	
+{
 	float volume;
-	sound	*snd;	
+	loaded_sound* snd;
 
 	if (!Sound_enabled)
 		return sound_handle::invalid();
