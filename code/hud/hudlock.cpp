@@ -91,7 +91,7 @@ char Lockspin_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN
 };
 
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out);
-void hud_lock_determine_lock_point(lock_info *current_lock, weapon_info *wip);
+void hud_lock_determine_lock_point(lock_info *current_lock);
 
 // hud_init_missile_lock() is called at the beginning of a mission
 //
@@ -561,10 +561,10 @@ void hud_lock_check_if_target_in_lock_cone()
 
 void hud_lock_check_if_target_in_lock_cone(lock_info *current_lock, weapon_info *wip)
 {
-	float		dist, dot;
+	float	dot;
 	vec3d	vec_to_target;
 
-	dist = vm_vec_normalized_dir(&vec_to_target, &current_lock->world_pos, &Player_obj->pos);
+	vm_vec_normalized_dir(&vec_to_target, &current_lock->world_pos, &Player_obj->pos);
 	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 	current_lock->target_in_lock_cone = dot > wip->lock_fov;
@@ -872,7 +872,6 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 	float dot;
 
 	ship *sp;
-	ship_subsys	*ss;
 
 	size_t i = 0;
 
@@ -895,7 +894,6 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 		}
 
 		sp = &Ships[A->instance];
-		ss = NULL;
 
 		if ( A->flags[Object::Object_Flags::Should_be_dead] ) {
 			continue;
@@ -995,7 +993,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 		vec3d vec_to_target;
 		vec3d target_pos;
 		object *objp;
-		float dist, dot;
+		float dot;
 
 		if ( lock_slot->obj != NULL ) {
 
@@ -1009,7 +1007,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 				target_pos = objp->pos;
 			}
 
-			dist = vm_vec_normalized_dir(&vec_to_target, &target_pos, &Eye_position);
+			vm_vec_normalized_dir(&vec_to_target, &target_pos, &Eye_position);
 			dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 			if ( !hud_lock_world_pos_in_range(&target_pos, &vec_to_target) || dot < wip->lock_fov) {
@@ -1144,7 +1142,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 }
 
 // Decide which point lock should be homing on
-void hud_lock_determine_lock_point(lock_info *current_lock, weapon_info *wip)
+void hud_lock_determine_lock_point(lock_info *current_lock)
 {
 	vec3d vec_to_lock_pos;
 	vec3d lock_local_pos;
@@ -1563,7 +1561,7 @@ void hud_do_lock_indicators(float frametime)
 			continue;
 		}
 
-		hud_lock_determine_lock_point(lock_slot, wip);
+		hud_lock_determine_lock_point(lock_slot);
 
 		hud_lock_check_if_target_in_lock_cone(lock_slot, wip);
 

@@ -11929,7 +11929,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if (aip->current_target_is_locked <= 0 || shipp->missile_locks.size() <= 0) {
+		if ((aip->current_target_is_locked <= 0 && !wip->multi_lock) || !ship_lock_present(shipp)) {
 			if (obj == Player_obj) {
 				if (!Weapon_energy_cheat) {
 					float max_dist;
@@ -19406,13 +19406,24 @@ void ship_queue_missile_locks(ship *shipp)
 	shipp->missile_locks_firing.clear();
 
 	// queue up valid missile locks
-	std::copy_if(shipp->missile_locks.begin(), shipp->missile_locks.end(),
-				 std::back_inserter(shipp->missile_locks_firing), [](lock_info lock) { return lock.locked; });
+	for (size_t i = 0; i < shipp->missile_locks.size(); ++i) {
+		if (shipp->missile_locks[i].locked) {
+			shipp->missile_locks_firing.push_back(shipp->missile_locks[i]);
+		}
+	}
+	//std::copy_if(shipp->missile_locks.begin(), shipp->missile_locks.end(), std::back_inserter(shipp->missile_locks_firing), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_lock_present(ship *shipp)
 {
-	return any_of(shipp->missile_locks.begin(), shipp->missile_locks.end(), [](lock_info lock) { return lock.locked; });
+	for (size_t i = 0; i < shipp->missile_locks.size(); i++) {
+		if (shipp->missile_locks[i].locked) {
+			return true;
+		}
+	}
+
+	return false;
+	//return any_of(shipp->missile_locks.begin(), shipp->missile_locks.end(), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_start_secondary_fire(object* objp)
