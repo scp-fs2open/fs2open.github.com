@@ -21,7 +21,6 @@
 #include "Grid.h"
 #include "dialog1.h"
 
-#include "globalincs/version.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 
@@ -164,12 +163,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
-
-	// Goober5000 - bash the proper title
-	// (yes, this is a hack, but it's the least horrifying option)
-	CString title = GetTitle();
-	title.Replace("[x.y.zzzz]", FS_VERSION_FULL);
-	SetTitle(title);
 
 	// Create the combo box
 	z = m_wndToolBar.CommandToIndex(ID_NEW_SHIP_TYPE);
