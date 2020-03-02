@@ -286,7 +286,7 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
-		mprintf(("Couldn't init SDL: %s", SDL_GetError()));
+		mprintf(("Couldn't init SDL: %s\n", SDL_GetError()));
 
 		exit(1);
 		return;

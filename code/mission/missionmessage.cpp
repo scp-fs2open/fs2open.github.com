@@ -2050,7 +2050,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_PERSONA_EXCLUDED:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else
@@ -2059,7 +2059,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_SPECIES:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else
@@ -2068,7 +2068,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_TYPE:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else

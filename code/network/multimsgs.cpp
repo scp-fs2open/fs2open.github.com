@@ -3075,7 +3075,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		// find the object (based on network signatures) for the object that fired
 		objp = multi_get_network_object( net_signature );
 		if ( objp == NULL ) {
-			nprintf(("Network", "Could not find ship for fire secondary packet!"));
+			nprintf(("Network", "Could not find ship for fire secondary packet!\n"));
 			return;
 		}
 
@@ -4708,7 +4708,7 @@ void process_netplayer_load_packet(ubyte *data, header *hinfo)
 
 		// MWA 2/3/98 -- ingame join changes!!!
 		// everyone can go through the same mission loading path here!!!!
-		nprintf(("Network","Loading mission..."));
+		nprintf(("Network","Loading mission...\n"));
 
 		// notify everyone that I'm loading the mission
 		Net_player->state = NETPLAYER_STATE_MISSION_LOADING;
@@ -7542,7 +7542,7 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	// find the object this fired packet is operating on
 	objp = multi_get_network_object( shooter_sig );
 	if ( objp == NULL ) {
-		nprintf(("Network", "Could not find ship for fire primary packet NEW!"));
+		nprintf(("Network", "Could not find ship for fire primary packet NEW!\n"));
 		return;
 	}
 	// if this object is not actually a valid ship, don't do anything

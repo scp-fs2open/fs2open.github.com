@@ -340,7 +340,7 @@ bool ds_check_for_openal_soft()
 	const ALchar * renderer = alGetString(AL_RENDERER);
 	if (renderer == NULL)
 	{
-		mprintf(("ds_check_for_openal_soft: renderer is null!"));
+		mprintf(("ds_check_for_openal_soft: renderer is null!\n"));
 		return false;
 	}
 	else if (!stricmp((const char *)renderer, "OpenAL Soft"))

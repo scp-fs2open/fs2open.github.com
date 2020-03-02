@@ -118,7 +118,7 @@ bool mission_load(const char* filename_ext)
 	}
 
 	if (mission_is_ignored(filename)) {
-		mprintf(("MISSION LOAD: Tried to load an ignored mission!  Aborting..."));
+		mprintf(("MISSION LOAD: Tried to load an ignored mission!  Aborting...\n"));
 		return false;
 	}
 

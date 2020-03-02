@@ -1376,7 +1376,7 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 	}
 
 	if (j >= MAX_AI_GOALS) {
-		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity", Ships[aip->shipnum].ship_name));
+		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity\n", Ships[aip->shipnum].ship_name));
 	}
 }
 

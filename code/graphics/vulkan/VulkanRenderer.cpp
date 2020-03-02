@@ -48,12 +48,12 @@ bool VulkanRenderer::initialize()
 	}
 
 	if (!initializeInstance()) {
-		mprintf(("Failed to create Vulkan instance!"));
+		mprintf(("Failed to create Vulkan instance!\n"));
 		return false;
 	}
 
 	if (!initializeSurface()) {
-		mprintf(("Failed to create Vulkan surface!"));
+		mprintf(("Failed to create Vulkan surface!\n"));
 		return false;
 	}
 
@@ -114,7 +114,7 @@ bool VulkanRenderer::initializeInstance()
 
 	unsigned int count;
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
-		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s", SDL_GetError()));
+		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -122,7 +122,7 @@ bool VulkanRenderer::initializeInstance()
 	extensions.resize(count);
 
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, extensions.data())) {
-		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s", SDL_GetError()));
+		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -132,7 +132,7 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Vulkan instance version %s\n", gameversion::format_version(vulkanVersion).c_str()));
 
 	if (vulkanVersion < MinVulkanVersion) {
-		mprintf(("Vulkan version is less than the minimum which is %s.",
+		mprintf(("Vulkan version is less than the minimum which is %s.\n",
 				 gameversion::format_version(MinVulkanVersion).c_str()));
 		return false;
 	}
@@ -202,7 +202,7 @@ bool VulkanRenderer::initializeInstance()
 	m_vkInstance = std::move(instance);
 	return true;
 #else
-	mprintf(("SDL does not support Vulkan in its current version."));
+	mprintf(("SDL does not support Vulkan in its current version.\n"));
 	return false;
 #endif
 }
@@ -213,7 +213,7 @@ bool VulkanRenderer::initializeSurface()
 
 	VkSurfaceKHR surface;
 	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), &surface)) {
-		mprintf(("Failed to create vulkan surface: %s", SDL_GetError()));
+		mprintf(("Failed to create vulkan surface: %s\n", SDL_GetError()));
 		return false;
 	}
 

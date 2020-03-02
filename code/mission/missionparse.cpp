@@ -423,11 +423,11 @@ void parse_custom_bitmap(const char *expected_string_640, const char *expected_s
 	// error testing
 	if (Fred_running && (found640) && !(found1024))
 	{
-		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024));
+		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!\n", expected_string_640, expected_string_1024));
 	}
 	if (Fred_running && !(found640) && (found1024))
 	{
-		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640));
+		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!\n", expected_string_1024, expected_string_640));
 	}
 }
 
@@ -3203,7 +3203,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		}
 
 		if (period_detected) {
-			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format\n"));
 		}
 	}
 
@@ -5673,7 +5673,7 @@ bool parse_mission(mission *pm, int flags)
 	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
 		// if running on standalone server, just print to the log
 		if (Game_mode & GM_STANDALONE_SERVER) {
-			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
+			mprintf(("Warning!  Could not load %d ship classes!\n", Num_unknown_ship_classes));
 			return false;
 		}
 		// don't do this in FRED; we will display a separate popup

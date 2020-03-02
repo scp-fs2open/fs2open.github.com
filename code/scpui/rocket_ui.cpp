@@ -179,7 +179,7 @@ bool mouse_button_handler(const SDL_Event& evt)
 		break;
 	default:
 		// Unknown SDL button value
-		mprintf(("Unknown SDL button value %d in libRocket mouse handler!", evt.button.button));
+		mprintf(("Unknown SDL button value %d in libRocket mouse handler!\n", evt.button.button));
 		return false;
 	}
 

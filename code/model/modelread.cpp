@@ -1292,7 +1292,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
 
 				n = cfread_int(fp);
-				//mprintf(("SOBJ IDed itself as %d", n));
+				//mprintf(("SOBJ IDed itself as %d\n", n));
 
 				Assert(n < pm->n_models );
 
