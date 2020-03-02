@@ -79,7 +79,7 @@ MFCOpenGLContext::~MFCOpenGLContext()
 {
 	if (!wglDeleteContext(_render_context))
 	{
-		mprintf(("Failed to delete render context!"));
+		mprintf(("Failed to delete render context!\n"));
 	}
 
 	--_oglDllReferenceCount;
@@ -214,7 +214,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		mprintf(("Unable to make current thread for OpenGL W32!\n"));
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -225,7 +225,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		wglMakeCurrent(nullptr, nullptr);
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -239,7 +239,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 			wglMakeCurrent(nullptr, nullptr);
 			if (!wglDeleteContext(temp_ctx))
 			{
-				mprintf(("Failed to delete fake context!"));
+				mprintf(("Failed to delete fake context!\n"));
 			}
 			return nullptr;
 		}
@@ -284,7 +284,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 	wglMakeCurrent(nullptr, nullptr);
 	if (!wglDeleteContext(temp_ctx))
 	{
-		mprintf(("Failed to delete fakse context!"));
+		mprintf(("Failed to delete fake context!\n"));
 	}
 	
 	if (attrib_ctx == nullptr)
@@ -297,7 +297,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		mprintf(("Unable to make current thread for OpenGL W32!\n"));
 		if (!wglDeleteContext(attrib_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}
@@ -308,7 +308,7 @@ std::unique_ptr<os::OpenGLContext> MFCGraphicsOperations::createOpenGLContext(os
 		wglMakeCurrent(nullptr, nullptr);
 		if (!wglDeleteContext(temp_ctx))
 		{
-			mprintf(("Failed to delete render context!"));
+			mprintf(("Failed to delete render context!\n"));
 		}
 		return nullptr;
 	}

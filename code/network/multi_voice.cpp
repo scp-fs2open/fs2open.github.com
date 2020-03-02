@@ -671,7 +671,7 @@ void multi_voice_player_process()
 			// if we've recorded the max time allowed, send the data
 			if((Multi_voice_recording_stamp != -1) && timestamp_elapsed(Multi_voice_recording_stamp)){
 #ifdef MULTI_VOICE_VERBOSE
-				nprintf(("Network","MULTI VOICE : timestamp popped"));
+				nprintf(("Network","MULTI VOICE : timestamp popped\n"));
 #endif
 				// mark me as no longer recording
 				Multi_voice_recording = 0;			

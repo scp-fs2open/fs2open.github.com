@@ -64,7 +64,7 @@ namespace
 
 		if (IsValidSid(ptkUser->User.Sid) == FALSE)
 		{
-			mprintf(("Invalid SID structure detected!"));
+			mprintf(("Invalid SID structure detected!\n"));
 
 			delete[] ptkUser;
 			return false;
@@ -96,7 +96,7 @@ namespace
 		BOOL bIsWow64 = FALSE;
 		if (!IsWow64Process(GetCurrentProcess(), &bIsWow64))
 		{
-			mprintf(("Failed to determine if we run under Wow64, registry configuration may fail!"));
+			mprintf(("Failed to determine if we run under Wow64, registry configuration may fail!\n"));
 			return false;
 		}
 

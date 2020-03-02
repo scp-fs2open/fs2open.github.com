@@ -4652,7 +4652,7 @@ void ai_fly_to_ship()
 		{
 			if (aip->mode == AIM_FLY_TO_SHIP || aip->goals[i].ai_mode == AI_GOAL_FLY_TO_SHIP)
 			{
-				mprintf(("Ship '%s' told to fly to target ship '%s'",
+				mprintf(("Ship '%s' told to fly to target ship '%s'\n",
 					Ships[Pl_objp->instance].ship_name,
 					aip->goals[i].target_name));
 			}
@@ -10683,7 +10683,7 @@ void ai_dock()
 			char *goal_dock_path_name = model_get(goal_sip->model_num)->paths[aip->mp_index].name;
 
 			mprintf(("Ship class %s has only %i points on dock path \"%s\".  Recommended minimum number of points is 4.  "\
-				"Docking along that path will look strange.  You may wish to edit the model.", goal_ship_class_name, aip->path_length, goal_dock_path_name));
+				"Docking along that path will look strange.  You may wish to edit the model.\n", goal_ship_class_name, aip->path_length, goal_dock_path_name));
 		}
 
 		aip->submode = AIS_DOCK_1;

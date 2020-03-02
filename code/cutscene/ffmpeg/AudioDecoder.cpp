@@ -126,7 +126,7 @@ void AudioDecoder::handleDecodedFrame(AVFrame* frame) {
 		auto ret = av_samples_alloc(m_outData, &m_outLinesize, OUT_NUM_CHANNELS, m_outNumSamples,
 									OUT_SAMPLE_FORMAT, 1);
 		if (ret < 0) {
-			mprintf(("FFMPEG: Failed to allocate samples!!!"));
+			mprintf(("FFMPEG: Failed to allocate samples!!!\n"));
 			return;
 		}
 

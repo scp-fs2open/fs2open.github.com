@@ -7990,7 +7990,7 @@ void multi_sync_pre_do()
 
 			// load the mission myself, as soon as possible
 			if(!Multi_mission_loaded){
-				nprintf(("Network","Server loading mission..."));
+				nprintf(("Network","Server loading mission...\n"));
 	
 				// update everyone about my status
 				Net_player->state = NETPLAYER_STATE_MISSION_LOADING;

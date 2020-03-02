@@ -48,12 +48,12 @@ bool VulkanRenderer::initialize()
 	}
 
 	if (!initializeInstance()) {
-		mprintf(("Failed to create Vulkan instance!"));
+		mprintf(("Failed to create Vulkan instance!\n"));
 		return false;
 	}
 
 	if (!initializeSurface()) {
-		mprintf(("Failed to create Vulkan surface!"));
+		mprintf(("Failed to create Vulkan surface!\n"));
 		return false;
 	}
 
@@ -202,7 +202,7 @@ bool VulkanRenderer::initializeInstance()
 	m_vkInstance = std::move(instance);
 	return true;
 #else
-	mprintf(("SDL does not support Vulkan in its current version."));
+	mprintf(("SDL does not support Vulkan in its current version.\n"));
 	return false;
 #endif
 }

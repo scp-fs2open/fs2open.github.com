@@ -3203,7 +3203,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		}
 
 		if (period_detected) {
-			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format\n"));
 		}
 	}
 
