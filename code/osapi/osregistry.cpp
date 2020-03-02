@@ -47,7 +47,7 @@ namespace
 		HANDLE hToken = NULL;
 		if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken) == FALSE)
 		{
-			mprintf(("Failed to get process token! Error Code: %d", (int)GetLastError()));
+			mprintf(("Failed to get process token! Error Code: %d\n", (int)GetLastError()));
 
 			return false;
 		}
@@ -73,7 +73,7 @@ namespace
 		LPTSTR sidName = NULL;
 		if (ConvertSidToStringSid(ptkUser->User.Sid, &sidName) == 0)
 		{
-			mprintf(("Failed to convert SID structure to string! Error Code: %d", (int)GetLastError()));
+			mprintf(("Failed to convert SID structure to string! Error Code: %d\n", (int)GetLastError()));
 
 			delete[] ptkUser;
 			return false;

@@ -114,7 +114,7 @@ bool VulkanRenderer::initializeInstance()
 
 	unsigned int count;
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
-		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s", SDL_GetError()));
+		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -122,7 +122,7 @@ bool VulkanRenderer::initializeInstance()
 	extensions.resize(count);
 
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, extensions.data())) {
-		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s", SDL_GetError()));
+		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -132,7 +132,7 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Vulkan instance version %s\n", gameversion::format_version(vulkanVersion).c_str()));
 
 	if (vulkanVersion < MinVulkanVersion) {
-		mprintf(("Vulkan version is less than the minimum which is %s.",
+		mprintf(("Vulkan version is less than the minimum which is %s.\n",
 				 gameversion::format_version(MinVulkanVersion).c_str()));
 		return false;
 	}
@@ -213,7 +213,7 @@ bool VulkanRenderer::initializeSurface()
 
 	VkSurfaceKHR surface;
 	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), &surface)) {
-		mprintf(("Failed to create vulkan surface: %s", SDL_GetError()));
+		mprintf(("Failed to create vulkan surface: %s\n", SDL_GetError()));
 		return false;
 	}
 

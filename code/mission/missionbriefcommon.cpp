@@ -567,14 +567,14 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 				if (sip->bii_index_wing_with_cargo >= 0)
 					return &Briefing_icon_info[sip->bii_index_wing_with_cargo];
 				else
-					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!\n", sip->name));
 			}
 			else
 			{
 				if (sip->bii_index_wing >= 0)
 					return &Briefing_icon_info[sip->bii_index_wing];
 				else
-					mprintf(("Ship '%s' is missing the wing briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the wing briefing icon!\n", sip->name));
 			}
 		}
 		else
@@ -584,7 +584,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 				if (sip->bii_index_ship_with_cargo >= 0)
 					return &Briefing_icon_info[sip->bii_index_ship_with_cargo];
 				else
-					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!", sip->name));
+					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!\n", sip->name));
 			}
 		}
 

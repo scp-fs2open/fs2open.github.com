@@ -594,7 +594,7 @@ namespace joystick
 			coord2d coord;
 			if (SDL_JoystickGetBall(_joystick, i, &coord.x, &coord.y))
 			{
-				mprintf(("Failed to get ball %d value for joystick %s: %s", i, _name.c_str(), SDL_GetError()));
+				mprintf(("Failed to get ball %d value for joystick %s: %s\n", i, _name.c_str(), SDL_GetError()));
 			}
 		}
 

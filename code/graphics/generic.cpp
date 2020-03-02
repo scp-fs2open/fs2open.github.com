@@ -254,7 +254,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
-			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
+			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s\n", ga->filename));
 			return -1;
 		}
 		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {

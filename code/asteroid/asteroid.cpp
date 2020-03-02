@@ -478,7 +478,7 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 			}
 			else
 			{
-				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)", asip->name, pm->n_detail_levels));
+				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)\n", asip->name, pm->n_detail_levels));
 			}
 		}	
 		// Stuff detail level distances.

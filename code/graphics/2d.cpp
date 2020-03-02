@@ -2211,7 +2211,7 @@ int poly_list::find_first_vertex_fast(int idx)
 
 	if ( first_idx == sorted_indices + n_verts ) {
 		// if this happens then idx was never in the index list to begin with which is not good
-		mprintf(("Sorted index list missing index %d!", idx));
+		mprintf(("Sorted index list missing index %d!\n", idx));
 		Int3();
 		return idx;
 	}
