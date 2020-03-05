@@ -766,12 +766,13 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 int parse_weapon(int subtype, bool replace, const char *filename)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
-	weapon_info *wip = NULL;
 	char fname[NAME_LENGTH];
+	weapon_info *wip = nullptr;
 	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
-	bool create_if_not_found  = true;
+	bool create_if_not_found = true;
+	bool remove_weapon = false;
     flagset<Weapon::Info_Flags> wi_flags;
 
 	required_string("$Name:");
@@ -785,6 +786,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		create_if_not_found = false;
 	}
 
+	if (optional_string("+remove")) {
+		if (!replace) {
+			Warning(LOCATION, "+remove flag used for weapon in non-modular table");
+		}
+		remove_weapon = true;
+	}
+
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
 	//only be parsed in demo builds
@@ -792,33 +800,51 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		backspace(fname);
 	}
 
+	//Check if weapon exists already
 	int w_id = weapon_info_lookup(fname);
 
-	if(w_id != -1)
+	// maybe remove it
+	if (remove_weapon)
+	{
+		if (w_id >= 0) {
+			mprintf(("Removing previously parsed weapon '%s'\n", buf));
+			Weapon_info.erase(Weapon_info.begin() + w_id);
+		}
+
+		if (!skip_to_start_of_string_either("$Name:", "#End")) {
+			error_display(1, "Missing [#End] or [$Name] after weapon class %s", buf);
+		}
+		return -1;
+	}
+
+	// an entry for this weapon exists
+	if (w_id >= 0)
 	{
 		wip = &Weapon_info[w_id];
-		if(!replace)
+		if (!replace)
 		{
 			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", wip->name);
 			}
 			return -1;
 		}
 	}
+	// an entry does not exist
 	else
 	{
-		//Don't create weapon if it has +nocreate and is in a modular table.
-		if(!create_if_not_found && replace)
+		// Don't create weapon if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after weapon %s", wip->name);
 			}
 
 			return -1;
 		}
 
-		if(Weapon_info.size() >= MAX_WEAPON_TYPES) {
+		// Check if there are too many weapon classes
+		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
@@ -826,7 +852,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();
 		first_time = true;
-		
+
 		strcpy_s(wip->name, fname);
 	}
 

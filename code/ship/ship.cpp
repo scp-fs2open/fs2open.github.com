@@ -697,10 +697,10 @@ static void parse_engine_wash(bool replace)
 	else
 	{
 		//Don't create engine wash if it has +nocreate and is in a modular table.
-		if(!create_if_not_found && replace)
+		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after engine wash %s", ewt.name);
 			}
 			return;
 		}
@@ -1775,16 +1775,26 @@ static void parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip = nullptr;
-	bool create_if_not_found  = true;
+	bool first_time = false;
+	bool create_if_not_found = true;
+	bool remove_ship = false;
 
 	required_string("$Name:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+	diag_printf("Ship name -- %s\n", buf);
 
-	if(optional_string("+nocreate")) {
-		if(!replace) {
+	if (optional_string("+nocreate")) {
+		if (!replace) {
 			Warning(LOCATION, "+nocreate flag used for ship in non-modular table");
 		}
 		create_if_not_found = false;
+	}
+
+	if (optional_string("+remove")) {
+		if (!replace) {
+			Warning(LOCATION, "+remove flag used for ship in non-modular table");
+		}
+		remove_ship = true;
 	}
 
 	//Remove @ symbol
@@ -1794,40 +1804,53 @@ static void parse_ship(const char *filename, bool replace)
 		backspace(buf);
 	}
 
-	diag_printf ("Ship name -- %s\n", buf);
 	//Check if ship exists already
-	bool first_time = false;
 	int ship_id = ship_info_lookup_sub( buf );
+
+	// maybe remove it
+	if (remove_ship)
+	{
+		if (ship_id >= 0) {
+			mprintf(("Removing previously parsed ship '%s'\n", buf));
+			Ship_info.erase(Ship_info.begin() + ship_id);
+		}
+
+		if (!skip_to_start_of_string_either("$Name:", "#End")) {
+			error_display(1, "Missing [#End] or [$Name] after ship class %s", buf);
+		}
+		return -1;
+	}
 	
-	if(ship_id >= 0)
+	// an entry for this ship exists
+	if (ship_id >= 0)
 	{
 		sip = &Ship_info[ship_id];
-		if(!replace)
+		if (!replace)
 		{
 			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, filename);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after duplicate ship class %s", sip->name);
 			}
 			return;
 		}
 	}
+	// an entry does not exist
 	else
 	{
-		//Don't create ship if it has +nocreate and is in a modular table.
-		if(!create_if_not_found && replace)
+		// Don't create ship if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after ship class %s", sip->name);
 			}
 			return;
 		}
-		
-		//Check if there are too many ship classes
-		if(Ship_info.size() >= MAX_SHIP_CLASSES) {
+
+		// Check if there are too many ship classes
+		if (Ship_info.size() >= MAX_SHIP_CLASSES) {
 			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
-		ship_id = ship_info_size();
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
@@ -1882,8 +1905,8 @@ static void parse_ship_template()
 	if( template_id != -1 ) {
 		sip = &Ship_templates[template_id];
 		Warning(LOCATION, "WARNING: Ship template %s already exists. All ship template names must be unique.", sip->name);
-		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
-			error_display(1, "Missing [#End] or [$Template] after duplicate entry for %s", sip->name);
+		if (!skip_to_start_of_string_either("$Template:", "#End")) {
+			error_display(1, "Missing [#End] or [$Template] after duplicate ship template %s", sip->name);
 		}
 		return;
 	}
@@ -4744,8 +4767,8 @@ static void parse_ship_type(const char *filename, const bool replace)
 		if (!replace)
 		{
 			Warning(LOCATION, "ship type '%s' already exists in %s; ship type names must be unique.", name_buf, filename);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after duplicate ship type %s", name_buf);
 			}
 			return;
 		}
@@ -4755,8 +4778,8 @@ static void parse_ship_type(const char *filename, const bool replace)
 	{
 		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after ship type %s", name_buf);
 			}
 			return;
 		}
