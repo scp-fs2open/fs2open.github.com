@@ -770,7 +770,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
-	diag_printf ("Weapon name -- %s\n", fname);
+	diag_printf("Weapon name -- %s\n", fname);
 
 	if(optional_string("+nocreate")) {
 		if(!replace) {
@@ -812,16 +812,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			return -1;
 		}
 
-		if(Num_weapon_types >= MAX_WEAPON_TYPES) {
+		if(Weapon_info.size() >= MAX_WEAPON_TYPES) {
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
-		wip = &Weapon_info[Num_weapon_types];
-		wip->reset();
+		Weapon_info.push_back(weapon_info());
+		wip = &Weapon_info.back();
 		first_time = true;
 		
 		strcpy_s(wip->name, fname);
-		Num_weapon_types++;
 	}
 
 	if(optional_string("$Alt name:"))
@@ -1524,7 +1523,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		{
 			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
 		}
-
 	}
 
 	parse_wi_flags(wip, wi_flags);
