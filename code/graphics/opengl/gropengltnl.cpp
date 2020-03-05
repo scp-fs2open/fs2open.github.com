@@ -37,7 +37,6 @@
 #include "weapon/trails.h"
 
 extern int GLOWMAP;
-extern int CLOAKMAP;
 extern int SPECMAP;
 extern int SPECGLOSSMAP;
 extern int NORMMAP;

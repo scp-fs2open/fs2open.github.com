@@ -13956,7 +13956,6 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
  *
  * NOTE: do not call this function.  It is only called from ::game_shutdown()
  */
-int CLOAKMAP=-1;
 void ship_close()
 {
 	int i;
@@ -13994,9 +13993,6 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
-	
-	if(CLOAKMAP != -1)
-		bm_release(CLOAKMAP);
 }	
 
 /**
