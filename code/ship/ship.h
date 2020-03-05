@@ -1335,7 +1335,6 @@ extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
-extern int CLOAKMAP;
 
 extern int Num_reinforcements;
 extern SCP_vector<ship_info> Ship_info;
