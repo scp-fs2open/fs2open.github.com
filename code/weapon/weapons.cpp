@@ -765,7 +765,7 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 
 int parse_weapon(int subtype, bool replace, const char *filename)
 {
-	char buf[WEAPONS_MULTITEXT_LENGTH];
+	char buf[NAME_LENGTH];
 	char fname[NAME_LENGTH];
 	weapon_info *wip = nullptr;
 	int iff, idx;
@@ -807,12 +807,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (remove_weapon)
 	{
 		if (w_id >= 0) {
-			mprintf(("Removing previously parsed weapon '%s'\n", buf));
+			mprintf(("Removing previously parsed weapon '%s'\n", fname));
 			Weapon_info.erase(Weapon_info.begin() + w_id);
 		}
 
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
-			error_display(1, "Missing [#End] or [$Name] after weapon class %s", buf);
+			error_display(1, "Missing [#End] or [$Name] after weapon class %s", fname);
 		}
 		return -1;
 	}
@@ -823,9 +823,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip = &Weapon_info[w_id];
 		if (!replace)
 		{
-			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
+			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", fname);
 			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", wip->name);
+				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", fname);
 			}
 			return -1;
 		}
@@ -837,7 +837,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (!create_if_not_found && replace)
 		{
 			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after weapon %s", wip->name);
+				error_display(1, "Missing [#End] or [$Name] after weapon %s", fname);
 			}
 
 			return -1;
@@ -1120,7 +1120,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->damage_type_idx_sav = damage_type_add(buf);
 		wip->damage_type_idx = wip->damage_type_idx_sav;
 	}
@@ -2673,7 +2673,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if(optional_string("$Armor Type:")) {
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(wip->armor_type_idx == -1)

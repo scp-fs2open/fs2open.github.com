@@ -1773,14 +1773,14 @@ ship_info::~ship_info()
  */
 static void parse_ship(const char *filename, bool replace)
 {
-	char buf[SHIP_MULTITEXT_LENGTH];
+	char fname[NAME_LENGTH];
 	ship_info *sip = nullptr;
 	bool first_time = false;
 	bool create_if_not_found = true;
 	bool remove_ship = false;
 
 	required_string("$Name:");
-	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+	stuff_string(fname, F_NAME, SHIP_MULTITEXT_LENGTH);
 	diag_printf("Ship name -- %s\n", buf);
 
 	if (optional_string("+nocreate")) {
@@ -1800,23 +1800,23 @@ static void parse_ship(const char *filename, bool replace)
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
 	//only be parsed in demo builds
-	if ( buf[0] == '@' ) {
-		backspace(buf);
+	if ( fname[0] == '@' ) {
+		backspace(fname);
 	}
 
 	//Check if ship exists already
-	int ship_id = ship_info_lookup_sub( buf );
+	int ship_id = ship_info_lookup_sub(fname);
 
 	// maybe remove it
 	if (remove_ship)
 	{
 		if (ship_id >= 0) {
-			mprintf(("Removing previously parsed ship '%s'\n", buf));
+			mprintf(("Removing previously parsed ship '%s'\n", fname));
 			Ship_info.erase(Ship_info.begin() + ship_id);
 		}
 
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
-			error_display(1, "Missing [#End] or [$Name] after ship class %s", buf);
+			error_display(1, "Missing [#End] or [$Name] after ship class %s", fname);
 		}
 		return -1;
 	}
@@ -1827,9 +1827,9 @@ static void parse_ship(const char *filename, bool replace)
 		sip = &Ship_info[ship_id];
 		if (!replace)
 		{
-			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, filename);
+			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", fname, filename);
 			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after duplicate ship class %s", sip->name);
+				error_display(1, "Missing [#End] or [$Name] after duplicate ship class %s", fname);
 			}
 			return;
 		}
@@ -1841,27 +1841,27 @@ static void parse_ship(const char *filename, bool replace)
 		if (!create_if_not_found && replace)
 		{
 			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after ship class %s", sip->name);
+				error_display(1, "Missing [#End] or [$Name] after ship class %s", fname);
 			}
 			return;
 		}
 
 		// Check if there are too many ship classes
 		if (Ship_info.size() >= MAX_SHIP_CLASSES) {
-			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
+			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", fname, MAX_SHIP_CLASSES);
 		}
 
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
 
-		strcpy_s(sip->name, buf);
+		strcpy_s(sip->name, fname);
 	}
 
 	// Use a template for this ship.
 	if( optional_string( "+Use Template:" ) ) {
 		if ( !create_if_not_found ) {
-			Warning(LOCATION, "Both '+nocreate' and '+Use Template:' were specified for ship class '%s', ignoring '+Use Template:'\n", buf);
+			Warning(LOCATION, "Both '+nocreate' and '+Use Template:' were specified for ship class '%s', ignoring '+Use Template:'\n", fname);
 		}
 		else {
 			char template_name[SHIP_MULTITEXT_LENGTH];
@@ -1870,10 +1870,10 @@ static void parse_ship(const char *filename, bool replace)
 			if ( template_id != -1 ) {
 				first_time = false;
 				sip->clone(Ship_templates[template_id]);
-				strcpy_s(sip->name, buf);
+				strcpy_s(sip->name, fname);
 			}
 			else {
-				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, buf);
+				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, fname);
 			}
 		}
 	}
