@@ -705,6 +705,7 @@ void event_music_level_close()
 		audiostream_close_all(0);
 	}
 
+	Current_soundtrack_num = -1;
 	Current_pattern = -1;
 	Event_music_level_inited = FALSE;
 	Event_Music_battle_started = FALSE;
