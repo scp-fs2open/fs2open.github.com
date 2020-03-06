@@ -1031,7 +1031,7 @@ void labviewer_update_variables_window()
 	}
 	// weapon variables ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		Assert(Lab_selected_index < Num_weapon_types);
+		Assert(Lab_selected_index < static_cast<int>(Weapon_info.size()));
 		weapon_info* wip = &Weapon_info[Lab_selected_index];
 
 		VAR_SET_VALUE(wip->get_display_string());
@@ -1691,32 +1691,32 @@ void labviewer_make_weap_window(Button* /*caller*/)
 	}
 
 	// Now add the weapons
-	for (i = 0; i < Num_weapon_types; i++) {
-		if (Weapon_info[i].subtype == WP_UNUSED) {
+	for (auto &wi : Weapon_info) {
+		if (wi.subtype == WP_UNUSED) {
 			continue;
-		} else if (Weapon_info[i].subtype >= Num_weapon_subtypes) {
-			Warning(LOCATION, "Invalid weapon subtype found on weapon %s", Weapon_info[i].name);
+		} else if (wi.subtype >= Num_weapon_subtypes) {
+			Warning(LOCATION, "Invalid weapon subtype found on weapon %s", wi.name);
 			continue;
 		}
 
-		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
+		if (wi.wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
-			stip = type_nodes[Weapon_info[i].subtype];
+			stip = type_nodes[wi.subtype];
 		}
 
 		TreeItem* new_weap_item =
-		    weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		    weap_tree->AddItem(stip, wi.get_display_string(), i, false, labviewer_change_weapon);
 
-		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
-			weap_list_endpoints[Weapon_info[i].subtype].first = new_weap_item;
+		if (weap_list_endpoints[wi.subtype].first == nullptr) {
+			weap_list_endpoints[wi.subtype].first = new_weap_item;
 		}
-		weap_list_endpoints[Weapon_info[i].subtype].second = new_weap_item;
+		weap_list_endpoints[wi.subtype].second = new_weap_item;
 
-		// if (Weapon_info[i].tech_model[0] != '\0') {
+		// if (wi.tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
 		//}
-		// if (Weapon_info[i].external_model_name[0] != '\0') {
+		// if (wi.external_model_name[0] != '\0') {
 		//	cmp->AddItem(cwip, "External Model", 0, false, labviewer_show_external_model);
 		//}
 	}

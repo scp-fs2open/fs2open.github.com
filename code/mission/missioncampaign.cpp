@@ -1797,7 +1797,7 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 			i = static_cast<int>(std::distance(Ship_info.begin(), it));
 			Campaign.ships_allowed[i] = 1;
 		}
-		for (i = 0; i < Num_weapon_types; i++) {
+		for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 			Campaign.weapons_allowed[i] = 1;
 		}
 

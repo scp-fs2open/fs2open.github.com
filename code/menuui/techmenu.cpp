@@ -837,7 +837,7 @@ void techroom_change_tab(int num)
 			// load weapon info & anims if necessary
 			if ( Weapons_loaded == 0 ) {
 				if (Weapon_list == NULL) {
-					Weapon_list = new tech_list_entry[Num_weapon_types];
+					Weapon_list = new tech_list_entry[Weapon_info.size()];
 
 					if (Weapon_list == NULL)
 						Error(LOCATION, "Couldn't init ships list!");
@@ -847,28 +847,30 @@ void techroom_change_tab(int num)
 				wi_mask.set(multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database);
                 wi_mask.set(Weapon::Info_Flags::Default_in_tech_database);
 
-				for (int i=0; i<Num_weapon_types; i++)
+				int i = 0;
+				for (auto &wi : Weapon_info)
 				{
-					if (Techroom_show_all || (Weapon_info[i].wi_flags & wi_mask).any_set())
+					if (Techroom_show_all || (wi.wi_flags & wi_mask).any_set())
 					{ 
 						// we have a weapon that should be in the tech db, so fill out the entry struct
 						Weapon_list[Weapon_list_size].index = i;
-						Weapon_list[Weapon_list_size].desc = Weapon_info[i].tech_desc;
+						Weapon_list[Weapon_list_size].desc = wi.tech_desc;
 						Weapon_list[Weapon_list_size].has_anim = 1;
-						Weapon_list[Weapon_list_size].name = *Weapon_info[i].tech_title ? Weapon_info[i].tech_title : Weapon_info[i].get_display_string();
+						Weapon_list[Weapon_list_size].name = wi.tech_title[0] ? wi.tech_title : wi.get_display_string();
 						Weapon_list[Weapon_list_size].bitmap = -1;
 						Weapon_list[Weapon_list_size].animation.num_frames = 0;
 						Weapon_list[Weapon_list_size].model_num = -1;
 						Weapon_list[Weapon_list_size].textures_loaded = 0;
 						// copy the weapon animation filename
-						strncpy(Weapon_list[Weapon_list_size].tech_anim_filename, Weapon_info[i].tech_anim_filename, MAX_FILENAME_LEN - 1);
+						strncpy(Weapon_list[Weapon_list_size].tech_anim_filename, wi.tech_anim_filename, MAX_FILENAME_LEN - 1);
 
-						Weapon_list_size++;
-					}				
+						++Weapon_list_size;
+					}
+					++i;
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
-				if (Num_weapon_types && !Weapon_list_size) {
+				if (!Weapon_info.empty() && !Weapon_list_size) {
 					Weapon_list[0].index = -1;
 					Weapon_list[0].desc = NULL;
 					Weapon_list[0].name = NULL;
@@ -1467,28 +1469,28 @@ int intel_info_lookup(char *name)
 void tech_reset_to_default()
 {
 	// ships
-    for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
+    for (auto &si : Ship_info)
     {
-        if (it->flags[Ship::Info_Flags::Default_in_tech_database])
-            it->flags.set(Ship::Info_Flags::In_tech_database);
+        if (si.flags[Ship::Info_Flags::Default_in_tech_database])
+            si.flags.set(Ship::Info_Flags::In_tech_database);
         else
-            it->flags.remove(Ship::Info_Flags::Default_in_tech_database);
+            si.flags.remove(Ship::Info_Flags::Default_in_tech_database);
 
-        if (it->flags[Ship::Info_Flags::Default_in_tech_database_m])
-            it->flags.set(Ship::Info_Flags::In_tech_database_m);
+        if (si.flags[Ship::Info_Flags::Default_in_tech_database_m])
+            si.flags.set(Ship::Info_Flags::In_tech_database_m);
         else
-            it->flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
+            si.flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
     }
 
 
 	// weapons
-	for (int i=0; i<Num_weapon_types; i++)
+	for (auto &wi : Weapon_info)
 	{
-        Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database, Weapon_info[i].wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
+        wi.wi_flags.set(Weapon::Info_Flags::In_tech_database, wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
 	}
 
 	// intelligence
-	for (int i=0; i<Intel_info_size; i++)
+	for (int i = 0; i < Intel_info_size; ++i)
 	{
 		if (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;

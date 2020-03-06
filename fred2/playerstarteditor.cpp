@@ -304,7 +304,7 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each weapon ship type	
 	m_weapon_list.ResetContent();
 	ct = 0;
-	for (i=0; i<Num_weapon_types; i++) {
+	for (i=0; i<Weapon_info.size(); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
@@ -882,7 +882,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout weapons that are statically assigned by class
 
-		for(idx=0; idx<Num_weapon_types; idx++)
+		for(idx=0; idx<Weapon_info.size(); idx++)
 		{
 			// if we have weapons here
 			if(static_weapon_pool[i][idx] > 0 || static_weapon_variable_pool[i][idx] > -1)

@@ -27,6 +27,7 @@
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"	// Needed for Ship_info.size() -MageKing17
+#include "weapon/weapon.h"	// Likewise, needed for Weapon_info.size() -Goober5000
 
 
 
@@ -246,7 +247,6 @@ void multi_campaign_client_store_goals(int mission_num)
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
 //
-extern int Num_weapon_types;
 // process a campaign update packet
 void multi_campaign_process_update(ubyte *data, header *hinfo)
 {
@@ -278,7 +278,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 			}
 
 			// all weapons
-			for(idx=0;idx<Num_weapon_types;idx++){
+			for(idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++) {
 				Campaign.weapons_allowed[idx] = 1;
 			}
 		} else {
@@ -462,7 +462,7 @@ void multi_campaign_send_pool_status()
 		
 		// determine how many weapon types we're going to add
 		wpool_size = 0;
-		for(idx=0;idx<Num_weapon_types;idx++){
+		for(idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++){
 			if(Campaign.weapons_allowed[idx]){
 				wpool_size++;
 			}
@@ -484,7 +484,7 @@ void multi_campaign_send_pool_status()
 		// add all weapon types
 		val = (ubyte)wpool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<Num_weapon_types;idx++){
+		for(idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++){
 			if(Campaign.weapons_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);

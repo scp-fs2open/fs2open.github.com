@@ -1835,7 +1835,7 @@ static int parse_ship(const char *filename, bool replace)
 			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
-		//Init vars
+		ship_id = Ship_info.size();
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
@@ -1865,7 +1865,10 @@ static int parse_ship(const char *filename, bool replace)
 
 	rtn = parse_ship_values(sip, false, first_time, replace);
 
-	return rtn;	//0 for success
+	if (rtn == 0)	//0 for success
+		return ship_id;
+	else
+		return rtn;
 }
 
 /**
@@ -2091,7 +2094,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
 			// clear allowed weapons so the modular table can define new ones
 			for (bank = 0; bank < max_banks; bank++) {
-				for (i = 0; i < Num_weapon_types; i++) {
+				for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
 				}
 				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
@@ -3457,7 +3460,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	// copy to regular allowed_weapons array
 	for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (auto j = 0; j < Num_weapon_types; j++)
+		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -5141,7 +5144,7 @@ static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < Num_weapon_types; ++j)
+		for (int j = 0; j < static_cast<int>(Weapon_info.size()); ++j)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
 				return true;
@@ -10343,7 +10346,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
 		// Play sound effect for counter measure launch
-		Assert(shipp->current_cmeasure < Num_weapon_types);
+		Assert(shipp->current_cmeasure < static_cast<int>(Weapon_info.size()));
 		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
@@ -12583,6 +12586,10 @@ int wing_lookup(const char *name)
  */
 static int ship_info_lookup_sub(const char *token)
 {
+	// bogus
+	if (token == nullptr)
+		return -1;
+
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		if (!stricmp(token, it->name))
 			return (int)std::distance(Ship_info.cbegin(), it);
@@ -16079,7 +16086,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 
 	Assertion(ship_class < static_cast<int>(Ship_info.size()), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
 
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
@@ -16099,7 +16106,7 @@ int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type
 	float capacity, size;
 
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
 
 	if (!swp || bank < 0 || ammo_type < 0) {
 		return 0;

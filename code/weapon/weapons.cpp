@@ -77,7 +77,7 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 static int Weapon_flyby_sound_timer;	
 
 weapon Weapons[MAX_WEAPONS];
-weapon_info Weapon_info[MAX_WEAPON_TYPES];
+SCP_vector<weapon_info> Weapon_info;
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -170,8 +170,6 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
-
-int Num_weapon_types = 0;
 
 int Num_weapons = 0;
 int Weapons_inited = 0;
@@ -519,12 +517,12 @@ missile_obj *missile_obj_return_address(int index)
 int weapon_info_lookup(const char *name)
 {
 	// bogus
-	if (name == NULL)
+	if (name == nullptr)
 		return -1;
 
-	for (int i=0; i<Num_weapon_types; i++)
-		if (!stricmp(name, Weapon_info[i].name))
-			return i;
+	for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it)
+		if (!stricmp(name, it->name))
+			return (int)std::distance(Weapon_info.cbegin(), it);
 
 	return -1;
 }
@@ -816,6 +814,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
+		w_id = Weapon_info.size();
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();
 		first_time = true;
@@ -2791,7 +2790,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_int(&wip->score);
 	}
 
-	return WEAPON_INFO_INDEX(wip);
+	return w_id;
 }
 
 /**
@@ -2802,7 +2801,7 @@ void translate_spawn_types()
 {
     int	i, j, k;
 
-    for (i = 0; i < Num_weapon_types; i++)
+    for (i = 0; i < static_cast<int>(Weapon_info.size()); i++)
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
@@ -2812,7 +2811,7 @@ void translate_spawn_types()
 
                 Assert( spawn_type < Num_spawn_types );
 
-                for (k = 0; k < Num_weapon_types; k++) 
+                for (k = 0; k < static_cast<int>(Weapon_info.size()); k++)
                 {
                     if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
                     {
@@ -3076,18 +3075,13 @@ void weapon_sort_by_type()
  */
 void weapon_clean_entries()
 {
-	weapon_info *wip;
-	int i;
-
-	for (i = 0; i < Num_weapon_types; i++) {
-		wip = &Weapon_info[i];
-
-		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::Beam]) {
 			// clean up any beam sections which may have been deleted
 			int removed = 0;
 
-			for (int s_idx = 0; s_idx < wip->b_info.beam_num_sections; s_idx++) {
-				beam_weapon_section_info *bsip = &wip->b_info.sections[s_idx];
+			for (int s_idx = 0; s_idx < wi.b_info.beam_num_sections; s_idx++) {
+				beam_weapon_section_info *bsip = &wi.b_info.sections[s_idx];
 
 				// If this is an invisible beam section, we want to keep it.  Originally invisible sections were initialized as they were parsed,
 				// but then they were inadvertently cleaned up in this function.  So let's properly set the filename here while not removing the section.
@@ -3099,7 +3093,7 @@ void weapon_clean_entries()
 					int new_idx = s_idx + 1;
 
 					while (new_idx < MAX_BEAM_SECTIONS) {
-						memcpy( &wip->b_info.sections[new_idx-1], &wip->b_info.sections[new_idx], sizeof(beam_weapon_section_info) );
+						memcpy( &wi.b_info.sections[new_idx-1], &wi.b_info.sections[new_idx], sizeof(beam_weapon_section_info) );
 						new_idx++;
 					}
 
@@ -3108,12 +3102,12 @@ void weapon_clean_entries()
 			}
 
 			if (removed) {
-				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wip->b_info.beam_num_sections, wip->name));
-				wip->b_info.beam_num_sections -= removed;
+				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wi.b_info.beam_num_sections, wi.name));
+				wi.b_info.beam_num_sections -= removed;
 			}
 
-			if (wip->b_info.beam_num_sections == 0) {
-				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wip->name);
+			if (wi.b_info.beam_num_sections == 0) {
+				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wi.name);
 			}
 		}
 	}
@@ -3121,9 +3115,6 @@ void weapon_clean_entries()
 
 void weapon_release_bitmaps()
 {
-	int i, j;
-	weapon_info *wip;
-
 	// not for FRED...
 	if (Fred_running)
 		return;
@@ -3132,8 +3123,8 @@ void weapon_release_bitmaps()
 	if (Cmdline_load_all_weapons)
 		return;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		wip = &Weapon_info[i];
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
+		weapon_info *wip = &Weapon_info[i];
 
 		// go ahead and clear out models, the model paging code will actually take care of
 		// releasing this stuff if needed, but we have to keep track of current modelnums ourselves
@@ -3171,7 +3162,7 @@ void weapon_release_bitmaps()
 			}
 
 			// section textures
-			for (j = 0; j < wip->b_info.beam_num_sections; j++) {
+			for (int j = 0; j < wip->b_info.beam_num_sections; ++j) {
 				beam_weapon_section_info *bsi = &wip->b_info.sections[j];
 
 				if (bsi->texture.first_frame >= 0) {
@@ -3213,7 +3204,7 @@ void weapon_release_bitmaps()
 
 bool weapon_is_used(int weapon_index)
 {
-	Assert( (weapon_index >= 0) || (weapon_index < Num_weapon_types) );
+	Assert( (weapon_index >= 0) || (weapon_index < static_cast<int>(Weapon_info.size())) );
 	return (used_weapons[weapon_index] > 0);
 }
 
@@ -3225,7 +3216,7 @@ void weapon_load_bitmaps(int weapon_index)
 	if (Fred_running)
 		return;
 
-	if ( (weapon_index < 0) || (weapon_index >= Num_weapon_types) ) {
+	if ( (weapon_index < 0) || (weapon_index >= static_cast<int>(Weapon_info.size())) ) {
 		Int3();
 		return;
 	}
@@ -3418,7 +3409,6 @@ void weapon_do_post_parse()
 {
 	weapon_info *wip;
 	int first_cmeasure_index = -1;
-	int i;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
@@ -3427,7 +3417,7 @@ void weapon_do_post_parse()
 	Default_cmeasure_index = -1;
 
 	// run through weapons list and deal with individual issues
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
 		wip = &Weapon_info[i];
 
 		// set default counter-measure index from the saved name
@@ -3483,13 +3473,6 @@ void weapon_expl_info_init()
 	LOD_checker.clear();
 }
 
-void weapon_reset_info()
-{
-	for (auto& wi : Weapon_info) {
-		wi.reset();
-	}
-}
-
 /**
  * This will get called once at game startup
  */
@@ -3500,11 +3483,8 @@ void weapon_init()
 		weapon_expl_info_init();
 
 		// parse weapons.tbl
-		weapon_reset_info();
-
-		Num_weapon_types = 0;
 		Num_spawn_types = 0;
-
+		Weapon_info.clear();
 		parse_weaponstbl("weapons.tbl");
 
 		parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
@@ -3585,11 +3565,11 @@ void weapon_level_init()
 	// emp effect
 	emp_level_init();
 
-	if (used_weapons == NULL)
-		used_weapons = new int[Num_weapon_types];
+	if (used_weapons == nullptr)
+		used_weapons = new int[Weapon_info.size()];
 
 	// clear out used_weapons between missions
-	memset(used_weapons, 0, Num_weapon_types * sizeof(int));
+	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
 
 	Weapon_flyby_sound_timer = timestamp(0);
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
@@ -5093,7 +5073,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	weapon		*wp;
 	weapon_info	*wip;
 
-	Assert(weapon_type >= 0 && weapon_type < Num_weapon_types);
+	Assert(weapon_type >= 0 && weapon_type < static_cast<int>(Weapon_info.size()));
 
 	wip = &Weapon_info[weapon_type];
 
@@ -5561,11 +5541,11 @@ void spawn_child_weapons(object *objp)
 
 	if (objp->type == OBJ_WEAPON) {
 		wp = &Weapons[objp->instance];
-		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
+		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < static_cast<int>(Weapon_info.size())), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
 		wip = &Weapon_info[wp->weapon_info_index];
 	} else if (objp->type == OBJ_BEAM) {
 		bp = &Beams[objp->instance];
-		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
+		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < static_cast<int>(Weapon_info.size())), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
 		wip = &Weapon_info[bp->weapon_info_index];
 	} else {	// Let's make sure we don't do screwball things in a release build if this gets called with a non-weapon non-beam.
 		return;
@@ -6368,7 +6348,7 @@ void weapon_mark_as_used(int weapon_type)
 
 	Assert( weapon_type < MAX_WEAPON_TYPES );
 
-	if (weapon_type < Num_weapon_types) {
+	if (weapon_type < static_cast<int>(Weapon_info.size())) {
 		used_weapons[weapon_type]++;
 		if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
 			for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
@@ -6395,7 +6375,7 @@ void weapons_page_in()
 
 	// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
 	// assigned directly to a ship
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		// we only want entries that already exist
 		if ( !used_weapons[i] )
 			continue;
@@ -6412,7 +6392,7 @@ void weapons_page_in()
 		weapon_release_bitmaps();
 
 	// Page in bitmaps for all used weapons
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		if ( !Cmdline_load_all_weapons ) {
 			if ( !used_weapons[i] ) {
 				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
@@ -6528,7 +6508,7 @@ void weapons_page_in_cheats()
 	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		// skip over anything that's already loaded
 		if (used_weapons[i])
 			continue;
@@ -6575,7 +6555,7 @@ bool weapon_page_in(int weapon_type)
 {
 	Assert(used_weapons != NULL);
 
-	if (weapon_type < 0 || weapon_type >= Num_weapon_types) {
+	if (weapon_type < 0 || weapon_type >= static_cast<int>(Weapon_info.size())) {
 		return false;
 	}
 

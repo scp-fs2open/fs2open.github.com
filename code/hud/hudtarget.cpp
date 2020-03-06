@@ -5207,13 +5207,11 @@ void hudtarget_page_in()
 	}
 	bm_page_in_aabitmap( New_weapon.first_frame, New_weapon.num_frames );
 
-	weapon_info* wip;
-	for(i = 0; i < Num_weapon_types; i++)
+	for (auto &wi : Weapon_info)
 	{
-		wip = &Weapon_info[i];
-		if(strlen(wip->hud_filename))
+		if (strlen(wi.hud_filename))
 		{
-			wip->hud_image_index = bm_load(wip->hud_filename);
+			wi.hud_image_index = bm_load(wi.hud_filename);
 		}
 	}
 }

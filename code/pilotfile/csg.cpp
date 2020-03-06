@@ -187,15 +187,15 @@ void pilotfile::csg_write_info()
 	// ship list
 	cfwrite_int(static_cast<int>(Ship_info.size()), cfp);
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		cfwrite_string_len(it->name, cfp);
+	for (auto &si : Ship_info) {
+		cfwrite_string_len(si.name, cfp);
 	}
 
 	// weapon list
-	cfwrite_int(Num_weapon_types, cfp);
+	cfwrite_int(static_cast<int>(Weapon_info.size()), cfp);
 
-	for (idx = 0; idx < Num_weapon_types; idx++) {
-		cfwrite_string_len(Weapon_info[idx].name, cfp);
+	for (auto &wi : Weapon_info) {
+		cfwrite_string_len(wi.name, cfp);
 	}
 
 	// intel list
@@ -232,7 +232,7 @@ void pilotfile::csg_write_info()
 	}
 
 	// allowed weapons
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++) {
 		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
 	}
 
@@ -486,8 +486,8 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// visible ships
-    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-        if ((it->flags[Ship::Info_Flags::In_tech_database]) && !(it->flags[Ship::Info_Flags::Default_in_tech_database])) {
+    for (auto &si : Ship_info) {
+        if ((si.flags[Ship::Info_Flags::In_tech_database]) && !(si.flags[Ship::Info_Flags::Default_in_tech_database])) {
             visible = 1;
         }
         else {
@@ -498,9 +498,9 @@ void pilotfile::csg_write_techroom()
     }
 
 	// visible weapons
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (auto &wi : Weapon_info) {
 		// only visible if not in techroom by default
-		if ( (Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]) && !(Weapon_info[idx].wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
+		if ((wi.wi_flags[Weapon::Info_Flags::In_tech_database]) && !(wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
 			visible = 1;
 		} else {
 			visible = 0;
@@ -653,7 +653,7 @@ void pilotfile::csg_write_loadout()
 	}
 
 	// weapon pool
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++) {
 		cfwrite_int(Player_loadout.weapon_pool[idx], cfp);
 	}
 

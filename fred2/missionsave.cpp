@@ -3547,7 +3547,7 @@ int CFred_mission_save::save_players() {
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < Num_weapon_types; j++) {
+		for (j = 0; j < Weapon_info.size(); j++) {
 			if (used_pool[j] > 0) {
 				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
