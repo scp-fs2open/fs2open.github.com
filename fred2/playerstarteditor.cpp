@@ -882,7 +882,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout weapons that are statically assigned by class
 
-		for(idx=0; idx<Weapon_info.size(); idx++)
+		for(idx=0; idx<static_cast<int>(Weapon_info.size()); idx++)
 		{
 			// if we have weapons here
 			if(static_weapon_pool[i][idx] > 0 || static_weapon_variable_pool[i][idx] > -1)
