@@ -559,9 +559,7 @@ void event_music_level_init(int force_soundtrack)
 	if (Event_music_inited == FALSE)
 		return;
 
-
-	if (force_soundtrack != -1)
-		Current_soundtrack_num = force_soundtrack;
+	Current_soundtrack_num = force_soundtrack;
 
 	if (Current_soundtrack_num < 0)
 	{
@@ -705,6 +703,7 @@ void event_music_level_close()
 		audiostream_close_all(0);
 	}
 
+	Current_soundtrack_num = -1;
 	Current_pattern = -1;
 	Event_music_level_inited = FALSE;
 	Event_Music_battle_started = FALSE;
