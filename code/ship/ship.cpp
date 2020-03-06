@@ -160,7 +160,7 @@ static int ship_info_lookup_sub(const char *token);
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
 // forward declaring for parse_ship()
-static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
+static void parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
 
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
@@ -1771,12 +1771,11 @@ ship_info::~ship_info()
 /**
  * Parse the information for a specific ship type.
  */
-static int parse_ship(const char *filename, bool replace)
+static void parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip = nullptr;
 	bool create_if_not_found  = true;
-	int rtn = 0;
 
 	required_string("$Name:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -1787,11 +1786,6 @@ static int parse_ship(const char *filename, bool replace)
 		}
 		create_if_not_found = false;
 	}
-
-#ifdef NDEBUG
-	if (get_pointer_to_first_hash_symbol(buf) && Fred_running)
-		rtn = 1;
-#endif
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
@@ -1815,7 +1809,7 @@ static int parse_ship(const char *filename, bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
-			return -1;
+			return;
 		}
 	}
 	else
@@ -1826,8 +1820,7 @@ static int parse_ship(const char *filename, bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
-
-			return -1;
+			return;
 		}
 		
 		//Check if there are too many ship classes
@@ -1863,22 +1856,16 @@ static int parse_ship(const char *filename, bool replace)
 		}
 	}
 
-	rtn = parse_ship_values(sip, false, first_time, replace);
-
-	if (rtn == 0)	//0 for success
-		return ship_id;
-	else
-		return rtn;
+	parse_ship_values(sip, false, first_time, replace);
 }
 
 /**
  * Parse the information for a specific ship type template.
  */
-static int parse_ship_template()
+static void parse_ship_template()
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
-	int rtn = 0;
 	bool first_time = true;
 
 	required_string("$Template:");
@@ -1899,7 +1886,7 @@ static int parse_ship_template()
 		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
 			error_display(1, "Missing [#End] or [$Template] after duplicate entry for %s", sip->name);
 		}
-		return -1;
+		return;
 	}
 	else {
 		
@@ -1924,9 +1911,7 @@ static int parse_ship_template()
 		}
 	}
 	
-	rtn = parse_ship_values( sip, true, first_time, false );
-	
-	return rtn;
+	parse_ship_values( sip, true, first_time, false );
 }
 
 static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
@@ -2364,12 +2349,11 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 /**
  * Puts values into a ship_info.
  */
-static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
+static void parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	const char* info_type_name;
 	const char* type_name;
-	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 
 	if ( ! is_template ) {
@@ -4723,8 +4707,6 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	}
 
 	model_anim_fix_reverse_times(sip);
-
-	return rtn;	//0 for success
 }
 
 static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
@@ -5093,34 +5075,24 @@ static void parse_shiptbl(const char *filename)
 		if (optional_string("#Engine Wash Info"))
 		{
 			while (required_string_either("#End", "$Name:"))
-			{
 				parse_engine_wash(Parsing_modular_table);
-			}
 
 			required_string("#End");
 		}
 
-		if ( optional_string("#Ship Templates") ) {
-
-			while ( required_string_either("#End", "$Template:") ) {
-				if ( parse_ship_template() ) {
-					continue;
-				}
-			}
+		if (optional_string("#Ship Templates"))
+		{
+			while (required_string_either("#End", "$Template:"))
+				parse_ship_template();
 
 			required_string("#End");
 		}
 
 		//Add ship classes
-		if(optional_string("#Ship Classes"))
+		if (optional_string("#Ship Classes"))
 		{
-
 			while (required_string_either("#End", "$Name:"))
-			{
-				if (parse_ship(filename, Parsing_modular_table)) {
-					continue;
-				}
-			}
+				parse_ship(filename, Parsing_modular_table);
 
 			required_string("#End");
 		}
