@@ -336,7 +336,7 @@ void model_unload(int modelnum, int force)
 
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
 	for (auto &si : Ship_info) {
-		if ( pm->id == si.>model_num ) {
+		if ( pm->id == si.model_num ) {
 			si.model_num = -1;
 		}
 

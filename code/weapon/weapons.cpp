@@ -7517,7 +7517,7 @@ int weapon_get_random_usable_weapon()
 	int rand_wep;
 	int idx = 0, weapon_list[MAX_WEAPON_TYPES];
 
-	for (int i = 0; i < static_cast<int>(Weapon_info.size())) {
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
 		// skip if we aren't supposed to use it
 		if (!Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed])
 			continue;
@@ -7550,77 +7550,69 @@ void weapon_info::reset()
 	// The order should match the order in the struct!
 	int i, j;
 
-    this->wi_flags.reset();
-
-	this->subtype = WP_UNUSED;
-	this->render_type = WRT_NONE;
-
 	memset(this->name, 0, sizeof(this->name));
 	memset(this->alt_name, 0, sizeof(this->alt_name));
 	memset(this->title, 0, sizeof(this->title));
-	this->desc = NULL;
-
-	memset(this->tech_title, 0, sizeof(this->tech_title));
-	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
-	this->tech_desc = NULL;
-	memset(this->tech_model, 0, sizeof(this->tech_model));
-
-	memset(this->hud_filename, 0, sizeof(this->hud_filename));
-	this->hud_image_index = -1;
+	this->desc = nullptr;
 
 	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
-
 	this->model_num = -1;
+	memset(this->external_model_name, 0, sizeof(this->external_model_name));
+	this->external_model_num = -1;
+
+	this->tech_desc = nullptr;
+	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
+	memset(this->tech_title, 0, sizeof(this->tech_title));
+	memset(this->tech_model, 0, sizeof(this->tech_model));
+
 	this->hud_target_lod = -1;
 	this->num_detail_levels = -1;
 	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; i++)
 	{
 		this->detail_distance[i] = -1;
 	}
+	this->subtype = WP_UNUSED;
+	this->render_type = WRT_NONE;
 
 	vm_vec_zero(&this->closeup_pos);
 	this->closeup_zoom = 1.0f;
 
+	memset(this->hud_filename, 0, sizeof(this->hud_filename));
+	this->hud_image_index = -1;
+
 	generic_anim_init(&this->laser_bitmap);
 	generic_anim_init(&this->laser_glow_bitmap);
 
+	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
-
-	this->laser_length = 10.0f;
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
 
-	memset(this->external_model_name, 0, sizeof(this->external_model_name));
-	this->external_model_num = -1;
-
-	this->weapon_submodel_rotate_accell = 10.0f;
-	this->weapon_submodel_rotate_vel = 0.0f;
-
-	this->mass = 1.0f;
 	this->max_speed = 10.0f;
 	this->acceleration_time = 0.0f;
 	this->vel_inherit_amount = 1.0f;
 	this->free_flight_time = 0.0f;
+	this->mass = 1.0f;
 	this->fire_wait = 1.0f;
 	this->max_delay = 0.0f;
 	this->min_delay = 0.0f;
+
 	this->damage = 0.0f;
 	this->damage_time = -1.0f;
 	this->atten_damage = -1.0f;
 
-	this->damage_type_idx = -1;
-	this->damage_type_idx_sav = -1;
-
-	this->armor_type_idx = -1;
+	shockwave_create_info_init(&this->shockwave);
+	shockwave_create_info_init(&this->dinky_shockwave);
 
 	this->arm_time = 0;
 	this->arm_dist = 0.0f;
 	this->arm_radius = 0.0f;
 	this->det_range = 0.0f;
 	this->det_radius = 0.0f;
-	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
+
 	this->flak_detonation_accuracy = 65.0f;
+	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
 	this->untargeted_flak_range_penalty = 20.0f;
 
 	this->armor_factor = 1.0f;
@@ -7629,23 +7621,40 @@ void weapon_info::reset()
 
 	this->life_min = -1.0f;
 	this->life_max = -1.0f;
+	this->max_lifetime = 1.0f;
 	this->lifetime = 1.0f;
+
 	this->energy_consumed = 0.0f;
 
-	this->cargo_size = 1.0f;
+	this->wi_flags.reset();
 
 	this->turn_time = 1.0f;
-	this->fov = 0;				//should be cos(pi), not pi
+	this->cargo_size = 1.0f;
+	this->rearm_rate = 1.0f;
+	this->reloaded_per_batch = -1;
+	this->weapon_range = 999999999.9f;
+	// *Minimum weapon range, default is 0 -Et1
+	this->WeaponMinRange = 0.0f;
+
+	this->num_spawn_weapons_defined = 0;
+	this->total_children_spawned = 0;
+	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
+	{
+		this->spawn_info[i].spawn_type = -1;
+		this->spawn_info[i].spawn_angle = 180;
+		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+	}
+
+	this->swarm_count = -1;
+	// *Default is 150  -Et1
+	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->min_lock_time = 0.0f;
 	this->lock_pixels_per_sec = 50;
 	this->catchup_pixels_per_sec = 50;
 	this->catchup_pixel_penalty = 50;
+	this->fov = 0;				//should be cos(pi), not pi
 	this->seeker_strength = 1.0f;
-
-	this->swarm_count = -1;
-	// *Default is 150  -Et1
-	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->pre_launch_snd = gamesnd_id();
 	this->pre_launch_snd_min_interval = 0;
@@ -7655,21 +7664,10 @@ void weapon_info::reset()
 	this->disarmed_impact_snd = gamesnd_id();
 	this->flyby_snd = gamesnd_id();
 
-	this->rearm_rate = 1.0f;
-	this->reloaded_per_batch = -1 ;
-
-	this->weapon_range = 999999999.9f;
-	// *Minimum weapon range, default is 0 -Et1
-	this->WeaponMinRange = 0.0f;
-
-	this->num_spawn_weapons_defined = 0;
-
-	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
-	{
-		this->spawn_info[i].spawn_type = -1;
-		this->spawn_info[i].spawn_angle = 180;
-		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-	}
+	this->hud_tracking_snd = gamesnd_id();
+	this->hud_locked_snd = gamesnd_id();
+	this->hud_in_flight_snd = gamesnd_id();
+	this->in_flight_play_type = ALWAYS;
 
 	// Trails
 	this->tr_info.pt = vmd_zero_vector;
@@ -7683,27 +7681,38 @@ void weapon_info::reset()
 	this->tr_info.n_fade_out_sections = 0;
 
 	memset(this->icon_filename, 0, sizeof(this->icon_filename));
-
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));
+	this->selection_effect = Default_weapon_select_effect;
 
 	this->shield_impact_explosion_radius = 1.0f;
 
 	this->impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
-
 	this->dinky_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
-
 	this->flash_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->piercing_impact_effect           = particle::ParticleEffectHandle::invalid();
+	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 
-	this->muzzle_flash = -1;
+	this->state_effects.clear();
 
 	this->emp_intensity = EMP_DEFAULT_INTENSITY;
 	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+
 	this->recoil_modifier = 1.0f;
+
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	this->tag_time = -1.0f;
+	this->tag_level = -1;
+
+	this->muzzle_flash = -1;
+
+	this->field_of_fire = 0.0f;
+	this->fof_spread_rate = 0.0f;
+	this->fof_reset_rate = 0.0f;
+	this->max_fof_spread = 0.0f;
+	this->shots = 1;
 
 	//customizeable corkscrew stuff
 	this->cs_num_fired = 4;
@@ -7720,18 +7729,13 @@ void weapon_info::reset()
 	this->elec_randomness = 2000;
 	this->elec_use_new_style = 0;
 
+	this->SSM_index = -1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+
 	this->lssm_warpout_delay = 0;			//delay between launch and warpout (ms)
 	this->lssm_warpin_delay = 0;			//delay between warpout and warpin (ms)
 	this->lssm_stage5_vel = 0;		//velocity during final stage
 	this->lssm_warpin_radius = 0;
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
-
-	this->cm_aspect_effectiveness = 1.0f;
-	this->cm_heat_effectiveness = 1.0f;
-	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
-	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
-	this->cm_kill_single = false;
-	this->cmeasure_timer_interval = 0;
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;
@@ -7791,46 +7795,52 @@ void weapon_info::reset()
 		generic_anim_init(&this->particle_spewers[s].particle_spew_anim, NULL);
 	}
 
-	this->tag_level = -1;
-	this->tag_time = -1.0f;
+	this->cm_aspect_effectiveness = 1.0f;
+	this->cm_heat_effectiveness = 1.0f;
+	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
+	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
+	this->cm_kill_single = false;
+	this->cmeasure_timer_interval = 0;
 
-	this->SSM_index = -1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+	this->weapon_submodel_rotate_accell = 10.0f;
+	this->weapon_submodel_rotate_vel = 0.0f;
 
-	this->field_of_fire = 0.0f;
-	this->fof_spread_rate = 0.0f;
-	this->fof_reset_rate = 0.0f;
-	this->max_fof_spread = 0.0f;
+	this->damage_type_idx = -1;
+	this->damage_type_idx_sav = -1;
 
-	this->shots = 1;
+	this->armor_type_idx = -1;
 
 	this->alpha_max = 1.0f;
 	this->alpha_min = 0.0f;
 	this->alpha_cycle = 0.0f;
 
-	shockwave_create_info_init(&this->shockwave);
-	shockwave_create_info_init(&this->dinky_shockwave);
-
 	this->weapon_hitpoints = 0;
 
-	this->burst_delay = 1.0f; // 1 second, just incase its not defined
 	this->burst_shots = 0;
+	this->burst_delay = 1.0f; // 1 second, just incase its not defined
     this->burst_flags.reset();
 
 	generic_anim_init(&this->thruster_flame);
 	generic_anim_init(&this->thruster_glow);
-
 	this->thruster_glow_factor = 1.0f;
+
 	this->target_lead_scaler = 0.0f;
+	this->num_targeting_priorities = 0;
+	for (i = 0; i < 32; ++i)
+		this->targeting_priorities[i] = -1;
 
 	this->failure_rate = 0.0f;
 	this->failure_sub_name.clear();
 	this->failure_sub = -1;
 
-	this->selection_effect = Default_weapon_select_effect;
+	this->num_substitution_patterns = 0;
+	for (i = 0; i < MAX_SUBSTITUTION_PATTERNS; ++i)
+	{
+		this->weapon_substitution_pattern[i] = -1;
+		this->weapon_substitution_pattern_names[i][0] = 0;
+	}
 
-	this->hud_locked_snd = gamesnd_id();
-	this->hud_tracking_snd = gamesnd_id();
-	this->hud_in_flight_snd = gamesnd_id();
+	this->score = 0;
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();

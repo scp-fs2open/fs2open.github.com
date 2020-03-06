@@ -226,24 +226,29 @@ enum InFlightSoundType
 
 #define MAX_SUBSTITUTION_PATTERNS	10
 
-typedef struct weapon_info {
+class weapon_info
+{
+public:
 	char	name[NAME_LENGTH];				// name of this weapon
 	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
-	int		subtype;								// one of the WP_* macros above
-	int		render_type;						//	rendering method, laser, pof, avi
+
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
 	int		external_model_num;					//the model rendered on the weapon points of a ship
-	int		hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
-	int		num_detail_levels;					// number of LODs defined in table (optional)
-	int		detail_distance[MAX_MODEL_DETAIL_LEVELS]; // LOD distances define in table (optional)
+
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
+
+	int		hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
+	int		num_detail_levels;					// number of LODs defined in table (optional)
+	int		detail_distance[MAX_MODEL_DETAIL_LEVELS]; // LOD distances define in table (optional)
+	int		subtype;								// one of the WP_* macros above
+	int		render_type;						//	rendering method, laser, pof, avi
 
 	vec3d	closeup_pos;						// position for camera to set an offset for viewing the weapon model
 	float	closeup_zoom;						// zoom when using weapon model in closeup view in loadout selection
@@ -274,6 +279,7 @@ typedef struct weapon_info {
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
+
 	fix arm_time;
 	float arm_dist;
 	float arm_radius;
@@ -284,17 +290,22 @@ typedef struct weapon_info {
 	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
+
 	float life_min;
 	float life_max;
 	float max_lifetime ;						// How long this weapon will actually live for
 	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
+
 	float energy_consumed;					// Energy used up when weapon is fired
+
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
+
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
+	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
     // spawn weapons
     int num_spawn_weapons_defined;
@@ -303,6 +314,7 @@ typedef struct weapon_info {
 
 	// swarm count
 	short swarm_count;						// how many swarm missiles are fired for this weapon
+	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
 	//	Specific to ASPECT homing missiles.
 	float	min_lock_time;						// minimum time (in seconds) to achieve lock
@@ -323,6 +335,11 @@ typedef struct weapon_info {
 	gamesnd_id disarmed_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	
+	gamesnd_id hud_tracking_snd; // Sound played when this weapon tracks a target
+	gamesnd_id hud_locked_snd; // Sound played when this weapon locked onto a target
+	gamesnd_id hud_in_flight_snd; // Sound played while the weapon is in flight
+	InFlightSoundType in_flight_play_type; // The status when the sound should be played
+
 	// Specific to weapons with TRAILS:
 	trail_info tr_info;			
 
@@ -333,9 +350,7 @@ typedef struct weapon_info {
 	float shield_impact_explosion_radius;
 
 	particle::ParticleEffectHandle impact_weapon_expl_effect; // Impact particle effect
-
 	particle::ParticleEffectHandle dinky_impact_weapon_expl_effect; // Dinky impact particle effect
-
 	particle::ParticleEffectHandle flash_impact_weapon_expl_effect;
 
 	particle::ParticleEffectHandle piercing_impact_effect;
@@ -355,9 +370,6 @@ typedef struct weapon_info {
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
 
-	// Beam weapon effect	
-	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
-
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
 	int tag_level;							// tag level (1 - 3)
@@ -365,11 +377,13 @@ typedef struct weapon_info {
 	// muzzle flash
 	int muzzle_flash;						// muzzle flash stuff
 	
-	// SSM
-	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
-
-	// now using new particle spew struct -nuke
-	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
+	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
+	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
+	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
+	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	int	  shots;					//the number of shots that will be fired at a time, 
+									//only realy usefull when used with FOF to make a shot gun effect
+									//now also used for weapon point cycleing
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
@@ -387,6 +401,9 @@ typedef struct weapon_info {
 	int elec_randomness;		//disruption time lasts + or - this value from whats calculated.  time in milliseconds
 	int elec_use_new_style;		//use new style electronics parameters
 
+	// SSM
+	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
+
 	//local ssm info
 	int lssm_warpout_delay;			//delay between launch and warpout (ms)
 	int lssm_warpin_delay;			//delay between warpout and warpin (ms)
@@ -394,13 +411,11 @@ typedef struct weapon_info {
 	float lssm_warpin_radius;
 	float lssm_lock_range;
 
-	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
-	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
-	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
-	float max_fof_spread;			//The maximum fof increase that the shots can spread to
-	int	  shots;					//the number of shots that will be fired at a time, 
-									//only realy usefull when used with FOF to make a shot gun effect
-									//now also used for weapon point cycleing
+	// Beam weapon effect	
+	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
+
+	// now using new particle spew struct -nuke
+	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
 
 	// Countermeasure information
 	float cm_aspect_effectiveness;
@@ -409,13 +424,6 @@ typedef struct weapon_info {
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
-
-    // *
-               
-    int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
-
-    float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
-
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
@@ -443,8 +451,8 @@ typedef struct weapon_info {
 	float			thruster_glow_factor;
 
 	float			target_lead_scaler;
-	int				targeting_priorities[32];
 	int				num_targeting_priorities;
+	int				targeting_priorities[32];
 
 	// Optional weapon failures
 	float failure_rate;
@@ -457,11 +465,6 @@ typedef struct weapon_info {
 	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
-
-	gamesnd_id hud_tracking_snd; // Sound played when this weapon tracks a target
-	gamesnd_id hud_locked_snd; // Sound played when this weapon locked onto a target
-	gamesnd_id hud_in_flight_snd; // Sound played while the weapon is in flight
-	InFlightSoundType in_flight_play_type; // The status when the sound should be played
 
 	decals::creation_info impact_decal;
 
@@ -478,7 +481,7 @@ public:
 	bool has_alternate_name();
 
 	void reset();
-} weapon_info;
+};
 
 extern flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[];
 extern const size_t num_weapon_info_flags;
