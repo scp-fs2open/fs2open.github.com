@@ -1796,11 +1796,10 @@ static void parse_ship(const char *filename, bool replace)
 
 	diag_printf ("Ship name -- %s\n", buf);
 	//Check if ship exists already
-	int ship_id;
 	bool first_time = false;
-	ship_id = ship_info_lookup_sub( buf );
+	int ship_id = ship_info_lookup_sub( buf );
 	
-	if(ship_id != -1)
+	if(ship_id >= 0)
 	{
 		sip = &Ship_info[ship_id];
 		if(!replace)
@@ -1828,7 +1827,7 @@ static void parse_ship(const char *filename, bool replace)
 			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
-		ship_id = Ship_info.size();
+		ship_id = static_cast<int>(Ship_info.size());
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
