@@ -91,7 +91,7 @@ void cscrew_maybe_fire_missile(int shipnum)
 	}
 
 	weapon_info_index = swp->secondary_bank_weapons[sp->corkscrew_missile_bank];
-	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
+	Assert( weapon_info_index >= 0 && weapon_info_index < static_cast<int>(Weapon_info.size()));
 
 	// if current secondary bank is not a corkscrew missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {

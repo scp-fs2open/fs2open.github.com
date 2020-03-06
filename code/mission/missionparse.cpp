@@ -920,7 +920,7 @@ void parse_player_info2(mission *pm)
 				}
 			}
 
-			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
+			if ( (list2[i] >= 0) && (list2[i] < static_cast<int>(Weapon_info.size())) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
 				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {

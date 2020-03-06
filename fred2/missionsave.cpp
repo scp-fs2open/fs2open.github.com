@@ -1118,7 +1118,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 	// write out the ships and weapons which the player can start the campaign with
 	optional_string_fred("+Starting Ships: (");
 	parse_comments(2);
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 		if (Campaign.ships_allowed[i])
 			fout(" \"%s\" ", Ship_info[i].name);
 	}
@@ -1126,7 +1126,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 
 	optional_string_fred("+Starting Weapons: (");
 	parse_comments();
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		if (Campaign.weapons_allowed[i])
 			fout(" \"%s\" ", Weapon_info[i].name);
 	}
@@ -3557,7 +3557,7 @@ int CFred_mission_save::save_players() {
 
 		// Goober5000 - mjn.mixael's required weapon feature
 		bool uses_required_weapon = false;
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (Team_data[i].weapon_required[j]) {
 				uses_required_weapon = true;
 				break;
@@ -3570,7 +3570,7 @@ int CFred_mission_save::save_players() {
 				fout("\n+Required for mission:");
 
 			fout(" (");
-			for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+			for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 				if (Team_data[i].weapon_required[j])
 					fout(" \"%s\"", Weapon_info[j].name);
 			}

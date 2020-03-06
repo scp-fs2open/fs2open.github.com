@@ -370,20 +370,10 @@ void mission_campaign_get_sw_info()
 {
     int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
 
-    // set allowable ships to the SIF_PLAYER_SHIPs
-    memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-        if (it->flags[Ship::Info_Flags::Player_ship])
-            Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
-    }
-
-    for (i = 0; i < MAX_WEAPON_TYPES; i++)
-        Campaign.weapons_allowed[i] = 1;
+	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
+	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
 
     if (optional_string("+Starting Ships:")) {
-        for (i = 0; i < static_cast<int>(Ship_info.size()); i++)
-            Campaign.ships_allowed[i] = 0;
-
         count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
         // now set the array elements stating which ships we are allowed
@@ -391,18 +381,31 @@ void mission_campaign_get_sw_info()
             if (Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship])
                 Campaign.ships_allowed[ship_list[i]] = 1;
         }
-    }
+	}
+	else {
+		// set allowable ships to the SIF_PLAYER_SHIPs
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+			if (it->flags[Ship::Info_Flags::Player_ship])
+				Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
+		}
+	}
 
     if (optional_string("+Starting Weapons:")) {
-        for (i = 0; i < MAX_WEAPON_TYPES; i++)
-            Campaign.weapons_allowed[i] = 0;
-
         count = stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
 
         // now set the array elements stating which ships we are allowed
-        for (i = 0; i < count; i++)
-            Campaign.weapons_allowed[weapon_list[i]] = 1;
+		for (i = 0; i < count; i++) {
+			if (Weapon_info[weapon_list[i]].wi_flags[Weapon::Info_Flags::Player_allowed])
+				Campaign.weapons_allowed[weapon_list[i]] = 1;
+		}
     }
+	else {
+		// set allowable weapons to the player-allowed ones
+		for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it) {
+			if (it->wi_flags[Weapon::Info_Flags::Player_allowed])
+				Campaign.weapons_allowed[std::distance(Weapon_info.cbegin(), it)] = 1;
+		}
+	}
 }
 
 /**
@@ -730,7 +733,6 @@ void player_loadout_init()
 			Player_loadout.unit_data[i].wep_count[j] = 0;
 		}
 	}
-
 }
 
 /**

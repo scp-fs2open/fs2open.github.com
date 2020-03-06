@@ -335,27 +335,27 @@ void model_unload(int modelnum, int force)
 	}
 
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
-		if ( pm->id == it->model_num ) {
-			it->model_num = -1;
+	for (auto &si : Ship_info) {
+		if ( pm->id == si.>model_num ) {
+			si.model_num = -1;
 		}
 
-		if ( pm->id == it->cockpit_model_num ) {
-			it->cockpit_model_num = -1;
+		if ( pm->id == si.cockpit_model_num ) {
+			si.cockpit_model_num = -1;
 		}
 
-		if ( pm->id == it->model_num_hud ) {
-			it->model_num_hud = -1;
+		if ( pm->id == si.model_num_hud ) {
+			si.model_num_hud = -1;
 		}
 	}
 
 	// need to reset weapon models as well
-	for (int k = 0; k < MAX_WEAPON_TYPES; ++k) {
-		if ( pm->id == Weapon_info[k].model_num ) {
-			Weapon_info[k].model_num = -1;
+	for (auto &wi: Weapon_info) {
+		if ( pm->id == wi.model_num ) {
+			wi.model_num = -1;
 		}
-		if ( pm->id == Weapon_info[k].external_model_num ) {
-			Weapon_info[k].external_model_num = -1;
+		if ( pm->id == wi.external_model_num ) {
+			wi.external_model_num = -1;
 		}
 	}
 

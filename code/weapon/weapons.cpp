@@ -814,7 +814,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
-		w_id = Weapon_info.size();
+		w_id = static_cast<int>(Weapon_info.size());
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();
 		first_time = true;
@@ -2922,7 +2922,7 @@ void weapon_sort_by_type()
 	int i, weapon_index;
 
 	// get the initial count of each weapon type
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -3000,7 +3000,7 @@ void weapon_sort_by_type()
 	}
 
 	// fill the buckets
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -3348,7 +3348,7 @@ void weapon_load_bitmaps(int weapon_index)
  * Checks all of the weapon infos for substitution patterns and caches the weapon_index of any that it finds. 
  */
 void weapon_generate_indexes_for_substitution() {
-	for (int i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		weapon_info *wip = &(Weapon_info[i]);
 
 		if ( wip->num_substitution_patterns > 0 ) {
@@ -3506,7 +3506,7 @@ void weapon_close()
 {
 	int i;
 
-	for (i = 0; i<MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		if (Weapon_info[i].desc) {
 			vm_free(Weapon_info[i].desc);
 			Weapon_info[i].desc = NULL;
@@ -3550,7 +3550,7 @@ void weapon_level_init()
 		Weapons[i].weapon_info_index = -1;
 	}
 
-	for (i=0; i<MAX_WEAPON_TYPES; i++)	{
+	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
 		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
 	}
@@ -6110,8 +6110,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	ship		*shipp;
 	int         objnum;
 
-	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPON_TYPES));
-	if((weapon_type < 0) || (weapon_type >= MAX_WEAPON_TYPES)){
+	Assert((weapon_type >= 0) && (weapon_type < static_cast<int>(Weapon_info.size())));
+	if ((weapon_type < 0) || (weapon_type >= static_cast<int>(Weapon_info.size()))) {
 		return;
 	}
 	wp = &Weapons[weapon_obj->instance];
@@ -6346,7 +6346,7 @@ void weapon_mark_as_used(int weapon_type)
 	if ( used_weapons == NULL )
 		return;
 
-	Assert( weapon_type < MAX_WEAPON_TYPES );
+	Assert( weapon_type < static_cast<int>(Weapon_info.size()) );
 
 	if (weapon_type < static_cast<int>(Weapon_info.size())) {
 		used_weapons[weapon_type]++;
@@ -7510,6 +7510,33 @@ void validate_SSM_entries()
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
+}
+
+int weapon_get_random_usable_weapon()
+{
+	int rand_wep;
+	int idx = 0, weapon_list[MAX_WEAPON_TYPES];
+
+	for (int i = 0; i < static_cast<int>(Weapon_info.size())) {
+		// skip if we aren't supposed to use it
+		if (!Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed])
+			continue;
+
+		if (idx >= MAX_WEAPON_TYPES) {
+			idx = MAX_WEAPON_TYPES;
+			break;
+		}
+
+		weapon_list[idx] = i;
+		idx++;
+	}
+
+	if (idx == 0)
+		return -1;
+
+	rand_wep = (rand() % idx);
+
+	return weapon_list[rand_wep];
 }
 
 weapon_info::weapon_info()

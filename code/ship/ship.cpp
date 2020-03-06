@@ -10764,9 +10764,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		
 		weapon_idx = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon_idx >= 0 && weapon_idx < MAX_WEAPON_TYPES );
-		if ( (weapon_idx < 0) || (weapon_idx >= MAX_WEAPON_TYPES) ) {
-			Int3();		// why would a ship try to fire a weapon that doesn't exist?
+
+		// why would a ship try to fire a weapon that doesn't exist?
+		Assert( weapon_idx >= 0 && weapon_idx < static_cast<int>(Weapon_info.size()));
+		if ( (weapon_idx < 0) || (weapon_idx >= static_cast<int>(Weapon_info.size())) ) {
 			continue;
 		}		
 
@@ -11725,10 +11726,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
-	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
+
+	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < static_cast<int>(Weapon_info.size())) );
+	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= static_cast<int>(Weapon_info.size()))){
 		return 0;
 	}
+
 	wip = &Weapon_info[weapon_idx];
 
 	if ( MULTIPLAYER_MASTER ) {
@@ -18269,13 +18272,13 @@ void parse_ai_target_priorities()
 		num_strings = stuff_string_list(temp_strings);
 
 		for(i = 0; i < num_strings; i++) {
-			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
+			for(j = 0; j < static_cast<int>(Weapon_info.size()); ++j) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
 					break;
 				}
 			}
-			if (j == MAX_WEAPON_TYPES) {
+			if (j == static_cast<int>(Weapon_info.size())) {
 				Warning(LOCATION, "Unidentified weapon class '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
@@ -18369,14 +18372,8 @@ void parse_weapon_targeting_priorities()
 	if (optional_string("$Name:")) {
 		stuff_string(tempname, F_NAME, NAME_LENGTH);
 		
-		for(k = 0; k < MAX_WEAPON_TYPES ; k++) {
-			if ( !stricmp(Weapon_info[k].name, tempname) ) {
-				// found weapon, yay!
-				// no need to keep searching for more
-				break;
-			}
-		}
-		if(k == MAX_WEAPON_TYPES) {
+		k = weapon_info_lookup(tempname);
+		if (k < 0) {
 			error_display(0, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 			if (optional_string("+Target Priority:")) {		// consume the data to avoid parsing errors
 				SCP_vector<SCP_string> dummy;

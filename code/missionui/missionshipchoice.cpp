@@ -1891,7 +1891,7 @@ void commit_pressed()
 	int num_required_weapons = 0;
 	int num_satisfied_weapons = 0;
 	SCP_string weapon_list;
-	for (j=0; j<MAX_WEAPON_TYPES; j++)
+	for (j=0; j<static_cast<int>(Weapon_info.size()); j++)
 	{
 		if (Team_data[Common_team].weapon_required[j])
 		{
