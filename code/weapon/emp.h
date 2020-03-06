@@ -65,7 +65,7 @@ struct vec3d;
 
 class object;
 class ship;
-struct weapon_info;
+class weapon_info;
 
 
 // ----------------------------------------------------------------------------------------------------

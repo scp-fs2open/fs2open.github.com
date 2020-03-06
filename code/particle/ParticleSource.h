@@ -13,7 +13,7 @@
 
 struct weapon;
 
-struct weapon_info;
+class weapon_info;
 
 // Forward declaration so we don't need weapons.h
 enum class WeaponState: uint32_t;

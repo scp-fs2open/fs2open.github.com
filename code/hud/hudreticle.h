@@ -15,7 +15,7 @@
 #include "hud/hud.h"
 
 class player;
-struct weapon_info;
+class weapon_info;
 
 extern int Outer_circle_radius[GR_NUM_RESOLUTIONS];
 extern int Hud_reticle_center[GR_NUM_RESOLUTIONS][2];
