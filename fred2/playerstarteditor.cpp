@@ -304,7 +304,7 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each weapon ship type	
 	m_weapon_list.ResetContent();
 	ct = 0;
-	for (i=0; i<Weapon_info.size(); i++) {
+	for (i=0; i<static_cast<int>(Weapon_info.size()); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
