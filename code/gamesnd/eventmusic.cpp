@@ -532,7 +532,7 @@ void event_music_do_frame()
 }
 
 // -------------------------------------------------------------------------------------------------
-// event_music_level_init() 
+// event_music_level_start() 
 //
 // Called at the start of a mission (level).  Sets up the pattern data, and kicks off the
 // first track to play().
@@ -540,7 +540,7 @@ void event_music_do_frame()
 // input:	force_soundtrack	=>		OPTIONAL parameter (default value -1)
 //												forces the soundtrack to ignore the music.tbl assignment
 //
-void event_music_level_init(int force_soundtrack)
+void event_music_level_start(int force_soundtrack)
 {
 	int					i;
 	SOUNDTRACK_INFO	*strack;
@@ -558,8 +558,9 @@ void event_music_level_init(int force_soundtrack)
 
 	if (Event_music_inited == FALSE)
 		return;
-
-	Current_soundtrack_num = force_soundtrack;
+	
+	if (force_soundtrack != -1)
+		Current_soundtrack_num = force_soundtrack;
 
 	if (Current_soundtrack_num < 0)
 	{
@@ -642,7 +643,7 @@ void event_music_first_pattern()
 	}
 
 	if ( Event_music_level_inited == FALSE ) {
-		event_music_level_init();
+		event_music_level_start();
 	}
 
 	if ( Event_music_level_inited == FALSE ) { //-V581
@@ -1469,7 +1470,7 @@ void event_music_enable()
 	Event_music_enabled = TRUE;
 
 	if ( Event_music_level_inited == FALSE ) {
-		event_music_level_init();
+		event_music_level_start();
 		// start the first pattern to play (delayed)
 		if ( Game_mode & GM_IN_MISSION ) {
 			event_music_first_pattern();
@@ -1608,7 +1609,7 @@ int event_music_next_soundtrack(int delta)
 		new_soundtrack = 0;
 
 	event_music_level_close();
-	event_music_level_init(new_soundtrack);
+	event_music_level_start(new_soundtrack);
 
 	return Current_soundtrack_num;
 }
@@ -1633,7 +1634,7 @@ void event_sexp_change_soundtrack(char *name)
 
 	event_music_level_close();
 	Current_soundtrack_num = -1; 
-	event_music_level_init(new_soundtrack);
+	event_music_level_start(new_soundtrack);
 }
 
 // ----------------------------------------------------------------
