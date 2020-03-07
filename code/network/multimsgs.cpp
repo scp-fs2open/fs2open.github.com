@@ -4057,6 +4057,7 @@ void send_netplayer_slot_packet()
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size,idx;
 	ubyte stop;
+	char val;
 
 	packet_size = 0;
 	stop = 0xff;
@@ -4066,8 +4067,9 @@ void send_netplayer_slot_packet()
 			ADD_DATA(stop);
 			ADD_SHORT(Net_players[idx].player_id);  
 			ADD_USHORT(Objects[Net_players[idx].m_player->objnum].net_signature);
-			ADD_INT(Net_players[idx].p_info.ship_class);
-			ADD_INT(Net_players[idx].p_info.ship_index);			
+			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_class));
+			val = static_cast<char>(Net_players[idx].p_info.ship_index);
+			ADD_DATA(val);
 		}
 	}
 	stop = 0x0;
@@ -4084,11 +4086,12 @@ void send_netplayer_slot_packet()
 void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 {
 	int offset;
-	int player_num,ship_class,ship_index;
+	int player_num;
+	char ship_index;
 	ushort net_sig;
 	object *objp;	
 	ubyte stop;
-	short player_id;
+	short player_id, ship_class;
 	
 	offset = HEADER_LENGTH;	
 
@@ -4099,8 +4102,8 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 	while(stop != 0x0){
 		GET_SHORT(player_id);
 		GET_USHORT(net_sig);
-		GET_INT(ship_class);
-		GET_INT(ship_index);
+		GET_SHORT(ship_class);
+		GET_DATA(ship_index);
 		player_num = find_player_id(player_id);
 		if(player_num < 0){
 			nprintf(("Network","Error looking up player for object/slot assignment!!\n"));
