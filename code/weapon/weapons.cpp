@@ -4080,9 +4080,6 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
-	// if we've got this far, this should be valid
-	weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
-
 	if (wip->acceleration_time > 0.0f) {
 		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
 			float t;
@@ -4173,6 +4170,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		break;
 	case OBJ_WEAPON:
 	{
+		weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
+
 		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 			|| hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
@@ -4242,8 +4241,9 @@ void weapon_home(object *obj, int num, float frame_time)
 				float dist;
 
 				dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-				if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure])) {
-					if (dist < hobj_infop->cm_detonation_rad) {
+				if (hobjp->type == OBJ_WEAPON) {
+					weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
+					if (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure] && dist < hobj_infop->cm_detonation_rad) {
 						//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
 						if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
 							detonate_nearby_missiles(hobjp, obj);
