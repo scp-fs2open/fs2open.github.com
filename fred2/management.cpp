@@ -466,6 +466,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Id_select_type_waypoint = (int)(Ship_info.size());
 	Fred_main_wnd -> init_tools();
 
+	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	return true;

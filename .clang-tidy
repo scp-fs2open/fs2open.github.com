@@ -14,6 +14,8 @@ misc-*,\
 -misc-static-assert,\
 -misc-unused-parameters,\
 -misc-non-private-member-variables-in-classes,\
+readability-*,\
+-readability-implicit-bool-conversion,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'
@@ -23,5 +25,7 @@ CheckOptions:
     value:        'assert,Assert,Assertion'
   - key:          'modernize-use-emplace.ContainersWithPushBack'
     value:        'std::vector;std::deque;std::list;SCP_vector;SCP_deque;SCP_list'
+  - key:          'readability-braces-around-statements.ShortStatementLines'
+    value:        '2' # Avoid flagging simple if (...) return false; statements
 ...
 

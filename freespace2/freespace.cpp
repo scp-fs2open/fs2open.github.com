@@ -1902,6 +1902,7 @@ void game_init()
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
+	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
