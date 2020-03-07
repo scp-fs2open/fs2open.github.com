@@ -5656,6 +5656,7 @@ void send_player_settings_packet(net_player *p)
 	ubyte stop;
 	int idx;
 	int packet_size = 0;
+	char val;
 
 	// build the header
 	BUILD_HEADER(PLAYER_SETTINGS);
@@ -5670,8 +5671,9 @@ void send_player_settings_packet(net_player *p)
 			// break the p_info structure by member, so we don't overwrite any absolute pointers
 			// ADD_DATA(Net_players[idx].p_info);
 			ADD_INT(Net_players[idx].p_info.team);
-			ADD_INT(Net_players[idx].p_info.ship_index);
-			ADD_INT(Net_players[idx].p_info.ship_class);
+			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_index));
+			val = static_cast<char>(Net_players[idx].p_info.ship_class);
+			ADD_DATA(val);
 		}
 	}
 	// add the stop byte
@@ -5692,6 +5694,8 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 	net_player_info bogus,*ptr;
 	short player_id;
 	ubyte stop;
+	short ship_index;
+	char ship_class;
 
 	offset = HEADER_LENGTH;
 
@@ -5710,8 +5714,10 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 		}
 		
 		GET_INT(ptr->team);
-		GET_INT(ptr->ship_index);
-		GET_INT(ptr->ship_class);
+		GET_SHORT(ship_index);
+		ptr->ship_index = ship_index;
+		GET_DATA(ship_class);
+		ptr->ship_class = ship_class;
 		
 		// next stop byte
 		GET_DATA(stop);
