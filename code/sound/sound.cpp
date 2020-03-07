@@ -357,7 +357,7 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 		return sound_load_id::invalid();
 	}
 
-	const auto fileProps = audio_file->getFileProperties();
+	auto fileProps = audio_file->getFileProperties();
 
 	type = 0;
 	if (flags & GAME_SND_USE_DS3D) {
@@ -369,6 +369,7 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 			resample.num_channels = 1;
 
 			audio_file->setResamplingProperties(resample);
+			fileProps = audio_file->getFileProperties(); // Refresh properties so that we have accurate information
 
 #ifndef NDEBUG
 			// Retail has a few sounds that triggers this warning so we need to ignore those
