@@ -6219,18 +6219,18 @@ void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_req
 	// add all the slots
 	for(idx=0;idx<MULTI_TS_NUM_SHIP_SLOTS;idx++){
 		// add the ship class
-		val = (ubyte)Wss_slots_teams[team_num][idx].ship_class;
-		ADD_DATA(val);
+		val_short = static_cast<short>(Wss_slots_teams[team_num][idx].ship_class);
+		ADD_SHORT(val_short);
 
 		// add the weapons
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			val_short = (short)Wss_slots_teams[team_num][idx].wep[i];
+			val_short = static_cast<short>(Wss_slots_teams[team_num][idx].wep[i]);
 			ADD_SHORT(val_short);
 		}
 
 		// add the weapon counts
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			val_short = (short)Wss_slots_teams[team_num][idx].wep_count[i];
+			val_short = static_cast<short>(Wss_slots_teams[team_num][idx].wep_count[i]);
 			ADD_SHORT(val_short);
 		}
 	}
@@ -6294,19 +6294,19 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 		memset(&Wss_slots_teams[team_num][idx],0,sizeof(wss_unit));
 
 		// get the ship class
-		GET_DATA(val);
-		Wss_slots_teams[team_num][idx].ship_class = (int)val;
+		GET_SHORT(val_short);
+		Wss_slots_teams[team_num][idx].ship_class = val;
 
 		// get the weapons
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			GET_SHORT(val_short);
-			Wss_slots_teams[team_num][idx].wep[i] = (int)val_short;
+			Wss_slots_teams[team_num][idx].wep[i] = val_short;
 		} 
 
 		// get the weapon counts
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
 			GET_SHORT(val_short);
-			Wss_slots_teams[team_num][idx].wep_count[i] = (int)val_short;
+			Wss_slots_teams[team_num][idx].wep_count[i] = val_short;
 		}
 	}
 	PACKET_SET_SIZE();
