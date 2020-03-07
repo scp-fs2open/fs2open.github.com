@@ -516,15 +516,23 @@ missile_obj *missile_obj_return_address(int index)
  */
 int weapon_info_lookup(const char *name)
 {
-	// bogus
-	if (name == nullptr)
-		return -1;
+	Assertion(name != nullptr, "NULL name passed to weapon_info_lookup");
 
 	for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it)
 		if (!stricmp(name, it->name))
 			return (int)std::distance(Weapon_info.cbegin(), it);
 
 	return -1;
+}
+
+/**
+ * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
+ * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
+ */
+int weapon_info_get_index(weapon_info *wip)
+{
+	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
+	return static_cast<int>(std::distance(Weapon_info.data(), wip));
 }
 
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
@@ -7512,29 +7520,23 @@ void validate_SSM_entries()
 	}
 }
 
-int weapon_get_random_usable_weapon()
+int weapon_get_random_player_usable_weapon()
 {
-	int rand_wep;
-	int idx = 0, weapon_list[MAX_WEAPON_TYPES];
+	SCP_vector<int> weapon_list;
 
-	for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i)
+	{
 		// skip if we aren't supposed to use it
 		if (!Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed])
 			continue;
 
-		if (idx >= MAX_WEAPON_TYPES) {
-			idx = MAX_WEAPON_TYPES;
-			break;
-		}
-
-		weapon_list[idx] = i;
-		idx++;
+		weapon_list.push_back(i);
 	}
 
-	if (idx == 0)
+	if (weapon_list.empty())
 		return -1;
 
-	rand_wep = (rand() % idx);
+	auto rand_wep = (rand() % weapon_list.size());
 
 	return weapon_list[rand_wep];
 }

@@ -519,7 +519,7 @@ void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 		//	weapons
 		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:
 		{
-			int wep_index = weapon_get_random_usable_weapon();
+			int wep_index = weapon_get_random_player_usable_weapon();
 			if (wep_index >= 0) {
 				strcpy_s(wt->str, Weapon_info[wep_index].get_display_string());
 			}

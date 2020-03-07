@@ -12519,8 +12519,7 @@ int wing_name_lookup(const char *name, int ignore_count)
 {
 	int i, wing_limit;
 
-	if (name == NULL)
-		return -1;
+	Assertion(name != nullptr, "NULL name passed to wing_name_lookup");
 
 	if ( Fred_running )
 		wing_limit = MAX_WINGS;
@@ -12547,8 +12546,9 @@ int wing_name_lookup(const char *name, int ignore_count)
  */
 int wing_lookup(const char *name)
 {
-   int idx;
-	for(idx=0;idx<Num_wings;idx++)
+	Assertion(name != nullptr, "NULL name passed to wing_lookup");
+
+	for(int idx=0;idx<Num_wings;idx++)
 		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
 
@@ -12560,9 +12560,7 @@ int wing_lookup(const char *name)
  */
 static int ship_info_lookup_sub(const char *token)
 {
-	// bogus
-	if (token == nullptr)
-		return -1;
+	Assertion(token != nullptr, "NULL token passed to ship_info_lookup_sub");
 
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		if (!stricmp(token, it->name))
@@ -12576,6 +12574,8 @@ static int ship_info_lookup_sub(const char *token)
  */
 static int ship_template_lookup(const char *token)
 {
+	Assertion(token != nullptr, "NULL token passed to ship_template_lookup");
+
 	for ( auto it = Ship_templates.cbegin(); it != Ship_templates.cend(); ++it ) {
 		if ( !stricmp(token, it->name) ) {
 			return (int)std::distance(Ship_templates.cbegin(), it);
@@ -12591,9 +12591,7 @@ int ship_info_lookup(const char *token)
 	const char *p;
 	char name[NAME_LENGTH], temp1[NAME_LENGTH], temp2[NAME_LENGTH];
 
-	// bogus
-	if (token == NULL)
-		return -1;
+	Assertion(token != nullptr, "NULL token passed to ship_info_lookup");
 
 	// first try a straightforward lookup
 	idx = ship_info_lookup_sub(token);
@@ -12715,14 +12713,9 @@ int ship_info_lookup(const char *token)
  */
 int ship_name_lookup(const char *name, int inc_players)
 {
-	int	i;
+	Assertion(name != nullptr, "NULL name passed to ship_name_lookup");
 
-	// bogus
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i<MAX_SHIPS; i++){
+	for (int i=0; i<MAX_SHIPS; i++){
 		if (Ships[i].objnum >= 0){
 			if (Objects[Ships[i].objnum].type == OBJ_SHIP || (Objects[Ships[i].objnum].type == OBJ_START && inc_players)){
 				if (!stricmp(name, Ships[i].ship_name)){
@@ -12738,10 +12731,7 @@ int ship_name_lookup(const char *name, int inc_players)
 
 int ship_type_name_lookup(const char *name)
 {
-	// bogus
-	if(name == NULL || !strlen(name)){
-		return -1;
-	}
+	Assertion(name != nullptr, "NULL name passed to ship_type_name_lookup");
 
 	//Look through Ship_types array
 	size_t max_size = Ship_types.size();
@@ -17431,6 +17421,8 @@ int ship_has_engine_power(ship *shipp)
 // Goober5000
 int ship_starting_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_starting_wing_lookup");
+
 	for (int i = 0; i < MAX_STARTING_WINGS; i++)
 	{
 		if (!stricmp(Starting_wing_names[i], wing_name))
@@ -17443,6 +17435,8 @@ int ship_starting_wing_lookup(const char *wing_name)
 // Goober5000
 int ship_squadron_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_squadron_wing_lookup");
+
 	// TvT uses a different set of wing names from everything else
 	if (MULTI_TEAM)
 	{
@@ -17467,6 +17461,8 @@ int ship_squadron_wing_lookup(const char *wing_name)
 // Goober5000
 int ship_tvt_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_tvt_wing_lookup");
+
 	for (int i = 0; i < MAX_TVT_WINGS; i++)
 	{
 		if (!stricmp(TVT_wing_names[i], wing_name))

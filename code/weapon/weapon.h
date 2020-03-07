@@ -542,7 +542,8 @@ extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types,
 #define WEAPON_INDEX(wp)			(int)(wp-Weapons)
 
 
-int weapon_info_lookup(const char *name = NULL);
+int weapon_info_lookup(const char *name);
+int weapon_info_get_index(weapon_info *wip);
 void weapon_init();					// called at game startup
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
@@ -607,7 +608,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
 
-int weapon_get_random_usable_weapon();
+int weapon_get_random_player_usable_weapon();
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
