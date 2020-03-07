@@ -296,7 +296,7 @@ void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_
 void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count );
 
 // send a packet indicating a ship should be created
-void send_ship_create_packet( object *objp, int is_support = 0 );
+void send_ship_create_packet(object *objp, bool is_support = false );
 
 // packet indicating a ship is departing
 void send_ship_depart_packet( object *objp, int method = -1 );

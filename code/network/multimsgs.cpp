@@ -2673,15 +2673,17 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating a ship should be created
-void send_ship_create_packet( object *objp, int is_support )
+void send_ship_create_packet( object *objp, bool is_support )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
+	ubyte val;
 
 	// We will pass the ship to create by name.
 	BUILD_HEADER(SHIP_CREATE);
 	ADD_USHORT(objp->net_signature);
-	ADD_INT( is_support );
+	val = is_support ? 1 : 0;
+	ADD_DATA(val);
 	if ( is_support ){
 		ADD_VECTOR( objp->pos );
 	}
@@ -2693,15 +2695,16 @@ void send_ship_create_packet( object *objp, int is_support )
 // process a packet indicating a ship should be created
 void process_ship_create_packet( ubyte *data, header *hinfo )
 {
-	int offset, objnum, is_support;
+	int offset, objnum;
 	ushort signature;
 	p_object *objp;
 	vec3d pos = ZERO_VECTOR;
+	ubyte is_support;
 
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 	offset = HEADER_LENGTH;
 	GET_USHORT(signature);
-	GET_INT( is_support );
+	GET_DATA(is_support);
 	if ( is_support ){
 		GET_VECTOR( pos );
 	}
