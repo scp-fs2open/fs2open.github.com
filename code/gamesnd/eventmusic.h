@@ -97,7 +97,7 @@ extern int Num_soundtracks;
 
 void	event_music_init();
 void	event_music_close();
-void	event_music_level_init(int force_soundtrack = -1);
+void	event_music_level_start(int force_soundtrack = -1);
 void	event_music_level_close();
 void	event_music_do_frame();
 void	event_music_disable();
