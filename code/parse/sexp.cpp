@@ -2935,12 +2935,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < Num_weapon_types; i++ ) {
-					if ( !stricmp(CTEXT(node), Weapon_info[i].name) )
-						break;
-				}
+				i = weapon_info_lookup(CTEXT(node));
 
-				if ( i == Num_weapon_types )
+				if ( i < 0 )
 					return SEXP_CHECK_INVALID_WEAPON_NAME;
 
 				// we need to be sure that for huge weapons, the WIF_HUGE flag is set
@@ -18192,7 +18189,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
 	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
-		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < MAX_WEAPON_TYPES,
+		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < static_cast<int>(Weapon_info.size()),
 				"sexp_beam_fire: found invalid weapon index (%i), get a coder\n!", fire_info.turret->weapons.primary_bank_weapons[idx]);
 		// store the weapon info index
 		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Beam]) {

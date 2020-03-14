@@ -95,7 +95,7 @@ ADE_FUNC(__len, l_Tables_WeaponClasses, NULL, "Number of weapon classes", "numbe
 	if(!Weapons_inited)
 		return ade_set_args(L, "i", 0);
 
-	return ade_set_args(L, "i", Num_weapon_types);
+	return ade_set_args(L, "i", static_cast<int>(Weapon_info.size()));
 }
 
 

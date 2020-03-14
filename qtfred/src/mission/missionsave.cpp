@@ -3470,7 +3470,7 @@ int CFred_mission_save::save_players() {
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < Num_weapon_types; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (used_pool[j] > 0) {
 				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
@@ -3480,7 +3480,7 @@ int CFred_mission_save::save_players() {
 
 		// Goober5000 - mjn.mixael's required weapon feature
 		bool uses_required_weapon = false;
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (Team_data[i].weapon_required[j]) {
 				uses_required_weapon = true;
 				break;
@@ -3494,7 +3494,7 @@ int CFred_mission_save::save_players() {
 			}
 
 			fout(" (");
-			for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+			for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 				if (Team_data[i].weapon_required[j]) {
 					fout(" \"%s\"", Weapon_info[j].name);
 				}

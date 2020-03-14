@@ -8241,8 +8241,8 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	// mprintf(("PAIN!\n"));
 
 	// get weapon info pointer
-	Assert((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));
-	if(! ((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER)) ){
+	Assert((windex < static_cast<int>(Weapon_info.size())) && (Weapon_info[windex].subtype == WP_LASER));
+	if(! ((windex < static_cast<int>(Weapon_info.size())) && (Weapon_info[windex].subtype == WP_LASER)) ){
 		return;
 	}
 	wip = &Weapon_info[windex];

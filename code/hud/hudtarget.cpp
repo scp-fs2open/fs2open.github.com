@@ -3691,7 +3691,7 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+		Assert(swp->primary_bank_weapons[bank_to_fire] < static_cast<int>(Weapon_info.size()));
 
 		if (swp->primary_bank_weapons[bank_to_fire] < 0)
 			continue;
@@ -5207,13 +5207,11 @@ void hudtarget_page_in()
 	}
 	bm_page_in_aabitmap( New_weapon.first_frame, New_weapon.num_frames );
 
-	weapon_info* wip;
-	for(i = 0; i < Num_weapon_types; i++)
+	for (auto &wi : Weapon_info)
 	{
-		wip = &Weapon_info[i];
-		if(strlen(wip->hud_filename))
+		if (strlen(wi.hud_filename))
 		{
-			wip->hud_image_index = bm_load(wip->hud_filename);
+			wi.hud_image_index = bm_load(wi.hud_filename);
 		}
 	}
 }

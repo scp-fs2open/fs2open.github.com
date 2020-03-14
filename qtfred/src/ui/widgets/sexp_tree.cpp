@@ -4191,11 +4191,10 @@ sexp_list_item* sexp_tree::get_listing_opf_medal_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_weapon_name() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		head.add_data(Weapon_info[i].name);
+	for (auto &wi : Weapon_info) {
+		head.add_data(wi.name);
 	}
 
 	return head.next;
@@ -4234,12 +4233,11 @@ sexp_list_item* sexp_tree::get_listing_opf_hud_gauge_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_huge_weapon() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge]) {
-			head.add_data(Weapon_info[i].name);
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::Huge]) {
+			head.add_data(wi.name);
 		}
 	}
 

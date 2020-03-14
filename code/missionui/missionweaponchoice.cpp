@@ -1757,7 +1757,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
 						int wep_pool_index, wep_precedence_index, new_wi_index = -1;
-						for ( wep_pool_index = 0; wep_pool_index < MAX_WEAPON_TYPES; wep_pool_index++ ) {
+						for ( wep_pool_index = 0; wep_pool_index < static_cast<int>(Weapon_info.size()); wep_pool_index++ ) {
 
 							if ( Wl_pool[wep_pool_index] <= 0 ) {
 								continue;
@@ -1863,7 +1863,7 @@ void wl_init_icon_lists()
 		Slist[i] = -1;
 	}
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Weapon_info.size()); i++ ) {
 		if ( Wl_pool[i] > 0 ) {
 			if ( Weapon_info[i].subtype == WP_MISSILE ) {
 				Slist[Slist_size++] = i;
@@ -2692,7 +2692,7 @@ void weapon_select_do(float frametime)
 			GR_RESIZE_MENU,
 			wip->selection_effect);
 	} else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
-		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
+		Assert(Selected_wl_class >= 0 && Selected_wl_class < static_cast<int>(Weapon_info.size()));
 		if ( Weapon_anim_class != Selected_wl_class )
 			start_weapon_animation(Selected_wl_class);
  
@@ -2718,7 +2718,7 @@ void weapon_select_do(float frametime)
 
 	if ( wl_icon_being_carried() ) {
 		int mx, my, sx, sy;
-		Assert(Carried_wl_icon.weapon_class < MAX_WEAPON_TYPES);
+		Assert(Carried_wl_icon.weapon_class < static_cast<int>(Weapon_info.size()));
 		Assert( (Wss_slots != NULL) && (Wl_icons != NULL) );
 		mouse_get_pos_unscaled( &mx, &my );
 		sx = mx + Wl_delta_x;

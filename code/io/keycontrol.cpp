@@ -634,12 +634,13 @@ extern int Show_cpu;
 int get_prev_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
+	int size = static_cast<int>(Weapon_info.size());
 
-	for (i = 1; i < Num_weapon_types; i++)
+	for (i = 1; i < size; i++)
 	{
-		new_index = (Num_weapon_types + current_weapon - i) % Num_weapon_types;
+		new_index = (size + current_weapon - i) % size;
 
-		if(Weapon_info[new_index].subtype == subtype)
+		if (Weapon_info[new_index].subtype == subtype)
 		{
 			return new_index;
 		}
@@ -651,12 +652,13 @@ int get_prev_weapon_looped(int current_weapon, int subtype)
 int get_next_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
+	int size = static_cast<int>(Weapon_info.size());
 
-	for (i = 1; i < Num_weapon_types; i++)
+	for (i = 1; i < size; i++)
 	{
-		new_index = (current_weapon + i) % Num_weapon_types;
+		new_index = (current_weapon + i) % size;
 
-		if(Weapon_info[new_index].subtype == subtype)
+		if (Weapon_info[new_index].subtype == subtype)
 		{
 			return new_index;
 		}

@@ -89,7 +89,7 @@ BOOL InitialShips::OnInitDialog()
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                for (auto i = 0; i < MAX_WEAPON_TYPES; i++) {
+                for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
                     if (it->allowed_weapons[i])
                         allowed_weapons[i] = 1;
                 }
@@ -97,7 +97,7 @@ BOOL InitialShips::OnInitDialog()
         }
 
 		// now add the weapons to the list
-		for (int i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		for (int i = 0; i < static_cast<int>(Weapon_info.size()); ++i) {
 			if ( allowed_weapons[i] ) {
 				m_initial_list.AddString( Weapon_info[i].name );
 				int add_weapon = 0;

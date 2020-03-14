@@ -253,7 +253,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			}
 		}
 		// double check the used pool is empty
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (used_pool[j] != 0) {
 				Warning(LOCATION,
 						"%s is used in wings of team %d but was not in the loadout. Fixing now",
@@ -457,7 +457,7 @@ void Editor::clearMission() {
 		Team_data[i].num_ship_choices = count;
 
 		count = 0;
-		for (auto j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
@@ -1663,14 +1663,14 @@ void Editor::generate_wing_weaponry_usage_list(int* arr, int wing) {
 		swp = &Ships[Wings[wing].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
 				arr[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >= 0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->secondary_bank_weapons[j] >= 0 && swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
 				arr[swp->secondary_bank_weapons[j]] += (int) floor(
 					(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f
 						/ Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);

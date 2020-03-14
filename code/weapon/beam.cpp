@@ -305,8 +305,8 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// make sure the beam_info_index is valid
-	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
+	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= static_cast<int>(Weapon_info.size())) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
+		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, static_cast<int>(Weapon_info.size()));
 		return -1;
 	}
 
@@ -496,8 +496,8 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	}
 	
 	// make sure the beam_info_index is valid
-	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < MAX_WEAPON_TYPES) && (Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam]));
-	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= MAX_WEAPON_TYPES) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])){
+	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < static_cast<int>(Weapon_info.size())) && (Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam]));
+	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= static_cast<int>(Weapon_info.size())) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])){
 		return -1;
 	}
 	wip = &Weapon_info[fire_info->beam_info_index];	
@@ -621,7 +621,7 @@ int beam_get_weapon_info_index(object *bm)
 		return -1;
 	}
     //make sure it's returning a valid info index
-	Assert((Beams[bm->instance].weapon_info_index > -1) && (Beams[bm->instance].weapon_info_index < Num_weapon_types));
+	Assert((Beams[bm->instance].weapon_info_index > -1) && (Beams[bm->instance].weapon_info_index < static_cast<int>(Weapon_info.size())));
 
 	// return weapon_info_index
 	return Beams[bm->instance].weapon_info_index;
@@ -2992,7 +2992,7 @@ void beam_handle_collisions(beam *b)
 	}
 
 	// get beam weapon info
-	if((b->weapon_info_index < 0) || (b->weapon_info_index >= Num_weapon_types)){
+	if((b->weapon_info_index < 0) || (b->weapon_info_index >= static_cast<int>(Weapon_info.size()))){
 		Int3();
 		return;
 	}
@@ -3647,13 +3647,12 @@ DCF(b_aim, "Adjusts the beam accuracy factor (Default is 1.0f)")
 }
 DCF(beam_list, "Lists all beams")
 {
-	int idx;
 	int b_count = 0;
 
-	for(idx=0; idx<Num_weapon_types; idx++){
-		if(Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam]){			
-			b_count++;
-			dc_printf("Beam %d : %s\n", b_count, Weapon_info[idx].name);
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::Beam]) {
+			++b_count;
+			dc_printf("Beam %d : %s\n", b_count, wi.name);
 		}
 	}
 }

@@ -194,7 +194,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		m_ship = Objects[cur_object_index].instance;
 
 	end1 = First_secondary_index;
-	end2 = Num_weapon_types;
+	end2 = static_cast<int>(Weapon_info.size());
 
 	list = (CListBox *) GetDlgItem(IDC_LIST);
 

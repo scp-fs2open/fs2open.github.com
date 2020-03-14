@@ -160,7 +160,7 @@ static int ship_info_lookup_sub(const char *token);
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
 // forward declaring for parse_ship()
-static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
+static void parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
 
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
@@ -1771,12 +1771,11 @@ ship_info::~ship_info()
 /**
  * Parse the information for a specific ship type.
  */
-static int parse_ship(const char *filename, bool replace)
+static void parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip = nullptr;
 	bool create_if_not_found  = true;
-	int rtn = 0;
 
 	required_string("$Name:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -1788,11 +1787,6 @@ static int parse_ship(const char *filename, bool replace)
 		create_if_not_found = false;
 	}
 
-#ifdef NDEBUG
-	if (get_pointer_to_first_hash_symbol(buf) && Fred_running)
-		rtn = 1;
-#endif
-
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
 	//only be parsed in demo builds
@@ -1802,11 +1796,10 @@ static int parse_ship(const char *filename, bool replace)
 
 	diag_printf ("Ship name -- %s\n", buf);
 	//Check if ship exists already
-	int ship_id;
 	bool first_time = false;
-	ship_id = ship_info_lookup_sub( buf );
+	int ship_id = ship_info_lookup_sub( buf );
 	
-	if(ship_id != -1)
+	if(ship_id >= 0)
 	{
 		sip = &Ship_info[ship_id];
 		if(!replace)
@@ -1815,7 +1808,7 @@ static int parse_ship(const char *filename, bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
-			return -1;
+			return;
 		}
 	}
 	else
@@ -1826,8 +1819,7 @@ static int parse_ship(const char *filename, bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
-
-			return -1;
+			return;
 		}
 		
 		//Check if there are too many ship classes
@@ -1835,7 +1827,7 @@ static int parse_ship(const char *filename, bool replace)
 			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
-		//Init vars
+		ship_id = static_cast<int>(Ship_info.size());
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
@@ -1863,19 +1855,16 @@ static int parse_ship(const char *filename, bool replace)
 		}
 	}
 
-	rtn = parse_ship_values(sip, false, first_time, replace);
-
-	return rtn;	//0 for success
+	parse_ship_values(sip, false, first_time, replace);
 }
 
 /**
  * Parse the information for a specific ship type template.
  */
-static int parse_ship_template()
+static void parse_ship_template()
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
-	int rtn = 0;
 	bool first_time = true;
 
 	required_string("$Template:");
@@ -1896,7 +1885,7 @@ static int parse_ship_template()
 		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
 			error_display(1, "Missing [#End] or [$Template] after duplicate entry for %s", sip->name);
 		}
-		return -1;
+		return;
 	}
 	else {
 		
@@ -1921,9 +1910,7 @@ static int parse_ship_template()
 		}
 	}
 	
-	rtn = parse_ship_values( sip, true, first_time, false );
-	
-	return rtn;
+	parse_ship_values( sip, true, first_time, false );
 }
 
 static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
@@ -2091,7 +2078,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
 			// clear allowed weapons so the modular table can define new ones
 			for (bank = 0; bank < max_banks; bank++) {
-				for (i = 0; i < Num_weapon_types; i++) {
+				for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
 				}
 				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
@@ -2361,12 +2348,11 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 /**
  * Puts values into a ship_info.
  */
-static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
+static void parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	const char* info_type_name;
 	const char* type_name;
-	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 
 	if ( ! is_template ) {
@@ -3457,7 +3443,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	// copy to regular allowed_weapons array
 	for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (auto j = 0; j < Num_weapon_types; j++)
+		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -4720,8 +4706,6 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	}
 
 	model_anim_fix_reverse_times(sip);
-
-	return rtn;	//0 for success
 }
 
 static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
@@ -5090,34 +5074,24 @@ static void parse_shiptbl(const char *filename)
 		if (optional_string("#Engine Wash Info"))
 		{
 			while (required_string_either("#End", "$Name:"))
-			{
 				parse_engine_wash(Parsing_modular_table);
-			}
 
 			required_string("#End");
 		}
 
-		if ( optional_string("#Ship Templates") ) {
-
-			while ( required_string_either("#End", "$Template:") ) {
-				if ( parse_ship_template() ) {
-					continue;
-				}
-			}
+		if (optional_string("#Ship Templates"))
+		{
+			while (required_string_either("#End", "$Template:"))
+				parse_ship_template();
 
 			required_string("#End");
 		}
 
 		//Add ship classes
-		if(optional_string("#Ship Classes"))
+		if (optional_string("#Ship Classes"))
 		{
-
 			while (required_string_either("#End", "$Name:"))
-			{
-				if (parse_ship(filename, Parsing_modular_table)) {
-					continue;
-				}
-			}
+				parse_ship(filename, Parsing_modular_table);
 
 			required_string("#End");
 		}
@@ -5141,7 +5115,7 @@ static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < Num_weapon_types; ++j)
+		for (int j = 0; j < static_cast<int>(Weapon_info.size()); ++j)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
 				return true;
@@ -10343,7 +10317,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
 		// Play sound effect for counter measure launch
-		Assert(shipp->current_cmeasure < Num_weapon_types);
+		Assert(shipp->current_cmeasure < static_cast<int>(Weapon_info.size()));
 		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
@@ -10761,9 +10735,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		
 		weapon_idx = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon_idx >= 0 && weapon_idx < MAX_WEAPON_TYPES );
-		if ( (weapon_idx < 0) || (weapon_idx >= MAX_WEAPON_TYPES) ) {
-			Int3();		// why would a ship try to fire a weapon that doesn't exist?
+
+		// why would a ship try to fire a weapon that doesn't exist?
+		Assert( weapon_idx >= 0 && weapon_idx < static_cast<int>(Weapon_info.size()));
+		if ( (weapon_idx < 0) || (weapon_idx >= static_cast<int>(Weapon_info.size())) ) {
 			continue;
 		}		
 
@@ -11722,10 +11697,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
-	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
+
+	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < static_cast<int>(Weapon_info.size())) );
+	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= static_cast<int>(Weapon_info.size()))){
 		return 0;
 	}
+
 	wip = &Weapon_info[weapon_idx];
 
 	if ( MULTIPLAYER_MASTER ) {
@@ -12542,8 +12519,7 @@ int wing_name_lookup(const char *name, int ignore_count)
 {
 	int i, wing_limit;
 
-	if (name == NULL)
-		return -1;
+	Assertion(name != nullptr, "NULL name passed to wing_name_lookup");
 
 	if ( Fred_running )
 		wing_limit = MAX_WINGS;
@@ -12570,8 +12546,9 @@ int wing_name_lookup(const char *name, int ignore_count)
  */
 int wing_lookup(const char *name)
 {
-   int idx;
-	for(idx=0;idx<Num_wings;idx++)
+	Assertion(name != nullptr, "NULL name passed to wing_lookup");
+
+	for(int idx=0;idx<Num_wings;idx++)
 		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
 
@@ -12583,6 +12560,8 @@ int wing_lookup(const char *name)
  */
 static int ship_info_lookup_sub(const char *token)
 {
+	Assertion(token != nullptr, "NULL token passed to ship_info_lookup_sub");
+
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		if (!stricmp(token, it->name))
 			return (int)std::distance(Ship_info.cbegin(), it);
@@ -12595,6 +12574,8 @@ static int ship_info_lookup_sub(const char *token)
  */
 static int ship_template_lookup(const char *token)
 {
+	Assertion(token != nullptr, "NULL token passed to ship_template_lookup");
+
 	for ( auto it = Ship_templates.cbegin(); it != Ship_templates.cend(); ++it ) {
 		if ( !stricmp(token, it->name) ) {
 			return (int)std::distance(Ship_templates.cbegin(), it);
@@ -12610,9 +12591,7 @@ int ship_info_lookup(const char *token)
 	const char *p;
 	char name[NAME_LENGTH], temp1[NAME_LENGTH], temp2[NAME_LENGTH];
 
-	// bogus
-	if (token == NULL)
-		return -1;
+	Assertion(token != nullptr, "NULL token passed to ship_info_lookup");
 
 	// first try a straightforward lookup
 	idx = ship_info_lookup_sub(token);
@@ -12734,14 +12713,9 @@ int ship_info_lookup(const char *token)
  */
 int ship_name_lookup(const char *name, int inc_players)
 {
-	int	i;
+	Assertion(name != nullptr, "NULL name passed to ship_name_lookup");
 
-	// bogus
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i<MAX_SHIPS; i++){
+	for (int i=0; i<MAX_SHIPS; i++){
 		if (Ships[i].objnum >= 0){
 			if (Objects[Ships[i].objnum].type == OBJ_SHIP || (Objects[Ships[i].objnum].type == OBJ_START && inc_players)){
 				if (!stricmp(name, Ships[i].ship_name)){
@@ -12757,10 +12731,7 @@ int ship_name_lookup(const char *name, int inc_players)
 
 int ship_type_name_lookup(const char *name)
 {
-	// bogus
-	if(name == NULL || !strlen(name)){
-		return -1;
-	}
+	Assertion(name != nullptr, "NULL name passed to ship_type_name_lookup");
 
 	//Look through Ship_types array
 	size_t max_size = Ship_types.size();
@@ -16075,7 +16046,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 
 	Assertion(ship_class < static_cast<int>(Ship_info.size()), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
 
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
@@ -16095,7 +16066,7 @@ int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type
 	float capacity, size;
 
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
 
 	if (!swp || bank < 0 || ammo_type < 0) {
 		return 0;
@@ -17446,6 +17417,8 @@ int ship_has_engine_power(ship *shipp)
 // Goober5000
 int ship_starting_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_starting_wing_lookup");
+
 	for (int i = 0; i < MAX_STARTING_WINGS; i++)
 	{
 		if (!stricmp(Starting_wing_names[i], wing_name))
@@ -17458,6 +17431,8 @@ int ship_starting_wing_lookup(const char *wing_name)
 // Goober5000
 int ship_squadron_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_squadron_wing_lookup");
+
 	// TvT uses a different set of wing names from everything else
 	if (MULTI_TEAM)
 	{
@@ -17482,6 +17457,8 @@ int ship_squadron_wing_lookup(const char *wing_name)
 // Goober5000
 int ship_tvt_wing_lookup(const char *wing_name)
 {
+	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_tvt_wing_lookup");
+
 	for (int i = 0; i < MAX_TVT_WINGS; i++)
 	{
 		if (!stricmp(TVT_wing_names[i], wing_name))
@@ -18258,13 +18235,13 @@ void parse_ai_target_priorities()
 		num_strings = stuff_string_list(temp_strings);
 
 		for(i = 0; i < num_strings; i++) {
-			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
+			for(j = 0; j < static_cast<int>(Weapon_info.size()); ++j) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
 					break;
 				}
 			}
-			if (j == MAX_WEAPON_TYPES) {
+			if (j == static_cast<int>(Weapon_info.size())) {
 				Warning(LOCATION, "Unidentified weapon class '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
@@ -18358,14 +18335,8 @@ void parse_weapon_targeting_priorities()
 	if (optional_string("$Name:")) {
 		stuff_string(tempname, F_NAME, NAME_LENGTH);
 		
-		for(k = 0; k < MAX_WEAPON_TYPES ; k++) {
-			if ( !stricmp(Weapon_info[k].name, tempname) ) {
-				// found weapon, yay!
-				// no need to keep searching for more
-				break;
-			}
-		}
-		if(k == MAX_WEAPON_TYPES) {
+		k = weapon_info_lookup(tempname);
+		if (k < 0) {
 			error_display(0, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 			if (optional_string("+Target Priority:")) {		// consume the data to avoid parsing errors
 				SCP_vector<SCP_string> dummy;
