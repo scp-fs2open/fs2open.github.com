@@ -3691,7 +3691,7 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] < static_cast<int>(Weapon_info.size()));
+		Assert(swp->primary_bank_weapons[bank_to_fire] < weapon_info_size());
 
 		if (swp->primary_bank_weapons[bank_to_fire] < 0)
 			continue;

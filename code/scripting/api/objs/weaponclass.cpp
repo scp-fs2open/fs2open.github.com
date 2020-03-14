@@ -19,7 +19,7 @@ ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Weapon_info[idx].get_display_string());
@@ -31,10 +31,10 @@ ADE_FUNC(__eq, l_Weaponclass, "weaponclass, weaponclass", "Checks if the two cla
 	if(!ade_get_args(L, "oo", l_Weaponclass.Get(&idx1), l_Weaponclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
-	if(idx1 < 0 || idx1 >= static_cast<int>(Weapon_info.size()))
+	if(idx1 < 0 || idx1 >= weapon_info_size())
 		return ade_set_error(L, "b", false);
 
-	if(idx2 < 0 || idx2 >= static_cast<int>(Weapon_info.size()))
+	if(idx2 < 0 || idx2 >= weapon_info_size())
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", idx1 == idx2);
@@ -47,7 +47,7 @@ ADE_VIRTVAR(Name, l_Weaponclass, "string", "Weapon class name. This is the possi
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -64,7 +64,7 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
@@ -81,7 +81,7 @@ ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Wea
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -98,7 +98,7 @@ ADE_VIRTVAR(Description, l_Weaponclass, "string", "Weapon class description stri
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	weapon_info *wip = &Weapon_info[idx];
@@ -126,7 +126,7 @@ ADE_VIRTVAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title", "stri
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -143,7 +143,7 @@ ADE_VIRTVAR(TechAnimationFilename, l_Weaponclass, "string", "Weapon class animat
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -160,7 +160,7 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
 	weapon_info *wip = &Weapon_info[idx];
@@ -188,7 +188,7 @@ ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model
 	if(!ade_get_args(L, "o|o", l_Weaponclass.Get(&weapon_info_idx), l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
-	if(weapon_info_idx < 0 || weapon_info_idx >= static_cast<int>(Weapon_info.size()))
+	if(weapon_info_idx < 0 || weapon_info_idx >= weapon_info_size())
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
 	weapon_info *wip = &Weapon_info[weapon_info_idx];
@@ -209,7 +209,7 @@ ADE_VIRTVAR(ArmorFactor, l_Weaponclass, "number", "Amount of weapon damage appli
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -226,7 +226,7 @@ ADE_VIRTVAR(Damage, l_Weaponclass, "number", "Amount of damage that weapon deals
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -243,7 +243,7 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -260,7 +260,7 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -277,7 +277,7 @@ ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "numb
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -294,7 +294,7 @@ ADE_VIRTVAR(Range, l_Weaponclass, "number", "Range of weapon in meters", "number
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -311,7 +311,7 @@ ADE_VIRTVAR(Mass, l_Weaponclass, "number", "Weapon mass", "number", "Weapon mass
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -328,7 +328,7 @@ ADE_VIRTVAR(ShieldFactor, l_Weaponclass, "number", "Amount of weapon damage appl
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -345,7 +345,7 @@ ADE_VIRTVAR(SubsystemFactor, l_Weaponclass, "number", "Amount of weapon damage a
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -362,7 +362,7 @@ ADE_VIRTVAR(TargetLOD, l_Weaponclass, "number", "LOD used for weapon model in th
 	if(!ade_get_args(L, "o|i", l_Weaponclass.Get(&idx), &lod))
 		return ade_set_error(L, "i", 0);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR) {
@@ -379,7 +379,7 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &spd))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -396,7 +396,7 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 	if(!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &newVal))
 		return ADE_RETURN_FALSE;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	weapon_info *info = &Weapon_info[idx];
@@ -420,7 +420,7 @@ ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon c
 	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &newVal))
 		return ade_set_args(L, "f", -1.0f);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_args(L, "f", -1.0f);
 
 	weapon_info *info = &Weapon_info[idx];
@@ -446,7 +446,7 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -458,7 +458,7 @@ ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the 
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx + 1);
@@ -470,7 +470,7 @@ ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a primary w
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].subtype == WP_LASER)
@@ -485,7 +485,7 @@ ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a seconda
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].subtype == WP_MISSILE)
@@ -500,7 +500,7 @@ ADE_FUNC(isPrimary, l_Weaponclass, NULL, "Return true if the weapon is a primary
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].subtype == WP_LASER)
@@ -515,7 +515,7 @@ ADE_FUNC(isSecondary, l_Weaponclass, NULL, "Return true if the weapon is a secon
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].subtype == WP_MISSILE)
@@ -530,7 +530,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
@@ -546,7 +546,7 @@ ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true if the weapon is paged 
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if (idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (!weapon_used(idx)) {
@@ -563,7 +563,7 @@ ADE_FUNC(loadWeapon, l_Weaponclass, NULL, "Pages in a weapon. Returns True on su
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx >= static_cast<int>(Weapon_info.size()))
+	if (idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_FALSE;
 
 	if (!weapon_page_in(idx)) {

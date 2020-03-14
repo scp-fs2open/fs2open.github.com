@@ -43,7 +43,7 @@ ADE_INDEXER(l_Tables_ShipClasses, "number Index/string Name", "Array of ship cla
 			return ade_set_error(L, "o", l_Shipclass.Set(-1));
 		}
 
-		if (idx < 0 || idx >= static_cast<int>(Ship_info.size())) {
+		if (idx < 0 || idx >= ship_info_size()) {
 			return ade_set_error(L, "o", l_Shipclass.Set(-1));
 		}
 	}
@@ -95,7 +95,7 @@ ADE_FUNC(__len, l_Tables_WeaponClasses, NULL, "Number of weapon classes", "numbe
 	if(!Weapons_inited)
 		return ade_set_args(L, "i", 0);
 
-	return ade_set_args(L, "i", static_cast<int>(Weapon_info.size()));
+	return ade_set_args(L, "i", weapon_info_size());
 }
 
 

@@ -238,7 +238,7 @@ void multi_oo_build_ship_list(net_player *pl)
 		}		
 
 		// never update the knossos device
-		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < static_cast<int>(Ship_info.size())) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])){
+		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < ship_info_size()) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])){
 			continue;
 		}
 				
@@ -729,7 +729,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	
 	// if we can't find the object, set pointer to bogus object to continue reading the data
 	// ignore out of sequence packets here as well
-	if ( (pobjp == NULL) || (pobjp->type != OBJ_SHIP) || (pobjp->instance < 0) || (pobjp->instance >= MAX_SHIPS) || (Ships[pobjp->instance].ship_info_index < 0) || (Ships[pobjp->instance].ship_info_index >= static_cast<int>(Ship_info.size()))) {
+	if ( (pobjp == NULL) || (pobjp->type != OBJ_SHIP) || (pobjp->instance < 0) || (pobjp->instance >= MAX_SHIPS) || (Ships[pobjp->instance].ship_info_index < 0) || (Ships[pobjp->instance].ship_info_index >= ship_info_size())) {
 		offset += data_size;
 		return offset;
 	}

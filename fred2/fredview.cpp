@@ -1599,7 +1599,7 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + static_cast<int>(Ship_info.size()) + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + ship_info_size() + 3)) {
 			if (nCode == CN_COMMAND) {
 				cur_model_index = id - SHIP_TYPES;
 				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
@@ -2433,7 +2433,7 @@ int CFREDView::global_error_check()
 			}
 
 			z = Ships[i].ship_info_index;
-			if ((z < 0) || (z >= static_cast<int>(Ship_info.size()))){
+			if ((z < 0) || (z >= ship_info_size())){
 				return internal_error("A ship has an illegal class");
 			}
 

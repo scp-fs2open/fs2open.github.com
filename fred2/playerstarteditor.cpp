@@ -304,7 +304,7 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each weapon ship type	
 	m_weapon_list.ResetContent();
 	ct = 0;
-	for (i=0; i<static_cast<int>(Weapon_info.size()); i++) {
+	for (i=0; i<weapon_info_size(); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
@@ -810,7 +810,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout ships that are statically assigned by class
 
-		for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+		for (idx = 0; idx < ship_info_size(); idx++) {
 			// if we have ships here
 			if(static_ship_pool[i][idx] > 0 || static_ship_variable_pool[i][idx] > -1) {
 				Team_data[i].ship_list[num_choices] = idx;
@@ -882,7 +882,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout weapons that are statically assigned by class
 
-		for(idx=0; idx<static_cast<int>(Weapon_info.size()); idx++)
+		for(idx=0; idx<weapon_info_size(); idx++)
 		{
 			// if we have weapons here
 			if(static_weapon_pool[i][idx] > 0 || static_weapon_variable_pool[i][idx] > -1)

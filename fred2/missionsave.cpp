@@ -1118,7 +1118,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 	// write out the ships and weapons which the player can start the campaign with
 	optional_string_fred("+Starting Ships: (");
 	parse_comments(2);
-	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+	for (i = 0; i < ship_info_size(); i++) {
 		if (Campaign.ships_allowed[i])
 			fout(" \"%s\" ", Ship_info[i].name);
 	}
@@ -1126,7 +1126,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 
 	optional_string_fred("+Starting Weapons: (");
 	parse_comments();
-	for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		if (Campaign.weapons_allowed[i])
 			fout(" \"%s\" ", Weapon_info[i].name);
 	}
@@ -3547,7 +3547,7 @@ int CFred_mission_save::save_players() {
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
+		for (j = 0; j < weapon_info_size(); j++) {
 			if (used_pool[j] > 0) {
 				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
@@ -3557,7 +3557,7 @@ int CFred_mission_save::save_players() {
 
 		// Goober5000 - mjn.mixael's required weapon feature
 		bool uses_required_weapon = false;
-		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
+		for (j = 0; j < weapon_info_size(); j++) {
 			if (Team_data[i].weapon_required[j]) {
 				uses_required_weapon = true;
 				break;
@@ -3570,7 +3570,7 @@ int CFred_mission_save::save_players() {
 				fout("\n+Required for mission:");
 
 			fout(" (");
-			for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
+			for (j = 0; j < weapon_info_size(); j++) {
 				if (Team_data[i].weapon_required[j])
 					fout(" \"%s\"", Weapon_info[j].name);
 			}

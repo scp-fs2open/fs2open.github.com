@@ -500,7 +500,7 @@ void debug_cycle_player_ship(int delta)
 	ship_info	*sip;
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index >= static_cast<int>(Ship_info.size()) ){
+		if ( si_index >= ship_info_size() ){
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
@@ -513,7 +513,7 @@ void debug_cycle_player_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity >= static_cast<int>(Ship_info.size()) ){
+		if ( sanity >= ship_info_size() ){
 			break;
 		}
 	}
@@ -548,7 +548,7 @@ void debug_cycle_targeted_ship(int delta)
 
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index >= static_cast<int>(Ship_info.size()) )
+		if ( si_index >= ship_info_size() )
 			si_index = 0;
 		if ( si_index < 0 )
 			si_index = static_cast<int>(Ship_info.size() - 1);
@@ -567,7 +567,7 @@ void debug_cycle_targeted_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity >= static_cast<int>(Ship_info.size()) )
+		if ( sanity >= ship_info_size() )
 			break;
 	}
 
@@ -634,7 +634,7 @@ extern int Show_cpu;
 int get_prev_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
-	int size = static_cast<int>(Weapon_info.size());
+	int size = weapon_info_size();
 
 	for (i = 1; i < size; i++)
 	{
@@ -652,7 +652,7 @@ int get_prev_weapon_looped(int current_weapon, int subtype)
 int get_next_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
-	int size = static_cast<int>(Weapon_info.size());
+	int size = weapon_info_size();
 
 	for (i = 1; i < size; i++)
 	{

@@ -47,7 +47,7 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 	debris *db = &Debris[oh->objp->instance];
 
 	if(ADE_SETTING_VAR) {
-		if (shipIdx >= 0 && shipIdx < static_cast<int>(Ship_info.size()))
+		if (shipIdx >= 0 && shipIdx < ship_info_size())
 			db->ship_info_index = shipIdx;
 	}
 

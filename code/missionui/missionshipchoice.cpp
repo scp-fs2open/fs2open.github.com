@@ -436,7 +436,7 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { //DTP singleplayer ship choice fix 
+	for ( i = 0; i < ship_info_size(); i++ ) { //DTP singleplayer ship choice fix 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
@@ -452,7 +452,7 @@ void clear_active_list()
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { 
+	for ( i = 0; i < ship_info_size(); i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
@@ -504,7 +504,7 @@ void init_active_list()
 	clear_active_list();
 
 	// build the active list
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			sai = get_free_active_list_node();
 			if ( sai != NULL ) {
@@ -1891,7 +1891,7 @@ void commit_pressed()
 	int num_required_weapons = 0;
 	int num_satisfied_weapons = 0;
 	SCP_string weapon_list;
-	for (j=0; j<static_cast<int>(Weapon_info.size()); j++)
+	for (j=0; j<weapon_info_size(); j++)
 	{
 		if (Team_data[Common_team].weapon_required[j])
 		{
@@ -2703,7 +2703,7 @@ void ss_reset_selected_ship()
 
 	if ( Selected_ss_class == -1 ) {
 		Int3();
-		for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+		for ( i = 0; i < ship_info_size(); i++ ) {
 			if ( Ss_pool[i] > 0 ) {
 				Selected_ss_class = i;
 			}

@@ -2557,7 +2557,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	// bogus
-	if((objp == nullptr) || (shipp == nullptr) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= static_cast<int>(Ship_info.size()))){
+	if((objp == nullptr) || (shipp == nullptr) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= ship_info_size())){
 		return;
 	}
 	sip = &Ship_info[shipp->ship_info_index];
@@ -3434,7 +3434,7 @@ void game_simulation_frame()
 		ship_info *sip;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != nullptr)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= static_cast<int>(Ship_info.size()))){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= ship_info_size())){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}

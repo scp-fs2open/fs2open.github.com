@@ -984,7 +984,7 @@ void labviewer_update_variables_window()
 	// IMPORTANT NOTE: If you add something here, make sure you add it to labviewer_populate_variables_window() as well!
 	// ship variables ...
 	if (Lab_mode == LAB_MODE_SHIP) {
-		Assert(Lab_selected_index < static_cast<int>(Ship_info.size()));
+		Assert(Lab_selected_index < ship_info_size());
 		ship_info* sip = &Ship_info[Lab_selected_index];
 
 		VAR_SET_VALUE(sip->name);
@@ -1031,7 +1031,7 @@ void labviewer_update_variables_window()
 	}
 	// weapon variables ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		Assert(Lab_selected_index < static_cast<int>(Weapon_info.size()));
+		Assert(Lab_selected_index < weapon_info_size());
 		weapon_info* wip = &Weapon_info[Lab_selected_index];
 
 		VAR_SET_VALUE(wip->get_display_string());

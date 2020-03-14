@@ -1522,7 +1522,7 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_CTRLED | KEY_PAGEDOWN: {
-				if ( Closeup_icon && (Closeup_icon->ship_class < static_cast<int>(Ship_info.size()) - 1) ) {
+				if ( Closeup_icon && (Closeup_icon->ship_class < ship_info_size() - 1) ) {
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];

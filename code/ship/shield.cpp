@@ -671,7 +671,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
 
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < ship_info_size())){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
@@ -710,7 +710,7 @@ void create_shield_low_detail(int objnum, int  /*model_num*/, matrix * /*orient*
 	Shield_hits[shnum].rgb[0] = 255;
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < ship_info_size())){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
