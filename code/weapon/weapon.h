@@ -226,9 +226,8 @@ enum InFlightSoundType
 
 #define MAX_SUBSTITUTION_PATTERNS	10
 
-class weapon_info
+struct weapon_info
 {
-public:
 	char	name[NAME_LENGTH];				// name of this weapon
 	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)

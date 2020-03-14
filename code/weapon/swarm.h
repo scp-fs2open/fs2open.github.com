@@ -16,7 +16,7 @@
 
 class object;
 class ship_subsys;
-class weapon_info;
+struct weapon_info;
 
 typedef struct turret_swarm_info {
 	int				flags;
