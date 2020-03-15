@@ -1780,8 +1780,8 @@ static void parse_ship(const char *filename, bool replace)
 	bool remove_ship = false;
 
 	required_string("$Name:");
-	stuff_string(fname, F_NAME, SHIP_MULTITEXT_LENGTH);
-	diag_printf("Ship name -- %s\n", buf);
+	stuff_string(fname, F_NAME, NAME_LENGTH);
+	diag_printf("Ship name -- %s\n", fname);
 
 	if (optional_string("+nocreate")) {
 		if (!replace) {
@@ -1818,7 +1818,7 @@ static void parse_ship(const char *filename, bool replace)
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
 			error_display(1, "Missing [#End] or [$Name] after ship class %s", fname);
 		}
-		return -1;
+		return;
 	}
 	
 	// an entry for this ship exists

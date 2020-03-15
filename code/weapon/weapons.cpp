@@ -759,10 +759,10 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	}
 }
 
-// function to parse the information for a specific weapon type.	
-// return 0 if successful, otherwise return -1
-#define WEAPONS_MULTITEXT_LENGTH 2048
-
+/**
+ * Parse the information for a specific ship type.
+ * Return weapon index if successful, otherwise return -1
+ */
 int parse_weapon(int subtype, bool replace, const char *filename)
 {
 	char buf[NAME_LENGTH];
