@@ -872,7 +872,7 @@ void red_alert_bash_wingman_status()
 					// if necessary, restore correct ship class
 					if ( ras->ship_class != shipp->ship_info_index )
 					{
-						if (ras->ship_class >= 0 && ras->ship_class < static_cast<int>(Ship_info.size()))
+						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
 							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 						else
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
@@ -961,7 +961,7 @@ void red_alert_bash_wingman_status()
 					// if necessary, restore correct ship class
 					if ( ras->ship_class != pobjp->ship_class )
 					{
-						if (ras->ship_class >= 0 && ras->ship_class < static_cast<int>(Ship_info.size()))
+						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
 							swap_parse_object(pobjp, ras->ship_class);
 						else
 						{

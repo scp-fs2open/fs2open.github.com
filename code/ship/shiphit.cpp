@@ -2072,7 +2072,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		// now the actual checks
 		if (other_obj->type == OBJ_BEAM)
 		{
-			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < static_cast<int>(Weapon_info.size())));
+			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < weapon_info_size()));
 			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);
@@ -2080,7 +2080,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		}
 		if (other_obj_is_weapon)
 		{
-			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < static_cast<int>(Weapon_info.size())));
+			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < weapon_info_size()));
 			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);

@@ -890,13 +890,13 @@ void parse_player_info2(mission *pm)
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
-					for (i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+					for (i = 0; i < ship_info_size(); i++ ) {
 						if ( Campaign.ships_allowed[i] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assertion( i < static_cast<int>(Ship_info.size()), "Mission: %s: Could not find a valid default ship.\n", pm->name );
+					Assertion( i < ship_info_size(), "Mission: %s: Could not find a valid default ship.\n", pm->name );
 				}
 			}
 		}
@@ -920,7 +920,7 @@ void parse_player_info2(mission *pm)
 				}
 			}
 
-			if ( (list2[i] >= 0) && (list2[i] < static_cast<int>(Weapon_info.size())) ) {
+			if ( (list2[i] >= 0) && (list2[i] < weapon_info_size()) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
 				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {

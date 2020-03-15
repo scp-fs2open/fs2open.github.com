@@ -1403,7 +1403,7 @@ ship_info::ship_info()
 
 	name[0] = '\0';
 	alt_name[0] = '\0';
-	sprintf(short_name, "ShipClass%d", static_cast<int>(Ship_info.size()));
+	sprintf(short_name, "ShipClass%d", ship_info_size());
 	species = 0;
 	class_type = -1;
 
@@ -1827,7 +1827,7 @@ static void parse_ship(const char *filename, bool replace)
 			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
-		ship_id = static_cast<int>(Ship_info.size());
+		ship_id = ship_info_size();
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
@@ -2078,7 +2078,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
 			// clear allowed weapons so the modular table can define new ones
 			for (bank = 0; bank < max_banks; bank++) {
-				for (i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
+				for (i = 0; i < weapon_info_size(); i++) {
 					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
 				}
 				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
@@ -3443,7 +3443,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// copy to regular allowed_weapons array
 	for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++)
+		for (auto j = 0; j < weapon_info_size(); j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -5115,7 +5115,7 @@ static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < static_cast<int>(Weapon_info.size()); ++j)
+		for (int j = 0; j < weapon_info_size(); ++j)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
 				return true;
@@ -9303,7 +9303,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		return -1;
 	}
 
-	Assertion((ship_type >= 0) && (ship_type < static_cast<int>(Ship_info.size())), "Invalid ship_type %d passed to ship_create() (expected value in the range 0-%d)\n", ship_type, static_cast<int>(Ship_info.size())-1);
+	Assertion((ship_type >= 0) && (ship_type < ship_info_size()), "Invalid ship_type %d passed to ship_create() (expected value in the range 0-%d)\n", ship_type, ship_info_size()-1);
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 	shipp->clear();
@@ -10317,7 +10317,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
 		// Play sound effect for counter measure launch
-		Assert(shipp->current_cmeasure < static_cast<int>(Weapon_info.size()));
+		Assert(shipp->current_cmeasure < weapon_info_size());
 		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
@@ -10656,7 +10656,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	swp = &shipp->weapons;
 
 	// bogus 
-	if((shipp->ship_info_index < 0) || (shipp->ship_info_index >= static_cast<int>(Ship_info.size()))){
+	if((shipp->ship_info_index < 0) || (shipp->ship_info_index >= ship_info_size())){
 		return 0;
 	}
 	if((shipp->ai_index < 0) || (shipp->ai_index >= MAX_AI_INFO)){
@@ -10737,8 +10737,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		weapon_idx = swp->primary_bank_weapons[bank_to_fire];
 
 		// why would a ship try to fire a weapon that doesn't exist?
-		Assert( weapon_idx >= 0 && weapon_idx < static_cast<int>(Weapon_info.size()));
-		if ( (weapon_idx < 0) || (weapon_idx >= static_cast<int>(Weapon_info.size())) ) {
+		Assert( weapon_idx >= 0 && weapon_idx < weapon_info_size());
+		if ( (weapon_idx < 0) || (weapon_idx >= weapon_info_size()) ) {
 			continue;
 		}		
 
@@ -11698,8 +11698,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < static_cast<int>(Weapon_info.size())) );
-	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= static_cast<int>(Weapon_info.size()))){
+	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size())){
 		return 0;
 	}
 
@@ -13823,9 +13823,9 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 				continue;
 			}
 
-			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < static_cast<int>(Ship_info.size())),
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < ship_info_size()),
 				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
-				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
+				shipp->ship_name, shipp->ship_info_index, ship_info_size());
 
 			sip = &Ship_info[shipp->ship_info_index];
 
@@ -16044,9 +16044,9 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
-	Assertion(ship_class < static_cast<int>(Ship_info.size()), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
+	Assertion(ship_class < ship_info_size(), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, ship_info_size());
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
+	Assertion(ammo_type < weapon_info_size(), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, weapon_info_size());
 
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
@@ -16066,7 +16066,7 @@ int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type
 	float capacity, size;
 
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
-	Assertion(ammo_type < static_cast<int>(Weapon_info.size()), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, static_cast<int>(Weapon_info.size()));
+	Assertion(ammo_type < weapon_info_size(), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, weapon_info_size());
 
 	if (!swp || bank < 0 || ammo_type < 0) {
 		return 0;
@@ -16404,7 +16404,7 @@ void ship_page_in_textures(int ship_index)
 	int i;
 	ship_info *sip;
 
-	if ( (ship_index < 0) || (ship_index >= static_cast<int>(Ship_info.size())) )
+	if ( (ship_index < 0) || (ship_index >= ship_info_size()) )
 		return;
 
 
@@ -16480,7 +16480,7 @@ void ship_page_out_textures(int ship_index, bool release)
 	int i;
 	ship_info *sip;
 
-	if ( (ship_index < 0) || (ship_index >= static_cast<int>(Ship_info.size())) )
+	if ( (ship_index < 0) || (ship_index >= ship_info_size()) )
 		return;
 
 
@@ -18235,13 +18235,13 @@ void parse_ai_target_priorities()
 		num_strings = stuff_string_list(temp_strings);
 
 		for(i = 0; i < num_strings; i++) {
-			for(j = 0; j < static_cast<int>(Weapon_info.size()); ++j) {
+			for(j = 0; j < weapon_info_size(); ++j) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
 					break;
 				}
 			}
-			if (j == static_cast<int>(Weapon_info.size())) {
+			if (j == weapon_info_size()) {
 				Warning(LOCATION, "Unidentified weapon class '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}

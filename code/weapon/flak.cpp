@@ -120,8 +120,8 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class)
 {
 	// sanity
-	Assert((turret_weapon_class >= 0) && (turret_weapon_class < static_cast<int>(Weapon_info.size())));
-	if((turret_weapon_class < 0) || (turret_weapon_class >= static_cast<int>(Weapon_info.size()))){
+	Assert((turret_weapon_class >= 0) && (turret_weapon_class < weapon_info_size()));
+	if((turret_weapon_class < 0) || (turret_weapon_class >= weapon_info_size())){
 		return;
 	}
 	Assert(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak]);

@@ -8287,7 +8287,7 @@ int sexp_get_damage_caused(int node)
 		damage_caused += get_damage_caused (damaged_sig, attacker_sig);
 	}
 	
-	Assertion((ship_class > -1) && (ship_class < static_cast<int>(Ship_info.size())), "Invalid ship class '%d' passed to sexp_get_damage_caused() (should be >= 0 and < %d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
+	Assertion((ship_class > -1) && (ship_class < ship_info_size()), "Invalid ship class '%d' passed to sexp_get_damage_caused() (should be >= 0 and < %d); get a coder!\n", ship_class, ship_info_size());
 	return (int) ((damage_caused/Ship_info[ship_class].max_hull_strength) * 100.0f);
 }
 
@@ -16887,7 +16887,7 @@ int sexp_shield_quad_low(int node)
 	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
 		return SEXP_FALSE;
 	}
-	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= static_cast<int>(Ship_info.size()))){
+	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= ship_info_size())){
 		return SEXP_FALSE;
 	}
 	objp = &Objects[Ships[sindex].objnum];
@@ -18189,7 +18189,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
 	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
-		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < static_cast<int>(Weapon_info.size()),
+		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < weapon_info_size(),
 				"sexp_beam_fire: found invalid weapon index (%i), get a coder\n!", fire_info.turret->weapons.primary_bank_weapons[idx]);
 		// store the weapon info index
 		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Beam]) {
@@ -21157,7 +21157,7 @@ int sexp_num_type_kills(int node)
 
 	// look stuff up	
 	total = 0;
-	for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for(idx = 0; idx < ship_info_size(); idx++) {
 		if((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx)==st_index){
 			total += p->stats.m_okKills[idx];
 		}
@@ -21206,7 +21206,7 @@ int sexp_num_class_kills(int node)
 
 	// get the ship type we're looking for
 	si_index = ship_info_lookup(CTEXT(CDR(node)));
-	if((si_index < 0) || (si_index >= static_cast<int>(Ship_info.size()))){
+	if((si_index < 0) || (si_index >= ship_info_size())){
 		return 0;
 	}
 

@@ -185,14 +185,14 @@ void pilotfile::csg_write_info()
 	startSection(Section::Info);
 
 	// ship list
-	cfwrite_int(static_cast<int>(Ship_info.size()), cfp);
+	cfwrite_int(ship_info_size(), cfp);
 
 	for (auto &si : Ship_info) {
 		cfwrite_string_len(si.name, cfp);
 	}
 
 	// weapon list
-	cfwrite_int(static_cast<int>(Weapon_info.size()), cfp);
+	cfwrite_int(weapon_info_size(), cfp);
 
 	for (auto &wi : Weapon_info) {
 		cfwrite_string_len(wi.name, cfp);
@@ -227,12 +227,12 @@ void pilotfile::csg_write_info()
 	cfwrite_int(Campaign.num_missions_completed, cfp);
 
 	// allowed ships
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_ubyte(Campaign.ships_allowed[idx], cfp);
 	}
 
 	// allowed weapons
-	for (idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++) {
+	for (idx = 0; idx < weapon_info_size(); idx++) {
 		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
 	}
 
@@ -403,7 +403,7 @@ void pilotfile::csg_write_missions()
 			cfwrite_uint(missionp->stats.s_bonehead_hits, cfp);
 
 			// ship kills (scoring)
-			for (j = 0; j < static_cast<int>(Ship_info.size()); j++) {
+			for (j = 0; j < ship_info_size(); j++) {
 				cfwrite_int(missionp->stats.kills[j], cfp);
 			}
 
@@ -648,12 +648,12 @@ void pilotfile::csg_write_loadout()
 	cfwrite_string_len(Player_loadout.last_modified, cfp);
 
 	// ship pool
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_int(Player_loadout.ship_pool[idx], cfp);
 	}
 
 	// weapon pool
-	for (idx = 0; idx < static_cast<int>(Weapon_info.size()); idx++) {
+	for (idx = 0; idx < weapon_info_size(); idx++) {
 		cfwrite_int(Player_loadout.weapon_pool[idx], cfp);
 	}
 
@@ -765,7 +765,7 @@ void pilotfile::csg_write_stats()
 	cfwrite_int((int)p->stats.last_backup, cfp);
 
 	// ship kills (scoring)
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_int(p->stats.kills[idx], cfp);
 	}
 

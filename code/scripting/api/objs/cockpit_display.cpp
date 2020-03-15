@@ -364,7 +364,7 @@ ship_info* cockpit_displays_info_h::Get() {
 	return &Ship_info[m_ship_info_idx];
 }
 bool cockpit_displays_info_h::isValid() {
-	if (m_ship_info_idx < 0 || m_ship_info_idx >= static_cast<int>(Ship_info.size()))
+	if (m_ship_info_idx < 0 || m_ship_info_idx >= ship_info_size())
 	{
 		return false;
 	}

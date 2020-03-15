@@ -74,7 +74,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 
 	if(fb->warp_open_sound_index.isValid()) {
 		sound_index = fb->warp_open_sound_index;
-	} else if ((ship_class >= 0) && (ship_class < static_cast<int>(Ship_info.size()))) {
+	} else if ((ship_class >= 0) && (ship_class < ship_info_size())) {
 		if ( Ship_info[ship_class].is_huge_ship() ) {
 			sound_index = gamesnd_id(GameSounds::CAPITAL_WARP_IN);
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;

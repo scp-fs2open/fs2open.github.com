@@ -906,7 +906,7 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
-		for ( j = 0; j < static_cast<int>(Ship_info.size()); j++ ) {
+		for ( j = 0; j < ship_info_size(); j++ ) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
@@ -918,7 +918,7 @@ void clear_mission()
 		Team_data[i].num_ship_choices = count;
 
 		count = 0;
-		for ( j = 0; j < static_cast<int>(Weapon_info.size()); j++ ) {
+		for ( j = 0; j < weapon_info_size(); j++ ) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
@@ -2409,14 +2409,14 @@ void generate_weaponry_usage_list(int *arr, int wing)
 		swp = &Ships[Wings[wing].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
+			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
 				arr[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
+			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
 				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
 			}
 		}

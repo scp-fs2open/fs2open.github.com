@@ -1430,6 +1430,11 @@ extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);
 
+inline int ship_info_size()
+{
+	return static_cast<int>(Ship_info.size());
+}
+
 extern int wing_lookup(const char *name);
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct

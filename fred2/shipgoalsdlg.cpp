@@ -554,7 +554,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x10) {  // data is a ship class
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				if (!stricmp(goalp[item].target_name, Ship_info[i].name)) {
 					m_data[item] = i | TYPE_SHIP_CLASS;
 					break;
@@ -653,7 +653,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 	// for goals that deal with ship classes
 	switch (mode) {
 		case AI_GOAL_CHASE_SHIP_CLASS:
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				z = m_object_box[item] -> AddString(Ship_info[i].name);
 				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_CLASS);
 				if (init && (m_data[item] == (i | TYPE_SHIP_CLASS)))

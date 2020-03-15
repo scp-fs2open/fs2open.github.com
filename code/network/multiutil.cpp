@@ -777,7 +777,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 		}
 	}
 	
-	if ( player_ship_class >= static_cast<int>(Ship_info.size()) ) {
+	if ( player_ship_class >= ship_info_size() ) {
 		nprintf(("Network","Network ==> Ship class was %d. Creating a default ship for multiplayer\n", player_ship_class));
 		player_ship_class = multi_ship_class_lookup(default_player_ship);
 	}
