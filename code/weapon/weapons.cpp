@@ -535,11 +535,6 @@ int weapon_info_get_index(weapon_info *wip)
 	return static_cast<int>(std::distance(Weapon_info.data(), wip));
 }
 
-inline int weapon_info_size()
-{
-	return static_cast<int>(Weapon_info.size());
-}
-
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.

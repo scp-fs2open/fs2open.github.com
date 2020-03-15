@@ -12708,11 +12708,6 @@ int ship_info_lookup(const char *token)
 	return ship_info_lookup_sub(name);
 }
 
-inline int ship_info_size()
-{
-	return static_cast<int>(Ship_info.size());
-}
-
 /**
  * Return the ship index of the ship with name *name.
  */
