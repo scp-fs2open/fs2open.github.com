@@ -11,6 +11,7 @@
 
 
 #include <csetjmp>
+#include <algorithm>
 
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
@@ -86,7 +87,6 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
-#include "ship.h"
 
 
 using namespace Ship;
@@ -1768,6 +1768,8 @@ ship_info::~ship_info()
 	free_strings();
 }
 
+static SCP_vector<SCP_string> Removed_ships;
+
 /**
  * Parse the information for a specific ship type.
  */
@@ -1790,11 +1792,21 @@ static void parse_ship(const char *filename, bool replace)
 		create_if_not_found = false;
 	}
 
+	// check first if this is on the remove blacklist
+	auto it = std::find(Removed_ships.begin(), Removed_ships.end(), fname);
+	if (it != Removed_ships.end()) {
+		remove_ship = true;
+	}
+
+	// we might have a remove tag
 	if (optional_string("+remove")) {
 		if (!replace) {
 			Warning(LOCATION, "+remove flag used for ship in non-modular table");
 		}
-		remove_ship = true;
+		if (!remove_ship) {
+			Removed_ships.push_back(fname);
+			remove_ship = true;
+		}
 	}
 
 	//Remove @ symbol

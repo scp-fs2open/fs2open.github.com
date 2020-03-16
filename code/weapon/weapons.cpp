@@ -9,6 +9,8 @@
 
 
 
+#include <algorithm>
+
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
@@ -759,6 +761,8 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	}
 }
 
+static SCP_vector<SCP_string> Removed_weapons;
+
 /**
  * Parse the information for a specific ship type.
  * Return weapon index if successful, otherwise return -1
@@ -786,11 +790,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		create_if_not_found = false;
 	}
 
+	// check first if this is on the remove blacklist
+	auto it = std::find(Removed_weapons.begin(), Removed_weapons.end(), fname);
+	if (it != Removed_weapons.end()) {
+		remove_weapon = true;
+	}
+	
+	// we might have a remove tag
 	if (optional_string("+remove")) {
 		if (!replace) {
 			Warning(LOCATION, "+remove flag used for weapon in non-modular table");
 		}
-		remove_weapon = true;
+		if (!remove_weapon) {
+			Removed_weapons.push_back(fname);
+			remove_weapon = true;
+		}
 	}
 
 	//Remove @ symbol
