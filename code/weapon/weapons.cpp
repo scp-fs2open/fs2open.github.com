@@ -3530,8 +3530,10 @@ void weapon_init()
 		//Init weapon explosion info
 		weapon_expl_info_init();
 
-		// parse weapons.tbl
 		Num_spawn_types = 0;
+
+		// parse weapons.tbl
+		Removed_weapons.clear();
 		Weapon_info.clear();
 		parse_weaponstbl("weapons.tbl");
 

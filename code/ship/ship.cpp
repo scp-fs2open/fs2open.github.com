@@ -5337,6 +5337,8 @@ void ship_init()
 			strcpy_s(default_player_ship, "");
 
 			//Parse main TBL first
+			Removed_ships.clear();
+			Ship_info.clear();
 			parse_shiptbl("ships.tbl");
 
 			//Then other ones
