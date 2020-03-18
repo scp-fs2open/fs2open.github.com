@@ -9,6 +9,8 @@
 
 
 
+#include <algorithm>
+
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
@@ -759,19 +761,22 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	}
 }
 
-// function to parse the information for a specific weapon type.	
-// return 0 if successful, otherwise return -1
-#define WEAPONS_MULTITEXT_LENGTH 2048
+static SCP_vector<SCP_string> Removed_weapons;
 
+/**
+ * Parse the information for a specific ship type.
+ * Return weapon index if successful, otherwise return -1
+ */
 int parse_weapon(int subtype, bool replace, const char *filename)
 {
-	char buf[WEAPONS_MULTITEXT_LENGTH];
-	weapon_info *wip = NULL;
+	char buf[NAME_LENGTH];
 	char fname[NAME_LENGTH];
+	weapon_info *wip = nullptr;
 	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
-	bool create_if_not_found  = true;
+	bool create_if_not_found = true;
+	bool remove_weapon = false;
     flagset<Weapon::Info_Flags> wi_flags;
 
 	required_string("$Name:");
@@ -785,6 +790,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		create_if_not_found = false;
 	}
 
+	// check first if this is on the remove blacklist
+	auto it = std::find(Removed_weapons.begin(), Removed_weapons.end(), fname);
+	if (it != Removed_weapons.end()) {
+		remove_weapon = true;
+	}
+	
+	// we might have a remove tag
+	if (optional_string("+remove")) {
+		if (!replace) {
+			Warning(LOCATION, "+remove flag used for weapon in non-modular table");
+		}
+		if (!remove_weapon) {
+			Removed_weapons.push_back(fname);
+			remove_weapon = true;
+		}
+	}
+
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
 	//only be parsed in demo builds
@@ -792,33 +814,51 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		backspace(fname);
 	}
 
+	//Check if weapon exists already
 	int w_id = weapon_info_lookup(fname);
 
-	if(w_id != -1)
+	// maybe remove it
+	if (remove_weapon)
+	{
+		if (w_id >= 0) {
+			mprintf(("Removing previously parsed weapon '%s'\n", fname));
+			Weapon_info.erase(Weapon_info.begin() + w_id);
+		}
+
+		if (!skip_to_start_of_string_either("$Name:", "#End")) {
+			error_display(1, "Missing [#End] or [$Name] after weapon class %s", fname);
+		}
+		return -1;
+	}
+
+	// an entry for this weapon exists
+	if (w_id >= 0)
 	{
 		wip = &Weapon_info[w_id];
-		if(!replace)
+		if (!replace)
 		{
-			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", fname);
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", fname);
 			}
 			return -1;
 		}
 	}
+	// an entry does not exist
 	else
 	{
-		//Don't create weapon if it has +nocreate and is in a modular table.
-		if(!create_if_not_found && replace)
+		// Don't create weapon if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after weapon %s", fname);
 			}
 
 			return -1;
 		}
 
-		if(Weapon_info.size() >= MAX_WEAPON_TYPES) {
+		// Check if there are too many weapon classes
+		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
@@ -826,7 +866,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();
 		first_time = true;
-		
+
 		strcpy_s(wip->name, fname);
 	}
 
@@ -1094,7 +1134,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->damage_type_idx_sav = damage_type_add(buf);
 		wip->damage_type_idx = wip->damage_type_idx_sav;
 	}
@@ -2647,7 +2687,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if(optional_string("$Armor Type:")) {
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(wip->armor_type_idx == -1)
@@ -3490,8 +3530,10 @@ void weapon_init()
 		//Init weapon explosion info
 		weapon_expl_info_init();
 
-		// parse weapons.tbl
 		Num_spawn_types = 0;
+
+		// parse weapons.tbl
+		Removed_weapons.clear();
 		Weapon_info.clear();
 		parse_weaponstbl("weapons.tbl");
 
