@@ -1683,15 +1683,16 @@ void labviewer_make_weap_window(Button* /*caller*/)
 	weap_tree = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
 	// Unfortunately these are hardcoded
 	auto type_nodes = new TreeItem*[Num_weapon_subtypes];
-	int i;
 
 	// Add type nodes
-	for (i = 0; i < Num_weapon_subtypes; i++) {
+	for (int i = 0; i < Num_weapon_subtypes; ++i) {
 		type_nodes[i] = weap_tree->AddItem(nullptr, Weapon_subtype_names[i], 0, false);
 	}
 
 	// Now add the weapons
-	for (auto &wi : Weapon_info) {
+	for (int i = 0; i < weapon_info_size(); ++i) {
+		auto &wi = Weapon_info[i];
+
 		if (wi.subtype == WP_UNUSED) {
 			continue;
 		} else if (wi.subtype >= Num_weapon_subtypes) {
@@ -1722,7 +1723,7 @@ void labviewer_make_weap_window(Button* /*caller*/)
 	}
 
 	// Get rid of any empty nodes
-	for (i = 0; i < Num_weapon_subtypes; i++) {
+	for (int i = 0; i < Num_weapon_subtypes; ++i) {
 		if (!type_nodes[i]->HasChildren()) {
 			delete type_nodes[i];
 		}
