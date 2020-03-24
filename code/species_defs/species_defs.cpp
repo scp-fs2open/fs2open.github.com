@@ -151,7 +151,6 @@ void parse_thrust_glows(species_info *species, bool no_create)
 
 void parse_species_tbl(const char *filename)
 {
-	int i;
 	char species_name[NAME_LENGTH];
 
 	try
