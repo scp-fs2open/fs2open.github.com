@@ -2033,12 +2033,7 @@ int lab_get_type_idx()
 {
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_info* si = &Ship_info[Lab_last_selected_object->GetData()];
-		for (int i = 0; i < (int)Species_info.size(); i++) {
-			species_info specie = Species_info[i];
-			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
-				return i;
-			}
-		}
+		return si->species;
 	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		weapon_info* wi = &Weapon_info[Lab_last_selected_object->GetData()];
 		for (int i = 0; i < Num_weapon_subtypes; i++) {

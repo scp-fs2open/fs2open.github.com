@@ -1207,29 +1207,37 @@ void parse_sound_table(const char* filename)
 		// parse flyby sound section
 		if (optional_string("#Flyby Sounds Start"))
 		{
-			char species_name_tag[NAME_LENGTH + 2];
-			int	sanity_check = 0;
-			size_t i;
-
-			while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
+			// try parsing sounds for each species
+			// Note 1: instead of going through Species_info and requiring a sound for each species,
+			// we now parse the token and extract the species name from it
+			// Note 2: if a species doesn't have a flyby sound, the flyby code will just not play anything
+			while (!check_for_string("#Flyby Sounds End"))
 			{
-				for (i = 0; i < Species_info.size(); i++)
+				char species_name_tag[NAME_LENGTH + 2];
+				stuff_string_until(species_name_tag, ":", NAME_LENGTH + 2);
+
+				if (species_name_tag[0] != '$')
 				{
-					species_info *species = &Species_info[i];
-
-					sprintf(species_name_tag, "$%s:", species->species_name);
-
-					if (check_for_string(species_name_tag))
-					{
-						gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
-						gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
-						sanity_check--;
-					}
-					else
-					{
-						sanity_check++;
-					}
+					error_display(0, "Unexpected token tag %s", species_name_tag);
+					advance_to_eoln(nullptr);
+					continue;
 				}
+
+				int idx = species_info_lookup(&species_name_tag[1]);
+				if (idx < 0)
+				{
+					mprintf(("Skipping flyby sound for unknown species %s\n", &species_name_tag[1]));
+					advance_to_eoln(nullptr);
+					continue;
+				}
+
+				// now we have a known species
+				species_info *species = &Species_info[idx];
+				strcat_s(species_name_tag, ":");	// put back the terminator to restore the entire tag
+
+				// parse the two sounds for it
+				gamesnd_parse_line(&species->snd_flyby_fighter, ":");				// since we stuffed most of the tag, the : is all that remains on this line
+				gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);	// for the subsequent line we use required_string on the whole tag
 			}
 
 			required_string("#Flyby Sounds End");
