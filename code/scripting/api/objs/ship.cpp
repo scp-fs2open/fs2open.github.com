@@ -617,7 +617,7 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 			else
 			{
 				aip->target_objnum = -1;
-				aip->target_signature = 0;
+				aip->target_signature = -1;
 				aip->target_time = 0.0f;
 			}
 
@@ -664,7 +664,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 		else
 		{
 			aip->target_objnum = -1;
-			aip->target_signature = 0;
+			aip->target_signature = -1;
 			aip->target_time = 0.0f;
 
 			set_targeted_subsys(aip, NULL, -1);
