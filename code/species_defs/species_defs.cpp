@@ -151,7 +151,6 @@ void parse_thrust_glows(species_info *species, bool no_create)
 
 void parse_species_tbl(const char *filename)
 {
-	int i;
 	char species_name[NAME_LENGTH];
 
 	try
@@ -190,14 +189,9 @@ void parse_species_tbl(const char *filename)
 			{
 				no_create = true;
 
-				for (i = 0; i < (int)Species_info.size(); i++)
-				{
-					if (!stricmp(Species_info[i].species_name, species_name))
-					{
-						species = &Species_info[i];
-						break;
-					}
-				}
+				int i = species_info_lookup(species_name);
+				if (i >= 0)
+					species = &Species_info[i];
 			}
 			else
 			{
@@ -367,4 +361,15 @@ void species_init()
 
 
 	Species_initted = 1;
+}
+
+int species_info_lookup(const char *species_name)
+{
+	for (int i = 0; i < static_cast<int>(Species_info.size()); i++)
+	{
+		if (!stricmp(Species_info[i].species_name, species_name))
+			return i;
+	}
+
+	return -1;
 }

@@ -92,4 +92,6 @@ extern SCP_vector<species_info> Species_info;
 // IMPORTANT: If Num_species != 3, icons.tbl, asteroid.tbl, and sounds.tbl have to be modified to compensate!
 void species_init();
 
+int species_info_lookup(const char *species_name);
+
 #endif

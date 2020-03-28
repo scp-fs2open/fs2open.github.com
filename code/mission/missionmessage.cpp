@@ -278,19 +278,12 @@ void persona_parse()
 	char cstrtemp[NAME_LENGTH];
 	if ( optional_string("+") )
 	{
-		int j;
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
+		int j = species_info_lookup(cstrtemp);
 
-		for (j = 0; j < (int)Species_info.size(); j++)
-		{
-			if (!strcmp(cstrtemp, Species_info[j].species_name))
-			{
-				Personas[Num_personas].species = j;
-				break;
-			}
-		}
-
-		if ( j == (int)Species_info.size() )
+		if (j >= 0)
+			Personas[Num_personas].species = j;
+		else
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
