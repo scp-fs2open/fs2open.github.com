@@ -974,7 +974,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 {
 	opengl_tnl_set_material(material_info, true);
 
-	gr_matrix_on_frame();
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
 	Current_shader->program->Uniforms.setTextureUniform("depthMap", 1);
@@ -1010,7 +1010,7 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 void opengl_tnl_set_material_movie(movie_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
-	gr_matrix_on_frame();
+	gr_matrix_set_uniforms();
 
 	Current_shader->program->Uniforms.setTextureUniform("ytex", 0);
 	Current_shader->program->Uniforms.setTextureUniform("utex", 1);
