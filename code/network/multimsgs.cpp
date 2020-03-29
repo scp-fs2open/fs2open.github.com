@@ -2942,7 +2942,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	int packet_size, net_player_num;
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
 	object *objp;
-	ushort target_signature;
+	ushort target_net_signature;
 	char t_subsys;
 	ai_info *aip;
 
@@ -2986,10 +2986,10 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	ADD_DATA( sinfo );
 
 	// add the ship's target and any targeted subsystem
-	target_signature = 0;
+	target_net_signature = 0;
 	t_subsys = -1;
 	if ( aip->target_objnum != -1) {
-		target_signature = Objects[aip->target_objnum].net_signature;
+		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
 			int s_index;
 
@@ -3004,7 +3004,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 
 	}
 
-	ADD_USHORT( target_signature );
+	ADD_USHORT( target_net_signature );
 	ADD_DATA( t_subsys );
 
 	// just send this packet to everyone, then bail if an AI ship fired.
@@ -3039,7 +3039,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 
 	// add the targeting information so that the player's weapons will always home on the correct
 	// ship
-	ADD_USHORT( target_signature );
+	ADD_USHORT( target_net_signature );
 	ADD_DATA( t_subsys );
 	
 	multi_io_send_reliable(&Net_players[net_player_num], data, packet_size);
@@ -3049,7 +3049,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 {
 	int offset, allow_swarm, target_objnum_save;
-	ushort net_signature, starting_sig, target_signature;
+	ushort net_signature, starting_sig, target_net_signature;
 	ubyte sinfo, current_bank;
 	object* objp, *target_objp;
 	ship *shipp;
@@ -3067,7 +3067,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_USHORT( starting_sig );
 		GET_DATA( sinfo );			// are we firing swarm missiles
 
-		GET_USHORT( target_signature );
+		GET_USHORT( target_net_signature );
 		GET_DATA( t_subsys );
 
 		PACKET_SET_SIZE();
@@ -3087,7 +3087,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_USHORT( starting_sig );
 		GET_DATA( sinfo );
 
-		GET_USHORT( target_signature );
+		GET_USHORT( target_net_signature );
 		GET_DATA( t_subsys );
 
 		PACKET_SET_SIZE();
@@ -3134,7 +3134,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	aip->target_objnum = -1;
 	aip->targeted_subsys = NULL;
 
-	target_objp = multi_get_network_object( target_signature );
+	target_objp = multi_get_network_object( target_net_signature );
 	if ( target_objp != NULL ) {
 		aip->target_objnum = OBJ_INDEX(target_objp);
 
@@ -4250,7 +4250,7 @@ void send_player_order_packet(int type, int index, int cmd)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte val;
-	ushort target_signature;
+	ushort target_net_signature;
 	char t_subsys;
 	int packet_size = 0;
 
@@ -4267,12 +4267,12 @@ void send_player_order_packet(int type, int index, int cmd)
 	ADD_INT(cmd);         // the command itself
 
 	// add target data.
-	target_signature = 0;
+	target_net_signature = 0;
 	if ( Player_ai->target_objnum != -1 ){
-		target_signature = Objects[Player_ai->target_objnum].net_signature;
+		target_net_signature = Objects[Player_ai->target_objnum].net_signature;
 	}
 
-	ADD_USHORT( target_signature );
+	ADD_USHORT( target_net_signature );
 
 	t_subsys = -1;
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
@@ -4295,7 +4295,7 @@ void send_player_order_packet(int type, int index, int cmd)
 void process_player_order_packet(ubyte *data, header *hinfo)
 {
 	int offset, player_num, command, index = 0, tobjnum_save;	
-	ushort target_signature;
+	ushort target_net_signature;
 	char t_subsys, type;
 	object *objp, *target_objp;
 	ai_info *aip;
@@ -4314,7 +4314,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	GET_INT( command );
-	GET_USHORT( target_signature );
+	GET_USHORT( target_net_signature );
 	GET_DATA( t_subsys );
 
 	PACKET_SET_SIZE();	
@@ -4361,7 +4361,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	aip = &Ai_info[shipp->ai_index];
 
 	// get the target objnum and targeted subsystem.  Quick out if we don't have an object to act on.
-	target_objp = multi_get_network_object( target_signature );
+	target_objp = multi_get_network_object( target_net_signature );
 	if ( target_objp == NULL ) {
 		return;
 	}
