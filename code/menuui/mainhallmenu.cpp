@@ -2492,13 +2492,11 @@ void main_hall_vasudan_funny()
 }
 
 /**
- * Lookup if Vasudan main hall, based upon music name
- * @return 1 if true, 0 if false
+ * Lookup if Vasudan main hall, based upon background graphics
  */
-int main_hall_is_vasudan()
+bool main_hall_is_vasudan()
 {
-	// kind of a hack for now
-	return (!stricmp(Main_hall->music_name.c_str(), "Psampik") || !stricmp(Main_hall->music_name.c_str(), "Psamtik"));
+	return !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
 }
 
 /**
