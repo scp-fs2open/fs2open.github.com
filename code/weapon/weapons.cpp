@@ -3549,6 +3549,43 @@ void weapon_init()
 	}
 
 	weapon_level_init();
+
+	// log all weapon stats
+	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload\n"));
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_LASER)
+		{
+			mprintf(("%s,%s,", wi.name, "Primary"));
+			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.inner_rad > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+
+			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
+			mprintf((",\n", wi.rearm_rate, 1.0f / wi.rearm_rate));	// no reload for primaries
+		}
+	}
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE)
+		{
+			mprintf(("%s,%s,", wi.name, "Secondary"));
+			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.inner_rad > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+
+			mprintf((","));	// no power use for secondaries
+			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
+			mprintf(("%.2f,%.2f\n", wi.rearm_rate, 1.0f / wi.rearm_rate));
+		}
+	}
 }
 
 
