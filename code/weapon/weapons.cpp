@@ -3554,7 +3554,7 @@ void weapon_init()
 	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Shockwave\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_LASER)
+		if (wi.subtype == WP_LASER && wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s,%s,", wi.name, "Primary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
@@ -3576,7 +3576,7 @@ void weapon_init()
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE)
+		if (wi.subtype == WP_MISSILE && (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child]))
 		{
 			mprintf(("%s,%s,", wi.name, "Secondary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
@@ -3601,7 +3601,7 @@ void weapon_init()
 	mprintf(("\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_LASER)
+		if (wi.subtype == WP_LASER && wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
@@ -3631,7 +3631,7 @@ void weapon_init()
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (!stricmp(wi.name, "Hornet#Weak") || !stricmp(wi.name, "Harpoon#Weak") || !stricmp(wi.name, "TAG-C") || (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE) || wi.wi_flags[Weapon::Info_Flags::Child])
+		if (wi.subtype == WP_MISSILE && (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child]))
 		{
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
