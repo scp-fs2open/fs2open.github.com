@@ -3551,7 +3551,7 @@ void weapon_init()
 	weapon_level_init();
 
 	// log all weapon stats
-	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload\n"));
+	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Shockwave\n"));
 	for (auto &wi : Weapon_info)
 	{
 		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_LASER)
@@ -3559,14 +3559,19 @@ void weapon_init()
 			mprintf(("%s,%s,", wi.name, "Primary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.inner_rad > 0.0f) ? 2.0f : 1.0f;
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
 
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
-			mprintf((",\n", wi.rearm_rate, 1.0f / wi.rearm_rate));	// no reload for primaries
+			mprintf((",,", wi.rearm_rate, 1.0f / wi.rearm_rate));	// no reload for primaries
+
+			if (wi.shockwave.speed > 0.0f)
+				mprintf(("Yes\n"));
+			else
+				mprintf(("\n"));
 		}
 	}
 	for (auto &wi : Weapon_info)
@@ -3576,14 +3581,85 @@ void weapon_init()
 			mprintf(("%s,%s,", wi.name, "Secondary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.inner_rad > 0.0f) ? 2.0f : 1.0f;
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
 
 			mprintf((","));	// no power use for secondaries
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
-			mprintf(("%.2f,%.2f\n", wi.rearm_rate, 1.0f / wi.rearm_rate));
+			mprintf(("%.2f,%.2f,", wi.rearm_rate, 1.0f / wi.rearm_rate));
+
+			if (wi.shockwave.speed > 0.0f)
+				mprintf(("Yes\n"));
+			else
+				mprintf(("\n"));
+		}
+	}
+
+	// mvp-style stats
+	mprintf(("\n"));
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_LASER)
+		{
+			mprintf(("%s\n", wi.name));
+			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("\tDPS: "));
+			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
+			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.0f Subsystem\n", multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+
+			char watts[NAME_LENGTH];
+			sprintf(watts, "%.1f", wi.energy_consumed / wi.fire_wait);
+			char *p = strstr(watts, ".0");
+			if (p)
+				*p = 0;
+			strcat(watts, "W");
+
+			char rof[NAME_LENGTH];
+			sprintf(rof, "%.1f", 1.0f / wi.fire_wait);
+			p = strstr(rof, ".0");
+			if (p)
+				*p = 0;
+			strcat(rof, "/s");
+
+			mprintf(("\tPower Use: %-10sROF: %s\n\n", watts, rof));
+		}
+	}
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE)
+		{
+			mprintf(("%s\n", wi.name));
+			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("\tDamage: "));
+			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor));
+			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor));
+			mprintf(("%.0f Subsystem\n", multiplier * wi.damage * wi.subsystem_factor));
+
+			char wait[NAME_LENGTH];
+			sprintf(wait, "%.1f", wi.fire_wait);
+			char *p = strstr(wait, ".0");
+			if (p)
+				*p = 0;
+			strcat(wait, "s");
+
+			bool flip = wi.rearm_rate <= 1.0f;
+			char flip_str[NAME_LENGTH];
+			sprintf(flip_str, "%d/", wi.reloaded_per_batch);
+
+			char reload[NAME_LENGTH];
+			sprintf(reload, "%.1f", flip ? wi.reloaded_per_batch / wi.rearm_rate : wi.rearm_rate);
+			p = strstr(reload, ".0");
+			if (p)
+				*p = 0;
+
+			mprintf(("\tFire Wait: %-10sReload: %s%s%ss\n\n", wait, !flip ? flip_str : "", reload, flip ? "/" : ""));
 		}
 	}
 }
