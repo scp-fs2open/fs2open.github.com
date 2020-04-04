@@ -3631,7 +3631,7 @@ void weapon_init()
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE)
+		if (!stricmp(wi.name, "Hornet#Weak") || !stricmp(wi.name, "Harpoon#Weak") || !stricmp(wi.name, "TAG-C") || (wi.wi_flags[Weapon::Info_Flags::Player_allowed] && wi.subtype == WP_MISSILE) || wi.wi_flags[Weapon::Info_Flags::Child])
 		{
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
