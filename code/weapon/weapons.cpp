@@ -3588,7 +3588,7 @@ void weapon_init()
 
 			mprintf((","));	// no power use for secondaries
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", wi.rearm_rate, 1.0f / wi.rearm_rate));
+			mprintf(("%.2f,%.2f,", wi.reloaded_per_batch / wi.rearm_rate, wi.rearm_rate / wi.reloaded_per_batch));	// rearm_rate is actually the reciprocal of what is in weapons.tbl
 
 			if (wi.shockwave.speed > 0.0f)
 				mprintf(("Yes\n"));
