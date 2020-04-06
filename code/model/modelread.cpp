@@ -3368,6 +3368,9 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	t = (height*Canv_h2)/pnt.world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
+	// Use the smaller of the width and height (forces the resulting targetting reticle to be square on non-square aspect ratios).
+	w = h = (w < h) ? w : h;
+
 	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
 	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
 
