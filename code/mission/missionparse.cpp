@@ -2177,173 +2177,143 @@ int parse_create_object_sub(p_object *p_objp)
 		sssp = &Subsys_status[p_objp->subsys_index + i];
 		if (!stricmp(sssp->name, NOX("Pilot")))
 		{
+			ptr = nullptr;
 			wp = &shipp->weapons;
-			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+		}
+		else
+		{
+			ptr = ship_get_subsys(shipp, sssp->name);	// find the subsystem in the ship list that corresponds to the parsed subsystem
+			if (!ptr)
 			{
-				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-				{
-					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
-				}
-
-				if (Fred_running)
-					wp->num_primary_banks = sip->num_primary_banks;
-				else
-					wp->num_primary_banks = k;
+				Warning(LOCATION, "Unable to find '%s' in the ship %s (class %s) subsys_list!", sssp->name, shipp->ship_name, sip->name);
+				continue;
 			}
-
-			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-			{
-				for (j = k = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-				{
-					if ((sssp->secondary_banks[j] >= 0) || Fred_running)
-						wp->secondary_bank_weapons[k++] = sssp->secondary_banks[j];
-				}
-
-				if (Fred_running)
-					wp->num_secondary_banks = sip->num_secondary_banks;
-				else
-					wp->num_secondary_banks = k;
-			}
-
-			// primary weapons too - Goober5000
-			for (j = 0; j < wp->num_primary_banks; j++)
-			{
-				if (Fred_running)
-				{
-					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
-				}
-				else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
-				{
-					Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
-							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[wp->primary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j]);
-					wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size);
-				}
-			}
-
-			for (j = 0; j < wp->num_secondary_banks; j++)
-			{
-				if (Fred_running)
-				{
-					wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				}
-				else if (wp->secondary_bank_weapons[j] >= 0)
-				{
-					Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
-							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j]);
-					wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size);
-				}
-			}
-
-			// skip the rest because the Pilot subsystem is special
-			continue;
+			wp = &ptr->weapons;
 		}
 
-		// find the subsystem in the ship list that corresponds to the parsed subsystem
-		ptr = ship_get_subsys(shipp, sssp->name);
-		if (ptr != nullptr)
+		if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
 		{
-			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-			if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
+			for (j = k = 0; j < MAX_SHIP_PRIMARY_BANKS; ++j)
 			{
-				// mark all turrets as beam free
-				if(ptr->system_info->type == SUBSYSTEM_TURRET)
+				// skip over any empty primary banks unless we are in FRED
+				if ((sssp->primary_banks[j] >= 0) || Fred_running)
 				{
-					ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-				}
-			}
+					wp->primary_bank_weapons[k] = sssp->primary_banks[j];
 
-			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
-			{
-				// mark all turrets as locked
-				if(ptr->system_info->type == SUBSYSTEM_TURRET)
-				{
-					ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+					if (Fred_running)
+					{
+						wp->primary_bank_ammo[k] = sssp->primary_ammo[j];
+					}
+					else if (sssp->primary_banks[j] >= 0 && Weapon_info[sssp->primary_banks[j]].wi_flags[Weapon::Info_Flags::Ballistic])
+					{
+						Assertion(Weapon_info[sssp->primary_banks[j]].cargo_size > 0.0f,
+							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+							shipp->ship_name, sssp->name, j, Weapon_info[sssp->primary_banks[j]].name);
+
+						int capacity = (int)std::lround(sssp->primary_ammo[j] / 100.0f * sip->primary_bank_ammo_capacity[j]);
+						wp->primary_bank_ammo[k] = (int)std::lround(capacity / Weapon_info[sssp->primary_banks[j]].cargo_size);
+					}
+
+					++k;
 				}
 			}
 
 			if (Fred_running)
-			{
-				ptr->current_hits = sssp->percent;
-				ptr->max_hits = 100.0f;
-			}
+				wp->num_primary_banks = sip->num_primary_banks;
 			else
+				wp->num_primary_banks = k;
+		}
+
+		if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+		{
+			for (j = k = 0; j < MAX_SHIP_SECONDARY_BANKS; ++j)
 			{
-				ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
-
-				float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-				if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
-					shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
-				}
-
-				if ((100.0f - sssp->percent) < 0.5)
+				// skip over any empty secondary banks unless we are in FRED
+				if ((sssp->secondary_banks[j] >= 0) || Fred_running)
 				{
-					ptr->current_hits = 0.0f;
-					ptr->submodel_info_1.blown_off = 1;
-				}
-				else
-				{
-					ptr->current_hits = new_hits;
-				}
-			}
+					wp->secondary_bank_weapons[k] = sssp->secondary_banks[j];
 
-			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-				for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-					ptr->weapons.primary_bank_weapons[j] = sssp->primary_banks[j];
-
-			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-				for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++)
-					ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
-
-			// Goober5000
-			for (j = 0; j < ptr->weapons.num_primary_banks; j++)
-			{
-				if (Fred_running) {
-					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-				} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
-					Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
-							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j]);
-					ptr->weapons.primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size);
-				}
-			}
-
-			for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
-			{
-				if (Fred_running) {
-					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				} else if (ptr->weapons.secondary_bank_weapons[j] >= 0) {
-					Assertion(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f,
+					if (Fred_running)
+					{
+						wp->secondary_bank_ammo[k] = sssp->secondary_ammo[j];
+					}
+					else if (sssp->secondary_banks[j] >= 0)
+					{
+						Assertion(Weapon_info[sssp->secondary_banks[j]].cargo_size > 0.0f,
 							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
+							shipp->ship_name, sssp->name, j, Weapon_info[sssp->secondary_banks[j]].name);
 
-					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j]);
-					ptr->weapons.secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size);
+						int capacity = (int)std::lround(sssp->secondary_ammo[j] / 100.0f * sip->secondary_bank_ammo_capacity[j]);
+						wp->secondary_bank_ammo[k] = (int)std::lround(capacity / Weapon_info[sssp->secondary_banks[j]].cargo_size);
+					}
+
+					++k;
 				}
 			}
 
-			ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+			if (Fred_running)
+				wp->num_secondary_banks = sip->num_secondary_banks;
+			else
+				wp->num_secondary_banks = k;
+		}
 
-			if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
-				ptr->weapons.ai_class = sssp->ai_class;
+		// if we are parsing a Pilot subsystem, skip the rest
+		if (!ptr)
+			continue;
 
-			ptr->turret_best_weapon = -1;
-			ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
-			ptr->turret_animation_done_time = 0;
+		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
+		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
+		{
+			// mark all turrets as beam free
+			if(ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
+				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+		}
+
+		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
+		{
+			// mark all turrets as locked
+			if(ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+			}
+		}
+
+		if (Fred_running)
+		{
+			ptr->current_hits = sssp->percent;
+			ptr->max_hits = 100.0f;
 		}
 		else
 		{
-			Warning(LOCATION, "Unable to find '%s' in ship subsys_list!", sssp->name);
+			ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
+
+			float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+			if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
+				shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
+			}
+
+			if ((100.0f - sssp->percent) < 0.5)
+			{
+				ptr->current_hits = 0.0f;
+				ptr->submodel_info_1.blown_off = 1;
+			}
+			else
+			{
+				ptr->current_hits = new_hits;
+			}
 		}
+
+		ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+
+		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
+			ptr->weapons.ai_class = sssp->ai_class;
+
+		ptr->turret_best_weapon = -1;
+		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
+		ptr->turret_animation_done_time = 0;
 	}
 	
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
