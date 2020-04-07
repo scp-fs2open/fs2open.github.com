@@ -589,6 +589,7 @@ void debug_max_secondary_weapons(object *objp)
 			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
 			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
 			float size = (float)wip->cargo_size;
+			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
 			swp->secondary_bank_ammo[index] = (int)std::lround(capacity / size);
 		}
 	}
@@ -610,6 +611,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 			{
 				float capacity = (float)sip->primary_bank_ammo_capacity[index];
 				float size = (float)wip->cargo_size;
+				Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
 				swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
 			}
 		}
