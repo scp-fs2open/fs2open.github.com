@@ -577,36 +577,43 @@ void debug_cycle_targeted_ship(int delta)
 
 void debug_max_secondary_weapons(object *objp)
 {
-	int index;
+	Assert(objp);
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon *swp = &shipp->weapons;
 
-	for ( index = 0; index < MAX_SHIP_SECONDARY_BANKS; index++ )
+	for (int index = 0; index < MAX_SHIP_SECONDARY_BANKS; ++index)
 	{
-		swp->secondary_bank_ammo[index] = sip->secondary_bank_ammo_capacity[index];
+		if (swp->secondary_bank_weapons[index] >= 0)
+		{
+			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
+			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
+			float size = (float)wip->cargo_size;
+			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
+			swp->secondary_bank_ammo[index] = (int)std::lround(capacity / size);
+		}
 	}
 }
 
 void debug_max_primary_weapons(object *objp)	// Goober5000
 {
-	Assert(objp);	// Goober5000
-
-	int index;
+	Assert(objp);
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon *swp = &shipp->weapons;
-	weapon_info *wip;
 
-	for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
+	for (int index = 0; index < MAX_SHIP_PRIMARY_BANKS; ++index)
 	{
-		wip = &Weapon_info[swp->primary_bank_weapons[index]];
-		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+		if (swp->primary_bank_weapons[index] >= 0)
 		{
-			float capacity, size;
-			capacity = (float) sip->primary_bank_ammo_capacity[index];
-			size = (float) wip->cargo_size;
-			swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
+			weapon_info *wip = &Weapon_info[swp->primary_bank_weapons[index]];
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				float capacity = (float)sip->primary_bank_ammo_capacity[index];
+				float size = (float)wip->cargo_size;
+				Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
+				swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
+			}
 		}
 	}
 }

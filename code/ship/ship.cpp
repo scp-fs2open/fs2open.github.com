@@ -16063,15 +16063,18 @@ float ship_get_secondary_weapon_range(ship *shipp)
  */
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 {
-	float capacity, size;
-	
-	if (!(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic]))
+	Assertion(ship_class < ship_info_size(), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, ship_info_size());
+	Assertion(bank < MAX_SHIP_PRIMARY_BANKS, "Invalid primary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_PRIMARY_BANKS - 1);
+	Assertion(ammo_type < weapon_info_size(), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, weapon_info_size());
+
+	// Invalid and non-existent weapons, and non-ballistic weapons, have capacities of 0, per ship_weapon::clear()
+	if (ship_class < 0 || bank < 0 || ammo_type < 0 || !(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic]))
 		return 0;
 
-	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
-	size = (float) Weapon_info[ammo_type].cargo_size;
+	float capacity = (float)Ship_info[ship_class].primary_bank_ammo_capacity[bank];
+	float size = (float)Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
-	return  (int)std::lround(capacity / size);
+	return (int)std::lround(capacity / size);
 }
 
 /**
@@ -16079,20 +16082,18 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
  */
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
-	float capacity, size;
-
 	Assertion(ship_class < ship_info_size(), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, ship_info_size());
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
 	Assertion(ammo_type < weapon_info_size(), "Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n", ammo_type, weapon_info_size());
 
-	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
+	// Invalid and non-existent weapons have capacities of 0, per ship_weapon::clear()
+	if (ship_class < 0 || bank < 0 || ammo_type < 0)
 		return 0;
-	} else {
-		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
-		size = (float) Weapon_info[ammo_type].cargo_size;
-		Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
-		return fl2ir(capacity / size);
-	}
+
+	float capacity = (float)Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
+	float size = (float)Weapon_info[ammo_type].cargo_size;
+	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
+	return (int)std::lround(capacity / size);
 }
 
 /**
