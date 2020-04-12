@@ -3865,8 +3865,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 				Assert(mode == SEXP_SAVE_MODE);
 				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			}
-		} else {
-			// string
+		}
+		// string
+		else {
 			Assert(Sexp_nodes[node].subtype == SEXP_ATOM_STRING);
 			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
 
@@ -3883,12 +3884,26 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 				sprintf(dest, "\"@%s[%s]\" ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			}
 		}
-	} else {
-		// not a variable
+	}
+	// not a variable
+	else {
+		char *ctext_string = CTEXT(node);
+
+		// strings are enclosed in quotes
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
-			sprintf(dest, "\"%s\" ", CTEXT(node));
-		} else {
-			sprintf(dest, "%s ", CTEXT(node));
+			sprintf(dest, "\"%s\" ", ctext_string);
+		}
+		// numbers and operators are printed as-is
+		else {
+			// do some sanity checking based on Github issue #2314
+			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
+				// if (for whatever reason) we have an empty string or an invalid number, print 0
+				if (!*ctext_string || !can_construe_as_integer(ctext_string)) {
+					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
+					ctext_string = "0";
+				}
+			}
+			sprintf(dest, "%s ", ctext_string);
 		}
 	}
 }
