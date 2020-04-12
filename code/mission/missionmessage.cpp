@@ -1,14 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "mission/missionmessage.h"
 
 #include "anim/animplay.h"
 #include "gamesequence/gamesequence.h"
@@ -21,15 +20,16 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "localization/localize.h"
-#include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "scripting/api/objs/message.h"
+#include "scripting/hook_api.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "sound/fsspeech.h"
@@ -39,11 +39,11 @@
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
+int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 // here is the list of the builtin message names and the settings which control how frequently
-// they are heard.  These names are used to match against names read in for builtin message 
-// radio bits to see what message to play.  
-// These are generic names, meaning that there will be the same message type for a 
+// they are heard.  These names are used to match against names read in for builtin message
+// radio bits to see what message to play.
+// These are generic names, meaning that there will be the same message type for a
 // number of different personas
 builtin_message Builtin_messages[] =
 {
@@ -214,6 +214,23 @@ int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 		7, 66
 	}
 };
+
+const auto OnMessageReceivedHook = scripting::Hook::Factory(
+	"On Message Received",
+	"Invoked when a mission sends a message.",
+	{
+		{"Name", "string", "The name of the message in the mission"},
+		{"Message",
+		 "string",
+		 "The text of the sent message. This will have any placeholder expanded (e.g. SEXP "
+		 "variables) and will be what the player sees on the HUD."},
+		{"SenderString", "string", "The source of the message as a string. Same as used by the engine on the HUD."},
+		{"Builtin", "boolean", "true if this is a builtin message, false of this is a mission message"},
+		{"Sender",
+		 "ship",
+		 "If sent from an object, the object that has sent the message. Invalid if not sent from an object"},
+		{"MessageHandle", "message", "The scripting handle of the message being sent."},
+	});
 
 // forward declarations
 void message_maybe_distort_text(char *text, int shipnum);
@@ -1590,25 +1607,22 @@ void message_queue_process()
 		hud_target_last_transmit_add(Message_shipnum);
 	}
 
-	Script_system.SetHookVar("Name", 's', m->name);
-	Script_system.SetHookVar("Message", 's', buf);
-	Script_system.SetHookVar("SenderString", 's', who_from);
-
 	builtinMessage = q->builtin_type != -1;
-	Script_system.SetHookVar("Builtin", 'b', builtinMessage);
 
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
-	Script_system.SetHookObject("Sender", sender);
-
-	Script_system.RunCondition(CHA_MSGRECEIVED, sender);
-
-	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
+	OnMessageReceivedHook->run(scripting::hook_param_list(
+		scripting::hook_param("Name", 's', m->name),
+		scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
+		scripting::hook_param("Message", 's', buf),
+		scripting::hook_param("SenderString", 's', who_from),
+		scripting::hook_param("Builtin", 'b', builtinMessage),
+		scripting::hook_param("Sender", 'o', sender)));
 
 all_done:
 	Num_messages_playing++;
-	message_remove_from_queue( q );
+	message_remove_from_queue(q);
 }
 
 // queues up a message to display to the player

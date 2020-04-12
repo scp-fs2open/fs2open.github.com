@@ -59,56 +59,56 @@ extern bool script_hook_valid(script_hook *hook);
 #define CHC_APPLICATION		11
 
 //Actions
-enum ConditionalActions {
-	CHA_NONE            = -1,
-	CHA_WARPOUT         = 0,
-	CHA_WARPIN          = 1,
-	CHA_DEATH           = 2,
-	CHA_ONFRAME         = 3,
-	CHA_COLLIDESHIP     = 4,
-	CHA_COLLIDEWEAPON   = 5,
-	CHA_COLLIDEDEBRIS   = 6,
-	CHA_COLLIDEASTEROID = 7,
-	CHA_HUDDRAW         = 8,
-	CHA_OBJECTRENDER    = 9,
-	CHA_SPLASHSCREEN    = 10,
-	CHA_GAMEINIT        = 11,
-	CHA_MISSIONSTART    = 12,
-	CHA_MISSIONEND      = 13,
-	CHA_MOUSEMOVED      = 14,
-	CHA_MOUSEPRESSED    = 15,
-	CHA_MOUSERELEASED   = 16,
-	CHA_KEYPRESSED      = 17,
-	CHA_KEYRELEASED     = 18,
-	CHA_ONSTATESTART    = 19,
-	CHA_ONSTATEEND      = 20,
-	CHA_ONWEAPONDELETE  = 21,
-	CHA_ONWPEQUIPPED    = 22,
-	CHA_ONWPFIRED       = 23,
-	CHA_ONWPSELECTED    = 24,
-	CHA_ONWPDESELECTED  = 25,
-	CHA_GAMEPLAYSTART   = 26,
-	CHA_ONTURRETFIRED   = 27,
-	CHA_PRIMARYFIRE     = 28,
-	CHA_SECONDARYFIRE   = 29,
-	CHA_ONSHIPARRIVE    = 30,
-	CHA_COLLIDEBEAM     = 31,
-	CHA_ONACTION        = 32,
-	CHA_ONACTIONSTOPPED = 33,
-	CHA_MSGRECEIVED     = 34,
-	CHA_HUDMSGRECEIVED  = 35,
-	CHA_AFTERBURNSTART  = 36,
-	CHA_AFTERBURNEND    = 37,
-	CHA_BEAMFIRE        = 38,
-	CHA_SIMULATION      = 39,
-	CHA_LOADSCREEN      = 40,
-	CHA_CMISSIONACCEPT  = 41,
-	CHA_ONSHIPDEPART    = 42,
-	CHA_ONWEAPONCREATED = 43,
-	CHA_ONWAYPOINTSDONE = 44,
-	CHA_ONSUBSYSDEATH   = 45,
-	CHA_ONGOALSCLEARED  = 46,
-	CHA_ONBRIEFSTAGE	= 47,
+enum ConditionalActions : int32_t {
+	CHA_NONE    = -1,
+	CHA_DEATH,
+	CHA_ONFRAME,
+	CHA_COLLIDESHIP,
+	CHA_COLLIDEWEAPON,
+	CHA_COLLIDEDEBRIS,
+	CHA_COLLIDEASTEROID,
+	CHA_HUDDRAW,
+	CHA_OBJECTRENDER,
+	CHA_SPLASHSCREEN,
+	CHA_GAMEINIT,
+	CHA_MISSIONSTART,
+	CHA_MISSIONEND,
+	CHA_MOUSEMOVED,
+	CHA_MOUSEPRESSED,
+	CHA_MOUSERELEASED,
+	CHA_KEYPRESSED,
+	CHA_KEYRELEASED,
+	CHA_ONSTATESTART,
+	CHA_ONSTATEEND,
+	CHA_ONWEAPONDELETE,
+	CHA_ONWPEQUIPPED,
+	CHA_ONWPFIRED,
+	CHA_ONWPSELECTED,
+	CHA_ONWPDESELECTED,
+	CHA_GAMEPLAYSTART,
+	CHA_ONTURRETFIRED,
+	CHA_PRIMARYFIRE,
+	CHA_SECONDARYFIRE,
+	CHA_ONSHIPARRIVE,
+	CHA_COLLIDEBEAM,
+	CHA_ONACTION,
+	CHA_ONACTIONSTOPPED,
+	CHA_MSGRECEIVED,
+	CHA_HUDMSGRECEIVED,
+	CHA_AFTERBURNSTART,
+	CHA_AFTERBURNEND,
+	CHA_BEAMFIRE,
+	CHA_SIMULATION,
+	CHA_LOADSCREEN,
+	CHA_CMISSIONACCEPT,
+	CHA_ONSHIPDEPART,
+	CHA_ONWEAPONCREATED,
+	CHA_ONWAYPOINTSDONE,
+	CHA_ONSUBSYSDEATH,
+	CHA_ONGOALSCLEARED,
+	CHA_ONBRIEFSTAGE,
+
+	CHA_LAST = CHA_ONBRIEFSTAGE,
 };
 
 // management stuff
@@ -119,14 +119,13 @@ void scripting_state_do_frame(float frametime);
 class script_condition
 {
 public:
-	int condition_type;
+	int condition_type{CHC_NONE};
 	union
 	{
 		char name[CONDITION_LENGTH];
 	} data;
 
 	script_condition()
-		: condition_type(CHC_NONE)
 	{
 		memset(data.name, 0, sizeof(data.name));
 	}
@@ -135,13 +134,8 @@ public:
 class script_action
 {
 public:
-	int action_type;
+	int action_type{CHA_NONE};
 	script_hook hook;
-
-	script_action()
-		: action_type(CHA_NONE)
-	{
-	}
 };
 
 class ConditionedHook
@@ -166,6 +160,15 @@ enum class ElementType {
 	Operator,
 	Property,
 };
+
+struct HookVariableDocumentation {
+	const char* name = nullptr;
+	scripting::ade_type_info type;
+	const char* description = nullptr;
+
+	HookVariableDocumentation(const char* name_, scripting::ade_type_info type_, const char* description_);
+};
+
 
 struct DocumentationElement {
 	ElementType type = ElementType::Unknown;
@@ -201,9 +204,17 @@ struct DocumentationEnum {
 	int value;
 };
 
+struct DocumentationAction {
+	SCP_string name;
+	SCP_string description;
+	SCP_vector<HookVariableDocumentation> parameters;
+	bool overridable;
+};
+
 struct ScriptingDocumentation {
 	SCP_vector<SCP_string> conditions;
-	SCP_vector<SCP_string> actions;
+	SCP_vector<HookVariableDocumentation> globalVariables;
+	SCP_vector<DocumentationAction> actions;
 
 	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
 

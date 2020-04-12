@@ -5,38 +5,37 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
+#include "hud/hudmessage.h"
 
-
-#include <cstdlib>
-#include <cstdarg>
-
-
-#include "anim/animplay.h"
-#include "freespace.h"
-#include "gamesequence/gamesequence.h"
-#include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+
+#include "freespace.h"
+
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
 #include "hud/hudconfig.h"
-#include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
-#include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
+#include "mission/missionmessage.h" // for MAX_MISSION_MESSAGES
 #include "missionui/missionscreencommon.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "playerman/player.h"
+#include "scripting/hook_api.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "ui/ui.h"
 #include "weapon/weapon.h"
 
+#include <cstdarg>
+#include <cstdlib>
 
 /* replaced with those static ints that follow
 #define LIST_X		46
@@ -198,8 +197,16 @@ static scrollback_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		scrollback_buttons("2_CB_05a",914,	681,	946,	661,	5)
 	//XSTR:ON
 	}
-}
-;
+};
+
+const auto OnHudMessageReceivedHook = scripting::Hook::Factory(
+	"On HUD Message Received",
+	"Called when a HUD message is received. For normal messages this will be called with the final text that appears "
+	"on the HUD (e.g. [ship]: [message]). Will also be called for engine generated messages.",
+	{
+		{"Text", "string", "The text of the message."},
+		{"SourceType", "number", "The type of message sent by the engine."},
+	});
 
 // ----------------------------------------------------------------------
 // HUD_init_fixed_text()
@@ -595,14 +602,9 @@ void hud_sourced_print(int source, const char *msg)
 
 	HUD_msg_buffer.push_back(new_msg);
 
-    // Invoke the scripting hook
-    Script_system.SetHookVar("Text", 's', const_cast<char*>(msg));
-    Script_system.SetHookVar("SourceType", 'i', source);
-
-    Script_system.RunCondition(CHA_HUDMSGRECEIVED);
-
-    Script_system.RemHookVars(2, "Text", "SourceType");
-    
+	// Invoke the scripting hook
+	OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg),
+															 scripting::hook_param("SourceType", 'i', source)));
 }
 
 int hud_query_scrollback_size()

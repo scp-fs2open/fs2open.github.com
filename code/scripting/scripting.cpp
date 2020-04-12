@@ -1,19 +1,21 @@
 #include "scripting/scripting.h"
 
+#include "globalincs/systemvars.h"
+#include "globalincs/version.h"
+
 #include "ade.h"
+#include "ade_args.h"
 #include "freespace.h"
+#include "hook_api.h"
 
 #include "bmpman/bmpman.h"
 #include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
-#include "globalincs/systemvars.h"
-#include "globalincs/version.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "libs/jansson.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
-#include "scripting/ade_args.h"
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
@@ -23,7 +25,7 @@
 
 using namespace scripting;
 
-//tehe. Declare the main event
+// tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
@@ -31,99 +33,112 @@ bool Output_scripting_json = false;
 flag_def_list Script_conditions[] = 
 {
 	{"State",		CHC_STATE,			0},
-	{"Campaign",	CHC_CAMPAIGN,		0},
-	{"Mission",		CHC_MISSION,		0},
-	{"Object Type", CHC_OBJECTTYPE,		0},
-	{"Ship",		CHC_SHIP,			0},
-	{"Ship class",	CHC_SHIPCLASS,		0},
-	{"Ship type",	CHC_SHIPTYPE,		0},
-	{"Weapon class",CHC_WEAPONCLASS,	0},
-	{"KeyPress",	CHC_KEYPRESS,		0},
-	{"Action",		CHC_ACTION,			0},
-	{"Version",		CHC_VERSION,		0},
-	{"Application",	CHC_APPLICATION,	0}
+	{"Campaign", CHC_CAMPAIGN, 0},
+	{"Mission", CHC_MISSION, 0},
+	{"Object Type", CHC_OBJECTTYPE, 0},
+	{"Ship", CHC_SHIP, 0},
+	{"Ship class", CHC_SHIPCLASS, 0},
+	{"Ship type", CHC_SHIPTYPE, 0},
+	{"Weapon class", CHC_WEAPONCLASS, 0},
+	{"KeyPress", CHC_KEYPRESS, 0},
+	{"Action", CHC_ACTION, 0},
+	{"Version", CHC_VERSION, 0},
+	{"Application", CHC_APPLICATION, 0},
 };
 
-int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
+int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
+
+class BuiltinHook : public scripting::HookBase {
+  public:
+	BuiltinHook(SCP_string hookName, int32_t hookId)
+		: HookBase(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId)
+	{
+	}
+	~BuiltinHook() override = default;
+
+	bool isOverridable() const override { return true; }
+};
 
 // clang-format off
-flag_def_list Script_actions[] =
+static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	{"On Game Init",			CHA_GAMEINIT,		0},
-	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
-	{"On State Start",			CHA_ONSTATESTART,	0},
-	{"On Frame",				CHA_ONFRAME,		0},
-	{"On Action",				CHA_ONACTION,		0},
-	{"On Action Stopped",		CHA_ONACTIONSTOPPED,0},
-	{"On Key Pressed",			CHA_KEYPRESSED,		0},
-	{"On Key Released",			CHA_KEYRELEASED,	0},
-	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
-	{"On Mouse Pressed",		CHA_MOUSEPRESSED,	0},
-	{"On Mouse Released",		CHA_MOUSERELEASED,	0},
-	{"On State End",			CHA_ONSTATEEND,		0},
-	{"On Mission Start",		CHA_MISSIONSTART,	0},
-	{"On HUD Draw",				CHA_HUDDRAW,		0},
-	{"On Ship Collision",		CHA_COLLIDESHIP,	0},
-	{"On Weapon Collision",		CHA_COLLIDEWEAPON,	0},
-	{"On Debris Collision",		CHA_COLLIDEDEBRIS,	0},
-	{"On Asteroid Collision",	CHA_COLLIDEASTEROID,0},
-	{"On Object Render",		CHA_OBJECTRENDER,	0},
-	{"On Warp In",				CHA_WARPIN,			0},
-	{"On Warp Out",				CHA_WARPOUT,		0},
-	{"On Death",				CHA_DEATH,			0},
-	{"On Mission End",			CHA_MISSIONEND,		0},
-	{"On Weapon Delete",		CHA_ONWEAPONDELETE,	0},
-	{"On Weapon Equipped",		CHA_ONWPEQUIPPED,	0},
-	{"On Weapon Fired",			CHA_ONWPFIRED,		0},
-	{"On Weapon Selected",		CHA_ONWPSELECTED,	0},
-	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0},
-	{"On Gameplay Start",		CHA_GAMEPLAYSTART,	0},
-	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
-	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
-	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
-	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
-	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
-	{"On Message Received",		CHA_MSGRECEIVED,	0},
-	{"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
-	{"On Afterburner Engage",	CHA_AFTERBURNSTART, 0},
-	{"On Afterburner Stop",		CHA_AFTERBURNEND,	0},
-	{"On Beam Fire",			CHA_BEAMFIRE,		0},
-	{"On Simulation",			CHA_SIMULATION,		0},
-	{"On Load Screen",			CHA_LOADSCREEN,		0},
-	{"On Campaign Mission Accept", CHA_CMISSIONACCEPT,	0},
-	{"On Ship Depart",			CHA_ONSHIPDEPART,	0},
-	{"On Weapon Created",		CHA_ONWEAPONCREATED, 0},
-	{"On Waypoints Done",		CHA_ONWAYPOINTSDONE, 0},
-	{"On Subsystem Destroyed",	CHA_ONSUBSYSDEATH,	0},
-	{"On Goals Cleared",		CHA_ONGOALSCLEARED, 0},
-	{"On Briefing Stage",		CHA_ONBRIEFSTAGE, 0},
+	std::make_shared<BuiltinHook>("On Game Init",			CHA_GAMEINIT ),
+	std::make_shared<BuiltinHook>("On Splash Screen",		CHA_SPLASHSCREEN ),
+	std::make_shared<BuiltinHook>("On State Start",			CHA_ONSTATESTART ),
+	std::make_shared<BuiltinHook>("On Action",				CHA_ONACTION ),
+	std::make_shared<BuiltinHook>("On Action Stopped",		CHA_ONACTIONSTOPPED ),
+	std::make_shared<BuiltinHook>("On Key Pressed",			CHA_KEYPRESSED ),
+	std::make_shared<BuiltinHook>("On Key Released",		CHA_KEYRELEASED ),
+	std::make_shared<BuiltinHook>("On Mouse Moved",			CHA_MOUSEMOVED ),
+	std::make_shared<BuiltinHook>("On Mouse Pressed",		CHA_MOUSEPRESSED ),
+	std::make_shared<BuiltinHook>("On Mouse Released",		CHA_MOUSERELEASED ),
+	std::make_shared<BuiltinHook>("On State End",			CHA_ONSTATEEND ),
+	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
+	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
+	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
+	std::make_shared<BuiltinHook>("On Weapon Collision",	CHA_COLLIDEWEAPON ),
+	std::make_shared<BuiltinHook>("On Debris Collision",	CHA_COLLIDEDEBRIS ),
+	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
+	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
+	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
+	std::make_shared<BuiltinHook>("On Mission End",			CHA_MISSIONEND ),
+	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
+	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),
+	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
+	std::make_shared<BuiltinHook>("On Weapon Selected",		CHA_ONWPSELECTED ),
+	std::make_shared<BuiltinHook>("On Weapon Deselected",	CHA_ONWPDESELECTED ),
+	std::make_shared<BuiltinHook>("On Gameplay Start",		CHA_GAMEPLAYSTART ),
+	std::make_shared<BuiltinHook>("On Turret Fired",		CHA_ONTURRETFIRED ),
+	std::make_shared<BuiltinHook>("On Primary Fire",		CHA_PRIMARYFIRE ),
+	std::make_shared<BuiltinHook>("On Secondary Fire",		CHA_SECONDARYFIRE ),
+	std::make_shared<BuiltinHook>("On Ship Arrive",			CHA_ONSHIPARRIVE ),
+	std::make_shared<BuiltinHook>("On Beam Collision",		CHA_COLLIDEBEAM ),
+	std::make_shared<BuiltinHook>("On Afterburner Engage",	CHA_AFTERBURNSTART ),
+	std::make_shared<BuiltinHook>("On Afterburner Stop",	CHA_AFTERBURNEND ),
+	std::make_shared<BuiltinHook>("On Beam Fire",			CHA_BEAMFIRE ),
+	std::make_shared<BuiltinHook>("On Simulation",			CHA_SIMULATION ),
+	std::make_shared<BuiltinHook>("On Load Screen",			CHA_LOADSCREEN ),
+	std::make_shared<BuiltinHook>("On Campaign Mission Accept", CHA_CMISSIONACCEPT ),
+	std::make_shared<BuiltinHook>("On Ship Depart",			CHA_ONSHIPDEPART ),
+	std::make_shared<BuiltinHook>("On Weapon Created",		CHA_ONWEAPONCREATED ),
+	std::make_shared<BuiltinHook>("On Waypoints Done",		CHA_ONWAYPOINTSDONE ),
+	std::make_shared<BuiltinHook>("On Subsystem Destroyed",	CHA_ONSUBSYSDEATH ),
+	std::make_shared<BuiltinHook>("On Goals Cleared",		CHA_ONGOALSCLEARED ),
+	std::make_shared<BuiltinHook>("On Briefing Stage",		CHA_ONBRIEFSTAGE ),
+};
+
+static HookVariableDocumentation GlobalVariables[] =
+{
+	{
+		"Player",
+		"object",
+		"The player object in a mission. Does not need to be a ship (e.g. in multiplayer). Not "
+		"present if not in a game play state."
+	},
 };
 // clang-format on
 
-int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 int scripting_state_inited = 0;
+
+HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type_info type_, const char* description_)
+	: name(name_), type(std::move(type_)), description(description_)
+{
+}
 
 //*************************Scripting init and handling*************************
 
 // ditto
-bool script_hook_valid(script_hook *hook)
-{
-	return hook->hook_function.function.isValid();
-}
+bool script_hook_valid(script_hook* hook) { return hook->hook_function.function.isValid(); }
 
-void script_parse_table(const char *filename)
+void script_parse_table(const char* filename)
 {
-	script_state *st = &Script_system;
-	
-	try
-	{
+	script_state* st = &Script_system;
+
+	try {
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		if (optional_string("#Global Hooks"))
-		{
-			//int num = 42;
-			//Script_system.SetHookVar("Version", 'i', &num);
+		if (optional_string("#Global Hooks")) {
 			if (optional_string("$Global:")) {
 				st->ParseGlobalChunk(CHA_ONFRAME, "Global");
 			}
@@ -146,28 +161,7 @@ void script_parse_table(const char *filename)
 
 			required_string("#End");
 		}
-		/*
-			if(optional_string("#State Hooks"))
-			{
-			while(optional_string("$State:")) {
-			char buf[NAME_LENGTH];
-			int idx;
-			stuff_string(buf, F_NAME, sizeof(buf));
 
-			idx = gameseq_get_state_idx(buf);
-
-			if(optional_string("$Hook:"))
-			{
-			if(idx > -1) {
-			GS_state_hooks[idx] = st->ParseChunk(buf);
-			} else {
-			st->ParseChunk(buf);
-			}
-			}
-			}
-			required_string("#End");
-			}
-			*/
 		if (optional_string("#Conditional Hooks"))
 		{
 			while (st->ParseCondition(filename));
@@ -276,15 +270,47 @@ static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<Docum
 	return elementsArray;
 }
 
+static json_t* json_doc_generate_param_element(const HookVariableDocumentation& param)
+{
+	return json_pack("{s:s,s:s,s:o}",
+					 "name",
+					 param.name,
+					 "description",
+					 param.description,
+					 "type",
+					 json_doc_generate_return_type(param.type));
+}
+
+static json_t* json_doc_generate_action_element(const DocumentationAction& action)
+{
+	json_t* paramArray = json_array();
+
+	for (const auto& param : action.parameters) {
+		json_array_append_new(paramArray, json_doc_generate_param_element(param));
+	}
+
+	return json_pack("{s:s,s:s,s:o,s:b}",
+					 "name",
+					 action.name.c_str(),
+					 "description",
+					 action.description.c_str(),
+					 "hookVars",
+					 paramArray,
+					 "overridable",
+					 action.overridable);
+}
+
 static void documentation_to_json(const ScriptingDocumentation& doc)
 {
 	std::unique_ptr<json_t> root(json_object());
+	// Should be incremented every time an incompatible change is made
+	json_object_set_new(root.get(), "version", json_integer(2));
 
 	{
 		json_t* actionArray = json_array();
 
 		for (const auto& action : doc.actions) {
-			json_array_append_new(actionArray, json_string(action.c_str()));
+			json_array_append_new(actionArray, json_doc_generate_action_element(action));
 		}
 
 		json_object_set_new(root.get(), "actions", actionArray);
@@ -307,6 +333,15 @@ static void documentation_to_json(const ScriptingDocumentation& doc)
 
 		json_object_set_new(root.get(), "enums", enumObject);
 	}
+	{
+		json_t* globalVariables = json_array();
+
+		for (const auto& param : doc.globalVariables) {
+			json_array_append_new(globalVariables, json_doc_generate_param_element(param));
+		}
+
+		json_object_set_new(root.get(), "globalVars", globalVariables);
+	}
 	json_object_set_new(root.get(), "elements", json_doc_generate_elements(doc.elements));
 
 	const auto jsonStr = json_dump_string(root.get(), JSON_INDENT(2) | JSON_SORT_KEYS);
@@ -315,8 +350,8 @@ static void documentation_to_json(const ScriptingDocumentation& doc)
 	outStr << jsonStr;
 }
 
-//Initializes the (global) scripting system, as well as any subsystems.
-//script_close is handled by destructors
+// Initializes the (global) scripting system, as well as any subsystems.
+// script_close is handled by destructors
 void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
@@ -336,6 +371,7 @@ void script_init()
 			documentation_to_json(doc);
 		}
 	}
+
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
 	script_parse_table("scripting.tbl");
 	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
@@ -948,10 +984,19 @@ ScriptingDocumentation script_state::OutputDocumentation()
 		doc.conditions.emplace_back(Script_conditions[i].name);
 	}
 
+	// Global variables
+	doc.globalVariables.assign(std::begin(GlobalVariables), std::end(GlobalVariables));
+
 	// Actions
-	doc.actions.reserve(static_cast<size_t>(Num_script_actions));
-	for (int32_t i = 0; i < Num_script_actions; i++) {
-		doc.actions.emplace_back(Script_actions[i].name);
+	auto sortedHooks = scripting::getHooks();
+	std::sort(sortedHooks.begin(),
+			  sortedHooks.end(),
+			  [](const scripting::HookBase* left, const scripting::HookBase* right) {
+				  return left->getHookName() < right->getHookName();
+			  });
+	for (const auto& hook : sortedHooks) {
+		doc.actions.push_back(
+			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->isOverridable()});
 	}
 
 	if (Langs & SC_LUA) {
@@ -961,53 +1006,87 @@ ScriptingDocumentation script_state::OutputDocumentation()
 	return doc;
 }
 
-int script_state::OutputMeta(const char *filename)
+template <typename Container>
+static void output_hook_variable_list(FILE* fp, const Container& vars)
 {
-	FILE *fp = fopen(filename,"w");
+	fputs("<dl>", fp);
+	for (const auto& param : vars) {
+		fputs("<dt>", fp);
+		ade_output_type_link(fp, param.type);
+		fprintf(fp, " <i>%s</i></dt>", param.name);
+		fprintf(fp, "<dd><b>Description:</b> %s</dt>", param.description);
+	}
+	fputs("</dl>", fp);
+}
+
+int script_state::OutputMeta(const char* filename)
+{
+	FILE* fp = fopen(filename, "w");
 	int i;
 
-	if(fp == NULL)
-	{
-		return 0; 
+	if (fp == nullptr) {
+		return 0;
 	}
 
 	fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%s (%s)</title>\n</head>\n", FS_VERSION_FULL, StateName);
 	fputs("<body>", fp);
-	fprintf(fp,"\t<h1>Script Output - FSO v%s (%s)</h1>\n", FS_VERSION_FULL, StateName);
-		
-	//Scripting languages links
+	fprintf(fp, "\t<h1>Script Output - FSO v%s (%s)</h1>\n", FS_VERSION_FULL, StateName);
+
+	// Scripting languages links
 	fputs("<dl>", fp);
 
 	//***Hooks
 	fputs("<dt><h2>Conditional Hooks</h2></dt>", fp);
 	fputs("<dd><dl>", fp);
 
-	//Conditions
+	// Conditions
 	fputs("<dt><b>Conditions</b></dt>", fp);
-	for(i = 0; i < Num_script_conditions; i++)
-	{
+	for (i = 0; i < Num_script_conditions; i++) {
 		fprintf(fp, "<dd>%s</dd>", Script_conditions[i].name);
 	}
 
-	//Actions
+	// Actions
 	fputs("<dt><b>Actions</b></dt>", fp);
-	for(i = 0; i < Num_script_actions; i++)
-	{
-		fprintf(fp, "<dd>%s</dd>", Script_actions[i].name);
+	fputs("<dd><dl>", fp);
+	auto sortedHooks = scripting::getHooks();
+	std::sort(sortedHooks.begin(),
+			  sortedHooks.end(),
+			  [](const scripting::HookBase* left, const scripting::HookBase* right) {
+				  return left->getHookName() < right->getHookName();
+			  });
+	for (const auto& hook : sortedHooks) {
+		fprintf(fp, "<dt><b>%s</b></dt>", hook->getHookName().c_str());
+		if (!hook->getDescription().empty()) {
+			fprintf(fp, "<dd><b>Description:</b> %s", hook->getDescription().c_str());
+			// Only write this for hooks with descriptions since this information is useless for legacy hooks
+			if (hook->isOverridable()) {
+				fputs("<br><i>This hook is overridable</i>", fp);
+			} else {
+				fputs("<br><i>This hook is <b>not</b> overridable</i>", fp);
+			}
+			if (!hook->getParameters().empty()) {
+				fputs("<br><b>Hook Variables:</b>", fp);
+				output_hook_variable_list(fp, hook->getParameters());
+			}
+			fputs("</dd>", fp);
+		}
 	}
+	fputs("</dl></dd>", fp);
 
+	fputs("<dt><b>Global Hook Variables:</b> (set globally independent of a specific hook)</dt>", fp);
+	output_hook_variable_list(fp, GlobalVariables);
 	fputs("</dl></dd><br />", fp);
 
 	//***Scripting langs
 	fputs("<dt><h2>Scripting languages</h2></dt>", fp);
-	if(Langs & SC_LUA) {
+	if (Langs & SC_LUA) {
 		fputs("<dd><a href=\"#Lua\">Lua</a></dd>", fp);
 	}
 	fputs("</dl>", fp);
 
-	//Languages
+	// Languages
 	fputs("<dl>", fp);
-	if(Langs & SC_LUA) {
+	if (Langs & SC_LUA) {
 		fputs("<dt><H2><a name=\"#Lua\">Lua</a></H2></dt>", fp);
 
 		fputs("<dd>", fp);
@@ -1200,26 +1279,25 @@ int script_state::RunBytecode(script_function& hd)
 int script_parse_condition()
 {
 	char buf[NAME_LENGTH];
-	for(int i = 0; i < Num_script_conditions; i++)
-	{
+	for (int i = 0; i < Num_script_conditions; i++) {
 		sprintf(buf, "$%s:", Script_conditions[i].name);
-		if(optional_string(buf))
+		if (optional_string(buf))
 			return Script_conditions[i].def;
 	}
 
 	return CHC_NONE;
 }
-flag_def_list* script_parse_action()
+
+const scripting::HookBase* script_parse_action()
 {
-	char buf[NAME_LENGTH];
-	for(int i = 0; i < Num_script_actions; i++)
-	{
-		sprintf(buf, "$%s:", Script_actions[i].name);
-		if(optional_string(buf))
-			return &Script_actions[i];
+	for (const auto& action : scripting::getHooks()) {
+		SCP_string buf;
+		sprintf(buf, "$%s:", action->getHookName().c_str());
+		if (optional_string(buf.c_str()))
+			return action;
 	}
 
-	return NULL;
+	return nullptr;
 }
 void script_state::ParseGlobalChunk(int hookType, const char* debug_str) {
 	ConditionedHook hook;
@@ -1259,43 +1337,41 @@ bool script_state::ParseCondition(const char *filename)
 			default:
 				stuff_string(sct.data.name, F_NAME, CONDITION_LENGTH);
 				break;
-		}
+			}
 
-		if(chp == NULL)
-		{
-			ConditionalHooks.push_back(ConditionedHook());
-			chp = &ConditionalHooks[ConditionalHooks.size()-1];
-		}
+			if (chp == nullptr) {
+				ConditionalHooks.push_back(ConditionedHook());
+				chp = &ConditionalHooks[ConditionalHooks.size() - 1];
+			}
 
-		if(!chp->AddCondition(&sct))
-		{
-			Warning(LOCATION, "Could not add condition to conditional hook in file '%s'; you may have more than %d", filename, MAX_HOOK_CONDITIONS);
-		}
+			if (!chp->AddCondition(&sct)) {
+				Warning(LOCATION,
+						"Could not add condition to conditional hook in file '%s'; you may have more than %d",
+						filename,
+						MAX_HOOK_CONDITIONS);
+			}
 	}
 
-	if(chp == NULL)
-	{
+	if (chp == NULL) {
 		return false;
 	}
 
-	flag_def_list *action;
 	bool actions_added = false;
-	for(action = script_parse_action(); action != NULL; action = script_parse_action())
-	{
+	for (const auto* action = script_parse_action(); action != nullptr; action = script_parse_action()) {
 		script_action sat;
-		sat.action_type = action->def;
+		sat.action_type = action->getHookId();
 
-		//WMC - build error string
-		char *buf = (char *)vm_malloc(strlen(filename) + strlen(action->name) + 4);
-		sprintf(buf, "%s - %s", filename, action->name);
+		// WMC - build error string
+		char* buf = (char*)vm_malloc(strlen(filename) + action->getHookName().size() + 4);
+		sprintf(buf, "%s - %s", filename, action->getHookName().c_str());
 
 		ParseChunk(&sat.hook, buf);
-		
-		//Free error string
+
+		// Free error string
 		vm_free(buf);
 
-		//Add the action
-		if(chp->AddAction(&sat))
+		// Add the action
+		if (chp->AddAction(&sat))
 			actions_added = true;
 	}
 

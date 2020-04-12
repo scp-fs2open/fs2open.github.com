@@ -1052,6 +1052,8 @@ add_file_folder("Scripting"
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
+	scripting/hook_api.cpp
+	scripting/hook_api.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
@@ -1351,8 +1353,9 @@ add_file_folder("Utils"
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/strings.h
-    utils/unicode.cpp
-    utils/unicode.h
+	utils/tuples.h
+	utils/unicode.cpp
+	utils/unicode.h
 )
 
 # Utils files
