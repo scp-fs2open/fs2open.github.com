@@ -3887,7 +3887,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 	}
 	// not a variable
 	else {
-		char *ctext_string = CTEXT(node);
+		const char *ctext_string = CTEXT(node);
 
 		// strings are enclosed in quotes
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
