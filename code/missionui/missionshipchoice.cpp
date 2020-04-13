@@ -1860,7 +1860,7 @@ bool is_a_weapon_slot_empty()
 		// a ship must exist in this slot
 		if (Wss_slots[slot].ship_class >= 0)
 		{
-			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++)
+			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++)		// NOLINT(modernize-loop-convert)
 			{
 				// is there a weapon here?
 				if (Wss_slots[slot].wep_count[bank] <= 0)
