@@ -5520,7 +5520,8 @@ void set_primary_weapon_linkage(object *objp)
 				if (!sip->flags[Ship::Info_Flags::No_primary_linking] ) {
 					shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 				}
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire]) {
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] || 
+					Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].wi_flags[Weapon::Info_Flags::No_doublefire]) {
 					shipp->flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				} else {
 					shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);

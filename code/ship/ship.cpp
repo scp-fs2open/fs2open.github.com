@@ -446,6 +446,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "big ship",					Weapon::Info_Flags::Big_only,							true, false },
     { "child",						Weapon::Info_Flags::Child,								true, false },
     { "no dumbfire",				Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",				Weapon::Info_Flags::No_doublefire,						true, false },
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
@@ -11922,7 +11923,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		int start_slot, end_slot;
 
 		// Checking for the secondary doublefire disabling here in case it slipped, such as being set to double fire in a previous session
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
+		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] || 
+			Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].wi_flags[Weapon::Info_Flags::No_doublefire]) &&
 			shipp->flags[Ship_Flags::Secondary_dual_fire]) {
 			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 		}
