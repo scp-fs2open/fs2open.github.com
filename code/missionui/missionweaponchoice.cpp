@@ -4097,7 +4097,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		SCP_string full_error_message = "The following errors were encountered:\n";
+		SCP_string full_error_message = XSTR("The following errors were encountered:\n", 1641);
 
 		size_t j;
 		bool is_duplicate;

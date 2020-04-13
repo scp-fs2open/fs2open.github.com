@@ -1853,6 +1853,25 @@ bool is_weapon_carried(int weapon_index)
 	return false;
 }
 
+bool is_a_weapon_slot_empty()
+{
+	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; slot++)
+	{
+		// a ship must exist in this slot
+		if (Wss_slots[slot].ship_class >= 0)
+		{
+			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++)		// NOLINT(modernize-loop-convert)
+			{
+				// is there a weapon here?
+				if (Wss_slots[slot].wep_count[bank] <= 0)
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
@@ -1918,6 +1937,14 @@ void commit_pressed()
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
 			return;
 		}
+	}
+
+	// Goober5000 - check that all weapon slots are filled (Mantis 2715)
+	// Note: don't check for training, scramble, or red-alert missions
+	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble] && !The_mission.flags[Mission::Mission_Flags::Red_alert])
+	{
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank.  All weapon banks must have weapons assigned.", 1642), weapon_list.c_str());
+		return;
 	}
 
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
