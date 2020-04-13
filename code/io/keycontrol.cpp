@@ -1888,8 +1888,9 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
 
-            if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
-                Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2 ||
+				The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire]) {
+				Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );

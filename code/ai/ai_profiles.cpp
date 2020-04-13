@@ -375,6 +375,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$disable linked fire penalty:", AI::Profile_Flags::Disable_linked_fire_penalty);
 
+				set_flag(profile, "$disable player secondary doublefire:", AI::Profile_Flags::Disable_player_secondary_doublefire);
+
 				set_flag(profile, "$disable ai secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
 
 				set_flag(profile, "$disable weapon damage scaling:", AI::Profile_Flags::Disable_weapon_damage_scaling);

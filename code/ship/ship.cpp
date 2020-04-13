@@ -11921,7 +11921,13 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 		int start_slot, end_slot;
 
-		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
+		// Checking for the secondary doublefire disabling here in case it slipped, such as being set to double fire in a previous session
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
+			shipp->flags[Ship_Flags::Secondary_dual_fire]) {
+			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
+		}
+
+		if (shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
 			if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
