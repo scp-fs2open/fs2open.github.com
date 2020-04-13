@@ -3340,12 +3340,15 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
  *
  * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
  *
+ * Calculates the focal length of the camera, and uses the law of similar
+ * triangles to project the subsystem's radius to the screen.
+ *
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
 int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	float w,h;
+	float w,h,focal_length;
 	vertex pnt;
 
 	g3_rotate_vertex(&pnt,pos);
@@ -3359,7 +3362,10 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	w = h = radius * Canv_h2 * Matrix_scale.xyz.y / pnt.world.xyz.z;
+	focal_length = Canv_h2 * Matrix_scale.xyz.y;
+	h = radius * focal_length / pnt.world.xyz.z;
+
+	w = h;
 
 	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
 	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
