@@ -497,7 +497,6 @@ void waypoint_remove(waypoint *wpt)
 					break;
 				}
 			}
-			Assert(ii != Waypoint_lists.end());
 
 			// iterate through all waypoints that are in lists later than this one,
 			// and edit their instances so that they point to a list one place lower
@@ -522,7 +521,6 @@ void waypoint_remove(waypoint *wpt)
 				break;
 			}
 		}
-		Assert(ii != wp_list->get_waypoints().end());
 
 		// iterate through all waypoints that are later than this one,
 		// and edit their instances so that they point to a waypoint one place lower

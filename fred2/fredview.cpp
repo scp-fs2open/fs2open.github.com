@@ -526,9 +526,11 @@ int drag_objects()
 		Dup_drag = 0;
 
 	if (Dup_drag == 1) {
-		dup_object(NULL);  // reset waypoint list
 		cobj = Duped_wing = -1;
 		flag = 0;
+
+		int duping_waypoint_list = -1;
+
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
@@ -542,6 +544,15 @@ int drag_objects()
 
 				} else
 					Duped_wing = -1;
+
+				// make sure we dup as many waypoint lists as we have
+				if (objp->type == OBJ_WAYPOINT) {
+					int this_list = calc_waypoint_list_index(objp->instance);
+					if (duping_waypoint_list != this_list) {
+						dup_object(nullptr);  // reset waypoint list
+						duping_waypoint_list = this_list;
+					}
+				}
 
 				flag = 1;
 				z = dup_object(objp);
