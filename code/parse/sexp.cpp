@@ -3831,7 +3831,7 @@ int num_block_variables()
 }
 
 /**
- * Stuff SEXP text string
+ * Stuff this particular SEXP node (just the node, not the tree) into a string representation
  */
 void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
@@ -3849,42 +3849,31 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
 		Assert((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING));
 
-		// number
-		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
+		// Error check - can be Fred or FreeSpace
+		if (mode == SEXP_ERROR_CHECK_MODE)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
-
-			// Error check - can be Fred or FreeSpace
-			if (mode == SEXP_ERROR_CHECK_MODE)
-			{
-				if (Fred_running)
-					sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
-				else
-					sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
-			}
+			if (Fred_running)
+				sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			else
+				sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+		}
+		else
+		{
+			// number
+			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 			{
-				// Save as string - only  Fred
+				Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
+
+				// Save as string - only Fred
 				Assert(mode == SEXP_SAVE_MODE);
 				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			}
-		}
-		// string
-		else
-		{
-			Assert(Sexp_nodes[node].subtype == SEXP_ATOM_STRING);
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
-
-			// Error check - can be Fred or FreeSpace
-			if (mode == SEXP_ERROR_CHECK_MODE)
-			{
-				if (Fred_running)
-					sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
-				else
-					sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
-			}
+			// string
 			else
 			{
+				Assert(Sexp_nodes[node].subtype == SEXP_ATOM_STRING);
+				Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
+
 				// Save as string - only Fred
 				Assert(mode == SEXP_SAVE_MODE);
 				sprintf(dest, "\"@%s[%s]\" ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
@@ -3908,7 +3897,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 			{
 				// if (for whatever reason) we have an empty string or an invalid number, print 0
-				if (!*ctext_string || !can_construe_as_integer(ctext_string))
+				if (*ctext_string == '\0' || !can_construe_as_integer(ctext_string))
 				{
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
 					ctext_string = "0";
