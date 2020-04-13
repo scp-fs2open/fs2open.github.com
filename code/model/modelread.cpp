@@ -3345,11 +3345,8 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
  */
 int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	float t,w,h;
+	float w,h;
 	vertex pnt;
-
-	float width = radius;
-	float height = radius;
 
 	g3_rotate_vertex(&pnt,pos);
 
@@ -3362,14 +3359,7 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
-
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
-
-	// Use the smaller of the width and height (forces the resulting targetting reticle to be square on non-square aspect ratios).
-	w = h = (w < h) ? w : h;
+	w = h = radius * Canv_h2 * Matrix_scale.xyz.y / pnt.world.xyz.z;
 
 	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
 	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
