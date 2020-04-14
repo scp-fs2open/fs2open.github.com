@@ -1941,7 +1941,8 @@ void commit_pressed()
 
 	// Goober5000 - check that all weapon slots are filled (Mantis 2715)
 	// Note: don't check for training, scramble, or red-alert missions
-	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble] && !The_mission.flags[Mission::Mission_Flags::Red_alert])
+	// Note2: don't check missions without briefings either
+	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble] && !The_mission.flags[Mission::Mission_Flags::Red_alert] && !The_mission.flags[Mission::Mission_Flags::No_briefing])
 	{
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank.  All weapon banks must have weapons assigned.", 1642), weapon_list.c_str());
 		return;
