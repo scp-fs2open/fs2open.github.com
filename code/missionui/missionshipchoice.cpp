@@ -1855,15 +1855,26 @@ bool is_weapon_carried(int weapon_index)
 
 bool is_a_weapon_slot_empty()
 {
-	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; slot++)
+	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; ++slot)
 	{
 		// a ship must exist in this slot
 		if (Wss_slots[slot].ship_class >= 0)
 		{
-			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++)		// NOLINT(modernize-loop-convert)
+			ship_info *sip = &Ship_info[Wss_slots[slot].ship_class];
+
+			// check primary banks
+			for (int bank = 0; bank < sip->num_primary_banks; ++bank)	// NOLINT(modernize-loop-convert)
 			{
-				// is there a weapon here?
+				// is the slot empty?
 				if (Wss_slots[slot].wep_count[bank] <= 0)
+					return true;
+			}
+
+			// check secondary banks
+			for (int bank = 0; bank < sip->num_secondary_banks; ++bank)
+			{
+				// is the slot empty?
+				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS+bank] <= 0)
 					return true;
 			}
 		}
