@@ -5672,7 +5672,16 @@ int ai_fire_primary_weapon(object *objp)
 	float	dot;
 	vec3d	v2t;
 
-	if ( !(vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE ) && !(aip->submode == SM_AVOID) ) {
+	bool condition;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ramming_stationary_targets_bug]) {
+		// fixed by Mantis 3147 - Avoid bashing orientation if trying to avoid a collision.
+		condition = !(vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE) && (aip->submode != SM_AVOID);
+	} else {
+		// retail behavior
+		condition = !(vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE);
+	}
+
+	if ( condition ) {
 		if ( vm_vec_cmp(&G_predicted_pos, &G_fire_pos) ) {
 			vm_vec_normalized_dir(&v2t, &G_predicted_pos, &G_fire_pos);
 			dot = vm_vec_dot(&v2t, &objp->orient.vec.fvec);
@@ -8222,9 +8231,15 @@ void ai_chase()
 	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
 		predicted_enemy_pos = enemy_pos;
 	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock]) {
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
-		predicted_enemy_pos = enemy_pos;
-		G_predicted_pos = predicted_enemy_pos;
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ramming_stationary_targets_bug]) {
+			// fixed by Mantis 3147 - Bash orientation if aspect seekers are equipped.
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
+			predicted_enemy_pos = enemy_pos;
+			G_predicted_pos = predicted_enemy_pos;
+		} else {
+			// retail behavior
+			predicted_enemy_pos = enemy_pos;
+		}
 	} else {
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.

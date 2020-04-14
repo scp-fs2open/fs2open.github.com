@@ -91,6 +91,7 @@ namespace AI {
         Fix_ai_path_order_bug,
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
+		Fix_ramming_stationary_targets_bug,
         Force_beam_turret_fov,
 		Free_afterburner_use,
         Glide_decay_requires_thrust,

@@ -391,6 +391,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix linked primary weapon decision bug:", AI::Profile_Flags::Fix_linked_primary_bug);
 
+				set_flag(profile, "$fix ramming stationary targets bug:", AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+
 				set_flag(profile, "$prevent turrets targeting too distant bombs:", AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
 
 				set_flag(profile, "$smart subsystem targeting for turrets:", AI::Profile_Flags::Smart_subsystem_targeting_for_turrets);
