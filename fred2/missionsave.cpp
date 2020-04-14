@@ -1849,6 +1849,25 @@ int CFred_mission_save::save_events() {
 			fout(" %d", Mission_events[i].team);
 		}
 
+		// save flags, if any
+		// (the transient flags are not used in FRED, so if the flags field is nonzero they will all be meaningful flags from the flag list)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].flags != 0) {
+			fso_comment_push(";;FSO 20.0.0;;");
+			if (optional_string_fred("+Event Flags: (", "$Formula:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Event Flags: (");
+			}
+			fso_comment_pop();
+
+			for (j = 0; j < Num_mission_event_flags; ++j) {
+				if (Mission_events[i].flags & Mission_event_flags[j].def) {
+					fout(" \"%s\"", Mission_event_flags[j].name);
+				}
+			}
+			fout(" )");
+		}
+
 		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].mission_log_flags != 0) {
 			fso_comment_push(";;FSO 3.6.11;;");
 			if (optional_string_fred("+Event Log Flags: (", "$Formula:")) {

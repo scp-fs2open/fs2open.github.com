@@ -257,6 +257,9 @@ extern const size_t num_parse_object_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
+extern int Num_mission_event_flags;
+extern flag_def_list Mission_event_flags[];
+
 extern char *Cargo_names[MAX_CARGO];
 extern char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 

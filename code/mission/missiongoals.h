@@ -56,7 +56,6 @@ typedef struct mission_goal {
 	int  	type;								// primary/secondary/bonus
 	int	satisfied;						// has this goal been satisfied
 	char	message[MAX_GOAL_TEXT];		//	Brief description, such as "Destroy all vile aliens!"
-	int	rating;							//	Some importance figure or something.
 	int	formula;							//	Index in Sexp_nodes of this Sexp.
 	int	score;							// score for this goal
 	int	flags;							// MGF_
@@ -83,6 +82,7 @@ extern int	Num_goals;									// number of goals for this mission
 #define MEF_DIRECTIVE_SPECIAL		(1 << 1)		// used to mark a directive as true even though not fully satisfied
 #define MEF_DIRECTIVE_TEMP_TRUE		(1 << 2)		// this directive is temporarily true.
 #define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
+#define MEF_USE_MSECS				(1 << 4)		// Goober5000 - interval and chain delay are in milliseconds, not seconds
 
 #define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
 

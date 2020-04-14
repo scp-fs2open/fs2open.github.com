@@ -315,6 +315,12 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
+// These are only the flags that are saved to the mission file.  See the MEF_ #defines.
+flag_def_list Mission_event_flags[] = {
+	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
+};
+int Num_mission_event_flags = sizeof(Mission_event_flags) / sizeof(flag_def_list);
+
 const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
@@ -4830,7 +4836,6 @@ void parse_event(mission * /*pm*/)
 	mission_event *event;
 
 	event = &Mission_events[Num_mission_events];
-	event->chain_delay = -1;
 
 	required_string( "$Formula:" );
 	event->formula = get_sexp_main();
@@ -4883,6 +4888,7 @@ void parse_event(mission * /*pm*/)
 		stuff_int(&event->score);
 	}
 
+	event->chain_delay = -1;
 	if ( optional_string("+Chained:") ){
 		stuff_int(&event->chain_delay);
 	}
@@ -4915,6 +4921,10 @@ void parse_event(mission * /*pm*/)
 		}
 	}
 
+	if (optional_string("+Event Flags:")) {
+		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
+	}
+
 	if( optional_string("+Event Log Flags:") ) {
 		SCP_vector<SCP_string> buffer;
 		
@@ -4931,8 +4941,6 @@ void parse_event(mission * /*pm*/)
 			}
 		}
 	}
-
-	event->timestamp = timestamp(-1);
 }
 
 void parse_events(mission *pm)

@@ -42,6 +42,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_event_score = 0;
 	m_chain_delay = 0;
 	m_chained = FALSE;
+	m_use_msecs = FALSE;
 	m_obj_text = _T("");
 	m_obj_key_text = _T("");
 	m_avi_filename = _T("");
@@ -81,6 +82,7 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EVENT_SCORE, m_event_score);
 	DDX_Text(pDX, IDC_CHAIN_DELAY, m_chain_delay);
 	DDX_Check(pDX, IDC_CHAINED, m_chained);
+	DDX_Check(pDX, IDC_USE_MSECS, m_use_msecs);
 	DDX_Text(pDX, IDC_OBJ_TEXT, m_obj_text);
 	DDX_Text(pDX, IDC_OBJ_KEY_TEXT, m_obj_key_text);
 	DDX_CBString(pDX, IDC_AVI_FILENAME, m_avi_filename);
@@ -438,6 +440,8 @@ int event_editor::query_modified()
 			return 1;
 		if (advanced_stricmp(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
 			return 1;
+		if (m_events[i].flags != Mission_events[i].flags)
+			return 1;
 		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags)
 			return 1;
 	}
@@ -746,6 +750,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	m_events[num].interval = 1;
 	m_events[num].score = 0;
 	m_events[num].chain_delay = -1;
+	m_events[num].flags = 0;
 	m_events[num].objective_text = NULL;
 	m_events[num].objective_key_text = NULL;
 	m_events[num].team = -1;
@@ -909,6 +914,11 @@ void event_editor::save_event(int e)
 		}
 	}
 
+	// handle event flags
+	m_events[e].flags = 0;
+	if (m_use_msecs)
+		m_events[e].flags |= MEF_USE_MSECS;
+
 	// handle event log flags
 	m_events[e].mission_log_flags = 0;
 	if (m_log_true) 
@@ -984,19 +994,42 @@ void event_editor::update_cur_event()
 		m_repeat_count = 1;
 		m_trigger_count = 1;
 		m_interval = 1;
+		m_chained = FALSE;
 		m_chain_delay = 0;
+		m_event_score = 0;
 		m_team = -1;
 		m_obj_text.Empty();
 		m_obj_key_text.Empty();
-		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_REPEAT_COUNT) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_TRIGGER_COUNT) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_EVENT_SCORE) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_CHAINED) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_OBJ_TEXT) -> EnableWindow(FALSE);
-		GetDlgItem(IDC_OBJ_KEY_TEXT) -> EnableWindow(FALSE);
+		m_use_msecs = FALSE;
+
+		m_log_true = FALSE;
+		m_log_false = FALSE;
+		m_log_always_false = FALSE;
+		m_log_1st_repeat = FALSE;
+		m_log_last_repeat = FALSE;
+		m_log_1st_trigger = FALSE;
+		m_log_last_trigger = FALSE;
+		m_log_state_change = FALSE;
+
+		GetDlgItem(IDC_REPEAT_COUNT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CHAINED)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CHAIN_DELAY)->EnableWindow(FALSE);
+		GetDlgItem(IDC_EVENT_SCORE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(FALSE);
+		GetDlgItem(IDC_OBJ_TEXT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_OBJ_KEY_TEXT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_USE_MSECS)->EnableWindow(FALSE);
+
+		GetDlgItem(IDC_MISSION_LOG_TRUE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_FALSE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_ALWAYS_FALSE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_1ST_REPEAT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_LAST_REPEAT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_1ST_TRIGGER)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_LAST_TRIGGER)->EnableWindow(FALSE);
+		GetDlgItem(IDC_MISSION_LOG_STATE_CHANGE)->EnableWindow(FALSE);
 
 		UpdateData(FALSE);
 		return;
@@ -1034,6 +1067,16 @@ void event_editor::update_cur_event()
 	GetDlgItem(IDC_REPEAT_COUNT)->EnableWindow(TRUE);
 	GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(TRUE);
 
+	GetDlgItem(IDC_USE_MSECS)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_TRUE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_FALSE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_ALWAYS_FALSE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_1ST_REPEAT)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_LAST_REPEAT)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_1ST_TRIGGER)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_LAST_TRIGGER)->EnableWindow(TRUE);
+	GetDlgItem(IDC_MISSION_LOG_STATE_CHANGE)->EnableWindow(TRUE);
+
 	if (( m_repeat_count <= 1) && (m_trigger_count <= 1)) {
 		m_interval = 1;
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
@@ -1050,47 +1093,18 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(TRUE);
 	}
 
+	// handle event flags
+	m_use_msecs = (m_events[cur_event].flags & MEF_USE_MSECS) ? TRUE : FALSE;
+
 	// handle event log flags
-	if (m_events[cur_event].mission_log_flags & MLF_SEXP_TRUE) {
-		m_log_true  = TRUE;
-	}else {
-		m_log_true  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_SEXP_FALSE) {
-		m_log_false  = TRUE;
-	}else {
-		m_log_false  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) {
-		m_log_always_false  = TRUE;
-	}else {
-		m_log_always_false  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_FIRST_REPEAT_ONLY) {
-		m_log_1st_repeat  = TRUE;
-	}else {
-		m_log_1st_repeat  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_LAST_REPEAT_ONLY) {
-		m_log_last_repeat  = TRUE;
-	}else {
-		m_log_last_repeat  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_FIRST_TRIGGER_ONLY) {
-		m_log_1st_trigger  = TRUE;
-	}else {
-		m_log_1st_trigger  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) {
-		m_log_last_trigger  = TRUE;
-	}else {
-		m_log_last_trigger  = FALSE;
-	}
-	if (m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) {
-		m_log_state_change  = TRUE;
-	}else {
-		m_log_state_change  = FALSE;
-	}
+	m_log_true = (m_events[cur_event].mission_log_flags & MLF_SEXP_TRUE) ? TRUE : FALSE;
+	m_log_false = (m_events[cur_event].mission_log_flags & MLF_SEXP_FALSE) ? TRUE : FALSE;
+	m_log_always_false = (m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) ? TRUE : FALSE;
+	m_log_1st_repeat = (m_events[cur_event].mission_log_flags & MLF_FIRST_REPEAT_ONLY) ? TRUE : FALSE;
+	m_log_last_repeat = (m_events[cur_event].mission_log_flags & MLF_LAST_REPEAT_ONLY) ? TRUE : FALSE;
+	m_log_1st_trigger = (m_events[cur_event].mission_log_flags & MLF_FIRST_TRIGGER_ONLY) ? TRUE : FALSE;
+	m_log_last_trigger = (m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) ? TRUE : FALSE;
+	m_log_state_change = (m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) ? TRUE : FALSE;
 
 	UpdateData(FALSE);
 }

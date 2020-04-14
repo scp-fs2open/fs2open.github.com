@@ -122,7 +122,7 @@
 #define IDB_DATA_95                     315
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
-#define IDD_WARP_PARAMS                 324
+#define IDD_WARP_PARAMS                 320
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -901,6 +901,7 @@
 #define IDC_CHAINED                     1441
 #define IDC_CHAIN_DELAY                 1442
 #define IDC_POOL_SPIN                   1443
+#define IDC_USE_MSECS                   1443
 #define IDC_POOL                        1444
 #define IDC_WEAPON_POOL                 1444
 #define IDC_OBJ_TEXT                    1445
@@ -1489,7 +1490,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        328
+#define _APS_NEXT_RESOURCE_VALUE        321
 #define _APS_NEXT_COMMAND_VALUE         33098
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105
