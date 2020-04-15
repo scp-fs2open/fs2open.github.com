@@ -360,6 +360,23 @@ void iff_init()
 				num_observed_colors[cur_iff]++;
 			}
 
+			// get F3 override
+			iff->hotkey_team = IFF_hotkey_team::Default;
+			if (optional_string("+Hotkey Team:"))
+			{
+				char temp[NAME_LENGTH];
+				stuff_string(temp, F_NAME, NAME_LENGTH);
+
+				if (!stricmp(temp, "Friendly"))
+					iff->hotkey_team = IFF_hotkey_team::Friendly;
+				else if (!stricmp(temp, "Hostile") || !stricmp(temp, "Enemy"))
+					iff->hotkey_team = IFF_hotkey_team::Hostile;
+				else if (!stricmp(temp, "None"))
+					iff->hotkey_team = IFF_hotkey_team::None;
+				else
+					Warning(LOCATION, "Unrecognized +Hotkey Tean: %s\n", temp);
+			}
+
 
 			// get flags ----------------------------------------------------------
 

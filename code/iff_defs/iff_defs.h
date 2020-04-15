@@ -22,6 +22,8 @@ class object;
 #define IFF_COLOR_TAGGED			2
 #define MAX_IFF_COLORS				(MAX_IFFS + 3)
 
+enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
+
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
 #define IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR	(1 << 1)	// self-explanatory
@@ -41,6 +43,7 @@ typedef struct iff_info {
 	int attackee_bitmask;						// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int attackee_bitmask_all_teams_at_war;		// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int observed_color_index[MAX_IFFS];			// treat this as private and use iff_get_color or iff_get_color_by_team
+	IFF_hotkey_team hotkey_team;
 
 	// flags
 	int flags;
