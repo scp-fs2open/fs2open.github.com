@@ -2219,7 +2219,11 @@ int parse_create_object_sub(p_object *p_objp)
 			}
 
 			if (Fred_running)
-				wp->num_primary_banks = sip->num_primary_banks;
+			{
+				// only do this for the Pilot subsystem
+				if (!ptr)
+					wp->num_primary_banks = sip->num_primary_banks;
+			}
 			else
 				wp->num_primary_banks = k;
 		}
@@ -2252,7 +2256,11 @@ int parse_create_object_sub(p_object *p_objp)
 			}
 
 			if (Fred_running)
-				wp->num_secondary_banks = sip->num_secondary_banks;
+			{
+				// only do this for the Pilot subsystem
+				if (!ptr)
+					wp->num_secondary_banks = sip->num_secondary_banks;
+			}
 			else
 				wp->num_secondary_banks = k;
 		}
