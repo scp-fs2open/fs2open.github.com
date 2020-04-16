@@ -577,10 +577,8 @@ int iff_get_attacker_mask(int attackee_team)
  *
  * @param team_x Team of attacker
  * @param team_y Team of attackee
- *
- * @return >0 if true, 0 if false
  */
-int iff_x_attacks_y(int team_x, int team_y)
+bool iff_x_attacks_y(int team_x, int team_y)
 {
 	return iff_matches_mask(team_y, iff_get_attackee_mask(team_x));
 }
@@ -600,12 +598,10 @@ int iff_get_mask(int team)
  *
  * @param team Team to test
  * @param mask Mask
- *
- * @return 1 if matches, 0 if does not match
  */
-int iff_matches_mask(int team, int mask)
+bool iff_matches_mask(int team, int mask)
 {
-	return (iff_get_mask(team) & mask) ? 1 : 0;
+	return (iff_get_mask(team) & mask) != 0;
 }
 
 /**

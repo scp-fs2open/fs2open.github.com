@@ -77,11 +77,11 @@ extern int iff_lookup(const char *iff_name);
 // If he fires at you, you don't react unless you are coded to attack him, because you are oblivious.
 extern int iff_get_attackee_mask(int attacker_team);
 extern int iff_get_attacker_mask(int attackee_team);
-extern int iff_x_attacks_y(int team_x, int team_y);
+extern bool iff_x_attacks_y(int team_x, int team_y);
 
 // mask stuff
 extern int iff_get_mask(int team);
-extern int iff_matches_mask(int team, int mask);
+extern bool iff_matches_mask(int team, int mask);
 
 // get color stuff
 extern color *iff_get_color(int color_index, int is_bright);
