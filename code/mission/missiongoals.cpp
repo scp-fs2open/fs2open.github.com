@@ -376,12 +376,19 @@ void mission_init_goals()
 	Num_mission_events = 0;
 	for (i=0; i<MAX_MISSION_EVENTS; i++) {
 		Mission_events[i].result = 0;
+		Mission_events[i].timestamp = timestamp(-1);
 		Mission_events[i].flags = 0;
 		Mission_events[i].count = 0;
 		Mission_events[i].satisfied_time = 0;
 		Mission_events[i].born_on_date = 0;
 		Mission_events[i].team = -1;
+
 		Mission_events[i].mission_log_flags = 0;
+		Mission_events[i].event_log_buffer.clear();
+		Mission_events[i].event_log_variable_buffer.clear();
+		Mission_events[i].event_log_argument_buffer.clear();
+		Mission_events[i].backup_log_buffer.clear();
+		Mission_events[i].previous_result = 0;
 	}
 
 	Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP);
@@ -898,10 +905,17 @@ void mission_process_event( int event )
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
+		fix offset;
+		if (Mission_events[event].flags & MEF_USE_MSECS) {
+			offset = fl2f(Mission_events[event].chain_delay * 0.001f);
+		} else {
+			offset = i2f(Mission_events[event].chain_delay);
+		}
+
 		// What everyone expected the chaining behavior to be, as specified in Karajorma's original fix to Mantis #82
 		if (Alternate_chaining_behavior) {
 			if (event > 0){
-				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + i2f(Mission_events[event].chain_delay) > Missiontime)){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + offset > Missiontime)){
 					sindex = -1;  // bypass evaluation
 				}
 			}
@@ -909,7 +923,7 @@ void mission_process_event( int event )
 		// Volition's original chaining behavior as used in retail and demonstrated in e.g. btm-01.fsm (or btm-01.fs2 in the Port)
 		else {
 			if (event > 0){
-				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + offset > Missiontime)){
 					sindex = -1;  // bypass evaluation
 				}
 			}
@@ -1011,8 +1025,12 @@ void mission_process_event( int event )
 		// Set the timestamp for the next check on this event unless we only have a trigger count and no repeat count and 
 		// this event didn't trigger this frame. 
 		else if (bump_timestamp || (!((Mission_events[event].repeat_count == -1) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) && (Mission_events[event].trigger_count != 0)))) {
-			// set the timestamp to time out 'interval' seconds in the future.  
-			Mission_events[event].timestamp = timestamp( Mission_events[event].interval * 1000 );
+			int interval = Mission_events[event].interval;
+			if (!(Mission_events[event].flags & MEF_USE_MSECS))
+				interval *= 1000;
+
+			// set the timestamp to time out 'interval' milliseconds in the future.
+			Mission_events[event].timestamp = timestamp( interval );
 		}
 	}
 

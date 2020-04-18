@@ -60,6 +60,7 @@ public:
 	int		m_event_score;
 	int		m_chain_delay;
 	BOOL	m_chained;
+	BOOL	m_use_msecs;
 	CString	m_obj_text;
 	CString	m_obj_key_text;
 	CString	m_avi_filename;

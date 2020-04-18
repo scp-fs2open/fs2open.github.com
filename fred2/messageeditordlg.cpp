@@ -438,8 +438,10 @@ int CMessageEditorDlg::update(int num)
 				Mission_events[m_event_num].interval = 1;
 				Mission_events[m_event_num].score = 0;
 				Mission_events[m_event_num].chain_delay = -1;
+				Mission_events[m_event_num].flags = 0;
 				Mission_events[m_event_num].objective_text = NULL;
 				Mission_events[m_event_num].objective_key_text = NULL;
+				Mission_events[m_event_num].mission_log_flags = 0;
 			}
 
 			fnode = m_tree.save_tree();
