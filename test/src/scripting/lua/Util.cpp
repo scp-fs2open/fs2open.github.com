@@ -18,7 +18,7 @@ TEST_F(LuaUtilTest, TableListPairs) {
 	table.addValue("key", "test3");
 
 	std::vector<std::pair<std::string, std::string>> pairList;
-	util::tableListPairs(table, pairList);
+	luacpp::util::tableListPairs(table, pairList);
 
 	ASSERT_EQ(3, (int)pairList.size());
 	ASSERT_TRUE(std::find(pairList.begin(), pairList.end(), std::make_pair<std::string, std::string>("1", "test1"))
@@ -38,7 +38,7 @@ TEST_F(LuaUtilTest, TableToList) {
 	table.addValue("key", "test3");
 
 	std::vector<std::string> valueList;
-	util::tableToList(table, valueList);
+	luacpp::util::tableToList(table, valueList);
 
 	ASSERT_EQ(2, (int)valueList.size());
 	ASSERT_TRUE(valueList[0] == "test1");

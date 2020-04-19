@@ -27,6 +27,11 @@
  #include <sys/stat.h>
 #endif
 
+#include "globalincs/alphacolors.h"
+#include "globalincs/crashdump.h"
+#include "globalincs/mspdb_callstack.h"
+#include "globalincs/version.h"
+
 #include "SDLGraphicsOperations.h"
 #include "freespace.h"
 #include "freespaceresource.h"
@@ -53,10 +58,6 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/alphacolors.h"
-#include "globalincs/crashdump.h"
-#include "globalincs/mspdb_callstack.h"
-#include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -159,6 +160,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
@@ -189,7 +191,6 @@
 
 #include <cinttypes>
 #include <stdexcept>
-
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -5897,26 +5898,26 @@ void game_do_state(int state)
 {
 	// always lets the do_state_common() function determine if the state should be skipped
 	Game_do_state_should_skip = 0;
-	
-	// legal to set the should skip state anywhere in this function
-	game_do_state_common(state);	// do stuff that may need to be done regardless of state
 
-	if(Game_do_state_should_skip){
+	// legal to set the should skip state anywhere in this function
+	game_do_state_common(state); // do stuff that may need to be done regardless of state
+
+	if (Game_do_state_should_skip) {
 		return;
 	}
 
-	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+	if (OnFrameHook->isOverride()) {
 		game_set_frametime(state);
 
 		game_check_key();
 
 		gr_clear();
-		gr_flip();	//Does state hook automagically
+		gr_flip(); // Does state hook automagically
 		return;
 	}
-	
+
 	switch (state) {
-		case GS_STATE_MAIN_MENU:
+	case GS_STATE_MAIN_MENU:
 			game_set_frametime(GS_STATE_MAIN_MENU);
 			main_hall_do(flFrametime);
 			break;

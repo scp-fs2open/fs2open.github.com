@@ -248,7 +248,11 @@ static bool is_internal_type(const char* typeName) {
 	return false;
 }
 
-static void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
+}
+
+namespace scripting {
+
+void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
 	switch (type_info.getType()) {
 	case ade_type_info_type::Empty:
 		fputs("nothing", fp);
@@ -279,10 +283,6 @@ static void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
 		break;
 	}
 }
-
-}
-
-namespace scripting {
 
 ade_manager* ade_manager::getInstance() {
 	static std::unique_ptr<ade_manager> manager(new ade_manager());
@@ -1080,32 +1080,37 @@ const char *ade_get_type_string(lua_State *L, int argnum)
 	return Lua_type_names[type];
 }
 
-int ade_set_object_with_breed(lua_State *L, int obj_idx)
+ade_odata_setter<object_h> ade_object_to_odata(int obj_idx)
 {
 	using namespace scripting::api;
 
 	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
-		return ade_set_args(L, "o", l_Object.Set(object_h()));
+		return l_Object.Set(object_h());
 
 	object *objp = &Objects[obj_idx];
 
 	switch(objp->type)
 	{
 	case OBJ_SHIP:
-		return ade_set_args(L, "o", l_Ship.Set(object_h(objp)));
+		return l_Ship.Set(object_h(objp));
 	case OBJ_ASTEROID:
-		return ade_set_args(L, "o", l_Asteroid.Set(object_h(objp)));
+		return l_Asteroid.Set(object_h(objp));
 	case OBJ_DEBRIS:
-		return ade_set_args(L, "o", l_Debris.Set(object_h(objp)));
+		return l_Debris.Set(object_h(objp));
 	case OBJ_WAYPOINT:
-		return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
+		return l_Waypoint.Set(object_h(objp));
 	case OBJ_WEAPON:
-		return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
+		return l_Weapon.Set(object_h(objp));
 	case OBJ_BEAM:
-		return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
+		return l_Beam.Set(object_h(objp));
 	default:
-		return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
+		return l_Object.Set(object_h(objp));
 	}
+}
+
+int ade_set_object_with_breed(lua_State *L, int obj_idx)
+{
+	return ade_set_args(L, "o", ade_object_to_odata(obj_idx));
 }
 
 void load_default_script(lua_State* L, const char* name)

@@ -1,21 +1,20 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
-
-
+ */
 
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#include "bmpman/bmpman.h"
-#include "cfile/cfile.h"
 #include "globalincs/flagset.h"
 #include "globalincs/pstypes.h"
+
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
 #include "graphics/grinternal.h"
 #include "graphics/tmapper.h"
 #include "io/cursor.h"
@@ -27,7 +26,10 @@ namespace graphics {
 namespace util {
 class UniformBuffer;
 class GPUMemoryHeap;
-}
+} // namespace util
+} // namespace graphics
+namespace scripting {
+class OverridableHook;
 }
 
 extern const float Default_min_draw_distance;
@@ -71,6 +73,8 @@ extern bool Deferred_lighting;
 extern bool High_dynamic_range;
 
 extern os::ViewportState Gr_configured_window_state;
+
+extern const std::shared_ptr<scripting::OverridableHook> OnFrameHook;
 
 class material;
 class model_material;

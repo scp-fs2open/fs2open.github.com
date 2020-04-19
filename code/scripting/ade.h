@@ -7,6 +7,8 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 
+#include "object/object.h"
+
 extern "C" {
 #include <lauxlib.h>
 #include <lualib.h>
@@ -241,12 +243,24 @@ void ade_stackdump(lua_State *L, char *stackdump);
 /**
  * @ingroup ade_api
  */
-int ade_friendly_error(lua_State *L);
+int ade_friendly_error(lua_State* L);
 
 /**
  * @ingroup ade_api
  */
-const char *ade_get_type_string(lua_State *L, int argnum);
+const char* ade_get_type_string(lua_State* L, int argnum);
+
+/**
+ * @brief Converts an object index to something that can be used with ade_set_args.
+ *
+ * This respects the actual type of the object so all appropriate functions are available in Lua.
+ *
+ * @warning This is only used internally and should not be used by API code. Use ade_set_object_with_breed instead.
+ *
+ * @param obj_idx The object index
+ * @return The ade odata
+ */
+ade_odata_setter<object_h> ade_object_to_odata(int obj_idx);
 
 /**
  * @brief Sets an object parameter with the right type
@@ -261,7 +275,7 @@ const char *ade_get_type_string(lua_State *L, int argnum);
  * @author WMC
  * @ingroup ade_api
  */
-int ade_set_object_with_breed(lua_State *L, int obj_idx);
+int ade_set_object_with_breed(lua_State* L, int obj_idx);
 
 /**
  * @brief Loads and executes a default lua script
@@ -276,10 +290,17 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx);
  */
 void load_default_script(lua_State* L, const char* name);
 
+/**
+ * @brief Writes HTML to fp which produces a link to the specified type info
+ * @param fp The stream to write the HTML to
+ * @param type_info The type to generate the link for
+ */
+void ade_output_type_link(FILE* fp, const ade_type_info& type_info);
+
 namespace internal {
 
 ade_table_entry& getTableEntry(size_t idx);
 }
-}
+} // namespace scripting
 
-#endif //FS2_OPEN_ADE_H
+#endif // FS2_OPEN_ADE_H
