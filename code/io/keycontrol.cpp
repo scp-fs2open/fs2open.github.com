@@ -1859,9 +1859,20 @@ int button_function_critical(int n, net_player *p = NULL)
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 			if (ship_select_next_secondary(objp)) {
 				ship* shipp = &Ships[objp->instance];
+				ship_weapon* swp = &shipp->weapons;
+				ship_info* sip = &Ship_info[shipp->ship_info_index];
 				if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {
 					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
 				}
+				
+				int current_secondary_weapon = swp->secondary_bank_weapons[swp->current_secondary_bank];
+
+				//Check if doublefire is valid for the new weapon, and disable it if not.
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ||
+					(Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire])) {
+					Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+				}
+
 
 				// multiplayer server should maintain bank/link status here
 				if( MULTIPLAYER_MASTER ){
@@ -1884,19 +1895,24 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 			}
 
-			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
+			ship* shipp = &Ships[objp->instance];
+			ship_weapon* swp = &shipp->weapons;
+			ship_info* sip = &Ship_info[shipp->ship_info_index];
+			polymodel *pm = model_get(sip->model_num);
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
+			int current_secondary_weapon = swp->secondary_bank_weapons[swp->current_secondary_bank];
 
-			if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2 ||
-				The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire]) {
+			//Only set the dual fire flag if the current weapon is allowed to doublefire. 
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
 				Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
-			} else {
+			} else if(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] == false && 
+				(Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire] == false)) {
                 Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
