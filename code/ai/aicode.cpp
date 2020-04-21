@@ -5894,6 +5894,8 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 
 	//	If switched banks, force reacquisition of aspect lock.
+	//	Also check if doublefire is valid for the new missile. Only checking the weapon flag
+	//  if the AI profile flag is set then it won't be set in the first place.
 	if (swp->current_secondary_bank != initial_bank) {
 		auto wi_flags = Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].wi_flags;
 		aip->aspect_locked_time = 0.0f;
@@ -5901,6 +5903,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] &&
 			wi_flags[Weapon::Info_Flags::No_doublefire]) {
 			Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+		}
 	}
 
 	if (swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS) 
