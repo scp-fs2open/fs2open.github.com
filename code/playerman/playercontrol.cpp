@@ -1307,6 +1307,8 @@ void player_restore_target_and_weapon_link_prefs()
 {
 	ship_info *player_sip;
 	player_sip = &Ship_info[Player_ship->ship_info_index];
+	ship_weapon* swp = &Player_ship->weapons;
+	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
 	polymodel *pm = model_get(player_sip->model_num);
 
 	//	Don't restores the save flags in training, as we must ensure certain things are off, such as speed matching.
@@ -1320,7 +1322,12 @@ void player_restore_target_and_weapon_link_prefs()
 		}
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
+	int current_secondary_weapon = swp->secondary_bank_weapons[swp->current_secondary_bank];
+
+	//Don't set the secondary dualfire flag if dualfire is not valid for the current secondary.
+	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) && 
+			!(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ||
+				Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire])) {
 		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
