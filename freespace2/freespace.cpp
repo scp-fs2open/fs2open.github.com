@@ -1224,6 +1224,9 @@ void freespace_mission_load_stuff()
 	
 		mprintf(( "=================== STARTING LEVEL DATA LOAD ==================\n" ));
 
+		game_busy( NOX("** setting up event music **") );
+		event_music_level_start(-1);	// preloads the first 2 seconds for each event music track
+
 		game_busy( NOX("** unloading interface sounds **") );
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
 
