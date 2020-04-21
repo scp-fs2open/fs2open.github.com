@@ -1869,7 +1869,7 @@ int button_function_critical(int n, net_player *p = NULL)
 
 				//Check if doublefire is valid for the new weapon, and disable it if not.
 				if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ||
-					(Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire])) {
+					Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire]) {
 					Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				}
 
@@ -1911,8 +1911,8 @@ int button_function_critical(int n, net_player *p = NULL)
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
-			} else if(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] == false && 
-				(Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire] == false)) {
+			} else if(!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] && 
+				!Weapon_info[current_secondary_weapon].wi_flags[Weapon::Info_Flags::No_doublefire]) {
                 Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
