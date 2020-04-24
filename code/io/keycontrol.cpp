@@ -1860,7 +1860,6 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_secondary(objp)) {
 				ship* shipp = &Ships[objp->instance];
 				ship_weapon* swp = &shipp->weapons;
-				ship_info* sip = &Ship_info[shipp->ship_info_index];
 				if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {
 					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
 				}

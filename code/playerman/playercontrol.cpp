@@ -1308,7 +1308,6 @@ void player_restore_target_and_weapon_link_prefs()
 	ship_info *player_sip;
 	player_sip = &Ship_info[Player_ship->ship_info_index];
 	ship_weapon* swp = &Player_ship->weapons;
-	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
 	polymodel *pm = model_get(player_sip->model_num);
 
 	//	Don't restores the save flags in training, as we must ensure certain things are off, such as speed matching.
