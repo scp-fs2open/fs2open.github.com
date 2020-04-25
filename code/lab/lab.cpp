@@ -549,24 +549,36 @@ void labviewer_do_render(float frametime)
 	}
 
 	//Print FXAA preset
-	if (gr_is_fxaa_mode(Gr_aa_mode) && !PostProcessing_override) {
-		const char* fxaa_mode;
+	if ((gr_is_fxaa_mode(Gr_aa_mode) || gr_is_smaa_mode(Gr_aa_mode)) && !PostProcessing_override) {
+		const char* aa_mode;
 		switch (Gr_aa_mode) {
 		case AntiAliasMode::FXAA_Low:
-			fxaa_mode = "Low";
+			aa_mode = "FXAA Low";
 			break;
 		case AntiAliasMode::FXAA_Medium:
-			fxaa_mode = "Medium";
+			aa_mode = "FXAA Medium";
 			break;
 		case AntiAliasMode::FXAA_High:
-			fxaa_mode = "High";
+			aa_mode = "FXAA High";
+			break;
+		case AntiAliasMode::SMAA_Low:
+			aa_mode = "SMAA Low";
+			break;
+		case AntiAliasMode::SMAA_Medium:
+			aa_mode = "SMAA Medium";
+			break;
+		case AntiAliasMode::SMAA_High:
+			aa_mode = "SMAA High";
+			break;
+		case AntiAliasMode::SMAA_Ultra:
+			aa_mode = "SMAA Ultra";
 			break;
 		default:
-			fxaa_mode = "None";
+			aa_mode = "None";
 			break;
 		}
 
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %s", fxaa_mode);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "AA Preset: %s", aa_mode);
 	}
 	
 	//Print current Team Color setting, if any
@@ -580,7 +592,7 @@ void labviewer_do_render(float frametime)
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
 	                    "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
-	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation "
+	                    "zoom in or out. Use number keys to switch between AA presets. R to cycle model rotation "
 	                    "modes, S to cycle model rotation speeds, V to reset view.");
 
 	// Rotation mode
@@ -1953,6 +1965,29 @@ void labviewer_change_background_actual()
 			if (optional_string("$Environment Map:")) {
 				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
 			}
+
+			const int size = 512;
+			int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
+
+			if (!Cmdline_env) {
+				return;
+			}
+
+			if (gr_screen.envmap_render_target >= 0) {
+				if (!bm_release(gr_screen.envmap_render_target, 1)) {
+					Warning(LOCATION, "Unable to release environment map render target.");
+				}
+
+				gr_screen.envmap_render_target = -1;
+			}
+
+			if (strlen(envmap_name)) {
+				// Load the mission map so we can use it later
+				ENVMAP = bm_load(The_mission.envmap_name);
+				return;
+			}
+
+			gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
 		}
 	} else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
@@ -2290,6 +2325,22 @@ void lab_do_frame(float frametime)
 		case KEY_2:
 			if (!PostProcessing_override)
 				Gr_aa_mode = AntiAliasMode::FXAA_High;
+			break;
+		case KEY_3:
+			if (!PostProcessing_override)
+				Gr_aa_mode = AntiAliasMode::SMAA_Low;
+			break;
+		case KEY_4:
+			if (!PostProcessing_override)
+				Gr_aa_mode = AntiAliasMode::SMAA_Medium;
+			break;
+		case KEY_5:
+			if (!PostProcessing_override)
+				Gr_aa_mode = AntiAliasMode::SMAA_High;
+			break;
+		case KEY_6:
+			if (!PostProcessing_override)
+				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 			break;
 
 		case KEY_T:
