@@ -3685,7 +3685,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		char str[NAME_LENGTH];
 		stuff_string(str, F_NAME, NAME_LENGTH);
 
-		angles model_icon_angles = {0.0f,0.0f,0.0f};
+		angles model_icon_angles = vmd_zero_angles;
 
 		if (!stricmp(str, "top")) {
 			model_icon_angles.p = -PI_2;

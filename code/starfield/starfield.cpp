@@ -1512,7 +1512,7 @@ void subspace_render()
 
 
 	matrix tmp;
-	angles angs = { 0.0f, 0.0f, 0.0f };
+	angles angs = vmd_zero_angles;
 
 	angs.b = subspace_offset_v * PI2;
 
