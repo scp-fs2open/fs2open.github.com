@@ -55,6 +55,7 @@ extern vec3d vmd_x_vector;
 extern vec3d vmd_y_vector;
 extern vec3d vmd_z_vector;
 extern matrix vmd_identity_matrix;
+extern angles vmd_zero_angles;
 
 //Here's a handy constant
 

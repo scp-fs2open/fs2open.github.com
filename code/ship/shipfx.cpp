@@ -106,7 +106,6 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 	// copy angles
 	angles copy_angs = pm->submodel[submodel_num].angs;
-	angles zero_angs = {0.0f, 0.0f, 0.0f};
 
 	// make sure the axis point is set
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
@@ -142,7 +141,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 		// convert to model coord of underlying submodel
 		// set angle to zero
-		pm->submodel[submodel_num].angs = zero_angs;
+		pm->submodel[submodel_num].angs = vmd_zero_angles;
 		world_find_model_instance_point(&start_model_pos, &start_world_pos, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
