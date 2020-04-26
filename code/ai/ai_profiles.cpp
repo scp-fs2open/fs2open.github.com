@@ -7,11 +7,11 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "def_files/def_files.h"
 #include "ai/ai_profiles.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -626,4 +626,22 @@ void ai_profile_t::reset()
     for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
         detail_distance_mult[i] = 0;
     }
+
+	// via Github #2332, enable bugfixes if we are targeting > 19.0
+	if (Targetted_version > gameversion::version(19)) {
+		flags.set(AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
+		flags.set(AI::Profile_Flags::Fix_linked_primary_bug);
+		flags.set(AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
+		flags.set(AI::Profile_Flags::Fix_heat_seeker_stealth_bug);
+		flags.set(AI::Profile_Flags::Allow_vertical_dodge);
+		flags.set(AI::Profile_Flags::Fix_ai_class_bug);
+		flags.set(AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
+		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
+		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
+		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+	}
+	// this flag has been enabled ever since 3.7.2
+	if (Targetted_version >= gameversion::version(3, 7, 2)) {
+		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
 }

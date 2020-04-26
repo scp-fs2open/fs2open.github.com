@@ -8,6 +8,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/version.h"
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
@@ -31,6 +32,7 @@ extern bool Red_alert_applies_to_delayed_ships;
 extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
+extern gameversion::version Targetted_version;
 extern SCP_string Window_title;
 extern bool Unicode_text_mode;
 extern SCP_string Movie_subtitle_font;
