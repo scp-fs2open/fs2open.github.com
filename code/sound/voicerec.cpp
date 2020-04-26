@@ -56,7 +56,7 @@ extern int button_function(int n);
 extern void hud_squadmsg_msg_all_fighters();
 extern void hud_squadmsg_shortcut( int command );
 extern bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
-extern int hud_squadmsg_wing_valid(wing *wingp);
+extern bool hud_squadmsg_wing_valid(wing *wingp);
 
 extern int Msg_instance;;
 extern int Msg_shortcut_command;

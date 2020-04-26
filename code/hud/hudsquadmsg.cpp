@@ -300,31 +300,15 @@ bool hud_squadmsg_exist_fighters( )
 	{	
 		objp = &Objects[so->objnum];
 		shipp = &Ships[objp->instance];
-		Assert ( shipp->objnum != -1 );
+		Assertion(shipp->objnum != -1, "hud_squadmsg_exist_fighters() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
-		// check fighter is accepting orders
-		if (shipp->orders_accepted == 0)
-			continue;
-
-		// be sure ship is on correct team
-#ifdef NDEBUG
-		if (shipp->team != Player_ship->team)
-			continue;
-#else
-		if (!Msg_enemies && (shipp->team != Player_ship->team))
-			continue;
-#endif
-
-		// cannot be my ship or an instructor
-		if ((objp == Player_obj) || is_instructor(objp))
-			continue;
-			
 		// ship must be a fighter/bomber
-		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
+		if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
 			continue;
 
 		// this ship satisfies everything
-		return true;
+		if (hud_squadmsg_ship_valid(shipp, objp))
+			return true;
 	}
 
 	return false;
@@ -337,7 +321,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 	if (!objp)	// For simplicity's sake, allow it to be called with just the ship pointer
 		objp = &Objects[shipp->objnum];
 
-	// ships must be able to receive a message
+	// ships must be able to receive orders
 	if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_accept_player_orders]) )
 		return false;
 
@@ -373,6 +357,10 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 		else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
 			return false;
 	}
+
+	// maybe check comm system
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(shipp) != COMM_OK)
+		return false;
 
 	// If we got to this point, the ship must be valid.
 	return true;
@@ -420,14 +408,14 @@ int hud_squadmsg_count_ships(int add_to_menu)
 }
 
 // routine to return true if a wing should be put onto the messaging menu
-int hud_squadmsg_wing_valid(wing *wingp)
+bool hud_squadmsg_wing_valid(wing *wingp)
 {
 	int idx, ship_num;
 
 	// a couple of special cases to account for before adding to count (or to menu).  Don't count
 	// wings that are leaving or left.
 	if ( wingp->flags[Ship::Wing_Flags::Gone, Ship::Wing_Flags::Departing] )
-		return 0;
+		return false;
 
 	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
 	// there are several significant cases when e.g. wings contain ships of different IFFs
@@ -436,34 +424,13 @@ int hud_squadmsg_wing_valid(wing *wingp)
 		ship_num = wingp->ship_index[idx];
 		Assert(ship_num >= 0);
 
-		// don't check player
-		if (ship_num == SHIP_INDEX(Player_ship))
-			continue;
-
-		// be sure ship is on same team
-#ifdef NDEBUG
-		if (Ships[ship_num].team != Player_ship->team)
-			continue;
-#else
-		if (!Msg_enemies && (Ships[ship_num].team != Player_ship->team))
-			continue;
-#endif
-
-		// check if ship is accepting orders
-		if (Ships[ship_num].orders_accepted == 0)
-			continue;
-
-		// if doing a message shortcut is being used, be sure the ship can "accept" the command.
-		if ( Msg_shortcut_command >= 0 && !(Ships[ship_num].orders_accepted & Msg_shortcut_command) )
-			return 0;
-
-
-		// at least one ship in this wing is valid, and that's all we need
-		return 1;
+		// if at least one ship in this wing is valid, that's all we need
+		if (hud_squadmsg_ship_valid(&Ships[ship_num], &Objects[Ships[ship_num].objnum]))
+			return true;
 	}
 
 	// no ships in the wing were valid
-	return 0;
+	return false;
 }
 
 // function like above, except for wings

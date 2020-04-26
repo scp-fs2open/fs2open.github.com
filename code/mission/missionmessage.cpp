@@ -1555,6 +1555,10 @@ void message_queue_process()
 	if ( hud_communications_state(Player_ship) == COMM_DESTROYED ) {
 		goto all_done;
 	}
+	// G5K 4-26-20: Can't send messages if comm is destroyed
+	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[Message_shipnum]) == COMM_DESTROYED ) {
+		goto all_done;
+	}
 
 	//	Don't play death scream unless a small ship.
 	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
@@ -2371,10 +2375,9 @@ bool change_message(const char* name, const char* message, int persona_index, in
 }
 
 /**
- * Ideally, this would return the minimum of the comm state between the player and the other ship.  In practice, retail has no checks whatsoever on a ship's ability
- * to send messages unless that ship is the player, so such a change would require an AI profiles option and we must default to the player's state.  However, we
- * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the newly enhanced scramble-messages SEXP.  Thus any comm
- * dropout does not cause an unanticipated deviation in the mission design.
+ * This returns the minimum of the comm state between the player and the other ship.  In practice, retail has no checks whatsoever on a ship's ability
+ * to send messages unless that ship is the player, so such a change requires an AI profiles option and we must default to the player's state.  However, we
+ * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the scramble-messages SEXP.
  */
 int comm_between_player_and_ship(int other_shipnum)
 {
@@ -2385,17 +2388,15 @@ int comm_between_player_and_ship(int other_shipnum)
 
 	int other_comm_state = hud_communications_state(&Ships[other_shipnum]);
 
-	/* here is where you would check the flag
-	if (hypothetical_ai_profiles_flag)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships])
 	{
 		return MIN(player_comm_state, other_comm_state);
 	}
 	else
-	*/
 	{
 		if (player_comm_state == COMM_OK && other_comm_state == COMM_OK)
 			return COMM_OK;
-		else if (player_comm_state == COMM_SCRAMBLED || other_comm_state == COMM_SCRAMBLED)
+		else if (player_comm_state == COMM_OK && other_comm_state == COMM_SCRAMBLED)
 			return COMM_SCRAMBLED;
 		else
 			return player_comm_state;
