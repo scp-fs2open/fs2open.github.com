@@ -238,8 +238,9 @@ SCP_vector<squadmsg_history> Squadmsg_history;
 // forward declarations
 void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(char *target, int order_source, int special_index);
-int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = NULL );
-int hud_squadmsg_ship_order_valid( int shipnum, int order );
+bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = nullptr );
+bool hud_squadmsg_ship_valid(ship *shipp, object *objp);
+bool hud_squadmsg_ship_order_valid( int shipnum, int order );
 
 // function to set up variables needed when messaging mode is started
 void hud_squadmsg_start()
@@ -733,8 +734,8 @@ void hud_squadmsg_repair_rearm_abort( int toggle_state, object *obj)
 }
 
 // Goober5000 - redone and added a bit
-// returns 1 if an order is valid for a ship.  Applies to things like departure when engines are blown, etc.
-int hud_squadmsg_ship_order_valid( int shipnum, int order )
+// returns true if an order is valid for a ship.  Applies to things like departure when engines are blown, etc.
+bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
 	// Goober5000
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
@@ -745,7 +746,7 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 		case DEPART_ITEM:
 			// disabled ships can't depart.
 			if (shipp->flags[Ship::Ship_Flags::Disabled])
-				return 0;
+				return false;
 
 			// Goober5000: also can't depart if no subspace drives and no valid mothership
 			if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
@@ -755,21 +756,21 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 				{
 					int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
 					if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
-						return 1;
+						return true;
 				}
 
-				return 0;
+				return false;
 			}
 
 			break;
 	}
-	return 1;
+	return true;
 }
 
 // returns true or false if the Players target is valid for the given order
 // find_order is true when we need to search the comm_orders array for the order entry.  We have
 // to do this action in some cases since all we know is the actual "value" of the order
-int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
+bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 {
 	int target_objnum, i;
 	ship *shipp, *ordering_shipp;
@@ -790,22 +791,22 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// orders which don't operate on targets are always valid
 	if ( !(Comm_orders[order].item & TARGET_MESSAGES) )
-		return 1;
+		return true;
 
 	target_objnum = aip->target_objnum;
 
 	// order isn't valid if there is no player target
 	if ( target_objnum == -1 ) {
-		return 0;
+		return false;
 	}
 
 	objp = &Objects[target_objnum];
 
 	ordering_shipp = &Ships[aip->shipnum];
 
-	// target isn't a ship, then return 0
+	// target isn't a ship, then return false
 	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_WEAPON) )
-		return 0;
+		return false;
 
 	// if it's a weapon, then it needs to be a WIF_BOMB weapon.  Only attack order valid, and only
 	// valid on bombs not on the player's team
@@ -813,54 +814,54 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	if ( objp->type == OBJ_WEAPON ) {
 		
 		if (Weapons[objp->instance].lssm_stage==3){
-			return 0;
+			return false;
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
 			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Fighter_Interceptable]))
-			&& (Weapons[objp->instance].team != ordering_shipp->team) )
+			&& (Weapons[objp->instance].team != ordering_shipp->team) ) {
+			return true;
+		}
 
-			return 1;
-
-		return 0;
+		return false;
 	}
 
 	Assert( objp->type == OBJ_SHIP );
 
 	shipp = &Ships[objp->instance];
 
-	// if target is a navbouy, return 0
+	// if target is a navbouy, return false
 	if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] ){
-		return 0;
+		return false;
 	}
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
 	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
-		return 0;
+		return false;
 	}
 
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
 	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
-		return 0;
+		return false;
 	}
 
 	// same as above except for disarmed.
 	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].type_count == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f)) ){
-		return 0;
+		return false;
 	}
 
 	// if order is disable subsystem, and no subsystem targeted or no hits, then order not valid
 	if ( (Comm_orders[order].item == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == NULL) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
-		return 0;
+		return false;
 	}
 
 	// check based on target's and player's team
 	if ( (shipp->team == ordering_shipp->team) && (FRIENDLY_TARGET_MESSAGES & Comm_orders[order].item) ){
-		return 1;
+		return true;
 	} else if ( (shipp->team != ordering_shipp->team) && (ENEMY_TARGET_MESSAGES & Comm_orders[order].item) ){
-		return 1;
+		return true;
 	} else {
-		return 0;
+		return false;
 	}
 }
 
