@@ -549,7 +549,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
 		vm_vec_normalize(&orient_vec);
 
-		factor = -target_sip->closeup_pos.xyz.z;
+		factor = -target_sip->closeup_pos_targetbox.xyz.z;
 
 		// use the player's up vector, and construct the viewers orientation matrix
 		if (Player_obj->type == OBJ_SHIP) {
@@ -567,7 +567,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 		// RT, changed scaling here
-		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
+		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom_targetbox);
 
 		// IMPORTANT NOTE! Code handling the case 'missile_view == TRUE' in rendering section of renderTargetWeapon()
 		//                 is largely copied over from renderTargetShip(). To keep the codes similar please update

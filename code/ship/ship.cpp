@@ -945,6 +945,9 @@ void ship_info::clone(const ship_info& other)
 	closeup_pos = other.closeup_pos;
 	closeup_zoom = other.closeup_zoom;
 
+	closeup_pos_targetbox = other.closeup_pos_targetbox;
+	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
+
 	memcpy(allowed_weapons, other.allowed_weapons, sizeof(int) * MAX_WEAPON_TYPES);
 
 	memcpy(restricted_loadout_flag, other.restricted_loadout_flag, sizeof(int) * MAX_SHIP_WEAPONS);
@@ -1226,6 +1229,9 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(closeup_pos, other.closeup_pos);
 	closeup_zoom = other.closeup_zoom;
+
+	std::swap(closeup_pos_targetbox, other.closeup_pos_targetbox);
+	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
 
 	std::swap(allowed_weapons, other.allowed_weapons);
 
@@ -1609,6 +1615,9 @@ ship_info::ship_info()
 
 	vm_vec_zero(&closeup_pos);
 	closeup_zoom = 0.5f;
+
+	vm_vec_zero(&closeup_pos_targetbox);
+	closeup_zoom_targetbox = 0.5f;
 
 	memset(allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
 
@@ -3664,6 +3673,28 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			mprintf(("Warning!  Ship '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting to default value.\n", sip->name, sip->closeup_zoom));
 			sip->closeup_zoom = 0.5f;
 		}
+	}
+
+	if(optional_string("$Closeup_pos_targetbox:"))
+	{
+		stuff_vec3d(&sip->closeup_pos_targetbox);
+	} 
+	else 
+	{ 
+		vm_vec_copy_scale(&sip->closeup_pos_targetbox, &sip->closeup_pos, 1.0f);
+	}
+
+	if (optional_string("$Closeup_zoom_targetbox:")) {
+		stuff_float(&sip->closeup_zoom_targetbox);
+
+		if (sip->closeup_zoom_targetbox <= 0.0f) {
+			mprintf(("Warning!  Ship '%s' has a $Closeup_zoom_targetbox value that is less than or equal to 0 (%f). Setting to default value.\n", sip->name, sip->closeup_zoom_targetbox));
+			sip->closeup_zoom_targetbox = 0.5f;
+		}
+	}
+	else
+	{
+		sip->closeup_zoom_targetbox = sip->closeup_zoom;
 	}
 		
 	if(optional_string("$Topdown offset:")) {
