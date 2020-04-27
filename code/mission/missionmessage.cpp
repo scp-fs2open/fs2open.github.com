@@ -864,9 +864,8 @@ void message_kill_all( int kill_all )
 
 	if ( kill_all ) {
 		Num_messages_playing = 0;
+		fsspeech_stop();
 	}
-
-	fsspeech_stop();
 }
 
 // function to kill nth playing message
