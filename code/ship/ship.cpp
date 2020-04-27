@@ -3679,9 +3679,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		stuff_vec3d(&sip->closeup_pos_targetbox);
 	} 
-	else 
+	else if (first_time)
 	{ 
-		vm_vec_copy_scale(&sip->closeup_pos_targetbox, &sip->closeup_pos, 1.0f);
+		sip->closeup_pos_targetbox = sip->closeup_pos;
 	}
 
 	if (optional_string("$Closeup_zoom_targetbox:")) {
@@ -3692,7 +3692,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->closeup_zoom_targetbox = 0.5f;
 		}
 	}
-	else
+	else if (first_time)
 	{
 		sip->closeup_zoom_targetbox = sip->closeup_zoom;
 	}
