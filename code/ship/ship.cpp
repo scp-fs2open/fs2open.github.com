@@ -14378,14 +14378,16 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 				continue;
 			}
-			// see if ship meets our criterea
+
+			// see if ship meets our criteria
 			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) ){
 				continue;
 			}
-			
-			if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags[Ship_Flags::No_builtin_messages]) )
-			{
-				continue;
+			if (flags == SHIP_GET_UNSILENCED) {
+				if (Ships[ship_index].flags[Ship_Flags::No_builtin_messages])
+					continue;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[ship_index]) <= COMM_DAMAGED)
+					continue;
 			}
 
 			// don't process ships on a different team
@@ -15431,6 +15433,9 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	if ( killer_sp->flags[Ship_Flags::No_builtin_messages] ) {
 		return; 
 	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(killer_sp) != COMM_OK) {
+		return;
+	}
 
 	message_send_builtin_to_player(MESSAGE_PRAISE_SELF, killer_sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 	Player->praise_self_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE_SELF].min_delay);
@@ -15526,8 +15531,12 @@ play_ask_help:
 	if (!(Ship_info[sp->ship_info_index].is_fighter_bomber())) //If we're still here, only continue if we're a fighter or bomber.
 		return;
 
-	if (!(sp->flags[Ship_Flags::No_builtin_messages])) // Karajorma - Only unsilenced ships should ask for help
-	{
+	// only unsilenced ships should ask for help
+	if (sp->flags[Ship_Flags::No_builtin_messages])
+		return;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[objp->instance]) <= COMM_DAMAGED)
+		return;
+
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 
@@ -15536,7 +15545,6 @@ play_ask_help:
 		Player->allow_scream_timestamp = timestamp(15000);
 
 	Player->ask_help_count++;
-	}
 }
 
 /**
@@ -15575,9 +15583,9 @@ void ship_scream(ship *sp)
 
 	// Bail if the ship is silenced
 	if (sp->flags[Ship_Flags::No_builtin_messages])
-	{
 		return;
-	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp, true) <= COMM_DAMAGED)
+		return;
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
@@ -15662,6 +15670,8 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 	if (sp->flags[Ship_Flags::No_builtin_messages]) {
 		return;
 	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
+		return;
 
 	// don't mention low ammo if we're docked, for the same reason as in maybe_request_support
 	if (object_is_docked(&Objects[sp->objnum]))
@@ -15726,6 +15736,8 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	// Silent ships should remain just that
 	if (sp->flags[Ship_Flags::No_builtin_messages])
+		return;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
 		return;
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell

@@ -238,8 +238,8 @@ SCP_vector<squadmsg_history> Squadmsg_history;
 // forward declarations
 void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(char *target, int order_source, int special_index);
-bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = nullptr );
-bool hud_squadmsg_ship_valid(ship *shipp, object *objp);
+bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = nullptr);
+bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
 bool hud_squadmsg_ship_order_valid( int shipnum, int order );
 
 // function to set up variables needed when messaging mode is started
@@ -426,7 +426,7 @@ bool hud_squadmsg_wing_valid(wing *wingp)
 		Assert(ship_num >= 0);
 
 		// if at least one ship in this wing is valid, that's all we need
-		if (hud_squadmsg_ship_valid(&Ships[ship_num], &Objects[Ships[ship_num].objnum]))
+		if (hud_squadmsg_ship_valid(&Ships[ship_num]))
 			return true;
 	}
 

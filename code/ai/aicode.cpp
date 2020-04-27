@@ -66,6 +66,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
+#include "ship/subsysdamage.h"
 #include "weapon/beam.h"
 #include "weapon/flak.h"
 #include "weapon/swarm.h"
@@ -14526,6 +14527,9 @@ void process_friendly_hit_message( int message, object *objp )
 
 	// If the ship can't send messages pick someone else
 	if (Ships[objp->instance].flags[Ship::Ship_Flags::No_builtin_messages]) {
+		index = -1;
+	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[objp->instance]) <= COMM_DAMAGED) {
 		index = -1;
 	}
 
