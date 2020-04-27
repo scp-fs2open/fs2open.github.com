@@ -1449,6 +1449,47 @@ void message_queue_process()
 	Assert ( q->priority != -1 );
 	Assert ( q->time_added != -1 );
 
+	int provisional_message_shipnum = -1;
+
+	// Do some checks to see if we are actually going to play this message at all.  These checks have been moved above the
+	// "if ( Num_messages_playing )" block because we don't want to cancel an existing message if we have nothing to replace it with.
+
+	// Goober5000 - argh, don't conflate special sources with ships!
+	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
+	if ( q->source != HUD_SOURCE_IMPORTANT ) {
+		provisional_message_shipnum = ship_name_lookup( q->who_from );
+
+		// see if we need to check if sending ship is alive
+		if ( (provisional_message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
+			goto all_done;
+		}
+	}
+
+	// AL: added 07/14/97.. only play avi/sound if in gameplay
+	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
+		goto all_done;
+
+	// AL 4-7-98: Can't receive messages if comm is destroyed
+	if ( hud_communications_state(Player_ship) == COMM_DESTROYED ) {
+		goto all_done;
+	}
+	// G5K 4-26-20: Can't send messages if comm is destroyed
+	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[provisional_message_shipnum]) == COMM_DESTROYED ) {
+		goto all_done;
+	}
+
+	//	Don't play death scream unless a small ship.
+	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
+		if (provisional_message_shipnum < 0) {
+			goto all_done;
+		}
+		if (!(Ship_info[Ships[provisional_message_shipnum].ship_info_index].is_small_ship() || (Ships[provisional_message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
+			goto all_done;
+		}
+	}
+
+	// At this point we think we're going to play the queued message.
+
 	if ( Num_messages_playing ) {
 		// peek at the first message on the queue to see if it should interrupt, or overlap a currently
 		// playing message.  Mission specific messages will always interrupt builtin messages.  They
@@ -1508,30 +1549,23 @@ void message_queue_process()
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
-	// Goober5000 - argh, don't conflate special sources with ships!
-	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
-	if ( q->source != HUD_SOURCE_IMPORTANT ) {
-		Message_shipnum = ship_name_lookup( q->who_from );
-
-		// see if we need to check if sending ship is alive
-		if ( (Message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
-			goto all_done;
-		}
-	}
-
 	// if this is a ship, then don't play anything if this ship is already talking
-	if ( Message_shipnum != -1 ) {
+	if ( provisional_message_shipnum != -1 ) {
 		for ( i = 0; i < Num_messages_playing; i++ ) {
-			if ( (Playing_messages[i].shipnum != -1) && (Playing_messages[i].shipnum == Message_shipnum) ){
+			if ( (Playing_messages[i].shipnum != -1) && (Playing_messages[i].shipnum == provisional_message_shipnum) ){
 				return;
 			}
 		}
 	}
 
+	// At this point we are definitely going to play the queued message.
+
+	Message_shipnum = provisional_message_shipnum;
+
 	// set up module globals for this message
 	m = &Messages[q->message_num];
 	Playing_messages[Num_messages_playing].anim_data = NULL;
-	Playing_messages[Num_messages_playing].wave         = sound_handle::invalid();
+	Playing_messages[Num_messages_playing].wave = sound_handle::invalid();
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
 	Playing_messages[Num_messages_playing].shipnum = Message_shipnum;
@@ -1546,28 +1580,6 @@ void message_queue_process()
 		message_translate_tokens(buf, q->special_message);
 
 	Message_expire = timestamp(static_cast<int>(42 * strlen(buf)));
-	// AL: added 07/14/97.. only play avi/sound if in gameplay
-	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
-		goto all_done;
-
-	// AL 4-7-98: Can't receive messages if comm is destroyed
-	if ( hud_communications_state(Player_ship) == COMM_DESTROYED ) {
-		goto all_done;
-	}
-	// G5K 4-26-20: Can't send messages if comm is destroyed
-	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[Message_shipnum]) == COMM_DESTROYED ) {
-		goto all_done;
-	}
-
-	//	Don't play death scream unless a small ship.
-	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-		if (Message_shipnum < 0) {
-			goto all_done;
-		}
-		if (!(Ship_info[Ships[Message_shipnum].ship_info_index].is_small_ship() || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
-			goto all_done;
-		}
-	}
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
@@ -1623,8 +1635,8 @@ void message_queue_process()
 		scripting::hook_param("Builtin", 'b', builtinMessage),
 		scripting::hook_param("Sender", 'o', sender)));
 
+	Num_messages_playing++;		// this has to be done at the end because some sound functions use it to index into the array
 all_done:
-	Num_messages_playing++;
 	message_remove_from_queue(q);
 }
 
