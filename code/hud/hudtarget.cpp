@@ -4570,10 +4570,6 @@ int hud_communications_state(ship *sp)
 	if ((sp == Player_ship) && (sp->flags[Ship::Ship_Flags::Dying]))
 		return COMM_OK;
 
-	// Goober5000 - check for scrambled communications
-	if ( emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages] )
-		return COMM_SCRAMBLED;
-
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
 
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
@@ -4581,6 +4577,10 @@ int hud_communications_state(ship *sp)
 	} else if ( str < MIN_COMM_STR_TO_MESSAGE ) {
 		return COMM_DAMAGED;
 	}
+
+	// Goober5000 - check for scrambled communications
+	if (emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages])
+		return COMM_SCRAMBLED;
 
 	return COMM_OK;
 }
