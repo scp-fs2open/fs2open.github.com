@@ -125,7 +125,7 @@ void hud_update_weapon_flash();
 void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
-int hud_communications_state(ship *sp);
+int hud_communications_state(ship *sp, bool for_death_scream = false);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();

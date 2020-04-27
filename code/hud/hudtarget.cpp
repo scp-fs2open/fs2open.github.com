@@ -4556,7 +4556,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-int hud_communications_state(ship *sp)
+int hud_communications_state(ship *sp, bool for_death_scream)
 {
 	float str;
 
@@ -4570,7 +4570,7 @@ int hud_communications_state(ship *sp)
 	if ((sp == Player_ship) && (sp->flags[Ship::Ship_Flags::Dying]))
 		return COMM_OK;
 
-	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
+	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION, for_death_scream );
 
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
 		return COMM_DESTROYED;

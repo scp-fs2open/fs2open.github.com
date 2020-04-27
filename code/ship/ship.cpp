@@ -10579,8 +10579,6 @@ int ship_stop_fire_primary(object * obj)
 
 int tracers[MAX_SHIPS][4][4];
 
-float ship_get_subsystem_strength( ship *shipp, int type );
-
 /**
  * Checks whether a ship would use autoaim if it were to fire its primaries at
  * the given object, taking lead into account.
@@ -13272,7 +13270,7 @@ int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type )
+float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check )
 {
 	float strength;
 	ship_subsys *ssp;
@@ -13280,7 +13278,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f)
+	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
 		return 0.0f;
 
 	// short circuit 1

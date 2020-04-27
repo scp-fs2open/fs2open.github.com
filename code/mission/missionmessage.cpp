@@ -233,8 +233,8 @@ const auto OnMessageReceivedHook = scripting::Hook::Factory(
 	});
 
 // forward declarations
-void message_maybe_distort_text(char *text, int shipnum);
-int comm_between_player_and_ship(int other_shipnum);
+void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream);
+int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
@@ -1474,7 +1474,7 @@ void message_queue_process()
 		goto all_done;
 	}
 	// G5K 4-26-20: Can't send messages if comm is destroyed
-	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[provisional_message_shipnum]) == COMM_DESTROYED ) {
+	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
 		goto all_done;
 	}
 
@@ -1590,7 +1590,7 @@ void message_queue_process()
 	message_play_anim(q);
 	
 	// distort the message if comms system is damaged
-	message_maybe_distort_text(buf, Message_shipnum);
+	message_maybe_distort_text(buf, Message_shipnum, (q->builtin_type == MESSAGE_WINGMAN_SCREAM));
 
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
@@ -2210,7 +2210,7 @@ void message_maybe_distort()
 
 		was_muted = 0;
 
-		if ( comm_between_player_and_ship(Playing_messages[i].shipnum) != COMM_OK) {
+		if ( comm_between_player_and_ship(Playing_messages[i].shipnum, Playing_messages[i].builtin_type == MESSAGE_WINGMAN_SCREAM) != COMM_OK ) {
 			was_muted = Message_wave_muted;
 			if ( timestamp_elapsed(Next_mute_time) ) {
 				Next_mute_time = fl2i(Distort_patterns[Distort_num][Distort_next++] * Message_wave_duration);
@@ -2241,11 +2241,11 @@ void message_maybe_distort()
 //					 Blank out portions of the sound based on Distort_num, this this is that same
 //					 data that will be used to blank out portions of the audio playback
 //
-void message_maybe_distort_text(char *text, int shipnum)
+void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 {
 	int voice_duration;
 
-	if (comm_between_player_and_ship(shipnum) == COMM_OK) {
+	if (comm_between_player_and_ship(shipnum, for_death_scream) == COMM_OK) {
 		return;
 	}
 
@@ -2390,14 +2390,14 @@ bool change_message(const char* name, const char* message, int persona_index, in
  * to send messages unless that ship is the player, so such a change requires an AI profiles option and we must default to the player's state.  However, we
  * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the scramble-messages SEXP.
  */
-int comm_between_player_and_ship(int other_shipnum)
+int comm_between_player_and_ship(int other_shipnum, bool for_death_scream)
 {
 	int player_comm_state = hud_communications_state(Player_ship);
 
 	if (other_shipnum < 0)
 		return player_comm_state;
 
-	int other_comm_state = hud_communications_state(&Ships[other_shipnum]);
+	int other_comm_state = hud_communications_state(&Ships[other_shipnum], for_death_scream);
 
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships])
 	{
