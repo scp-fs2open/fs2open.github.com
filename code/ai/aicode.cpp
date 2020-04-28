@@ -5506,31 +5506,33 @@ void set_primary_weapon_linkage(object *objp)
 	weapon_info *wip;
 
 	shipp = &Ships[objp->instance];
+
+	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f)) {
+		if (shipp->flags[Ship::Ship_Flags::Primary_linked]) {
+			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
+			shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
+		}
+		return;		//	If low on slots, don't link.
+	}
+
 	sip = &Ship_info[shipp->ship_info_index];
 	aip	= &Ai_info[shipp->ai_index];
 	swp = &shipp->weapons;
 
-    shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
+	shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
 
 	// AL: ensure target is a ship!
 	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
 		if ( Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_ship() ) {
-			if ( aip->targeted_subsys == NULL ) {
+			if ( aip->targeted_subsys == nullptr ) {
 				if (!sip->flags[Ship::Info_Flags::No_primary_linking] ) {
 					shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 				}
-                shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
+				shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				return;
 			}
 		}
-	}
-
-	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f) || sip->flags[Ship::Info_Flags::No_primary_linking]) {
-		if (shipp->flags[Ship::Ship_Flags::Primary_linked])
-			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
-        shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
-		return;		//	If low on slots or primary linking disallowed, don't link.
 	}
 
 	// AL 2-11-98: If ship has a disarm or disable goal, don't link unless both weapons are
