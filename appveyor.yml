@@ -40,25 +40,24 @@ deploy:
           NightlyBuild: true        # deploy on nightly push only
 
     - provider: FTP
-      protocol: ftp
-      host: swc.fs2downloads.com
-      username: 
-        secure: EXg2ADoKzMduZF90ip2Q0g==
+      protocol: sftp
+      host: porphyrion.feralhosting.com
+      username:
+        secure: 36+bVD8eJgI0BVbi7TZ4zQ==
       password:
-        secure: x0LL0uY9yBAQ7JTARhQ6AA==
-      folder: swc.fs2downloads.com/builds/nightly/$(VersionName)
-      beta: true
+        secure: CrzmDVca8AGG08iWPA1gOD4Ge06+wJ3rcBagBGclwYQ=
+      folder: www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly/$(VersionName)
       on:
           NightlyBuild: true        # deploy on nightly push only
 
     - provider: FTP
-      protocol: ftp
-      host: swc.fs2downloads.com
-      username: 
-        secure: EXg2ADoKzMduZF90ip2Q0g==
+      protocol: sftp
+      host: porphyrion.feralhosting.com
+      username:
+        secure: 36+bVD8eJgI0BVbi7TZ4zQ==
       password:
-        secure: x0LL0uY9yBAQ7JTARhQ6AA==
-      folder: swc.fs2downloads.com/builds/test/$(VersionName)
+        secure: CrzmDVca8AGG08iWPA1gOD4Ge06+wJ3rcBagBGclwYQ=
+      folder: www/datacorder.porphyrion.feralhosting.com/public_html/builds/test/$(VersionName)
       beta: true
       on:
           TestBuild: true        # deploy on test build push only
