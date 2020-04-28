@@ -3081,6 +3081,8 @@ void model_set_bay_path_nums(polymodel *pm)
 	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
 	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
 
+	// sanity part 1
+	memset(pm->ship_bay->path_indexes, -1, MAX_SHIP_BAY_PATHS * sizeof(int));
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
 	bool too_many_paths = false;
@@ -3115,6 +3117,16 @@ void model_set_bay_path_nums(polymodel *pm)
 	if(too_many_paths)
 	{
 		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
+	}
+
+	// sanity part 2
+	for (i = 0; i < pm->ship_bay->num_paths; i++)
+	{
+		if (pm->ship_bay->path_indexes[i] < 0)
+		{
+			Warning(LOCATION, "Model '%s' does not have a '$bay%.2d' path specified!  A total of %d bay paths were counted.  Either there is a gap in the path sequence, or a path has a duplicate name.", pm->filename, i + 1, pm->ship_bay->num_paths);
+			pm->ship_bay->path_indexes[i] = 0;	// avoid crashes
+		}
 	}
 }
 
