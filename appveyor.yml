@@ -58,6 +58,5 @@ deploy:
       password:
         secure: CrzmDVca8AGG08iWPA1gOD4Ge06+wJ3rcBagBGclwYQ=
       folder: www/datacorder.porphyrion.feralhosting.com/public_html/builds/test/$(VersionName)
-      beta: true
       on:
           TestBuild: true        # deploy on test build push only
