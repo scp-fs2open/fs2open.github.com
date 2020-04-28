@@ -3975,12 +3975,14 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	}
 
 	frame_offset = pickFrame(prange, srange, dist_to_target);
-	if ( frame_offset < 0 ) {
+	if ( frame_offset < 0 && srange != -1.0f ) {
 		return;
 	}
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(frame_offset, targetp, &lead_target_pos);
+	if (frame_offset >= 0) {
+		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		renderIndicator(frame_offset, targetp, &lead_target_pos);
+	}
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
