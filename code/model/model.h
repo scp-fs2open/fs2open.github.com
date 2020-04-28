@@ -371,7 +371,7 @@ typedef struct mp_vert {
 } mp_vert;
 
 typedef struct model_path {
-	char			name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+	char			name[MAX_NAME_LEN];					// name of the path.  Should be unique
 	char			parent_name[MAX_NAME_LEN];			// parent name of submodel that path is linked to in POF
 	int			parent_submodel;
 	int			nverts;

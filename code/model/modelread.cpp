@@ -2273,7 +2273,15 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
+
+					// check for reused path names... not fatal, but maybe problematic
+					for (j = 0; j < i; j++) {
+						if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
+							Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
+						}
+					}
+
 					if ( pm->version >= 2002 ) {
 						// store the sub_model name number of the parent
 						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
