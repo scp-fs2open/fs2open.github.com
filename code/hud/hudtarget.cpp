@@ -6074,7 +6074,10 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 			}
 
@@ -6992,7 +6995,10 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 			}
 
