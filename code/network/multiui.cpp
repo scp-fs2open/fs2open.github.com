@@ -4449,9 +4449,10 @@ void multi_create_list_load_missions()
 	}
 
 	for (idx = 0; idx < file_count; idx++) {
-		int flags,max_players;
+		int flags, max_players;
 		char *filename;
 		uint m_respawn;
+		bool lcl_weirdness = false;
 
 		fname = file_list[idx];
 		
@@ -4462,10 +4463,16 @@ void multi_create_list_load_missions()
 			std_gen_set_text(filename, 2);
 		}
 
+		// activate tstrings check
+		Lcl_unexpected_tstring_check = &lcl_weirdness;
+
 		flags = mission_parse_is_multi(filename, mission_name);
 
+		// deactivate tstrings check
+		Lcl_unexpected_tstring_check = nullptr;
+
 		// if the mission is a multiplayer mission, and we can list it, then add it to the mission list
-		if (flags && !mission_is_ignored(filename)) {
+		if (flags && !mission_is_ignored(filename) && !lcl_weirdness) {
 			max_players = mission_parse_get_multi_mission_info( filename );
 			m_respawn = The_mission.num_respawns;
 

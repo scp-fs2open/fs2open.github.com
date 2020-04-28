@@ -48,6 +48,8 @@ int Lcl_gr = 0;
 int Lcl_pl = 0;
 int Lcl_english = 1;
 
+bool *Lcl_unexpected_tstring_check = nullptr;
+
 
 // executable string localization data --------------------
 
@@ -626,14 +628,17 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // XSTR("whee", 20)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
+// returns true if we were able to extract the XSTR elements (text_str and maybe id are populated)
+bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_len, int *id)
 {
-	char text_str[PARSE_BUF_SIZE]="";
 	int str_id;
 	size_t str_len;
 
 	Assert(in);
 	Assert(out);
+
+	// NOTE: "Token too long" warnings are disabled when Lcl_unexpected_tstring_check is active,
+	// because in such cases we actually anticipate that the length might be exceeded.
 
 	// default (non-external string) value
 	if (id != NULL) {
@@ -644,7 +649,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 
 	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
 	if (str_len < 9) {
-		if (str_len > max_len)
+		if (str_len > max_len && !Lcl_unexpected_tstring_check)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
@@ -652,13 +657,13 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 		if (id != NULL)
 			*id = -2;
 
-		return;
+		return false;
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
 	if (strnicmp(in, "XSTR", 4) != 0) {
 		// NOT an XSTR() tag
-		if (str_len > max_len)
+		if (str_len > max_len && !Lcl_unexpected_tstring_check)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
@@ -666,12 +671,12 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 		if (id != NULL)
 			*id = -2;
 
-		return;
+		return false;
 	}
 
 	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections
 	if (!lcl_ext_get_text(in, text_str)) {
-		if (str_len > max_len)
+		if (str_len > max_len && !Lcl_unexpected_tstring_check)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
@@ -679,10 +684,10 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 		if (id != NULL)
 			*id = -1;
 
-		return;
+		return false;
 	}
 	if (!lcl_ext_get_id(in, &str_id)) {
-		if (str_len > max_len)
+		if (str_len > max_len && !Lcl_unexpected_tstring_check)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
@@ -690,12 +695,12 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 		if (id != NULL)
 			*id = -1;
 
-		return;
+		return false;
 	}
 	
-	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
-		if ( strlen(text_str) > max_len )
+	// if the localization file is not open, or there's no entry, return the original string
+	if ( !Xstr_inited || (str_id < 0) ) {
+		if ( strlen(text_str) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
 		strncpy(out, text_str, max_len);
@@ -703,20 +708,20 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 		if (id != NULL)
 			*id = str_id;
 
-		return;
+		return true;
 	}
 
 	// get the string if it exists
 	if (Lcl_ext_str.find(str_id) != Lcl_ext_str.end()) {
 		// copy to the outgoing string
-		if ( strlen(Lcl_ext_str[str_id]) > max_len )
+		if ( strlen(Lcl_ext_str[str_id]) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
 
 		strncpy(out, Lcl_ext_str[str_id], max_len);
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
-		if ( strlen(text_str) > max_len )
+		if ( strlen(text_str) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
 		strncpy(out, text_str, max_len);
@@ -726,12 +731,13 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	if (id != NULL) {
 		*id = str_id;
 	}
+
+	return true;
 }
 
 // ditto for SCP_string
-void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
+bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string &out, int *id)
 {
-	SCP_string text_str = "";
 	int str_id;
 
 	// default (non-external string) value
@@ -746,7 +752,7 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 		if (id != NULL)
 			*id = -2;
 
-		return;
+		return false;
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
@@ -757,7 +763,7 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 		if (id != NULL)
 			*id = -2;
 
-		return;
+		return false;
 	}
 
 	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
@@ -767,7 +773,7 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 		if (id != NULL)
 			*id = -1;
 
-		return;
+		return false;
 	}
 	if (!lcl_ext_get_id(in, &str_id)) {
 		out = in;
@@ -775,17 +781,17 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 		if (id != NULL)
 			*id = -1;
 
-		return;
+		return false;
 	}
 	
-	// if the localization file is not open, or we're running in the default language, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
+	// if the localization file is not open, or there's no entry, return the original string
+	if ( !Xstr_inited || (str_id < 0) ) {
 		out = text_str;
 
 		if (id != NULL)
 			*id = str_id;
 
-		return;
+		return true;
 	}
 
 	// get the string if it exists
@@ -802,15 +808,43 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 	if (id != NULL){
 		*id = str_id;
 	}
+
+	return true;
 }
 
 // Goober5000 - wrapper for lcl_ext_localize_sub; used because lcl_replace_stuff has to
 // be called *after* the translation is done, and the original function returned in so
 // many places that it would be messy to call lcl_replace_stuff everywhere
+// Addendum: Now, of course, it provides a handy way to encapsulate another check
 void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 {
-	// do XSTR translation
-	lcl_ext_localize_sub(in, out, max_len, id);
+	// buffer for the untranslated string inside the XSTR tag
+	char text_str[PARSE_BUF_SIZE] = "";
+
+	// if we're doing this extra check, then we have to compare the untranslated string with the default language string and see if they're different
+	if (Lcl_unexpected_tstring_check)
+	{
+		int saved_language = Lcl_current_lang;
+		Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+		bool extracted = lcl_ext_localize_sub(in, text_str, out, max_len, id);
+
+		// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
+		if (extracted && strcmp(text_str, out) != 0)
+			*Lcl_unexpected_tstring_check = true;
+
+		// at this point, we go back to our usual language and do the translation for real
+		if (saved_language != Lcl_current_lang)
+		{
+			Lcl_current_lang = saved_language;
+			lcl_ext_localize_sub(in, text_str, out, max_len, id);
+		}
+	}
+	// most of the time we're not going to do the check, so localize as normal
+	else
+	{
+		// do XSTR translation
+		lcl_ext_localize_sub(in, text_str, out, max_len, id);
+	}
 
 	// do translation of $callsign, $rank, etc.
 	lcl_replace_stuff(out, max_len);
@@ -819,8 +853,33 @@ void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 // ditto for SCP_string
 void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id)
 {
-	// do XSTR translation
-	lcl_ext_localize_sub(in, out, id);
+	// buffer for the untranslated string inside the XSTR tag
+	SCP_string text_str = "";
+
+	// if we're doing this extra check, then we have to compare the untranslated string with the default language string and see if they're different
+	if (Lcl_unexpected_tstring_check)
+	{
+		int saved_language = Lcl_current_lang;
+		Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+		bool extracted = lcl_ext_localize_sub(in, text_str, out, id);
+
+		// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
+		if (extracted && text_str != out)
+			*Lcl_unexpected_tstring_check = true;
+
+		// at this point, we go back to our usual language and do the translation for real
+		if (saved_language != Lcl_current_lang)
+		{
+			Lcl_current_lang = saved_language;
+			lcl_ext_localize_sub(in, text_str, out, id);
+		}
+	}
+	// most of the time we're not going to do the check, so localize as normal
+	else
+	{
+		// do XSTR translation
+		lcl_ext_localize_sub(in, text_str, out, id);
+	}
 
 	// do translation of $callsign, $rank, etc.
 	lcl_replace_stuff(out);
