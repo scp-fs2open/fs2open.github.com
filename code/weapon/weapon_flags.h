@@ -23,6 +23,7 @@ namespace Weapon {
 		Bomb,								// Bomb-type missile, can be targeted
 		Huge,								// Huge damage (generally 500+), probably only fired at huge ships.
 		No_dumbfire,						// Missile cannot be fired dumbfire (ie requires aspect lock)
+		No_doublefire,						// Disables linked firing for secondaries - EatThePath
 		Thruster,							// Has thruster cone and/or glow
 		In_tech_database,
 		Player_allowed,						// allowed to be on starting wing ships/in weaponry pool

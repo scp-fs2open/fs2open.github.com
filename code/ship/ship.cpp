@@ -446,6 +446,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "big ship",					Weapon::Info_Flags::Big_only,							true, false },
     { "child",						Weapon::Info_Flags::Child,								true, false },
     { "no dumbfire",				Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",				Weapon::Info_Flags::No_doublefire,						true, false },
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
