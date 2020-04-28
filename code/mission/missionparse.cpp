@@ -6643,7 +6643,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
-			Int3();			// get MWA or AL -- not sure what to do here when we cannot acquire a path
+			// get MWA or AL -- not sure what to do here when we cannot acquire a path
+			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[shipnum].ship_name));
 			return -1;
 		}
 		Objects[objnum].pos = pos;
