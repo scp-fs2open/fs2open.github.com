@@ -11953,6 +11953,16 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 		int start_slot, end_slot;
 
+		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
+			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
+				shipp->objnum != OBJ_INDEX(Player_obj) ) ||
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
+				shipp->objnum == OBJ_INDEX(Player_obj) ))
+			) {
+			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
+		}
+
 		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
