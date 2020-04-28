@@ -372,6 +372,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "clear-ship-goals",				OP_CLEAR_SHIP_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-wing-goals",				OP_CLEAR_WING_GOALS,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,						2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "good-primary-time",				OP_GOOD_PRIMARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "good-secondary-time",			OP_GOOD_SECONDARY_TIME,					4,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "change-ai-class",				OP_CHANGE_AI_CLASS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "player-use-ai",					OP_PLAYER_USE_AI,						0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -5157,33 +5158,6 @@ int sexp_string_compare(int n, int op)
 	// it satisfies the operator for all the arguments
 	return SEXP_TRUE;
 }
-
-#define OSWPT_TYPE_NONE				0
-#define OSWPT_TYPE_SHIP				1
-#define OSWPT_TYPE_WING				2
-#define OSWPT_TYPE_WAYPOINT			3
-#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
-#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
-#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
-#define OSWPT_TYPE_EXITED			7
-#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
-
-// Goober5000
-typedef struct object_ship_wing_point_team
-{
-	char *object_name;
-	int type;
-
-	p_object *p_objp;
-	object *objp;
-	ship *shipp;
-	wing *wingp;
-	waypoint *waypointp;
-	int team;
-
-	void clear();
-}
-object_ship_wing_point_team;
 
 void object_ship_wing_point_team::clear()
 {
@@ -14580,6 +14554,37 @@ void sexp_set_subspace_drive(int node)
 	bool set_flag = !is_sexp_true(node);
 
 	sexp_deal_with_ship_flag(CDR(node), true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::No_subspace_drive, Mission::Parse_Object_Flags::NUM_VALUES, set_flag);
+}
+
+//forward declarations
+extern void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target);
+extern void ai_clear_preferred_primary(object_ship_wing_point_team *subject, object_ship_wing_point_team *target);
+
+void sexp_good_primary_time(int node)
+{
+	object_ship_wing_point_team subject;
+	sexp_get_object_ship_wing_point_team(&subject, CTEXT(node));
+	//if we don't get a ship, wing or team, bail
+	if (!subject.shipp && !subject.wingp && subject.team == -1) {
+		return;
+	}
+
+	//index into Weapon_info
+	int weap_idx = weapon_info_lookup(CTEXT(CDR(node)));
+
+	object_ship_wing_point_team target;
+	sexp_get_object_ship_wing_point_team(&target, CTEXT(CDDR(node)));
+	if (!target.shipp && !target.wingp && target.team == -1) {
+		return;
+	}
+
+	int activate = eval_num(CDDDR(node));
+
+	if (activate) {
+		ai_set_preferred_primary_weapon(&subject, weap_idx, &target);
+	} else {
+		ai_clear_preferred_primary(&subject, &target);
+	}
 }
 
 /**
@@ -25377,6 +25382,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_GOOD_PRIMARY_TIME:
+				sexp_good_primary_time(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_GOOD_SECONDARY_TIME:
 				sexp_good_secondary_time(node);
 				sexp_val = SEXP_TRUE;
@@ -27227,6 +27237,7 @@ int query_operator_return_type(int op)
 		case OP_WARP_ALLOWED:
 		case OP_SET_SUBSPACE_DRIVE:
 		case OP_FLASH_HUD_GAUGE:
+		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_SHIP_VISIBLE:
 		case OP_SHIP_INVISIBLE:
@@ -28789,6 +28800,13 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FLASH_HUD_GAUGE:
 			return OPF_HUD_GAUGE_NAME;
+
+		case OP_GOOD_PRIMARY_TIME:
+			if (argnum == 0 || argnum == 2) {
+				return OPF_SHIP_WING_WHOLETEAM;
+			} else if (argnum == 1) {
+				return OPF_WEAPON_NAME;
+			} else return OPF_NUMBER;
 
 		case OP_GOOD_SECONDARY_TIME:
 			if ( argnum == 0 )
@@ -31138,6 +31156,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
+		case OP_GOOD_PRIMARY_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_AI_CLASS:
 		case OP_PLAYER_USE_AI:
@@ -33341,15 +33360,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of medal to grant to player." },
 
+	{ OP_GOOD_PRIMARY_TIME, "Set preferred primary weapon\r\n"
+		"\tForces the given ship/wing/team to use the specified primary weapon against a certain ship/wing/team.  "
+		"Use the fourth parameter as a boolean (zero/nonzero) to control overriding the normal AI weapon selection\r\n\r\n"
+		"Takes 4 arguments...\r\n"
+		"\t1:\tName of ship/wing/team which will prefer firing given weapon\r\n"
+		"\t2:\tWeapon name\r\n"
+		"\t3:\tTarget name\r\n"
+		"\t4:\tActivate/deactivate" },
+
 	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
 		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
 		"fire during combat.  When this expression is evaluated, any AI ships of the given "
 		"team prefer to fire the given weapon at the given ship. (Preferred over other "
 		"secondary weapons)\r\n\r\n"
-		"Takes 4 argument...\r\n"
+		"Takes 4 arguments...\r\n"
 		"\t1:\tTeam name which will prefer firing given weapon\r\n"
 		"\t2:\tMaximum number of this type of weapon above team can fire.\r\n"
-		"\t3:\tWeapon name (list includes only the valid weapons for this expression\r\n"
+		"\t3:\tWeapon name (list includes only the valid weapons for this expression)\r\n"
 		"\t4:\tShip name at which the above named team should fire the above named weapon." },
 
 	{ OP_AND_IN_SEQUENCE, "And in sequence (Boolean operator)\r\n"
