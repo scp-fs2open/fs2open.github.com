@@ -1860,6 +1860,11 @@ bool is_a_weapon_slot_empty()
 		// a ship must exist in this slot
 		if (Wss_slots[slot].ship_class >= 0)
 		{
+			// if the player can't modify the weapons, then an empty bank is not his fault
+			auto ss_slot = &Ss_wings[slot / MAX_WING_SLOTS].ss_slots[slot % MAX_WING_SLOTS];
+			if (ss_slot->status & WING_SLOT_WEAPONS_DISABLED)
+				continue;
+
 			ship_info *sip = &Ship_info[Wss_slots[slot].ship_class];
 
 			// check primary banks
@@ -1874,7 +1879,7 @@ bool is_a_weapon_slot_empty()
 			for (int bank = 0; bank < sip->num_secondary_banks; ++bank)
 			{
 				// is the slot empty?
-				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS+bank] <= 0)
+				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS + bank] <= 0)
 					return true;
 			}
 		}
@@ -1953,7 +1958,7 @@ void commit_pressed()
 	// Goober5000 - check that all weapon slots are filled (Mantis 2715)
 	// Note: don't check for training, scramble, or red-alert missions
 	// Note2: don't check missions without briefings either
-	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble] && !The_mission.flags[Mission::Mission_Flags::Red_alert] && !The_mission.flags[Mission::Mission_Flags::No_briefing])
+	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
 	{
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank.  All weapon banks must have weapons assigned.", 1642), weapon_list.c_str());
 		return;
@@ -2197,7 +2202,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 						color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 
 					// in multiplayer, determine if this it the special case where the slot is disabled, and 
-					// it is also _my_ slot (ie, team capatains/host have not locked players yet)
+					// it is also _my_ slot (ie, team captains/hosts have not locked players yet)
 					if((Game_mode & GM_MULTIPLAYER) && multi_ts_disabled_high_slot(slot_index)){
 						if(icon->model_index == -1)
 							bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED_HIGH];

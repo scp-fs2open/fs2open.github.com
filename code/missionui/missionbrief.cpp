@@ -1992,7 +1992,7 @@ int brief_only_allow_briefing()
 		return 1;
 	}
 
-	if ( The_mission.flags[Mission::Mission_Flags::Scramble] || The_mission.flags[Mission::Mission_Flags::Red_alert] ) {
+	if ( The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert] ) {
 		return 1;
 	}
 
