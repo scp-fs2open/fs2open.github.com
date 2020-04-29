@@ -3502,6 +3502,7 @@ int CFred_mission_save::save_players()
 
 		fout(" (\n");
 		generate_weaponry_usage_list_team(i, used_pool);
+
 		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
 			// first output the weapon name or a variable that sets it 
 			if (strlen(Team_data[i].weaponry_pool_variable[j])) {
