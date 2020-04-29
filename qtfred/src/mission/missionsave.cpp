@@ -3544,7 +3544,7 @@ int CFred_mission_save::save_players()
 		fout(")");
 
 		// sanity check
-		if (Mission_save_format == FSO_FORMAT_RETAIL && wrote_fso_data) {
+		if (save_format == MissionFormat::RETAIL && wrote_fso_data) {
 			// this is such an unlikely (and hard-to-fix) case that a warning should be sufficient
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 				"Incompatibility with retail mission format",
