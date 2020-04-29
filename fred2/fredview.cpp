@@ -107,9 +107,7 @@ Marking_box	marking_box;
 object_orient_pos	rotation_backup[MAX_OBJECTS];
 
 // Goober5000 (currently, FS1 retail not implemented)
-int Format_fs2_open = FSO_FORMAT_STANDARD;
-int Format_fs2_retail = 0;
-int Format_fs1_retail = 0;
+int Mission_save_format = FSO_FORMAT_STANDARD;
 
 // used by error checker, but needed in more than just one function.
 char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
@@ -4523,9 +4521,7 @@ void CFREDView::OnDumpStats()
 
 void CFREDView::OnFormatFs2Open() 
 {
-	Format_fs2_open = FSO_FORMAT_STANDARD;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_STANDARD;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4533,14 +4529,12 @@ void CFREDView::OnFormatFs2Open()
 
 void CFREDView::OnUpdateFormatFs2Open(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_STANDARD);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_STANDARD);
 }
 
 void CFREDView::OnFormatFs2OpenComp() 
 {
-	Format_fs2_open = FSO_FORMAT_COMPATIBILITY_MODE;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_COMPATIBILITY_MODE;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4548,14 +4542,12 @@ void CFREDView::OnFormatFs2OpenComp()
 
 void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE);
 }
 
 void CFREDView::OnFormatFs2Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 1;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4563,14 +4555,12 @@ void CFREDView::OnFormatFs2Retail()
 
 void CFREDView::OnUpdateFormatFs2Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnFormatFs1Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 1;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4578,7 +4568,7 @@ void CFREDView::OnFormatFs1Retail()
 
 void CFREDView::OnUpdateFormatFs1Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs1_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnEditorsSetGlobalShipFlags() 
