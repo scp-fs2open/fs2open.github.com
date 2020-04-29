@@ -2703,7 +2703,7 @@ int CFred_mission_save::save_music()
 
 int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL)
+	if (Mission_save_format == FSO_FORMAT_RETAIL)
 		return err;
 
 	// for writing to file; c.f. parse_warp_params
