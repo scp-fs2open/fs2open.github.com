@@ -272,7 +272,7 @@ void recompile_aa_shader() {
 			// start recompile by grabbing deleting the current shader we have, assuming it's already created
 		opengl_delete_shader( gr_opengl_maybe_create_shader(sdr, 0) );
 
-		// then recreate it again. shader loading code will be updated with the new FXAA presets
+		// then recreate it again. shader loading code will be updated with the new AA presets
 		gr_opengl_maybe_create_shader(sdr, 0);
 	}
 
