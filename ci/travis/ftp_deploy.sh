@@ -84,6 +84,6 @@ for file in *; do
         curl -k "sftp://scp.indiegames.us/~/public_html/builds/nightly/$VERSION_NAME/" --user "$INDIEGAMES_USER:$INDIEGAMES_PASSWORD" -T "$file" --ftp-create-dirs
 
         # Upload to datacorder
-        curl -k "sftp://porphyrion.feralhosting.com/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly/$VERSION_NAME/" --user "$DATACORDER_USER:$DATACORDER_PASSWORD" -T "$file" --ftp-create-dirs
+        curl -k "sftp://porphyrion.feralhosting.com/~/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly/$VERSION_NAME/" --user "$DATACORDER_USER:$DATACORDER_PASSWORD" -T "$file" --ftp-create-dirs
     fi
 done
