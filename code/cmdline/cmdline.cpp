@@ -1877,8 +1877,6 @@ bool SetCmdlineParams()
 				Gr_aa_mode = AntiAliasMode::FXAA_Low;
 			}
 		}
-
-		Gr_aa_mode_last_frame = Gr_aa_mode;
 	}
 
 	if (smaa_arg.found()) {
@@ -1904,6 +1902,10 @@ bool SetCmdlineParams()
 			}
 		}
 	}
+
+	// If any of the AA presets were chosen, update the _last_frame AA mode to avoid an unnecessary
+	// shader recompile.
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 
 	if ( glow_arg.found() )
 		Cmdline_glow = 0;
