@@ -254,18 +254,27 @@ void gr_opengl_post_process_begin()
 	Post_in_frame = true;
 }
 
-void recompile_fxaa_shader() {
-	if (!gr_is_fxaa_mode(Gr_aa_mode)) {
-		return;
+void recompile_aa_shader() {
+	auto stype = SCP_vector<shader_type>();
+
+	if (gr_is_fxaa_mode(Gr_aa_mode)) {
+		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_FXAA);
+	}
+	else if (gr_is_smaa_mode(Gr_aa_mode)) {
+		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT);
+		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_EDGE);
+		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING);
 	}
 
-	mprintf(("Recompiling FXAA shader...\n"));
+	mprintf(("Recompiling AA shader(s)...\n"));
 
-	// start recompile by grabbing deleting the current shader we have, assuming it's already created
-	opengl_delete_shader( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
+	for (auto sdr : stype) {
+			// start recompile by grabbing deleting the current shader we have, assuming it's already created
+		opengl_delete_shader( gr_opengl_maybe_create_shader(sdr, 0) );
 
-	// then recreate it again. shader loading code will be updated with the new FXAA presets
-	gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0);
+		// then recreate it again. shader loading code will be updated with the new FXAA presets
+		gr_opengl_maybe_create_shader(sdr, 0);
+	}
 
 	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
@@ -277,7 +286,7 @@ void opengl_post_pass_fxaa()
 
 	// If the preset changed, recompile the shader
 	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
-		recompile_fxaa_shader();
+		recompile_aa_shader();
 	}
 
 	// We only want to draw to ATTACHMENT0
@@ -407,6 +416,11 @@ void opengl_post_pass_smaa()
 {
 	GR_DEBUG_SCOPE("SMAA");
 	TRACE_SCOPE(tracing::SMAA);
+
+		// If the preset changed, recompile the shader
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
+		recompile_aa_shader();
+	}
 
 	GL_state.PushFramebufferState();
 
@@ -962,6 +976,23 @@ void set_smaa_defines(SCP_stringstream& sflags)
 		sflags << "#define SMAA_GLSL_4\n";
 	} else {
 		sflags << "#define SMAA_GLSL_3\n";
+	}
+
+	switch (Gr_aa_mode) {
+	case AntiAliasMode::SMAA_Low:
+		sflags << "#define SMAA_PRESET_LOW\n";
+		break;
+	case AntiAliasMode::SMAA_Medium:
+		sflags << "#define SMAA_PRESET_MEDIUM\n";
+		break;
+	case AntiAliasMode::SMAA_High:
+		sflags << "#define SMAA_PRESET_HIGH\n";
+		break;
+	case AntiAliasMode::SMAA_Ultra:
+		sflags << "#define SMAA_PRESET_ULTRA\n";
+		break;
+	default:
+		UNREACHABLE("Unhandled SMAA mode!");
 	}
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
