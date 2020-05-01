@@ -254,25 +254,29 @@ void gr_opengl_post_process_begin()
 	Post_in_frame = true;
 }
 
+SCP_vector<shader_type> get_aa_shader_types(AntiAliasMode aa_mode) {
+	auto stypes = SCP_vector<shader_type>();
+
+	if (gr_is_fxaa_mode(aa_mode)) {
+		stypes.push_back(shader_type::SDR_TYPE_POST_PROCESS_FXAA);
+	}
+	else if (gr_is_smaa_mode(aa_mode)) {
+		stypes.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT);
+		stypes.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_EDGE);
+		stypes.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING);
+	}
+
+	return stypes;
+}
+
 void recompile_aa_shader() {
-	auto stype = SCP_vector<shader_type>();
-
-	if (gr_is_fxaa_mode(Gr_aa_mode)) {
-		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_FXAA);
-	}
-	else if (gr_is_smaa_mode(Gr_aa_mode)) {
-		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT);
-		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_EDGE);
-		stype.push_back(shader_type::SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING);
-	}
-
 	mprintf(("Recompiling AA shader(s)...\n"));
 
-	for (auto sdr : stype) {
-			// start recompile by grabbing deleting the current shader we have, assuming it's already created
+	for (auto sdr : get_aa_shader_types(Gr_aa_mode_last_frame)) {
 		opengl_delete_shader( gr_opengl_maybe_create_shader(sdr, 0) );
+	}
 
-		// then recreate it again. shader loading code will be updated with the new AA presets
+	for (auto sdr : get_aa_shader_types(Gr_aa_mode)) {
 		gr_opengl_maybe_create_shader(sdr, 0);
 	}
 
