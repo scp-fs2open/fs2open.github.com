@@ -625,6 +625,7 @@ void parse_msgtbl()
 		generic_message_filenames.clear();
 		generic_message_filenames.push_back("none");
 		generic_message_filenames.push_back("cuevoice");
+		generic_message_filenames.push_back("cue_voice");
 		generic_message_filenames.push_back("emptymsg");
 		generic_message_filenames.push_back("generic");
 		generic_message_filenames.push_back("msgstart");
