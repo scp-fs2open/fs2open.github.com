@@ -490,9 +490,13 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 
 	Num_lights++;
 
+	vec3d screen_dir;
+	vm_vec_rotate(&screen_dir, dir, &Eye_matrix);
+	screen_dir.xyz.z = -screen_dir.xyz.z;
+
 	l.type = Light_Type::Cone;
 	l.vec = *pos;
-	l.vec2= *dir;
+	l.vec2= screen_dir;
 	l.cone_angle = angle;
 	l.cone_inner_angle = inner_angle;
 	l.dual_cone = dual_cone;

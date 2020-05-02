@@ -9,9 +9,12 @@
 
 #include "model/modelrender.h"
 
+#include "globalincs/alphacolors.h"
+
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
+#include "graphics/debug.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -1809,7 +1812,6 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					vec3d cone_dir_rot;
 					vec3d cone_dir_model;
 					vec3d cone_dir_world;
-					vec3d cone_dir_screen;
 					vec3d unused;
 
 					if ( gpo->rotating ) {
@@ -1820,9 +1822,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 
 					find_submodel_instance_point_normal(&unused, &cone_dir_model, shipp->model_instance_num, bank->submodel_parent, &unused, &cone_dir_rot);
 					vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
-					vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
-					cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
-					light_add_cone(&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, w * gpo->radius_multi, 1, pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x, pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y, pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z, -1);
+					light_add_cone(&world_pnt, &cone_dir_world, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, w * gpo->radius_multi, 1, pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x, pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y, pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z, -1);
 				} else {
 					light_add_point(&world_pnt, 1.0f, w * gpo->radius_multi, 1, pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x, pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y, pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z, -1);
 				}
@@ -2012,7 +2012,6 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	int n_q = 0;
 	size_t 	k;
 	vec3d norm, norm2, fvec, pnt, npnt;
-	thruster_bank *bank = NULL;
 	vertex p;
 	bool do_render = false;
 
@@ -2031,7 +2030,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 	// get an initial count to figure out how man geo batchers we need allocated
 	for (i = 0; i < pm->n_thrusters; i++ ) {
-		bank = &pm->thrusters[i];
+		const auto bank = &pm->thrusters[i];
 		n_q += bank->num_points;
 	}
 
@@ -2073,10 +2072,10 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 		bool submodel_rotation = false;
 
-		bank = &pm->thrusters[i];
+		const auto bank = &pm->thrusters[i];
 
 		// don't draw this thruster if the engine is destroyed or just not on
-		if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
+		if (!model_should_render_engine_glow(objnum, bank->obj_num))
 			continue;
 
 		// If bank is attached to a submodel, prepare to account for rotations
@@ -2085,18 +2084,21 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		// set the the necessary submodel instance info needed here. The second
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
-		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
-			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
+		if (bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move &&
+			(gameseq_get_state_idx(GS_STATE_LAB) == -1)) {
+			model_find_submodel_offset(&submodel_static_offset,
+									   Ship_info[shipp->ship_info_index].model_num,
+									   bank->submodel_num);
 
 			submodel_rotation = true;
 		}
 
 		for (j = 0; j < bank->num_points; j++) {
-			Assert( bank->points != NULL );
+			Assert(bank->points != NULL);
 
 			float d, D;
 			vec3d tempv;
-			glow_point *gpt = &bank->points[j];
+			glow_point* gpt  = &bank->points[j];
 			vec3d loc_offset = gpt->pnt;
 			vec3d loc_norm = gpt->norm;
 			vec3d world_pnt;
@@ -2147,21 +2149,21 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			D = d = vm_vec_dot(&tempv, &world_norm);
 
 			// ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
-#define NOISE_SCALE 0.5f
-#define MIN_SCALE 3.4f
-#define MAX_SCALE 4.7f
+			const auto NOISE_SCALE = 0.5f;
+			const auto MIN_SCALE   = 3.4f;
+			const auto MAX_SCALE   = 4.7f;
 
 			float magnitude;
-			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
+			vec3d scale_vec = {{{1.0f, 0.0f, 0.0f}}};
 
 			// normalize banks, in case of incredibly big normals
-			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
+			if (!IS_VEC_NULL_SQ_SAFE(&world_norm))
 				vm_vec_copy_normalize(&scale_vec, &world_norm);
 
 			// adjust for thrust
 			(scale_vec.xyz.x *= thruster_info.length.xyz.x) -= 0.1f;
 			(scale_vec.xyz.y *= thruster_info.length.xyz.y) -= 0.1f;
-			(scale_vec.xyz.z *= thruster_info.length.xyz.z)   -= 0.1f;
+			(scale_vec.xyz.z *= thruster_info.length.xyz.z) -= 0.1f;
 
 			// get magnitude, which we will use as the scaling reference
 			magnitude = vm_vec_normalize(&scale_vec);
@@ -2289,9 +2291,9 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					// Where the particles emit from
 					pe.pos = npnt;
 					// Initial velocity of all the particles
-					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
+					pe.vel     = Objects[shipp->objnum].phys_info.desired_vel;
 					pe.min_vel = v * 0.75f;
-					pe.max_vel =  v * 1.25f;
+					pe.max_vel = v * 1.25f;
 					// What normal the particle emit around
 					pe.normal = orient->vec.fvec;
 					vm_vec_negate(&pe.normal);
@@ -2300,16 +2302,37 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					pe.num_low = tp->n_low;
 					// Highest number of particles to create
 					pe.num_high = tp->n_high;
-					pe.min_rad = gpt->radius * tp->min_rad;
-					pe.max_rad = gpt->radius * tp->max_rad;
+					pe.min_rad  = gpt->radius * tp->min_rad;
+					pe.max_rad  = gpt->radius * tp->max_rad;
 					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 					pe.normal_variance = tp->variance;
-					pe.min_life = 0.0f;
-					pe.max_life = 1.0f;
+					pe.min_life        = 0.0f;
+					pe.max_life        = 1.0f;
 
-					particle::emit( &pe, particle::PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
+					particle::emit(&pe, particle::PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
 			}
+
+//			vec3d debug_pnt = world_pnt + (10.f * magnitude) * world_norm;
+//			graphics::debug::line_3d(&world_pnt, &debug_pnt, &Color_red);
+//
+//			graphics::debug::text_3d(&debug_pnt, &Color_white, std::to_string(magnitude));
+
+			const auto lightRadius = std::max(1.0f, gpt->radius) * 250.f;
+			const auto outerAngle      = cosf(50.0f / 180.0f * PI);
+			const auto innerAngle      = cosf(25.0f / 180.0f * PI);
+			light_add_cone(&world_pnt,
+						   &world_norm,
+						   outerAngle,
+						   innerAngle,
+						   false,
+						   lightRadius,
+						   lightRadius,
+						   magnitude,
+						   0.1f,
+						   0.1f,
+						   0.9f,
+						   -1);
 		}
 	}
 }

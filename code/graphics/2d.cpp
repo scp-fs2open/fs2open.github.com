@@ -7,15 +7,12 @@
  *
  */
 
-#ifdef _WIN32
-#include <windows.h>
-#include <windowsx.h>
-#endif
+#include "2d.h"
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 
-#include "2d.h"
+#include "debug.h"
 #include "grinternal.h"
 #include "grstub.h"
 #include "light.h"
@@ -46,6 +43,11 @@
 
 #include <algorithm>
 #include <climits>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <windowsx.h>
+#endif
 
 #if (SDL_VERSION_ATLEAST(1, 2, 7))
 #include "SDL_cpuinfo.h"
@@ -990,13 +992,17 @@ bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mo
 
 void gr_close()
 {
-	if ( !Gr_inited ) {
+	if (!Gr_inited) {
 		return;
 	}
 
+	graphics::debug::cleanup();
+
 	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-		                       (Gr_original_gamma_ramp + 512));
+		SDL_SetWindowGammaRamp(os::getSDLMainWindow(),
+							   Gr_original_gamma_ramp,
+							   (Gr_original_gamma_ramp + 256),
+							   (Gr_original_gamma_ramp + 512));
 	}
 
 	// This is valid even if Gr_original_gamma_ramp is nullptr
@@ -2628,6 +2634,8 @@ void gr_flip(bool execute_scripting)
 		// WMC - Do scripting reset stuff
 		Script_system.EndFrame();
 	}
+
+	graphics::debug::render_elements();
 
 	gr_reset_immediate_buffer();
 

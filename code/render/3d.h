@@ -36,18 +36,12 @@
 /**
  * Start the frame. Pass non-zero to enable zbuffering
  */
-#define g3_start_frame(zbuffer_flag) g3_start_frame_func(zbuffer_flag, __FILE__, __LINE__ )
-
-/**
- * Use the g3_start_frame macro instead of calling this directly.
- */
-extern void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno);
+extern void g3_start_frame(int zbuffer_flag);
 
 /**
  * End the frame
  */
-#define g3_end_frame() g3_end_frame_func( __FILE__, __LINE__ )
-extern void g3_end_frame_func(const char *filename, int lineno);
+extern void g3_end_frame();
 
 /**
  * Currently in frame?
