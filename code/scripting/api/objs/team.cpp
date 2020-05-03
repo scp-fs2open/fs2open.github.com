@@ -73,7 +73,7 @@ ADE_FUNC(attacks, l_Team, "team", "Checks the IFF status of another team", "bool
 {
 	int x, y;
 	ade_get_args(L, "oo", l_Team.Get(&x), l_Team.Get(&y));
-	if (iff_x_attacks_y(x, y) > 0)
+	if (iff_x_attacks_y(x, y))
 		return ADE_RETURN_TRUE;
 
 	return ADE_RETURN_FALSE;

@@ -569,24 +569,20 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	const char *str = NULL;
 	int i, j, s, z, start, team_mask;
 	int font_height = gr_get_font_height();
+	IFF_hotkey_team hotkey_team;
 
 	if (list_enemies)
 	{
 		str = XSTR( "Enemy ships", 403);
 		team_mask = enemy_team_mask;
+		hotkey_team = IFF_hotkey_team::Hostile;
 	}
 	else
 	{
 		str = XSTR( "Friendly ships", 402);
 		team_mask = ~enemy_team_mask;
+		hotkey_team = IFF_hotkey_team::Friendly;
 	}
-
-	for (i=0; i<MAX_SHIPS; i++)
-		if (iff_matches_mask(Ships[i].team, team_mask))
-			break;
-
-	if (i >= MAX_SHIPS)
-		return y;
 
 	hotkey_line_add(str, HOTKEY_LINE_HEADING, 0, y);
 	y += 2;
@@ -594,38 +590,67 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	start = Num_lines;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		int shipnum;
+		bool add_it;
 
 		// don't process non-ships, or the player ship
 		if ( (Game_mode & GM_NORMAL) && (so->objnum == OBJ_INDEX(Player_obj)) )
 			continue;
 
-		shipnum = Objects[so->objnum].instance;
+		int shipnum = Objects[so->objnum].instance;
+		ship *shipp = &Ships[shipnum];
+
+		// filter out ships in wings
+		if ( shipp->wingnum >= 0 )
+			continue;
 
 		// filter out cargo containers, navbouys, etc, and non-ships
-		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::Hotkey_on_list] ))
+		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Hotkey_on_list]) )
 			continue;
 
 		// don't process ships invisible to sensors, dying or departing
-		if ( Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors] || Ships[shipnum].is_dying_or_departing() )
+		if ( shipp->flags[Ship::Ship_Flags::Hidden_from_sensors] || shipp->is_dying_or_departing() )
 			continue;
 
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if
 		// we are now in mission.  Otherwise, skip this ship
-		if ( Ships[shipnum].hotkey == MAX_KEYED_TARGETS ) {
+		if ( shipp->hotkey == MAX_KEYED_TARGETS ) {
 			if ( !(Game_mode & GM_IN_MISSION) )
 				continue;										// skip to next ship
-			Ships[shipnum].hotkey = -1;
+			shipp->hotkey = -1;
 		}
 
-		// be sure this ship isn't in a wing, and that the teams match
-		if ( iff_matches_mask(Ships[shipnum].team, team_mask) && (Ships[shipnum].wingnum < 0) ) {
-			hotkey_line_add_sorted(Ships[shipnum].get_display_string(), HOTKEY_LINE_SHIP, shipnum, start);
+		// check IFF override and team mask
+		if (Iff_info[shipp->team].hotkey_team == IFF_hotkey_team::Default) {
+			add_it = iff_matches_mask(shipp->team, team_mask);
+		} else {
+			add_it = (Iff_info[shipp->team].hotkey_team == hotkey_team);
+		}
+
+		// add it if the teams match or if the IFF says to
+		if (add_it) {
+			hotkey_line_add_sorted(shipp->get_display_string(), HOTKEY_LINE_SHIP, shipnum, start);
 		}
 	}
 
 	for (i=0; i<Num_wings; i++) {
-		if (Wings[i].current_count && (Wings[i].ship_index[Wings[i].special_ship] >= 0) && iff_matches_mask(Ships[Wings[i].ship_index[Wings[i].special_ship]].team, team_mask)) {
+		bool add_it;
+
+		// the wing has to be valid
+		if (Wings[i].current_count && Wings[i].ship_index[Wings[i].special_ship] >= 0) {
+			ship *shipp = &Ships[Wings[i].ship_index[Wings[i].special_ship]];
+
+			// check IFF override and team mask
+			if (Iff_info[shipp->team].hotkey_team == IFF_hotkey_team::Default) {
+				add_it = iff_matches_mask(shipp->team, team_mask);
+			} else {
+				add_it = (Iff_info[shipp->team].hotkey_team == hotkey_team);
+			}
+		} else {
+			add_it = false;
+		}
+
+		// add it if the teams match or if the IFF says to
+		if (add_it) {
 			// special check for the player's wing.  If he's in a wing, and the only guy left, don't
 			// do anything
 			if ( (Player_ship->wingnum == i) && (Wings[i].current_count == 1) )
@@ -652,10 +677,19 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
 					s = Wings[i].ship_index[j];
-					z = hotkey_line_insert(z + 1, Ships[s].get_display_string(), HOTKEY_LINE_SUBSHIP, s);
+					if (!Ships[s].is_dying_or_departing()) {
+						z = hotkey_line_insert(z + 1, Ships[s].get_display_string(), HOTKEY_LINE_SUBSHIP, s);
+					}
 				}
 			}
 		}
+	}
+
+	// see if we actually added any lines
+	if (start == Num_lines) {
+		// roll back the heading, then return as if nothing happened
+		Num_lines--;
+		return y - 2;
 	}
 
 	for (i=start; i<Num_lines; i++) {
