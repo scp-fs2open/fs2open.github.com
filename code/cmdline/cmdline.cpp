@@ -323,7 +323,7 @@ cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", 
 cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
-cmdline_parm deprecated_fxaa_arg("-fxaa", NULL, AT_NONE);
+cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
 cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), requires post-processing and -fxaa", AT_INT);
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
