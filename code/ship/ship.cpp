@@ -1611,7 +1611,7 @@ ship_info::ship_info()
 
 	sup_hull_repair_rate = 0.15f;
 	sup_shield_repair_rate = 0.20f;
-	sup_subsys_repair_rate = 0.15f;
+	sup_subsys_repair_rate = 0.15f;		// The retail default is 0.10, but it actually used the hull rate of 0.15
 
 	vm_vec_zero(&closeup_pos);
 	closeup_zoom = 0.5f;
@@ -13515,8 +13515,8 @@ float ship_calculate_rearm_duration( object *objp )
 //
 int ship_do_rearm_frame( object *objp, float frametime )
 {
-	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok, last_ballistic_idx = -1;
-	float			shield_str, max_shield_str = 0.0f, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
+	int			i, banks_full, primary_banks_full, subsys_type, last_ballistic_idx = -1;
+	float			shield_str, max_shield_str = 0.0f, repair_delta, repair_allocated, max_hull_repair = 0, max_subsys_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
 	ship_info	*sip;
@@ -13538,6 +13538,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		}
 		swp->num_primary_banks = sip->num_primary_banks;
 	}
+
 	// AL 12-30-97: Repair broken warp drive
 	if ( shipp->flags[Ship_Flags::Warp_broken] ) {
 		// TODO: maybe do something here like informing player warp is fixed?
@@ -13546,7 +13547,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		shipp->flags.remove(Ship_Flags::Warp_broken);
 	}
 
-	// AL 1-16-97: Replenish countermeasures
+	// AL 1-16-98: Replenish countermeasures
 	shipp->cmeasure_count = sip->cmeasure_max;
 
 	// Do shield repair here
@@ -13567,53 +13568,36 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// Repair the ship integrity (subsystems + hull).  This works by applying the repair points
-	// to the subsystems.  Ships integrity is stored is objp->hull_strength, so that always is 
+	// to the subsystems.  Ships integrity is stored in objp->hull_strength, so that always is 
 	// incremented by repair_allocated
-	repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_hull_repair_rate;
 
-//	AL 11-24-97: remove increase to hull integrity
-//	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
-
-	//Figure out how much of the ship's hull we can repair
-	max_hull_repair = shipp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
-
-	//Don't "reverse-repair" the hull if it's already above the max repair threshold
-	if (objp->hull_strength > max_hull_repair)
+	//	AL 11-24-97: remove increase to hull integrity
+	//	Comments removed by PhReAk; Note that this is toggled on/off with a mission flag
+	if (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
 	{
-		max_hull_repair = objp->hull_strength;
-	}
-	
-	if(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
-	{
-		objp->hull_strength += repair_allocated;
-		if ( objp->hull_strength > max_hull_repair ) {
-			objp->hull_strength = max_hull_repair;
-		}
-
-		if ( objp->hull_strength > shipp->ship_max_hull_strength )
+		//Figure out how much of the ship's hull we can repair
+		//Don't "reverse-repair" the hull if it's already above the max repair threshold
+		max_hull_repair = shipp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
+		if (objp->hull_strength < max_hull_repair)
 		{
-			objp->hull_strength = shipp->ship_max_hull_strength;
-			repair_allocated -= ( shipp->ship_max_hull_strength - objp->hull_strength);
+			objp->hull_strength += shipp->ship_max_hull_strength * frametime * sip->sup_hull_repair_rate;
+			if (objp->hull_strength > max_hull_repair)
+				objp->hull_strength = max_hull_repair;
 		}
 	}
 
 	// figure out repairs for subsystems
-	if(sip->sup_subsys_repair_rate == 0.0f)
-		repair_allocated = 0.0f;
-	else if(sip->sup_hull_repair_rate == 0.0f)
-		repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
-	else if(!(sip->sup_hull_repair_rate == sip->sup_subsys_repair_rate))
-		repair_allocated = repair_allocated * sip->sup_subsys_repair_rate / sip->sup_hull_repair_rate;
+	repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
 
 	// check the subsystems of the ship.
-	subsys_all_ok = 1;
+	bool subsys_all_ok = true;
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 		//Figure out how much we *can* repair the current subsystem -C
 		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
 
 		if ( ssp->current_hits < max_subsys_repair && repair_allocated > 0 ) {
-			subsys_all_ok = 0;
+			subsys_all_ok = false;
 			subsys_type = ssp->system_info->type;
 
 			if ( objp == Player_obj ) {
@@ -13779,7 +13763,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			if ((aip->rearm_first_ballistic_primary == TRUE) && (i == last_ballistic_idx))
 			{
-				if (primary_banks_full != swp->num_primary_banks) {
+				if (primary_banks_full != swp->num_primary_banks)
+				{
 					// Goober5000
 					gamesnd_id sound_index;
 					if (gamesnd_game_sound_valid(GameSounds::BALLISTIC_START_LOAD))
@@ -13805,23 +13790,24 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		aip->rearm_first_ballistic_primary = TRUE;
 	}
 
-	int shields_full = 0;
+	int shields_full = false;
 	if ( (objp->flags[Object::Object_Flags::No_shields]) ) {
-		shields_full = 1;
+		shields_full = true;
 	} else {
 		if ( shield_get_strength(objp) >= max_shield_str )
-			shields_full = 1;
+			shields_full = true;
 		if (sip->sup_shield_repair_rate == 0.0f)
-			shields_full = 1;
+			shields_full = true;
 	}
 
-	int hull_ok = 0;
-	if(objp->hull_strength >= max_hull_repair)
-		hull_ok = 1;
-
-	if(sip->sup_hull_repair_rate == 0.0f) {
-		subsys_all_ok = 1;
-		hull_ok = 1;
+	bool hull_ok = false;
+	if (!(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])) {
+		hull_ok = true;
+	} else {
+		if (objp->hull_strength >= max_hull_repair)
+			hull_ok = true;
+		if (sip->sup_hull_repair_rate == 0.0f)
+			hull_ok = true;
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
@@ -13846,7 +13832,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		}
 	}
 
-	if (objp == Player_obj) Player_rearm_eta -= frametime;
+	if (objp == Player_obj)
+		Player_rearm_eta -= frametime;
 
 	return 0;
 }
