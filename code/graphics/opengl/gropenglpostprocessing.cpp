@@ -1255,7 +1255,7 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if (gr_is_smaa_mode(Gr_aa_mode)) {
+	if (Gr_aa_mode != AntiAliasMode::None) {
 		setup_smaa_resources();
 	}
 
