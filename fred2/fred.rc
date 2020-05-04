@@ -1900,9 +1900,9 @@ BEGIN
     LTEXT           "Default Value",IDC_STATIC,251,15,44,8
     GROUPBOX        "Variable Type",IDC_STATIC,7,7,114,38
     CONTROL         "Save On Mission Complete",IDC_TYPE_CAMPAIGN_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,229,57,99,11
+                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,229,57,99,11
     CONTROL         "Save On Mission Close",IDC_TYPE_PLAYER_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,229,70,84,11
+                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,229,70,84,11
     CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,49,84,11
     GROUPBOX        "Persistence",IDC_STATIC,221,43,186,52
     CONTROL         "Eternal",IDC_TYPE_ETERNAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,335,57,38,10
@@ -1925,9 +1925,9 @@ BEGIN
     LTEXT           "Default Value",IDC_STATIC,251,15,44,8
     GROUPBOX        "Delete Variable and References",IDC_STATIC,7,56,114,38
     CONTROL         "Save On Mission Complete",IDC_TYPE_CAMPAIGN_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,219,57,104,11
+                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,219,57,104,11
     CONTROL         "Save On Mission Close",IDC_TYPE_PLAYER_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,219,70,84,11
+                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,219,70,84,11
     CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,49,84,11
     GROUPBOX        "Persistence",IDC_STATIC,212,44,196,44
     CONTROL         "Eternal",IDC_TYPE_ETERNAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,323,57,75,9
