@@ -1582,6 +1582,10 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
 
+	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
+	}
+
 	for (int i = 0; i < pm->num_debris_objects; i++ )	{
 		// draw DEBRIS_FREE in test only
 		if (half_ship->draw_debris[i] == DEBRIS_DRAW) {
