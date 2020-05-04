@@ -162,8 +162,7 @@ Flag exe_params[] =
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-no_post_process",	"Disable post-processing",					true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_post_process" },
 	{ "-soft_particles",	"Enable soft particles",					true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
-	{ "-fxaa",				"Enable FXAA anti-aliasing",				true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fxaa" },
-	{ "-smaa",				"Enable SMAA anti-aliasing",				true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-smaa" },
+	{ "-aa",				"Enable Post-process anti-aliasing",		true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-aa" },
 	{ "-nolightshafts",		"Disable lightshafts",						true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nolightshafts"},
 	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_explosions", },
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
@@ -322,10 +321,12 @@ cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
 cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
 cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
-cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
-cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires post-processing and -fxaa", AT_INT);
-cmdline_parm smaa_arg("-smaa", nullptr, AT_NONE);
-cmdline_parm smaa_preset_arg("-smaa_preset", "SMAA quality (0-9), requires post-processing and -smaa", AT_INT);
+cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
+cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
+cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
+cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), requires post-processing and -fxaa", AT_INT);
+cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
+cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
@@ -1863,40 +1864,31 @@ bool SetCmdlineParams()
 	if ( height_arg.found() ) {
 		Cmdline_height = 0;
 	}
-	
-	if (fxaa_arg.found() ) {
-		Gr_aa_mode = AntiAliasMode::FXAA_Medium;
 
-		if (fxaa_preset_arg.found()) {
-			auto val = fxaa_preset_arg.get_int();
-			if (val > 6) {
-				Gr_aa_mode = AntiAliasMode::FXAA_High;
-			} else if (val > 3) {
-				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
-			} else {
+	if (post_process_aa_arg.found() || post_process_aa_preset_arg.found()) {
+		Gr_aa_mode = AntiAliasMode::SMAA_Low;
+
+		if (post_process_aa_preset_arg.found()) {
+			switch (post_process_aa_preset_arg.get_int()) {
+			case 0: 
 				Gr_aa_mode = AntiAliasMode::FXAA_Low;
-			}
-		}
-	}
-
-	if (smaa_arg.found()) {
-		Gr_aa_mode = AntiAliasMode::SMAA_Medium;
-
-		if (smaa_preset_arg.found()) {
-			switch (smaa_preset_arg.get_int()) {
-			case 0:
+				break;
+			case 1: 
+				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
+				break;
+			case 2: 
+				Gr_aa_mode = AntiAliasMode::FXAA_High;
+				break;
+			case 3: 
 				Gr_aa_mode = AntiAliasMode::SMAA_Low;
 				break;
-			case 1:
+			case 4: 
 				Gr_aa_mode = AntiAliasMode::SMAA_Medium;
 				break;
-			case 2:
+			case 5: 
 				Gr_aa_mode = AntiAliasMode::SMAA_High;
 				break;
-			case 3:
-				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
-				break;
-			default:
+			case 6: 
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
 			}
@@ -2209,6 +2201,45 @@ bool SetCmdlineParams()
 
 	if (deprecated_postprocess_arg.found()) {
 		Cmdline_deprecated_postprocess = true;
+	}
+
+	if (deprecated_fxaa_arg.found() ) {
+		Gr_aa_mode = AntiAliasMode::FXAA_Medium;
+
+		if (deprecated_fxaa_preset_arg.found()) {
+			auto val = deprecated_fxaa_preset_arg.get_int();
+			if (val > 6) {
+				Gr_aa_mode = AntiAliasMode::FXAA_High;
+			} else if (val > 3) {
+				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
+			} else {
+				Gr_aa_mode = AntiAliasMode::FXAA_Low;
+			}
+		}
+	}
+
+	if (deprecated_smaa_arg.found()) {
+		Gr_aa_mode = AntiAliasMode::SMAA_Medium;
+
+		if (deprecated_smaa_preset_arg.found()) {
+			switch (deprecated_smaa_preset_arg.get_int()) {
+			case 0:
+				Gr_aa_mode = AntiAliasMode::SMAA_Low;
+				break;
+			case 1:
+				Gr_aa_mode = AntiAliasMode::SMAA_Medium;
+				break;
+			case 2:
+				Gr_aa_mode = AntiAliasMode::SMAA_High;
+				break;
+			case 3:
+				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
+				break;
+			default:
+				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
+				break;
+			}
+		}
 	}
  
 	return true; 
