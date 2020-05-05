@@ -1256,14 +1256,11 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = vmd_zero_angles;
+	matrix submodel_orient = vmd_identity_matrix;
 
 	if ( smi != nullptr ) {
-		ang = smi->angs;
+		submodel_orient = smi->canonical_orient;
 	}
-
-	matrix submodel_orient;
-	vm_angles_2_matrix(&submodel_orient, &ang);
 
 	scene->push_transform(&sm->offset, &submodel_orient);
 	

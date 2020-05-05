@@ -44,10 +44,11 @@ extern int model_render_flags_size;
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
-#define MOVEMENT_AXIS_NONE	-1
-#define MOVEMENT_AXIS_X		0
-#define MOVEMENT_AXIS_Y		2
-#define MOVEMENT_AXIS_Z		1
+#define MOVEMENT_AXIS_NONE		-1
+#define MOVEMENT_AXIS_X			0
+#define MOVEMENT_AXIS_Y			2
+#define MOVEMENT_AXIS_Z			1
+#define MOVEMENT_AXIS_OTHER		3
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -78,8 +79,8 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 // Data specific to a particular instance of a submodel.
 struct submodel_instance
 {
-	angles	angs = vmd_zero_angles;					// The current angle this thing is turned to.
-	angles	prev_angs = vmd_zero_angles;
+	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
+	float	prev_angle = 0.0f;
 
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
@@ -91,6 +92,14 @@ struct submodel_instance
 	bool	blown_off = false;						// If set, this subobject is blown off
 
 	bool collision_checked = false;
+
+	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
+	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
+	// NOTE: IF THE ANGLES ARE MODIFIED, THE ORIENT SHOULD BE MODIFIED TOO!
+
+	angles	canonical_angs = vmd_zero_angles;
+	matrix	canonical_orient = vmd_identity_matrix;
+	matrix	canonical_prev_orient = vmd_identity_matrix;
 
 	// --- these fields used to be in bsp_info ---
 
@@ -150,7 +159,7 @@ public:
 	//	a separate struct so they don't take up space for all subsystem types.
     char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
 	vec3d	turret_norm;						//	direction this turret faces
-	matrix	turret_matrix;						// turret_norm converted to a matrix.
+	matrix	turret_matrix;						// turret_norm converted to a matrix.  This is now only used for Turret_alt_math
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
 	float	turret_y_fov;						//  turret's base's fov
@@ -290,10 +299,11 @@ public:
 		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
 	}
 
-	char	name[MAX_NAME_LEN];			// name of the subsystem.  Probably displayed on HUD
-	int		movement_type  = -1;		// -1 if no movement, otherwise rotational or positional movement -- subobjects only
-	int		movement_axis = -1;			// which axis this subobject moves or rotates on.
-	bool	can_move;					// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
+	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
+	int		movement_type = -1;						// -1 if no movement, otherwise rotational or positional movement -- subobjects only
+	vec3d	movement_axis = vmd_zero_vector;		// which axis this subobject moves or rotates on.
+	int		movement_axis_id = -1;					// for optimization
+	bool	can_move;				// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
 
 	vec3d	offset;					// 3d offset from parent object
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
@@ -913,6 +923,7 @@ extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, mod
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
+extern void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp);
 extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
 extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 

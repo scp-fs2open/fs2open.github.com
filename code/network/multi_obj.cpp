@@ -1315,9 +1315,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
 				if (subsystem->submodel_instance_1)
-					angs_1 = &subsystem->submodel_instance_1->angs;
+					angs_1 = &subsystem->submodel_instance_1->canonical_angs;
 				if (subsystem->submodel_instance_2)
-					angs_2 = &subsystem->submodel_instance_2->angs;
+					angs_2 = &subsystem->submodel_instance_2->canonical_angs;
 
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
@@ -1924,12 +1924,12 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
 				if (subsysp->submodel_instance_1) {
-					prev_angs_1 = &subsysp->submodel_instance_1->prev_angs;
-					angs_1 = &subsysp->submodel_instance_1->angs;
+					prev_angs_1 = new angles;
+					angs_1 = &subsysp->submodel_instance_1->canonical_angs;
 				}
 				if (subsysp->submodel_instance_2) {
-					prev_angs_2 = &subsysp->submodel_instance_2->prev_angs;
-					angs_2 = &subsysp->submodel_instance_2->angs;
+					prev_angs_2 = new angles;
+					angs_2 = &subsysp->submodel_instance_2->canonical_angs;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
@@ -1967,6 +1967,19 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					angs_2->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
+
+				// fix up the matrixes
+				if (flags[i] & OO_SUBSYS_ROTATION_1) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
+					delete prev_angs_1;
+				}
+				if (flags[i] & OO_SUBSYS_ROTATION_2) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
+					delete prev_angs_2;
+				}
+
 				subsysp = GET_NEXT(subsysp);
 
 			}

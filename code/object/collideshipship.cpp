@@ -285,13 +285,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 				}
 
 				// set angles for last frame
-				angles copy_angles = smi->angs;
+				matrix copy_matrix = smi->canonical_orient;
 
 				// find the start and end positions of the sphere in submodel RF
-				smi->angs = smi->prev_angs;
+				smi->canonical_orient = smi->canonical_prev_orient;
 				world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos);
 
-				smi->angs = copy_angles;
+				smi->canonical_orient = copy_matrix;
 				world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 				mc.p0 = &p0;
@@ -578,20 +578,10 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 				model_init_submodel_axis_pt(pm, pmi, ship_ship_hit_info->submodel_num);
 			}
 
-			vec3d omega, axis, r_rot;
-			if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_X ) {
-				axis = vmd_x_vector;
-			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y ) {
-				axis = vmd_y_vector;
-			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Z ) {
-				axis = vmd_z_vector;
-			} else {
-				// must be one of these axes or submodel_rot_hit is incorrectly set
-				Int3();
-			}
+			vec3d omega, r_rot;
 
 			// get world rotational velocity of rotating submodel
-			model_instance_find_world_dir(&omega, &axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			model_instance_find_world_dir(&omega, &pm->submodel[ship_ship_hit_info->submodel_num].movement_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
 
 			vm_vec_scale(&omega, smi->current_turn_rate);
 

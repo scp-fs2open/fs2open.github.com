@@ -1170,17 +1170,17 @@ NoHit:
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
-		angles angs;
+		matrix instance_orient;
 		bool blown_off;
 		bool collision_checked;
 		bsp_info * csm = &Mc_pm->submodel[i];
 		
 		if ( Mc_pmi ) {
-			angs = Mc_pmi->submodel[i].angs;
+			instance_orient = Mc_pmi->submodel[i].canonical_orient;
 			blown_off = Mc_pmi->submodel[i].blown_off;
 			collision_checked = Mc_pmi->submodel[i].collision_checked;
 		} else {
-			angs = vmd_zero_angles;
+			instance_orient = vmd_identity_matrix;
 			blown_off = false;
 			collision_checked = false;
 		}
@@ -1191,9 +1191,7 @@ NoHit:
 			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
 			vm_vec_add2(&Mc_base, &saved_base);
 
-			matrix tm;
-			vm_angles_2_matrix(&tm, &angs);
-			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
+			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);
 
 			mc_check_subobj( i );
 		}
