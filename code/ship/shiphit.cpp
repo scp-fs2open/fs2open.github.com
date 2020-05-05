@@ -77,7 +77,7 @@ const std::shared_ptr<scripting::OverridableHook> OnPainFlashHook = scripting::O
 	"On Pain Flash", "Called when a pain flash is displayed.",
 	{ 		
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
-	}, CHA_PAINFLASH);
+	});
 
 //WMC - Camera rough draft stuff
 /*
