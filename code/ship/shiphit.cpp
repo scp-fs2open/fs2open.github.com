@@ -38,6 +38,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
@@ -71,6 +72,12 @@ vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
 static bool global_damage = false;
+
+const std::shared_ptr<scripting::OverridableHook> OnPainFlashHook = scripting::OverridableHook::Factory(
+	"On Pain Flash", "Called when a pain flash is displayed.",
+	{ 		
+		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
+	}, CHA_PAINFLASH);
 
 //WMC - Camera rough draft stuff
 /*
@@ -2654,9 +2661,7 @@ void ship_hit_pain(float damage, int quadrant)
 			pain_type = 1;
 		}
 		// add scripting hook for 'On Pain Flash' --wookieejedi
-		Script_system.SetHookVar("Pain_Type", 'i', pain_type);
-		Script_system.RunCondition(CHA_PAINFLASH);
-		Script_system.RemHookVars(1, "Pain_Type");
+		OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
     }
 
 	// kill any active popups when you get hit.
