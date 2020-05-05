@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/timer.h"
 #include "ship/ship.h"
+#include "ship/ship_flags.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "hud/hud.h"
@@ -1099,7 +1100,51 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_R:
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_R:
 		{
-			// rearm yourself, even if the mission nominally won't let you
+			// toggle support for this mission
+			if (The_mission.support_ships.max_support_ships == 0)
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Setting maximum number of support ships to infinite.", 1643));
+				The_mission.support_ships.max_support_ships = -1;
+			}
+			else
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Setting maximum number of support ships to zero.", 1644));
+				The_mission.support_ships.max_support_ships = 0;
+			}
+
+			break;
+		}
+
+		// Goober5000
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_U:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_U:
+		{
+			// toggle the current target between scanned and unscanned
+			if (Player_ai->target_objnum >= 0)
+			{
+				object *objp = &Objects[Player_ai->target_objnum];
+				if (objp->type == OBJ_SHIP)
+				{
+					ship *targeted_shipp = &Ships[objp->instance];
+
+					if (Player_ai->targeted_subsys == nullptr)
+					{
+						if (targeted_shipp->flags[Ship::Ship_Flags::Cargo_revealed])
+							ship_do_cargo_hidden(targeted_shipp);
+						else
+							ship_do_cargo_revealed(targeted_shipp);
+					}
+					else
+					{
+						if (Player_ai->targeted_subsys->flags[Ship::Subsystem_Flags::Cargo_revealed])
+							ship_do_cap_subsys_cargo_hidden(targeted_shipp, Player_ai->targeted_subsys);
+						else
+							ship_do_cap_subsys_cargo_revealed(targeted_shipp, Player_ai->targeted_subsys);
+					}
+				}
+			}
+
+			break;
 		}
 
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_UP:
