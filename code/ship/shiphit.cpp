@@ -38,6 +38,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
@@ -71,6 +72,12 @@ vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
 static bool global_damage = false;
+
+const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factory(
+	"On Pain Flash", "Called when a pain flash is displayed.",
+	{ 		
+		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
+	});
 
 //WMC - Camera rough draft stuff
 /*
@@ -2637,6 +2644,7 @@ void ship_hit_pain(float damage, int quadrant)
 
     if (!(Player_obj->flags[Object::Object_Flags::Invulnerable]))
     {
+		int pain_type;
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
 		{
 			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / shield_get_max_strength(Player_obj);
@@ -2645,9 +2653,15 @@ void ship_hit_pain(float damage, int quadrant)
 				effect -= Shield_pain_flash_factor;
 			
 			game_flash((sip->shield_color[0] * effect) / 255.0f, (sip->shield_color[1] * effect) / 255.0f, (sip->shield_color[2] * effect) / 255.0f);
+			pain_type = 0;
 		}
 		else
+		{
 			game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
+			pain_type = 1;
+		}
+		// add scripting hook for 'On Pain Flash' --wookieejedi
+		OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
     }
 
 	// kill any active popups when you get hit.
