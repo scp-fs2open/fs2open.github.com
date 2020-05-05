@@ -11425,7 +11425,7 @@ void process_subobjects(int objnum)
 				}
 				//Only move turrets if enemies are present
 				if(enemies_present == 1 || pss->turret_enemy_objnum >= 0)
-					ai_fire_from_turret(shipp, pss, objnum);
+					ai_fire_from_turret(shipp, pss);
 			} else {
 				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
 			}

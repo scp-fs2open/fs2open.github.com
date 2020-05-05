@@ -908,8 +908,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-// turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
+extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset = false);
 
 // Gets and sets turret rotation matrix
 extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret);

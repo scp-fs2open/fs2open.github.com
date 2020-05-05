@@ -462,6 +462,56 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
+// routine to parse out a vec3d from a user property field of an object
+bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
+{
+	float f1, f2, f3;
+	char closing_bracket = '\0';
+	bool success = false;
+
+	pause_parse();
+	Mp = buf;
+
+	do {
+		// skip white space and equal sign
+		while (isspace(*Mp) || (*Mp == '='))
+			Mp++;
+
+		if (require_brackets)
+		{
+			// look for vector bracket
+			if (*Mp == '{')
+				closing_bracket = '}';
+			else if (*Mp == '[')
+				closing_bracket = ']';
+			else
+				break;
+		}
+
+		// get comma-separated floats
+		if (stuff_float_optional(&f1) != 2)
+			break;
+		if (stuff_float_optional(&f2) != 2)
+			break;
+		if (stuff_float_optional(&f3) != 2)
+			break;
+
+		if (require_brackets)
+		{
+			ignore_white_space();
+
+			if (*Mp != closing_bracket)
+				break;
+		}
+
+		value->xyz = { f1, f2, f3 };
+		success = true;
+	} while (false);
+
+	unpause_parse();
+	return success;
+}
+
 // routine to look for one of the specified user properties
 // if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
 // returns the index of the property found, or -1 if not found
@@ -1546,131 +1596,52 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				// Added for new handling of turret orientation - KeldorKatarn
-				matrix	*orient = &pm->submodel[n].orientation;
+				// KeldorKatarn, with modifications
+				if ( (p = strstr(props, "$uvec:")) != nullptr ) {
+					matrix submodel_orient;
 
-				if ( (p = strstr(props, "$uvec:")) != NULL ) {
-					p += 6;
+					if (get_user_vec3d_value(p + 6, &submodel_orient.vec.uvec, false)) {
 
-					char *parsed_string = p;
+						if ((p = strstr(props, "$fvec:")) != nullptr) {
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
+							if (get_user_vec3d_value(p + 6, &submodel_orient.vec.fvec, false)) {
 
-					orient->vec.uvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
+								vm_vec_normalize(&submodel_orient.vec.uvec);
+								vm_vec_normalize(&submodel_orient.vec.fvec);
 
-					// Find end of number
-					parsed_string = strchr(parsed_string, ',');
-					if (parsed_string == NULL) {
-						Error( LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
-							"\n\n$uvec: should be followed by 3 numbers separated with commas."
-							"\n\nCouldn't find first comma (,)!",
-							 pm->submodel[n].name, filename);
-					}
-					parsed_string++;
+								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
+								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
+								vm_vec_normalize(&submodel_orient.vec.fvec);
+								vm_vec_normalize(&submodel_orient.vec.rvec);
 
-					orient->vec.uvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
+								vm_orthogonalize_matrix(&submodel_orient);
 
-					// Find end of number
-					parsed_string = strchr(parsed_string, ',');
-					if (parsed_string == NULL) {
-						Error( LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
-							"\n\n$uvec: should be followed by 3 numbers separated with commas."
-							"\n\nCouldn't find second comma (,)!",
-							 pm->submodel[n].name, filename);
-					}
-					parsed_string++;
+								pm->submodel[n].orientation = submodel_orient;
+								pm->submodel[n].force_turret_normal = true;
 
-					while (*parsed_string == ' ') {
-						parsed_string++; // Skip spaces
-					}
-
-					orient->vec.uvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
-
-					if ( (p = strstr(props, "$fvec:")) != NULL ) {
-						parsed_string = p + 6;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
-
-						// Find end of number
-						parsed_string = strchr(parsed_string, ',');
-						if (parsed_string == NULL) {
-							Error( LOCATION,
-								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
-								"\n\n$fvec: should be followed by 3 numbers separated with commas."
-								"\n\nCouldn't find first comma (,)!",
-								 pm->submodel[n].name, filename);
-						}
-						parsed_string++;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
-
-						// Find end of number
-						parsed_string = strchr(parsed_string, ',');
-						if (parsed_string == NULL) {
-							Error( LOCATION,
-								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
-								"\n\n$fvec: should be followed by 3 numbers separated with commas."
-								"\n\nCouldn't find second comma (,)!",
-								 pm->submodel[n].name, filename);
-						}
-						parsed_string++;
-
-						while (*parsed_string == ' ') {
-							parsed_string++; // Skip spaces
-						}
-
-						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
-
-						pm->submodel[n].force_turret_normal = true;
-
-						vm_vec_normalize(&orient->vec.uvec);
-						vm_vec_normalize(&orient->vec.fvec);
-
-						vm_vec_cross(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
-						vm_vec_cross(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
-
-						vm_vec_normalize(&orient->vec.fvec);
-						vm_vec_normalize(&orient->vec.rvec);
-
-						vm_orthogonalize_matrix(orient);
-					} else {
-						int parent_num = pm->submodel[n].parent;
-
-						if (parent_num > -1) {
-							*orient = pm->submodel[parent_num].orientation;
+							} else {
+								Warning(LOCATION,
+									"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
+									"\n\n$fvec: should be followed by 3 numbers separated with commas.",
+									pm->submodel[n].name, filename);
+							}
 						} else {
-							*orient = vmd_identity_matrix;
+							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", pm->submodel[n].name);
 						}
-
-						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
+					} else {
+						Warning(LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
+							"\n\n$uvec: should be followed by 3 numbers separated with commas.",
+							pm->submodel[n].name, filename);
 					}
 				} else {
 					int parent_num = pm->submodel[n].parent;
-
-					if (parent_num > -1) {
-						*orient = pm->submodel[parent_num].orientation;
+					
+					if (parent_num >= 0) {
+						pm->submodel[n].orientation = pm->submodel[parent_num].orientation;
 					} else {
-						*orient = vmd_identity_matrix;
-					}
-
-					if (strstr(props, "$fvec:") != NULL) {
-						Warning( LOCATION, "Improper custom orientation matrix for subsystem %s, you must define a up vector, then a forward vector", pm->submodel[n].name);
+						pm->submodel[n].orientation = vmd_identity_matrix;
 					}
 				}
 
@@ -3804,14 +3775,25 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
 {
-	object *objp = &Objects[obj_idx];
 	ship *shipp = &Ships[objp->instance];
 	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
 
-	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
-	bsp_info * base = &pm->submodel[turret->subobj_num];
+	// This should not happen
+	if ( turret->subobj_num == turret->turret_gun_sobj ) {
+		return 0;
+	}
+
+	auto base_sm = &pm->submodel[turret->subobj_num];
+//	auto gun_sm = &pm->submodel[turret->turret_gun_sobj];
+
+	auto base_smi = &pmi->submodel[turret->subobj_num];
+	auto gun_smi = &pmi->submodel[turret->turret_gun_sobj];
+
+	auto base_angles = &base_smi->angs;
+	auto gun_angles = &gun_smi->angs;
+
 	bool limited_base_rotation = false;
 
 	// Check for a valid turret
@@ -3819,14 +3801,8 @@ int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, ang
 	// Check for a valid subsystem
 	Assert( ss != NULL );
 
-	//This should not happen
-	if ( base == gun ) {
-		return 0;
-	}
-
 	// Build the correct turret matrix if there isn't already one
 	if ( !(turret->flags[Model::Subsystem_Flags::Turret_matrix]) ) {
-		auto pmi = model_get_instance(shipp->model_instance_num);
 		model_make_turret_matrix(pm, pmi, turret);
 	}
 
@@ -3843,13 +3819,13 @@ int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, ang
 	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
 	vec3d tempv;
 
-	vm_vec_unrotate( &tempv, &base->offset, orient);
-	vm_vec_add( &world_to_turret_translate, pos, &tempv );
+	vm_vec_unrotate( &tempv, &base_sm->offset, &objp->orient );
+	vm_vec_add( &world_to_turret_translate, &objp->pos, &tempv );
 
 	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
 		world_to_turret_matrix = ss->world_to_turret_matrix;
 	else
-		vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
+		vm_matrix_x_matrix( &world_to_turret_matrix, &objp->orient, &turret->turret_matrix );
 
 	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
 	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );

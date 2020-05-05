@@ -1361,10 +1361,11 @@ void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss)
  *
  * @return TRUE if caller should use angles in subsequent rotations.
  */
-int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
+int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
 	int ret_val __UNUSED = 0; // to be used in future, see comment @ end of function
-	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
@@ -1385,7 +1386,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		//	weapon_system_strength scales time enemy in range in 0..1.  So, the lower this is, the worse the aiming will be.
 		weapon_system_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
-		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gun_pos, &gun_vec);
+		ship_get_global_turret_info(objp, tp, &gun_pos, &gun_vec);
 
 		//Update "known" position and velocity of target. Only matters if max_aim_update_delay is set.
 		turret_ai_update_aim(&Ai_info[shipp->ai_index], &Objects[ss->turret_enemy_objnum], ss);
@@ -1438,20 +1439,13 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
 		}
 
-		auto base_angles = &ss->submodel_instance_1->angs;
-		auto gun_angles = &ss->submodel_instance_2->angs;
 		if (in_fov) {
-			ret_val = model_rotate_gun(pm,
-										tp, &Objects[parent_objnum].orient, 
-										base_angles, gun_angles,
-										&Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum);
+			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos);
 		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
-			ret_val = model_rotate_gun(pm, tp, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
+			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos, true);
 		}
 	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
-		auto base_angles = &ss->submodel_instance_1->angs;
-		auto gun_angles = &ss->submodel_instance_2->angs;
-		ret_val = model_rotate_gun(pm, ss->system_info, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
+		ret_val = model_rotate_gun(objp, pm, pmi, ss->system_info, predicted_enemy_pos, true);
 	}
 
 	// by default "ret_val" should be set to 1 for multi-part turrets, and 0 for single-part turrets
@@ -2166,7 +2160,7 @@ int Num_turrets_fired = 0;
  * Given a turret tp and its parent parent_objnum, fire from the turret at its enemy.
  */
 extern int Nebula_sec_range;
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
+void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
     float		WeaponMinRange;			// *Weapon minimum firing range -Et1
@@ -2243,10 +2237,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		lep = nullptr;
 	}
 
-	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
-	objp = &Objects[parent_objnum];
+	Assert((shipp->objnum >= 0) && (shipp->objnum < MAX_OBJECTS));
+	int parent_objnum = shipp->objnum;
+	objp = &Objects[shipp->objnum];
 	Assert(objp->type == OBJ_SHIP);
-	Assert(shipp->objnum == parent_objnum);
 
 	// Wanderer - make sure turrets already have all the data
 	if ( !(tp->flags[Model::Subsystem_Flags::Turret_matrix]) )
@@ -2261,14 +2255,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Use the turret info for all guns, not one gun in particular.
 	vec3d	 gvec, gpos;
-	ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
+	ship_get_global_turret_info(objp, tp, &gpos, &gvec);
 
 	if (tp->flags[Model::Subsystem_Flags::Turret_alt_math]) {
-		vm_matrix_x_matrix( &ss->world_to_turret_matrix, &Objects[parent_objnum].orient, &tp->turret_matrix );
+		vm_matrix_x_matrix( &ss->world_to_turret_matrix, &objp->orient, &tp->turret_matrix );
 	}
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
-	int use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
+	int use_angles = aifft_rotate_turret(objp, shipp, ss, lep, &predicted_enemy_pos, &gvec);
 
 	if ((tp->flags[Model::Subsystem_Flags::Fire_on_target]) && (ss->points_to_target >= 0.0f))
 	{
@@ -2292,7 +2286,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	// count the number of enemies, in case we have a spawning weapon
-	int num_ships_nearby = num_nearby_fighters(iff_get_attackee_mask(obj_team(&Objects[parent_objnum])), &gpos, 1500.0f);
+	int num_ships_nearby = num_nearby_fighters(iff_get_attackee_mask(obj_team(objp)), &gpos, 1500.0f);
 
 	// some flags considering there may be different weapon types on this turret
 	bool we_did_non_spawning_logic = false;
@@ -2584,7 +2578,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			// We're ready to fire... now get down to specifics, like where is the
 			// actual gun point and normal, not just the one for whole turret.
-			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+			ship_get_global_turret_gun_info(objp, ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			// [Yet this retail comment precedes the calculation of vector-to-enemy...]
@@ -2728,7 +2722,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 				// make sure salvo fire mode does not turn into autofire
 				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
-					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
+					ai_info *parent_aip = &Ai_info[shipp->ai_index];
 					turret_set_next_fire_timestamp(valid_weapons[valid_index], wip, ss, parent_aip);
 				}
 			}
