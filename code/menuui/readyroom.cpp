@@ -1110,11 +1110,15 @@ void sim_room_init()
 	strcpy_s(wild_card, NOX("*"));
 	strcat_s(wild_card, FS_MISSION_FILE_EXT);
 
+#ifndef NDEBUG
 	// Activate the check while we fill the mission list so that we don't potentially end up with dozens of string length warnings.
 	// We don't actually remove mismatched missions from the list here; that will happen in build_standalone_mission_list_do_frame().
 	Lcl_unexpected_tstring_check = &dummy_buffer;
+#endif
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
+#ifndef NDEBUG
 	Lcl_unexpected_tstring_check = nullptr;
+#endif
 
 	// set up slider with 0 items to start
 	Sim_room_slider.create(&Ui_window, Sim_room_slider_coords[gr_screen.res][X_COORD], Sim_room_slider_coords[gr_screen.res][Y_COORD], Sim_room_slider_coords[gr_screen.res][W_COORD], Sim_room_slider_coords[gr_screen.res][H_COORD], 0, Sim_room_slider_filename[gr_screen.res], &sim_room_scroll_screen_up, &sim_room_scroll_screen_down, &sim_room_scroll_capture);
