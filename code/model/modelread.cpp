@@ -1669,8 +1669,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 								vm_orthogonalize_matrix(&submodel_orient);
 
-								pm->submodel[n].orientation = submodel_orient;
-								pm->submodel[n].force_turret_normal = true;
+								pm->submodel[n].frame_of_reference = submodel_orient;
 
 							} else {
 								Warning(LOCATION,
@@ -1691,9 +1690,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					int parent_num = pm->submodel[n].parent;
 					
 					if (parent_num >= 0) {
-						pm->submodel[n].orientation = pm->submodel[parent_num].orientation;
+						pm->submodel[n].frame_of_reference = pm->submodel[parent_num].frame_of_reference;
 					} else {
-						pm->submodel[n].orientation = vmd_identity_matrix;
+						pm->submodel[n].frame_of_reference = vmd_identity_matrix;
 					}
 				}
 
@@ -3404,39 +3403,6 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	return 0;
 }
 
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
-{
-	vec3d tvec, vec;
-	matrix m;
-	int mn;
-	Assert(pm->id == pmi->model_num);
-
-	vec = *m_vec;
-	mn = submodel_num;
-
-	// instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tvec, &vec, &m);
-		vec = tvec;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, objorient);
-}
-
 
 // Given a rotating submodel, find the ship and world axes of rotation.
 void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
@@ -3454,7 +3420,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_instance_find_obj_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
+	model_instance_find_world_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
 
@@ -3772,33 +3738,18 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 	auto base = &pmi->submodel[turret->subobj_num];
 	auto gun = &pmi->submodel[turret->turret_gun_sobj];
 
-	float offset_base_h = 0.0f;
-	float offset_barrel_h = 0.0f;
-#ifdef WMC_SIDE_TURRETS
-	offset_base_h = -PI_2;
-	offset_barrel_h = -PI_2;
-#endif
-
-	auto pm_base = &pm->submodel[turret->subobj_num];
-	if (pm_base->force_turret_normal)
-		turret->turret_norm = pm_base->orientation.vec.uvec;
-
 	auto save_base_angs = base->angs;
 	auto save_gun_angs = gun->angs;
 	base->angs = gun->angs = vmd_zero_angles;
 
-	base->angs.h = offset_base_h;
-	gun->angs.h = offset_barrel_h;
 	model_instance_find_world_dir(&fvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
 
-	base->angs.h = -PI_2 + offset_base_h;
+	base->angs.h = -PI_2;
 	gun->angs.p = -PI_2;
-	gun->angs.h = offset_barrel_h;
 	model_instance_find_world_dir(&rvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
 
-	base->angs.h = 0.0f + offset_base_h;
+	base->angs.h = 0.0f;
 	gun->angs.p = -PI_2;
-	gun->angs.h = offset_barrel_h;
 	model_instance_find_world_dir(&uvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
 									
 	vm_vec_normalize(&fvec);
@@ -3996,8 +3947,6 @@ void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submo
 void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
 	int mn;
 
 	pnt = *mpnt;
@@ -4005,20 +3954,8 @@ void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
 		// the angles in non-instanced models are always zero, so no need to rotate
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
@@ -4048,17 +3985,7 @@ void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
+		vm_angles_2_matrix(&m, &pmi->submodel[mn].angs);
 		vm_vec_unrotate(&tpnt, &pnt, &m);
 
 		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
@@ -4091,16 +4018,7 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymode
 	// put into submodel RF
 	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
 
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent - KeldorKatarn
-	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+	vm_angles_2_matrix(&m, &pmi->submodel[submodel_num].angs);
 
 	vm_vec_rotate(out, &tempv2, &m);
 }
@@ -4117,7 +4035,7 @@ void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const poly
 {
 	Assert(pm->id == pmi->model_num);
 	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+	matrix submodel_instance_matrix;
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4126,12 +4044,7 @@ void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const poly
 		int parent_mn = pm->submodel[mn].parent;
 
 		if (pm->submodel[parent_mn].can_move) {
-			rotation_matrix = pm->submodel[parent_mn].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_mn].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[parent_mn].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+			vm_angles_2_matrix(&submodel_instance_matrix, &pmi->submodel[parent_mn].angs);
 
 			vec3d tvec = offset;
 			vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
@@ -4160,7 +4073,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const po
 	Assert(pm->id == pmi->model_num);
 	*outnorm = *submodel_norm;
 	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+	matrix submodel_instance_matrix;
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4169,12 +4082,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const po
 		if ( mn == submodel_num) {
 			vec3d submodel_pnt_offset = *submodel_pnt;
 
-			rotation_matrix = pm->submodel[submodel_num].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+			vm_angles_2_matrix(&submodel_instance_matrix, &pmi->submodel[mn].angs);
 
 			vec3d tvec = submodel_pnt_offset;
 			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &submodel_instance_matrix);
@@ -4185,14 +4093,9 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const po
 			vm_vec_add2(&offset, &submodel_pnt_offset);
 		}
 
-		int parent_model_num = pm->submodel[mn].parent;
+		int parent_mn = pm->submodel[mn].parent;
 
-		rotation_matrix = pm->submodel[parent_model_num].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
-
-		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
-
-		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+		vm_angles_2_matrix(&submodel_instance_matrix, &pmi->submodel[parent_mn].angs);
 
 		vec3d tvec = offset;
 		vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
@@ -4202,7 +4105,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const po
 
 		vm_vec_add2(outpnt, &offset);
 
-		mn = parent_model_num;
+		mn = parent_mn;
 	}
 }
 
@@ -4226,7 +4129,7 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const
 	Assert(pm->id == pmi->model_num);
 	*outorient = *submodel_orient;
 	vm_vec_zero(outpnt);
-	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
+	matrix submodel_instance_matrix;
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4235,12 +4138,7 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const
 		if ( mn == submodel_num) {
 			vec3d submodel_pnt_offset = *submodel_pnt;
 
-			rotation_matrix = pm->submodel[submodel_num].orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
-
-			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+			vm_angles_2_matrix(&submodel_instance_matrix, &pmi->submodel[mn].angs);
 
 			vec3d tvec = submodel_pnt_offset;
 			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &submodel_instance_matrix);
@@ -4251,14 +4149,9 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const
 			vm_vec_add2(&offset, &submodel_pnt_offset);
 		}
 
-		int parent_model_num = pm->submodel[mn].parent;
+		int parent_mn = pm->submodel[mn].parent;
 
-		rotation_matrix = pm->submodel[parent_model_num].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
-
-		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
-
-		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
+		vm_angles_2_matrix(&submodel_instance_matrix, &pmi->submodel[parent_mn].angs);
 
 		vec3d tvec = offset;
 		vm_vec_unrotate(&offset, &tvec, &submodel_instance_matrix);
@@ -4268,7 +4161,7 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const
 
 		vm_vec_add2(outpnt, &offset);
 
-		mn = parent_model_num;
+		mn = parent_mn;
 	}
 }
 
@@ -4403,35 +4296,11 @@ void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, in
 // return the point in 3-space in outpnt.
 void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
 {
-	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
-	int mn;
-
-	pnt = *in_dir;
-	mn = submodel_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		// the angles in non-instanced models are always zero, so no need to rotate
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-		pnt = tpnt;
-
-		mn = pm->submodel[mn].parent;
-	}
+	SCP_UNUSED(pm);
+	SCP_UNUSED(submodel_num);
 
 	//now instance for the entire object
-	vm_vec_unrotate(out_dir,&pnt,objorient);
+	vm_vec_unrotate(out_dir, in_dir, objorient);
 }
 
 // the same as model_find_world_dir - just taking model instance data into account
@@ -4453,27 +4322,17 @@ void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const po
 	pnt = *in_dir;
 	mn = submodel_num;
 
-	//instance up the tree for this point
+	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
+		vm_angles_2_matrix(&m, &pmi->submodel[mn].angs);
 		vm_vec_unrotate(&tpnt, &pnt, &m);
 		pnt = tpnt;
 
 		mn = pm->submodel[mn].parent;
 	}
 
-	//now instance for the entire object
-	vm_vec_unrotate(out_dir,&pnt,objorient);
+	// now instance for the entire object
+	vm_vec_unrotate(out_dir, &pnt, objorient);
 }
 
 
@@ -4697,49 +4556,69 @@ void model_do_look_at(int pn)
 // Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
 void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 {
-	vec3d axis;
-	vec3d *mpoint1, *mpoint2;
+	vec3d mpoint1, mpoint2, axis_buf;
 	vec3d p1, v1, p2, v2, int1;
 	Assert(pm->id == pmi->model_num);
 
 	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 	submodel_instance *smi = &pmi->submodel[submodel_num];
-
-	mpoint1 = NULL;
-	mpoint2 = NULL;
+	
+	vec3d *axis, *vector_trick;
 
 	// find 2 fixed points in submodel RF
 	// these will be rotated to about the axis an angle of 0 and PI and we'll find the intersection of the
 	// two lines to find a point on the axis
 	if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_X) {
-		axis = vmd_x_vector;
-		mpoint1 = &vmd_y_vector;
-		mpoint2 = &vmd_z_vector;
+		axis = &vmd_x_vector;
+		vector_trick = &vmd_x_vector;
 	} else if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_Y) {
-		mpoint1 = &vmd_x_vector;
-		axis = vmd_z_vector;		// rotation about y is a change in heading (p,b,h), so we need z
-		mpoint2 = &vmd_z_vector;
+		axis = &vmd_y_vector;
+		vector_trick = &vmd_z_vector;		// rotation about y is a change in heading (p,b,h), so we need z
 	} else if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_Z) {
-		mpoint1 = &vmd_x_vector;
-		mpoint2 = &vmd_y_vector;
-		axis = vmd_y_vector;		// rotation about z is a change in bank (p,b,h), so we need y
-	} else {
-		// must be one of these axes or submodel_rot_hit is incorrectly set
-		Int3();
+		axis = &vmd_z_vector;
+		vector_trick = &vmd_y_vector;		// rotation about z is a change in bank (p,b,h), so we need y
 	}
+
+	// since the movement axis is now arbitrary, we can't simply pick points on the other two axes;
+	// we need to generate some suitably orthogonal points
+
+	// first find the standard vector that's the most orthongonal-ish
+	vec3d *stdaxis;
+	float dotx = fl_abs(vm_vec_dot(axis, &vmd_x_vector));
+	float doty = fl_abs(vm_vec_dot(axis, &vmd_y_vector));
+	float dotz = fl_abs(vm_vec_dot(axis, &vmd_z_vector));
+	if (dotx < doty) {
+		if (dotx < dotz) {
+			stdaxis = &vmd_x_vector;
+		} else {
+			stdaxis = &vmd_z_vector;
+		}
+	} else {
+		if (doty < dotz) {
+			stdaxis = &vmd_y_vector;
+		} else {
+			stdaxis = &vmd_z_vector;
+		}
+	}
+
+	// now find a vector perpendicular to the axis
+	vm_vec_cross(&mpoint1, axis, stdaxis);
+
+	// now find another vector perpendicular to the axis and the first perpendicular vector
+	vm_vec_cross(&mpoint2, axis, &mpoint1);
 
 	// copy submodel angs
 	angles copy_angs = smi->angs;
 
 	// find two points rotated into model RF when angs set to 0
-	vm_vec_copy_scale((vec3d*)&smi->angs, &axis, 0.0f);
-	model_instance_find_world_point(&p1, mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&p2, mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	vm_vec_copy_scale((vec3d*)&smi->angs, vector_trick, 0.0f);
+	model_instance_find_world_point(&p1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_find_world_point(&p2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// find two points rotated into model RF when angs set to PI
-	vm_vec_copy_scale((vec3d*)&smi->angs, &axis, PI);
-	model_instance_find_world_point(&v1, mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&v2, mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	vm_vec_copy_scale((vec3d*)&smi->angs, vector_trick, PI);
+	model_instance_find_world_point(&v1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_find_world_point(&v2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// reset submodel angs
 	smi->angs = copy_angs;

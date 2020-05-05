@@ -1262,21 +1262,10 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		ang = smi->angs;
 	}
 
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = sm->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
+	matrix submodel_orient;
+	vm_angles_2_matrix(&submodel_orient, &ang);
 
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &sm->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	scene->push_transform(&sm->offset, &submodel_matrix);
+	scene->push_transform(&sm->offset, &submodel_orient);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
@@ -2389,23 +2378,9 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
 	// (Not needed here because we're not using model instances)
-	angles ang = vmd_zero_angles;
+	matrix submodel_orient = vmd_identity_matrix;
 
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = model->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &model->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
+	g3_start_instance_matrix(&model->offset, &submodel_orient, true);
 
 	if ( debug_flags & MR_DEBUG_PIVOTS ) {
 		model_draw_debug_points( pm, &pm->submodel[mn], debug_flags );
