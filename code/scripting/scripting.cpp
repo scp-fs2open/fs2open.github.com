@@ -105,6 +105,7 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Subsystem Destroyed",	CHA_ONSUBSYSDEATH ),
 	std::make_shared<BuiltinHook>("On Goals Cleared",		CHA_ONGOALSCLEARED ),
 	std::make_shared<BuiltinHook>("On Briefing Stage",		CHA_ONBRIEFSTAGE ),
+	std::make_shared<BuiltinHook>("On Pain Flash",			CHA_PAINFLASH ),
 };
 
 static HookVariableDocumentation GlobalVariables[] =
