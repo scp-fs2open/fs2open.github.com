@@ -1008,7 +1008,6 @@ void sim_room_init()
 	int i;
 	sim_room_buttons *b;
 	char wild_card[256];
-	bool dummy_buffer;
 
 	list_x1 = Mission_list_coords[gr_screen.res][0];
 	list_x2 = Campaign_list_coords[gr_screen.res][0];
@@ -1113,6 +1112,7 @@ void sim_room_init()
 #ifndef NDEBUG
 	// Activate the check while we fill the mission list so that we don't potentially end up with dozens of string length warnings.
 	// We don't actually remove mismatched missions from the list here; that will happen in build_standalone_mission_list_do_frame().
+	bool dummy_buffer;
 	Lcl_unexpected_tstring_check = &dummy_buffer;
 #endif
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);

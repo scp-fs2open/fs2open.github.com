@@ -815,7 +815,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 // Goober5000 - wrapper for lcl_ext_localize_sub; used because lcl_replace_stuff has to
 // be called *after* the translation is done, and the original function returned in so
 // many places that it would be messy to call lcl_replace_stuff everywhere
-// Addendum: Now, of course, it provides a handy way to encapsulate another check
+// Addendum: Now, of course, it provides a handy way to encapsulate the unexpected tstring check.
 void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 {
 	// buffer for the untranslated string inside the XSTR tag
