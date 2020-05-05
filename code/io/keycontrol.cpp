@@ -1103,12 +1103,12 @@ void process_debug_keys(int k)
 			// toggle support for this mission
 			if (The_mission.support_ships.max_support_ships == 0)
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Setting maximum number of support ships to infinite.", 1643));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Setting maximum number of support ships to infinite.", 1643));
 				The_mission.support_ships.max_support_ships = -1;
 			}
 			else
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Setting maximum number of support ships to zero.", 1644));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Setting maximum number of support ships to zero.", 1644));
 				The_mission.support_ships.max_support_ships = 0;
 			}
 
