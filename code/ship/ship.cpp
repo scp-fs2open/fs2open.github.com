@@ -6899,9 +6899,16 @@ void ship_render_cockpit(object *objp)
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
 
+	uint render_flags = MR_NORMAL;
+	render_flags |= MR_NO_FOGGING;
+
+	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
+	}
+
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
-	render_info.set_flags(MR_NO_FOGGING);
+	render_info.set_flags(render_flags);
 	render_info.set_replacement_textures(Player_cockpit_textures);
 
 	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
