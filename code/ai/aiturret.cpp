@@ -2580,7 +2580,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				ss->turret_next_fire_pos = ffp_pos;
 			}
 
-            ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+			// We're ready to fire... now get down to specifics, like where is the
+			// actual gun point and normal, not just the one for whole turret.
+			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
@@ -2591,9 +2593,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[0]);
 			else
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
-
-			// We're ready to fire... now get down to specifics, like where is the
-			// actual gun point and normal, not just the one for whole turret.
 	
 			// make sure to reset this for current weapon
 			ok_to_fire = false;
