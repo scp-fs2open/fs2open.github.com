@@ -2544,7 +2544,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	// Ok, the turret is lined up... now line up a particular gun.
 	bool ok_to_fire = false;
 	bool something_was_ok_to_fire=false;
-	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
 
 	if (in_fov ) {
 
@@ -2581,7 +2580,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				ss->turret_next_fire_pos = ffp_pos;
 			}
 
-            ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+			// We're ready to fire... now get down to specifics, like where is the
+			// actual gun point and normal, not just the one for whole turret.
+			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
@@ -2592,12 +2593,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[0]);
 			else
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
-
-			// We're ready to fire... now get down to specifics, like where is the
-			// actual gun point and normal, not just the one for whole turret.
-			// moved here as if there are two weapons with indentical fire stamps
-			// they would have shared the fire point.
-			tv2e = gvec;
 	
 			// make sure to reset this for current weapon
 			ok_to_fire = false;
@@ -2605,7 +2600,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
 			// to make a cool visual effect and make them less lethal
 			if(wip->wi_flags[Weapon::Info_Flags::Flak]){
-				flak_jitter_aim(&tv2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
+				flak_jitter_aim(&v2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
 			}
 			
 			// Fire if:
@@ -2716,9 +2711,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 				//Pass along which gun we are using
 				if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
-					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &v2e, &predicted_enemy_pos);
 				else
-					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &v2e, &predicted_enemy_pos);
 			} else {
 				// make sure salvo fire mode does not turn into autofire
 				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
