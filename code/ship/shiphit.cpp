@@ -73,7 +73,7 @@ vec3d	Original_vec_to_deader;
 
 static bool global_damage = false;
 
-const std::shared_ptr<scripting::OverridableHook> OnPainFlashHook = scripting::OverridableHook::Factory(
+const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factory(
 	"On Pain Flash", "Called when a pain flash is displayed.",
 	{ 		
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
