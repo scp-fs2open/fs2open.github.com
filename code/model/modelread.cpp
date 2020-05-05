@@ -2273,7 +2273,15 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
+
+					// check for reused path names... not fatal, but maybe problematic
+					for (j = 0; j < i; j++) {
+						if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
+							Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
+						}
+					}
+
 					if ( pm->version >= 2002 ) {
 						// store the sub_model name number of the parent
 						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
@@ -3073,6 +3081,8 @@ void model_set_bay_path_nums(polymodel *pm)
 	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
 	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
 
+	// sanity part 1
+	memset(pm->ship_bay->path_indexes, -1, MAX_SHIP_BAY_PATHS * sizeof(int));
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
 	bool too_many_paths = false;
@@ -3107,6 +3117,16 @@ void model_set_bay_path_nums(polymodel *pm)
 	if(too_many_paths)
 	{
 		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
+	}
+
+	// sanity part 2
+	for (i = 0; i < pm->ship_bay->num_paths; i++)
+	{
+		if (pm->ship_bay->path_indexes[i] < 0)
+		{
+			Warning(LOCATION, "Model '%s' does not have a '$bay%.2d' path specified!  A total of %d bay paths were counted.  Either there is a gap in the path sequence, or a path has a duplicate name.", pm->filename, i + 1, pm->ship_bay->num_paths);
+			pm->ship_bay->path_indexes[i] = 0;	// avoid crashes
+		}
 	}
 }
 
