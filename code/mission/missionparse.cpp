@@ -60,6 +60,7 @@
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -406,6 +407,11 @@ void convertFSMtoFS2();
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
+const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
+	"On Departure Started", "Called when a ship starts the departure process.",
+	{ 		
+		{"Ship", "ship", "The ship that has began the depture process."},
+	});
 
 // Goober5000
 void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
@@ -7146,6 +7152,11 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
+
+	// add scripting hook for 'On Depature Started' --wookieejedi
+	// hook is placed at the begining of this function to allow the scripter to
+	// actually have access to the ship's departure decisions before they are all executed
+	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp)));
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior
