@@ -116,7 +116,7 @@ extern int required_string_one_of(int arg_count, ...);
 
 // stuff
 extern void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr, int max);
-extern void copy_text_until(char *outstr, char *instr, const char *endstr, int max_chars);
+extern void copy_text_until(char *outstr, const char *instr, const char *endstr, int max_chars);
 extern void stuff_string_white(char *outstr, int len = 0);
 extern void stuff_string_until(char *outstr, const char *endstr, int len = 0);
 extern void stuff_string(char *outstr, int type, int len, const char *terminators = NULL);
@@ -124,7 +124,7 @@ extern void stuff_string_line(char *outstr, int len);
 
 // SCP_string stuff
 extern void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *instr);
-extern void copy_text_until(SCP_string &outstr, char *instr, const char *endstr);
+extern void copy_text_until(SCP_string &outstr, const char *instr, const char *endstr);
 extern void stuff_string_white(SCP_string &outstr);
 extern void stuff_string_until(SCP_string &outstr, const char *endstr);
 extern void stuff_string(SCP_string &outstr, int type, const char *terminators = NULL);
@@ -136,8 +136,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-extern char *stuff_and_malloc_string(int type, char *terminators = NULL);
-extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL);
+extern char *stuff_and_malloc_string(int type, const char *terminators = NULL);
+extern void stuff_malloc_string(char **dest, int type, const char *terminators = NULL);
 extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f, bool raw = false);
 extern int stuff_int_optional(int *i, bool raw = false);
