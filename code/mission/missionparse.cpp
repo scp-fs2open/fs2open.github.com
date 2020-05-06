@@ -6011,15 +6011,18 @@ void parse_init(bool basic)
 {
 	reset_parse();
 
-	for (int i = 0; i < MAX_CARGO; i++)
-		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
+	// if we just want basic info then we don't need some of this initialization
+	if (!basic)
+	{
+		for (int i = 0; i < MAX_CARGO; i++)
+			Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
-	Total_goal_target_names = 0;
+		Total_goal_target_names = 0;
 
-	// if we are just wanting basic info then we shouldn't need sexps
-	// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
-	if ( !basic )
+		// if we are just wanting basic info then we shouldn't need sexps
+		// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
 		init_sexp();
+	}
 }
 
 // main parse routine for parsing a mission.  The default parameter flags tells us which information

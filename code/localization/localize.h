@@ -61,6 +61,9 @@ extern int Lcl_english;
 // The currently active language. Index into Lcl_languages.
 extern int Lcl_current_lang;
 
+// special check for misplaced mod data (see Mantis #2942)
+extern bool *Lcl_unexpected_tstring_check;
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
@@ -110,8 +113,8 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // XSTR("whee", 20)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = NULL);
-void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
+void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = nullptr);
+void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = nullptr);
 
 // translate the specified string based upon the current language
 const char *XSTR(const char *str, int index);

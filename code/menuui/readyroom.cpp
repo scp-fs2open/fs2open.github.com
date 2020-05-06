@@ -450,6 +450,7 @@ int build_standalone_mission_list_do_frame()
 	int font_height = gr_get_font_height();
 	char filename[MAX_FILENAME_LEN];
 	char str[256];
+	bool lcl_weirdness = false;
 	
 	// When no standalone missions in data directory
 	if (Num_standalone_missions == 0) {
@@ -473,8 +474,16 @@ int build_standalone_mission_list_do_frame()
 			// tack on an extension
 			strcat_s(filename, FS_MISSION_FILE_EXT);
 
-			// check if we can list the mission and if loading basic info didn't return an error code
-			if (!mission_is_ignored(filename) && !get_mission_info(filename)) {
+			// activate tstrings check
+			Lcl_unexpected_tstring_check = &lcl_weirdness;
+
+			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an unexpected XSTR mismatch
+			bool condition = !mission_is_ignored(filename) && !get_mission_info(filename) && !lcl_weirdness;
+
+			// deactivate tstrings check
+			Lcl_unexpected_tstring_check = nullptr;
+
+			if (condition) {
 				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
@@ -1099,7 +1108,17 @@ void sim_room_init()
 	memset(wild_card, 0, 256);
 	strcpy_s(wild_card, NOX("*"));
 	strcat_s(wild_card, FS_MISSION_FILE_EXT);
+
+#ifndef NDEBUG
+	// Activate the check while we fill the mission list so that we don't potentially end up with dozens of string length warnings.
+	// We don't actually remove mismatched missions from the list here; that will happen in build_standalone_mission_list_do_frame().
+	bool dummy_buffer;
+	Lcl_unexpected_tstring_check = &dummy_buffer;
+#endif
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
+#ifndef NDEBUG
+	Lcl_unexpected_tstring_check = nullptr;
+#endif
 
 	// set up slider with 0 items to start
 	Sim_room_slider.create(&Ui_window, Sim_room_slider_coords[gr_screen.res][X_COORD], Sim_room_slider_coords[gr_screen.res][Y_COORD], Sim_room_slider_coords[gr_screen.res][W_COORD], Sim_room_slider_coords[gr_screen.res][H_COORD], 0, Sim_room_slider_filename[gr_screen.res], &sim_room_scroll_screen_up, &sim_room_scroll_screen_down, &sim_room_scroll_capture);
