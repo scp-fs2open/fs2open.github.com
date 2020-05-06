@@ -252,7 +252,7 @@ extern void reset_parse(char *text = NULL);
 extern void display_parse_diagnostics();
 extern void pause_parse();
 extern void unpause_parse();
-// stop parsing, basically just free's up the memory from Mission_text and Mission_text_raw
+// stop parsing, basically just frees up the memory from Parse_text and Parse_text_raw
 extern void stop_parse();
 
 // utility
