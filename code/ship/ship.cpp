@@ -11951,8 +11951,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			goto done_secondary;
 		}
 
-		int start_slot, end_slot;
-
+		// Handle the optional disabling of dual fire
+		// dual fire/doublefire can be disabled for individual weapons, for players, or for AIs
+		// if any of these apply to the current weapon, unset the dual fire flag on the ship 
+		// then proceed as normal.
+		// This is only handled at firing time so dualfire isn't lost when cycling through weapons
 		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
 			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
 			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
@@ -11962,6 +11965,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			) {
 			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 		}
+
+		int start_slot, end_slot;
 
 		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
