@@ -6036,6 +6036,33 @@ const char* ship::get_display_string() {
 	}
 }
 
+void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
+{
+	if (!replacements.empty())
+	{
+		ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
+
+		for (auto i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			ship_replacement_textures[i] = -1;
+	}
+
+	// now fill them in
+	for (auto tr : replacements)
+	{
+		auto pm = model_get(Ship_info[ship_info_index].model_num);
+
+		// look for textures
+		for (auto j = 0; j < pm->n_textures; j++)
+		{
+			texture_map *tmap = &pm->maps[j];
+
+			int tnum = tmap->FindTexture(tr.old_texture);
+			if(tnum > -1)
+				ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
+		}
+	}
+}
+
 void ship_weapon::clear() 
 {
     flags.reset();

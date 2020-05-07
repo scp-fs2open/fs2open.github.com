@@ -2030,29 +2030,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (!p_objp->replacement_textures.empty())
-	{
-		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			shipp->ship_replacement_textures[i] = -1;
-	}
-
-	// now fill them in
-	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
-	{
-		pm = model_get(sip->model_num);
-
-		// look for textures
-		for (j = 0; j < pm->n_textures; j++)
-		{
-			texture_map *tmap = &pm->maps[j];
-
-			int tnum = tmap->FindTexture(tr->old_texture);
-			if(tnum > -1)
-				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
-		}
-	}
+	shipp->apply_replacement_textures(p_objp->replacement_textures);
 
 	// Copy across the alt classes (if any) for FRED
 	if (Fred_running) {

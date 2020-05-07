@@ -1575,6 +1575,27 @@ void labviewer_change_ship_lod(Tree* caller)
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
 	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
+	auto ship_objp = &Ships[Objects[Lab_selected_object].instance];
+	auto ship_infop = &Ship_info[ship_objp->ship_info_index];
+
+	// If the ship class defines replacement textures, load them and apply them to the ship
+	// load the texture
+	auto replacements = SCP_vector<texture_replace>();
+	for (auto tr : ship_infop->replacement_textures) {
+		if (!stricmp(tr.new_texture, "invisible"))
+		{
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		}
+		else
+		{
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+		replacements.push_back(tr);
+	}
+
+	ship_objp->apply_replacement_textures(replacements);
 
 	lab_cam_distance = Objects[Lab_selected_object].radius * 1.6f;
 
