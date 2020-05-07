@@ -727,6 +727,8 @@ public:
 
 	bool has_display_name();
 	const char* get_display_string();
+
+	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
