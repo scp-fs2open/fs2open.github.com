@@ -14338,8 +14338,9 @@ static void ship_add_ship_type_kill_count( int ship_info_index )
 		return;
 	}
 
-	//Add it
-	Ship_type_counts[type].killed++;
+	//Add it if we are actually in gameplay
+	if (Ship_type_counts.size() > type)
+		Ship_type_counts[type].killed++;
 }
 
 int ship_query_general_type(int ship)

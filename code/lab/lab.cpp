@@ -28,6 +28,8 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "debris/debris.h"
 #include "species_defs/species_defs.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
@@ -47,6 +49,7 @@
 #define LAB_FLAG_SHOW_WEAPONS (1 << 6)         // determines if external weapons models are displayed
 #define LAB_FLAG_INITIAL_ROTATION (1 << 7)     // initial rotation setting
 #define LAB_FLAG_DESTROYED_SUBSYSTEMS (1 << 8) // render model as if all subsystems are destroyed
+#define LAB_FLAG_KILL_SHIP (1 << 9)			   // execute the ship kill stuff
 
 // modes
 #define LAB_MODE_NONE 0   // not showing anything
@@ -446,6 +449,10 @@ void labviewer_render_model(float frametime)
 			}
 			else {
 				obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
+			}
+
+			if (Lab_viewer_flags & LAB_FLAG_KILL_SHIP && !Ships[obj->instance].flags[Ship::Ship_Flags::Dying]) {
+				ship_self_destruct(obj);
 			}
 		}
 
@@ -1206,6 +1213,7 @@ void labviewer_make_render_options_window(Button* /*caller*/)
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
+	ADD_RENDER_FLAG("Kill this ship", Lab_viewer_flags, LAB_FLAG_KILL_SHIP);
 
 	ADD_RENDER_BOOL("Emissive Lighting", Lab_emissive_light_override);
 
@@ -2275,6 +2283,11 @@ void lab_init()
 
 	Lab_selected_mission   = "None";
 	Lab_skybox_orientation = vmd_identity_matrix;
+
+	fireball_init();
+	debris_init();
+	extern void debris_page_in();
+	debris_page_in();
 }
 
 #include "lab.h"
