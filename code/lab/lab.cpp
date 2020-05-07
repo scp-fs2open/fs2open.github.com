@@ -440,6 +440,13 @@ void labviewer_render_model(float frametime)
 			ship_model_update_instance(obj);
 
 			Ships[obj->instance].team_name = Lab_team_color;
+
+			if (Lab_viewer_flags & LAB_FLAG_LIGHTNING_ARCS) {
+				obj->hull_strength = 1.0f;
+			}
+			else {
+				obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
+			}
 		}
 
 		if (Lab_render_wireframe)
