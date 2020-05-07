@@ -445,7 +445,7 @@ void labviewer_render_model(float frametime)
 				obj->hull_strength = 1.0f;
 			}
 			else {
-				obj->hull_strength = 1000000.0f;
+				obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
 			}
 		}
 
