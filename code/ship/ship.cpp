@@ -6047,7 +6047,7 @@ void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
 	}
 
 	// now fill them in
-	for (SCP_vector<texture_replace>::iterator tr = replacements.begin(); tr != replacements.end(); ++tr)
+	for (auto tr : replacements)
 	{
 		auto pm = model_get(Ship_info[ship_info_index].model_num);
 
@@ -6056,9 +6056,9 @@ void ship::apply_replacement_textures(SCP_vector<texture_replace> &replacements)
 		{
 			texture_map *tmap = &pm->maps[j];
 
-			int tnum = tmap->FindTexture(tr->old_texture);
+			int tnum = tmap->FindTexture(tr.old_texture);
 			if(tnum > -1)
-				ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
+				ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
 		}
 	}
 }
