@@ -623,7 +623,6 @@ void labviewer_exit(Button* /*caller*/)
 	if (Lab_selected_object != -1) {
 		obj_delete(Lab_selected_object);
 	}
-	shockwave_level_close();
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -1588,9 +1587,11 @@ void labviewer_change_ship_lod(Tree* caller)
 	}
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
-	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
 	auto ship_objp = &Ships[Objects[Lab_selected_object].instance];
 	auto ship_infop = &Ship_info[ship_objp->ship_info_index];
+
+	// This is normally set during mission parse
+	ship_objp->special_exp_damage = -1;
 
 	// If the ship class defines replacement textures, load them and apply them to the ship
 	// load the texture
@@ -2092,6 +2093,7 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 	auto obj = &Objects[Lab_selected_object];
 
 	if (obj->type == OBJ_SHIP) {
+		obj->flags.remove(Object::Object_Flags::Player_ship);
 		ship_self_destruct(obj);
 		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
 	}
@@ -2320,6 +2322,8 @@ void lab_init()
 	extern void debris_page_in();
 	debris_page_in();
 	shockwave_level_init();
+
+	ai_paused = 1;
 }
 
 #include "lab.h"
@@ -2573,4 +2577,8 @@ void lab_close()
 	cam_delete(Lab_cam);
 
 	obj_init();
+
+	shockwave_level_close();
+
+	ai_paused = 0;
 }
