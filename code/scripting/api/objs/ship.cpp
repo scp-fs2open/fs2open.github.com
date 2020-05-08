@@ -1487,6 +1487,23 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(canBayDepart, l_Ship, NULL, "Checks whether ship has a bay departure location and if it's mother ship is present.", "boolean", "True if successful, or nil if ship handle is invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if( ship_can_bay_depart(shipp) ){
+		return ADE_RETURN_FALSE;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 // Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
 ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "True if the ship is warping in, false or nil otherwise")
 {
