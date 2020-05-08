@@ -1498,10 +1498,10 @@ ADE_FUNC(canBayDepart, l_Ship, NULL, "Checks whether ship has a bay departure lo
 
 	ship *shipp = &Ships[objh->objp->instance];
 	if( ship_can_bay_depart(shipp) ){
-		return ADE_RETURN_FALSE;
+		return ADE_RETURN_TRUE;
 	}
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
 }
 
 // Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
