@@ -446,6 +446,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "big ship",					Weapon::Info_Flags::Big_only,							true, false },
     { "child",						Weapon::Info_Flags::Child,								true, false },
     { "no dumbfire",				Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",				Weapon::Info_Flags::No_doublefire,						true, false },
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
@@ -11982,6 +11983,21 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				// TODO:  AI switch secondary weapon / re-arm?
 			}
 			goto done_secondary;
+		}
+
+		// Handle the optional disabling of dual fire
+		// dual fire/doublefire can be disabled for individual weapons, for players, or for AIs
+		// if any of these apply to the current weapon, unset the dual fire flag on the ship 
+		// then proceed as normal.
+		// This is only handled at firing time so dualfire isn't lost when cycling through weapons
+		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
+			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
+				shipp->objnum != OBJ_INDEX(Player_obj) ) ||
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
+				shipp->objnum == OBJ_INDEX(Player_obj) ))
+			) {
+			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 		}
 
 		int start_slot, end_slot;
