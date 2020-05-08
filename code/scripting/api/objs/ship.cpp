@@ -1487,7 +1487,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(canBayDepart, l_Ship, NULL, "Checks whether ship has a bay departure location and if it's mother ship is present.", "boolean", "True if successful, or nil if ship handle is invalid")
+ADE_FUNC(canBayDepart, l_Ship, nullptr, "Checks whether ship has a bay departure location and if it's mother ship is present.", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
