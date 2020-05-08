@@ -136,8 +136,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-extern char *stuff_and_malloc_string(int type, const char *terminators = NULL);
-extern void stuff_malloc_string(char **dest, int type, const char *terminators = NULL);
+extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
+extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
 extern void stuff_float(float *f);
 extern int stuff_float_optional(float *f, bool raw = false);
 extern int stuff_int_optional(int *i, bool raw = false);
