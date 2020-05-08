@@ -2318,7 +2318,8 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
-	if (Player_ship->flags[Ship::Ship_Flags::No_subspace_drive])
+	// wookieejedi - ship_can_warp_full_check(shipp) is not used here because there are other functions for the player that deal with navigation and engines
+	if (Player_ship->cannot_warp_flags())
 	{
 		switch(n)
 		{

@@ -2157,7 +2157,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		((Player_obj->type == OBJ_SHIP) && ( Player_ship->cannot_warp())) ){		
+		((Player_obj->type == OBJ_SHIP) && !(ship_can_warp_full_check(Player_ship)))){		
 
 		multi_handle_sudden_mission_end(); 
 

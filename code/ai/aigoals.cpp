@@ -1413,21 +1413,18 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	{
 		ship *shipp = &Ships[objp->instance];
 
-		// always valid if has subspace drive
-		if (!(shipp->flags[Ship::Ship_Flags::No_subspace_drive]))
+		// always valid if has working subspace drive and not disabled
+		if ( ship_can_warp_full_check(shipp) )
 			return AI_GOAL_ACHIEVABLE;
 
 		// if no subspace drive, only valid if our mothership is present
-
-		// check that we have a mothership and that we can depart to it
-		if (shipp->departure_location == DEPART_AT_DOCK_BAY)
-		{
-			int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
-			if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
-				return AI_GOAL_ACHIEVABLE;
+		// function accounts for ship's wing and returns 1 if ship has bay departure and mothership present, 0 otherwise
+		if (ship_can_bay_depart(shipp)) {
+			return AI_GOAL_ACHIEVABLE;
 		}
-
-		return AI_GOAL_NOT_KNOWN;
+		else {
+			return AI_GOAL_NOT_KNOWN;
+		}
 	}
 
 

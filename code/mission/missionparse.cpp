@@ -7103,21 +7103,6 @@ void mission_eval_arrivals()
 	Mission_arrival_timestamp = timestamp(ARRIVAL_TIMESTAMP);
 }
 
-/**
- * Checks the warp drive; we might be able to depart some other way (e.g. by entering a docking bay)
- */
-int ship_can_use_warp_drive(ship *shipp)
-{
-	// must *have* a subspace drive
-	if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
-		return 0;
-
-	// navigation must work
-	if (!ship_navigation_ok_to_warp(shipp))
-		return 0;
-
-	return 1;
-}
 
 /**
  * Called to make object objp depart.  Rewritten and expanded by Goober5000.
@@ -7150,7 +7135,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
 		// since our goal is to warp, then if we can warp, jump directly to the warping part
-		else if (ship_can_use_warp_drive(shipp))
+		else if (ship_can_warp_full_check(shipp))
 		{
 			mprintf(("Our current goal is to warp!  Trying to warp...\n"));
 			goto try_to_warp;
@@ -7220,7 +7205,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 try_to_warp:
 
 	// make sure we can actually warp
-	if (ship_can_use_warp_drive(shipp))
+	if (ship_can_warp_full_check(shipp))
 	{
 		mprintf(("Setting mode to warpout\n"));
 
@@ -7273,7 +7258,8 @@ void mission_eval_departures()
 			// don't process a ship that is already departing or dying or disabled
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
-			if ( shipp->is_dying_or_departing() || (shipp->cannot_warp() && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			// wookieejedi - fixed so it accounts for break and never warp too
+			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 

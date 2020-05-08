@@ -1470,7 +1470,7 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace drive and is allowed to use it", "boolean", "True if successful, or nil if ship handle is invalid")
+ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace drive, is allowed to use it, and is not disabled or is limited by navigation.", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
@@ -1480,7 +1480,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
+	if( ship_can_warp_full_check(shipp) ){
 		return ADE_RETURN_FALSE;
 	}
 
