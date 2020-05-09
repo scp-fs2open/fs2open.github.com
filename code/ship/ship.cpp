@@ -14629,8 +14629,7 @@ int ship_secondary_bank_has_ammo(int shipnum)
 // returns 1 if ship is able to warp, otherwise return 0
 int ship_engine_ok_to_warp(ship *sp)
 {
-	// disabled ships with broken or never warp, or no subspace drive can't warp
-	if (sp->cannot_warp_flags())
+	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
 		return 0;
 
 	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
@@ -14672,24 +14671,24 @@ int ship_navigation_ok_to_warp(ship *sp)
 
 // wookieejedi
 // checks both the warp flags and ship_engine_ok_to_warp() and ship_navigation_ok_to_warp() --wookieejedi
-// returns 1 if ship is able to warp, otherwise return 0
-int ship_can_warp_full_check(ship* sp)
+// returns true if ship is able to warp, otherwise return false
+bool ship_can_warp_full_check(ship* sp)
 {
 	if (!(sp->cannot_warp_flags()) && ship_navigation_ok_to_warp(sp) && ship_engine_ok_to_warp(sp)) {
 		// there are no warp flags that are preventing us from warping and the nav and engines are good
 		// thus warp is allowed
-		return 1;
+		return true;
 	} else {
 		// warp is not allowed since one of those conditions was not met
-		return 0;
+		return false;
 	}
 }
 
 // wookieejedi
 // check to see if a ship can depart via bay 
 // takes into account if the ship is in a wing
-// returns 1 if the ship has a bay departure and the mothership is present, 0 otherwise
-int ship_can_bay_depart(ship* sp)
+// returns true if the ship has a bay departure and the mothership is present, false otherwise
+bool ship_can_bay_depart(ship* sp)
 {
 	// if this ship belongs to a wing, then use the wing departure information
 	int departure_location;
@@ -14700,6 +14699,7 @@ int ship_can_bay_depart(ship* sp)
 		wing *wingp = &Wings[sp->wingnum];
 		departure_location = wingp->departure_location;
 		departure_anchor = wingp->departure_anchor;
+		Assertion( departure_anchor >= 0, "Wing %s must have a valid departure anchor", wingp->name );
 		departure_path_mask = wingp->departure_path_mask;
 	} else {
 		departure_location = sp->departure_location;
@@ -14710,13 +14710,14 @@ int ship_can_bay_depart(ship* sp)
 	if ( departure_location == DEPART_AT_DOCK_BAY )
 	{
 		int anchor_shipnum = ship_name_lookup(Parse_names[departure_anchor]);
-		if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, departure_path_mask))
+		if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, departure_path_mask)) {
 			// can bay depart at this time
-			return 1;
+			return true;
+		}
 	}
 
 	// cannot bay depart at this time
-	return 0;
+	return false;
 }
 
 // Calculate the normal vector from a subsystem position and its first path point

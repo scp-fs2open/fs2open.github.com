@@ -783,7 +783,7 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 			// Goober5000: also can't depart if no subspace drives and no valid mothership
 			if ( !(ship_can_warp_full_check(shipp)) )
 			{
-				// function accounts for ship's wing and returns 1 if ship has bay departure and mothership present, 0 otherwise
+				// function accounts for ship's wing and returns true if ship has bay departure and mothership present, false otherwise
 				return ship_can_bay_depart(shipp);
 			}
 

@@ -13280,7 +13280,7 @@ void ai_warp_out(object *objp)
 	{
 		// you shouldn't hit this... if you do, then I need to add a check for it
 		// in whatever function initiates a warpout
-		Assert (ship_can_warp_full_check(shipp));
+		Assert (!(shipp->flags[Ship::Ship_Flags::No_subspace_drive]));
 
 		// flag us as trying to warp so that this function keeps getting called
 		// (in other words, if we can't warp just yet, we want to warp at the first
