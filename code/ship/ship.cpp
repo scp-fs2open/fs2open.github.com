@@ -14629,6 +14629,10 @@ int ship_secondary_bank_has_ammo(int shipnum)
 // returns 1 if ship is able to warp, otherwise return 0
 int ship_engine_ok_to_warp(ship *sp)
 {
+	// disabled ships can't warp
+	if (sp->flags[Ship_Flags::Disabled])
+		return 0;
+	
 	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
 		return 0;
 
