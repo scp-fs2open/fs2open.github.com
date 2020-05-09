@@ -6966,6 +6966,7 @@ void ship_render_show_ship_cockpit(object *objp)
 	model_render_params render_info;
 
 	render_info.set_object_number(OBJ_INDEX(objp));
+	render_info.set_replacement_textures(Ships[objp->instance].ship_replacement_textures);
 	render_info.set_detail_level_lock(0);
 
 	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient,
