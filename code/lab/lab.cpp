@@ -25,6 +25,7 @@
 #include "nebula/neb.h"
 #include "object/objectsnd.h"
 #include "playerman/managepilot.h"
+#include "particle/particle.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -471,6 +472,8 @@ void labviewer_render_model(float frametime)
 		}
 
 		obj_move_all(frametime);
+		particle::move_all(flFrametime);
+		particle::ParticleManager::get()->doFrame(flFrametime);
 		shockwave_move_all(frametime);
 
 		Trail_render_override = true;
