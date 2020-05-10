@@ -760,7 +760,8 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 		target_shipp = &Ships[target_objp->instance];
 	}
 
-	target_subsys = NULL;
+	// Reset target subsys in case it isn't needed
+	if (target_subsys != nullptr) target_subsys = nullptr;
 
 	// if a large ship, lock to pos closest to center and within range
 	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].is_big_or_huge()) ) {
@@ -776,8 +777,6 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 		if ( best_lock_dot > 0.95 ) {
 			return;
 		}
-
-		target_subsys = new ship_subsys();
 
 		// iterate through subsystems to see if we can get a better choice
 		ss = GET_FIRST(&target_shipp->subsys_list);
@@ -797,6 +796,7 @@ void hud_lock_acquire_current_target(object *target_objp, ship_subsys *target_su
 			ss = GET_NEXT( ss );
 		}
 	}
+
 }
 
 void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float *best_dot, int *least_num_locks)

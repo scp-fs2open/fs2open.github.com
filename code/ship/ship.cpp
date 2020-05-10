@@ -19450,11 +19450,9 @@ bool ship_start_secondary_fire(object* objp)
 		return false;
 	}
 
-	int weapon = swp->secondary_bank_weapons[bank];
-
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 
-	weapon_info *wip = &Weapon_info[weapon];
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
 	if ( wip->trigger_lock ) {
 		swp->flags.set(Ship::Weapon_Flags::Trigger_Lock);
@@ -19495,11 +19493,9 @@ bool ship_stop_secondary_fire(object* objp)
 		return false;
 	}
 
-	int weapon = swp->secondary_bank_weapons[bank];
-
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 
-	wip = &Weapon_info[weapon];
+	wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
 	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Trigger_Lock]) {
 		swp->flags.remove(Ship::Weapon_Flags::Trigger_Lock);
