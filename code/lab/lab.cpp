@@ -472,8 +472,8 @@ void labviewer_render_model(float frametime)
 		}
 
 		obj_move_all(frametime);
-		particle::move_all(flFrametime);
-		particle::ParticleManager::get()->doFrame(flFrametime);
+		particle::move_all(frametime);
+		particle::ParticleManager::get()->doFrame(frametime);
 		shockwave_move_all(frametime);
 
 		Trail_render_override = true;
@@ -2325,6 +2325,7 @@ void lab_init()
 	extern void debris_page_in();
 	debris_page_in();
 	shockwave_level_init();
+	particle::init();
 
 	ai_paused = 1;
 }
