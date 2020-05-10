@@ -4011,7 +4011,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	{
 		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
 		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
-		ss->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+		ss->points_to_target = sqrt((base_delta*base_delta) + (gun_delta*gun_delta));
 	}
 
 	return 1;
