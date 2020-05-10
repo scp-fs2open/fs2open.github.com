@@ -84,6 +84,7 @@ namespace AI {
         Assist_scoring_scales_with_damage,
         Beams_damage_weapons,
         Big_ships_can_attack_beam_turrets_on_untargeted_ships,
+		Check_comms_for_non_player_ships,
         Disable_linked_fire_penalty,
         Disable_player_secondary_doublefire,
         Disable_ai_secondary_doublefire,

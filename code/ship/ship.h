@@ -1497,7 +1497,7 @@ extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacke
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
 extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);
-extern float ship_get_subsystem_strength( ship *shipp, int type );
+extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
 extern ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
