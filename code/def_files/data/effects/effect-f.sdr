@@ -45,7 +45,7 @@ void main()
 		fragDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - gl_FragCoord.z * (farZ-nearZ) );
 	}
 	// assume UV of 0.5, 0.5 is the centroid of this sphere volume
-	float depthOffset = sqrt(pow(fragRadius, 2.0) - pow(offset_len, 2.0));
+	float depthOffset = sqrt((fragRadius*fragRadius) - (offset_len*offset_len));
 	float frontDepth = fragDepthLinear - depthOffset;
 	float backDepth = fragDepthLinear + depthOffset;
 	float intensity = smoothstep(max(nearZ, frontDepth), backDepth, sceneDepthLinear);
