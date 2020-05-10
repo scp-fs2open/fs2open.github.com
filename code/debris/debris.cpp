@@ -240,11 +240,12 @@ void debris_process_post(object * obj, float frame_time)
 		MONITOR_INC(NumSmallDebris,1);
 	}
 
-	if ( db->lifeleft >= 0.0f) {
+	if (db->lifeleft >= 0.0f) {
 		db->lifeleft -= frame_time;
-		if ( db->lifeleft < 0.0f )	{
-			debris_start_death_roll(obj, db);
-		}
+	}
+
+	if ( db->lifeleft < 0.0f )	{
+		debris_start_death_roll(obj, db);
 	}
 
 	maybe_delete_debris(db);	//	Make this debris go away if it's very far away.

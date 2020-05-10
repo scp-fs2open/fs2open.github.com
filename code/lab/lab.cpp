@@ -28,6 +28,8 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "debris/debris.h"
 #include "species_defs/species_defs.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
@@ -47,6 +49,7 @@
 #define LAB_FLAG_SHOW_WEAPONS (1 << 6)         // determines if external weapons models are displayed
 #define LAB_FLAG_INITIAL_ROTATION (1 << 7)     // initial rotation setting
 #define LAB_FLAG_DESTROYED_SUBSYSTEMS (1 << 8) // render model as if all subsystems are destroyed
+#define LAB_FLAG_SHIP_EXPLODING (1 << 9)	   // execute the ship kill stuff
 
 // modes
 #define LAB_MODE_NONE 0   // not showing anything
@@ -64,6 +67,7 @@ static Window* Lab_material_override_window = nullptr;
 static Window* Lab_variables_window         = nullptr;
 static Window* Lab_description_window       = nullptr;
 static Window* Lab_background_window        = nullptr;
+static Window* Lab_actions_window           = nullptr;
 static Text* Lab_description_text           = nullptr;
 static TreeItem** Lab_species_nodes         = nullptr;
 
@@ -349,7 +353,7 @@ void labviewer_render_model(float frametime)
 
 		if (dx || dy) {
 			// Rotate the ship
-			if (Trackball_mode == 1) {
+			if (Trackball_mode == 1 && !(Lab_viewer_flags & LAB_FLAG_SHIP_EXPLODING)) {
 				angles rot_angle;
 				vm_extract_angles_matrix_alternate(&rot_angle, &Lab_model_orient);
 
@@ -436,7 +440,6 @@ void labviewer_render_model(float frametime)
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
 
-			ship_process_post(obj, frametime);
 			ship_model_update_instance(obj);
 
 			Ships[obj->instance].team_name = Lab_team_color;
@@ -466,6 +469,9 @@ void labviewer_render_model(float frametime)
 			if (obj->type == OBJ_SHIP)
 				Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 		}
+
+		obj_move_all(frametime);
+		shockwave_move_all(frametime);
 
 		Trail_render_override = true;
 		game_render_frame(Lab_cam);
@@ -1581,9 +1587,11 @@ void labviewer_change_ship_lod(Tree* caller)
 	}
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
-	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
 	auto ship_objp = &Ships[Objects[Lab_selected_object].instance];
 	auto ship_infop = &Ship_info[ship_objp->ship_info_index];
+
+	// This is normally set during mission parse
+	ship_objp->special_exp_damage = -1;
 
 	// If the ship class defines replacement textures, load them and apply them to the ship
 	// load the texture
@@ -1627,6 +1635,8 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
 	labviewer_recalc_camera();
+
+	Lab_viewer_flags &= ~LAB_FLAG_SHIP_EXPLODING;
 }
 
 void labviewer_change_ship(Tree* caller)
@@ -2074,6 +2084,34 @@ void labviewer_make_background_window(Button* /*caller*/)
 	}
 }
 
+// ----------------------------- Actions window --------------------------------
+void lab_actions_window_close(GUIObject* /*caller*/) {
+	Lab_actions_window = nullptr;
+}
+
+void labviewer_actions_destroy_ship(Button* /*caller*/) {
+	auto obj = &Objects[Lab_selected_object];
+
+	if (obj->type == OBJ_SHIP) {
+		obj->flags.remove(Object::Object_Flags::Player_ship);
+		ship_self_destruct(obj);
+		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
+	}
+}
+
+void labviewer_make_actions_window(Button* /*caller*/) 
+{
+	if (Lab_actions_window != nullptr)
+		return;
+
+	Lab_actions_window = (Window*)Lab_screen->Add(
+		new Window("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50)
+	);
+	Lab_actions_window->SetCloseFunction(lab_actions_window_close);
+
+	Lab_actions_window->AddChild(new Button("Destroy Ship", 0, 0, labviewer_actions_destroy_ship));
+}
+
 // ----------------------------- Lab functions ---------------------------------
 bool is_same_obj_type(int curr, int next)
 {
@@ -2206,6 +2244,9 @@ void lab_init()
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_toolbar->AddChild(new Button("Backgrounds", x, 0, labviewer_make_background_window));
 
+	x += cbp->GetWidth() + 10;
+	cbp = Lab_toolbar->AddChild(new Button("Actions", x, 0, labviewer_make_actions_window));
+
 	x += cbp->GetWidth() + 20;
 	cbp = Lab_toolbar->AddChild(new Button("Exit", x, 0, labviewer_exit));
 
@@ -2275,6 +2316,14 @@ void lab_init()
 
 	Lab_selected_mission   = "None";
 	Lab_skybox_orientation = vmd_identity_matrix;
+
+	fireball_init();
+	debris_init();
+	extern void debris_page_in();
+	debris_page_in();
+	shockwave_level_init();
+
+	ai_paused = 1;
 }
 
 #include "lab.h"
@@ -2528,4 +2577,8 @@ void lab_close()
 	cam_delete(Lab_cam);
 
 	obj_init();
+
+	shockwave_level_close();
+
+	ai_paused = 0;
 }
