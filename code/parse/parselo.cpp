@@ -244,7 +244,7 @@ int get_line_num()
 	while (p < stoploc)
 	{
 		if (*p == '\0')
-			Assert(0);
+			Warning(LOCATION, "Unexpected end-of-file while looking for error line!");
 
 		if ( !incomment && (*p == COMMENT_CHAR) )
 			incomment = 1;
@@ -314,8 +314,6 @@ void advance_to_eoln(const char *more_terminators)
 	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
-	else
-		terminators[1] = 0;
 
 	while (strchr(terminators, *Mp) == NULL)
 		Mp++;
@@ -324,7 +322,7 @@ void advance_to_eoln(const char *more_terminators)
 // Advance Mp to the next white space (ignoring white space inside of " marks)
 void advance_to_next_white()
 {
-	int in_quotes = 0;
+	bool	in_quotes = false;
 
 	while ((*Mp != EOLN) && (*Mp != '\0')) {
 		if (*Mp == '\"')
@@ -765,8 +763,6 @@ void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr,
 	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
-	else
-		terminators[1] = 0;
 
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)  && (count < max)) {
 		*outstr++ = ch;
@@ -791,8 +787,6 @@ void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *
 	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
-	else
-		terminators[1] = 0;
 
 	outstr = "";
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)) {
@@ -802,10 +796,10 @@ void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *
 
 //	Copy characters from instr to outstr until next white space is found, or until max
 //	characters have been copied (including terminator).
-void copy_to_next_white(char *outstr, char *instr, int max)
+void copy_to_next_white(char *outstr, const char *instr, int max)
 {
 	int	count = 0;
-	int	in_quotes = 0;
+	bool	in_quotes = false;
 	char	ch;
 
 	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != '\0') && (count < max)) {
@@ -831,9 +825,9 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 }
 
 //	Ditto for SCP_string.
-void copy_to_next_white(SCP_string &outstr, char *instr)
+void copy_to_next_white(SCP_string &outstr, const char *instr)
 {
-	int	in_quotes = 0;
+	bool	in_quotes = false;
 	char	ch;
 
 	outstr = "";
@@ -854,10 +848,10 @@ void copy_to_next_white(SCP_string &outstr, char *instr)
 }
 
 //Returns a null-terminated character string allocated with vm_malloc() with the data
-char* alloc_text_until(char* instr, char* endstr)
+char* alloc_text_until(const char* instr, const char* endstr)
 {
 	Assert(instr && endstr);
-	char *foundstr = stristr(instr, endstr);
+	auto foundstr = stristr(instr, endstr);
 
 	if(foundstr == NULL)
 	{
@@ -888,12 +882,11 @@ char* alloc_text_until(char* instr, char* endstr)
 //	Copy text until a certain string is matched.
 //	For example, this is used to copy mission notes, scanning until $END NOTES:
 // is found.
-void copy_text_until(char *outstr, char *instr, const char *endstr, int max_chars)
+void copy_text_until(char *outstr, const char *instr, const char *endstr, int max_chars)
 {
-	char *foundstr;
 	Assert(outstr && instr && endstr);
 
-	foundstr = stristr(instr, endstr);
+	auto foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
         nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
@@ -915,12 +908,11 @@ void copy_text_until(char *outstr, char *instr, const char *endstr, int max_char
 }
 
 //	Ditto for SCP_string.
-void copy_text_until(SCP_string &outstr, char *instr, const char *endstr)
+void copy_text_until(SCP_string &outstr, const char *instr, const char *endstr)
 {
-	char *foundstr;
 	Assert(instr && endstr);
 
-	foundstr = stristr(instr, endstr);
+	auto foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
         nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
@@ -1367,7 +1359,7 @@ void stuff_string_line(SCP_string &outstr)
 // Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-char *stuff_and_malloc_string(int type, char *terminators)
+char *stuff_and_malloc_string(int type, const char *terminators)
 {
 	SCP_string tmp_result;
 
@@ -1380,7 +1372,7 @@ char *stuff_and_malloc_string(int type, char *terminators)
 	return vm_strdup(tmp_result.c_str());
 }
 
-void stuff_malloc_string(char **dest, int type, char *terminators)
+void stuff_malloc_string(char **dest, int type, const char *terminators)
 {
 	Assert(dest != NULL); //wtf?
 
@@ -1397,53 +1389,62 @@ void stuff_malloc_string(char **dest, int type, char *terminators)
 }
 
 // After reading a multitext string, you can call this function to convert any newlines into
-// spaces, so it's a one paragraph string (I.e. as in MS-Word).
-//
+// spaces, so it's a one paragraph string (i.e. as in MS-Word).
 void compact_multitext_string(char *str)
 {
-	size_t i;
-	size_t len = strlen(str);
-	size_t num_cr = 0;
+	auto p_dest = str;
+	auto p_src = str;
 
-	for (i=0; i<len; i++)
+	while (*p_src)
 	{
+		char ch = *p_src;
+		p_src++;
+
 		// skip CR
 		// convert LF to space
 		// copy characters backwards if any CRs previously encountered
-		if (str[i] == '\r')
-			num_cr++;
-		else if (str[i] == '\n')
-			str[i-num_cr] = ' ';
-		else if (num_cr > 0)
-			str[i-num_cr] = str[i];
+		if (ch != '\r')
+		{
+			if (ch == '\n')
+				*p_dest = ' ';
+			else if (p_dest != p_src)
+				*p_dest = *p_src;
+
+			p_dest++;
+		}
 	}
 
-	if (num_cr > 0)
-		str[len-num_cr] = 0;
+	if (p_dest != p_src)
+		*p_dest = 0;
 }
 
 // ditto for SCP_string
 void compact_multitext_string(SCP_string &str)
 {
-	size_t i;
-	size_t len = str.length();
-	size_t num_cr = 0;
+	auto p_dest = str.begin();
+	auto p_src = str.begin();
 
-	for (i=0; i<len; i++)
+	while (p_src != str.end())
 	{
+		char ch = *p_src;
+		p_src++;
+
 		// skip CR
 		// convert LF to space
 		// copy characters backwards if any CRs previously encountered
-		if (str[i] == '\r')
-			num_cr++;
-		else if (str[i] == '\n')
-			str[i-num_cr] = ' ';
-		else if (num_cr > 0)
-			str[i-num_cr] = str[i];
+		if (ch != '\r')
+		{
+			if (ch == '\n')
+				*p_dest = ' ';
+			else if (p_dest != p_src)
+				*p_dest = *p_src;
+
+			p_dest++;
+		}
 	}
 
-	if (num_cr > 0)
-		str.resize(len-num_cr);
+	if (p_dest != p_src)
+		str.erase(p_dest);
 }
 
 // Converts a character from Windows-1252 to CP437.
@@ -1987,12 +1988,11 @@ void strip_comments(char *line, bool &in_quote, bool &in_multiline_comment_a, bo
 	}
 }
 
-int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, char *cur)
+int parse_get_line(char *lineout, int max_line_len, const char *start, int max_size, const char *cur)
 {
 	char * t = lineout;
 	int i, num_chars_read=0;
 	char c;
-
 
 	for ( i = 0; i < max_line_len-1; i++ ) {
 		do {
@@ -2019,7 +2019,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 //	Read mission text, stripping comments.
 //	When a comment is found, it is removed.  If an entire line
 //	consisted of a comment, a blank line is left in the input file.
-// Goober5000 - added ability to read somewhere other than Mission_text
+// Goober5000 - added ability to read somewhere other than Parse_text
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
@@ -2134,7 +2134,7 @@ void allocate_parse_text(size_t size)
 	Parse_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 
 	if ( (Parse_text == nullptr) || (Parse_text_raw == nullptr) ) {
-		Error(LOCATION, "Unable to allocate enough memory for Mission_text!  Aborting...\n");
+		Error(LOCATION, "Unable to allocate enough memory for Parse_text!  Aborting...\n");
 	}
 
 	memset( Parse_text, 0, sizeof(char) * size );
@@ -2170,7 +2170,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	// that if we have control over the raw_text pointer which is only the case if it's null.
 	auto can_reallocate = raw_text == nullptr;
 	if (raw_text == nullptr) {
-		// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
+		// allocate, or reallocate, memory for Parse_text and Parse_text_raw based on size we need now
 		allocate_parse_text((size_t) (file_len + 1));
 		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
 		raw_text = Parse_text_raw;

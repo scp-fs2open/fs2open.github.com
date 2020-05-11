@@ -115,6 +115,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "child",							Weapon::Info_Flags::Child,								true, false },
     { "bomb",							Weapon::Info_Flags::Bomb,								true, false },
     { "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",					Weapon::Info_Flags::No_doublefire,						true, false },
     { "in tech database",				Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",					Weapon::Info_Flags::Player_allowed,                     true, false },
     { "particle spew",					Weapon::Info_Flags::Particle_spew,						true, false },
@@ -808,7 +809,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	//Remove @ symbol
-	//these used to be used to denote weapons that would
+	//these used to denote weapons that would
 	//only be parsed in demo builds
 	if ( fname[0] == '@' ) {
 		backspace(fname);

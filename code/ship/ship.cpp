@@ -446,6 +446,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "big ship",					Weapon::Info_Flags::Big_only,							true, false },
     { "child",						Weapon::Info_Flags::Child,								true, false },
     { "no dumbfire",				Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",				Weapon::Info_Flags::No_doublefire,						true, false },
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
@@ -1819,7 +1820,7 @@ static void parse_ship(const char *filename, bool replace)
 	}
 
 	//Remove @ symbol
-	//these used to be used to denote weapons that would
+	//these used to denote weapons that would
 	//only be parsed in demo builds
 	if ( fname[0] == '@' ) {
 		backspace(fname);
@@ -6965,6 +6966,7 @@ void ship_render_show_ship_cockpit(object *objp)
 	model_render_params render_info;
 
 	render_info.set_object_number(OBJ_INDEX(objp));
+	render_info.set_replacement_textures(Ships[objp->instance].ship_replacement_textures);
 	render_info.set_detail_level_lock(0);
 
 	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient,
@@ -10644,8 +10646,6 @@ int ship_stop_fire_primary(object * obj)
 
 int tracers[MAX_SHIPS][4][4];
 
-float ship_get_subsystem_strength( ship *shipp, int type );
-
 /**
  * Checks whether a ship would use autoaim if it were to fire its primaries at
  * the given object, taking lead into account.
@@ -11982,6 +11982,21 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				// TODO:  AI switch secondary weapon / re-arm?
 			}
 			goto done_secondary;
+		}
+
+		// Handle the optional disabling of dual fire
+		// dual fire/doublefire can be disabled for individual weapons, for players, or for AIs
+		// if any of these apply to the current weapon, unset the dual fire flag on the ship 
+		// then proceed as normal.
+		// This is only handled at firing time so dualfire isn't lost when cycling through weapons
+		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
+			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
+				shipp->objnum != OBJ_INDEX(Player_obj) ) ||
+			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
+				shipp->objnum == OBJ_INDEX(Player_obj) ))
+			) {
+			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 		}
 
 		int start_slot, end_slot;
@@ -13337,7 +13352,7 @@ int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
 // calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
-float ship_get_subsystem_strength( ship *shipp, int type )
+float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check )
 {
 	float strength;
 	ship_subsys *ssp;
@@ -13345,7 +13360,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f)
+	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
 		return 0.0f;
 
 	// short circuit 1
@@ -14338,8 +14353,9 @@ static void ship_add_ship_type_kill_count( int ship_info_index )
 		return;
 	}
 
-	//Add it
-	Ship_type_counts[type].killed++;
+	//Add it if we are actually in gameplay
+	if (Ship_type_counts.size() > static_cast<size_t>(type))
+		Ship_type_counts[type].killed++;
 }
 
 int ship_query_general_type(int ship)
@@ -14432,14 +14448,16 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 				continue;
 			}
-			// see if ship meets our criterea
+
+			// see if ship meets our criteria
 			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) ){
 				continue;
 			}
-			
-			if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags[Ship_Flags::No_builtin_messages]) )
-			{
-				continue;
+			if (flags == SHIP_GET_UNSILENCED) {
+				if (Ships[ship_index].flags[Ship_Flags::No_builtin_messages])
+					continue;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[ship_index]) <= COMM_DAMAGED)
+					continue;
 			}
 
 			// don't process ships on a different team
@@ -15536,6 +15554,9 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	if ( killer_sp->flags[Ship_Flags::No_builtin_messages] ) {
 		return; 
 	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(killer_sp) != COMM_OK) {
+		return;
+	}
 
 	message_send_builtin_to_player(MESSAGE_PRAISE_SELF, killer_sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 	Player->praise_self_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE_SELF].min_delay);
@@ -15631,8 +15652,12 @@ play_ask_help:
 	if (!(Ship_info[sp->ship_info_index].is_fighter_bomber())) //If we're still here, only continue if we're a fighter or bomber.
 		return;
 
-	if (!(sp->flags[Ship_Flags::No_builtin_messages])) // Karajorma - Only unsilenced ships should ask for help
-	{
+	// only unsilenced ships should ask for help
+	if (sp->flags[Ship_Flags::No_builtin_messages])
+		return;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[objp->instance]) <= COMM_DAMAGED)
+		return;
+
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 
@@ -15641,7 +15666,6 @@ play_ask_help:
 		Player->allow_scream_timestamp = timestamp(15000);
 
 	Player->ask_help_count++;
-	}
 }
 
 /**
@@ -15680,9 +15704,9 @@ void ship_scream(ship *sp)
 
 	// Bail if the ship is silenced
 	if (sp->flags[Ship_Flags::No_builtin_messages])
-	{
 		return;
-	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp, true) <= COMM_DAMAGED)
+		return;
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
@@ -15767,6 +15791,8 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 	if (sp->flags[Ship_Flags::No_builtin_messages]) {
 		return;
 	}
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
+		return;
 
 	// don't mention low ammo if we're docked, for the same reason as in maybe_request_support
 	if (object_is_docked(&Objects[sp->objnum]))
@@ -15831,6 +15857,8 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	// Silent ships should remain just that
 	if (sp->flags[Ship_Flags::No_builtin_messages])
+		return;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
 		return;
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
