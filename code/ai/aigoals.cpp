@@ -1413,11 +1413,11 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	{
 		ship *shipp = &Ships[objp->instance];
 
-		// always valid if the goal is to warp and the ship has working subspace drive and is not disabled
+		// always valid if has working subspace drive, not disabled, and not limited by navigation
 		if ( ship_can_warp_full_check(shipp) )
 			return AI_GOAL_ACHIEVABLE;
 
-		// if no subspace drive, only valid if our mothership is present
+		// if no working subspace drive or limited by engines or navigation, only valid if our mothership is present
 		// function accounts for ship's wing and returns true if ship has bay departure and mothership present, false otherwise
 		if (ship_can_bay_depart(shipp)) {
 			return AI_GOAL_ACHIEVABLE;

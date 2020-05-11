@@ -14650,7 +14650,7 @@ int ship_engine_ok_to_warp(ship *sp)
 	// disabled ships can't warp
 	if (sp->flags[Ship_Flags::Disabled])
 		return 0;
-	
+
 	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
 		return 0;
 
@@ -14721,7 +14721,6 @@ bool ship_can_bay_depart(ship* sp)
 		wing *wingp = &Wings[sp->wingnum];
 		departure_location = wingp->departure_location;
 		departure_anchor = wingp->departure_anchor;
-		Assertion( departure_anchor >= 0, "Wing %s must have a valid departure anchor", wingp->name );
 		departure_path_mask = wingp->departure_path_mask;
 	} else {
 		departure_location = sp->departure_location;
@@ -14731,6 +14730,7 @@ bool ship_can_bay_depart(ship* sp)
 	
 	if ( departure_location == DEPART_AT_DOCK_BAY )
 	{
+		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
 		int anchor_shipnum = ship_name_lookup(Parse_names[departure_anchor]);
 		if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, departure_path_mask)) {
 			// can bay depart at this time
