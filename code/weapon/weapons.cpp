@@ -985,8 +985,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$Model file:") ) {
 		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
 
-		if ( VALID_FNAME(wip->pofbitmap_name) )
+		if (VALID_FNAME(wip->pofbitmap_name))
 			wip->render_type = WRT_POF;
+		else
+			wip->render_type = WRT_NONE;
 
 		diag_printf("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
@@ -1017,7 +1019,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (wip->render_type == WRT_POF) {
 			mprintf(("WARNING:  Weapon '%s' has both LASER and POF render types!  Will only use POF type!\n", wip->name));
-			generic_anim_init(&wip->laser_bitmap, NULL);
+			generic_anim_init(&wip->laser_bitmap, nullptr);
 		} else {
 			generic_anim_init(&wip->laser_bitmap, fname);
 			wip->render_type = WRT_LASER;
