@@ -11989,7 +11989,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				locked = 1;
 			} else {
 				target_objnum = -1;
-				target_subsys = NULL;
+				target_subsys = nullptr;
 				locked = 0;
 			}
 		} else {
@@ -19295,7 +19295,7 @@ void ship_clear_lock(lock_info *slot) {
 
 	slot->maintain_lock_count = 0;
 
-	slot->need_new_start_pos = 0;
+	slot->need_new_start_pos = false;
 
 	slot->target_in_lock_cone = false;
 
@@ -19303,8 +19303,8 @@ void ship_clear_lock(lock_info *slot) {
 
 	slot->locked = false;
 
-	slot->obj = NULL;
-	slot->subsys = NULL;
+	slot->obj = nullptr;
+	slot->subsys = nullptr;
 
 
 	slot->time_to_lock = -1.0f;
@@ -19339,7 +19339,7 @@ bool ship_lock_present(ship *shipp)
 bool ship_start_secondary_fire(object* objp)
 {
 
-	Assert( objp != NULL );
+	Assert( objp != nullptr);
 
 	if ( objp->type != OBJ_SHIP ) {
 		return false;
@@ -19380,7 +19380,7 @@ bool ship_stop_secondary_fire(object* objp)
 	ship_weapon *swp;
 	weapon_info *wip;
 
-	Assert( objp != NULL );
+	Assert( objp != nullptr);
 
 	if ( objp->type != OBJ_SHIP ) {
 		return false;

@@ -1443,8 +1443,8 @@ extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0 );
-extern bool ship_start_secondary_fire(object* objp);
-extern bool ship_stop_secondary_fire(object* objp);
+bool ship_start_secondary_fire(object* objp);
+bool ship_stop_secondary_fire(object* objp);
 
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 
