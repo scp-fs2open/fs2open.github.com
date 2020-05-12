@@ -3551,7 +3551,7 @@ void weapon_init()
 	weapon_level_init();
 
 	// log all weapon stats
-	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Shockwave\n"));
+	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Area Effect,Shockwave\n"));
 	for (auto &wi : Weapon_info)
 	{
 		if (wi.subtype == WP_LASER && wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -3567,6 +3567,11 @@ void weapon_init()
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
 			mprintf((",,", wi.rearm_rate, 1.0f / wi.rearm_rate));	// no reload for primaries
+
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+				mprintf(("Yes,"));
+			else
+				mprintf((","));
 
 			if (wi.shockwave.speed > 0.0f)
 				mprintf(("Yes\n"));
@@ -3590,6 +3595,11 @@ void weapon_init()
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.reloaded_per_batch / wi.rearm_rate, wi.rearm_rate / wi.reloaded_per_batch));	// rearm_rate is actually the reciprocal of what is in weapons.tbl
 
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+				mprintf(("Yes,"));
+			else
+				mprintf((","));
+
 			if (wi.shockwave.speed > 0.0f)
 				mprintf(("Yes\n"));
 			else
@@ -3606,7 +3616,7 @@ void weapon_init()
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
 			mprintf(("\tDPS: "));
 			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
 			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
@@ -3636,7 +3646,7 @@ void weapon_init()
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
 			mprintf(("\tDamage: "));
 			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor));
 			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor));
