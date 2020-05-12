@@ -3564,7 +3564,8 @@ void weapon_init()
 			strcpy_s(temp, wi.name);
 			end_string_at_first_hash_symbol(temp);
 			int idx = weapon_info_lookup(temp);
-			wip_base = &Weapon_info[idx];
+			if (idx >= 0)
+				wip_base = &Weapon_info[idx];
 		}
 
 		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || (wip_base != nullptr && wip_base->wi_flags[Weapon::Info_Flags::Player_allowed]))
@@ -3604,7 +3605,8 @@ void weapon_init()
 			strcpy_s(temp, wi.name);
 			end_string_at_first_hash_symbol(temp);
 			int idx = weapon_info_lookup(temp);
-			wip_base = &Weapon_info[idx];
+			if (idx >= 0)
+				wip_base = &Weapon_info[idx];
 		}
 
 		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || (wip_base != nullptr && wip_base->wi_flags[Weapon::Info_Flags::Player_allowed]) || wi.wi_flags[Weapon::Info_Flags::Child])
@@ -3637,7 +3639,21 @@ void weapon_init()
 	mprintf(("\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype == WP_LASER && wi.wi_flags[Weapon::Info_Flags::Player_allowed])
+		if (wi.subtype != WP_LASER)
+			continue;
+
+		weapon_info *wip_base = nullptr;
+		if (strchr(wi.name, '#'))
+		{
+			char temp[NAME_LENGTH];
+			strcpy_s(temp, wi.name);
+			end_string_at_first_hash_symbol(temp);
+			int idx = weapon_info_lookup(temp);
+			if (idx >= 0)
+				wip_base = &Weapon_info[idx];
+		}
+
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || (wip_base != nullptr && wip_base->wi_flags[Weapon::Info_Flags::Player_allowed]))
 		{
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
@@ -3667,7 +3683,21 @@ void weapon_init()
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype == WP_MISSILE && (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child]))
+		if (wi.subtype != WP_MISSILE)
+			continue;
+
+		weapon_info *wip_base = nullptr;
+		if (strchr(wi.name, '#'))
+		{
+			char temp[NAME_LENGTH];
+			strcpy_s(temp, wi.name);
+			end_string_at_first_hash_symbol(temp);
+			int idx = weapon_info_lookup(temp);
+			if (idx >= 0)
+				wip_base = &Weapon_info[idx];
+		}
+
+		if (wi.wi_flags[Weapon::Info_Flags::Player_allowed] || (wip_base != nullptr && wip_base->wi_flags[Weapon::Info_Flags::Player_allowed]) || wi.wi_flags[Weapon::Info_Flags::Child])
 		{
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
