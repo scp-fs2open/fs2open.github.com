@@ -310,7 +310,7 @@ void ai_clear_wing_goals( int wingnum )
 void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 {
 	int mode, submode, priority, i;
-	char *name;
+	const char *name;
 	ai_goal *aigp;
 	wing *wingp;
 
@@ -388,7 +388,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 {
 	int i, j;
 	ai_goal *purge_goal;
-	char *name;
+	const char *name;
 	int mode, ship_index, wingnum;
 
 	// get locals for easer access

@@ -18,8 +18,7 @@
 #include "ship/ship.h"
 
 
-int Total_goal_target_names = 0;
-char Goal_target_names[MAX_GOAL_TARGET_NAMES][NAME_LENGTH];
+SCP_vector<SCP_string> Goal_target_names;
 ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
@@ -82,22 +81,23 @@ void set_wingnum(int objnum, int wingnum)
 	Ai_info[ai_index].wing = wingnum;
 }
 
-char *ai_get_goal_target_name(const char *name, int *index)
+const char *ai_get_goal_target_name(const char *name, int *index)
 {
-	Assert(name != NULL);
-	Assert(index != NULL);
-	int i;
+	Assertion(name != nullptr && index != nullptr, "Arguments cannot be null!");
 
-	for (i=0; i < Total_goal_target_names; i++)
-		if (!stricmp(name, Goal_target_names[i])) {
+	for (int i = 0; i < static_cast<int>(Goal_target_names.size()); i++) {
+		if (!stricmp(name, Goal_target_names[i].c_str())) {
 			*index = i;
-			return Goal_target_names[i];
+			return Goal_target_names[i].c_str();
 		}
+	}
 
-	Assert(Total_goal_target_names < MAX_GOAL_TARGET_NAMES);
-	Assertion(strlen(name) <= NAME_LENGTH - 1, "Goal target name %s is too long. Needs to be 31 characters or less.", name);
-	i = Total_goal_target_names++;
-	strcpy_s(Goal_target_names[i], name);
-	*index = i;
-	return Goal_target_names[i];
+	*index = static_cast<int>(Goal_target_names.size());
+	Goal_target_names.push_back(name);
+	return Goal_target_names[*index].c_str();
+}
+
+void ai_clear_goal_target_names()
+{
+	Goal_target_names.clear();
 }

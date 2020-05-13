@@ -6001,7 +6001,7 @@ void parse_init(bool basic)
 		for (int i = 0; i < MAX_CARGO; i++)
 			Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
-		Total_goal_target_names = 0;
+		ai_clear_goal_target_names();
 
 		// if we are just wanting basic info then we shouldn't need sexps
 		// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
