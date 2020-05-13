@@ -7,11 +7,11 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "def_files/def_files.h"
 #include "ai/ai_profiles.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -397,6 +397,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix linked primary weapon decision bug:", AI::Profile_Flags::Fix_linked_primary_bug);
 
+				set_flag(profile, "$fix ramming stationary targets bug:", AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+
 				set_flag(profile, "$prevent turrets targeting too distant bombs:", AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
 
 				set_flag(profile, "$smart subsystem targeting for turrets:", AI::Profile_Flags::Smart_subsystem_targeting_for_turrets);
@@ -630,4 +632,22 @@ void ai_profile_t::reset()
     for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
         detail_distance_mult[i] = 0;
     }
+
+	// via Github #2332, enable bugfixes if we are targeting version 20 and up
+	if (mod_supports_version(20, 0, 0)) {
+		flags.set(AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
+		flags.set(AI::Profile_Flags::Fix_linked_primary_bug);
+		flags.set(AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
+		flags.set(AI::Profile_Flags::Fix_heat_seeker_stealth_bug);
+		flags.set(AI::Profile_Flags::Allow_vertical_dodge);
+		flags.set(AI::Profile_Flags::Fix_ai_class_bug);
+		flags.set(AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
+		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
+		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
+		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+	}
+	// this flag has been enabled ever since 3.7.2
+	if (mod_supports_version(3, 7, 2)) {
+		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
 }
