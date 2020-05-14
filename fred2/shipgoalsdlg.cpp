@@ -1195,8 +1195,7 @@ void ShipGoalsDlg::OnSelchangeObject10()
 
 void ShipGoalsDlg::set_object(int item)
 {
-	char *str;
-	int i = 0, z, num, not_used;
+	int i = 0, z, num;
 	ship_subsys *subsys;
 
 	if (m_behavior[item] > 0) {
@@ -1213,8 +1212,7 @@ void ShipGoalsDlg::set_object(int item)
 			for (i=0; i<num; i++) {
 				Assert(Docking_bay_list[i]);
 				z = m_dock2_box[item] -> AddString(Docking_bay_list[i]);
-				str = ai_get_goal_target_name(Docking_bay_list[i], &not_used);
-				m_dock2_box[item] -> SetItemDataPtr(z, str);
+				m_dock2_box[item] -> SetItemDataPtr(z, Docking_bay_list[i]);
 			}
 
 		} else if ((mode == AI_GOAL_DESTROY_SUBSYSTEM) && (m_data[item] >= 0)) {
