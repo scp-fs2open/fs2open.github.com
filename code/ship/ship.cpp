@@ -14691,6 +14691,57 @@ int ship_navigation_ok_to_warp(ship *sp)
 	return 1;
 }
 
+// wookieejedi
+// checks both the warp flags and ship_engine_ok_to_warp() and ship_navigation_ok_to_warp() --wookieejedi
+// returns true if ship is able to warp, otherwise return false
+bool ship_can_warp_full_check(ship* sp)
+{
+	if (!(sp->cannot_warp_flags()) && ship_navigation_ok_to_warp(sp) && ship_engine_ok_to_warp(sp)) {
+		// there are no warp flags that are preventing us from warping and the nav and engines are good
+		// thus warp is allowed
+		return true;
+	} else {
+		// warp is not allowed since one of those conditions was not met
+		return false;
+	}
+}
+
+// wookieejedi
+// check to see if a ship can depart via bay 
+// takes into account if the ship is in a wing
+// returns true if the ship has a bay departure and the mothership is present, false otherwise
+bool ship_can_bay_depart(ship* sp)
+{
+	// if this ship belongs to a wing, then use the wing departure information
+	int departure_location;
+	int departure_anchor;
+	int departure_path_mask;
+	if (sp->wingnum >= 0)
+	{
+		wing *wingp = &Wings[sp->wingnum];
+		departure_location = wingp->departure_location;
+		departure_anchor = wingp->departure_anchor;
+		departure_path_mask = wingp->departure_path_mask;
+	} else {
+		departure_location = sp->departure_location;
+		departure_anchor = sp->departure_anchor;
+		departure_path_mask = sp->departure_path_mask;
+	}
+	
+	if ( departure_location == DEPART_AT_DOCK_BAY )
+	{
+		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
+		int anchor_shipnum = ship_name_lookup(Parse_names[departure_anchor]);
+		if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, departure_path_mask)) {
+			// can bay depart at this time
+			return true;
+		}
+	}
+
+	// cannot bay depart at this time
+	return false;
+}
+
 // Calculate the normal vector from a subsystem position and its first path point
 // input:	sp	=>	pointer to ship that is parent of subsystem
 //				ss =>	pointer to subsystem of interest

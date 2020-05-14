@@ -749,17 +749,10 @@ bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 				return false;
 
 			// Goober5000: also can't depart if no subspace drives and no valid mothership
-			if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
+			if ( !(ship_can_warp_full_check(shipp)) )
 			{
-				// check that we have a mothership and that we can depart to it
-				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
-				{
-					int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
-					if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
-						return true;
-				}
-
-				return false;
+				// function accounts for ship's wing and returns true if ship has bay departure and mothership present, false otherwise
+				return ship_can_bay_depart(shipp);
 			}
 
 			break;
