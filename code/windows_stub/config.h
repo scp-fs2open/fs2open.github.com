@@ -29,13 +29,18 @@
 
 #if defined _WIN32
 
+#include "basetsd.h"
+
 #ifndef filelength
 #define filelength _filelength
 #endif
 
+#define strtok_r strtok_s
+
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d\n", __FUNCTION__, __LINE__))
 
 #define SOCKLEN_T int
+#define ssize_t SSIZE_T
 
 #define NETCALL_WOULDBLOCK(err) (err == WSAEWOULDBLOCK)
 

@@ -267,7 +267,7 @@ int multi_lag_recvfrom(SOCKET s, char *buf, int len, int /*flags*/, struct socka
 
 	switch (item->ip_addr.ss_family) {
 		case AF_INET: {
-			Assert(*fromlen >= sizeof(SOCKADDR_IN));
+			Assert(*fromlen >= static_cast<int>(sizeof(SOCKADDR_IN)));
 
 			memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
 			*fromlen = sizeof(SOCKADDR_IN);
@@ -276,7 +276,7 @@ int multi_lag_recvfrom(SOCKET s, char *buf, int len, int /*flags*/, struct socka
 		}
 
 		case AF_INET6: {
-			Assert(*fromlen >= sizeof(SOCKADDR_IN6));
+			Assert(*fromlen >= static_cast<int>(sizeof(SOCKADDR_IN6)));
 
 			memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN6));
 			*fromlen = sizeof(SOCKADDR_IN6);
@@ -285,7 +285,7 @@ int multi_lag_recvfrom(SOCKET s, char *buf, int len, int /*flags*/, struct socka
 		}
 
 		default: {
-			Assert(*fromlen >= sizeof(item->ip_addr));
+			Assert(*fromlen >= static_cast<int>(sizeof(item->ip_addr)));
 
 			memcpy(from, &item->ip_addr, sizeof(item->ip_addr));
 			*fromlen = sizeof(item->ip_addr);

@@ -2043,7 +2043,7 @@ void psnet_set_socket_options()
 
 	// make sure we are in dual-stack mode (not the default on Windows)
 	i_opt = 0;
-	setsockopt(Psnet_socket, IPPROTO_IPV6, IPV6_V6ONLY, &i_opt, sizeof(i_opt));
+	setsockopt(Psnet_socket, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<char *>(&i_opt), sizeof(i_opt));
 }
 
 /**

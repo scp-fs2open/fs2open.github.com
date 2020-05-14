@@ -329,7 +329,7 @@ void multi_xfer_abort(int handle)
 	}
 
 	// zero the socket
-	xe->file_socket = INVALID_SOCKET;
+	xe->file_socket = PSNET_INVALID_SOCKET;
 
 	// blast the entry
 	memset(xe,0,sizeof(xfer_entry));
@@ -360,7 +360,7 @@ void multi_xfer_release_handle(int handle)
 	}
 
 	// zero the socket
-	xe->file_socket = INVALID_SOCKET;	
+	xe->file_socket = PSNET_INVALID_SOCKET;
 
 	// blast the entry
 	memset(xe,0,sizeof(xfer_entry));
@@ -478,7 +478,7 @@ uint multi_xfer_get_sock(int handle)
 {
 	// if this is an invalid handle, return NULL
 	if(MULTI_XFER_INVALID_HANDLE(handle)){
-		return INVALID_SOCKET;
+		return PSNET_INVALID_SOCKET;
 	}
 
 	return Multi_xfer_entry[handle].file_socket;
@@ -489,7 +489,7 @@ int multi_xfer_get_force_dir(int handle)
 {
 	// if this is an invalid handle, return NULL
 	if(MULTI_XFER_INVALID_HANDLE(handle)){
-		return INVALID_SOCKET;
+		return PSNET_INVALID_SOCKET;
 	}
 
 	return Multi_xfer_entry[handle].force_dir;
