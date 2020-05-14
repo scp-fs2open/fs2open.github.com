@@ -95,13 +95,13 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	mod_table_init();
 
 	listener(SubSystem::Locale);
-	// initialize localization module. Make sure this is done AFTER initialzing OS.
-	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
+	// initialize localization module. Make sure this is done AFTER initializing OS.
+	// NOTE: Fred should ALWAYS run without localization. Otherwise it might swap in another language
 	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
 	// trust me on this :)
-	lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
+	lcl_init(LCL_UNTRANSLATED);
 
-	// Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
+	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
 	Xstr_inited = 1;
 
 #ifndef NDEBUG

@@ -27,13 +27,13 @@
 // general language/localization data ---------------------
 
 // current language
-int Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+int Lcl_current_lang = LCL_UNTRANSLATED;
 SCP_vector<lang_info> Lcl_languages;
 
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",		"",		{127,0,176,0,0},	589986744},				// English
+	{ "English",		"",		{127,0,176,0,0},	589986744},				// English ("" is correct; the game data files do not use a language extension for English)
 	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German
 	{ "French",			"fr",	{164,0,176,0,0},	0 },					// French
 	{ "Polish",			"pl",	{127,0,176,0,0},	-1131728960},			// Polish
@@ -46,7 +46,7 @@ int Lcl_special_chars;
 int Lcl_fr = 0;
 int Lcl_gr = 0;
 int Lcl_pl = 0;
-int Lcl_english = 1;
+int Lcl_en = 1;
 
 bool *Lcl_unexpected_tstring_check = nullptr;
 
@@ -111,8 +111,8 @@ void lcl_init(int lang_init)
 	// initialize encryption
 	encrypt_init();
 
-	// setup English
-	Lcl_languages.push_back(Lcl_builtin_languages[FS2_OPEN_DEFAULT_LANGUAGE]);
+	// set up the first language (which should be English)
+	Lcl_languages.push_back(Lcl_builtin_languages[0]);
 
 	// check string.tbl to see which languages we support
 	try
@@ -126,8 +126,8 @@ void lcl_init(int lang_init)
 
 	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
 
-	// if the only language we have at this point is English, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
-	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added English above.
+	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
+	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
 	if ((int)Lcl_languages.size() == 1) {
 		for (i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
 			Lcl_languages.push_back(Lcl_builtin_languages[i]);
@@ -135,18 +135,12 @@ void lcl_init(int lang_init)
 	}
 
 	// read the language from the registry
-	if(lang_init < 0){
+	if (lang_init < 0) {
 		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text 
+		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
 		// in tstrings in the #default section)
-		ret = os_config_read_string(NULL, "Language", Lcl_languages[FS2_OPEN_DEFAULT_LANGUAGE].lang_name);
-
-		if(ret == NULL){
-			Error(LOCATION, "Default language not found."); 
-		}
-
-		strcpy_s(lang_string, ret);
-		
+		ret = os_config_read_string(NULL, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+		strcpy_s(lang_string, ret);		
 
 		// look it up
 		lang = -1;
@@ -157,11 +151,16 @@ void lcl_init(int lang_init)
 			}
 		}
 		if(lang < 0){
-			lang = 0;
-		}	
+			lang = LCL_DEFAULT;
+		}
 	} else {
-		Assert((lang_init >= 0) && (lang_init < (int)Lcl_languages.size()));
+		Assert(lang_init == LCL_UNTRANSLATED || (lang_init >= 0 && lang_init < (int)Lcl_languages.size()));
 		lang = lang_init;
+	}
+
+	// and after all that... the default language reverts to untranslated unless we are specifically translating it
+	if (lang == LCL_DEFAULT && !Use_tabled_strings_for_default_language) {
+		lang = LCL_UNTRANSLATED;
 	}
 
 	// set the language (this function takes care of setting up file pointers)
@@ -252,14 +251,14 @@ void parse_stringstbl_common(const char *filename, const bool external)
 		// move down to the proper section
 		memset(language_tag, 0, sizeof(language_tag));
 		strcpy_s(language_tag, "#");
-		if (external && Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE){
+		if (external && (Lcl_current_lang == LCL_UNTRANSLATED || Lcl_current_lang == LCL_DEFAULT)) {
 			strcat_s(language_tag, "default");
 		} else {
-			strcat_s(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
+			strcat_s(language_tag, Lcl_languages[Lcl_current_lang == LCL_UNTRANSLATED ? LCL_DEFAULT : Lcl_current_lang].lang_name);
 		}
 
 		if ( skip_to_string(language_tag) != 1 ) {
-			mprintf(("Current language not found in %s\n", filename));
+			mprintf(("Language tag %s not found in %s\n", language_tag, filename));
 			return;
 		}
 
@@ -484,46 +483,62 @@ void lcl_set_language(int lang)
 {
 	Lcl_current_lang = lang;
 
-	nprintf(("General", "Setting language to %s\n", Lcl_languages[lang].lang_name));
+	if (lang == LCL_UNTRANSLATED) {
+		nprintf(("General", "Setting language to UNTRANSLATED\n"));
+		// but for the purposes of array access, we use the default
+		lang = LCL_DEFAULT;
+	} else {
+		nprintf(("General", "Setting language to %s\n", Lcl_languages[lang].lang_name));
+	}
 
-	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
+	Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Attempt to set language to an invalid language");
 
 	// flag the proper language as being active
-	Lcl_special_chars = Lcl_languages[Lcl_current_lang].special_char_indexes[0];
+	Lcl_special_chars = Lcl_languages[lang].special_char_indexes[0];
 	Lcl_fr = 0;
 	Lcl_gr = 0;
 	Lcl_pl = 0;
-	Lcl_english = 0;
-	if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_ENGLISH].lang_name)) {
-		Lcl_english = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_FRENCH].lang_name)) {
+	Lcl_en = 0;
+	if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_ENGLISH].lang_name)) {
+		Lcl_en = 1;
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_FRENCH].lang_name)) {
 		Lcl_fr = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_GERMAN].lang_name)) {
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_GERMAN].lang_name)) {
 		Lcl_gr = 1;
-	} else if (!strcmp(Lcl_languages[Lcl_current_lang].lang_name, Lcl_builtin_languages[LCL_POLISH].lang_name)) {
+	} else if (!strcmp(Lcl_languages[lang].lang_name, Lcl_builtin_languages[LCL_POLISH].lang_name)) {
 		Lcl_pl = 1;
 	}
 }
 
 ubyte lcl_get_font_index(int font_num)
 {
+	int lang = Lcl_current_lang;
+	if (Lcl_current_lang == LCL_UNTRANSLATED) {
+		lang = LCL_DEFAULT;
+	}
+
 	if (Unicode_text_mode) {
 		// In Unicode mode there are no special characters. Some of the code still uses this function in that mode so
 		// we just return 0 to signify that there are no special characters in this font
 		return 0;
 	} else {
 		Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-		Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
 
-		return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
+		return Lcl_languages[lang].special_char_indexes[font_num];
 	}
 }
 
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 {
+	int lang = Lcl_current_lang;
+	if (Lcl_current_lang == LCL_UNTRANSLATED) {
+		lang = LCL_DEFAULT;
+	}
+
 	// if the disk extension is 0 length, don't add anything
-	if (strlen(Lcl_languages[Lcl_current_lang].lang_ext) <= 0) {
+	if (strlen(Lcl_languages[lang].lang_ext) <= 0) {
 		return 1;
 	}
 
@@ -544,7 +559,7 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 	}
 
 	// add extension
-	strcat_s(current_path, path_max, Lcl_languages[Lcl_current_lang].lang_ext);
+	strcat_s(current_path, path_max, Lcl_languages[lang].lang_ext);
 	strcat_s(current_path, path_max, DIR_SEPARATOR_STR );
 
 	// copy rest of filename from temp
@@ -784,8 +799,8 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 		return false;
 	}
 	
-	// if the localization file is not open, or there's no entry, return the original string
-	if ( !Xstr_inited || (str_id < 0) ) {
+	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == LCL_UNTRANSLATED) ) {
 		out = text_str;
 
 		if (id != NULL)
@@ -825,7 +840,7 @@ void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id)
 	if (Lcl_unexpected_tstring_check)
 	{
 		int saved_language = Lcl_current_lang;
-		Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+		Lcl_current_lang = LCL_DEFAULT;
 		bool extracted = lcl_ext_localize_sub(in, text_str, out, max_len, id);
 
 		// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
@@ -860,7 +875,7 @@ void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id)
 	if (Lcl_unexpected_tstring_check)
 	{
 		int saved_language = Lcl_current_lang;
-		Lcl_current_lang = FS2_OPEN_DEFAULT_LANGUAGE;
+		Lcl_current_lang = LCL_DEFAULT;
 		bool extracted = lcl_ext_localize_sub(in, text_str, out, id);
 
 		// the untranslated and default-translated strings should always be identical, so if they're different, it might mean we have some data from a different mod
@@ -894,15 +909,20 @@ const char *XSTR(const char *str, int index)
 		return str;
 	}
 
-	// perform a lookup
-	if (index >= 0 && index < XSTR_SIZE)
+	if (Lcl_current_lang != LCL_UNTRANSLATED)
 	{
-		// return translation of string
-		if (Xstr_table[index].str)
-			return Xstr_table[index].str;
+		// perform a lookup
+		if (index >= 0 && index < XSTR_SIZE)
+		{
+			// return translation of string
+			if (Xstr_table[index].str)
+				return Xstr_table[index].str;
+			else
+				mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+		}
 	}
 
-	// can't translate; return original english string
+	// can't translate; return original English string
 	return str;
 }
 
@@ -1151,9 +1171,12 @@ int lcl_ext_get_id(const SCP_string &xstr, int *out)
 
 void lcl_get_language_name(char *lang_name)
 {
-	Assert(Lcl_current_lang < (int)Lcl_languages.size());
+	int lang = Lcl_current_lang;
+	if (Lcl_current_lang == LCL_UNTRANSLATED)
+		lang = LCL_DEFAULT;
 
-	strcpy(lang_name, Lcl_languages[Lcl_current_lang].lang_name);
+	Assert(lang >= 0 && lang < (int)Lcl_languages.size());
+	strcpy(lang_name, Lcl_languages[lang].lang_name);
 }
 
 // ------------------------------------------------------------------
