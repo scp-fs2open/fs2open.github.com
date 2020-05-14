@@ -19402,33 +19402,19 @@ void ship_clear_lock(lock_info *slot) {
 
 void ship_queue_missile_locks(ship *shipp)
 {
-
 	shipp->missile_locks_firing.clear();
 
 	// queue up valid missile locks
-	/*for (size_t i = 0; i < shipp->missile_locks.size(); ++i) {
-		if (shipp->missile_locks[i].locked) {
-			shipp->missile_locks_firing.push_back(shipp->missile_locks[i]);
-		}
-	}*/
 	std::copy_if(shipp->missile_locks.begin(), shipp->missile_locks.end(), std::back_inserter(shipp->missile_locks_firing), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_lock_present(ship *shipp)
 {
-	/*for (size_t i = 0; i < shipp->missile_locks.size(); i++) {
-		if (shipp->missile_locks[i].locked) {
-			return true;
-		}
-	}*/
-
-	//return false;
 	return std::any_of(shipp->missile_locks.begin(), shipp->missile_locks.end(), [](lock_info lock) { return lock.locked; });
 }
 
 bool ship_start_secondary_fire(object* objp)
 {
-
 	Assert( objp != nullptr);
 
 	if ( objp->type != OBJ_SHIP ) {
@@ -19465,11 +19451,6 @@ bool ship_start_secondary_fire(object* objp)
 
 bool ship_stop_secondary_fire(object* objp)
 {
-	ship *shipp;
-	ship_info *sip;
-	ship_weapon *swp;
-	weapon_info *wip;
-
 	Assert( objp != nullptr);
 
 	if ( objp->type != OBJ_SHIP ) {
@@ -19483,9 +19464,9 @@ bool ship_stop_secondary_fire(object* objp)
 	}
 	Assert( Ships[n].objnum == OBJ_INDEX(objp) );
 
-	shipp = &Ships[n];
-	sip = &Ship_info[shipp->ship_info_index];
-	swp = &shipp->weapons;
+	ship *shipp = &Ships[n];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon *swp = &shipp->weapons;
 
 	int bank = swp->current_secondary_bank;
 
@@ -19495,7 +19476,7 @@ bool ship_stop_secondary_fire(object* objp)
 
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
 
-	wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
 	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Trigger_Lock]) {
 		swp->flags.remove(Ship::Weapon_Flags::Trigger_Lock);
