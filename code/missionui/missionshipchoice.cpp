@@ -1853,7 +1853,7 @@ bool is_weapon_carried(int weapon_index)
 	return false;
 }
 
-bool is_a_weapon_slot_empty()
+bool check_for_gaps_in_weapon_slots()
 {
 	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; ++slot)
 	{
@@ -1866,21 +1866,38 @@ bool is_a_weapon_slot_empty()
 				continue;
 
 			ship_info *sip = &Ship_info[Wss_slots[slot].ship_class];
+			bool gap_exists = false;
 
 			// check primary banks
 			for (int bank = 0; bank < sip->num_primary_banks; ++bank)	// NOLINT(modernize-loop-convert)
 			{
 				// is the slot empty?
 				if (Wss_slots[slot].wep_count[bank] <= 0)
+				{
+					gap_exists = true;
+				}
+				// is there a full slot following a gap?
+				else if (gap_exists)
+				{
 					return true;
+				}
 			}
+
+			gap_exists = false;
 
 			// check secondary banks
 			for (int bank = 0; bank < sip->num_secondary_banks; ++bank)
 			{
 				// is the slot empty?
 				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS + bank] <= 0)
+				{
+					gap_exists = true;
+				}
+				// is there a full slot following a gap?
+				else if (gap_exists)
+				{
 					return true;
+				}
 			}
 		}
 	}
@@ -1955,12 +1972,13 @@ void commit_pressed()
 		}
 	}
 
-	// Goober5000 - check that all weapon slots are filled (Mantis 2715)
+	// Goober5000 - check that there are no gaps in weapon slots (Mantis 2715)
+	// Any incomplete loadouts that make it through the loadout screen will be condensed so that gaps are moved to the bottom.  This check adds that responsibility to the player.
 	// Note: don't check for training, scramble, or red-alert missions
 	// Note2: don't check missions without briefings either
-	if (is_a_weapon_slot_empty() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
+	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
 	{
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank.  All weapon banks must have weapons assigned.", 1642), weapon_list.c_str());
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.", 1642), weapon_list.c_str());
 		return;
 	}
 
