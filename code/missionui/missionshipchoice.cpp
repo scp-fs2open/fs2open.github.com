@@ -1866,7 +1866,7 @@ bool check_for_gaps_in_weapon_slots()
 				continue;
 
 			ship_info *sip = &Ship_info[Wss_slots[slot].ship_class];
-			bool gap_exists = false;
+			bool empty_exists = false;
 
 			// check primary banks
 			for (int bank = 0; bank < sip->num_primary_banks; ++bank)	// NOLINT(modernize-loop-convert)
@@ -1874,16 +1874,16 @@ bool check_for_gaps_in_weapon_slots()
 				// is the slot empty?
 				if (Wss_slots[slot].wep_count[bank] <= 0)
 				{
-					gap_exists = true;
+					empty_exists = true;
 				}
 				// is there a full slot following a gap?
-				else if (gap_exists)
+				else if (empty_exists)
 				{
 					return true;
 				}
 			}
 
-			gap_exists = false;
+			empty_exists = false;
 
 			// check secondary banks
 			for (int bank = 0; bank < sip->num_secondary_banks; ++bank)
@@ -1891,10 +1891,10 @@ bool check_for_gaps_in_weapon_slots()
 				// is the slot empty?
 				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS + bank] <= 0)
 				{
-					gap_exists = true;
+					empty_exists = true;
 				}
 				// is there a full slot following a gap?
-				else if (gap_exists)
+				else if (empty_exists)
 				{
 					return true;
 				}
