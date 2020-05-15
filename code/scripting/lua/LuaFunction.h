@@ -110,13 +110,13 @@ class LuaFunction: public LuaValue {
      * @exception LuaException If an error occurs while executing the function an exception is thrown
      * 	with the message of the error.
      */
-	LuaValueList call(const LuaValueList& arguments = LuaValueList());
+	LuaValueList call(const LuaValueList& arguments = LuaValueList()) const;
 
 	/**
      * @brief Calls the function. See call().
      * @return Same as call().
      */
-	LuaValueList operator()(const LuaValueList& arguments = LuaValueList());
+	LuaValueList operator()(const LuaValueList& arguments = LuaValueList()) const;
  private:
 	LuaReference _errorFunction;
 };

@@ -43,20 +43,22 @@ extern bool script_hook_valid(script_hook *hook);
 
 #define MAX_HOOK_CONDITIONS	8
 
-//Conditionals
-#define CHC_NONE			-1
-#define CHC_MISSION			0
-#define CHC_SHIP			1
-#define CHC_SHIPCLASS		2
-#define CHC_SHIPTYPE		3
-#define CHC_STATE			4
-#define CHC_CAMPAIGN		5
-#define CHC_WEAPONCLASS		6
-#define CHC_OBJECTTYPE		7
-#define CHC_KEYPRESS		8
-#define CHC_ACTION			9
-#define CHC_VERSION			10
-#define CHC_APPLICATION		11
+// Conditionals
+enum ConditionalType {
+	CHC_NONE        = -1,
+	CHC_MISSION     = 0,
+	CHC_SHIP        = 1,
+	CHC_SHIPCLASS   = 2,
+	CHC_SHIPTYPE    = 3,
+	CHC_STATE       = 4,
+	CHC_CAMPAIGN    = 5,
+	CHC_WEAPONCLASS = 6,
+	CHC_OBJECTTYPE  = 7,
+	CHC_KEYPRESS    = 8,
+	CHC_ACTION      = 9,
+	CHC_VERSION     = 10,
+	CHC_APPLICATION = 11,
+};
 
 //Actions
 enum ConditionalActions : int32_t {
@@ -116,25 +118,18 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime);
 
-class script_condition
-{
-public:
-	int condition_type{CHC_NONE};
-	union
-	{
-		char name[CONDITION_LENGTH];
-	} data;
+int32_t scripting_string_to_action(const char* action);
+ConditionalType scripting_string_to_condition(const char* condition);
 
-	script_condition()
-	{
-		memset(data.name, 0, sizeof(data.name));
-	}
+struct script_condition
+{
+	ConditionalType condition_type = CHC_NONE;
+	SCP_string condition_string;
 };
 
-class script_action
+struct script_action
 {
-public:
-	int action_type{CHA_NONE};
+	int32_t action_type {CHA_NONE};
 	script_hook hook;
 };
 
@@ -235,6 +230,8 @@ private:
 	SCP_vector<image_desc> ScriptImages;
 	SCP_vector<ConditionedHook> ConditionalHooks;
 
+	SCP_vector<script_function> GameInitFunctions;
+
 private:
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
@@ -294,8 +291,11 @@ public:
 	                          const char* debug_str = nullptr);
 	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
-	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
+	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
+	void AddConditionedHook(ConditionedHook hook);
+
+	void AddGameInitFunction(script_function func);
 
 	//***Hook running functions
 	template <typename T>
@@ -304,6 +304,8 @@ public:
 	bool IsOverride(script_hook &hd);
 	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
+
+	void RunInitFunctions();
 
 	//*****Other functions
 	void EndFrame();

@@ -66,7 +66,7 @@ bool LuaFunction::setEnvironment(const LuaTable& table) {
 	return ret;
 }
 
-LuaValueList LuaFunction::operator()(const LuaValueList& args) {
+LuaValueList LuaFunction::operator()(const LuaValueList& args) const {
 	return this->call(args);
 }
 
@@ -91,7 +91,7 @@ void LuaFunction::setReference(const LuaReference& ref) {
 	}
 }
 
-LuaValueList LuaFunction::call(const LuaValueList& args) {
+LuaValueList LuaFunction::call(const LuaValueList& args) const {
 	int err_idx = 0;
 	int stackTop;
 
@@ -108,8 +108,8 @@ LuaValueList LuaFunction::call(const LuaValueList& args) {
 	this->pushValue();
 
 	// Push the arguments onto the stack
-	for (LuaValueList::const_iterator iter = args.begin(); iter != args.end(); ++iter) {
-		iter->pushValue();
+	for (const auto& arg : args) {
+		arg.pushValue();
 	}
 
 	// actually call the function now!

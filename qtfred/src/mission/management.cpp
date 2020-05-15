@@ -254,8 +254,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	control_config_common_init();
 
 	listener(SubSystem::ScriptingInitHook);
+	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
-	
+
 	return true;
 }
 

@@ -58,6 +58,7 @@
 #include "scripting/api/libs/base.h"
 #include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
+#include "scripting/api/libs/engine.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
 #include "scripting/api/libs/hud.h"
@@ -76,46 +77,6 @@ using namespace scripting;
 using namespace scripting::api;
 
 // *************************Housekeeping*************************
-//WMC - The miraculous lines of code that make Lua debugging worth something.
-lua_Debug Ade_debug_info;
-char debug_stack[4][32];
-
-void ade_debug_ret(lua_State *L, lua_Debug *ar)
-{
-	Assert(L != NULL);
-	Assert(ar != NULL);
-	lua_getstack(L, 1, ar);
-	lua_getinfo(L, "nSlu", ar);
-	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
-
-	int n;
-	for (n = 0; n < 4; n++) {
-		debug_stack[n][0] = '\0';
-	}
-
-	for (n = 0; n < 4; n++) {
-		if (lua_getstack(L,n+1, ar) == 0)
-			break;
-		lua_getinfo(L,"n", ar);
-		if (ar->name == NULL)
-			break;
-		strcpy_s(debug_stack[n],ar->name);
-	}
-}
-
-//WMC - because the behavior of the return keyword
-//was changed, I now have to use this in hooks.
-static int ade_return_hack(lua_State *L)
-{
-	int i = 0;
-	int num = lua_gettop(L);
-	for(i = 0; i < num; i++)
-	{
-		lua_pushvalue(L, i+1);
-	}
-
-	return num;
-}
 
 static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
 	if (nsize == 0)
@@ -165,11 +126,6 @@ int script_state::CreateLuaState()
 	}
 	lua_pop(L, 1);	//os table
 
-	//*****SET DEBUG HOOKS
-#ifndef NDEBUG
-	lua_sethook(L, ade_debug_ret, LUA_MASKRET, 0);
-#endif
-
 	//*****INITIALIZE ADE
 	uint i;
 	mprintf(("LUA: Beginning ADE initialization\n"));
@@ -179,12 +135,6 @@ int script_state::CreateLuaState()
 		if(ade_manager::getInstance()->getEntry(i).ParentIdx == UINT_MAX)			//WMC - oh hey, we're done with the meaty point in < 10 lines.
 			ade_manager::getInstance()->getEntry(i).SetTable(L, LUA_GLOBALSINDEX, LUA_GLOBALSINDEX);	//Oh the miracles of OOP.
 	}
-
-	//*****INITIALIZE RETURN HACK FUNCTION
-	lua_pushstring(L, "ade_return_hack");
-	lua_pushboolean(L, 0);
-	lua_pushcclosure(L, ade_return_hack, 2);
-	lua_setglobal(L, "ade_return_hack");
 
 	//*****INITIALIZE ENUMERATION CONSTANTS
 	mprintf(("ADE: Initializing enumeration constants...\n"));

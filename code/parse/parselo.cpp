@@ -4309,8 +4309,12 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 
 	Parsing_modular_table = true;
 
+	const auto ext = strrchr(name_check, '.');
+
 	for (i = 0; i < num_files; i++){
-		tbl_file_names[i] += ".tbm";
+		if (ext != nullptr) {
+			tbl_file_names[i] += ext;
+		}
 		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i].c_str()));
 		(*parse_callback)(tbl_file_names[i].c_str());
 	}
