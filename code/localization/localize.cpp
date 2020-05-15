@@ -139,7 +139,7 @@ void lcl_init(int lang_init)
 		memset(lang_string, 0, 128);
 		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
 		// in tstrings in the #default section)
-		ret = os_config_read_string(NULL, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+		ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
 		strcpy_s(lang_string, ret);		
 
 		// look it up
