@@ -7944,7 +7944,7 @@ void weapon_spew_stats()
 
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
-			mprintf((",,", wi.rearm_rate, 1.0f / wi.rearm_rate));	// no reload for primaries
+			mprintf((",,"));	// no reload for primaries
 
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
 				mprintf(("Yes,"));
