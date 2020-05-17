@@ -11,12 +11,12 @@ class LuaStateTest: public testing::Test {
  public:
 	lua_State* L;
 
-	virtual void SetUp() override {
+	void SetUp() override {
 		L = luaL_newstate();
 		luaL_openlibs(L);
 	}
 
-	virtual void TearDown() override {
+	void TearDown() override {
 		lua_close(L);
 	}
 };

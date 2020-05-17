@@ -15,7 +15,7 @@ TEST_F(LuaTableTest, AddValue) {
 	LuaTable table = LuaTable::create(L);
 	table.addValue("key", "value");
 
-	ASSERT_TRUE(table.pushValue());
+	ASSERT_TRUE(table.pushValue(L));
 
 	lua_getfield(L, -1, "key");
 

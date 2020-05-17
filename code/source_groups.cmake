@@ -1060,11 +1060,17 @@ add_file_folder("Scripting"
 )
 
 add_file_folder("Scripting\\\\Api"
+	scripting/api/LuaCoroutineRunner.cpp
+	scripting/api/LuaCoroutineRunner.h
 	scripting/api/LuaEventCallback.cpp
 	scripting/api/LuaEventCallback.h
+	scripting/api/LuaPromise.cpp
+	scripting/api/LuaPromise.h
 )
 
 add_file_folder("Scripting\\\\Api\\\\Libs"
+	scripting/api/libs/async.cpp
+	scripting/api/libs/async.h
 	scripting/api/libs/audio.cpp
 	scripting/api/libs/audio.h
 	scripting/api/libs/base.cpp
@@ -1158,6 +1164,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/physics_info.h
 	scripting/api/objs/player.cpp
 	scripting/api/objs/player.h
+	scripting/api/objs/promise.cpp
+	scripting/api/objs/promise.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
@@ -1211,6 +1219,9 @@ add_file_folder("Scripting\\\\Lua"
 	scripting/lua/LuaReference.h
 	scripting/lua/LuaTable.cpp
 	scripting/lua/LuaTable.h
+	scripting/lua/LuaThread.cpp
+	scripting/lua/LuaThread.h
+	scripting/lua/LuaTypes.h
 	scripting/lua/LuaUtil.cpp
 	scripting/lua/LuaUtil.h
 	scripting/lua/LuaValue.cpp

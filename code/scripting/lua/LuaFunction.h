@@ -3,17 +3,18 @@
 #pragma once
 
 #include "LuaConvert.h"
-#include "LuaValue.h"
 #include "LuaTable.h"
+#include "LuaTypes.h"
+#include "LuaValue.h"
 
-#include <vector>
-#include <string>
 #include <functional>
-
+#include <string>
+#include <vector>
 
 namespace luacpp {
-typedef std::vector<LuaValue> LuaValueList;
 class LuaFunction;
+
+using LuaFunctionObject = std::function<LuaValueList(lua_State* L, const LuaValueList& params)>;
 
 /**
  * @brief A reference to lua code.
@@ -25,6 +26,7 @@ class LuaFunction;
  */
 class LuaFunction: public LuaValue {
  public:
+
 	/**
      * @brief Compile lua code and return the function.
      * The specified code is compiled into a lua functions which can then be called with the returned class.
@@ -48,6 +50,14 @@ class LuaFunction: public LuaValue {
 	static LuaFunction createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues = LuaValueList());
 
 	/**
+	 * @brief Creates a lua function from a C++ function object
+	 * @param L The lua state to create the function in
+	 * @param function The function to wrap
+	 * @return A handle of a Lua function that can be used for calling that function
+	 */
+	static LuaFunction createFromStdFunction(lua_State* L, LuaFunctionObject function);
+
+	/**
      * @brief Default constructor
      */
 	LuaFunction();
@@ -61,6 +71,9 @@ class LuaFunction: public LuaValue {
      */
 	LuaFunction(const LuaFunction& other);
 	LuaFunction& operator=(const LuaFunction& other);
+
+	LuaFunction(LuaFunction&&) noexcept;
+	LuaFunction& operator=(LuaFunction&&) noexcept;
 
 	/**
      * @brief Frees the reference to the function if it exists.

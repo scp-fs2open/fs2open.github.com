@@ -28,7 +28,7 @@ enum class ValueType {
 	TABLE,
 	FUNCTION,
 	USERDATA,
-	THREAD
+	THREAD,
 };
 
 /**
@@ -63,37 +63,44 @@ class LuaValue {
 	static LuaValue createNil(lua_State* L);
 
 	/**
-     * @brief Default constructor, creates an invalid LuaValue
-     */
-	LuaValue() : _luaState(nullptr), _luaType(ValueType::NONE) {}
+	 * @brief Default constructor, creates an invalid LuaValue
+	 */
+	LuaValue();
 
 	/**
-     * @brief Initializes the lua value
-     *
-     * The instance does not point to a lua-value after the constructor has finished. To reference
-     * a value use #setReference(LuaReferencePtr)
-     *
-     * @param state The lua state
-     */
+	 * @brief Initializes the lua value
+	 *
+	 * The instance does not point to a lua-value after the constructor has finished. To reference
+	 * a value use #setReference(LuaReferencePtr)
+	 *
+	 * @param state The lua state
+	 */
 	LuaValue(lua_State* state);
 
 	/**
-     * @brief Copy-constructor
-     * @param other The other LuaValue.
-     */
+	 * @brief Copy-constructor
+	 * @param other The other LuaValue.
+	 */
 	LuaValue(const LuaValue& other);
 	LuaValue& operator=(const LuaValue& other);
 
 	/**
-     * @brief Releases the reference
-     */
+	 * @brief Move-constructor
+	 * @param other The other LuaValue.
+	 */
+	LuaValue(LuaValue&& other) noexcept;
+	LuaValue& operator=(LuaValue&& other) noexcept;
+
+	/**
+	 * @brief Releases the reference
+	 */
 	virtual ~LuaValue();
 
 	/**
-     * @brief Sets a new LuaReference.
-     *
-     * @param ref The new lua reference.
-     */
+	 * @brief Sets a new LuaReference.
+	 *
+	 * @param ref The new lua reference.
+	 */
 	virtual void setReference(const LuaReference& ref);
 
 	/**
@@ -141,7 +148,7 @@ class LuaValue {
      */
 	template<class Type>
 	Type getValue() const {
-		_reference->pushValue();
+		_reference->pushValue(_luaState);
 
 		Type target;
 		if (!convert::popValue(_luaState, target)) {
@@ -160,13 +167,16 @@ class LuaValue {
 	bool isValid() const;
 
 	/**
-     * @brief Pushes this lua value onto the stack.
-     */
-	virtual bool pushValue() const;
+	 * @brief Pushes this lua value onto the stack.
+	 * @param thread The thread stack onto which this value should be pushed. May be nullptr for the default state of
+	 * this value
+	 */
+	bool pushValue(lua_State* thread) const;
 
 	lua_State* getLuaState() const;
- protected:
-	lua_State* _luaState; //!< The lua state of this value.
+
+  protected:
+	lua_State* _luaState{nullptr}; //!< The lua state of this value.
 
 	LuaReference _reference;
 
@@ -181,7 +191,7 @@ class LuaValue {
 */
 template<typename Type>
 bool operator==(const LuaValue& lhs, const Type& rhs) {
-	lhs.pushValue();
+	lhs.pushValue(lhs.getLuaState());
 	convert::pushValue(lhs.getLuaState(), rhs);
 
 	bool result = lua_equal(lhs.getLuaState(), -2, -1) != 0;
@@ -200,7 +210,7 @@ bool operator==(const LuaValue& lhs, const Type& rhs) {
 */
 template<typename Type>
 bool operator<(const LuaValue& lhs, const Type& rhs) {
-	lhs.pushValue();
+	lhs.pushValue(lhs.getLuaState());
 	convert::pushValue(lhs.getLuaState(), rhs);
 
 	bool result = lua_lessthan(lhs.getLuaState(), -2, -1) != 0;

@@ -13,7 +13,7 @@ class AdeArgsTest : public LuaStateTest {
 
 TEST_F(AdeArgsTest, GetFunctionArg) {
 	auto stack_func = LuaFunction::createFromCode(L, "return 1");
-	stack_func.pushValue();
+	stack_func.pushValue(L);
 
 	scripting::internal::Ade_get_args_lfunction = true;
 	LuaFunction func;
@@ -23,7 +23,7 @@ TEST_F(AdeArgsTest, GetFunctionArg) {
 
 TEST_F(AdeArgsTest, GetTableArg) {
 	auto stack_table = LuaTable::create(L);
-	stack_table.pushValue();
+	stack_table.pushValue(L);
 
 	scripting::internal::Ade_get_args_lfunction = true;
 	LuaTable table;
