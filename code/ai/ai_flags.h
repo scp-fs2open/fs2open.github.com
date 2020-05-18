@@ -125,6 +125,7 @@ namespace AI {
         Use_additive_weapon_velocity,
         Use_newtonian_dampening,
         Use_only_single_fov_for_turrets,
+		Fix_guard_attack_this_bug,
 
 		NUM_VALUES
 	};

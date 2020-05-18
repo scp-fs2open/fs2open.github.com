@@ -472,6 +472,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
+				set_flag(profile, "$fix Guard Attack This bug:", AI::Profile_Flags::Fix_guard_attack_this_bug);
+
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
