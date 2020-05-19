@@ -1030,6 +1030,9 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 			offscreengauge->preprocess();
 			offscreengauge->onFrame(flFrametime);
 
+			// needs to be turned on so it can pass the canRender() condition --wookieejedi
+			offscreengauge->updateActive(true);
+
 			if ( !offscreengauge->canRender() ) {
 				break;
 			}
