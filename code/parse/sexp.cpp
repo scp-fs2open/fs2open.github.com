@@ -26480,6 +26480,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			return sexp_val;
 		}
 
+#ifndef NDEBUG
 		// now, reconcile positive and negative - Goober5000
 		if (sexp_val < 0 && sexp_val > SEXP_UNLIKELY_RETURN_VALUE_BOUND)
 		{
@@ -26494,10 +26495,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				// if we need a positive value, make it positive
 				if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
 				{
+					Warning(LOCATION, "Parent node %s, argument %d (value %d) is negative, but is required to be positive!", Sexp_nodes[parent_node].text, arg_num + 1, sexp_val);
 					sexp_val *= -1;
 				}
 			}
 		}
+#endif
 
 		if ( sexp_val ){
 			Sexp_nodes[cur_node].value = SEXP_TRUE;
