@@ -168,6 +168,15 @@ SCP_vector<exited_ship> Ships_exited;
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int> Ship_registry_map;
 
+const ship_registry_entry *ship_registry_get(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return &Ship_registry[ship_it->second];
+
+	return nullptr;
+}
+
 
 int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
