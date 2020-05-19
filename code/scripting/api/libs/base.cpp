@@ -323,7 +323,8 @@ ADE_FUNC(getCurrentLanguage,
 		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
 		 "string",
 		 "The current game language") {
-	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_name);
+	auto lang_name = (Lcl_current_lang == LCL_UNTRANSLATED) ? "UNTRANSLATED" : Lcl_languages[Lcl_current_lang].lang_name;
+	return ade_set_args(L, "s", lang_name);
 }
 
 ADE_FUNC(getCurrentLanguageExtension,
@@ -334,7 +335,8 @@ ADE_FUNC(getCurrentLanguageExtension,
 			 "This will return an empty string for the default language.",
 		 "string",
 		 "The current game language") {
-	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
+	int lang = (Lcl_current_lang == LCL_UNTRANSLATED) ? LCL_DEFAULT : Lcl_current_lang;
+	return ade_set_args(L, "s", Lcl_languages[lang].lang_ext);
 }
 
 ADE_FUNC(getVersionString, l_Base, nullptr,

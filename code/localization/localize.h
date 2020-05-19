@@ -19,13 +19,14 @@
 // LOCALIZE DEFINES/VARS
 //
 
-// language defines
+// language defines (English should always be index 0)
 #define LCL_ENGLISH						0
 #define LCL_GERMAN						1
 #define LCL_FRENCH						2
 #define LCL_POLISH						3
 
-#define FS2_OPEN_DEFAULT_LANGUAGE		0
+#define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
+#define	LCL_DEFAULT						0
 
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
@@ -56,7 +57,7 @@ extern int Lcl_special_chars;
 extern int Lcl_fr;
 extern int Lcl_gr;
 extern int Lcl_pl;
-extern int Lcl_english;
+extern int Lcl_en;
 
 // The currently active language. Index into Lcl_languages.
 extern int Lcl_current_lang;
