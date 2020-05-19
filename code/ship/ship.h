@@ -775,6 +775,23 @@ extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
 extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
+// stuff for overall ship status, useful for reference by sexps and scripts
+
+enum ShipStatus { NOT_YET_PRESENT, PRESENT, EXITED };
+
+struct ship_registry_entry
+{
+	ShipStatus status;
+
+	p_object *pobjp;
+	object *objp;
+	ship *shipp;
+	int cleanup_mode;
+};
+
+extern SCP_vector<ship_registry_entry> Ship_registry;
+extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 

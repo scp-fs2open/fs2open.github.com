@@ -1070,6 +1070,8 @@ typedef struct sexp_node {
 	int	rest;						// index into Sexp_nodes of rest of parameters
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
+
+	sexp_cached_data *cache;	// Goober5000
 } sexp_node;
 
 // Goober5000
@@ -1103,6 +1105,37 @@ class arg_item
 		int is_empty();
 		arg_item *get_next();
 		void clear_nesting_level(); 
+};
+
+// Goober5000
+struct sexp_cached_data
+{
+	int sexp_node_data_type;		// an OPF_ #define
+	int ship_registry_index;		// because ship status is pretty common
+
+	// these are open-ended
+	int numeric_literal;			// i.e. a number
+	void *pointer;					// could be an IFF, a wing, a goal, or other unchanging reference
+
+	sexp_cached_data()
+		: sexp_node_data_type(OPF_NONE), ship_registry_index(-1), numeric_literal(0), pointer(nullptr)
+	{}
+	
+	sexp_cached_data(int data_type)
+		: sexp_node_data_type(data_type), ship_registry_index(-1), numeric_literal(0), pointer(nullptr)
+	{}
+
+	sexp_cached_data(int data_type, void *pointer)
+		: sexp_node_data_type(data_type), ship_registry_index(-1), numeric_literal(0), pointer(pointer)
+	{}
+
+	sexp_cached_data(int data_type, int registry_index, int num)
+		: sexp_node_data_type(data_type), ship_registry_index(registry_index), numeric_literal(num), pointer(nullptr)
+	{}
+
+	sexp_cached_data(int data_type, int registry_index, int num, void *pointer)
+		: sexp_node_data_type(data_type), ship_registry_index(registry_index), numeric_literal(num), pointer(pointer)
+	{}
 };
 
 
