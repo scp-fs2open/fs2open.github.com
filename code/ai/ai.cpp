@@ -18,7 +18,7 @@
 #include "ship/ship.h"
 
 
-SCP_vector<SCP_string> Goal_target_names;
+SCP_vector<char *> Goal_target_names;
 ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
@@ -85,19 +85,21 @@ const char *ai_get_goal_target_name(const char *name, int *index)
 {
 	Assertion(name != nullptr && index != nullptr, "Arguments cannot be null!");
 
-	for (int i = 0; i < static_cast<int>(Goal_target_names.size()); i++) {
-		if (!stricmp(name, Goal_target_names[i].c_str())) {
+	for (int i = 0; i < static_cast<int>(Goal_target_names.size()); ++i) {
+		if (!stricmp(name, Goal_target_names[i])) {
 			*index = i;
-			return Goal_target_names[i].c_str();
+			return Goal_target_names[i];
 		}
 	}
 
 	*index = static_cast<int>(Goal_target_names.size());
-	Goal_target_names.push_back(name);
-	return Goal_target_names[*index].c_str();
+	Goal_target_names.push_back(vm_strdup(name));
+	return Goal_target_names[*index];
 }
 
 void ai_clear_goal_target_names()
 {
+	for (auto ptr : Goal_target_names)
+		vm_free(ptr);
 	Goal_target_names.clear();
 }
