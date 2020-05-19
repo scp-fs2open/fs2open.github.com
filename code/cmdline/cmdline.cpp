@@ -230,7 +230,8 @@ Flag exe_params[] =
 	{ "-pos",				"Show position of camera",					false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-stats",				"Show statistics",							true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",							false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
-	{ "-pofspew",			"Generate all ibx files immediately",		false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pofspew", },
+	{ "-pofspew",			"Dump model information to pofspew.txt",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pofspew", },
+	{ "-weaponspew",		"Dump weapon stats and spreadsheets",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-weaponspew", },
 	{ "-tablecrcs",			"Dump table CRCs for multi validation",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tablecrcs", },
 	{ "-missioncrcs",		"Dump mission CRCs for multi validation",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missioncrcs", },
 	{ "-dis_collisions",	"Disable collisions",						true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dis_collisions", },
@@ -274,6 +275,7 @@ cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
 cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
 cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
+cmdline_parm weapon_spew("-weaponspew", nullptr, AT_NONE);			// Cmdline_spew_weapon_stats
 cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
 cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", AT_INT);				// Cmdline_timeout
 cmdline_parm bit32_arg("-32bit", "Deprecated", AT_NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
@@ -295,6 +297,7 @@ int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_network_port = -1;
 int Cmdline_restricted_game = 0;
 int Cmdline_spew_pof_info = 0;
+bool Cmdline_spew_weapon_stats = false;
 int Cmdline_start_netgame = 0;
 int Cmdline_timeout = -1;
 int Cmdline_use_last_pilot = 0;
@@ -1666,6 +1669,11 @@ bool SetCmdlineParams()
 	// spew pof info
 	if(pof_spew.found()){
 		Cmdline_spew_pof_info = 1;
+	}
+
+	// spew weapon stats
+	if (weapon_spew.found()) {
+		Cmdline_spew_weapon_stats = true;
 	}
 
 	// mouse coords
