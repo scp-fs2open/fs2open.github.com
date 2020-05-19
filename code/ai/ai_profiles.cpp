@@ -647,6 +647,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+		flags.set(AI::Profile_Flags::Fix_guard_attack_this_bug);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
