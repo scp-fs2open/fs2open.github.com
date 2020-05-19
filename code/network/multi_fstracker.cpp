@@ -847,20 +847,26 @@ void multi_stats_fs_to_tracker(scoring_struct *fs, vmt_stats_struct *vmt, player
 	vmt->last_flown = static_cast<unsigned int>(fs->last_flown);
 
 	// medals and ship kills are stored in a single array, medals first
-	Assert(fs->medal_counts.size() < MAX_FS2OPEN_COUNTS);
-	vmt->num_medals = static_cast<unsigned char>(fs->medal_counts.size());
+	Assert(fs->medal_counts.size() >= static_cast<size_t>(Num_medals));
+	vmt->num_medals = static_cast<unsigned char>(Num_medals);
+
+	if (vmt->num_medals > MAX_FS2OPEN_COUNTS) {
+		vmt->num_medals = MAX_FS2OPEN_COUNTS;
+	}
 
 	// find only up to last in array with at least 1 kill
-	vmt->num_ships = 0;
+	vmt->num_ships = MAX_FS2OPEN_COUNTS - vmt->num_medals;
 
-	for (int idx : fs->kills) {
+	for (int idx = vmt->num_ships-1; idx >= 0; --idx) {
 		if (fs->kills[idx] > 0) {
-			vmt->num_ships++;
+			break;
 		}
+
+		--vmt->num_ships;
 	}
 
 	// medals should always fit here, ships might get cut off on large mods
-	const size_t count = std::min(static_cast<unsigned short>(vmt->num_medals + vmt->num_ships), MAX_FS2OPEN_COUNTS);
+	const size_t count = vmt->num_medals + vmt->num_ships;
 
 	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {
 		if (idx < vmt->num_medals) {
@@ -901,13 +907,16 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 	}
 
 	// medals and ship kills are stored in a single array, medals first
-	const int count = vmt->num_medals + vmt->num_ships;
+	const size_t count = vmt->num_medals + vmt->num_ships;
 
 	Assert(count <= MAX_FS2OPEN_COUNTS);
 
-	for (int idx = 0, idx2 = 0; idx < count; ++idx) {
+	const size_t max_medals = std::max(static_cast<size_t>(Num_medals), static_cast<size_t>(vmt->num_medals));
+	fs->medal_counts.assign(max_medals, 0);
+
+	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {
 		if (idx < vmt->num_medals) {
-			fs->medal_counts.push_back( static_cast<int>(vmt->counts[idx]) );
+			fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
 		} else {
 			fs->kills[idx2++] = static_cast<int>(vmt->counts[idx]);
 		}
