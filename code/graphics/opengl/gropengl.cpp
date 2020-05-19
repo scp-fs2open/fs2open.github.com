@@ -1010,8 +1010,6 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 		nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 			sourceStr, typeStr, id, severityStr, message));
 	}
-	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
-		   sourceStr, typeStr, id, severityStr, message);
 }
 
 static bool hasPendingDebugMessage() {
