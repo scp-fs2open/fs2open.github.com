@@ -1069,8 +1069,7 @@ struct sexp_cached_data
 	int ship_registry_index = -1;			// because ship status is pretty common
 	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
 
-	sexp_cached_data()
-	{}
+	sexp_cached_data() = default;
 
 	sexp_cached_data(int _sexp_node_data_type)
 		: sexp_node_data_type(_sexp_node_data_type)
