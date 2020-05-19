@@ -7479,7 +7479,6 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Goober5000 - handle ship registry
 	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
 	entry->status = ShipStatus::EXITED;
-	entry->pobjp = nullptr;
 	entry->objp = nullptr;
 	entry->shipp = nullptr;
 	entry->cleanup_mode = cleanup_mode;
