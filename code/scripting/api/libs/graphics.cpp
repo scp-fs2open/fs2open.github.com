@@ -1027,30 +1027,36 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		if (default_hud_gauges[j]->getObjectType() == HUD_OBJECT_OFFSCREEN) {
 			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j].get());
 
-			offscreengauge->preprocess();
-			offscreengauge->onFrame(flFrametime);
-
-			// needs to be turned on so it can pass the canRender() condition --wookieejedi
-			offscreengauge->updateActive(true);
-
-			if ( !offscreengauge->canRender() ) {
-				break;
-			}
-
-			offscreengauge->resetClip();
-			offscreengauge->setFont();
 			int dir;
 			float tri_separation;
 
 			offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation);
 
 			if (draw) {
-				float distance = hud_find_target_distance(targetp, Player_obj);
+				// needs to be turned on so it can pass the canRender() condition
+				// but first make sure to record the original status to use to restore later
+				bool original_status = offscreengauge->canRender();
+				offscreengauge->updateActive(true);
 
-				if (!setcolor)
-					hud_set_iff_color(targetp, 1);
+				// only draw if it can be rendered
+				if ( offscreengauge->canRender() ) {
 
-				offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
+					offscreengauge->preprocess();
+					offscreengauge->onFrame(flFrametime);
+
+					offscreengauge->resetClip();
+					offscreengauge->setFont();
+
+					float distance = hud_find_target_distance(targetp, Player_obj);
+
+					if (!setcolor)
+						hud_set_iff_color(targetp, 1);
+
+					offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
+
+					// now that the gauge is rendered restore the original status
+					offscreengauge->updateActive(original_status);
+				}
 			}
 
 			offscreengauge->resize(&outpoint.x, &outpoint.y);
