@@ -7476,6 +7476,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	object *objp = &Objects[shipp->objnum];
 	char *jumpnode_name = nullptr;
 
+	// this should never happen
+	Assertion(Ship_registry_map.find(shipp->ship_name) != Ship_registry_map.end(), "Ship %s was destroyed, but was never stored in the ship registry!", shipp->ship_name);
+
 	// Goober5000 - handle ship registry
 	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
 	entry->status = ShipStatus::EXITED;
