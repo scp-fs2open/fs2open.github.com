@@ -1064,25 +1064,24 @@ typedef struct sexp_oper {
 // Goober5000
 struct sexp_cached_data
 {
-	int sexp_node_data_type;		// an OPF_ #define
-	int numeric_literal;			// i.e. a number
-	int ship_registry_index;		// because ship status is pretty common
-	void *pointer;					// could be an IFF, a wing, a goal, or other unchanging reference
+	int sexp_node_data_type = OPF_NONE;		// an OPF_ #define
+	int numeric_literal = 0;				// i.e. a number
+	int ship_registry_index = -1;			// because ship status is pretty common
+	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
 
 	sexp_cached_data()
-		: sexp_node_data_type(OPF_NONE), numeric_literal(0), ship_registry_index(-1), pointer(nullptr)
 	{}
 
-	sexp_cached_data(int data_type)
-		: sexp_node_data_type(data_type), numeric_literal(0), ship_registry_index(-1), pointer(nullptr)
+	sexp_cached_data(int _sexp_node_data_type)
+		: sexp_node_data_type(_sexp_node_data_type)
 	{}
 
-	sexp_cached_data(int data_type, void *pointer)
-		: sexp_node_data_type(data_type), numeric_literal(0), ship_registry_index(-1), pointer(pointer)
+	sexp_cached_data(int _sexp_node_data_type, void *_pointer)
+		: sexp_node_data_type(_sexp_node_data_type), pointer(_pointer)
 	{}
 
-	sexp_cached_data(int data_type, int num, int registry_index)
-		: sexp_node_data_type(data_type), numeric_literal(num), ship_registry_index(registry_index), pointer(nullptr)
+	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
+		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
 	{}
 };
 
