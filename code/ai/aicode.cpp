@@ -275,7 +275,7 @@ typedef struct {
 	int team;
 	int weapon_index;
 	int max_fire_count;
-	char	*shipname;
+	const char *shipname;
 } huge_fire_info;
 
 SCP_vector<huge_fire_info> Ai_huge_fire_info;
