@@ -1418,9 +1418,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					
 				}
 				
-			} else {
-				wip->target_restrict = LR_CURRENT_TARGET;
-				
 			}
 			
 				if (optional_string("+Independent Seekers:")) {
