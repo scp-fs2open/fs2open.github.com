@@ -505,12 +505,11 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 			case MULTI_END_ERROR_WAVE_COUNT:
 				strcat_s(err_msg,XSTR("The player wings Alpha, Beta, Gamma, and Zeta must have only 1 wave.  One of these wings currently has more than 1 wave.", 987));
 				break;
-			// Karajorma - both of these should really be replaced with new strings in strings.tbl but for now this one has much the same meaning
 			case MULTI_END_ERROR_TEAM0_EMPTY:
-				strcat_s(err_msg,XSTR("All players from team 1 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 1 have left the game", 1645));
 				break;
 			case MULTI_END_ERROR_TEAM1_EMPTY:
-				strcat_s(err_msg,XSTR("All players from team 2 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 2 have left the game", 1646));
 				break;
 			case MULTI_END_ERROR_CAPTAIN_LEFT:
 				strcat_s(err_msg,XSTR("Team captain(s) have left the game, aborting...",664));

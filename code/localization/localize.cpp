@@ -58,7 +58,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
-#define XSTR_SIZE	1645
+#define XSTR_SIZE	1647
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -640,7 +640,7 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // valid input to this function includes :
 // "this is some text"
 // XSTR("wheeee", -1)
-// XSTR("whee", 20)
+// XSTR("whee", 2000)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
 // returns true if we were able to extract the XSTR elements (text_str and maybe id are populated)

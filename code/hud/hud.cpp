@@ -1707,7 +1707,7 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 	if ( time_comp < 1 ) {
 		renderPrintf(position[0] + time_val_offsets[0], position[1] + time_val_offsets[1], /*XSTR( "x%.1f", 215), time_comp)*/ NOX("%.2f"), time_comp);
 	} else {
-		renderPrintf(position[0] + time_val_offsets[0], position[1] + time_val_offsets[1], XSTR( "x%.2f", 216), time_comp);
+		renderPrintf(position[0] + time_val_offsets[0], position[1] + time_val_offsets[1], XSTR( "x%.0f", 216), time_comp);
 	}
 }
 
