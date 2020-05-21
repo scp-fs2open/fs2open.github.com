@@ -1061,6 +1061,29 @@ typedef struct sexp_oper {
 	int type;
 } sexp_oper;
 
+// Goober5000
+struct sexp_cached_data
+{
+	int sexp_node_data_type = OPF_NONE;		// an OPF_ #define
+	int numeric_literal = 0;				// i.e. a number
+	int ship_registry_index = -1;			// because ship status is pretty common
+	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+
+	sexp_cached_data() = default;
+
+	sexp_cached_data(int _sexp_node_data_type)
+		: sexp_node_data_type(_sexp_node_data_type)
+	{}
+
+	sexp_cached_data(int _sexp_node_data_type, void *_pointer)
+		: sexp_node_data_type(_sexp_node_data_type), pointer(_pointer)
+	{}
+
+	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
+		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
+	{}
+};
+
 typedef struct sexp_node {
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
@@ -1070,6 +1093,9 @@ typedef struct sexp_node {
 	int	rest;						// index into Sexp_nodes of rest of parameters
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
+
+	sexp_cached_data *cache;	// Goober5000
+	int cached_variable_index;	// Goober5000
 } sexp_node;
 
 // Goober5000
@@ -1200,7 +1226,6 @@ void flush_sexp_tree(int node);
 
 // sexp_variable
 void sexp_modify_variable(const char *text, int index, bool sexp_callback = true);
-int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *text);
 int get_index_sexp_variable_name(SCP_string &text);	// Goober5000
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000

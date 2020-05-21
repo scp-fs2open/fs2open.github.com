@@ -1648,25 +1648,35 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 	else
 	{
+		auto ship_entry = ship_registry_get(aigp->target_name);
+
+		if (!ship_entry)
+		{
+			status = SHIP_STATUS_UNKNOWN;
+		}
 		// goal ship is currently in mission
-		if ( ship_name_lookup( aigp->target_name ) != -1 )
+		else if (ship_entry->status == ShipStatus::PRESENT)
 		{
 			status = SHIP_STATUS_ARRIVED;
 		}
 		// goal ship is still on the arrival list
-		else if ( mission_check_ship_yet_to_arrive(aigp->target_name) )
+		else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
 			status = SHIP_STATUS_NOT_ARRIVED;
 		}
 		// goal ship has left the area
-		else if ( ship_find_exited_ship_by_name(aigp->target_name) != -1 )
+		else if (ship_entry->status == ShipStatus::EXITED)
 		{
 			status = SHIP_STATUS_GONE;
 		}
 		else
 		{
-			mprintf(("Potentially incorrect behaviour in AI goal for ship %s: Ship %s could not be found among currently active, departed, or yet-to-arrive ships.\nPlease check the mission file.\n", Ships[objp->instance].ship_name, aigp->target_name));
 			status = SHIP_STATUS_UNKNOWN;
+		}
+
+		if (status == SHIP_STATUS_UNKNOWN)
+		{
+			mprintf(("Potentially incorrect behaviour in AI goal for ship %s: Ship %s could not be found among currently active, departed, or yet-to-arrive ships.\nPlease check the mission file.\n", Ships[objp->instance].ship_name, aigp->target_name));
 		}
 	}
 

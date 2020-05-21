@@ -4766,6 +4766,15 @@ void post_process_ships_wings()
 	// both ships and wings have been parsed.
 	mission_parse_set_up_initial_docks();
 
+	// Goober5000 - now add all the parse objects to the ship registry.  This must be done before
+	// any ships are created from the parse objects.
+	for (auto &pobjp : Parse_objects)
+	{
+		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, &pobjp, nullptr, nullptr, 0 };
+		Ship_registry.push_back(entry);
+		Ship_registry_map[pobjp.name] = static_cast<int>(Ship_registry.size() - 1);
+	}
+
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
 	// but can't be done until the dock references are resolved.  This was originally done
 	// in parse_object().

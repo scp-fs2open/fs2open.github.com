@@ -907,7 +907,6 @@ int get_sexp();
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
-int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 
 // for handling variables
@@ -929,6 +928,10 @@ bool is_blank_of_op(int op_const);
 
 int get_handler_for_x_of_operator(int node);
 
+int sexp_atoi(int node);
+bool sexp_can_construe_as_integer(int node);
+int sexp_get_variable_index(int node);
+
 //Karajorma
 int get_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
@@ -941,7 +944,6 @@ int get_effect_from_name(const char* name);
 
 // Karajorma - some useful helper methods
 player * get_player_from_ship_node(int node, bool test_respawns = false);
-ship * sexp_get_ship_from_node(int node);
 
 // hud-display-gauge magic values
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
@@ -950,6 +952,7 @@ ship * sexp_get_ship_from_node(int node);
 SCP_vector<SCP_string> *Current_event_log_buffer;
 SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
+
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
@@ -1067,6 +1070,13 @@ void sexp_nodes_init()
 			last_persistent_node = i;					// keep track of it
 		else
 			Sexp_nodes[i].type = SEXP_NOT_USED;			// it's not needed
+
+		// free anything cached
+		if (Sexp_nodes[i].cache)
+		{
+			delete Sexp_nodes[i].cache;
+			Sexp_nodes[i].cache = nullptr;
+		}
 	}
 
 	nprintf(("SEXP", "Last persistent node index is %d.\n", last_persistent_node));
@@ -1097,6 +1107,16 @@ static void sexp_nodes_close()
 	// free all sexp nodes... should only be done on game shutdown
 	if (Sexp_nodes != NULL)
 	{
+		// free anything cached
+		for (int i = 0; i < Num_sexp_nodes; i++)
+		{
+			if (Sexp_nodes[i].cache)
+			{
+				delete Sexp_nodes[i].cache;
+				Sexp_nodes[i].cache = nullptr;
+			}
+		}
+
 		vm_free(Sexp_nodes);
 		Sexp_nodes = NULL;
 		Num_sexp_nodes = 0;
@@ -1180,8 +1200,10 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].first = first;
 	Sexp_nodes[node].rest = rest;
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
-	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;	// Goober5000
+	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;
 	Sexp_nodes[node].op_index = NO_OPERATOR_INDEX_DEFINED;
+	Sexp_nodes[node].cache = nullptr;
+	Sexp_nodes[node].cached_variable_index = -1;
 
 	return node;
 }
@@ -1276,6 +1298,7 @@ void sexp_unmark_persistent(int n)
  */
 int free_one_sexp(int num)
 {
+	Assert(Fred_running);
 	Assert((num >= 0) && (num < Num_sexp_nodes));
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
@@ -1284,6 +1307,11 @@ int free_one_sexp(int num)
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
+	if (Sexp_nodes[num].cache)
+	{
+		delete Sexp_nodes[num].cache;
+		Sexp_nodes[num].cache = nullptr;
+	}
 	return 1;
 }
 
@@ -1305,6 +1333,11 @@ int free_sexp(int num)
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
+	if (Sexp_nodes[num].cache)
+	{
+		delete Sexp_nodes[num].cache;
+		Sexp_nodes[num].cache = nullptr;
+	}
 	count++;
 
 	i = Sexp_nodes[num].first;
@@ -1361,6 +1394,13 @@ void flush_sexp_tree(int node)
 	}
 
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
+	if (Sexp_nodes[node].cache)
+	{
+		delete Sexp_nodes[node].cache;
+		Sexp_nodes[node].cache = nullptr;
+	}
+	Sexp_nodes[node].cached_variable_index = -1;
+
 	flush_sexp_tree(Sexp_nodes[node].first);
 	flush_sexp_tree(Sexp_nodes[node].rest);
 }
@@ -1853,7 +1893,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		// variables should only be typechecked. 
 		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
-			var_index = get_index_sexp_variable_from_node(node);
+			var_index = sexp_get_variable_index(node);
 			Assert(var_index != -1);
 	
 			switch (type) {
@@ -3094,7 +3134,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 
 			case OPF_VARIABLE_NAME:
-				var_index = get_index_sexp_variable_from_node(node);
+				var_index = sexp_get_variable_index(node);
 				if ( var_index  == -1) {
 					return SEXP_CHECK_INVALID_VARIABLE;
 				}
@@ -4020,7 +4060,7 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 		return val;
 	}
 	else
-		return atoi(CTEXT(n));		// otherwise, just get the number
+		return sexp_atoi(n);		// otherwise, just get the number
 }
 
 template <typename T>
@@ -4201,26 +4241,98 @@ player * get_player_from_ship_node(int node, bool test_respawns)
 	}
 }
 
+// ----------------------------------------------------------------------------------- 
+// SEXP caching
+// -----------------------------------------------------------------------------------
+
 /**
- * Given a node, returns a pointer to the ship or NULL if this isn't the name of a ship
+ * Gets a ship from a sexp node.  Returns the ship registry entry, or NULL if the ship is unknown.
  */
-ship * sexp_get_ship_from_node(int node)
+const ship_registry_entry *eval_ship(int node)
 {
-	int sindex;
-	ship *shipp = NULL;
-
-	sindex = ship_name_lookup( CTEXT(node) );
-
-	if (sindex < 0) {
-		return shipp;
+	if (Sexp_nodes[node].cache)
+	{
+		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_SHIP, "Cache data mismatch!");
+		return &Ship_registry[Sexp_nodes[node].cache->ship_registry_index];
 	}
 
-	if (Ships[sindex].objnum < 0) {
-		return shipp;
+	auto ship_it = Ship_registry_map.find(CTEXT(node));
+	if (ship_it != Ship_registry_map.end())
+	{
+		// cache the value, unless this node is a variable because the value may change
+		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_SHIP, -1, ship_it->second);
+
+		return &Ship_registry[ship_it->second];
 	}
 
-	shipp = &Ships[sindex]; 
-	return shipp;
+	// we know nothing about this ship, apparently
+	return nullptr;
+}
+
+/**
+ * Returns a number parsed from the sexp node text.
+ * NOTE: sexp_atoi can only be used if CTEXT was used; i.e. atoi(CTEXT(n))
+ */
+int sexp_atoi(int node)
+{
+	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+
+	if (Sexp_nodes[node].cache)
+	{
+		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER, "Cache data mismatch!");
+		return Sexp_nodes[node].cache->numeric_literal;
+	}
+
+	int num = atoi(CTEXT(node));
+
+	// cache the value, unless this node is a variable because the value may change
+	// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+
+	return num;
+}
+
+/**
+ * A version of can_construe_as_integer that knows about number caching.
+ */
+bool sexp_can_construe_as_integer(int node)
+{
+	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+
+	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
+		return true;
+
+	return can_construe_as_integer(CTEXT(node));
+}
+
+/*
+ * This can be used by both FRED and FSO.  When in FSO, it incorporates caching that runs parallel to the main data caching.
+ */
+int sexp_get_variable_index(int node)
+{
+	if (Sexp_nodes[node].cached_variable_index >= 0)
+		return Sexp_nodes[node].cached_variable_index;
+
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		return -1;
+
+	Assert(Sexp_nodes[node].first == -1);
+
+	if (Fred_running)
+		return get_index_sexp_variable_name(Sexp_nodes[node].text);
+
+	// parse it
+	int index = atoi(Sexp_nodes[node].text);
+
+	// verify variable set
+	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
+
+	// cache and return
+	Sexp_nodes[node].cached_variable_index = index;
+	return index;
 }
 
 /**
@@ -4264,7 +4376,7 @@ int add_sexps(int n)
 			sum = val;
 		}
 		else
-			sum = atoi(CTEXT(n));
+			sum = sexp_atoi(n);
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
@@ -4302,7 +4414,7 @@ int sub_sexps(int n)
 			sum = val;
 		}
 		else
-			sum = atoi(CTEXT(n));
+			sum = sexp_atoi(n);
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
@@ -4340,7 +4452,7 @@ int mul_sexps(int n)
 			sum = val;
 		}
 		else
-			sum = atoi(CTEXT(n));
+			sum = sexp_atoi(n);
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
@@ -4378,7 +4490,7 @@ int div_sexps(int n)
 			sum = val;
 		}
 		else
-			sum = atoi(CTEXT(n));
+			sum = sexp_atoi(n);
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
@@ -4421,7 +4533,7 @@ int mod_sexps(int n)
 			sum = val;
 		}
 		else
-			sum = atoi(CTEXT(n));
+			sum = sexp_atoi(n);
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
@@ -4660,7 +4772,7 @@ int sexp_nan_to_number(int n)
 	}
 	// straight-up numeric or string arguments cannot be NaN
 	else
-		return atoi(CTEXT(n));
+		return sexp_atoi(n);
 }
 
 // Goober5000
@@ -4803,7 +4915,7 @@ int rand_sexp(int node, bool multiple)
 	if (Sexp_nodes[node].value == SEXP_NUM_EVAL)
 	{
 		// don't regenerate new random number
-		return atoi(CTEXT(node));
+		return sexp_atoi(node);
 	}
 
 	// get low, high, and (optional) seed - seed will be 0, per eval_nums, if not specified
@@ -4854,7 +4966,7 @@ int sexp_or(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = (atoi(CTEXT(n)) != 0) || result;
+			result = (sexp_atoi(n) != 0) || result;
 
 		while (CDR(n) != -1)
 		{
@@ -4894,7 +5006,7 @@ int sexp_and(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = (atoi(CTEXT(n)) != 0) && result;
+			result = (sexp_atoi(n) != 0) && result;
 
 		while (CDR(n) != -1)
 		{
@@ -4934,7 +5046,7 @@ int sexp_and_in_sequence(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = (atoi(CTEXT(n)) != 0) && result;
+			result = (sexp_atoi(n) != 0) && result;
 
 		// a little test -- if the previous sexpressions was true, then mark the node itself as always
 		// true.  I did this because of the distance function.  It might become true, then when waiting for
@@ -4991,7 +5103,7 @@ int sexp_not(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = (atoi(CTEXT(n)) != 0);
+			result = (sexp_atoi(n) != 0);
 	}
 
 	return result ? SEXP_FALSE : SEXP_TRUE;
@@ -5018,7 +5130,7 @@ int sexp_xor(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = (atoi(CTEXT(n)) != 0);
+			result = (sexp_atoi(n) != 0);
 
 		while (CDR(n) != -1)
 		{
@@ -11024,11 +11136,11 @@ void sexp_set_player_orders(int n)
 	int orders = 0;
 	int default_orders; 
 
-	shipp = sexp_get_ship_from_node(n);
-
-	if (shipp == NULL) {
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
+	shipp = ship_entry->shipp;
 
 	// we need to know which orders this ship class can accept.
 	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
@@ -11362,11 +11474,7 @@ void sexp_close_sound_from_file(int n)
 	int sexp_var = -1;
 	if (n >= 0)
 	{
-		Assert(Sexp_nodes[n].first == -1);
-		sexp_var = atoi(Sexp_nodes[n].text);
-
-		// verify variable set
-		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		sexp_var = sexp_get_variable_index(n);
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -11426,11 +11534,7 @@ void sexp_play_sound_from_file(int n)
 	int sexp_var = -1;
 	if (n >= 0)
 	{
-		Assert(Sexp_nodes[n].first == -1);
-		sexp_var = atoi(Sexp_nodes[n].text);
-
-		// verify variable set
-		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		sexp_var = sexp_get_variable_index(n);
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -11483,11 +11587,7 @@ void sexp_pause_sound_from_file(int n)
 	int sexp_var = -1;
 	if (n >= 0)
 	{
-		Assert(Sexp_nodes[n].first == -1);
-		sexp_var = atoi(Sexp_nodes[n].text);
-
-		// verify variable set
-		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		sexp_var = sexp_get_variable_index(n);
 
 		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
 		{
@@ -11824,8 +11924,8 @@ void sexp_explosion_effect(int n)
 		if (is_nan || is_nan_forever)
 			return;
 	}
-	else if (can_construe_as_integer(CTEXT(n)))
-		num = atoi(CTEXT(n));
+	else if (sexp_can_construe_as_integer(n))
+		num = sexp_atoi(n);
 
 	// is it a number?
 	if (num >= 0)
@@ -12021,8 +12121,8 @@ void sexp_warp_effect(int n)
 		if (is_nan || is_nan_forever)
 			return;
 	}
-	else if (can_construe_as_integer(CTEXT(n)))
-		num = atoi(CTEXT(n));
+	else if (sexp_can_construe_as_integer(n))
+		num = sexp_atoi(n);
 
 	// is it a number?
 	if (num >= 0)
@@ -13529,12 +13629,7 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 		Assert((n >= 0) && (n < Num_sexp_nodes));
 
 		// ripped from sexp_modify_variable()
-		// get sexp_variable index
-		Assert(Sexp_nodes[n].first == -1);
-		sexp_var = atoi(Sexp_nodes[n].text);
-		
-		// verify variable set
-		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		sexp_var = sexp_get_variable_index(n);
 
 		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 		{
@@ -14335,18 +14430,21 @@ bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, 
 int sexp_are_ship_flags_set(int node)
 {
 	char *flag_name;
-	ship *shipp;
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
     Ship::Ship_Flags ship_flags = Ship::Ship_Flags::NUM_VALUES;
 	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 
-	shipp = sexp_get_ship_from_node(node);
-
-	// return false if the ship doesn't exist
-	if (shipp == NULL) {
-		return 0;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
 	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	auto shipp = ship_entry->shipp;
+	auto objp = ship_entry->objp;
+	auto aip = &Ai_info[shipp->ai_index];
 
 	node = CDR(node); 
 
@@ -14356,28 +14454,27 @@ int sexp_are_ship_flags_set(int node)
 
 		// now check the flags
 		if (object_flag != Object::Object_Flags::NUM_VALUES) {
-			if (!(Objects[shipp->objnum].flags[object_flag]))
-				return 0; 
+			if (!(objp->flags[object_flag]))
+				return SEXP_FALSE;
 		}
-		// if we ever get object flags 2 - they go here.
 
 		if (ship_flags != Ship::Ship_Flags::NUM_VALUES) {
 			if (!(shipp->flags[ship_flags]))
-				return 0; 
+				return SEXP_FALSE;
 		}
 
 		// we don't check parse flags
 
 		if (ai_flag != AI::AI_Flags::NUM_VALUES) {
-			if (!(Ai_info[shipp->ai_index].ai_flags[ai_flag]))
-				return 0; 
+			if (!(aip->ai_flags[ai_flag]))
+				return SEXP_FALSE;
 		}
 
 		node = CDR(node); 
 	}
 
 	// if we're still here, all the flags we were looking for were present
-	return 1; 
+	return SEXP_TRUE; 
 }
 
 void sexp_alter_ship_flag(int node)
@@ -14751,10 +14848,14 @@ int sexp_weapon_fired_delay(int node, int op_num)
 	int requested_bank, delay, last_fired = -1;
 	bool is_nan, is_nan_forever;
 
-	shipp = sexp_get_ship_from_node(node); 
-	if (shipp == NULL) {
-		return SEXP_FALSE;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
 	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	shipp = ship_entry->shipp;
 
 	// Get the bank to check
 	node = CDR(node);
@@ -14812,10 +14913,14 @@ int sexp_has_weapon(int node, int op_num)
 	int num_weapon_banks = 0;
 	int *weapon_banks = NULL;
 
-	shipp = sexp_get_ship_from_node(node); 
-	if (shipp == NULL) {
-		return SEXP_FALSE;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
 	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	shipp = ship_entry->shipp;
 
 	// Get the bank to check
 	node = CDR(node);
@@ -15377,14 +15482,15 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 //setit only passed for backward compatibility with older sexps.
 void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag, bool sendit = false, bool setit = false)
 {	
-	ship *shipp = NULL;
+	ship *shipp;
 	ship_subsys *ss = NULL;	
 	
 	// get ship
-	shipp = sexp_get_ship_from_node(node); 
-	if (shipp == NULL) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
+	shipp = ship_entry->shipp;
 
 	//replace or not
 	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
@@ -16253,16 +16359,14 @@ int sexp_targeted(int node)
 	bool is_nan, is_nan_forever;
 	ship_subsys *ptr;
 
-	if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
+	} else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
 		return SEXP_CANT_EVAL;
 	}
 
-	z = ship_name_lookup(CTEXT(node), 1);
-	if (z < 0) {
-		return SEXP_KNOWN_FALSE;  // ship isn't around, nor will it ever be
-	}
-
-	if (!Player_ai || (Ships[z].objnum != Players_target)){
+	if (!Player_ai || (ship_entry->shipp->objnum != Players_target)){
 		return SEXP_FALSE;
 	}
 
@@ -16454,15 +16558,14 @@ int sexp_facing(int node)
 		return SEXP_FALSE;
 	}
 
-	ship *target_shipp = sexp_get_ship_from_node(node);
-	if (target_shipp == nullptr) {
-		// hasn't arrived yet
-		if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
-			return SEXP_CANT_EVAL;
-		}
-		// not found and won't arrive: invalid
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
 		return SEXP_KNOWN_FALSE;
 	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	auto target_objp = ship_entry->objp;
 
 	angle = eval_num(CDR(node), is_nan, is_nan_forever);
 	if (is_nan)
@@ -16473,7 +16576,7 @@ int sexp_facing(int node)
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
 
-	vm_vec_sub(&v2, &Objects[target_shipp->objnum].pos, &Player_obj->pos);
+	vm_vec_sub(&v2, &target_objp->pos, &Player_obj->pos);
 	vm_vec_normalize(&v2);
 
 	a1 = vm_vec_dot(&v1, &v2);
@@ -16491,37 +16594,32 @@ int sexp_is_facing(int node)
 	bool is_nan, is_nan_forever;
 	float a1, a2;
 	vec3d v1, v2;
-	object *origin_objp, *target_objp;
 
-	ship *origin_shipp = sexp_get_ship_from_node(node);
-	if (origin_shipp == nullptr) {
-		// hasn't arrived yet
-		if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
-			return SEXP_CANT_EVAL;
-		}
-		// not found and won't arrive: invalid
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
 		return SEXP_KNOWN_FALSE;
 	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	auto origin_objp = ship_entry->objp;
 	node = CDR(node);
 
 	object_ship_wing_point_team oswpt;
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node));
 
-	if (oswpt.type == OSWPT_TYPE_SHIP && sexp_get_ship_from_node(node) == nullptr) {
+	// check if target has departed or not yet arrived
+	if (oswpt.type == OSWPT_TYPE_EXITED) {
 		return SEXP_KNOWN_FALSE;
 	}
-
-	// only true if ship has departed or not yet arrived
-	if (oswpt.type == OSWPT_TYPE_EXITED || oswpt.type == OSWPT_TYPE_PARSE_OBJECT) {
+	if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT) {
 		return SEXP_CANT_EVAL;
 	}
 
-	if (oswpt.type == OSWPT_TYPE_NONE)
+	if (!oswpt.objp)
 		return SEXP_CANT_EVAL;
 
-	origin_objp = &Objects[origin_shipp->objnum];
-	target_objp = oswpt.objp;
-
+	auto target_objp = oswpt.objp;
 	node = CDR(node);
 
 	angle = eval_num(node, is_nan, is_nan_forever);
@@ -17511,16 +17609,15 @@ void multi_sexp_set_weapon()
 
 int sexp_get_countermeasures(int node) 
 {
-	ship *shipp;
-
-	shipp = sexp_get_ship_from_node(node);
-
-	if (shipp !=NULL) {
-		return shipp->cmeasure_count;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_NAN_FOREVER;
 	}
-	else {
-		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
 	}
+
+	return ship_entry->shipp->cmeasure_count;
 }
 
 void sexp_set_countermeasures(int node)
@@ -17529,12 +17626,13 @@ void sexp_set_countermeasures(int node)
 	int num_cmeasures;
 	bool is_nan, is_nan_forever;
 
-	shipp = sexp_get_ship_from_node(node);
-
-	if (shipp == NULL) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
+	shipp = ship_entry->shipp;
 	node = CDR(node);
+
 	num_cmeasures = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
 		return;
@@ -21573,6 +21671,9 @@ int sexp_string_to_int(int n)
 	char *ch, *buf_ch, buf[TOKEN_LENGTH];
 	Assert (n != -1);
 
+	if (Sexp_nodes[n].cache)
+		return Sexp_nodes[n].cache->numeric_literal;
+
 	// copy all numeric characters to buf
 	// also, copy a sign symbol if we haven't copied numbers yet
 	buf_ch = buf;
@@ -21594,7 +21695,13 @@ int sexp_string_to_int(int n)
 	// terminate string
 	*buf_ch = '\0';
 
-	return atoi(buf);
+	int num = atoi(buf);
+
+	// cache this number unless the node is a variable
+	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE))
+		Sexp_nodes[n].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+
+	return num;
 }
 
 // Goober5000
@@ -21612,11 +21719,7 @@ void sexp_int_to_string(int n)
 	n = CDR(n);
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+	sexp_variable_index = sexp_get_variable_index(n);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
@@ -21651,11 +21754,7 @@ void sexp_string_concatenate(int n)
 	n = CDR(n);
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+	sexp_variable_index = sexp_get_variable_index(n);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
@@ -21690,12 +21789,8 @@ void sexp_string_concatenate_block(int n)
 		return;
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
+	sexp_variable_index = sexp_get_variable_index(n);
 	n = CDR(n);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
@@ -21747,11 +21842,7 @@ void sexp_string_get_substring(int node)
 	eval_nums(n, is_nan, is_nan_forever, pos, len);
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+	sexp_variable_index = sexp_get_variable_index(n);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
@@ -21816,11 +21907,7 @@ void sexp_string_set_substring(int node)
 	n = CDR(n);
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+	sexp_variable_index = sexp_get_variable_index(n);
 
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
@@ -21893,12 +21980,8 @@ void sexp_modify_variable_xstr(int n)
 		return;
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	auto sexp_variable_index = atoi(Sexp_nodes[n].text);
+	auto sexp_variable_index = sexp_get_variable_index(n);
 	n = CDR(n);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)) {
 		Warning(LOCATION, "Variable for modify-variable-xstr has to be a string variable!");
@@ -23389,11 +23472,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 				if (n != -1 && success)
 				{
-					Assert(Sexp_nodes[n].first == -1);
-					int variable_index = atoi(Sexp_nodes[n].text);
-
-					// verify variable set
-					Assert(Sexp_variables[variable_index].type & SEXP_VARIABLE_SET);
+					int variable_index = sexp_get_variable_index(n);
 
 					if (!(Sexp_variables[variable_index].type & SEXP_VARIABLE_STRING))
 					{
@@ -23702,11 +23781,12 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 	ship* shipp;
 	int colgroup_id;
 
-	shipp = sexp_get_ship_from_node(node);
-	if (shipp == nullptr)
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
-
-	objp = &Objects[shipp->objnum];
+	}
+	shipp = ship_entry->shipp;
+	objp = ship_entry->objp;
 	colgroup_id = objp->collision_group_id;
 
 	node = CDR(node);
@@ -23735,11 +23815,14 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 
 int sexp_get_colgroup(int node)
 {
-	ship* shipp;
-
-	shipp = sexp_get_ship_from_node(CDR(node));
-
-	return Objects[shipp->objnum].collision_group_id;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_NAN_FOREVER;
+	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	return ship_entry->objp->collision_group_id;
 }
 
 int get_effect_from_name(const char* name)
@@ -23842,12 +23925,10 @@ void sexp_change_team_color(int n)
 	n = CDR(n);
 
 	while (n != -1) {
-		ship* shipp = sexp_get_ship_from_node(n);
-
-		if (shipp != NULL) {
-			shippointers.push_back(shipp);
+		auto ship_entry = eval_ship(n);
+		if (ship_entry && ship_entry->shipp) {
+			shippointers.push_back(ship_entry->shipp);
 		}
-
 		n = CDR(n);
 	}
 
@@ -25636,7 +25717,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case 0: // zero represents a non-operator
-				return atoi(CTEXT(cur_node));
+				return sexp_atoi(cur_node);
 
 			case OP_NOP:
 				sexp_val = SEXP_TRUE;
@@ -30277,36 +30358,6 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 
-// Takes an Sexp_node.text pointing to a variable (of form "Sexp_variables[xx]=string" or "Sexp_variables[xx]=number")
-// and returns the index into the Sexp_variables array of the actual value 
-int extract_sexp_variable_index(int node)
-{
-	char *text = Sexp_nodes[node].text;
-	char char_index[8];
-	char *start_index;
-	int variable_index;
-
-	// get past the '['
-	start_index = text + 15;
-	Assert(isdigit(*start_index));
-
-	int len = 0;
-
-	while ( *start_index != ']' ) {
-		char_index[len++] = *(start_index++);
-		Assert(len < 3);
-	}
-
-	Assert(len > 0);
-	char_index[len] = 0;	// append null termination to string
-
-	variable_index = atoi(char_index);
-	Assert( (variable_index >= 0) && (variable_index < MAX_SEXP_VARIABLES) );
-
-	return variable_index;
-}
-
-
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
@@ -30367,7 +30418,7 @@ char *CTEXT(int n)
 		}
 		else
 		{
-			sexp_variable_index = atoi(Sexp_nodes[n].text);
+			sexp_variable_index = sexp_get_variable_index(n);
 		}
 		// Reference a Sexp_variable
 		// string format -- "Sexp_variables[xx]=number" or "Sexp_variables[xx]=string", where xx is the index
@@ -30536,11 +30587,7 @@ void sexp_modify_variable(int n)
 		return;
 
 	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_variable_index = atoi(Sexp_nodes[n].text);
-
-	// verify variable set
-	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+	sexp_variable_index = sexp_get_variable_index(n);
 
 	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
 	{
@@ -30716,10 +30763,7 @@ void sexp_copy_variable_from_index(int node)
 	}
 
 	// now get the variable we are modifying
-	to_index = atoi(Sexp_nodes[CDR(node)].text);
-
-	// verify variable set
-	Assert(Sexp_variables[to_index].type & SEXP_VARIABLE_SET);
+	to_index = sexp_get_variable_index(CDR(node));
 
 	// verify matching types
 	if ( ((Sexp_variables[from_index].type & SEXP_VARIABLE_NUMBER) && !(Sexp_variables[to_index].type & SEXP_VARIABLE_NUMBER))
@@ -30801,27 +30845,6 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	strcpy_s(Sexp_variables[index].text, text);
 	strcpy_s(Sexp_variables[index].variable_name, var_name);
 	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
-}
-
-/**
- * Given a sexp node return the index of the variable at that node, -1 if not found
- */
-int get_index_sexp_variable_from_node (int node)
-{
-	int var_index; 
-
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)) {
-		return -1;
-	}
-
-	if (Fred_running) {
-		var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
-	}
-	else {
-		var_index = atoi(Sexp_nodes[node].text);
-	}
-
-	return var_index; 
 }
 
 /**

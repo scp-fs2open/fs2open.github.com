@@ -165,6 +165,19 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
 
+SCP_vector<ship_registry_entry> Ship_registry;
+SCP_unordered_map<SCP_string, int> Ship_registry_map;
+
+const ship_registry_entry *ship_registry_get(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return &Ship_registry[ship_it->second];
+
+	return nullptr;
+}
+
+
 int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
@@ -5500,6 +5513,11 @@ void ship_level_init()
 	strcpy_s(TVT_wing_names[0], "Alpha");
 	strcpy_s(TVT_wing_names[1], "Zeta");
 
+	// clear out ship registry
+	Ship_registry.clear();
+	Ship_registry_map.clear();
+
+
 	// Empty the subsys list
 	ship_clear_subsystems();
 	list_init( &ship_subsys_free_list );
@@ -7457,6 +7475,16 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
 	char *jumpnode_name = nullptr;
+
+	// this should never happen
+	Assertion(Ship_registry_map.find(shipp->ship_name) != Ship_registry_map.end(), "Ship %s was destroyed, but was never stored in the ship registry!", shipp->ship_name);
+
+	// Goober5000 - handle ship registry
+	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
+	entry->status = ShipStatus::EXITED;
+	entry->objp = nullptr;
+	entry->shipp = nullptr;
+	entry->cleanup_mode = cleanup_mode;
 
 	// add the information to the exited ship list
 	switch (cleanup_mode) {
@@ -9564,6 +9592,23 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	// Add this ship to Ship_obj_list
 	shipp->ship_list_index = ship_obj_list_add(objnum);
+
+	// Goober5000 - update the ship registry
+	// (since scripts and sexps can create ships, the entry may not yet exist)
+	auto ship_it = Ship_registry_map.find(shipp->ship_name);
+	if (ship_it == Ship_registry_map.end())
+	{
+		ship_registry_entry entry = { ShipStatus::PRESENT, nullptr, &Objects[objnum], shipp, 0 };
+		Ship_registry.push_back(entry);
+		Ship_registry_map[shipp->ship_name] = static_cast<int>(Ship_registry.size() - 1);
+	}
+	else
+	{
+		auto entry = &Ship_registry[ship_it->second];
+		entry->status = ShipStatus::PRESENT;
+		entry->objp = &Objects[objnum];
+		entry->shipp = shipp;
+	}
 
 	// Set time when ship is created
 	shipp->create_time = timer_get_milliseconds();
