@@ -4251,7 +4251,10 @@ player * get_player_from_ship_node(int node, bool test_respawns)
 const ship_registry_entry *eval_ship(int node)
 {
 	if (Sexp_nodes[node].cache)
+	{
+		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_SHIP, "Cache data mismatch!");
 		return &Ship_registry[Sexp_nodes[node].cache->ship_registry_index];
+	}
 
 	auto ship_it = Ship_registry_map.find(CTEXT(node));
 	if (ship_it != Ship_registry_map.end())
@@ -4277,7 +4280,10 @@ int sexp_atoi(int node)
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 
 	if (Sexp_nodes[node].cache)
+	{
+		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER, "Cache data mismatch!");
 		return Sexp_nodes[node].cache->numeric_literal;
+	}
 
 	int num = atoi(CTEXT(node));
 
