@@ -46,6 +46,7 @@
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
+#include "executor/global_executors.h"
 #include "cutscene/player.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -3596,6 +3597,8 @@ void game_simulation_frame()
 #endif
 	}
 
+	// Kick off externally injected operations after the simulation step has finished
+	executor::OnSimulationExecutor->process();
 	Script_system.RunCondition(CHA_SIMULATION);
 }
 

@@ -260,6 +260,18 @@ add_file_folder("ExceptionHandler"
 	exceptionhandler/exceptionhandler.h
 )
 
+# Executor files
+add_file_folder("Executor"
+	executor/Executor.cpp
+	executor/Executor.h
+	executor/GameStateExecutionContext.cpp
+	executor/GameStateExecutionContext.h
+	executor/global_executors.cpp
+	executor/global_executors.h
+	executor/IExecutionContext.cpp
+	executor/IExecutionContext.h
+)
+
 # ExternalDLL files
 add_file_folder("ExternalDLL"
 	external_dll/externalcode.h
@@ -1126,6 +1138,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
 	scripting/api/objs/event.h
+	scripting/api/objs/executor.cpp
+	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
 	scripting/api/objs/file.cpp
@@ -1359,8 +1373,9 @@ add_file_folder("Ui"
 
 add_file_folder("Utils"
 	utils/encoding.cpp
-    utils/encoding.h
-    utils/event.h
+	utils/encoding.h
+	utils/event.h
+	utils/finally.h
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h

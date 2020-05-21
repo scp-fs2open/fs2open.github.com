@@ -166,6 +166,8 @@ struct HookVariableDocumentation {
 
 
 struct DocumentationElement {
+	virtual ~DocumentationElement() = default;
+
 	ElementType type = ElementType::Unknown;
 
 	SCP_string name;
@@ -177,10 +179,14 @@ struct DocumentationElement {
 };
 
 struct DocumentationElementClass : public DocumentationElement {
+	~DocumentationElementClass() override = default;
+
 	SCP_string superClass;
 };
 
 struct DocumentationElementProperty : public DocumentationElement {
+	~DocumentationElementProperty() override = default;
+
 	scripting::ade_type_info getterType;
 	SCP_string setterType;
 
@@ -188,6 +194,8 @@ struct DocumentationElementProperty : public DocumentationElement {
 };
 
 struct DocumentationElementFunction : public DocumentationElement {
+	~DocumentationElementFunction() override = default;
+
 	scripting::ade_type_info returnType;
 	SCP_string parameters;
 

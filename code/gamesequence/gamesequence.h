@@ -193,11 +193,23 @@ void game_do_state(int current_state);
 // Kazan
 bool GameState_Stack_Valid();
 
-//WMC
+// WMC
 int gameseq_get_event_idx(const char* s);
 int gameseq_get_state_idx(const char* s);
 
-//zookeeper
+// zookeeper
 int gameseq_get_state_idx(int state);
+
+/**
+ * @brief Gets a state instance id of the specified depth.
+ *
+ * The instance ID is an integer associated with a specific instance of a state. Should the same state be entered later
+ * it will have a different instance id. This is meant to be used for keeping track of state changes without registering
+ * for the state change events.
+ *
+ * @param depth The depth in the stack to query the instance id
+ * @return The instance id
+ */
+int gameseq_get_state_instance_id(int depth = 0);
 
 #endif /* __GAMESEQUENCE_H__ */

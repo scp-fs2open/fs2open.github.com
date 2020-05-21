@@ -5,7 +5,7 @@ INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
-target_compile_features(code PUBLIC ${REQUIRED_CXX_FEATURES})
+target_compile_features(code PUBLIC cxx_std_11)
 
 INCLUDE(default_files.cmake)
 

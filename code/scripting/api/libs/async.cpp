@@ -1,7 +1,10 @@
 
 #include "async.h"
 
+#include "executor/GameStateExecutionContext.h"
+#include "executor/global_executors.h"
 #include "scripting/api/LuaCoroutineRunner.h"
+#include "scripting/api/objs/executor.h"
 #include "scripting/api/objs/promise.h"
 #include "scripting/lua/LuaThread.h"
 
@@ -10,6 +13,37 @@ namespace api {
 
 //**********LIBRARY: Async
 ADE_LIB(l_Async, "Async", "async", "Support library for asynchronous operations");
+
+int executorGetter(lua_State* L, const std::shared_ptr<executor::Executor>& executor)
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only!");
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "o", l_Executor.Set(executor_h(executor)));
+}
+
+ADE_VIRTVAR(OnFrameExecutor,
+	l_Async,
+	nullptr,
+	"An executor that executes operations at the end of rendering a frame.",
+	"executor",
+	"The executor handle")
+{
+	return executorGetter(L, executor::OnFrameExecutor);
+}
+
+ADE_VIRTVAR(OnSimulationExecutor,
+	l_Async,
+	nullptr,
+	"An executor that executes operations after all object simulation has been done but before rendering starts. This "
+	"is the place to do physics manipulations.",
+	"executor",
+	"The executor handle")
+{
+	return executorGetter(L, executor::OnSimulationExecutor);
+}
 
 /**
  * @brief A simple run context that allows a promise to be resolved by calling a lua function
@@ -136,12 +170,15 @@ ADE_FUNC(errored,
 ADE_FUNC(run,
 	l_Async,
 	"function body()",
-	"Runs an asynchronous function",
+	"Runs an asynchronous function. Inside this function you can use async.await to suspend the function until a "
+	"promise resolves.",
 	"promise",
 	"A promise that resolves with the return value of the body when it reaches a return statement")
 {
 	luacpp::LuaFunction body;
-	if (!ade_get_args(L, "u", &body)) {
+	executor_h executor;
+	bool captureContext = true;
+	if (!ade_get_args(L, "u|ob", &body, l_Executor.Get(&executor), &captureContext)) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -151,7 +188,14 @@ ADE_FUNC(run,
 		return true;
 	});
 
-	return ade_set_args(L, "o", l_Promise.Set(runAsyncCoroutine(std::move(coroutine))));
+	std::shared_ptr<executor::IExecutionContext> exeContext;
+	if (executor.isValid() && captureContext) {
+		exeContext = executor::GameStateExecutionContext::captureContext();
+	}
+
+	return ade_set_args(L,
+		"o",
+		l_Promise.Set(runAsyncCoroutine(std::move(coroutine), executor.getExecutor(), std::move(exeContext))));
 }
 
 ADE_FUNC(await,
@@ -161,6 +205,16 @@ ADE_FUNC(await,
 	"unknown",
 	"The resolve value of the promise")
 {
+	// await cannot be used on the main thread since there is nothing that will wait for the promise
+	if (lua_pushthread(L)) {
+		// We are the main thread
+		lua_pop(L, 1);
+
+		LuaError(L, "Tried to await something on the main thread! That is not supported.");
+		return ADE_RETURN_NIL;
+	}
+	lua_pop(L, 1);
+
 	LuaPromise* promise = nullptr;
 	if (!ade_get_args(L, "o", l_Promise.GetPtr(&promise))) {
 		return ADE_RETURN_NIL;
@@ -184,6 +238,39 @@ ADE_FUNC(await,
 	// Return the promise via the yield so that the resumer can register themself on the promise to resume when that
 	// resolves
 	return lua_yield(L, 1);
+}
+
+ADE_FUNC(yield,
+	l_Async,
+	nullptr,
+	"Returns a promise that will resolve on the next execution of the current executor. Effectively allows to "
+	"asynchronously wait until the next frame.",
+	"promise",
+	"The promise")
+{
+	if (executor::currentExecutor() == nullptr) {
+		LuaError(L,
+			"There is no running executor at the moment. This function needs to be called from a executor callback.");
+		return ADE_RETURN_NIL;
+	}
+
+	class yield_resolve_context : public resolve_context {
+	  public:
+		explicit yield_resolve_context(executor::Executor* executor) : m_exec(executor) {}
+		void setResolver(Resolver resolver) override
+		{
+			m_exec->post([resolver]() {
+				resolver(false, luacpp::LuaValueList());
+				return executor::Executor::CallbackResult::Done;
+			});
+		}
+
+	  private:
+		executor::Executor* m_exec = nullptr;
+	};
+	return ade_set_args(L,
+		"o",
+		l_Promise.Set(LuaPromise(std::make_shared<yield_resolve_context>(executor::currentExecutor()))));
 }
 
 } // namespace api

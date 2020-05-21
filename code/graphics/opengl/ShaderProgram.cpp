@@ -157,11 +157,11 @@ opengl::ShaderProgram::~ShaderProgram() {
 	}
 }
 
-opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other) SCP_NOEXCEPT : _program_id(0), Uniforms(this) {
+opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept : _program_id(0), Uniforms(this) {
 	*this = std::move(other);
 }
 
-opengl::ShaderProgram& opengl::ShaderProgram::operator=(ShaderProgram&& other) SCP_NOEXCEPT {
+opengl::ShaderProgram& opengl::ShaderProgram::operator=(ShaderProgram&& other) noexcept {
 	std::swap(_program_id, other._program_id);
 	std::swap(Uniforms, other.Uniforms);
 

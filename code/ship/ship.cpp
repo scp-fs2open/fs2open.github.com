@@ -1390,7 +1390,7 @@ void ship_info::free_strings()
 	CHECK_THEN_FREE(missile_banks);
 }
 
-ship_info &ship_info::operator= (ship_info&& other) SCP_NOEXCEPT
+ship_info &ship_info::operator= (ship_info&& other) noexcept
 {
 	if (this != &other) {
 		move(std::move(other));
@@ -1398,7 +1398,7 @@ ship_info &ship_info::operator= (ship_info&& other) SCP_NOEXCEPT
 	return *this;
 }
 
-ship_info::ship_info(ship_info&& other) SCP_NOEXCEPT
+ship_info::ship_info(ship_info&& other) noexcept
 {
 	// MageKing17 - Initialize these pointers to NULL because otherwise move() will leave them uninitialized.
 	type_str = NULL;

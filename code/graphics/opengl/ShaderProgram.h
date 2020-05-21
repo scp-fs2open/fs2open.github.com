@@ -58,8 +58,8 @@ class ShaderProgram {
 	ShaderProgram(const ShaderProgram&) SCP_DELETED_FUNCTION;
 	ShaderProgram& operator=(const ShaderProgram&) SCP_DELETED_FUNCTION;
 
-	ShaderProgram(ShaderProgram&& other) SCP_NOEXCEPT;
-	ShaderProgram& operator=(ShaderProgram&& other) SCP_NOEXCEPT;
+	ShaderProgram(ShaderProgram&& other) noexcept;
+	ShaderProgram& operator=(ShaderProgram&& other) noexcept;
 
 	void use();
 
