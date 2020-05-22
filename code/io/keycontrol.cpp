@@ -897,7 +897,7 @@ void process_debug_keys(int k)
 				vm_vec_scale_add(&pos, &Player_obj->pos, &randvec, Player_obj->radius);
 			ship_apply_local_damage(Player_obj, Player_obj, &pos, 25.0f, MISS_SHIELDS, CREATE_SPARKS);
 			hud_get_target_strength(Player_obj, &shield, &integrity);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You knocked yourself down to %7.3f percent hull.\n", 9), 100.0f * integrity);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You whacked yourself down to %7.3f percent hull.\n", 9), 100.0f * integrity);
 			break;
 			}
 			

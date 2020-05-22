@@ -111,7 +111,7 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // valid input to this function includes :
 // "this is some text"
 // XSTR("wheeee", -1)
-// XSTR("whee", 20)
+// XSTR("whee", 2000)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
 void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = nullptr);

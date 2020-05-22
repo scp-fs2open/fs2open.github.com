@@ -352,7 +352,7 @@ void multi_pinfo_popup_init(net_player *np)
 	Multi_pinfo_stats_labels[5] = vm_strdup(XSTR("Primary Shots Fired", 1012));
 	Multi_pinfo_stats_labels[6] = vm_strdup(XSTR("Primary Hit %", 1013));
 	Multi_pinfo_stats_labels[7] = vm_strdup(XSTR("Secondary Shots Fired",	1014));
-	Multi_pinfo_stats_labels[8] = vm_strdup(XSTR("Secondary Hit %", 1015));				
+	Multi_pinfo_stats_labels[8] = vm_strdup(XSTR("Secondary Hit %", 1015));
 }
 
 // run the popup in a tight loop (no states)
