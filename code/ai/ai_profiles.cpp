@@ -472,8 +472,6 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
-				set_flag(profile, "$fix Guard Attack This bug:", AI::Profile_Flags::Fix_guard_attack_this_bug);
-
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
@@ -647,7 +645,6 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
-		flags.set(AI::Profile_Flags::Fix_guard_attack_this_bug);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {

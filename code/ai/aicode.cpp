@@ -9612,16 +9612,9 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 			aip = &Ai_info[Ships[objp->instance].ai_index];
 
 			if ((aip->mode == AIM_GUARD) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)) {
-				bool condition;
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_guard_attack_this_bug]) {
-					// actually account for 'Guard Attack This' status -wookieejedi
-					ship *eshipp = &Ships[hitter_objp->instance];		
-					condition = (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]));
-				} else {
-					// retail behavior
-					condition = true;
-				}
-				if (condition) {
+				//	Only attack ship if allowed to
+				ship *eshipp = &Ships[hitter_objp->instance];
+				if ((Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))) {
 					if (aip->guard_objnum == OBJ_INDEX(hit_objp)) {
 						guard_object_was_hit(objp, hitter_objp);
 					} else if ((aip->guard_wingnum != -1) && (aip->guard_wingnum == Ai_info[Ships[hit_objp->instance].ai_index].wing)) {
