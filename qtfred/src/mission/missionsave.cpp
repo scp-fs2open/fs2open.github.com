@@ -130,6 +130,11 @@ void CFred_mission_save::convert_special_tags_to_retail()
 
 int CFred_mission_save::fout(const char* format, ...)
 {
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
+		return 0;
+	}
+
 	SCP_string str;
 	va_list args;
 
@@ -147,6 +152,11 @@ int CFred_mission_save::fout(const char* format, ...)
 
 int CFred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 {
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
+		return 0;
+	}
+
 	SCP_string str_scp;
 	SCP_string str_out_scp;
 	va_list args;
@@ -258,8 +268,8 @@ int CFred_mission_save::fout_version(const char* format, ...)
 		return err;
 	}
 
-	// if we're saving in retail format, we can completely skip this
-	if (save_format == MissionFormat::RETAIL) {
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
 		return 0;
 	}
 
