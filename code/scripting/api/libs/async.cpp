@@ -23,13 +23,43 @@ class lua_func_resolve_context : public resolve_context {
 
 	void setResolver(Resolver resolver) override
 	{
+		struct shared_state {
+			Resolver resolver;
+			bool alreadyCalled = false;
+		};
+
+		auto state      = std::make_shared<shared_state>();
+		state->resolver = std::move(resolver);
+
 		const auto resolveFunc = luacpp::LuaFunction::createFromStdFunction(_callback.getLuaState(),
-			[resolver](lua_State*, const luacpp::LuaValueList& resolveVals) {
-				resolver(resolveVals);
+			[state](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+				if (state->alreadyCalled) {
+					LuaError(L, "Promise has already been resolved or rejected before!");
+					return luacpp::LuaValueList();
+				}
+
+				state->resolver(false, resolveVals);
+				state->alreadyCalled = true;
+
+				state->resolver = nullptr;
 				return luacpp::LuaValueList();
 			});
 
-		_callback({resolveFunc});
+		const auto rejectFunc = luacpp::LuaFunction::createFromStdFunction(_callback.getLuaState(),
+			[state](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+				if (state->alreadyCalled) {
+					LuaError(L, "Promise has already been resolved or rejected before!");
+					return luacpp::LuaValueList();
+				}
+
+				state->resolver(true, resolveVals);
+				state->alreadyCalled = true;
+
+				state->resolver = nullptr;
+				return luacpp::LuaValueList();
+			});
+
+		_callback({resolveFunc, rejectFunc});
 	}
 
   private:
@@ -38,8 +68,9 @@ class lua_func_resolve_context : public resolve_context {
 
 ADE_FUNC(promise,
 	l_Async,
-	"function(function resolve(...))",
-	"Creates a promise that resolves when the resolve function of the callback is called. The function will be called "
+	"function(function resolve(...), function reject(...))",
+	"Creates a promise that resolves when the resolve function of the callback is called or errors if the reject "
+	"function is called. The function will be called "
 	"on it's own.",
 	"promise",
 	"The promise or nil on error")
@@ -76,7 +107,27 @@ ADE_FUNC(resolved,
 		values.push_back(val);
 	}
 
-	return ade_set_args(L, "o", l_Promise.Set(LuaPromise(values)));
+	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::resolved(values)));
+}
+
+ADE_FUNC(errored,
+	l_Async,
+	"...",
+	"Creates an errored promise with the values passed to this function.",
+	"promise",
+	"Errored promise")
+{
+	auto nargs = lua_gettop(L);
+	luacpp::LuaValueList values;
+	values.reserve(nargs);
+
+	for (int i = 1; i <= nargs; ++i) {
+		luacpp::LuaValue val;
+		val.setReference(luacpp::UniqueLuaReference::create(L, i));
+		values.push_back(val);
+	}
+
+	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::errored(values)));
 }
 
 ADE_FUNC(run,

@@ -20,14 +20,15 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 	return thread;
 }
 
-LuaThread::LuaThread() : LuaValue() {}
+LuaThread::LuaThread() = default;
 LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {}
 
 LuaThread::LuaThread(const LuaThread&) = default;
 LuaThread& LuaThread::operator=(const LuaThread&) = default;
 
-LuaThread::LuaThread(LuaThread&&) noexcept = default;
-LuaThread& LuaThread::operator=(LuaThread&&) noexcept = default;
+// These should be noexcept but Visual Studio doesn't like that yet in a recent enough version
+LuaThread::LuaThread(LuaThread&&) = default; // NOLINT(performance-noexcept-move-constructor)
+LuaThread& LuaThread::operator=(LuaThread&&) = default; // NOLINT(performance-noexcept-move-constructor)
 
 LuaThread::~LuaThread() = default;
 

@@ -11,22 +11,40 @@ enum class State {
 	Invalid,
 	Pending,
 	Resolved,
+	Errored,
 };
 
 resolve_context::~resolve_context() = default;
 
 class continuation_resolve_context : public resolve_context {
   public:
-	continuation_resolve_context(LuaPromise::ContinuationFunction continuation) : _continuation(std::move(continuation))
+	continuation_resolve_context(bool wantErrors, LuaPromise::ContinuationFunction continuation)
+		: _wantErrors(wantErrors), _continuation(std::move(continuation))
 	{
 	}
 	~continuation_resolve_context() override = default;
 
 	void setResolver(Resolver resolver) override { _resolver = std::move(resolver); }
 
-	void resolve(const luacpp::LuaValueList& resolveVals) { _resolver(_continuation(resolveVals)); }
+	void resolve(bool error, const luacpp::LuaValueList& resolveVals)
+	{
+		// If the error value is what we want then we need to call our continuation. Otherwise the value just passes
+		// through this instance without the continuation being called
+		if (error == _wantErrors) {
+			// The next value is never an error since either we are in the "then" case or we are "catching" the
+			// exception and so the return value is no longer an error.
+			_resolver(false, _continuation(resolveVals));
+		} else {
+			_resolver(error, resolveVals);
+		}
+
+		// Not needed anymore, might as well clean up references
+		_resolver     = nullptr;
+		_continuation = nullptr;
+	}
 
   private:
+	bool _wantErrors = false;
 	LuaPromise::ContinuationFunction _continuation;
 	Resolver _resolver;
 };
@@ -44,33 +62,27 @@ struct LuaPromise::internal_state : std::enable_shared_from_this<LuaPromise::int
 	{
 		// Need a weak pointer here to avoid circular dependency. Lua will keep this object alive as long as needed
 		std::weak_ptr<LuaPromise::internal_state> weak_self = shared_from_this();
-		resolveCtx->setResolver([this, weak_self](const luacpp::LuaValueList& resolveVals) {
+		resolveCtx->setResolver([this, weak_self](bool error, const luacpp::LuaValueList& resolveVals) {
 			if (auto _ = weak_self.lock()) {
 				// Now we know that "this" is still valid
-				resolveCb(resolveVals);
+				resolveCb(error, resolveVals);
 			}
 		});
 	}
 
-	void resolveCb(const luacpp::LuaValueList& resolveVals)
+	void resolveCb(bool error, const luacpp::LuaValueList& resolveVals)
 	{
 		resolvedValue = resolveVals;
-		state         = State::Resolved;
+		state         = error ? State::Errored : State::Resolved;
 
 		// Call everyone who has registered on our coroutine so that those promises also resolve
 		for (const auto& cont : continuationContexts) {
-			cont->resolve(resolveVals);
+			cont->resolve(error, resolveVals);
 		}
 	}
 };
 
 LuaPromise::LuaPromise() : m_state(std::make_shared<LuaPromise::internal_state>()) {}
-
-LuaPromise::LuaPromise(luacpp::LuaValueList resolveValue) : LuaPromise()
-{
-	m_state->state         = State::Resolved;
-	m_state->resolvedValue = std::move(resolveValue);
-}
 
 LuaPromise::LuaPromise(std::shared_ptr<resolve_context> resolveContext) : LuaPromise()
 {
@@ -96,24 +108,76 @@ LuaPromise LuaPromise::then(LuaPromise::ContinuationFunction continuation)
 
 	// The easy way
 	if (m_state->state == State::Resolved) {
-		return LuaPromise(continuation(m_state->resolvedValue));
+		return LuaPromise::resolved(continuation(m_state->resolvedValue));
 	}
 
-	// This is the connection between us and the resulting promise. We need the reference to resolve the promise
-	// and the returned promise uses it to know when to resolve
-	auto continuationContext = std::make_shared<continuation_resolve_context>(std::move(continuation));
-	m_state->continuationContexts.push_back(continuationContext);
+	// If the promise is already in an error state then the continuation doesn't matter
+	if (m_state->state == State::Errored) {
+		return LuaPromise::errored(m_state->resolvedValue);
+	}
 
-	return LuaPromise(continuationContext);
+	return registerContinuation(false, std::move(continuation));
 }
+
+LuaPromise LuaPromise::catchError(LuaPromise::ContinuationFunction continuation)
+{
+	// NOT THREAD SAFE!
+	if (m_state->state == State::Invalid) {
+		return LuaPromise();
+	}
+
+	// If we want to catch errors then the value from this resolved promise just passes through
+	if (m_state->state == State::Resolved) {
+		return LuaPromise::resolved(m_state->resolvedValue);
+	}
+
+	// We actually want this value
+	if (m_state->state == State::Errored) {
+		return LuaPromise::errored(continuation(m_state->resolvedValue));
+	}
+
+	return registerContinuation(true, std::move(continuation));
+}
+
 bool LuaPromise::isValid() const { return m_state->state != State::Invalid; }
 bool LuaPromise::isResolved() const { return m_state->state == State::Resolved; }
+bool LuaPromise::isErrored() const { return m_state->state == State::Errored; }
 
 const luacpp::LuaValueList& LuaPromise::resolveValue() const
 {
 	Assertion(isResolved(), "Tried to get value from unresolved promise!");
 
 	return m_state->resolvedValue;
+}
+const luacpp::LuaValueList& LuaPromise::errorValue() const
+{
+	Assertion(isErrored(), "Tried to get error value from unresolved promise!");
+
+	return m_state->resolvedValue;
+}
+LuaPromise LuaPromise::resolved(luacpp::LuaValueList resolveValue)
+{
+	LuaPromise p;
+	p.m_state->state         = State::Resolved;
+	p.m_state->resolvedValue = std::move(resolveValue);
+	return p;
+}
+
+LuaPromise LuaPromise::errored(luacpp::LuaValueList resolveValue)
+{
+	LuaPromise p;
+	p.m_state->state         = State::Errored;
+	p.m_state->resolvedValue = std::move(resolveValue);
+	return p;
+}
+LuaPromise LuaPromise::registerContinuation(bool catchErrors, LuaPromise::ContinuationFunction continuation)
+{
+	// This is the connection between us and the resulting promise. We need the reference to resolve the promise
+	// and the returned promise uses it to know when to resolve
+	auto continuationContext = std::make_shared<continuation_resolve_context>(catchErrors, std::move(continuation));
+	m_state->continuationContexts.push_back(continuationContext);
+
+	return LuaPromise(continuationContext);
 }
 
 } // namespace api

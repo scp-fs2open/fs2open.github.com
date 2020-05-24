@@ -10,7 +10,7 @@ local promise1 = async.promise(function(resolve)
     promise1Resolve = resolve
 end)
 
-local promise2 = async.resolved("Test", nil, 1234)
+local promise2 = async.errored("Test", nil, 1234)
 
 local start_reached = false
 local promise1_reached = false
@@ -23,12 +23,8 @@ local asyncPromise = async.run(function()
     promise1_reached = true
     assert.equals("Promise1", promise1Val)
 
-    local promise2Vals = pack(async.await(promise2))
+    async.await(promise2)
     promise2_reached = true
-    assert.equals(3, #promise2Vals)
-    assert.equals("Test", promise2Vals[1])
-    assert.equals(nil, promise2Vals[2])
-    assert.equals(1234, promise2Vals[3])
 
     return "ResolvedReturn", 42
 end)
@@ -38,26 +34,32 @@ local thenCalled = false
 local catchCalled = false;
 asyncPromise:continueWith(function(stringTest, intTest)
     thenCalled = true
-
-    assert.equals("ResolvedReturn", stringTest)
-    assert.equals(42, intTest)
 end)
 asyncPromise:catch(function(...)
     catchCalled = true
+
+    local retVals = pack(...)
+    assert.equals(3, #retVals)
+    assert.equals("Test", retVals[1])
+    assert.equals(nil, retVals[2])
+    assert.equals(1234, retVals[3])
 end)
 
 promise1Resolve("Promise1")
 
-assert.isTrue(thenCalled)
-assert.isFalse(catchCalled)
+assert.isFalse(thenCalled)
+assert.isTrue(catchCalled)
 
 -- Check progress status. Since promises are already resolved this will resolve synchronously.
 assert.isTrue(start_reached)
 assert.isTrue(promise1_reached)
-assert.isTrue(promise2_reached)
-assert.isTrue(asyncPromise:isResolved())
+assert.isFalse(promise2_reached)
 
-local retVals = pack(asyncPromise:getValue())
-assert.equals(2, #retVals)
-assert.equals("ResolvedReturn", retVals[1])
-assert.equals(42, retVals[2])
+assert.isFalse(asyncPromise:isResolved())
+assert.isTrue(asyncPromise:isErrored())
+
+local retVals = pack(asyncPromise:getErrorValue())
+assert.equals(3, #retVals)
+assert.equals("Test", retVals[1])
+assert.equals(nil, retVals[2])
+assert.equals(1234, retVals[3])

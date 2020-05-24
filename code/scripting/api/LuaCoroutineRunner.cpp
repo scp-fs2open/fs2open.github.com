@@ -34,7 +34,7 @@ class run_resolve_context : public resolve_context, public std::enable_shared_fr
 
 		if (result.completed) {
 			// Thread is finished! We can call our resolver
-			m_resolver(result.returnVals);
+			m_resolver(false, result.returnVals);
 			return;
 		}
 
@@ -59,12 +59,20 @@ class run_resolve_context : public resolve_context, public std::enable_shared_fr
 
 		// Register ourself to be called when the promise resolves so that we can resume our coroutine
 		auto self = shared_from_this();
-		promise->then([this, self](const luacpp::LuaValueList& resolveVals) {
-			// Since "self" keeps "this" alive it is safe to access that here
-			resumeCoroutine(resolveVals);
+		promise
+			->then([this, self](const luacpp::LuaValueList& resolveVals) {
+				// Since "self" keeps "this" alive it is safe to access that here
+				resumeCoroutine(resolveVals);
 
-			return luacpp::LuaValueList();
-		});
+				return luacpp::LuaValueList();
+			})
+			.catchError([this, self](const luacpp::LuaValueList& resolveVals) {
+				// If the awaited coroutine causes an error we stop the coroutine and propagate that error to the
+				// promise
+				m_resolver(true, resolveVals);
+
+				return luacpp::LuaValueList();
+			});
 	}
 
 	Resolver m_resolver;

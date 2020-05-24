@@ -15,7 +15,7 @@ class resolve_context {
   public:
 	virtual ~resolve_context();
 
-	using Resolver = std::function<void(const luacpp::LuaValueList& resolveVals)>;
+	using Resolver = std::function<void(bool error, const luacpp::LuaValueList& resolveVals)>;
 
 	/**
 	 * @brief Sets the function which is called when an asynchronous operation finishes
@@ -38,12 +38,6 @@ class LuaPromise {
 	LuaPromise();
 
 	/**
-	 * @brief Creates a resolved promise
-	 * @param resolveValue The value with which the promise resolves
-	 */
-	explicit LuaPromise(luacpp::LuaValueList resolveValue);
-
-	/**
 	 * @brief Creates a pending promise
 	 * @param resolveContext The context to register on
 	 */
@@ -57,13 +51,24 @@ class LuaPromise {
 
 	LuaPromise then(ContinuationFunction continuation);
 
+	LuaPromise catchError(ContinuationFunction continuation);
+
 	bool isValid() const;
 
 	bool isResolved() const;
 
+	bool isErrored() const;
+
 	const luacpp::LuaValueList& resolveValue() const;
 
+	const luacpp::LuaValueList& errorValue() const;
+
+	static LuaPromise resolved(luacpp::LuaValueList resolveValue);
+
+	static LuaPromise errored(luacpp::LuaValueList resolveValue);
   private:
+	LuaPromise registerContinuation(bool catchErrors, ContinuationFunction continuation);
+
 	struct internal_state;
 	std::shared_ptr<internal_state> m_state;
 };

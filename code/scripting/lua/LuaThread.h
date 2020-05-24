@@ -42,8 +42,9 @@ class LuaThread : public LuaValue {
 	LuaThread(const LuaThread&);
 	LuaThread& operator=(const LuaThread&);
 
-	LuaThread(LuaThread&&) noexcept;
-	LuaThread& operator=(LuaThread&&) noexcept;
+	// These should be noexcept but Visual Studio doesn't like that yet in a recent enough version
+	LuaThread(LuaThread&&); // NOLINT(performance-noexcept-move-constructor)
+	LuaThread& operator=(LuaThread&&); // NOLINT(performance-noexcept-move-constructor)
 
 	~LuaThread() override;
 
