@@ -37,6 +37,8 @@
 
 int		Num_hull_pieces;		// number of hull pieces in existance
 debris	Hull_debris_list;		// head of linked list for hull debris chunks, for quick search
+								// This list holds debris pieces that are set to expire when their lifetime runs out;
+								// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
 
 debris Debris[MAX_DEBRIS_PIECES];
 
@@ -169,7 +171,7 @@ void debris_delete( object * obj )
 	db = &Debris[num];
 
 	Assert( Num_debris_pieces >= 0 );
-	if ( db->is_hull && (!db->flags[Debris_Flags::DoNotExpire]) ) {
+	if ( db->is_hull ) {
 		debris_remove_from_hull_list(db);
 	}
 

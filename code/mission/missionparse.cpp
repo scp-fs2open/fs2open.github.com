@@ -3534,7 +3534,8 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 						continue;
 					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
-
+					
+					debris_remove_from_hull_list(db);
 					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
 					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
