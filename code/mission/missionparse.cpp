@@ -3530,12 +3530,12 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 					debris *db;
 
 					db = &Debris[i];
-					if (!(db->flags & DEBRIS_USED))				// not used, move onto the next one.
+					if (!(db->flags[Debris_Flags::Used]))		// not used, move onto the next one.
 						continue;
 					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
 
-					debris_clear_expired_flag(db);				// mark as don't expire
+					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
 					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
 					// now move the debris along its path for N seconds

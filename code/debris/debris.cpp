@@ -95,7 +95,7 @@ void debris_init()
 	// Reset everything between levels
 	Num_debris_pieces = 0;
 	for (i=0; i<MAX_DEBRIS_PIECES; i++ )	{
-		Debris[i].flags = 0;
+		Debris[i].flags.reset();
 		Debris[i].sound_delay = 0;
 		Debris[i].objnum = -1;
 	}
@@ -141,16 +141,14 @@ MONITOR(NumSmallDebrisRend)
 MONITOR(NumHullDebrisRend)
 
 /**
- * Removed the ::DEBRIS_EXPIRE flag, and remove item from ::Hull_debris_list
+ * Remove item from ::Hull_debris_list
  */
-void debris_clear_expired_flag(debris *db)
+void debris_remove_from_hull_list(debris *db)
 {
-	if ( db->flags & DEBRIS_EXPIRE ) {
-		db->flags &= ~DEBRIS_EXPIRE;
+	if ( !db->flags[Debris_Flags::DoNotExpire] ) {
 		if ( db->is_hull ) {
 			Num_hull_pieces--;
 			list_remove(Hull_debris_list, db);
-			Assert( Num_hull_pieces >= 0 );
 		}
 	}
 }
@@ -171,11 +169,11 @@ void debris_delete( object * obj )
 	db = &Debris[num];
 
 	Assert( Num_debris_pieces >= 0 );
-	if ( db->is_hull && (db->flags & DEBRIS_EXPIRE) ) {
-		debris_clear_expired_flag(db);
+	if ( db->is_hull && (!db->flags[Debris_Flags::DoNotExpire]) ) {
+		debris_remove_from_hull_list(db);
 	}
 
-	db->flags = 0;
+	db->flags.reset();
 	db->objnum = -1;
 	Num_debris_pieces--;
 }
@@ -240,12 +238,12 @@ void debris_process_post(object * obj, float frame_time)
 		MONITOR_INC(NumSmallDebris,1);
 	}
 
-	if (db->lifeleft >= 0.0f) {
+	if (!db->flags[Debris_Flags::DoNotExpire]) {
 		db->lifeleft -= frame_time;
-	}
 
-	if ( db->lifeleft < 0.0f )	{
-		debris_start_death_roll(obj, db);
+		if (db->lifeleft < 0.0f) {
+			debris_start_death_roll(obj, db);
+		}
 	}
 
 	maybe_delete_debris(db);	//	Make this debris go away if it's very far away.
@@ -428,7 +426,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	}
 
 	for (n=0; n<MAX_DEBRIS_PIECES; n++ ) {
-		if ( !(Debris[n].flags & DEBRIS_USED) )
+		if ( !(Debris[n].flags[Debris_Flags::Used]) )
 			break;
 	}
 
@@ -489,7 +487,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	if (vaporize) {
 		db->lifeleft *= 3.0f;
 	}
-	db->flags |= DEBRIS_USED;
+	db->flags.set(Debris_Flags::Used);
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
 	db->damage_type_idx = shipp->debris_damage_type_idx;
@@ -611,7 +609,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->fire_timeout = timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		
 		if ( Objects[db->source_objnum].radius < MIN_RADIUS_FOR_PERSISTANT_DEBRIS ) {
-			db->flags |= DEBRIS_EXPIRE;	// debris can expire
 			Num_hull_pieces++;
 			list_append(&Hull_debris_list, db);
 		} else {
@@ -1050,7 +1047,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	Assert(num >= 0 && num < MAX_DEBRIS_PIECES);
 	db = &Debris[num];
 
-	Assert(db->flags & DEBRIS_USED);
+	Assert(db->flags[Debris_Flags::Used]);
 
 	texture_info *tbase = NULL;
 

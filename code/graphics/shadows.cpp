@@ -478,7 +478,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 				debris *db;
 				db = &Debris[objp->instance];
 
-				if ( !(db->flags & DEBRIS_USED)){
+				if ( !(db->flags[Debris_Flags::Used])){
 					continue;
 				}
 								
