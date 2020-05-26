@@ -790,7 +790,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 	int i;
 	for ( i = 0; i < MAX_DEBRIS_PIECES; i++, db++ )	{
-		if ( !(db->flags & DEBRIS_USED) || !db->is_hull ){
+		if ( !(db->flags[Debris_Flags::Used]) || !db->is_hull ){
 			continue;
 		}
 
