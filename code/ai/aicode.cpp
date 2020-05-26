@@ -9612,10 +9612,14 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 			aip = &Ai_info[Ships[objp->instance].ai_index];
 
 			if ((aip->mode == AIM_GUARD) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)) {
-				if (aip->guard_objnum == OBJ_INDEX(hit_objp)) {
-					guard_object_was_hit(objp, hitter_objp);
-				} else if ((aip->guard_wingnum != -1) && (aip->guard_wingnum == Ai_info[Ships[hit_objp->instance].ai_index].wing)) {
-					guard_object_was_hit(objp, hitter_objp);
+				//	Only attack ship if allowed to
+				ship *eshipp = &Ships[hitter_objp->instance];
+				if ((Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))) {
+					if (aip->guard_objnum == OBJ_INDEX(hit_objp)) {
+						guard_object_was_hit(objp, hitter_objp);
+					} else if ((aip->guard_wingnum != -1) && (aip->guard_wingnum == Ai_info[Ships[hit_objp->instance].ai_index].wing)) {
+						guard_object_was_hit(objp, hitter_objp);
+					}
 				}
 			}
 		}
