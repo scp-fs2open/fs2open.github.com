@@ -614,6 +614,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 			Num_hull_pieces++;
 			list_append(&Hull_debris_list, db);
 		} else {
+			db->flags.set(Debris_Flags::DoNotExpire);
 			nprintf(("Alan","A forever chunk of debris was created from ship with radius %f\n",Objects[db->source_objnum].radius));
 		}
 	}
