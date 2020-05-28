@@ -1053,10 +1053,10 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 						hud_set_iff_color(targetp, 1);
 
 					offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
-
-					// now that the gauge is rendered restore the original status
-					offscreengauge->updateActive(original_status);
 				}
+
+				// now that the gauge is rendered restore the original status
+				offscreengauge->updateActive(original_status);
 			}
 
 			offscreengauge->resize(&outpoint.x, &outpoint.y);
