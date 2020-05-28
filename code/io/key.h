@@ -16,8 +16,9 @@
 
 #define NUM_KEYS 256
 
-extern int shifted_ascii_table[];
-extern int ascii_table[];
+const size_t SIZE_OF_ASCII_TABLE = 128;
+extern int shifted_ascii_table[SIZE_OF_ASCII_TABLE];
+extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
 extern ubyte keyd_pressed[NUM_KEYS];
 
