@@ -392,7 +392,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				auto stack_start = lua_gettop(LuaState);
 
 				auto val = ret.front();
-				val.pushValue();
+				val.pushValue(LuaState);
 
 				scripting::internal::Ade_get_args_skip      = stack_start;
 				scripting::internal::Ade_get_args_lfunction = true;
@@ -430,7 +430,7 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 			auto stack_start = lua_gettop(LuaState);
 
 			auto val = ret.front();
-			val.pushValue();
+			val.pushValue(LuaState);
 
 			char fmt[2]                                 = {format, '\0'};
 			scripting::internal::Ade_get_args_skip      = stack_start;

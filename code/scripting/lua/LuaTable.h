@@ -138,7 +138,7 @@ class LuaTable: public LuaValue {
 	template<class IndexType, class ValueType>
 	void addValue(IndexType&& index, ValueType&& value) {
 		// Push the table onto the stack by using the reference
-		this->pushValue();
+		this->pushValue(_luaState);
 
 		// Push the index and value onto the stac by using the template functions
 		convert::pushValue(_luaState, std::forward<IndexType>(index));
@@ -160,7 +160,7 @@ class LuaTable: public LuaValue {
      */
 	template<class IndexType, class ValueType>
 	bool getValue(const IndexType& index, ValueType& target) {
-		this->pushValue();
+		this->pushValue(_luaState);
 
 		convert::pushValue(_luaState, index);
 

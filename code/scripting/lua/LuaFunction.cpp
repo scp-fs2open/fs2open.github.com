@@ -4,20 +4,85 @@
 #include "LuaHeaders.h"
 
 namespace luacpp {
-LuaFunction LuaFunction::createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues) {
+namespace {
+
+int stdFunctionDestructor(lua_State* L)
+{
+	// The userdata is the function object so we call the destructor here to free up the internal resources
+	const auto luaPtr = lua_touserdata(L, 1);
+	const auto funcPtr = static_cast<LuaFunctionObject*>(luaPtr);
+
+	funcPtr->~LuaFunctionObject();
+
+	return 0;
+}
+
+int stdFunctionCaller(lua_State* L)
+{
+	const auto numArgs = lua_gettop(L);
+
+	// Push the actual function object on the stack
+	lua_pushvalue(L, lua_upvalueindex(1));
+
+	const auto funcObj = static_cast<LuaFunctionObject*>(lua_touserdata(L, -1));
+	lua_pop(L, 1); // We have the pointer so we can remove this from the stack again
+
+	LuaValueList params;
+	params.reserve(numArgs);
+
+	for (int i = 1; i <= numArgs; ++i) {
+		LuaValue val;
+		val.setReference(UniqueLuaReference::create(L, i));
+		params.push_back(val);
+	}
+
+	const auto ret = (*funcObj)(L, params);
+
+	// Prepare to return values. Clear the stack
+	lua_settop(L, 0);
+	for (const auto& retVal : ret)
+	{
+		retVal.pushValue(L);
+	}
+
+	// Done!
+	return static_cast<int>(ret.size());
+}
+
+}
+
+LuaFunction LuaFunction::createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues)
+{
 	LuaFunction func;
 
 	for (auto& val : upvalues) {
-		val.pushValue();
+		val.pushValue(L);
 	}
 
-	lua_pushcclosure(L, function, (int) upvalues.size());
+	lua_pushcclosure(L, function, (int)upvalues.size());
 
 	func.setReference(UniqueLuaReference::create(L));
 
 	lua_pop(L, 1);
 
 	return func;
+}
+LuaFunction LuaFunction::createFromStdFunction(lua_State* L, LuaFunctionObject function) {
+	auto userdataMetatable = LuaTable::create(L);
+	userdataMetatable.addValue("__gc", stdFunctionDestructor);
+
+	// Create storage for the function object in Lua and initialize our data there via placement new
+	auto functionStorage = lua_newuserdata(L, sizeof(function));
+	new (functionStorage) LuaFunctionObject(std::move(function));
+
+	userdataMetatable.pushValue(L);
+	lua_setmetatable(L, -2);
+
+	LuaValue funcValue;
+	funcValue.setReference(UniqueLuaReference::create(L));
+	lua_pop(L, 1); // Value is referenced. We can remove it from the stack now
+
+	return LuaFunction::createFromCFunction(L, stdFunctionCaller, { funcValue });
 }
 
 LuaFunction LuaFunction::createFromCode(lua_State* L, std::string const& code, std::string const& name) {
@@ -48,6 +113,9 @@ LuaFunction::LuaFunction() : LuaValue(), _errorFunction(nullptr) {
 LuaFunction::LuaFunction(const LuaFunction&) = default;
 LuaFunction& LuaFunction::operator=(const LuaFunction&) = default;
 
+LuaFunction::LuaFunction(LuaFunction&&) noexcept = default;
+LuaFunction& LuaFunction::operator=(LuaFunction&&) noexcept = default;
+
 LuaFunction::~LuaFunction() = default;
 
 bool LuaFunction::setEnvironment(const LuaTable& table) {
@@ -55,8 +123,8 @@ bool LuaFunction::setEnvironment(const LuaTable& table) {
 		throw LuaException("Table reference is not valid!");
 	}
 
-	this->pushValue();
-	table.pushValue();
+	this->pushValue(_luaState);
+	table.pushValue(_luaState);
 
 	bool ret = lua_setfenv(_luaState, -2) != 0;
 
@@ -78,9 +146,9 @@ void LuaFunction::setReference(const LuaReference& ref) {
 		return;
 	}
 
-	ref->pushValue();
-
 	lua_State* L = ref->getState();
+
+	ref->pushValue(L);
 
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
 		lua_pop(L, 1);
@@ -97,7 +165,7 @@ LuaValueList LuaFunction::call(const LuaValueList& args) const {
 
 	if (_errorFunction) {
 		// push the error function
-		_errorFunction->pushValue();
+		_errorFunction->pushValue(_luaState);
 		err_idx = lua_gettop(_luaState);
 		stackTop = err_idx;
 	} else {
@@ -105,11 +173,11 @@ LuaValueList LuaFunction::call(const LuaValueList& args) const {
 	}
 
 	// Push the function onto the stack
-	this->pushValue();
+	this->pushValue(_luaState);
 
 	// Push the arguments onto the stack
 	for (const auto& arg : args) {
-		arg.pushValue();
+		arg.pushValue(_luaState);
 	}
 
 	// actually call the function now!

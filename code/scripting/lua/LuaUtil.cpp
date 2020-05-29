@@ -1,16 +1,21 @@
 
 #include "LuaUtil.h"
 
+namespace {
+const char* mainStateRefName = "_lua_mainthread";
+}
+
 namespace luacpp {
 namespace util {
-const char* getValueName(ValueType type) {
+const char* getValueName(ValueType type)
+{
 	switch (type) {
-		case ValueType::NONE:
-			return "none";
-		case ValueType::NIL:
-			return "nil";
-		case ValueType::BOOLEAN:
-			return "boolean";
+	case ValueType::NONE:
+		return "none";
+	case ValueType::NIL:
+		return "nil";
+	case ValueType::BOOLEAN:
+		return "boolean";
 		case ValueType::LIGHTUSERDATA:
 			return "light userdata";
 		case ValueType::STRING:
@@ -27,7 +32,33 @@ const char* getValueName(ValueType type) {
 			return "thread";
 		default:
 			return "unknown";
+		}
+}
+
+void initializeLuaSupportLib(lua_State* L)
+{
+	auto mainThread = lua_pushthread(L);
+	Assertion(mainThread, "Must be called with the main thread as the parameter!");
+
+	lua_setfield(L, LUA_REGISTRYINDEX, mainStateRefName);
+}
+
+lua_State* getMainThread(lua_State* L)
+{
+	if (lua_pushthread(L)) {
+		// State is the main thread, just return that
+		lua_pop(L, 1);
+		return L;
 	}
+
+	lua_pushstring(L, mainStateRefName);
+	lua_rawget(L, LUA_REGISTRYINDEX);
+
+	auto state = lua_tothread(L, -1);
+	lua_pop(L, 1);
+
+	return state;
 }
-}
-}
+
+} // namespace util
+} // namespace luacpp

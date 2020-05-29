@@ -1,6 +1,8 @@
 
 #include "scripting/scripting.h"
 
+#include "scripting/lua/LuaUtil.h"
+
 /**
  * IMPORTANT!
  *
@@ -34,6 +36,7 @@
 #include "scripting/api/objs/model_path.h"
 #include "scripting/api/objs/physics_info.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/shields.h"
 #include "scripting/api/objs/ship.h"
@@ -55,6 +58,7 @@
 #include "scripting/api/objs/wing.h"
 
 #include "scripting/api/libs/audio.h"
+#include "scripting/api/libs/async.h"
 #include "scripting/api/libs/base.h"
 #include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
@@ -107,6 +111,9 @@ int script_state::CreateLuaState()
 	//*****INITIALIZE AUXILIARY LIBRARIES
 	mprintf(("LUA: Initializing base Lua libraries...\n"));
 	luaL_openlibs(L);
+
+	//*****INITIALIZE OUR SUPPORT LIBRARY
+	luacpp::util::initializeLuaSupportLib(L);
 
 	//*****DISABLE DANGEROUS COMMANDS
 	lua_pushstring(L, "os");

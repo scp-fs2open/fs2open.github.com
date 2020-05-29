@@ -209,22 +209,45 @@ TEST_F(LuaFunctionTest, ErrorFunctionNoReturnValues) {
 	try {
 		func();
 		FAIL();
-	}
-	catch (const LuaException& err) {
+	} catch (const LuaException& err) {
 		ASSERT_STREQ("Invalid lua value on stack!", err.what());
 	}
 }
 
-TEST_F(LuaFunctionTest, Upvalues) {
+TEST_F(LuaFunctionTest, Upvalues)
+{
 	ScopedLuaStackTest stackTest(L);
 
 	LuaValue upval = LuaValue::createValue(L, "UpvalueTest");
 
-	LuaFunction func = LuaFunction::createFromCFunction(L, upvalueTest, { upval });
+	LuaFunction func = LuaFunction::createFromCFunction(L, upvalueTest, {upval});
 
 	auto ret = func();
 
 	ASSERT_EQ(1, (int)ret.size());
 	ASSERT_TRUE(ret.front().is(ValueType::BOOLEAN));
 	ASSERT_TRUE(ret.front().getValue<bool>());
+}
+
+TEST_F(LuaFunctionTest, CreateFromStdFunction)
+{
+	ScopedLuaStackTest stackTest(L);
+
+	const auto stdFunc = [](lua_State* luaState, const LuaValueList& params) {
+		EXPECT_EQ(2, static_cast<int>(params.size()));
+
+		EXPECT_EQ(42, params[0].getValue<int>());
+		EXPECT_EQ("TestString", params[1].getValue<SCP_string>());
+
+		return LuaValueList{LuaValue::createValue(luaState, "StringTest"), LuaValue::createValue(luaState, 1234)};
+	};
+
+	const auto stdFuncObj = LuaFunction::createFromStdFunction(L, stdFunc);
+
+	const auto testRet = stdFuncObj({LuaValue::createValue(L, 42), LuaValue::createValue(L, "TestString")});
+
+	EXPECT_EQ(2, static_cast<int>(testRet.size()));
+
+	EXPECT_EQ("StringTest", testRet[0].getValue<SCP_string>());
+	EXPECT_EQ(1234, testRet[1].getValue<int>());
 }

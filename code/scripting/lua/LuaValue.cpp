@@ -34,7 +34,8 @@ ValueType luaToEnumType(int luaType) {
 }
 
 namespace luacpp {
-LuaValue LuaValue::createNil(lua_State* L) {
+LuaValue LuaValue::createNil(lua_State* L)
+{
 	lua_pushnil(L);
 
 	LuaValue val(L);
@@ -44,33 +45,34 @@ LuaValue LuaValue::createNil(lua_State* L) {
 	return val;
 }
 
-LuaValue::LuaValue(lua_State* state) : _luaState(state), _luaType(ValueType::NONE) {
+LuaValue::LuaValue() = default;
+
+LuaValue::LuaValue(lua_State* state) : _luaState(state)
+{
 	Assertion(state != nullptr, "Lua state pointer is not valid!");
 }
 
-LuaValue::LuaValue(const LuaValue& other) : _luaState(other._luaState) {
-	// Just copy the reference object from the other
-	this->setReference(other._reference);
-}
+LuaValue::LuaValue(const LuaValue&) = default;
+LuaValue& LuaValue::operator=(const LuaValue&) = default;
 
-LuaValue& LuaValue::operator=(const LuaValue& other) {
-	_luaState = other._luaState;
-	this->setReference(other._reference);
-	return *this;
-}
+LuaValue::LuaValue(LuaValue&&) noexcept = default;
+LuaValue& LuaValue::operator=(LuaValue&&) noexcept = default;
 
 LuaValue::~LuaValue() = default;
 
-void LuaValue::setReference(const LuaReference& ref) {
+void LuaValue::setReference(const LuaReference& ref)
+{
 	this->_reference = ref;
+	this->_luaState = ref->getState();
 
 	if (isValid()) {
-		this->_reference->pushValue();
+		this->_reference->pushValue(_luaState);
 
-		_luaState = ref->getState();
 		this->_luaType = luaToEnumType(lua_type(_luaState, -1));
 
 		lua_pop(_luaState, 1);
+	} else {
+		_luaType = ValueType::NONE;
 	}
 }
 
@@ -86,30 +88,24 @@ bool LuaValue::isValid() const {
 	return _reference && _reference->isValid();
 }
 
-bool LuaValue::pushValue() const {
+bool LuaValue::pushValue(lua_State* thread) const
+{
 	if (this->_reference->isValid()) {
-		this->_reference->pushValue();
+		this->_reference->pushValue(thread);
 		return true;
 	} else {
 		return false;
 	}
 }
 
-lua_State* LuaValue::getLuaState() const {
-	return _luaState;
-}
+lua_State* LuaValue::getLuaState() const { return _luaState; }
 
 namespace convert {
 
-void pushValue(lua_State* luaState, const LuaValue& value) {
-	if (luaState != value.getLuaState()) {
-		throw LuaException("Lua state mismatch!");
-	}
+void pushValue(lua_State* luaState, const LuaValue& value) { value.pushValue(luaState); }
 
-	value.pushValue();
-}
-
-bool popValue(lua_State* luaState, LuaValue& target, int stackposition, bool remove) {
+bool popValue(lua_State* luaState, LuaValue& target, int stackposition, bool remove)
+{
 	if (!internal::isValidIndex(luaState, stackposition)) {
 		return false;
 	}

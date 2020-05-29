@@ -44,6 +44,7 @@ add_file_folder("Scripting"
 )
 
 add_file_folder("Scripting\\\\API"
+    scripting/api/async.cpp
     scripting/api/base.cpp
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
@@ -56,6 +57,7 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Reference.cpp
     scripting/lua/Table.cpp
     scripting/lua/TestUtil.h
+    scripting/lua/Thread.cpp
     scripting/lua/Util.cpp
     scripting/lua/Value.cpp
 )
