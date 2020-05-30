@@ -1015,7 +1015,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	}
 
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
-		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, MAX_GOAL_PRIORITY));
+		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", CTEXT(node), aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
