@@ -222,7 +222,7 @@ void radar_plot_object( object *objp )
 				return;
 
 			// if we don't attack the bomb, return
-			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Show_friendly])) && (Player_ship != nullptr && !iff_x_attacks_y(Player_ship->team, obj_team(objp))))
+			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Show_friendly])) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
 				return;
 
 			// if a local ssm is in subspace, return
@@ -287,7 +287,7 @@ void radar_plot_object( object *objp )
 
 	// flag the blip as a current target if it is
 	// if we are in the lab, Player_ai is null; we need to catch this h
-	if (Player_ai != nullptr && OBJ_INDEX(objp) == Player_ai->target_objnum)
+	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
 	{
 		b->flags |= BLIP_CURRENT_TARGET;
 		blip_bright = 1;
