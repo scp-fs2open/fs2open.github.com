@@ -2328,6 +2328,8 @@ void lab_init()
 	particle::init();
 
 	ai_paused = 1;
+	physics_paused = 1;
+	Game_mode |= GM_LAB;
 }
 
 #include "lab.h"
@@ -2585,4 +2587,6 @@ void lab_close()
 	shockwave_level_close();
 
 	ai_paused = 0;
+	physics_paused = 0;
+	Game_mode &= ~GM_LAB;
 }

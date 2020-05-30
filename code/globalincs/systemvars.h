@@ -29,6 +29,7 @@
 #define  GM_STANDALONE_SERVER			(1 << 8)
 #define	GM_STATS_TRANSFER				(1 << 9)				// in the process of stats transfer
 #define	GM_CAMPAIGN_MODE				(1 << 10)			// are we currently in a campaign.
+#define GM_LAB							(1 << 11)			// We are currently in the F3 lab
 
 #define	VM_EXTERNAL						(1 << 0)				//	Set if not viewing from player position.
 #define	VM_TRACK						(1 << 1)				//	Set if viewer is tracking target.
