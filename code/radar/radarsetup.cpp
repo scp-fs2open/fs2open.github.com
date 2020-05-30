@@ -286,7 +286,6 @@ void radar_plot_object( object *objp )
 	blip_bright = (dist <= Radar_bright_range);
 
 	// flag the blip as a current target if it is
-	// if we are in the lab, Player_ai is null; we need to catch this h
 	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
 	{
 		b->flags |= BLIP_CURRENT_TARGET;
