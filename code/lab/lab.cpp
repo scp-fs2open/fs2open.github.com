@@ -1586,8 +1586,11 @@ void labviewer_change_ship_lod(Tree* caller)
 		// reset any existing model/bitmap that is showing
 		labviewer_change_model(nullptr);
 	} else {
-		obj_delete(Lab_selected_object);
+		obj_delete_all();
 	}
+
+	// clean up any running particle effects
+	particle::kill_all();
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
 	auto ship_objp = &Ships[Objects[Lab_selected_object].instance];
@@ -1640,6 +1643,7 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_recalc_camera();
 
 	Lab_viewer_flags &= ~LAB_FLAG_SHIP_EXPLODING;
+	physics_paused = 1;
 }
 
 void labviewer_change_ship(Tree* caller)
@@ -2099,6 +2103,7 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 		obj->flags.remove(Object::Object_Flags::Player_ship);
 		ship_self_destruct(obj);
 		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
+		physics_paused = 0;
 	}
 }
 
@@ -2328,7 +2333,6 @@ void lab_init()
 	particle::init();
 
 	ai_paused = 1;
-	physics_paused = 1;
 	Game_mode |= GM_LAB;
 }
 
