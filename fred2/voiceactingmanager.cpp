@@ -742,7 +742,7 @@ char *VoiceActingManager::get_message_sender(char *message)
 			continue;
 
 		// stuff
-		int op = get_operator_const(Sexp_nodes[i].text);
+		int op = get_operator_const(i);
 		int n = CDR(i);
 
 		// find the message sexps
@@ -834,7 +834,7 @@ void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int>
 		return;
 
 	// stuff
-	op = get_operator_const(Sexp_nodes[node].text);
+	op = get_operator_const(node);
 	n = CDR(node);
 
 	if (op == OP_SEND_MESSAGE_LIST)

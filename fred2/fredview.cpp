@@ -3658,7 +3658,7 @@ void fred_check_message_personas()
 			continue;
 
 		// now look for the send-message opeator
-		op = get_operator_const( Sexp_nodes[i].text );
+		op = get_operator_const( i );
 		if ( op != OP_SEND_MESSAGE )
 			continue;
 

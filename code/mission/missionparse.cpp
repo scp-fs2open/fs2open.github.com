@@ -5829,7 +5829,7 @@ bool post_process_mission()
 		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
 			int result, bad_node, op;
 
-			op = get_operator_index(CTEXT(i));
+			op = get_operator_index(i);
 			Assert(op != -1);  // need to make sure it is an operator before we treat it like one..
 			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bad_node);
 

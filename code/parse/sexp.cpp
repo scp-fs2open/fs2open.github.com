@@ -1738,7 +1738,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	if (Sexp_nodes[op_node].subtype != SEXP_ATOM_OPERATOR)
 		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
 
-	op = get_operator_index(CTEXT(op_node));
+	op = get_operator_index(op_node);
 	if (op == -1)
 		return SEXP_CHECK_UNKNOWN_OP;  // unrecognized operator
 
@@ -1791,7 +1791,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (Sexp_nodes[i].subtype == SEXP_ATOM_LIST)
 				return 0;
 
-			op2 = get_operator_index(CTEXT(i));
+			op2 = get_operator_index(i);
 			if (op2 == -1)
 				return SEXP_CHECK_UNKNOWN_OP;
 
@@ -1865,7 +1865,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			}
 
 			i = atoi(CTEXT(node));
-			z = get_operator_const(CTEXT(op_node));
+			z = get_operator_const(op_node);
 			if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
 				if ( (argnum == 2) && (i < 1) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
@@ -1879,7 +1879,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 			}
 
-			z = get_operator_index(CTEXT(op_node));
+			z = get_operator_index(op_node);
 			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
 				if ( (i < 0) || (i > 200) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
@@ -2096,7 +2096,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// with that name.  This code assumes by default that the ship is *always* the first name
 				// in the sexpression.  If this is ever not the case, the code here must be changed to
 				// get the correct ship name.
-				switch(get_operator_const(CTEXT(op_node)))
+				switch(get_operator_const(op_node))
 				{
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					case OP_DISTANCE_SUBSYSTEM:
@@ -2477,7 +2477,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					int ship_num, ship2, w = 0;
 
 					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
-					if (get_operator_const(Sexp_nodes[op_node].text) == OP_GOALS_ID) {
+					if (get_operator_const(op_node) == OP_GOALS_ID) {
 						break;
 					}
 
@@ -2496,7 +2496,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					Assert(Sexp_nodes[node].subtype == SEXP_ATOM_LIST);
 					z = Sexp_nodes[node].first;
 					Assert(Sexp_nodes[z].subtype != SEXP_ATOM_LIST);
-					z = get_operator_const(CTEXT(z));
+					z = get_operator_const(z);
 					if (ship_num >= 0) {
 						if (!query_sexp_ai_goal_valid(z, ship_num)){
 							return SEXP_CHECK_ORDER_NOT_ALLOWED;
@@ -2704,14 +2704,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 					// Look for the node containing the docker ship as its first argument. For set-docked, we want 
 					// the current SEXP. Otherwise (for ai-dock), we want its parent.
-					if (get_operator_const(Sexp_nodes[op_node].text) == OP_SET_DOCKED) {
+					if (get_operator_const(op_node) == OP_SET_DOCKED) {
 						z = op_node;
 					}
 					else {
 						z = find_parent_operator(op_node);
 					
 						// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
-						if (get_operator_const(Sexp_nodes[z].text) == OP_GOALS_ID) {
+						if (get_operator_const(z) == OP_GOALS_ID) {
 							break;
 						}
 					}
@@ -2747,7 +2747,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					int ship_num, model;
 
 					// If we're using set-docked, we want to look up the ship from the third SEXP argument.
-					if (get_operator_const(Sexp_nodes[op_node].text) == OP_SET_DOCKED) {
+					if (get_operator_const(op_node) == OP_SET_DOCKED) {
 						//Navigate to the third argument
 						z = op_node;
 						for (i = 0; i < 3; i++)
@@ -3545,7 +3545,7 @@ int get_sexp()
 
 	
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
-	if (get_operator_const(CTEXT(start)) == OP_AI_CHASE_ANY)
+	if (get_operator_const(start) == OP_AI_CHASE_ANY)
 	{
 		// if there is more than one argument, free the extras
 		int n = CDR(CDR(start));
@@ -3563,11 +3563,11 @@ int get_sexp()
 
 		// see if we're using special arguments
 		parent = find_parent_operator(start);
-		if (parent >= 0 && is_blank_argument_op(get_operator_const(CTEXT(parent))))
+		if (parent >= 0 && is_blank_argument_op(get_operator_const(parent)))
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
+			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(arg_handler)))
 				arg_handler = -1;
 		}
 
@@ -3580,7 +3580,7 @@ int get_sexp()
 		arg_handler = -1;
 
 		// preload according to sexp
-		op = get_operator_const(CTEXT(start));
+		op = get_operator_const(start);
 		switch (op)
 		{
 			case OP_CHANGE_SHIP_CLASS:
@@ -9087,7 +9087,7 @@ int special_argument_appears_in_sexp_tree(int node)
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
 	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
-		if (is_blank_argument_op(get_operator_const(CTEXT(node)))) {
+		if (is_blank_argument_op(get_operator_const(node))) {
 			return 0; 
 		}
 	}
@@ -9120,7 +9120,7 @@ void eval_when_do_one_exp(int exp)
 	arg_item *ptr;
 	int do_node;
 
-	switch (get_operator_const(CTEXT(exp)))
+	switch (get_operator_const(exp))
 	{
 		// if the op is a conditional then we just evaluate it
 		case OP_WHEN:
@@ -9199,7 +9199,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 		{	
 			exp = CAR(actions);	
 
-			op_num = get_operator_const(CTEXT(exp));
+			op_num = get_operator_const(exp);
 
 			if (op_num == OP_DO_FOR_VALID_ARGUMENTS) {
 				int do_node = CDR(exp); 
@@ -9902,7 +9902,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 		return;
 
 	// can't change validity of for-counter
-	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
+	if (get_operator_const(arg_handler) == OP_FOR_COUNTER)
 		return;
 		
 	while (n != -1)
@@ -9959,7 +9959,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 		return;
 
 	// can't change validity of for-counter
-	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
+	if (get_operator_const(arg_handler) == OP_FOR_COUNTER)
 		return;
 		
 	// loop through arguments
@@ -10038,11 +10038,11 @@ int get_handler_for_x_of_operator(int n)
 			return -1;
 		}
 	}
-	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
+	while (!is_blank_argument_op(get_operator_const(conditional)));
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
+	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(arg_handler))) {
 		return -1;
 	}
 
@@ -26949,7 +26949,7 @@ int get_sexp_main()
 	// only need to check syntax if we have a operator
 	if (!Fred_running && (start_node >= 0))
 	{
-		op = get_operator_index(CTEXT(start_node));
+		op = get_operator_index(start_node);
 		if (op < 0)
 		{
 			Error(LOCATION, "Can't find operator %s in operator list!\n", CTEXT(start_node));
@@ -29924,7 +29924,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	if (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
 		return;
 
-	op = get_operator_index(CTEXT(node));
+	op = get_operator_index(node);
 	Assert(Sexp_nodes[node].first < 0);
 	n = Sexp_nodes[node].rest;
 	i = 0;

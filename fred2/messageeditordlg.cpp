@@ -299,19 +299,20 @@ int CMessageEditorDlg::find_event()
 		node = Mission_events[i].formula;
 		Assertion(node >= 0, "Can't have a formula point to sexp node -1!");
 
-		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
-			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT
-			|| get_operator_const(CTEXT(node)) == OP_IF_THEN_ELSE || get_operator_const(CTEXT(node)) == OP_PERFORM_ACTIONS )
+		int op_const = get_operator_const(node);
+		if (op_const == OP_WHEN || op_const == OP_EVERY_TIME
+			|| op_const == OP_WHEN_ARGUMENT || op_const == OP_EVERY_TIME_ARGUMENT
+			|| op_const == OP_IF_THEN_ELSE || op_const == OP_PERFORM_ACTIONS )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (is_blank_argument_op(get_operator_const(CTEXT(node))))
+			if (is_blank_argument_op(op_const))
 				node = CDR(node);
 
 			node = CDR(node);
 			formula = CAR(node);  // bool conditional
 			if (CDR(CDR(node)) == -1) {  // only 1 action
 				node = CADR(node);
-				if ((get_operator_const(CTEXT(node)) == OP_SEND_MESSAGE) && !stricmp(CTEXT(CDR(CDR(CDR(node)))), m_message_name)) {
+				if ((get_operator_const(node) == OP_SEND_MESSAGE) && !stricmp(CTEXT(CDDDR(node)), m_message_name)) {
 					box = (CComboBox *) GetDlgItem(IDC_SENDER);
 					str = CTEXT(CDR(node));
 					m_sender = box->FindStringExact(-1, str);
@@ -319,7 +320,7 @@ int CMessageEditorDlg::find_event()
 						m_sender = 0;
 
 					box = (CComboBox *) GetDlgItem(IDC_PRIORITY);
-					str = CTEXT(CDR(CDR(node)));
+					str = CTEXT(CDDR(node));
 					m_priority = box->FindStringExact(-1, str);
 					if (m_priority == CB_ERR)
 						m_priority = 0;
