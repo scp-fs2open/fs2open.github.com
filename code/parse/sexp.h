@@ -1189,7 +1189,9 @@ extern int is_sexp_top_level( int node );
 
 // Goober5000 - renamed these to be more clear, to prevent bugs :p
 extern int get_operator_index(const char *token);
+extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
+extern int get_operator_const(int node);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
