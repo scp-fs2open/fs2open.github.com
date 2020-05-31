@@ -1132,7 +1132,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			}
 		} else if (Operators[op].value == OP_JETTISON_CARGO_NEW) {
 			item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
-		} else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR) {
+		} else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR || Operators[op].value == OP_TECH_REMOVE_INTEL_XSTR) {
 			item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else {
 			item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
@@ -4947,6 +4947,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated
@@ -4954,6 +4955,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
@@ -5011,6 +5013,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated
@@ -5018,6 +5021,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
