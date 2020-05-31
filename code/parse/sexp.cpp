@@ -13988,7 +13988,7 @@ void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 			if (add) {
 				Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
 			} else {
-				Intel_info[i].flags &= IIF_IN_TECH_DATABASE;
+				Intel_info[i].flags &= ~ IIF_IN_TECH_DATABASE;
 			}
 		}
 		else if (xstr)
