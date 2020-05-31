@@ -13992,9 +13992,9 @@ void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 			}
 		}
 		else if (xstr)
-			Warning(LOCATION, "In tech-%-intel-xstr, entry XSTR(\"%s\", %d) invalid", (add? "add" : "remove"), name, id);
+			Warning(LOCATION, "In tech-%s-intel-xstr, entry XSTR(\"%s\", %d) invalid", (add? "add" : "remove"), name, id);
 		else
-			Warning(LOCATION, "In tech-%-intel, entry \"%s\" invalid", (add ? "add" : "remove"), name);
+			Warning(LOCATION, "In tech-%s-intel, entry \"%s\" invalid", (add ? "add" : "remove"), name);
 	}
 }
 
