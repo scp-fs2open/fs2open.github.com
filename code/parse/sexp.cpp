@@ -563,6 +563,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "tech-add-ships",					OP_TECH_ADD_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-weapons",				OP_TECH_ADD_WEAPON,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-intel",					OP_TECH_ADD_INTEL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "tech-remove-intel",				OP_TECH_REMOVE_INTEL,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// wookieejedi
 	{ "tech-add-intel-xstr",			OP_TECH_ADD_INTEL_XSTR,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "tech-remove-intel-xstr",			OP_TECH_REMOVE_INTEL_XSTR,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// wookieejedi
 	{ "tech-reset-to-default",			OP_TECH_RESET_TO_DEFAULT,				0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -13953,7 +13954,8 @@ void sexp_tech_add_weapon(int node)
 }
 
 // Goober5000
-void sexp_tech_add_intel(int node, bool xstr)
+// expanded with remove parameter by wookieejedi
+void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 {
 	int i, id, n = node;
 	char *name;
@@ -13982,48 +13984,17 @@ void sexp_tech_add_intel(int node, bool xstr)
 
 		// if we have an xstr, we already translated this node in the preloader, so just look it up
 		i = intel_info_lookup(name);
-		if (i >= 0)
-			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		if (i >= 0) {
+			if (add) {
+				Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+			} else {
+				Intel_info[i].flags &= IIF_IN_TECH_DATABASE;
+			}
+		}
 		else if (xstr)
-			Warning(LOCATION, "In tech-add-intel-xstr, entry XSTR(\"%s\", %d) invalid", name, id);
+			Warning(LOCATION, "In tech-%-intel-xstr, entry XSTR(\"%s\", %d) invalid", (add? "add" : "remove"), name, id);
 		else
-			Warning(LOCATION, "In tech-add-intel, entry \"%s\" invalid", name);
-	}
-}
-
-// wookieejedi, base copied from sexp_tech_add_intel()
-void sexp_tech_remove_intel(int node, bool xstr)
-{
-	int i, id, n = node;
-	char* name;
-
-	Assert(n >= 0);
-	// this function doesn't mean anything when not in campaign mode
-	if (!(Game_mode & GM_CAMPAIGN_MODE))
-		return;
-
-	while (n >= 0) {
-		// don't use things like CTEXT or eval_num, since we didn't in the preloader
-		name = Sexp_nodes[n].text;
-		n    = CDR(n);
-
-		// the xstr variant must have an id
-		if (xstr) {
-			if (n < 0)
-				break;
-			id = atoi(Sexp_nodes[n].text);
-			n  = CDR(n);
-		} else
-			id = -1;
-
-		// if we have an xstr, we already translated this node in the preloader, so just look it up
-		i = intel_info_lookup(name);
-		if (i >= 0)
-			Intel_info[i].flags &= IIF_IN_TECH_DATABASE;
-		else if (xstr)
-			Warning(LOCATION, "In tech-remove-intel-xstr, entry XSTR(\"%s\", %d) invalid", name, id);
-		else
-			Warning(LOCATION, "In tech-remove-intel, entry \"%s\" invalid", name);
+			Warning(LOCATION, "In tech-%-intel, entry \"%s\" invalid", (add ? "add" : "remove"), name);
 	}
 }
 
@@ -25524,12 +25495,13 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_TECH_ADD_INTEL:
 			case OP_TECH_ADD_INTEL_XSTR:
-				sexp_tech_add_intel(node, op_num == OP_TECH_ADD_INTEL_XSTR);
+				sexp_tech_toggle_intel(node, true, op_num == OP_TECH_ADD_INTEL_XSTR);
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TECH_REMOVE_INTEL:
 			case OP_TECH_REMOVE_INTEL_XSTR:
-				sexp_tech_remove_intel(node, op_num == OP_TECH_REMOVE_INTEL_XSTR);
+				sexp_tech_toggle_intel(node, false, op_num == OP_TECH_REMOVE_INTEL_XSTR);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -27344,6 +27316,7 @@ int query_operator_return_type(int op)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_REMOVE_INTEL:
 		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_REMOVE_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
@@ -28867,6 +28840,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_WEAPON_NAME;
 
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_REMOVE_INTEL:
 			return OPF_INTEL_NAME;
 
 		case OP_TECH_ADD_INTEL_XSTR:
@@ -31396,6 +31370,7 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_SHIP:
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
+		case OP_TECH_REMOVE_INTEL:
 		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_TECH_REMOVE_INTEL_XSTR:
 		case OP_TECH_RESET_TO_DEFAULT:
@@ -33519,6 +33494,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"then be able to view this intel entry there.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of intel entry to add." },
+
+	{ OP_TECH_REMOVE_INTEL, "Tech remove intel (Action operator, deprecated in favor of tech-remove-intel-xstr)\r\n"
+		"\tThis operator removes the given intel entry in the techroom database.  Players will "
+		"then not be able to view this intel entry there.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of intel entry to remove." },
 
 	{ OP_TECH_ADD_INTEL_XSTR, "Tech add intel XSTR (Action operator)\r\n"
 		"\tThis operator makes the given intel entry available in the techroom database.  Players will "

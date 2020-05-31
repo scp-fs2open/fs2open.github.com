@@ -4954,6 +4954,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
@@ -5018,6 +5019,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
