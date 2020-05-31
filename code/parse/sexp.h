@@ -1101,9 +1101,11 @@ typedef struct sexp_node {
 } sexp_node;
 
 // Goober5000
-#define SNF_ARGUMENT_VALID		(1<<0)
-#define SNF_ARGUMENT_SELECT		(1<<1)
-#define SNF_DEFAULT_VALUE		SNF_ARGUMENT_VALID
+#define SNF_ARGUMENT_VALID			(1<<0)
+#define SNF_ARGUMENT_SELECT			(1<<1)
+#define SNF_SPECIAL_ARG_IN_TREE		(1<<2)
+#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<3)
+#define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
 	int		type;
@@ -1217,8 +1219,8 @@ extern int count_free_sexp_nodes();
 
 // Goober5000
 void do_action_for_each_special_argument(int cur_node);
-int special_argument_appears_in_sexp_tree(int node);
-int special_argument_appears_in_sexp_list(int node);
+bool special_argument_appears_in_sexp_tree(int node);
+bool special_argument_appears_in_sexp_list(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
