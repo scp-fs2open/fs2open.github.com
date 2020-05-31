@@ -4947,6 +4947,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated
@@ -5012,6 +5013,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated

@@ -827,6 +827,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_SHIP:
 							case OP_TECH_ADD_WEAPON:
 							case OP_TECH_ADD_INTEL_XSTR:
+							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 							// unlike the above operators, these are deprecated 
@@ -875,6 +876,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_SHIP:
 							case OP_TECH_ADD_WEAPON:
 							case OP_TECH_ADD_INTEL_XSTR:
+							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 							// unlike the above operators, these are deprecated 
