@@ -9075,41 +9075,55 @@ void do_action_for_each_special_argument( int cur_node )
 }
 
 // Goober5000
-int special_argument_appears_in_sexp_tree(int node)
+bool special_argument_appears_in_sexp_tree(int node)
 {
 	// empty tree
 	if (node < 0)
 		return 0;
 
+	// cached?
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_TREE)
+		return true;
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_NOT_IN_TREE)
+		return false;
+
 	// special argument?
 	if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
-		return 1;
+		return true;
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
 	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
 		if (is_blank_argument_op(get_operator_const(node))) {
-			return 0; 
+			return false; 
 		}
 	}
 
-	return special_argument_appears_in_sexp_tree(CAR(node))
-		|| special_argument_appears_in_sexp_tree(CDR(node));
+	bool result = special_argument_appears_in_sexp_tree(CAR(node))
+				|| special_argument_appears_in_sexp_tree(CDR(node));
+
+	// cache this result
+	if (result)
+		Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_TREE;
+	else
+		Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_NOT_IN_TREE;
+
+	return result;
 }
 
 // Goober5000
-int special_argument_appears_in_sexp_list(int node)
+bool special_argument_appears_in_sexp_list(int node)
 {
 	// look through list
 	while (node != -1)
 	{
 		// special argument?
 		if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
-			return 1;
+			return true;
 
 		node = CDR(node);
 	}
 
-	return 0;
+	return false;
 }
 
 // conditional sexpressions follow
