@@ -18432,9 +18432,9 @@ void sexp_beam_floating_fire(int n)
 	beam_fire(&fire_info);
 }
 
-void sexp_beam_free_one_turret(ship_subsys *turret, bool beam, bool free)
+void sexp_beam_free_one_turret(ship_subsys *turret, bool is_beam, bool free)
 {
-	if (beam)
+	if (is_beam)
 	{
 		if (free)
 		{
@@ -18470,7 +18470,7 @@ void sexp_beam_free_one_turret(ship_subsys *turret, bool beam, bool free)
 	}
 }
 
-void sexp_beam_or_turret_free_or_lock(int node, bool beam, bool free)
+void sexp_beam_or_turret_free_or_lock(int node, bool is_beam, bool free)
 {
 	// get the firing ship
 	auto shooter = eval_ship(node);
@@ -18485,11 +18485,11 @@ void sexp_beam_or_turret_free_or_lock(int node, bool beam, bool free)
 		if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
 			continue;
 
-		sexp_beam_free_one_turret(turret, beam, free);
+		sexp_beam_free_one_turret(turret, is_beam, free);
 	}
 }
 
-void sexp_beam_or_turret_free_or_lock_all(int node, bool beam, bool free)
+void sexp_beam_or_turret_free_or_lock_all(int node, bool is_beam, bool free)
 {
 	for (int n = node; n >= 0; n = CDR(n))
 	{
@@ -18504,7 +18504,7 @@ void sexp_beam_or_turret_free_or_lock_all(int node, bool beam, bool free)
 			if (turret->system_info->type != SUBSYSTEM_TURRET)
 				continue;
 
-			sexp_beam_free_one_turret(turret, beam, free);
+			sexp_beam_free_one_turret(turret, is_beam, free);
 		}
 	}
 }
