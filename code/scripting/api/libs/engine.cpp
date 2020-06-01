@@ -79,5 +79,16 @@ ADE_FUNC(addHook, l_Engine,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(sleep, l_Engine, "number seconds", "Executes a <b>blocking</b> sleep. Usually only necessary for development or testing purposes. Use with care!", nullptr, nullptr)
+{
+	float seconds = 0.0f;
+	if (!ade_get_args(L, "f", &seconds)) {
+		return ADE_RETURN_NIL;
+	}
+
+	os_sleep(fl2i(seconds * 1000.0f));
+	return ADE_RETURN_NIL;
+}
+
 } // namespace api
 } // namespace scripting

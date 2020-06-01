@@ -416,7 +416,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
+int mission_campaign_load(const char* filename, player* pl, int load_savefile, bool reset_stats)
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -780,7 +780,7 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
  * Deletes any save file in the players directory for the given
  * campaign filename
  */
-void mission_campaign_savefile_delete( char *cfilename )
+void mission_campaign_savefile_delete(const char* cfilename)
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
 

@@ -11,6 +11,8 @@
 #ifndef _READYROOM_H
 #define _READYROOM_H
 
+#include "globalincs/pstypes.h"
+
 extern int Sim_room_overlay_id;
 extern int Campaign_room_overlay_id;
 
@@ -24,5 +26,9 @@ int readyroom_continue_campaign();
 void campaign_room_init();
 void campaign_room_close();
 void campaign_room_do_frame(float frametime);
+
+bool campaign_build_campaign_list();
+void campaign_select_campaign(const SCP_string& campaign_file);
+void campaign_reset(const SCP_string& campaign_file);
 
 #endif
