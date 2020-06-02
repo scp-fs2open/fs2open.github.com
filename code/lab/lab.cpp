@@ -457,6 +457,7 @@ void labviewer_render_model(float frametime)
 			model_render_set_wireframe_color(&Color_white);
 
 		if (Lab_render_show_thrusters && obj->type == OBJ_SHIP) {
+			physics_paused = 0;
 			obj->phys_info.forward_thrust = 1.0f;
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
 
@@ -465,6 +466,7 @@ void labviewer_render_model(float frametime)
 			else
 				obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
 		} else {
+			physics_paused = 1;
 			obj->phys_info.forward_thrust = 0.0f;
 
 			if (obj->type == OBJ_SHIP)
