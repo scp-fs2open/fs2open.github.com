@@ -2094,7 +2094,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		for (j = 0; j < bank->num_points; j++) {
 			Assert( bank->points != NULL );
 
-			float d, D;
+			float d;
 			vec3d tempv;
 			glow_point *gpt = &bank->points[j];
 			vec3d loc_offset = gpt->pnt;
@@ -2144,7 +2144,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			vm_vec_sub(&tempv, &View_position, &world_pnt);
 			vm_vec_normalize(&tempv);
 			vm_vec_unrotate(&world_norm, &loc_norm, orient);
-			D = d = vm_vec_dot(&tempv, &world_norm);
+			d = vm_vec_dot(&tempv, &world_norm);
 
 			// ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 #define NOISE_SCALE 0.5f
