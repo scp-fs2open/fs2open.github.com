@@ -496,8 +496,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-free-all",				OP_TURRET_FREE_ALL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-lock",					OP_TURRET_LOCK,							2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
-	{ "turret-tagged-only",				OP_TURRET_TAGGED_ONLY_ALL,				1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "turret-tagged-clear",			OP_TURRET_TAGGED_CLEAR_ALL,				1,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "turret-tagged-only",				OP_TURRET_TAGGED_ONLY_ALL,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "turret-tagged-clear",			OP_TURRET_TAGGED_CLEAR_ALL,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,				5,	5,			SEXP_ACTION_OPERATOR,	},	//WMC
@@ -18266,11 +18266,25 @@ void sexp_set_skybox_model_preload(char *name)
 	}
 }
 
+void sexp_set_thrusters(int node)
+{
+	bool activate = is_sexp_true(node);
+	node = CDR(node);
+
+	for (; node >= 0; node = CDR(node))
+	{
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
+
+		ship_entry->shipp->flags.set(Ship::Ship_Flags::No_thrusters, !activate);
+	}
+}
+
 void sexp_beam_fire(int node, bool at_coords)
 {
-	int sindex, n = node;
-	beam_fire_info fire_info;		
-	int idx;
+	int idx, n = node;
+	beam_fire_info fire_info;
 	bool is_nan, is_nan_forever;
 
 	// zero stuff out
@@ -18278,22 +18292,19 @@ void sexp_beam_fire(int node, bool at_coords)
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
 
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(n));
+	auto shooter = eval_ship(n);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
 	n = CDR(n);
-	if (sindex < 0) {
-		return;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return;
-	}
-	fire_info.shooter = &Objects[Ships[sindex].objnum];
+	fire_info.shooter = shooter->objp;
 
 	// get the subsystem
-	fire_info.turret = ship_get_subsys(&Ships[sindex], CTEXT(n));
-	n = CDR(n);
+	fire_info.turret = ship_get_subsys(shooter->shipp, CTEXT(n));
 	if (fire_info.turret == NULL) {
 		return;
 	}
+	n = CDR(n);
 
 	if (at_coords) {
 		// get the target coordinates
@@ -18307,20 +18318,17 @@ void sexp_beam_fire(int node, bool at_coords)
 		fire_info.target_subsys = NULL;
 	} else {
 		// get the target
-		sindex = ship_name_lookup(CTEXT(n));
+		auto target = eval_ship(n);
+		if (!target || !target->shipp) {
+			return;
+		}
 		n = CDR(n);
-		if (sindex < 0) {
-			return;
-		}
-		if (Ships[sindex].objnum < 0) {
-			return;
-		}
-		fire_info.target = &Objects[Ships[sindex].objnum];
+		fire_info.target = target->objp;
 
 		// see if the optional subsystem can be found	
 		fire_info.target_subsys = NULL;
 		if (n >= 0) {
-			fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+			fire_info.target_subsys = ship_get_subsys(target->shipp, CTEXT(n));
 			n = CDR(n);
 		}
 	}
@@ -18378,7 +18386,6 @@ void sexp_beam_fire(int node, bool at_coords)
 
 void sexp_beam_floating_fire(int n)
 {
-	int sindex;
 	bool is_nan, is_nan_forever;
 	beam_fire_info fire_info;
 	memset(&fire_info, 0, sizeof(beam_fire_info));
@@ -18393,7 +18400,8 @@ void sexp_beam_floating_fire(int n)
 		Warning(LOCATION, "Invalid weapon class passed to beam-create; weapon type '%s' does not exist!\n", CTEXT(n));
 		return;
 	}
-	if (!(Weapon_info[fire_info.beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
+	if (!(Weapon_info[fire_info.beam_info_index].wi_flags[Weapon::Info_Flags::Beam]))
+	{
 		Warning(LOCATION, "Invalid weapon class passed to beam-create; weapon type '%s' is not a beam!\n", CTEXT(n));
 		return;
 	}
@@ -18401,10 +18409,11 @@ void sexp_beam_floating_fire(int n)
 	fire_info.shooter = NULL;
 	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
-		sindex = ship_name_lookup(CTEXT(n));
+		auto shooter = eval_ship(n);
+		if (!shooter || !shooter->shipp)
+			return;
 
-		if (sindex >= 0)
-			fire_info.shooter = &Objects[Ships[sindex].objnum];
+		fire_info.shooter = shooter->objp;
 	}
 	n = CDR(n);
 
@@ -18418,23 +18427,25 @@ void sexp_beam_floating_fire(int n)
 	fire_info.target = NULL;
 	fire_info.target_subsys = NULL;
 
-	sindex = -1;
+	const ship_registry_entry *target = nullptr;
 	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
-		sindex = ship_name_lookup(CTEXT(n));
+		target = eval_ship(n);
+		if (!target || !target->shipp)
+			return;
 
-		if (sindex >= 0)
-			fire_info.target = &Objects[Ships[sindex].objnum];
-	} else {
-		fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+		fire_info.target = target->objp;
 	}
+	else
+		fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
 	n = CDR(n);
 
 	if (n >= 0)
 	{
-		if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0) {
-			if (sindex >= 0)
-				fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
+		{
+			if (target && target->shipp)
+				fire_info.target_subsys = ship_get_subsys(target->shipp, CTEXT(n));
 		}
 
 		n = CDR(n);
@@ -18455,324 +18466,120 @@ void sexp_beam_floating_fire(int n)
 	beam_fire(&fire_info);
 }
 
-void sexp_beam_free(int node)
+void sexp_beam_free_one_turret(ship_subsys *turret, bool is_beam, bool free)
 {
-	int sindex;
-	ship_subsys *turret = NULL;	
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			continue;
-		}
-
-		// flag it as beam free :)
-		if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free]))
+	if (is_beam)
+	{
+		if (free)
 		{
-			turret->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-		}
-	}
-}
-
-void sexp_set_thrusters(int node) 
-{
-	bool activate = is_sexp_true(node);
-	node = CDR(node);
-
-	for(; node >= 0; node = CDR(node)) {
-		int sindex = ship_name_lookup(CTEXT(node));
-		
-		if (sindex < 0) {
-			continue;
-		}
-
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
-
-        Ships[sindex].flags.set(Ship::Ship_Flags::No_thrusters, !activate);
-    }
-}
-
-void sexp_beam_free_all(int node)
-{
-	ship_subsys *subsys;
-	int sindex;
-
-	for (int n = node; n >= 0; n = CDR(n)) {
-		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(n) );
-
-		if (sindex < 0) {
-			continue;
-		}
-
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
-
-		// free all beam weapons
-		subsys = GET_FIRST(&Ships[sindex].subsys_list);
-
-		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
-			// just mark all turrets as beam free
-			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (!(subsys->weapons.flags[Ship::Weapon_Flags::Beam_Free])))
+			// flag it as beam free :)
+			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free]))
 			{
-				subsys->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+				turret->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
+				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
 			}
-
-			// next item
-			subsys = GET_NEXT(subsys);
 		}
-	}
-}
-
-void sexp_beam_lock(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			continue;
-		}
-
-		// flag it as not beam free
-		turret->weapons.flags.remove(Ship::Weapon_Flags::Beam_Free);
-	}
-}
-
-void sexp_beam_lock_all(int node)
-{
-	ship_subsys *subsys;
-	int sindex;
-
-	for (int n = node; n >= 0; n = CDR(n)) {
-		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(n) );
-
-		if (sindex < 0) {
-			continue;
-		}
-
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
-
-		// lock all beam weapons
-		subsys = GET_FIRST(&Ships[sindex].subsys_list);
-
-		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
-			// just mark all turrets as not beam free
-			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
-				subsys->weapons.flags.remove(Ship::Weapon_Flags::Beam_Free);
-			}
-
-			// next item
-			subsys = GET_NEXT(subsys);
-		}
-	}
-}
-
-void sexp_turret_free(int node)
-{
-	int sindex;
-	ship_subsys *turret = NULL;	
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			continue;
-		}
-
-		// flag turret as no longer locked :)
-		if (turret->weapons.flags[Ship::Weapon_Flags::Turret_Lock]) 
+		else
 		{
-			turret->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
-			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			// flag it as not beam free
+			turret->weapons.flags.remove(Ship::Weapon_Flags::Beam_Free);
 		}
 	}
-}
-
-void sexp_turret_free_all(int node)
-{
-	ship_subsys *subsys;
-	int sindex;
-
-	for (int n = node; n >= 0; n = CDR(n)) {
-		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(n) );
-
-		if (sindex < 0) {
-			continue;
-		}
-
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
-
-		// free all turrets
-		subsys = GET_FIRST(&Ships[sindex].subsys_list);
-
-		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
-			// just mark all turrets as free
-			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (subsys->weapons.flags[Ship::Weapon_Flags::Turret_Lock])) {
-				subsys->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
-				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+	else
+	{
+		if (free)
+		{
+			// flag turret as no longer locked :)
+			if (turret->weapons.flags[Ship::Weapon_Flags::Turret_Lock])
+			{
+				turret->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
+				turret->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
 			}
-
-			// next item
-			subsys = GET_NEXT(subsys);
+		}
+		else
+		{
+			// flag turret as locked
+			turret->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 		}
 	}
 }
 
-void sexp_turret_lock(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-
+void sexp_beam_or_turret_free_or_lock(int node, bool is_beam, bool free)
+{
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp)
 		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
 	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
+
+	for ( ; node >= 0; node = CDR(node) )
+	{
 		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+		if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
 			continue;
-		}
 
-		// flag turret as locked
-		turret->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		sexp_beam_free_one_turret(turret, is_beam, free);
 	}
 }
 
-void sexp_turret_lock_all(int node)
+void sexp_beam_or_turret_free_or_lock_all(int node, bool is_beam, bool free)
 {
-	ship_subsys *subsys;
-	int sindex;
-
-	for (int n = node; n >= 0; n = CDR(n)) {
+	for (int n = node; n >= 0; n = CDR(n))
+	{
 		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(n) );
-
-		if (sindex < 0) {
+		auto shooter = eval_ship(n);
+		if (!shooter || !shooter->shipp)
 			continue;
-		}
 
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
+		// visit all beam weapons
+		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
+		{
+			if (turret->system_info->type != SUBSYSTEM_TURRET)
+				continue;
 
-		// lock all turrets
-		subsys = GET_FIRST(&Ships[sindex].subsys_list);
-
-		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
-			// just mark all turrets as locked
-			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
-				subsys->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
-			}
-
-			// next item
-			subsys = GET_NEXT(subsys);
+			sexp_beam_free_one_turret(turret, is_beam, free);
 		}
 	}
 }
 
-void sexp_turret_tagged_only_all(int node)
+void sexp_turret_tagged_only_or_clear_all(int node, bool set_it)
 {
-	ship_subsys *subsys;
-	int sindex;
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		// get the firing ship
+		auto shooter = eval_ship(n);
+		if (!shooter || !shooter->shipp)
+			continue;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
+		// visit all turrets
+		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
+		{
+			if (turret->system_info->type != SUBSYSTEM_TURRET)
+				continue;
 
-	// mark all turrets to only target tagged ships
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as locked
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only);
+			turret->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only, set_it);
 		}
-
-		// next item
-		subsys = GET_NEXT(subsys);
 	}
 }
 
-void sexp_turret_tagged_clear_all(int node)
+void sexp_turret_tagged_or_clear_specific(int node, bool set_it)
 {
-	ship_subsys *subsys;
-	int sindex;
-
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp)
 		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
+	node = CDR(node);
 
-	// mark all turrets so not restricted to only tagged ships
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as locked
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags.remove(Ship::Weapon_Flags::Tagged_Only);
-		}
+	for ( ; node >= 0; node = CDR(node))
+	{
+		// get the subsystem
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+		if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
+			continue;
 
-		// next item
-		subsys = GET_NEXT(subsys);
+		// flag turret as slaved to tag
+		turret->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only, set_it);
 	}
 }
 
@@ -19938,60 +19745,6 @@ void sexp_trigger_submodel_animation(int node)
 	else
 	{
 		model_anim_start_type(&Ships[ship_num], animation_type, animation_subtype, direction, instant);
-	}
-}
-
-void sexp_turret_tagged_specific(int node)
-{
-	ship_subsys *subsys;
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(subsys == NULL){
-			continue;
-		}
-
-		// flag turret as slaved to tag
-		subsys->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only);
-	}
-}
-
-void sexp_turret_tagged_clear_specific(int node)
-{
-	ship_subsys *subsys;
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(subsys == NULL){
-			continue;
-		}
-
-		// flag turret as slaved to tag
-		subsys->weapons.flags.remove(Ship::Weapon_Flags::Tagged_Only);
 	}
 }
 
@@ -25837,43 +25590,19 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_BEAM_FREE:
+			case OP_BEAM_LOCK:
+			case OP_TURRET_FREE:
+			case OP_TURRET_LOCK:
+				sexp_beam_or_turret_free_or_lock(node, op_num == OP_BEAM_FREE || op_num == OP_BEAM_LOCK, op_num == OP_BEAM_FREE || op_num == OP_TURRET_FREE);
 				sexp_val = SEXP_TRUE;
-				sexp_beam_free(node);
 				break;
 
 			case OP_BEAM_FREE_ALL:
-				sexp_val = SEXP_TRUE;
-				sexp_beam_free_all(node);
-				break;
-
-			case OP_BEAM_LOCK:
-				sexp_val = SEXP_TRUE;
-				sexp_beam_lock(node);
-				break;
-
 			case OP_BEAM_LOCK_ALL:
-				sexp_val = SEXP_TRUE;
-				sexp_beam_lock_all(node);
-				break;
-
-			case OP_TURRET_FREE:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_free(node);
-				break;
-
 			case OP_TURRET_FREE_ALL:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_free_all(node);
-				break;
-
-			case OP_TURRET_LOCK:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_lock(node);
-				break;
-
 			case OP_TURRET_LOCK_ALL:
+				sexp_beam_or_turret_free_or_lock_all(node, op_num == OP_BEAM_FREE_ALL || op_num == OP_BEAM_LOCK_ALL, op_num == OP_BEAM_FREE_ALL || op_num == OP_TURRET_FREE_ALL);
 				sexp_val = SEXP_TRUE;
-				sexp_turret_lock_all(node);
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
@@ -25967,13 +25696,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TURRET_TAGGED_ONLY_ALL:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_tagged_only_all(node);
-				break;
-
 			case OP_TURRET_TAGGED_CLEAR_ALL:
+				sexp_turret_tagged_only_or_clear_all(node, op_num == OP_TURRET_TAGGED_ONLY_ALL);
 				sexp_val = SEXP_TRUE;
-				sexp_turret_tagged_clear_all(node);
 				break;
 
 			case OP_SUBSYS_SET_RANDOM:
@@ -26115,12 +25840,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TURRET_TAGGED_SPECIFIC:
-				sexp_turret_tagged_specific(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
-				sexp_turret_tagged_clear_specific(node);
+				sexp_turret_tagged_or_clear_specific(node, op_num == OP_TURRET_TAGGED_SPECIFIC);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -34361,12 +34082,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_TURRET_TAGGED_ONLY_ALL, "turret-tagged-only\r\n"
 		"\tMakes turrets target and hence fire strictly at tagged objects\r\n"
-		"\t1: Ship name\r\n"
+		"\tAll: Ship name\r\n"
 		"\tNOTE: Will not stop a turret already firing at an untagged ship\r\n"},
 
 	{ OP_TURRET_TAGGED_CLEAR_ALL, "turret-tagged-clear\r\n"
 		"\tRelaxes restriction on turrets targeting only tagged ships\r\n"
-		"\t1: Ship name\r\n"},
+		"\tAll: Ship name\r\n"},
 
 	{ OP_PRIMARIES_DEPLETED, "primaries-depleted\r\n"
 		"\tReturns true if ship is out of primary weapons\r\n"
