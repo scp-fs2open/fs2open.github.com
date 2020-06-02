@@ -122,6 +122,7 @@ public:
     * Adds a ship's net sig to the SEXP packet.
     */
     void send_ship(ship *shipp);
+	void send_ship(int shipnum);
     
 	/**
 	* Adds a wing's net sig to the SEXP packet.

@@ -10635,7 +10635,7 @@ void sexp_change_ai_class(int n)
 		return;
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(&Ships[ship_num]);
+	Current_sexp_network_packet.send_ship(ship_num);
 	Current_sexp_network_packet.send_int(new_ai_class);
 
 	// subsys?
@@ -12824,7 +12824,7 @@ void sexp_repair_subsystem(int n)
 		ihs = shipp->ship_max_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
-		objp->hull_strength += repair_hits;
+		objp->sim_hull_strength += repair_hits;
 		if ( objp->sim_hull_strength > ihs )
 			objp->sim_hull_strength = ihs;
 		return;
@@ -14174,7 +14174,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
 				Current_sexp_network_packet.send_bool(true); 
-				Current_sexp_network_packet.send_ship(&Ships[ship_index]);
+				Current_sexp_network_packet.send_ship(ship_index);
 			}
 		}
 		// if it's not in-mission
@@ -14861,7 +14861,7 @@ void sexp_set_persona (int node)
 		Ships[sindex].persona_index = persona_index; 
 
 		if (MULTIPLAYER_MASTER) {
-			Current_sexp_network_packet.send_ship(&Ships[sindex]);
+			Current_sexp_network_packet.send_ship(sindex);
 		}
 	}
 
@@ -16008,7 +16008,7 @@ void sexp_destroy_instantly(int n)
 
 				// multiplayer callback
 				if (MULTIPLAYER_MASTER)
-					Current_sexp_network_packet.send_ship(&Ships[ship_num]);
+					Current_sexp_network_packet.send_ship(ship_num);
 			}
 		}
 	}
@@ -17019,7 +17019,7 @@ void sexp_set_ets_values(int node)
 			Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
 			Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
 
-			Current_sexp_network_packet.send_ship(&Ships[sindex]);
+			Current_sexp_network_packet.send_ship(sindex);
 			Current_sexp_network_packet.send_int(ets_idx[ENGINES]);
             Current_sexp_network_packet.send_int(ets_idx[SHIELDS]);
 			Current_sexp_network_packet.send_int(ets_idx[WEAPONS]);
@@ -17308,7 +17308,7 @@ void sexp_set_primary_ammo (int node)
 
 	// do the multiplayer callback here
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(&Ships[sindex]);
+	Current_sexp_network_packet.send_ship(sindex);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(requested_weapons);
 	Current_sexp_network_packet.send_int(rearm_limit);
@@ -17472,7 +17472,7 @@ void sexp_set_secondary_ammo (int node)
 
 	// do the multiplayer callback here
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(&Ships[sindex]);
+	Current_sexp_network_packet.send_ship(sindex);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(requested_weapons);
 	Current_sexp_network_packet.send_int(rearm_limit);
@@ -17586,7 +17586,7 @@ void sexp_set_weapon(int node, bool primary)
 	}
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(&Ships[sindex]);
+	Current_sexp_network_packet.send_ship(sindex);
 	Current_sexp_network_packet.send_bool(primary);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(windex);
@@ -17878,7 +17878,7 @@ void sexp_change_ship_class(int n)
 
 				if (MULTIPLAYER_MASTER) {
 					Current_sexp_network_packet.send_bool(true); 
-					Current_sexp_network_packet.send_ship(&Ships[ship_num]);
+					Current_sexp_network_packet.send_ship(ship_num);
 				}
 			}
 		}
@@ -23630,7 +23630,7 @@ void sexp_script_eval_multi(int node)
 				// otherwise notify the clients
 				else {
 					sindex = ship_name_lookup(CTEXT(node));
-					Current_sexp_network_packet.send_ship(&Ships[sindex]);
+					Current_sexp_network_packet.send_ship(sindex);
 				}
 			}
 

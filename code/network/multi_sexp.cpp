@@ -306,6 +306,11 @@ void sexp_network_packet::send_ship(ship * shipp)
     current_argument_count += sizeof(ushort);
 }
 
+void sexp_network_packet::send_ship(int shipnum)
+{
+	send_ship(&Ships[shipnum]);
+}
+
 void sexp_network_packet::send_object(object * objp)
 {
     if (cannot_send_data()) {
