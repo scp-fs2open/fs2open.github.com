@@ -413,7 +413,7 @@ bool StartAutopilot()
 				}
 				else
 				{
-					ai_clear_wing_goals(wingnum);
+					ai_clear_wing_goals(&Wings[wingnum]);
 					j = 1+int( (float)floor(double(wcount-1)/2.0) );
 					switch (wcount % 2)
 					{
@@ -484,7 +484,7 @@ bool StartAutopilot()
 				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
 				//ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 				
-				ai_clear_wing_goals( i );
+				ai_clear_wing_goals( &Wings[i] );
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					

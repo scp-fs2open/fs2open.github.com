@@ -35,7 +35,7 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d *hitpos, bool no_explosion = false );
 
 // Goober5000
-extern void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team);
+extern void ship_apply_tag(ship *ship_p, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team);
 
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.

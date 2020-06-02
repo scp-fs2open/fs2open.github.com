@@ -782,11 +782,13 @@ enum ShipStatus { NOT_YET_PRESENT, PRESENT, EXITED };
 struct ship_registry_entry
 {
 	ShipStatus status;
+	const char *name;
 
 	p_object *pobjp;
 	object *objp;
 	ship *shipp;
 	int cleanup_mode;
+	int exited_index;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -1421,7 +1423,7 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj, int shipnum);
+extern void ship_destroy_instantly(object *ship_obj);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
@@ -1468,6 +1470,8 @@ extern int wing_has_conflicting_teams(int wing_index);
 // in the wing -- used to tell is the wing exists or not, not whether it exists and has ships currently
 // present.
 extern int wing_name_lookup(const char *name, int ignore_count = 0);
+
+extern bool wing_has_yet_to_arrive(const wing *wingp);
 
 // for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
 extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
@@ -1517,7 +1521,7 @@ extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
 extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);
 extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
-extern ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name);
+extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
@@ -1714,8 +1718,8 @@ float ship_class_get_length(const ship_info *sip);
 void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos);
 
 // Goober5000 - used by change-ai-class
-extern void ship_set_new_ai_class(int ship_num, int new_ai_class);
-extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class);
+extern void ship_set_new_ai_class(ship *shipp, int new_ai_class);
+extern void ship_subsystem_set_new_ai_class(ship *shipp, char *subsystem, int new_ai_class);
 
 // wing squad logos - Goober5000
 extern void wing_load_squad_bitmap(wing *w);

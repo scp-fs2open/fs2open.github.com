@@ -5575,6 +5575,11 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 		entry.damage_ship[i] = sp->damage_ship[i] ;
 	}
 	
+	// record this in the ship registry
+	auto ship_it = Ship_registry_map.find(sp->ship_name);
+	if (ship_it != Ship_registry_map.end())
+		Ship_registry[ship_it->second].exited_index = static_cast<int>(Ships_exited.size());
+
 	Ships_exited.push_back(entry);
 }
 
@@ -7413,7 +7418,7 @@ void ship_actually_depart(int shipnum, int method)
 }
 
 // no destruction effects, not for player destruction and multiplayer, only self-destruction
-void ship_destroy_instantly(object *ship_objp, int shipnum)
+void ship_destroy_instantly(object *ship_objp)
 {
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
@@ -7430,7 +7435,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	Script_system.RemHookVar("Self");
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
-	ship_cleanup(shipnum,SHIP_DESTROYED);
+	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
 }
 
 // convert the departure int method to a string --wookieejedi
@@ -9598,7 +9603,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	auto ship_it = Ship_registry_map.find(shipp->ship_name);
 	if (ship_it == Ship_registry_map.end())
 	{
-		ship_registry_entry entry = { ShipStatus::PRESENT, nullptr, &Objects[objnum], shipp, 0 };
+		ship_registry_entry entry = { ShipStatus::PRESENT, shipp->ship_name, nullptr, &Objects[objnum], shipp, 0, -1 };
 		Ship_registry.push_back(entry);
 		Ship_registry_map[shipp->ship_name] = static_cast<int>(Ship_registry.size() - 1);
 	}
@@ -10206,7 +10211,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
 	}
 
-	ship_set_new_ai_class(n, sip->ai_class);
+	ship_set_new_ai_class(sp, sip->ai_class);
 
 	//======================================================
 
@@ -12700,6 +12705,11 @@ int wing_name_lookup(const char *name, int ignore_count)
 	}
 
 	return -1;
+}
+
+bool wing_has_yet_to_arrive(const wing *wingp)
+{
+	return (wingp != nullptr) && (wingp->num_waves >= 0) && (wingp->total_arrived_count == 0);
 }
 
 /**
@@ -17003,7 +17013,7 @@ int ship_get_turret_type(ship_subsys *subsys)
 	return 1;
 }
 
-ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name)
+ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name)
 {
 	// sanity checks
 	if ((shipp == NULL) || (subsys_name == NULL)) {
@@ -17367,35 +17377,35 @@ void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos)
 }
 
 // Goober5000
-void ship_set_new_ai_class(int ship_num, int new_ai_class)
+void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 {
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+	Assert(shipp);
 	Assert(new_ai_class >= 0);
 
-	ai_info *aip = &Ai_info[Ships[ship_num].ai_index];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
 	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
-	Ships[ship_num].weapons.ai_class = new_ai_class;
+	shipp->weapons.ai_class = new_ai_class;
 
 	// I think that's everything!
 }
 
 // Goober5000
-void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class)
+void ship_subsystem_set_new_ai_class(ship *shipp, char *subsystem, int new_ai_class)
 {
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+	Assert(shipp);
 	Assert(subsystem);
 	Assert(new_ai_class >= 0);
 
 	ship_subsys *ss;
 
 	// find the ship subsystem by searching ship's subsys_list
-	ss = GET_FIRST( &Ships[ship_num].subsys_list );
-	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+	ss = GET_FIRST( &shipp->subsys_list );
+	while ( ss != END_OF_LIST( &shipp->subsys_list ) )
 	{
 		// if we found the subsystem
 		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))

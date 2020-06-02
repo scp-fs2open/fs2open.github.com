@@ -277,11 +277,9 @@ void ai_clear_ship_goals( ai_info *aip )
 
 }
 
-void ai_clear_wing_goals( int wingnum )
+void ai_clear_wing_goals( wing *wingp )
 {
 	int i;
-	wing *wingp = &Wings[wingnum];
-	//p_object *objp;
 
 	// clear the goals for all ships in the wing
 	for (i = 0; i < wingp->current_count; i++) {
@@ -292,15 +290,13 @@ void ai_clear_wing_goals( int wingnum )
 
 	}
 
-		// clear out the goals for the wing now
+	// clear out the goals for the wing now
 	for (i = 0; i < MAX_AI_GOALS; i++) {
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
 		wingp->ai_goals[i].flags.reset();
 	}
-
-
 }
 
 // routine which marks a wing goal as being complete.  We get the wingnum and a pointer to the goal
@@ -1209,11 +1205,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 }
 
 // code to add ai goals to wings.
-void ai_remove_wing_goal_sexp(int sexp, int wingnum)
+void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
-	wing *wingp = &Wings[wingnum];
 
 	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
@@ -1244,10 +1239,9 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 }
 
 // code to add ai goals to wings.
-void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
+void ai_add_wing_goal_sexp(int sexp, int type, wing *wingp)
 {
 	int i;
-	wing *wingp = &Wings[wingnum];
 
 	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {

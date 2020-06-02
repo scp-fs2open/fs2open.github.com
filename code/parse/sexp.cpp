@@ -4255,7 +4255,10 @@ const ship_registry_entry *eval_ship(int node)
 {
 	if (Sexp_nodes[node].cache)
 	{
-		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_SHIP, "Cache data mismatch!");
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_SHIP)
+			return nullptr;
+
 		return &Ship_registry[Sexp_nodes[node].cache->ship_registry_index];
 	}
 
@@ -4275,6 +4278,37 @@ const ship_registry_entry *eval_ship(int node)
 }
 
 /**
+ * Gets a wing from a sexp node.  Returns the wing pointer, or NULL if the wing is unknown.
+ */
+wing *eval_wing(int node)
+{
+	if (Sexp_nodes[node].cache)
+	{
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_WING)
+			return nullptr;
+
+		return static_cast<wing*>(Sexp_nodes[node].cache->pointer);
+	}
+
+	int wing_num = wing_lookup(CTEXT(node));
+	if (wing_num >= 0)
+	{
+		auto wingp = &Wings[wing_num];
+
+		// cache the value, unless this node is a variable because the value may change
+		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
+
+		return wingp;
+	}
+
+	// it must not be a wing
+	return nullptr;
+}
+
+/**
  * Returns a number parsed from the sexp node text.
  * NOTE: sexp_atoi can only be used if CTEXT was used; i.e. atoi(CTEXT(n))
  */
@@ -4284,7 +4318,10 @@ int sexp_atoi(int node)
 
 	if (Sexp_nodes[node].cache)
 	{
-		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER, "Cache data mismatch!");
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
+			return 0;
+
 		return Sexp_nodes[node].cache->numeric_literal;
 	}
 
@@ -10598,7 +10635,7 @@ void sexp_change_ai_class(int n)
 		return;
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(ship_num);
+	Current_sexp_network_packet.send_ship(&Ships[ship_num]);
 	Current_sexp_network_packet.send_int(new_ai_class);
 
 	// subsys?
@@ -10608,7 +10645,7 @@ void sexp_change_ai_class(int n)
 		for ( ; n != -1; n = CDR(n) )
 		{
 			subsystem = CTEXT(n);
-			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 
 			Current_sexp_network_packet.send_string(subsystem);
 		}
@@ -10616,7 +10653,7 @@ void sexp_change_ai_class(int n)
 	// just the one ship
 	else
 	{
-		ship_set_new_ai_class(ship_num, new_ai_class);
+		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
 	}
 
 	Current_sexp_network_packet.end_callback();
@@ -10632,15 +10669,15 @@ void multi_sexp_change_ai_class()
 
 	// subsystem?
 	if (Current_sexp_network_packet.get_string(subsystem)) {
-		ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+		ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 
 		// deal with any other subsystems
 		while (Current_sexp_network_packet.get_string(subsystem)) {
-			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 		}		 
 	}
 	else {
-		ship_set_new_ai_class(ship_num, new_ai_class);
+		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
 	}
 }
 
@@ -10676,7 +10713,7 @@ void sexp_add_wing_goal(int n)
 		return;
 
 	sindex = CDR(n);
-	ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
+	ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
 }
 
 /**
@@ -10696,7 +10733,7 @@ void sexp_add_goal(int n)
 	if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 		ai_add_ship_goal_sexp( sindex, AIG_TYPE_EVENT_SHIP, &(Ai_info[Ships[num].ai_index]) );
 	else if ( (num = wing_name_lookup(name)) != -1 )
-		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
+		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
 }
 
 // Goober5000
@@ -10724,7 +10761,7 @@ void sexp_remove_goal(int n)
 	}
 	else if ( (num = wing_name_lookup(name)) != -1 )
 	{
-		ai_remove_wing_goal_sexp( sindex, num );
+		ai_remove_wing_goal_sexp( sindex, &Wings[num] );
 	}
 	
 }
@@ -10758,7 +10795,7 @@ void sexp_clear_wing_goals(int n)
 	num = wing_name_lookup(wing_name);
 	if ( num < 0 )
 		return;
-	ai_clear_wing_goals( num );
+	ai_clear_wing_goals( &Wings[num] );
 }
 
 /**
@@ -10775,7 +10812,7 @@ void sexp_clear_goals(int n)
 		if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 			ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 		else if ( (num = wing_name_lookup(name)) != -1 )
-			ai_clear_wing_goals( num );
+			ai_clear_wing_goals( &Wings[num] );
 
 		n = CDR(n);
 	}
@@ -14137,7 +14174,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
 				Current_sexp_network_packet.send_bool(true); 
-				Current_sexp_network_packet.send_ship(ship_index); 
+				Current_sexp_network_packet.send_ship(&Ships[ship_index]);
 			}
 		}
 		// if it's not in-mission
@@ -14824,7 +14861,7 @@ void sexp_set_persona (int node)
 		Ships[sindex].persona_index = persona_index; 
 
 		if (MULTIPLAYER_MASTER) {
-			Current_sexp_network_packet.send_ship(sindex); 
+			Current_sexp_network_packet.send_ship(&Ships[sindex]);
 		}
 	}
 
@@ -15653,7 +15690,7 @@ void sexp_ship_tag( int n, int tag )
             ssm_team = iff_lookup(CTEXT(n));
 	}
 
-	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
+	ship_apply_tag(&Ships[ship_num], tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
 }
 
 // sexpression to toggle invulnerability flag of ships.
@@ -15967,11 +16004,11 @@ void sexp_destroy_instantly(int n)
 			// if it's the player don't destroy
 			if (ship_obj_p != Player_obj)
 			{
-				ship_destroy_instantly(ship_obj_p, ship_num);
+				ship_destroy_instantly(ship_obj_p);
 
 				// multiplayer callback
 				if (MULTIPLAYER_MASTER)
-					Current_sexp_network_packet.send_ship(ship_num);
+					Current_sexp_network_packet.send_ship(&Ships[ship_num]);
 			}
 		}
 	}
@@ -15996,7 +16033,7 @@ void multi_sexp_destroy_instantly()
 			// if it's the player don't destroy
 			if (ship_obj_p != Player_obj)
 			{
-				ship_destroy_instantly(ship_obj_p, ship_num);
+				ship_destroy_instantly(ship_obj_p);
 			}
 		}
 	}
@@ -16982,7 +17019,7 @@ void sexp_set_ets_values(int node)
 			Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
 			Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
 
-			Current_sexp_network_packet.send_ship(sindex);
+			Current_sexp_network_packet.send_ship(&Ships[sindex]);
 			Current_sexp_network_packet.send_int(ets_idx[ENGINES]);
             Current_sexp_network_packet.send_int(ets_idx[SHIELDS]);
 			Current_sexp_network_packet.send_int(ets_idx[WEAPONS]);
@@ -17271,7 +17308,7 @@ void sexp_set_primary_ammo (int node)
 
 	// do the multiplayer callback here
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_ship(&Ships[sindex]);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(requested_weapons);
 	Current_sexp_network_packet.send_int(rearm_limit);
@@ -17435,7 +17472,7 @@ void sexp_set_secondary_ammo (int node)
 
 	// do the multiplayer callback here
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_ship(&Ships[sindex]);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(requested_weapons);
 	Current_sexp_network_packet.send_int(rearm_limit);
@@ -17549,7 +17586,7 @@ void sexp_set_weapon(int node, bool primary)
 	}
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_ship(&Ships[sindex]);
 	Current_sexp_network_packet.send_bool(primary);
 	Current_sexp_network_packet.send_int(requested_bank);
 	Current_sexp_network_packet.send_int(windex);
@@ -17841,7 +17878,7 @@ void sexp_change_ship_class(int n)
 
 				if (MULTIPLAYER_MASTER) {
 					Current_sexp_network_packet.send_bool(true); 
-					Current_sexp_network_packet.send_ship(ship_num); 
+					Current_sexp_network_packet.send_ship(&Ships[ship_num]);
 				}
 			}
 		}
@@ -23593,7 +23630,7 @@ void sexp_script_eval_multi(int node)
 				// otherwise notify the clients
 				else {
 					sindex = ship_name_lookup(CTEXT(node));
-					Current_sexp_network_packet.send_ship(sindex);
+					Current_sexp_network_packet.send_ship(&Ships[sindex]);
 				}
 			}
 
