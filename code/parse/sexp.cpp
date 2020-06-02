@@ -908,7 +908,7 @@ int Num_explosion_options = 6;
 int get_sexp();
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
-int sexp_determine_team(char *subj);
+int sexp_determine_team(const char *subj);
 void init_sexp_vars();
 
 // for handling variables
@@ -930,13 +930,9 @@ bool is_blank_of_op(int op_const);
 
 int get_handler_for_x_of_operator(int node);
 
-int sexp_atoi(int node);
-bool sexp_can_construe_as_integer(int node);
-int sexp_get_variable_index(int node);
-
 //Karajorma
-int get_generic_subsys(char *subsy_name);
-bool ship_class_unchanged(int ship_index); 
+int get_generic_subsys(const char *subsy_name);
+bool ship_class_unchanged(int ship_index);
 void multi_sexp_modify_variable();
 
 int get_effect_from_name(const char* name);
@@ -7043,7 +7039,7 @@ int sexp_directive_value(int n)
 	return SEXP_TRUE;
 }
 
-int sexp_determine_team(char *subj)
+int sexp_determine_team(const char *subj)
 {
 	char team_name[NAME_LENGTH];
 
@@ -10225,7 +10221,8 @@ int sexp_is_iff(int n)
 					// it's probably an exited wing, which we don't store information about
 					return SEXP_NAN_FOREVER;
 				}
-				FALLTHROUGH;
+
+				break;
 			}
 
 			// we don't handle the other cases
@@ -24076,7 +24073,7 @@ void sexp_set_motion_debris(int node)
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
-int get_generic_subsys(char *subsys_name) 
+int get_generic_subsys(const char *subsys_name)
 {
 	if (!strcmp(subsys_name, SEXP_ALL_ENGINES_STRING)) {
 		return SUBSYSTEM_ENGINE;
