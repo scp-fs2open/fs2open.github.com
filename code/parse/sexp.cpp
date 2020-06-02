@@ -908,7 +908,7 @@ int Num_explosion_options = 6;
 int get_sexp();
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
-int sexp_determine_team(char *subj);
+int sexp_determine_team(const char *subj);
 void init_sexp_vars();
 
 // for handling variables
@@ -930,13 +930,9 @@ bool is_blank_of_op(int op_const);
 
 int get_handler_for_x_of_operator(int node);
 
-int sexp_atoi(int node);
-bool sexp_can_construe_as_integer(int node);
-int sexp_get_variable_index(int node);
-
 //Karajorma
-int get_generic_subsys(char *subsy_name);
-bool ship_class_unchanged(int ship_index); 
+int get_generic_subsys(const char *subsy_name);
+bool ship_class_unchanged(int ship_index);
 void multi_sexp_modify_variable();
 
 int get_effect_from_name(const char* name);
@@ -4255,7 +4251,10 @@ const ship_registry_entry *eval_ship(int node)
 {
 	if (Sexp_nodes[node].cache)
 	{
-		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_SHIP, "Cache data mismatch!");
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_SHIP)
+			return nullptr;
+
 		return &Ship_registry[Sexp_nodes[node].cache->ship_registry_index];
 	}
 
@@ -4275,6 +4274,37 @@ const ship_registry_entry *eval_ship(int node)
 }
 
 /**
+ * Gets a wing from a sexp node.  Returns the wing pointer, or NULL if the wing is unknown.
+ */
+wing *eval_wing(int node)
+{
+	if (Sexp_nodes[node].cache)
+	{
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_WING)
+			return nullptr;
+
+		return static_cast<wing*>(Sexp_nodes[node].cache->pointer);
+	}
+
+	int wing_num = wing_lookup(CTEXT(node));
+	if (wing_num >= 0)
+	{
+		auto wingp = &Wings[wing_num];
+
+		// cache the value, unless this node is a variable because the value may change
+		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
+
+		return wingp;
+	}
+
+	// it must not be a wing
+	return nullptr;
+}
+
+/**
  * Returns a number parsed from the sexp node text.
  * NOTE: sexp_atoi can only be used if CTEXT was used; i.e. atoi(CTEXT(n))
  */
@@ -4284,7 +4314,10 @@ int sexp_atoi(int node)
 
 	if (Sexp_nodes[node].cache)
 	{
-		Assertion(Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER, "Cache data mismatch!");
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
+			return 0;
+
 		return Sexp_nodes[node].cache->numeric_literal;
 	}
 
@@ -7006,7 +7039,7 @@ int sexp_directive_value(int n)
 	return SEXP_TRUE;
 }
 
-int sexp_determine_team(char *subj)
+int sexp_determine_team(const char *subj)
 {
 	char team_name[NAME_LENGTH];
 
@@ -10188,7 +10221,8 @@ int sexp_is_iff(int n)
 					// it's probably an exited wing, which we don't store information about
 					return SEXP_NAN_FOREVER;
 				}
-				FALLTHROUGH;
+
+				break;
 			}
 
 			// we don't handle the other cases
@@ -10608,7 +10642,7 @@ void sexp_change_ai_class(int n)
 		for ( ; n != -1; n = CDR(n) )
 		{
 			subsystem = CTEXT(n);
-			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 
 			Current_sexp_network_packet.send_string(subsystem);
 		}
@@ -10616,7 +10650,7 @@ void sexp_change_ai_class(int n)
 	// just the one ship
 	else
 	{
-		ship_set_new_ai_class(ship_num, new_ai_class);
+		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
 	}
 
 	Current_sexp_network_packet.end_callback();
@@ -10632,15 +10666,15 @@ void multi_sexp_change_ai_class()
 
 	// subsystem?
 	if (Current_sexp_network_packet.get_string(subsystem)) {
-		ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+		ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 
 		// deal with any other subsystems
 		while (Current_sexp_network_packet.get_string(subsystem)) {
-			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
 		}		 
 	}
 	else {
-		ship_set_new_ai_class(ship_num, new_ai_class);
+		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
 	}
 }
 
@@ -10676,7 +10710,7 @@ void sexp_add_wing_goal(int n)
 		return;
 
 	sindex = CDR(n);
-	ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
+	ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
 }
 
 /**
@@ -10696,7 +10730,7 @@ void sexp_add_goal(int n)
 	if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 		ai_add_ship_goal_sexp( sindex, AIG_TYPE_EVENT_SHIP, &(Ai_info[Ships[num].ai_index]) );
 	else if ( (num = wing_name_lookup(name)) != -1 )
-		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
+		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
 }
 
 // Goober5000
@@ -10724,7 +10758,7 @@ void sexp_remove_goal(int n)
 	}
 	else if ( (num = wing_name_lookup(name)) != -1 )
 	{
-		ai_remove_wing_goal_sexp( sindex, num );
+		ai_remove_wing_goal_sexp( sindex, &Wings[num] );
 	}
 	
 }
@@ -10758,7 +10792,7 @@ void sexp_clear_wing_goals(int n)
 	num = wing_name_lookup(wing_name);
 	if ( num < 0 )
 		return;
-	ai_clear_wing_goals( num );
+	ai_clear_wing_goals( &Wings[num] );
 }
 
 /**
@@ -10775,7 +10809,7 @@ void sexp_clear_goals(int n)
 		if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
 			ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 		else if ( (num = wing_name_lookup(name)) != -1 )
-			ai_clear_wing_goals( num );
+			ai_clear_wing_goals( &Wings[num] );
 
 		n = CDR(n);
 	}
@@ -12787,7 +12821,7 @@ void sexp_repair_subsystem(int n)
 		ihs = shipp->ship_max_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
-		objp->hull_strength += repair_hits;
+		objp->sim_hull_strength += repair_hits;
 		if ( objp->sim_hull_strength > ihs )
 			objp->sim_hull_strength = ihs;
 		return;
@@ -14137,7 +14171,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
 				Current_sexp_network_packet.send_bool(true); 
-				Current_sexp_network_packet.send_ship(ship_index); 
+				Current_sexp_network_packet.send_ship(ship_index);
 			}
 		}
 		// if it's not in-mission
@@ -14824,7 +14858,7 @@ void sexp_set_persona (int node)
 		Ships[sindex].persona_index = persona_index; 
 
 		if (MULTIPLAYER_MASTER) {
-			Current_sexp_network_packet.send_ship(sindex); 
+			Current_sexp_network_packet.send_ship(sindex);
 		}
 	}
 
@@ -15653,7 +15687,7 @@ void sexp_ship_tag( int n, int tag )
             ssm_team = iff_lookup(CTEXT(n));
 	}
 
-	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
+	ship_apply_tag(&Ships[ship_num], tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
 }
 
 // sexpression to toggle invulnerability flag of ships.
@@ -15967,7 +16001,7 @@ void sexp_destroy_instantly(int n)
 			// if it's the player don't destroy
 			if (ship_obj_p != Player_obj)
 			{
-				ship_destroy_instantly(ship_obj_p, ship_num);
+				ship_destroy_instantly(ship_obj_p);
 
 				// multiplayer callback
 				if (MULTIPLAYER_MASTER)
@@ -15996,7 +16030,7 @@ void multi_sexp_destroy_instantly()
 			// if it's the player don't destroy
 			if (ship_obj_p != Player_obj)
 			{
-				ship_destroy_instantly(ship_obj_p, ship_num);
+				ship_destroy_instantly(ship_obj_p);
 			}
 		}
 	}
@@ -17841,7 +17875,7 @@ void sexp_change_ship_class(int n)
 
 				if (MULTIPLAYER_MASTER) {
 					Current_sexp_network_packet.send_bool(true); 
-					Current_sexp_network_packet.send_ship(ship_num); 
+					Current_sexp_network_packet.send_ship(ship_num);
 				}
 			}
 		}
@@ -24039,7 +24073,7 @@ void sexp_set_motion_debris(int node)
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
-int get_generic_subsys(char *subsys_name) 
+int get_generic_subsys(const char *subsys_name)
 {
 	if (!strcmp(subsys_name, SEXP_ALL_ENGINES_STRING)) {
 		return SUBSYSTEM_ENGINE;

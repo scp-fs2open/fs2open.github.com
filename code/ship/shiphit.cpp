@@ -2398,24 +2398,24 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 }
 
 // Goober5000
-void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
+void ship_apply_tag(ship *shipp, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
 {
 	// set time first tagged
-	if (Ships[ship_num].time_first_tagged == 0)
-		Ships[ship_num].time_first_tagged = Missiontime;
+	if (shipp->time_first_tagged == 0)
+		shipp->time_first_tagged = Missiontime;
 
 	// do tag effect
 	if (tag_level == 1)
 	{
-//		mprintf(("TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
-		Ships[ship_num].tag_left = tag_time;
-		Ships[ship_num].tag_total = tag_time;
+//		mprintf(("TAGGED %s for %f seconds\n", shipp->ship_name, tag_time));
+		shipp->tag_left = tag_time;
+		shipp->tag_total = tag_time;
 	}
 	else if (tag_level == 2)
 	{
-//		mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
-		Ships[ship_num].level2_tag_left = tag_time;
-		Ships[ship_num].level2_tag_total = tag_time;
+//		mprintf(("Level 2 TAGGED %s for %f seconds\n", shipp->ship_name, tag_time));
+		shipp->level2_tag_left = tag_time;
+		shipp->level2_tag_total = tag_time;
 	}
 	else if (tag_level == 3)
 	{
@@ -2484,7 +2484,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 			vec3d *start = hitpos;
 			int ssm_index = wip->SSM_index;
 
-			ship_apply_tag(ship_objp->instance, wip->tag_level, wip->tag_time, ship_objp, start, ssm_index, wp->team);
+			ship_apply_tag(ship_p, wip->tag_level, wip->tag_time, ship_objp, start, ssm_index, wp->team);
 		}
 	}
 

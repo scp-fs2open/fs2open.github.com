@@ -276,6 +276,21 @@ void sexp_network_packet::send_int(int value)
     current_argument_count += sizeof(int);
 }
 
+void sexp_network_packet::send_wing(wing * wingp)
+{
+	if (cannot_send_data()) {
+		return;
+	}
+
+	ensure_space_remains(sizeof(ushort));
+
+	//write into the Type buffer.
+	type[packet_size] = packet_data_type::WING;
+	//write the into the data buffer
+	ADD_USHORT(wingp->net_signature);
+	current_argument_count += sizeof(ushort);
+}
+
 void sexp_network_packet::send_ship(ship * shipp)
 {
     if (cannot_send_data()) {
@@ -293,13 +308,7 @@ void sexp_network_packet::send_ship(ship * shipp)
 
 void sexp_network_packet::send_ship(int shipnum)
 {
-    if (cannot_send_data()) {
-        return;
-    }
-
-    ensure_space_remains(sizeof(shipnum));
-
-    send_ship(&Ships[shipnum]);
+	send_ship(&Ships[shipnum]);
 }
 
 void sexp_network_packet::send_object(object * objp)
@@ -396,6 +405,18 @@ void sexp_network_packet::send_float(float value)
     current_argument_count += sizeof(float);
 }
 
+void sexp_network_packet::send_vec3d(vec3d *value)
+{
+	for (int i = 0; i < 3; ++i)     // NOLINT
+		send_float(value->a1d[i]);
+}
+
+void sexp_network_packet::send_matrix(matrix *value)
+{
+	for (int i = 0; i < 9; ++i)     // NOLINT
+		send_float(value->a1d[i]);
+}
+
 void sexp_network_packet::send_short(short value)
 {
     if (cannot_send_data()) {
@@ -460,7 +481,7 @@ bool sexp_network_packet::get_ship(int & value)
         return true;
     }
 
-    Warning(LOCATION, "Current_sexp_network_packet.get_ship called for object %d even though it is not a ship", objp->instance);
+    Warning(LOCATION, "Current_sexp_network_packet.get_ship called for net signature %d even though it is not a ship", netsig);
     return false;
 }
 
@@ -473,6 +494,31 @@ bool sexp_network_packet::get_ship(ship *& shipp)
         return true;
     }
 
+    return false;
+}
+
+bool sexp_network_packet::get_wing(wing *& wingp)
+{
+	int i;
+    ushort netsig;
+
+    if (!sexp_bytes_left || !current_argument_count) {
+        return false;
+    }
+
+    // get the net signature of the wing
+    GET_USHORT(netsig);
+    reduce_counts(sizeof(ushort));
+
+    // lookup the wing
+	for (i = 0; i < Num_wings; i++) {
+		if (Wings[i].net_signature == netsig) {
+			wingp = &Wings[i];
+			return true;
+		}
+	}
+
+    Warning(LOCATION, "Current_sexp_network_packet.get_wing called for net signature %d even though it is not a ship", netsig);
     return false;
 }
 
@@ -571,6 +617,26 @@ bool sexp_network_packet::get_float(float & value)
     reduce_counts(sizeof(float));
 
     return true;
+}
+
+bool sexp_network_packet::get_vec3d(vec3d *value)
+{
+	for (int i = 0; i < 3; ++i)     // NOLINT
+	{
+		if (!get_float(value->a1d[i]))
+			return false;
+	}
+	return true;
+}
+
+bool sexp_network_packet::get_matrix(matrix *value)
+{
+	for (int i = 0; i < 9; ++i)     // NOLINT
+	{
+		if (!get_float(value->a1d[i]))
+			return false;
+	}
+	return true;
 }
 
 bool sexp_network_packet::get_short(short & value)

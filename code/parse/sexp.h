@@ -1217,6 +1217,17 @@ extern int sexp_query_type_match(int opf, int opr);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+struct ship_registry_entry;
+struct wing;
+
+// Goober5000 - stuff with caching
+// (included in the header file because Lua uses the first three)
+extern const ship_registry_entry *eval_ship(int node);
+extern wing *eval_wing(int node);
+extern int sexp_get_variable_index(int node);
+extern int sexp_atoi(int node);
+extern bool sexp_can_construe_as_integer(int node);
+
 // Goober5000
 void do_action_for_each_special_argument(int cur_node);
 bool special_argument_appears_in_sexp_tree(int node);

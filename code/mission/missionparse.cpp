@@ -1985,7 +1985,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 	//Fixes a bug where the AI class attributes were not copied if the AI class was set in the mission.
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
-		ship_set_new_ai_class(shipnum, p_objp->ai_class);
+		ship_set_new_ai_class(shipp, p_objp->ai_class);
 
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
@@ -4618,7 +4618,7 @@ void parse_wing(mission *pm)
 		// this will assign the goals to the wings as well as to any ships in the wing that have been
 		// already created.
 		for ( sexp = CDR(wing_goals); sexp != -1; sexp = CDR(sexp) )
-			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingnum);  // used by Fred
+			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingp);  // used by Fred
 
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
@@ -4775,7 +4775,7 @@ void post_process_ships_wings()
 	// any ships are created from the parse objects.
 	for (auto &pobjp : Parse_objects)
 	{
-		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, &pobjp, nullptr, nullptr, 0 };
+		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, pobjp.name, &pobjp, nullptr, nullptr, 0, -1 };
 		Ship_registry.push_back(entry);
 		Ship_registry_map[pobjp.name] = static_cast<int>(Ship_registry.size() - 1);
 	}

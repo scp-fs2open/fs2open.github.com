@@ -327,7 +327,7 @@ int ai_good_time_to_rearm(object *objp)
 /**
  * Entry point from sexpression code to set internal data for use by AI code.
  */
-void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, char *shipname )
+void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, const char *shipname )
 {
 	Assert(shipname != NULL);
 	int index;
