@@ -7943,9 +7943,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Area Effect,Shockwave%s\n", all_weapons ? ",Player Allowed" : ""));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER)
-			continue;
-		if (wi.wi_flags[Weapon::Info_Flags::Beam])
+		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -7953,13 +7951,25 @@ void weapon_spew_stats(WeaponSpewType type)
 			mprintf(("%s,%s,", wi.name, "Primary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
+			float damage;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				damage = wi.damage * wi.b_info.beam_life * 5.5;
+			else
+				damage = wi.damage;
+
+			float fire_rate;
+			if (wi.burst_shots > 1) //Still need to examine burst implementation to avoid off-by-one errors here
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * wi.burst_shots);
+			else
+				fire_rate = 1 / wi.fire_wait;
+
 			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.armor_factor, multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.shield_factor, multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.subsystem_factor, multiplier * damage * wi.subsystem_factor * fire_rate));
 
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", wi.fire_wait, fire_rate));
 			mprintf((",,"));	// no reload for primaries
 
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
@@ -8020,9 +8030,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER)
-			continue;
-		if (wi.wi_flags[Weapon::Info_Flags::Beam])
+		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -8030,21 +8038,33 @@ void weapon_spew_stats(WeaponSpewType type)
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
 
+			float damage;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				damage = wi.damage * wi.b_info.beam_life * 5.5;
+			else
+				damage = wi.damage;
+
+			float fire_rate;
+			if (wi.burst_shots > 1) //Still need to examine burst implementation to avoid off-by-one errors here
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * wi.burst_shots);
+			else
+				fire_rate = 1 / wi.fire_wait;
+
 			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
 			mprintf(("\tDPS: "));
-			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
-			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
-			mprintf(("%.0f Subsystem\n", multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+			mprintf(("%.0f Hull, ", multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.0f Shield, ", multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.0f Subsystem\n", multiplier * damage * wi.subsystem_factor * fire_rate));
 
 			char watts[NAME_LENGTH];
-			sprintf(watts, "%.1f", wi.energy_consumed / wi.fire_wait);
+			sprintf(watts, "%.1f", wi.energy_consumed * fire_rate);
 			char *p = strstr(watts, ".0");
 			if (p)
 				*p = 0;
 			strcat(watts, "W");
 
 			char rof[NAME_LENGTH];
-			sprintf(rof, "%.1f", 1.0f / wi.fire_wait);
+			sprintf(rof, "%.1f", fire_rate);
 			p = strstr(rof, ".0");
 			if (p)
 				*p = 0;
