@@ -407,13 +407,13 @@ void sexp_network_packet::send_float(float value)
 
 void sexp_network_packet::send_vec3d(vec3d *value)
 {
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)     // NOLINT
 		send_float(value->a1d[i]);
 }
 
 void sexp_network_packet::send_matrix(matrix *value)
 {
-	for (int i = 0; i < 9; ++i)
+	for (int i = 0; i < 9; ++i)     // NOLINT
 		send_float(value->a1d[i]);
 }
 
@@ -621,7 +621,7 @@ bool sexp_network_packet::get_float(float & value)
 
 bool sexp_network_packet::get_vec3d(vec3d *value)
 {
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)     // NOLINT
 	{
 		if (!get_float(value->a1d[i]))
 			return false;
@@ -631,7 +631,7 @@ bool sexp_network_packet::get_vec3d(vec3d *value)
 
 bool sexp_network_packet::get_matrix(matrix *value)
 {
-	for (int i = 0; i < 9; ++i)
+	for (int i = 0; i < 9; ++i)     // NOLINT
 	{
 		if (!get_float(value->a1d[i]))
 			return false;
