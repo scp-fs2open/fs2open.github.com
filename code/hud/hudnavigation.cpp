@@ -32,7 +32,7 @@ void hud_draw_navigation()
 			in_cockpit = 0;
 
 		vertex target_point;	// temp vertex used to find screen position for 3-D object;
-		vec3d *target_pos = Navs[CurrentNav].GetPosition();
+		auto target_pos = Navs[CurrentNav].GetPosition();
 
 		color NavColor;
         

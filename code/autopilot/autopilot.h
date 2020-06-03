@@ -32,17 +32,17 @@ public:
 	char m_NavName[32];
 	int flags;
 
-	void *target_obj;
+	const void *target_obj;
 	int waypoint_num; //only used when flags & NP_WAYPOINT
 
-	vec3d *GetPosition();
+	const vec3d *GetPosition();
 
 	void clear()
 	{
 		m_NavName[0] = 0;
 		flags = 0;
 
-		target_obj = NULL;
+		target_obj = nullptr;
 		waypoint_num = -1;
 	}
 };
@@ -82,11 +82,11 @@ bool Sel_NextNav();
 //        * No asteroids within AutopilotMinAsteroidDistance meters
 //        * Destination > 1,000 meters away
 //        * Support ship not present or is actively leaving
-bool CanAutopilot(vec3d targetPos, bool send_msg=false);
+bool CanAutopilot(const vec3d *targetPos, bool send_msg=false);
 
 // Check if autopilot is allowed at player's current position
 // See CanAutopilot(vec3d, bool) for more information
-inline bool CanAutopilot(bool send_msg=false) { return CanAutopilot(Player_obj->pos, send_msg); }
+inline bool CanAutopilot(bool send_msg=false) { return CanAutopilot(&Player_obj->pos, send_msg); }
 
 // Engages autopilot
 // This does:
@@ -120,42 +120,42 @@ void NavSystem_Init();
 void parse_autopilot_table(const char *filename);
 
 // Finds a Nav point by name
-int FindNav(char *Nav);
+int FindNav(const char *Nav);
 
 // Selects a Nav point by name
-void SelectNav(char *Nav);
+void SelectNav(const char *Nav);
 
 // Deselects any navpoint selected.
 void DeselectNav();
 
 // Removes a Nav
-bool DelNavPoint(char *Nav);
+bool DelNavPoint(const char *Nav);
 bool DelNavPoint(int nav);
 
 // adds a Nav
-bool AddNav_Ship(char *Nav, char *TargetName, int flags); 
-bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags);
+bool AddNav_Ship(const char *Nav, const char *TargetName, int flags);
+bool AddNav_Waypoint(const char *Nav, const char *WP_Path, int node, int flags);
 
 // Sexp Accessors
-bool Nav_Set_Flag(char *Nav, int flag);
-bool Nav_UnSet_Flag(char *Nav, int flag);
+bool Nav_Set_Flag(const char *Nav, int flag);
+bool Nav_UnSet_Flag(const char *Nav, int flag);
 
-bool Nav_Set_Hidden(char *Nav);
-bool Nav_Set_NoAccess(char *Nav);
-bool Nav_Set_Visited(char *Nav);
+bool Nav_Set_Hidden(const char *Nav);
+bool Nav_Set_NoAccess(const char *Nav);
+bool Nav_Set_Visited(const char *Nav);
 
-bool Nav_UnSet_Hidden(char *Nav);
-bool Nav_UnSet_NoAccess(char *Nav);
-bool Nav_UnSet_Visited(char *Nav);
+bool Nav_UnSet_Hidden(const char *Nav);
+bool Nav_UnSet_NoAccess(const char *Nav);
+bool Nav_UnSet_Visited(const char *Nav);
 
 // Useful functions
-unsigned int DistanceTo(char *nav);
+unsigned int DistanceTo(const char *nav);
 unsigned int DistanceTo(int nav);
 
-bool IsVisited(char *nav);
+bool IsVisited(const char *nav);
 bool IsVisited(int nav);
 
-void send_autopilot_msg(char *msg, char *snd=NULL);
+void send_autopilot_msg(const char *msg, const char *snd=nullptr);
 void send_autopilot_msgID(int msgid);
 #endif
 

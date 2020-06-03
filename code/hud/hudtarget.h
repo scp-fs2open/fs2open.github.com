@@ -175,7 +175,7 @@ typedef struct target_display_info {
 
 extern SCP_vector<target_display_info> target_display_list;
 
-void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char *name, int flags);
+void hud_target_add_display_list(object *objp, const vertex *target_point, const vec3d *target_pos, int correction, const color *bracket_clr, const char *name, int flags);
 void hud_target_clear_display_list();
 
 class HudGaugeAutoTarget: public HudGauge
