@@ -2209,14 +2209,19 @@ int parse_create_object_sub(p_object *p_objp)
 			{
 				wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 			}
-			else if (sssp->primary_banks[j] >= 0 && Weapon_info[sssp->primary_banks[j]].wi_flags[Weapon::Info_Flags::Ballistic])
+			else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
-				Assertion(Weapon_info[sssp->primary_banks[j]].cargo_size > 0.0f,
+				Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
 					"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-					shipp->ship_name, sssp->name, j, Weapon_info[sssp->primary_banks[j]].name);
-
-				int capacity = (int)std::lround(sssp->primary_ammo[j] / 100.0f * sip->primary_bank_ammo_capacity[j]);
-				wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[sssp->primary_banks[j]].cargo_size);
+					shipp->ship_name, sssp->name,j,Weapon_info[wp->primary_bank_weapons[j]].name);
+				int ammo_cap;
+				if (!ptr) {
+					ammo_cap = sip->primary_bank_ammo_capacity[j];
+				} else {
+					ammo_cap = wp->primary_bank_capacity[j];
+				}
+				int capacity = (int)std::lround(sssp->primary_ammo[j] / 100.0f * ammo_cap);
+				wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size);
 			}
 		}
 
@@ -2248,14 +2253,19 @@ int parse_create_object_sub(p_object *p_objp)
 			{
 				wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
 			}
-			else if (sssp->secondary_banks[j] >= 0)
+			else if (wp->secondary_bank_weapons[j] >= 0)
 			{
-				Assertion(Weapon_info[sssp->secondary_banks[j]].cargo_size > 0.0f,
+				Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
 					"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-					shipp->ship_name, sssp->name, j, Weapon_info[sssp->secondary_banks[j]].name);
-
-				int capacity = (int)std::lround(sssp->secondary_ammo[j] / 100.0f * sip->secondary_bank_ammo_capacity[j]);
-				wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[sssp->secondary_banks[j]].cargo_size);
+					shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
+				int ammo_cap;
+				if (!ptr) {
+					ammo_cap = sip->secondary_bank_ammo_capacity[j];
+				} else {
+					ammo_cap = wp->secondary_bank_capacity[j];
+				}
+				int capacity = (int)std::lround(sssp->secondary_ammo[j] / 100.0f * ammo_cap);
+				wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size);
 			}
 		}
 
