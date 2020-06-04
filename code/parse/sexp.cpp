@@ -4217,8 +4217,8 @@ player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool t
 		}
 		if (test_respawns && np_index < 0) {
 			// Respawning ships don't have an objnum so we need to take a different approach 
-			if (ship_entry->pobjp) {
-				np_index = multi_find_player_by_parse_object(ship_entry->pobjp);
+			if (ship_entry->p_objp) {
+				np_index = multi_find_player_by_parse_object(ship_entry->p_objp);
 			}
 		}
 
@@ -20943,19 +20943,19 @@ int sexp_return_player_data(int node, int type)
 	// AI ships also have a respawn count so we can return valid data for that at least
 	else if ( (Game_mode & GM_MULTIPLAYER) && (type == OP_SHIP_DEATHS || type == OP_RESPAWNS_LEFT ) ) {
 		auto ship_entry = eval_ship(node);
-		if (!ship_entry || !ship_entry->pobjp) {
+		if (!ship_entry || !ship_entry->p_objp) {
 			return 0;
 		}
 
-		if (ship_entry->pobjp->flags[Mission::Parse_Object_Flags::OF_Player_start]) {
+		if (ship_entry->p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) {
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
 					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
 					// from the log instead
-					return mission_log_get_count(LOG_SHIP_DESTROYED, ship_entry->pobjp->name, nullptr) + mission_log_get_count(LOG_SELF_DESTRUCTED, ship_entry->pobjp->name, nullptr);
+					return mission_log_get_count(LOG_SHIP_DESTROYED, ship_entry->p_objp->name, nullptr) + mission_log_get_count(LOG_SELF_DESTRUCTED, ship_entry->p_objp->name, nullptr);
 					
 				case OP_RESPAWNS_LEFT:
-					return Netgame.respawn - ship_entry->pobjp->respawn_count;
+					return Netgame.respawn - ship_entry->p_objp->respawn_count;
 
 				default:
 					// We should never reach this.
