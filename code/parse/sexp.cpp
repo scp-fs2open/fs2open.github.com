@@ -940,9 +940,6 @@ int get_effect_from_name(const char* name);
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
 
-// Karajorma - some useful helper methods
-player * get_player_from_ship_node(int node, bool test_respawns = false);
-
 // hud-display-gauge magic values
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
@@ -4196,48 +4193,56 @@ int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
 }
 
 /**
- * Takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
+ * Takes a ship entry and returns the player for that ship or NULL if it is an AI ship
  */
-player * get_player_from_ship_node(int node, bool test_respawns)
+player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool test_respawns = false, int *netplayer_index = nullptr)
 {
-	int sindex, np_index = -1;	
-	p_object *p_objp;
-	
-	Assert (node != -1);
-
-	sindex = ship_name_lookup(CTEXT(node));
+	if (netplayer_index)
+		*netplayer_index = -1;
 
 	// singleplayer
-	if (!(Game_mode & GM_MULTIPLAYER)){	
-		if(sindex >= 0){
-			if(Player_obj == &Objects[Ships[sindex].objnum]){
-				return Player;
-			}
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		if (Player_obj == ship_entry->objp) {
+			return Player;
 		}
-		return NULL; 
+		return nullptr;
 	}
 	// multiplayer
 	else {
-		if(sindex >= 0){
-			if(Ships[sindex].objnum >= 0) {
-				// try and find the player
-				np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
-			}
+		int np_index = -1;
+
+		if (ship_entry->objp) {
+			// try and find the player
+			np_index = multi_find_player_by_object(ship_entry->objp);
 		}
 		if (test_respawns && np_index < 0) {
 			// Respawning ships don't have an objnum so we need to take a different approach 
-			p_objp = mission_parse_get_arrival_ship(CTEXT(node));
-			if (p_objp != NULL) {
-				np_index = multi_find_player_by_parse_object(p_objp);
+			if (ship_entry->pobjp) {
+				np_index = multi_find_player_by_parse_object(ship_entry->pobjp);
 			}
 		}
 
-		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
+		if ((np_index >= 0) && (np_index < MAX_PLAYERS)) {
+			if (netplayer_index)
+				*netplayer_index = np_index;
+
 			return Net_players[np_index].m_player; 
 		}
 
-		return NULL; 
+		return nullptr; 
 	}
+}
+
+/**
+ * Takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
+ */
+player *get_player_from_ship_node(int node, bool test_respawns = false, int *netplayer_index = nullptr)
+{
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry)
+		return nullptr;
+
+	return get_player_from_ship_entry(ship_entry, test_respawns, netplayer_index);
 }
 
 // ----------------------------------------------------------------------------------- 
@@ -13952,9 +13957,7 @@ void sexp_grant_medal(int n)
 
 void sexp_change_player_score(int node)
 {
-	int sindex;	
 	int score;
-	int plr_index;
 	bool is_nan, is_nan_forever;
 
 	score = eval_num(node, is_nan, is_nan_forever); 
@@ -13963,34 +13966,21 @@ void sexp_change_player_score(int node)
 	if (is_nan || is_nan_forever)
 		return;
 
-	if(!(Game_mode & GM_MULTIPLAYER)){
-		if ( (sindex = ship_name_lookup(CTEXT(node))) == -1) {
-			Warning(LOCATION, "Invalid shipname '%s' passed to sexp_change_player_score!", CTEXT(node));
-			return;
-		}
-
-		if (Player_ship != &Ships[sindex]) {
-			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
-			return; 	
-		}
-		Player->stats.m_score += score; 
-		if (Player->stats.m_score < 0) {
-			Player->stats.m_score = 0; 
-		}
-	}
-	else {
-		while (node >= 0) {
-			plr_index = multi_find_player_by_ship_name(CTEXT(node), true);
-			if (plr_index >= 0) {
-				Net_player[plr_index].m_player->stats.m_score += score;
+	while (node >= 0) {
+		auto player = get_player_from_ship_node(node, true);
+		if (player) {
+			player->stats.m_score += score;
 				
-				if (Net_player[plr_index].m_player->stats.m_score < 0) {
-					Net_player[plr_index].m_player->stats.m_score = 0;
-				}
-			}			
-
-			node = CDR(node);
+			if (player->stats.m_score < 0) {
+				player->stats.m_score = 0;
+			}
+		} else {
+			if (!(Game_mode & GM_MULTIPLAYER)) {
+				Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
+			}
 		}
+
+		node = CDR(node);
 	}
 }
 
@@ -16024,32 +16014,23 @@ void sexp_ship_vanish(int n)
 
 void sexp_destroy_instantly(int n)
 {
-	char *ship_name;
-	int ship_num;
-	object *ship_obj_p;
-
 	if (MULTIPLAYER_MASTER)
 		Current_sexp_network_packet.start_callback();
 
 	for ( ; n >= 0; n = CDR(n) )
 	{
-		ship_name = CTEXT(n);
-		ship_num = ship_name_lookup(ship_name);
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
 
-		// if it still exists, destroy it
-		if (ship_num >= 0)
+		// if it's the player don't destroy
+		if (!get_player_from_ship_node(n))
 		{
-			ship_obj_p = &Objects[Ships[ship_num].objnum];
+			ship_destroy_instantly(ship_entry->objp);
 
-			// if it's the player don't destroy
-			if (ship_obj_p != Player_obj)
-			{
-				ship_destroy_instantly(ship_obj_p);
-
-				// multiplayer callback
-				if (MULTIPLAYER_MASTER)
-					Current_sexp_network_packet.send_ship(ship_num);
-			}
+			// multiplayer callback
+			if (MULTIPLAYER_MASTER)
+				Current_sexp_network_packet.send_ship(ship_entry->shipp);
 		}
 	}
 
@@ -16059,24 +16040,11 @@ void sexp_destroy_instantly(int n)
 
 void multi_sexp_destroy_instantly()
 {
-	int ship_num;
-	object *ship_obj_p;
+	ship *shipp;
 
 	// destroy ships
-	while (Current_sexp_network_packet.get_ship(ship_num))
-	{
-		// if it still exists, destroy it
-		if (ship_num >= 0)
-		{
-			ship_obj_p = &Objects[Ships[ship_num].objnum];
-
-			// if it's the player don't destroy
-			if (ship_obj_p != Player_obj)
-			{
-				ship_destroy_instantly(ship_obj_p);
-			}
-		}
-	}
+	while (Current_sexp_network_packet.get_ship(shipp))
+		ship_destroy_instantly(&Objects[shipp->objnum]);
 }
 
 void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
@@ -16542,11 +16510,9 @@ int sexp_speed(int node)
 
 int sexp_get_throttle_speed(int node)
 {
-	player *the_player; 
+	auto the_player = get_player_from_ship_node(node); 
 
-	the_player = get_player_from_ship_node(node); 
-
-	if (the_player != NULL) {
+	if (the_player) {
 		float max_speed = Ship_info[Ships[Objects[the_player->objnum].instance].ship_info_index].max_speed;
 		return (int)(the_player->ci.forward_cruise_percent / 100.0f * max_speed);
 	}
@@ -16560,10 +16526,9 @@ void sexp_set_player_throttle_speed(int node)
 	bool is_nan, is_nan_forever;
 
 	//get and sanity check the player first
-	player *the_player;
-	the_player = get_player_from_ship_node(node); 
+	auto the_player = get_player_from_ship_node(node); 
 
-	if(the_player != NULL)
+	if (the_player)
 	{
 		//now the throttle percentage
 		node = CDR(node);
@@ -20746,65 +20711,26 @@ int sexp_missile_locked(int node)
 
 int sexp_is_player(int node)
 {
-	int sindex, np_index;
-	p_object *p_objp;
-
 	bool standard_check = is_sexp_true(node);
+	node = CDR(node);
 
-	if (!(Game_mode & GM_MULTIPLAYER)){	
-		sindex = ship_name_lookup(CTEXT(CDR(node)));
-
-		// There can only be one player ship in singleplayer so if more than one ship is specifed the sexp is false
-		if (CDDR(node) < 0 ) {
+	while (node >= 0) {
+		auto player = get_player_from_ship_node(node, true);
+		if (player) {
+			// in single-player mode, maybe check for AI-controlled player ships
+			if (!(Game_mode & GM_MULTIPLAYER) && standard_check && Player_use_ai) {
+				return SEXP_FALSE;
+			}
+		} else {
+			// ship is not a player
 			return SEXP_FALSE;
 		}
 
-		if(sindex >= 0){
-			if(Player_obj == &Objects[Ships[sindex].objnum]){
-				if (standard_check) {
-					if (Player_use_ai) {
-						return SEXP_FALSE;
-					}
-				}
-				return SEXP_TRUE;
-			}
-		}
-		return SEXP_FALSE;
-	}
-	// For multiplayer we need to decide what to do about respawning players
-	else {		
 		node = CDR(node);
-		while (node >= 0) {
-			// reset the netplayer index
-			np_index = -1; 
-
-			sindex = ship_name_lookup(CTEXT(node));
-			if(sindex >= 0){
-				if(Ships[sindex].objnum >= 0) {
-					// try and find the player
-					np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
-				}
-			}
-			
-			if (standard_check && np_index < 0) {
-				// Respawning ships don't have an objnum so we need to take a different approach 
-				p_objp = mission_parse_get_arrival_ship(CTEXT(node));
-				if (p_objp != NULL) {
-					np_index = multi_find_player_by_parse_object(p_objp);
-				}
-			}
-			
-			// if we couldn't find a valid netplayer index then the ship isn't a player
-			if((np_index < 0) || (np_index >= MAX_PLAYERS)){
-				return SEXP_FALSE;
-			}
-			
-			node = CDR(node);
-		}
-
-		// if we reached this far they all checked out
-		return SEXP_TRUE;
 	}
+
+	// if we reached this far they all checked out
+	return SEXP_TRUE;
 }
 
 void sexp_set_respawns(int node)
@@ -20978,46 +20904,11 @@ void multi_sexp_remove_weapons()
 
 int sexp_return_player_data(int node, int type)
 {
-	int sindex, np_index = -1;
-	player *p = NULL;
-	p_object *p_objp;
-
-	sindex = ship_name_lookup(CTEXT(node));
-
-	if(Game_mode & GM_MULTIPLAYER){			
-		if(sindex >= 0){
-			if(Ships[sindex].objnum >= 0) {
-				// try and find the player
-				np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
-			}
-		}
-		
-		if (np_index < 0) {
-			// Respawning ships don't have an objnum so we need to take a different approach 
-			p_objp = mission_parse_get_arrival_ship(CTEXT(node));
-			np_index = multi_find_player_by_parse_object(p_objp);
-		}
-		
-		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].m_player;
-		}
-	}
-	// if we're in single player, we're only concerned with ourself
-	else {
-		if(sindex < 0){
-			return 0;
-		}
-		if(Ships[sindex].objnum < 0){
-			return 0;
-		}
-		
-		if(Player_obj == &Objects[Ships[sindex].objnum]){
-			p = Player;
-		}
-	}
+	int np_index;
+	auto p = get_player_from_ship_node(node, true, &np_index);
 
 	// now, if we have a valid player, return his kills
-	if(p != NULL) {
+	if (p) {
 		switch (type) {
 			case OP_NUM_KILLS:
 				return p->stats.m_kill_count_ok;
@@ -21034,7 +20925,7 @@ int sexp_return_player_data(int node, int type)
 			case OP_RESPAWNS_LEFT:
 				// Dogfight missions have no respawn limit
 				if (MULTI_NOT_DOGFIGHT) {
-					if ( Net_players[np_index].flags & NETINFO_FLAG_RESPAWNING) {						
+					if ( Net_players[np_index].flags & NETINFO_FLAG_RESPAWNING ) {						
 						// since the player hasn't actually respawned yet he hasn't used up a number or spawns equal to his deaths
 						// so add an extra life back. 
 						return Netgame.respawn - p->stats.m_player_deaths + 1;
@@ -21048,23 +20939,23 @@ int sexp_return_player_data(int node, int type)
 			default:
 				Error(LOCATION, "return-player-data was called with invalid type %d on node %d!", type, node);
 		}
-	}	
+	}
 	// AI ships also have a respawn count so we can return valid data for that at least
 	else if ( (Game_mode & GM_MULTIPLAYER) && (type == OP_SHIP_DEATHS || type == OP_RESPAWNS_LEFT ) ) {
-		p_objp = mission_parse_get_arrival_ship(CTEXT(node));
-		if (p_objp == NULL) {
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->pobjp) {
 			return 0;
 		}
 
-		if (p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) { 
+		if (ship_entry->pobjp->flags[Mission::Parse_Object_Flags::OF_Player_start]) {
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
 					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
 					// from the log instead
-					return mission_log_get_count(LOG_SHIP_DESTROYED, CTEXT(node), NULL) + mission_log_get_count(LOG_SELF_DESTRUCTED, CTEXT(node), NULL);
+					return mission_log_get_count(LOG_SHIP_DESTROYED, ship_entry->pobjp->name, nullptr) + mission_log_get_count(LOG_SELF_DESTRUCTED, ship_entry->pobjp->name, nullptr);
 					
 				case OP_RESPAWNS_LEFT:
-					return Netgame.respawn - p_objp->respawn_count; 
+					return Netgame.respawn - ship_entry->pobjp->respawn_count;
 
 				default:
 					// We should never reach this.
@@ -21079,52 +20970,21 @@ int sexp_return_player_data(int node, int type)
 
 int sexp_num_type_kills(int node)
 {
-	int sindex, st_index;
-	int idx, total;
-	player *p = NULL;
-
-	// get the ship we're interested in
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-	
-	int np_index;
-
-	// in multiplayer, search through all players
-	if(Game_mode & GM_MULTIPLAYER){
-		// try and find the player
-		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
-		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].m_player;
-		}
-	}
-	// if we're in single player, we're only concerned with ourself
-	else {
-		// me
-		if(Player_obj == &Objects[Ships[sindex].objnum]){
-			p = Player;
-		}
-	}
-
-	// bad
-	if(p == NULL){
+	auto p = get_player_from_ship_node(node, true);
+	if (!p) {
 		return 0;
 	}
 
 	// lookup ship type name
-	st_index = ship_type_name_lookup(CTEXT(CDR(node)));
-	if(st_index < 0){
+	int st_index = ship_type_name_lookup(CTEXT(CDR(node)));
+	if (st_index < 0) {
 		return 0;
 	}
 
 	// look stuff up	
-	total = 0;
-	for(idx = 0; idx < ship_info_size(); idx++) {
-		if((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx)==st_index){
+	int total = 0;
+	for (int idx = 0; idx < ship_info_size(); idx++) {
+		if ((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx) == st_index) {
 			total += p->stats.m_okKills[idx];
 		}
 	}
@@ -21135,44 +20995,14 @@ int sexp_num_type_kills(int node)
 
 int sexp_num_class_kills(int node)
 {
-	int sindex, si_index;
-	player *p = NULL;
-
-	// get the ship we're interested in
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-	
-	int np_index;
-
-	// in multiplayer, search through all players
-	if(Game_mode & GM_MULTIPLAYER){
-		// try and find the player
-		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
-		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].m_player;
-		}
-	}
-	// if we're in single player, we're only concerned with ourself
-	else {
-		// me
-		if(Player_obj == &Objects[Ships[sindex].objnum]){
-			p = Player;
-		}
-	}
-
-	// bad
-	if(p == NULL){
+	auto p = get_player_from_ship_node(node, true);
+	if (!p) {
 		return 0;
 	}
 
 	// get the ship type we're looking for
-	si_index = ship_info_lookup(CTEXT(CDR(node)));
-	if((si_index < 0) || (si_index >= ship_info_size())){
+	int si_index = ship_info_lookup(CTEXT(CDR(node)));
+	if ((si_index < 0) || (si_index >= ship_info_size())) {
 		return 0;
 	}
 
@@ -23382,94 +23212,87 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 void sexp_script_eval_multi(int node)
 {
-	char s[TOKEN_LENGTH];
+	char script[TOKEN_LENGTH];
 	bool success = true;
 	bool execute_on_server;
-	int sindex;
 	player *p;
 
-	strcpy_s(s, CTEXT(node));
-
+	strcpy_s(script, CTEXT(node));
 	node = CDR(node);
 
 	execute_on_server = is_sexp_true(node);
-
 	node = CDR(node);
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_string(s);
+	Current_sexp_network_packet.send_string(script);
 	// evalutate on all clients
 	if (node == -1) {
 		Current_sexp_network_packet.send_bool(true);			
-		execute_on_server = 1;
+		execute_on_server = true;
 	}
 	// we have to send to all clients but we need to send a list of ships so that they know if they evaluate or not
 	else {
 		Current_sexp_network_packet.send_bool(false);
 
-		do {
+		for (; node != -1; node = CDR(node)) {
 			p = get_player_from_ship_node(node, true);
 
 			// not a player ship so skip it
 			if (p == NULL ){
-				node = CDR(node);
 				continue;
 			}
 			else {
 				// if this is me, flag that we should execute the script
 				if (p == Player) {					
-					execute_on_server = 1;
+					execute_on_server = true;
 				}
 				// otherwise notify the clients
 				else {
-					sindex = ship_name_lookup(CTEXT(node));
-					Current_sexp_network_packet.send_ship(sindex);
+					Current_sexp_network_packet.send_string(CTEXT(node));
 				}
 			}
-
-			node = CDR(node);
-		} while (node != -1); 
+		}
 	}
 
 	Current_sexp_network_packet.end_callback();
 
 	if (execute_on_server) {		
-		success = Script_system.EvalString(s, s);
+		success = Script_system.EvalString(script, script);
 	}
 
 	if(!success) {
-		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script);
 	}
 }
 
 void multi_sexp_script_eval_multi()
 {
-	int sindex;
-	char s[TOKEN_LENGTH];
+	char script[TOKEN_LENGTH];
+	char ship_name[TOKEN_LENGTH];
 	bool sent_to_all = false;
 	bool success = true;
 
-	Current_sexp_network_packet.get_string(s);
+	Current_sexp_network_packet.get_string(script);
 	Current_sexp_network_packet.get_bool(sent_to_all);
 
 	if (sent_to_all) {
-		success = Script_system.EvalString(s, s);
+		success = Script_system.EvalString(script, script);
 	}
 	// go through all the ships that were sent and see if any of them match this client.
 	else {
-		while (Current_sexp_network_packet.get_ship(sindex)) {
-			Assertion(sindex >= 0, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %d does not exist!", sindex); 
-			if (Player->objnum == Ships[sindex].objnum) {
-				success = Script_system.EvalString(s, s);
+		while (Current_sexp_network_packet.get_string(ship_name)) {
+			auto ship_entry = ship_registry_get(ship_name);
+			Assertion(ship_entry, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %s does not exist!", ship_name);
+			if (Player == get_player_from_ship_entry(ship_entry)) {
+				success = Script_system.EvalString(script, script);
 			}
 		}
 	}
 
 	if(!success) {
-		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script);
 	}
 }
-
 
 void sexp_force_glide(int node)
 {
