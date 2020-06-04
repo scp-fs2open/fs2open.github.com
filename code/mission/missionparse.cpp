@@ -2214,6 +2214,8 @@ int parse_create_object_sub(p_object *p_objp)
 				Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
 					"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 					shipp->ship_name, sssp->name,j,Weapon_info[wp->primary_bank_weapons[j]].name);
+				// Pilot subsystem ammo depends on ship ammo capacity
+				// in contrast non pilot subsystems depend on the bank capacity of the subsystem
 				int ammo_cap;
 				if (!ptr) {
 					ammo_cap = sip->primary_bank_ammo_capacity[j];
@@ -2258,6 +2260,8 @@ int parse_create_object_sub(p_object *p_objp)
 				Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
 					"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 					shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
+				// Pilot subsystem ammo depends on ship ammo capacity
+				// in contrast non pilot subsystems depend on the bank capacity of the subsystem
 				int ammo_cap;
 				if (!ptr) {
 					ammo_cap = sip->secondary_bank_ammo_capacity[j];
