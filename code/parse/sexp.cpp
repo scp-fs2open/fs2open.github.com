@@ -5355,8 +5355,8 @@ struct object_ship_wing_point_team
 		: object_ship_wing_point_team(&Ships[Objects[so->objnum].instance])
 	{}
 
-	object_ship_wing_point_team(wing *wingp)
-		: object_name(wingp->name), wingp(wingp)
+	object_ship_wing_point_team(wing *wp)
+		: object_name(wp->name), wingp(wp)
 	{
 		if (wingp->current_count > 0)
 			type = OSWPT_TYPE_WING;
