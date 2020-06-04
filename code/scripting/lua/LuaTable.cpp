@@ -64,6 +64,9 @@ size_t LuaTable::getLength() {
 
 LuaTable::iterator::iterator(const LuaTable& parent) {
 	_iter.reset(new LuaTableIterator(parent));
+
+	// Ensure that this value is correct if we try to iterate over an empty table
+	_atEnd = !_iter->hasElement();
 }
 LuaTable::iterator::iterator() : _iter(nullptr), _atEnd(true) {
 }

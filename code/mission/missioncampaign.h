@@ -165,12 +165,12 @@ void player_loadout_init();
 void mission_campaign_init( void );
 
 // load up and initialize a new campaign
-int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1, bool reset_stats = true );
+int mission_campaign_load(const char* filename, player* pl = nullptr, int load_savefile = 1, bool reset_stats = true);
 
 bool campaign_is_ignored(const char *filename);
 
 // declaration for local campaign save game load function
-extern void mission_campaign_savefile_delete( char *cfilename );
+extern void mission_campaign_savefile_delete(const char* cfilename);
 extern void mission_campaign_delete_all_savefiles( char *pilot_name );
 
 // if a given campaign is a multiplayer campaign, we can load and save the multiplayer info portion with these functions
