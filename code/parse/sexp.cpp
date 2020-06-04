@@ -5335,10 +5335,10 @@ struct object_ship_wing_point_team
 
 	object_ship_wing_point_team() = default;
 
-	object_ship_wing_point_team(ship *shipp)
-		: object_name(shipp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[shipp->objnum])
+	object_ship_wing_point_team(ship *sp)
+		: object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 	{
-		ship_entry = ship_registry_get(shipp->ship_name);
+		ship_entry = ship_registry_get(sp->ship_name);
 		shipp = ship_entry->shipp;
 		p_objp = ship_entry->pobjp;
 	}
