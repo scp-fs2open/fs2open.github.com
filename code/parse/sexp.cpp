@@ -5340,7 +5340,7 @@ struct object_ship_wing_point_team
 	{
 		ship_entry = ship_registry_get(sp->ship_name);
 		shipp = ship_entry->shipp;
-		p_objp = ship_entry->pobjp;
+		p_objp = ship_entry->p_objp;
 	}
 
 	object_ship_wing_point_team(p_object *pobjp)
@@ -5348,7 +5348,7 @@ struct object_ship_wing_point_team
 	{
 		ship_entry = ship_registry_get(pobjp->name);
 		shipp = ship_entry->shipp;
-		p_objp = ship_entry->pobjp;
+		p_objp = ship_entry->p_objp;
 	}
 
 	object_ship_wing_point_team(ship_obj *so)
@@ -5458,7 +5458,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 		oswpt->object_name = ship_entry->name;
 		oswpt->objp = ship_entry->objp;
 		oswpt->shipp = ship_entry->shipp;
-		oswpt->p_objp = ship_entry->pobjp;
+		oswpt->p_objp = ship_entry->p_objp;
 
 		switch (ship_entry->status)
 		{
@@ -14242,12 +14242,12 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 			if (p_object_flag != Mission::Parse_Object_Flags::NUM_VALUES)
 			{
 				// set or clear?
-    			ship_entry->pobjp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
+    			ship_entry->p_objp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
 			}
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
 				Current_sexp_network_packet.send_bool(false); 
-				Current_sexp_network_packet.send_parse_object(ship_entry->pobjp); 
+				Current_sexp_network_packet.send_parse_object(ship_entry->p_objp);
 			}
 		}
 	}
@@ -14458,9 +14458,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			}
 
 			// see if we have a p_object flag to set
-			if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES && oswpt.ship_entry->pobjp != nullptr)
+			if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES && oswpt.ship_entry->p_objp != nullptr)
 			{
-                oswpt.ship_entry->pobjp->flags.set(parse_obj_flag, set_flag);
+                oswpt.ship_entry->p_objp->flags.set(parse_obj_flag, set_flag);
 			}
 			break;
 	}
@@ -14642,7 +14642,7 @@ void sexp_alter_ship_flag(int node)
 					break;
 
 				case OSWPT_TYPE_PARSE_OBJECT:
-					Current_sexp_network_packet.send_parse_object(oswpt.ship_entry->pobjp);
+					Current_sexp_network_packet.send_parse_object(oswpt.ship_entry->p_objp);
 					break;
 
 				case OSWPT_TYPE_WING_NOT_PRESENT:
