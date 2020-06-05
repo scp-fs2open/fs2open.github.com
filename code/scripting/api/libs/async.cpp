@@ -19,7 +19,9 @@ ADE_LIB(l_Async, "Async", "async", "Support library for asynchronous operations"
  */
 class lua_func_resolve_context : public resolve_context {
   public:
-	lua_func_resolve_context(luacpp::LuaFunction callback) : _callback(std::move(callback)) {}
+	lua_func_resolve_context(lua_State* L, luacpp::LuaFunction callback) : _luaState(L), _callback(std::move(callback))
+	{
+	}
 
 	void setResolver(Resolver resolver) override
 	{
@@ -59,10 +61,11 @@ class lua_func_resolve_context : public resolve_context {
 				return luacpp::LuaValueList();
 			});
 
-		_callback({resolveFunc, rejectFunc});
+		_callback(_luaState, {resolveFunc, rejectFunc});
 	}
 
   private:
+	lua_State* _luaState = nullptr;
 	luacpp::LuaFunction _callback;
 };
 
@@ -85,7 +88,7 @@ ADE_FUNC(promise,
 		return ADE_RETURN_NIL;
 	}
 
-	std::unique_ptr<resolve_context> resolveCtx(new lua_func_resolve_context(std::move(callback)));
+	std::unique_ptr<resolve_context> resolveCtx(new lua_func_resolve_context(L, std::move(callback)));
 
 	return ade_set_args(L, "o", l_Promise.Set(LuaPromise(std::move(resolveCtx))));
 }

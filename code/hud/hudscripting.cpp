@@ -4,8 +4,8 @@
 #include "hud/hudscripting.h"
 
 #include "parse/parselo.h"
-
 #include "scripting/api/objs/hudgauge.h"
+#include "scripting/scripting.h"
 
 HudGaugeScripting::HudGaugeScripting() :
 	HudGauge(HUD_OBJECT_SCRIPTING,
@@ -25,8 +25,8 @@ void HudGaugeScripting::render(float /*frametime*/) {
 		return;
 	}
 
-	_renderFunction.call({ luacpp::LuaValue::createValue(_renderFunction.getLuaState(),
-	                                                     l_HudGaugeDrawFuncs.Set(this)) });
+	_renderFunction.call(Script_system.GetLuaSession(),
+		{luacpp::LuaValue::createValue(_renderFunction.getLuaState(), l_HudGaugeDrawFuncs.Set(this))});
 }
 
 void HudGaugeScripting::initName(SCP_string name) {

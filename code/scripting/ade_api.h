@@ -5,6 +5,7 @@
 #define FS2_OPEN_ADE_API_H_H
 
 #include "globalincs/version.h"
+
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
 
