@@ -5657,7 +5657,10 @@ void spawn_child_weapons(object *objp)
 			// for multiplayer, use the static randvec functions based on the network signatures to provide
 			// the randomness so that it is the same on all machines.
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				if (wip->spawn_info[i].spawn_min_angle <= 0)
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				else
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
 			} else {
 				if(wip->spawn_info[i].spawn_min_angle <= 0)
 					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
