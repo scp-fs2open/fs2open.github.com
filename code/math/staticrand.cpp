@@ -139,6 +139,38 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 	vm_rot_point_around_line(out, &t2, fl_radians(static_randf_range(num+2,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
+//generates a random vector in a cone, with a min amd max angle. 
+//Clone of vm_vec_random_cone overload of the same function, adapted to use static_randf_range
+void static_rand_cone(int num,vec3d* out, const vec3d* in, float min_angle, float max_angle, const matrix* orient) {
+	vec3d temp;
+	const matrix* rot;
+	matrix m;
+
+	if (max_angle < min_angle) {
+		auto tmp = min_angle;
+		min_angle = max_angle;
+		max_angle = tmp;
+	}
+
+	// get an orientation matrix
+	if (orient != NULL) {
+		rot = orient;
+	}
+	else {
+		vm_vector_2_matrix(&m, in, NULL, NULL);
+		rot = &m;
+	}
+
+	// Get properly distributed spherical coordinates (DahBlount)
+	// This might not seem intuitive, but the min_angle is the angle that will have a larger z coordinate
+	float z = static_randf_range(num,cosf(fl_radians(max_angle)), cosf(fl_radians(min_angle))); // Take a 2-sphere slice
+	float phi = static_randf_range(num+1,0.0f, PI2);
+	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
+
+	vm_vec_unrotate(out, &temp, rot); // We find the final vector by rotating temp to the correct orientation
+}
+
+
 /////////////////////////////////////////////////////////////////////
 // Alternate random number generator, that doesn't affect rand() sequence
 /////////////////////////////////////////////////////////////////////
