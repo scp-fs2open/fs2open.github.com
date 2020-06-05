@@ -2617,8 +2617,6 @@ static void output_uniform_debug_data()
 
 void gr_flip(bool execute_scripting)
 {
-	TRACE_SCOPE(tracing::PageFlip);
-
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	if (execute_scripting && !popup_active()) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
@@ -2645,6 +2643,7 @@ void gr_flip(bool execute_scripting)
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();
 
+	TRACE_SCOPE(tracing::PageFlip);
 	gr_screen.gf_flip();
 }
 

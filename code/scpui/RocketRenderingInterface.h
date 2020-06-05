@@ -36,9 +36,9 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 
 	vec2d renderOffset;
 
-	Texture* get_texture(Rocket::Core::TextureHandle handle);
+	static Texture* get_texture(Rocket::Core::TextureHandle handle);
 
-	Rocket::Core::TextureHandle get_texture_handle(Texture* bitmap);
+	static Rocket::Core::TextureHandle get_texture_handle(Texture* bitmap);
 
 	void renderGeometry(int vertex_buffer, int index_buffer, int num_elements, int bitmap,
 	                    const Rocket::Core::Vector2f& translation);
@@ -132,14 +132,14 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 	 * @param handle The libRocket texture handle
 	 * @return The bitmap number
 	 */
-	int getBitmapNum(Rocket::Core::TextureHandle handle);
+	static int getBitmapNum(Rocket::Core::TextureHandle handle);
 
 	/**
 	 * @brief Sets the animation frame that the TextureHandle will use when it's rendered
 	 * @param handle The libRocket texture handle to modify
 	 * @param frame The animation frame (0-based for the first frame)
 	 */
-	void setAnimationFrame(Rocket::Core::TextureHandle handle, int frame);
+	static void setAnimationFrame(Rocket::Core::TextureHandle handle, int frame);
 };
 
 } // namespace scpui

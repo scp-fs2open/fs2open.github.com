@@ -3,6 +3,7 @@
 
 #include "engine.h"
 
+#include "scripting/api/objs/tracing_category.h"
 #include "scripting/scripting.h"
 
 namespace scripting {
@@ -79,7 +80,12 @@ ADE_FUNC(addHook, l_Engine,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(sleep, l_Engine, "number seconds", "Executes a <b>blocking</b> sleep. Usually only necessary for development or testing purposes. Use with care!", nullptr, nullptr)
+ADE_FUNC(sleep,
+	l_Engine,
+	"number seconds",
+	"Executes a <b>blocking</b> sleep. Usually only necessary for development or testing purposes. Use with care!",
+	nullptr,
+	nullptr)
 {
 	float seconds = 0.0f;
 	if (!ade_get_args(L, "f", &seconds)) {
@@ -88,6 +94,23 @@ ADE_FUNC(sleep, l_Engine, "number seconds", "Executes a <b>blocking</b> sleep. U
 
 	os_sleep(fl2i(seconds * 1000.0f));
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createTracingCategory,
+	l_Engine,
+	"string name, [boolean gpu_category = false]",
+	"Creates a new category for tracing the runtime of a code segment. Also allows to trace how long the corresponding "
+	"code took on the GPU.",
+	"tracing_category",
+	"The allocated category.")
+{
+	const char* name  = nullptr;
+	bool gpu_category = false;
+	if (!ade_get_args(L, "s|b", &name, &gpu_category)) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "o", l_TracingCategory.Set(tracing::Category(name, gpu_category)));
 }
 
 } // namespace api

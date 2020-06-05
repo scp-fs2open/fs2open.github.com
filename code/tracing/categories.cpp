@@ -6,7 +6,7 @@ namespace tracing {
 Category::Category(const char* name, bool is_graphics) : _name(name), _graphics_category(is_graphics) {
 }
 const char* Category::getName() const {
-	return _name;
+	return _name.c_str();
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;
@@ -111,6 +111,12 @@ Category CutsceneProcessAudioData("Process audio data", false);
 
 Category CutsceneFFmpegVideoDecoder("FFmpeg decode video", false);
 Category CutsceneFFmpegAudioDecoder("FFmpeg decode audio", false);
+
+Category RocketCompileGeometry("Rocket compile geometry", true);
+Category RocketRenderCompiledGeometry("Rocket render compiled geometry", true);
+Category RocketLoadTexture("Rocket load texture", true);
+Category RocketGenerateTexture("Rocket generate texture", true);
+Category RocketRenderGeometry("Rocket render geometry", true);
 
 Category LoadMissionLoad("Load mission", false);
 Category LoadPostMissionLoad("Mission load post processing", false);
