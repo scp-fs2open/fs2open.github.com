@@ -775,9 +775,21 @@ extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
 extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
-// stuff for overall ship status, useful for reference by sexps and scripts
+// Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
+enum ShipStatus
+{
+	// A ship is on the arrival list as a parse object
+	NOT_YET_PRESENT,
 
-enum ShipStatus { NOT_YET_PRESENT, PRESENT, EXITED };
+	// A ship is currently in-mission, and its objp and shipp pointers are valid
+	PRESENT,
+
+	// A ship is destroyed, departed, or vanished.  Note however that for destroyed ships,
+	// ship_cleanup is not called until the death roll is complete, which means there is a
+	// period of time where the ship is "exited", but objp and shipp are still valid and
+	// exited_index is not yet assigned.
+	EXITED
+};
 
 struct ship_registry_entry
 {
