@@ -115,10 +115,10 @@ void static_randvec(int num, vec3d *vp)
  * @param max_angle
  * @param orient
  */
-void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient)
+void static_rand_cone(int num, vec3d *out, const vec3d const *in, float max_angle, const matrix const *orient)
 {
 	vec3d t1, t2;
-	matrix *rot;
+	const matrix *rot;
 	matrix m;
 
 	// get an orientation matrix
@@ -141,7 +141,7 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 
 //generates a random vector in a cone, with a min amd max angle. 
 //Clone of vm_vec_random_cone overload of the same function, adapted to use static_randf_range
-void static_rand_cone(int num,vec3d* out, const vec3d* in, float min_angle, float max_angle, const matrix* orient) {
+void static_rand_cone(int num, vec3d* out, const vec3d* const in, float min_angle, float max_angle, const matrix* const orient) {
 	vec3d temp;
 	const matrix* rot;
 	matrix m;
