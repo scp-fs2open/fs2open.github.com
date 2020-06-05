@@ -115,7 +115,7 @@ void static_randvec(int num, vec3d *vp)
  * @param max_angle
  * @param orient
  */
-void static_rand_cone(int num, vec3d *out, const vec3d const *in, float max_angle, const matrix const *orient)
+void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angle, const matrix* const orient)
 {
 	vec3d t1, t2;
 	const matrix *rot;
