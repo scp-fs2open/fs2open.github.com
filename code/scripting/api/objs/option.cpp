@@ -150,13 +150,16 @@ ADE_VIRTVAR(Value, l_Option, "ValueDescription", "The current value of this opti
 	}
 	return ade_set_args(L, "o", l_ValueDescription.Set(opt->get()->getCurrentValueDescription()));
 }
-ADE_VIRTVAR(Flags, l_Option, nullptr,
-            "Contains a list mapping a flag name to its value. Possible names are:"
-            "<ul>"
-            "<li><b>ForceMultiValueSelection:</b> If true, a selection option with two values should be displayed the "
-            "same as an option with more possible values</li>"
-            "</ul>",
-            "{string->boolean...}", "The table of flags values.")
+ADE_VIRTVAR(Flags,
+	l_Option,
+	nullptr,
+	"Contains a list mapping a flag name to its value. Possible names are:"
+	"<ul>"
+	"<li><b>ForceMultiValueSelection:</b> If true, a selection option with two values should be displayed the "
+	"same as an option with more possible values</li>"
+	"</ul>",
+	ade_type_map("string", "boolean"),
+	"The table of flags values.")
 {
 	option_h* opt;
 	options::ValueDescription* new_val = nullptr;

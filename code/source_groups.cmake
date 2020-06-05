@@ -1052,6 +1052,8 @@ add_file_folder("Scripting"
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
+	scripting/ade_doc.cpp
+	scripting/ade_doc.h
 	scripting/hook_api.cpp
 	scripting/hook_api.h
 	scripting/lua.cpp

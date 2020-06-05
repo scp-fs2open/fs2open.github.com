@@ -77,7 +77,7 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 }
 
 ADE_FUNC(playElementSound, l_UserInterface,
-         "Rocket::Element element, string event, string state = "
+         "Rocket::Element element, string event, string state = \"\""
          "",
          "Plays an element specific sound with an optional state for differentiating different UI states.", "boolean",
          "true if a sound was played, false otherwise")

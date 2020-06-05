@@ -78,14 +78,17 @@ ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "
 		return ade_set_args(L, "s", "");
 }
 
-ADE_FUNC(read, l_File, "number|string, ...",
-         "Reads part of or all of a file, depending on arguments passed. Based on basic Lua file:read function."
-         "Returns nil when the end of the file is reached."
-         "<br><ul><li>\"*n\" - Reads a number.</li>"
-         "<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
-         "<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
-         "<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-         ade_type_info({"number|string", "..."}), "Requested data, or nil if the function fails")
+ADE_FUNC(read,
+	l_File,
+	"number|string, ...",
+	"Reads part of or all of a file, depending on arguments passed. Based on basic Lua file:read function."
+	"Returns nil when the end of the file is reached."
+	"<br><ul><li>\"*n\" - Reads a number.</li>"
+	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
+	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
+	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
+	ade_type_info({ade_type_alternative({"number", "string"}), "..."}),
+	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;
 	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))

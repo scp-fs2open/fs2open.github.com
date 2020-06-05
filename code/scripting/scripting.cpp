@@ -232,11 +232,35 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 		                 "element",
 		                 json_doc_generate_return_type(type_info.elements().front()));
 	}
-	default:
-		UNREACHABLE("Unknown type type!");
-		return nullptr;
+	case ade_type_info_type::Map: {
+		return json_pack("{sssoso}",
+			"type",
+			"map",
+			"key",
+			json_doc_generate_return_type(type_info.elements()[0]),
+			"value",
+			json_doc_generate_return_type(type_info.elements()[1]));
+	}
+	case ade_type_info_type::Iterator: {
+		return json_pack("{ssso}",
+			"type",
+			"iterator",
+			"element",
+			json_doc_generate_return_type(type_info.elements().front()));
+	}
+	case ade_type_info_type::Alternative: {
+		json_t* alternativeTypes = json_array();
+
+		for (const auto& type : type_info.elements()) {
+			json_array_append_new(alternativeTypes, json_doc_generate_return_type(type));
+		}
+
+		return json_pack("{ssso}", "type", "alternative", "elements", alternativeTypes);
+	}
 	}
 
+	UNREACHABLE("Unknown type type!");
+	return nullptr;
 }
 static void json_doc_generate_function(json_t* elObj, const DocumentationElementFunction* lib)
 {
@@ -399,6 +423,7 @@ void script_init()
 		if (Output_scripting_json) {
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			documentation_to_json(doc);
+			exit(1);
 		}
 	}
 

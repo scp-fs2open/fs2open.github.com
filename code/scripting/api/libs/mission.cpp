@@ -1258,8 +1258,12 @@ static int arrivalListIter(lua_State* L)
 	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(next)));
 }
 
-ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ships for this mission", "iterator[parse_object]",
-            "An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+ADE_FUNC(getArrivalList,
+	l_Mission,
+	nullptr,
+	"Get the list of yet to arrive ships for this mission",
+	ade_type_iterator("parse_object"),
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
