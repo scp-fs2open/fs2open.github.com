@@ -1658,7 +1658,7 @@ void Button::DoDraw(float  /*frametime*/)
 		gr_get_string_size(&half_x, &half_y, Caption.c_str());
 		half_x = Coords[0] +(((Coords[2]-Coords[0]) - half_x) / 2);
 		half_y = Coords[1] +(((Coords[3]-Coords[1]) - half_y) / 2);
-		gr_string(half_x, half_y, Caption.c_str(), GR_RESIZE_NONE);
+		gr_string(half_x, half_y + 1, Caption.c_str(), GR_RESIZE_NONE);
 	}
 }
 
@@ -2062,7 +2062,7 @@ void Text::DoDraw(float  /*frametime*/)
 	int font_height = gr_get_font_height();
 
 	for (int i = 0; i < NumLines; i++) {
-		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), GR_RESIZE_NONE);
+		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height) + 2, Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), GR_RESIZE_NONE);
 	}
 }
 
@@ -2167,6 +2167,8 @@ void Text::AddLine(const SCP_string &in_line)
 	Content += in_line;
 	OnRefreshSize();
 }
+
+
 
 void Text::SetSaveLoc(int *int_ptr, int save_method, int max_value, int min_value)
 {

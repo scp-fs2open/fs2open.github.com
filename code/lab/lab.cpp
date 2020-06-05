@@ -457,8 +457,6 @@ void labviewer_render_model(float frametime)
 			model_render_set_wireframe_color(&Color_white);
 
 		if (Lab_render_show_thrusters) {
-			
-			physics_paused = 0;
 			obj->phys_info.forward_thrust = 1.0f;
 			if (obj->type == OBJ_SHIP) {
 				Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
@@ -469,7 +467,6 @@ void labviewer_render_model(float frametime)
 				obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
 		}
 		else {
-			physics_paused = 1;
 			obj->phys_info.forward_thrust = 0.0f;
 
 			if (obj->type == OBJ_SHIP)
@@ -858,7 +855,7 @@ void labviewer_variables_add(int* Y, const char* var_name)
 	Lab_variables_window->AddChild(new Text((var_name), (var_name), 0, y, VAR_POS_LEFTWIDTH));
 	// edit box
 	new_text = (Text*)Lab_variables_window->AddChild(new Text(SCP_string((var_name)) + SCP_string("Editbox"), "",
-	                                                          VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
+	                                                          VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, gr_get_font_height() + 2, T_EDITTABLE));
 
 	if (Y) {
 		*Y += new_text->GetHeight() + 2;
@@ -1058,9 +1055,9 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->shockwave_count, 0);
 
 		VAR_SET_VALUE_SAVE(sip->closeup_zoom, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.x, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.y, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.z, 0);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.x, 0.0f);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.y, 0.0f);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.z, 0.0f);
 	}
 	// weapon variables ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1648,7 +1645,6 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_recalc_camera();
 
 	Lab_viewer_flags &= ~LAB_FLAG_SHIP_EXPLODING;
-	physics_paused = 1;
 }
 
 void labviewer_change_ship(Tree* caller)
@@ -2108,7 +2104,6 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 		obj->flags.remove(Object::Object_Flags::Player_ship);
 		ship_self_destruct(obj);
 		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
-		physics_paused = 0;
 	}
 }
 
