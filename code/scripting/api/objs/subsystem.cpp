@@ -43,7 +43,7 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 {
 	ship_subsys_h *sso;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
@@ -53,10 +53,12 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 
 	ship_subsys *ssys = sso->ss;
 
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		ssys->armor_type_idx = atindex;
+	} else {
+		atindex = ssys->armor_type_idx;
 	}
 
 	if (atindex != -1)

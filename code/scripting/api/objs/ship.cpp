@@ -183,7 +183,7 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 {
 	object_h *objh;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -192,10 +192,12 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->shield_armor_type_idx = atindex;
+	} else {
+		atindex = shipp->shield_armor_type_idx;
 	}
 
 	if (atindex != -1)
@@ -210,7 +212,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 {
 	object_h *objh;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -219,10 +221,12 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->armor_type_idx = atindex;
+	} else {
+		atindex = shipp->armor_type_idx;
 	}
 
 	if (atindex != -1)
