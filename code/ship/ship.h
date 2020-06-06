@@ -796,7 +796,7 @@ struct ship_registry_entry
 	ShipStatus status;
 	const char *name;
 
-	p_object *pobjp;
+	p_object *p_objp;
 	object *objp;
 	ship *shipp;
 	int cleanup_mode;
