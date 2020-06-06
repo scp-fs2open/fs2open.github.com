@@ -194,6 +194,8 @@ void reset_view()
 	}
 }
 
+void labviewer_update_actions_window();
+
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
@@ -304,6 +306,7 @@ void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 	}
 
 	labviewer_update_flags_window();
+	labviewer_update_actions_window();
 }
 
 void labviewer_recalc_camera()
@@ -2107,7 +2110,49 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 	}
 }
 
-void labviewer_make_actions_window(Button* /*caller*/) 
+void labviewer_actions_destroy_subsystem(Tree* caller) {
+	auto selected_subsys_subobj_num = caller->GetSelectedItem()->GetData();
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				if (ssp->system_info->subobj_num == selected_subsys_subobj_num) {
+					do_subobj_destroyed_stuff(sp, ssp, nullptr);
+				}
+
+				ssp = GET_NEXT(ssp);
+			}
+		}
+	}
+}
+
+void labviewer_fill_actions_menu()
+{
+	int y = 0;
+
+	auto btn = new Button("Destroy Ship", 0, y, labviewer_actions_destroy_ship);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
+
+	auto subsys_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Subsystem List", 0, y));
+	auto head_item = subsys_tree->AddItem(nullptr, "Destroy Subsystem", 0, false);
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				subsys_tree->AddItem(head_item, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
+
+				ssp = GET_NEXT(ssp);
+			}
+		}
+	}
+}
+
+void labviewer_make_actions_window(Button* /*caller*/)
 {
 	if (Lab_actions_window != nullptr)
 		return;
@@ -2117,7 +2162,15 @@ void labviewer_make_actions_window(Button* /*caller*/)
 	);
 	Lab_actions_window->SetCloseFunction(lab_actions_window_close);
 
-	Lab_actions_window->AddChild(new Button("Destroy Ship", 0, 0, labviewer_actions_destroy_ship));
+	labviewer_fill_actions_menu();
+}
+
+// Called when the viewed ship changes while the action window is open
+void labviewer_update_actions_window() {
+	if (Lab_actions_window != nullptr) { 
+		Lab_actions_window->DeleteChildren();
+		labviewer_fill_actions_menu();
+	}
 }
 
 // ----------------------------- Lab functions ---------------------------------
