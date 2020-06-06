@@ -14692,7 +14692,7 @@ void multi_sexp_alter_ship_flag()
 		int type;
 		while (Current_sexp_network_packet.get_int(type))
 		{
-			object_ship_wing_point_team *oswptp = nullptr;
+			std::unique_ptr<object_ship_wing_point_team> oswptp;
 
 			switch (type)
 			{
@@ -14700,7 +14700,7 @@ void multi_sexp_alter_ship_flag()
 				{
 					ship *shipp;
 					if (Current_sexp_network_packet.get_ship(shipp))
-						oswptp = new object_ship_wing_point_team(shipp);
+						oswptp.reset(new object_ship_wing_point_team(shipp));
 					else
 						Warning(LOCATION, "OSWPT had an invalid ship in multi_sexp_alter_ship_flag(), skipping");
 					break;
@@ -14710,7 +14710,7 @@ void multi_sexp_alter_ship_flag()
 				{
 					p_object *p_objp;
 					if (Current_sexp_network_packet.get_parse_object(p_objp))
-						oswptp = new object_ship_wing_point_team(p_objp);
+						oswptp.reset(new object_ship_wing_point_team(p_objp));
 					else
 						Warning(LOCATION, "OSWPT had an invalid parse object in multi_sexp_alter_ship_flag(), skipping");
 					break;
@@ -14721,7 +14721,7 @@ void multi_sexp_alter_ship_flag()
 				{
 					wing *wingp;
 					if (Current_sexp_network_packet.get_wing(wingp))
-						oswptp = new object_ship_wing_point_team(wingp);
+						oswptp.reset(new object_ship_wing_point_team(wingp));
 					else
 						Warning(LOCATION, "OSWPT had an invalid wing in multi_sexp_alter_ship_flag(), skipping");
 					break;
@@ -14732,7 +14732,7 @@ void multi_sexp_alter_ship_flag()
 					int team;
 					if (Current_sexp_network_packet.get_int(team))
 					{
-						oswptp = new object_ship_wing_point_team();
+						oswptp.reset(new object_ship_wing_point_team());
 						oswptp->type = OSWPT_TYPE_WHOLE_TEAM;
 						oswptp->team = team;
 					}
@@ -14743,10 +14743,7 @@ void multi_sexp_alter_ship_flag()
 			}
 
 			if (oswptp)
-			{
 				sexp_alter_ship_flag_helper(*oswptp, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
-				delete oswptp;
-			}
 		}
 	}
 }
