@@ -23,7 +23,7 @@ ADE_LIB(l_Tables, "Tables", "tb", "Tables library");
 
 //*****SUBLIBRARY: Tables/ShipClasses
 ADE_LIB_DERIV(l_Tables_ShipClasses, "ShipClasses", NULL, NULL, l_Tables);
-ADE_INDEXER(l_Tables_ShipClasses, "number Index/string Name", "Array of ship classes", "shipclass", "Ship handle, or invalid ship handle if index is invalid")
+ADE_INDEXER(l_Tables_ShipClasses, "number/string IndexOrName", "Array of ship classes", "shipclass", "Ship handle, or invalid ship handle if index is invalid")
 {
 	if(!ships_inited)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
@@ -62,7 +62,7 @@ ADE_FUNC(__len, l_Tables_ShipClasses, NULL, "Number of ship classes", "number", 
 //*****SUBLIBRARY: Tables/WeaponClasses
 ADE_LIB_DERIV(l_Tables_WeaponClasses, "WeaponClasses", NULL, NULL, l_Tables);
 
-ADE_INDEXER(l_Tables_WeaponClasses, "number Index/string WeaponName", "Array of weapon classes", "weapon", "Weapon class handle, or invalid weaponclass handle if index is invalid")
+ADE_INDEXER(l_Tables_WeaponClasses, "number/string IndexOrWeaponName", "Array of weapon classes", "weapon", "Weapon class handle, or invalid weaponclass handle if index is invalid")
 {
 	if(!Weapons_inited)
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));

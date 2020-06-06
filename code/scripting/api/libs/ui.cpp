@@ -190,7 +190,7 @@ ADE_FUNC(deletePilot, l_UserInterface_PilotSelect, "string callsign",
 }
 
 ADE_FUNC(
-    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi[, string copy_from]",
+    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi, [string copy_from]",
     "Creates a new pilot in either single or multiplayer mode and optionally copies settings from an existing pilot.",
     "boolean", "true on success, false otherwise")
 {

@@ -81,7 +81,7 @@ ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seco
 	return ade_set_args(L, "f", (i2fl(gamesnd_get_max_duration(seh->Get())) / 1000.0f));
 }
 
-ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]",
+ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion, [number radius=0.0]",
          "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
          "If range is given then the volume will diminish when the listener is withing that distance to the source.<br>"
          "The position of the listener is always the the current viewing position.",
@@ -332,7 +332,7 @@ ADE_FUNC(isSoundValid, l_Sound, NULL, "Checks if only the sound is valid, should
 
 ADE_OBJ_DERIV(l_Sound3D, sound_h, "sound3D", "3D sound instance handle", l_Sound);
 
-ADE_FUNC(updatePosition, l_Sound3D, "vector Position[, number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
+ADE_FUNC(updatePosition, l_Sound3D, "vector Position, [number radius = 0.0]", "Updates the given 3D sound with the specified position and an optional range value", "boolean", "true if succeesed, false otherwise")
 {
 	sound_h *sh;
 	vec3d *newPos = NULL;
@@ -386,7 +386,7 @@ ADE_VIRTVAR(Filename, l_Soundfile, "string", "The filename of the file", "string
 }
 
 
-ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
+ADE_FUNC(play, l_Soundfile, "[number volume = 1.0, number panning = 0.0]", "Plays the sound", "sound", "A sound handle or invalid handle on error")
 {
 	soundfile_h* handle = nullptr;
 	float volume = 1.0f;

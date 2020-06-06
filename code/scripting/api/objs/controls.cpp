@@ -101,7 +101,7 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, an
 	return ade_set_args(L, "b", true);
 }
 
-ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide[, boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
+ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide, [boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
 	"the mouse will be restricted to the window. Set this to true when hiding the cursor while in game. By default grab will be true when we are in the game play state, false otherwise.", NULL, NULL)
 {
 	if(!mouse_inited)
@@ -116,7 +116,7 @@ ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide[, boolean grab]", "Hides the cu
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function to force mouse position", "boolean", "if the operation succeeded or not")
+ADE_FUNC(forceMousePosition, l_Mouse, "number x, number y", "function to force mouse position", "boolean", "if the operation succeeded or not")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_FALSE;

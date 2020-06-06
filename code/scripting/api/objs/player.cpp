@@ -238,7 +238,7 @@ ADE_FUNC(getMultiSquadronName, l_Player, NULL, "Gets current player multi squad 
 	return ade_set_args(L, "s", plr->get()->m_squad_name);
 }
 
-ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = <current>", "Loads the specified campaign save file.",
+ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loads the specified campaign save file.",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;

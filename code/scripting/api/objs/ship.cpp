@@ -52,7 +52,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
 }
 
-ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
+ADE_INDEXER(l_ShipTextures, "number/string IndexOrTextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
 {
 	object_h *oh;
 	const char* s;
@@ -137,7 +137,7 @@ ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "bool
 //**********HANDLE: Ship
 ADE_OBJ_DERIV(l_Ship, object_h, "ship", "Ship handle", l_Object);
 
-ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
+ADE_INDEXER(l_Ship, "string/number NameOrIndex", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
 {
 	object_h *objh;
 	const char* s      = nullptr;
@@ -946,7 +946,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
+ADE_FUNC(addShipEffect, l_Ship, "string name, number durationMillis", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
 	object_h *shiph;
 	const char* effect = nullptr;
 	int duration;
@@ -1340,7 +1340,13 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Apply-all Rotation, number Vertical, number Sideways, number Forward, boolean Apply-all Movement, number Maneuver Bitfield", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+ADE_FUNC(doManeuver,
+	l_Ship,
+	"number Duration, number Heading, number Pitch, number Bank, boolean ApplyAllRotation, number Vertical, number "
+	"Sideways, number Forward, boolean ApplyAllMovement, number ManeuverBitfield",
+	"Sets ship maneuver over the defined time period",
+	"boolean",
+	"True if maneuver order was given, otherwise false or nil")
 {
 	object_h *objh;
 	float heading, pitch, bank, up, sideways, forward;
@@ -1646,7 +1652,7 @@ ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum s
 	}
 }
 
-ADE_FUNC(EtsSetIndexes, l_Ship, "number Engine Index, number Shield Index, number Weapon Index",
+ADE_FUNC(EtsSetIndexes, l_Ship, "number EngineIndex, number ShieldIndex, number WeaponIndex",
 		 "Sets ships ETS systems to specified values",
 		 "boolean",
 		 "True if successful, false if target ships ETS was missing, or only has one system")

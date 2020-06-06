@@ -582,7 +582,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", "Fires weapon on turret", NULL, NULL)
+ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
@@ -612,7 +612,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
+ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
 	ship_subsys_h *sso;
 	vec3d pos = vmd_zero_vector;

@@ -262,11 +262,38 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 	UNREACHABLE("Unknown type type!");
 	return nullptr;
 }
+static json_t* json_doc_function_signature(const SCP_vector<scripting::argument_def>& args) {
+	json_t* arr = json_array();
+
+	for (const auto& arg : args)
+	{
+		json_array_append(arr,
+			json_pack("{sosssssb}",
+				"type",
+				json_doc_generate_return_type(arg.type),
+				"name",
+				arg.name.c_str(),
+				"default",
+				arg.def_val.c_str(),
+				"optional",
+				arg.optional));
+	}
+
+	return arr;
+}
 static void json_doc_generate_function(json_t* elObj, const DocumentationElementFunction* lib)
 {
 	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
-	json_object_set_new(elObj, "parameters", json_string(lib->parameters.c_str()));
 	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+
+	if (!lib->parameters.arguments.empty()) {
+		// For future compatibility, the complex case can contain multiple separate parameter lists
+		json_object_set_new(elObj,
+			"parameters",
+			json_pack("[o]", json_doc_function_signature(lib->parameters.arguments)));
+	} else {
+		json_object_set_new(elObj, "parameters", json_string(lib->parameters.simple.c_str()));
+	}
 }
 static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
 {
@@ -423,7 +450,6 @@ void script_init()
 		if (Output_scripting_json) {
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			documentation_to_json(doc);
-			exit(1);
 		}
 	}
 

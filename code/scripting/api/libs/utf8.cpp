@@ -20,7 +20,7 @@ ADE_LIB(l_Utf8, "Unicode", "utf8", "Functions for handling UTF-8 encoded unicode
 
 ADE_FUNC(sub,
 		 l_Utf8,
-		 "string arg, number start[, number end = -1]",
+		 "string arg, number start, [number end = -1]",
 		 "This function is similar to the standard library string.sub but this can operate on UTF-8 encoded unicode strings. "
 			 "This function will respect the unicode mode setting of the current mod so you can use it even if you don't use Unicode strings.",
 		 "string",

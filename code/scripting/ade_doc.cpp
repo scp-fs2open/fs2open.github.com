@@ -74,7 +74,7 @@ const SCP_vector<ade_type_info>& ade_type_alternative::getElementTypes() const {
 namespace {
 
 struct arglist_parser_regexes {
-	std::regex identifier{R"(^[\w:_-%]+)"};
+	std::regex identifier{R"(^[\w:_<>]+)"};
 	std::regex number{R"(^-?\d+(\.\d*)?)"};
 	std::regex string{R"(^"[^"]*")"};
 	std::regex tableInit{R"(^\{[^\}]*\})"};
@@ -101,6 +101,7 @@ enum class TokenType {
 	TableInitializer,
 
 	EndOfFile,
+	INVALID,
 };
 
 struct regex_token {
@@ -113,12 +114,12 @@ regex_tokens getRegexTokens()
 {
 	const auto& regex = regexes();
 
-	return {
+	return {{
 		regex_token{TokenType::Number, regex.number},
 		regex_token{TokenType::String, regex.string},
 		regex_token{TokenType::Identifier, regex.identifier},
 		regex_token{TokenType::TableInitializer, regex.tableInit},
-	};
+	}};
 }
 
 const char* to_string(TokenType t)
@@ -144,6 +145,8 @@ const char* to_string(TokenType t)
 		return "<number>";
 	case TokenType::TableInitializer:
 		return "<table initializer>";
+	case TokenType::INVALID:
+		return "<INVALID INPUT>";
 	}
 
 	UNREACHABLE("Unknown token type %d", static_cast<int>(t));
@@ -316,7 +319,7 @@ struct lexer_state {
 			return {regexTok.type, match.str(0), tokenOff};
 		}
 
-		throw std::runtime_error("Unrecognized input: " + parse_text.substr(offset));
+		throw token_error("Unrecognized input", {TokenType::INVALID, SCP_string(), offset});
 	}
 };
 
@@ -521,15 +524,15 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 		_argList = parser.arguments;
 		return true;
 	} catch (const token_error& token_error) {
-		fprintf(stderr,
-			"Error while parsing\n%s\n%s^\n%s\n\n",
+		SCP_string tokenUnderline;
+		if (!token_error.getToken().content.empty()) {
+			tokenUnderline = SCP_string(token_error.getToken().content.size() - 1, '~');
+		}
+		mprintf(("Scripting documentation: Error while parsing\n%s\n%s^%s\n%s\n(This is only relevant for coders)\n\n",
 			parser.lexer.parse_text.c_str(),
-			std::string(token_error.getToken().offset, ' ').c_str(),
-			token_error.what());
-
-		return false;
-	} catch (const std::exception& e) {
-		fprintf(stderr, "Error while parsing\n%s\n%s\n\n", parser.lexer.parse_text.c_str(), e.what());
+			SCP_string(token_error.getToken().offset, ' ').c_str(),
+			tokenUnderline.c_str(),
+			token_error.what()));
 
 		return false;
 	}

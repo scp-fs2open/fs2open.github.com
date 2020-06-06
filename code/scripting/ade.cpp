@@ -849,7 +849,22 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 		obj->returnType = ReturnType;
 
 		if (Arguments != nullptr) {
-			obj->parameters = Arguments;
+			argument_list_parser arg_parser;
+			if (arg_parser.parse(Arguments)) {
+				bool optional = false;
+				for (const auto& arg : arg_parser.getArgList()) {
+					if (!optional && (arg.optional || !arg.def_val.empty())) {
+						optional = true;
+					}
+
+					auto argCopy     = arg;
+					argCopy.optional = optional;
+
+					obj->parameters.arguments.push_back(std::move(argCopy));
+				}
+			} else {
+				obj->parameters.simple.assign(Arguments);
+			}
 		}
 
 		if (ReturnDescription != nullptr) {
@@ -949,7 +964,7 @@ ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& p
 	ate.Function           = func;
 	ate.Arguments          = args;
 	ate.Description        = desc;
-	ate.ReturnType         = ret_type;
+	ate.ReturnType         = std::move(ret_type);
 	ate.ReturnDescription  = ret_desc;
 	ate.DeprecationVersion = deprecation_version;
 	ate.DeprecationMessage = deprecation_message;
