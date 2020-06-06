@@ -21,6 +21,8 @@
 
 #include "graphics/2d.h"
 #include "graphics/material.h"
+#include "tracing/categories.h"
+#include "tracing/tracing.h"
 
 using namespace Rocket::Core;
 
@@ -60,6 +62,7 @@ Rocket::Core::TextureHandle RocketRenderingInterface::get_texture_handle(RocketR
 CompiledGeometryHandle RocketRenderingInterface::CompileGeometry(Vertex* vertices, int num_vertices, int* indices,
                                                                  int num_indices, TextureHandle texture)
 {
+	TRACE_SCOPE(tracing::RocketCompileGeometry);
 	GR_DEBUG_SCOPE("libRocket::CompileGeometry");
 
 	auto* geom          = new CompiledGeometry();
@@ -76,6 +79,7 @@ CompiledGeometryHandle RocketRenderingInterface::CompileGeometry(Vertex* vertice
 }
 void RocketRenderingInterface::RenderCompiledGeometry(CompiledGeometryHandle geometry, const Vector2f& translation)
 {
+	TRACE_SCOPE(tracing::RocketRenderCompiledGeometry);
 	GR_DEBUG_SCOPE("libRocket::RenderCompiledGeometry");
 
 	auto geom = reinterpret_cast<CompiledGeometry*>(geometry);
@@ -119,6 +123,7 @@ void RocketRenderingInterface::SetScissorRegion(int x, int y, int width, int hei
 bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector2i& texture_dimensions,
                                            const String& source)
 {
+	TRACE_SCOPE(tracing::RocketLoadTexture);
 	GR_DEBUG_SCOPE("libRocket::LoadTexture");
 	SCP_string filename;
 	int dir_type;
@@ -152,6 +157,7 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 bool RocketRenderingInterface::GenerateTexture(TextureHandle& texture_handle, const Rocket::Core::byte* source,
                                                const Vector2i& source_dimensions)
 {
+	TRACE_SCOPE(tracing::RocketGenerateTexture);
 	GR_DEBUG_SCOPE("libRocket::GenerateTexture");
 	auto size = (size_t)(source_dimensions.x * source_dimensions.y * 4); // RGBA format
 
@@ -184,6 +190,8 @@ void RocketRenderingInterface::ReleaseTexture(TextureHandle texture)
 void RocketRenderingInterface::RenderGeometry(Vertex* vertices, int num_vertices, int* indices, int num_indices,
                                               TextureHandle texture, const Vector2f& translation)
 {
+	TRACE_SCOPE(tracing::RocketRenderGeometry);
+	GR_DEBUG_SCOPE("libRocket::RenderGeometry");
 	gr_update_buffer_data(vertex_stream_buffer, sizeof(*vertices) * num_vertices, vertices);
 	gr_update_buffer_data(index_stream_buffer, sizeof(*indices) * num_indices, indices);
 

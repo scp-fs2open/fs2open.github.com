@@ -3,6 +3,7 @@
 #define _TRACING_CATEGORIES_H
 #pragma once
 
+#include "globalincs/pstypes.h"
 
 /** @file
  *  @ingroup tracing
@@ -14,7 +15,7 @@
 namespace tracing {
 
 class Category {
-	const char* _name;
+	const SCP_string _name;
 	bool _graphics_category;
  public:
 	Category(const char* name, bool is_graphics);
@@ -123,6 +124,12 @@ extern Category CutsceneProcessAudioData;
 
 extern Category CutsceneFFmpegVideoDecoder;
 extern Category CutsceneFFmpegAudioDecoder;
+
+extern Category RocketCompileGeometry;
+extern Category RocketRenderCompiledGeometry;
+extern Category RocketLoadTexture;
+extern Category RocketGenerateTexture;
+extern Category RocketRenderGeometry;
 
 // Loading scopes
 extern Category LoadMissionLoad;

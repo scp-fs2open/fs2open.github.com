@@ -1194,6 +1194,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/texturemap.h
     scripting/api/objs/time_obj.cpp
     scripting/api/objs/time_obj.h
+	scripting/api/objs/tracing_category.cpp
+	scripting/api/objs/tracing_category.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
 	scripting/api/objs/waypoint.cpp
