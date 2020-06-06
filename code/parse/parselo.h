@@ -352,7 +352,7 @@ namespace parse
 	{
 	public:
 		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
-		~ParseException() noexcept override {}
+		~ParseException() noexcept override = default;
 	};
 
 	/**

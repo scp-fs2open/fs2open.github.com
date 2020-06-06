@@ -2,7 +2,8 @@
 
 namespace executor {
 
-Executor::Callback runInContext(std::shared_ptr<IExecutionContext> context, IExecutionContext::Callback func)
+Executor::Callback runInContext(const std::shared_ptr<IExecutionContext>& context,
+	const IExecutionContext::Callback& func)
 {
 	return [context, func]() {
 		const auto ctxState = context->determineContextState();

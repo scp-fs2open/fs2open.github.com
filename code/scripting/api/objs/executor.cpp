@@ -40,8 +40,8 @@ ADE_FUNC(schedule,
 	}
 
 	// Post the function onto the executor with a wrapper to convert the Lua value to the proper enum
-	executor->getExecutor()->post([func]() {
-		const auto ret = func();
+	executor->getExecutor()->post([L, func]() {
+		const auto ret = func(L);
 
 		if (ret.empty()) {
 			return executor::Executor::CallbackResult::Done;

@@ -17,8 +17,7 @@ class ArgumentException: public LuaException {
 	ArgumentException(const std::string& message = "Argument Error!") noexcept : LuaException(message) {
 	}
 
-	~ArgumentException() noexcept override {
-	}
+	~ArgumentException() noexcept override = default;
 };
 
 class opt {};

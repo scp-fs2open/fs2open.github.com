@@ -18,6 +18,7 @@
 #include <ctime>
 #include <stdexcept>
 #include <memory>
+#include <utility>
 
 
 #define CF_EOF (-1)
@@ -437,11 +438,11 @@ namespace cfile
 			{
 			}
 
-			explicit cfile_error(const std::string &excuse) : m_excuse(excuse)
+			explicit cfile_error(std::string excuse) : m_excuse(std::move(excuse))
 			{
 			}
 
-			~cfile_error() noexcept override {}
+			~cfile_error() noexcept override = default;
 
 			const char *what() const noexcept override {
 				return m_excuse.c_str();

@@ -41,6 +41,7 @@ class IExecutionContext {
  * @param func The function to wrap
  * @return An executor work item
  */
-Executor::Callback runInContext(std::shared_ptr<IExecutionContext> context, IExecutionContext::Callback func);
+Executor::Callback runInContext(const std::shared_ptr<IExecutionContext>& context,
+	const IExecutionContext::Callback& func);
 
 } // namespace executor

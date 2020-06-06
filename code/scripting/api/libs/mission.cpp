@@ -829,7 +829,7 @@ ADE_FUNC(createShip,
 {
 	const char* name = nullptr;
 	int sclass       = -1;
-	matrix_h* orient = NULL;
+	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	ade_get_args(L, "|sooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
