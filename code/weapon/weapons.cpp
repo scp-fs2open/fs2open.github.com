@@ -3552,7 +3552,7 @@ void weapon_init()
 
 	weapon_level_init();
 
-	if (Cmdline_spew_weapon_stats)
+	if (Cmdline_spew_weapon_stats != WeaponSpewType::NONE)
 		weapon_spew_stats(Cmdline_spew_weapon_stats);
 }
 
