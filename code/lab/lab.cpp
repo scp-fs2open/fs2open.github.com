@@ -161,6 +161,7 @@ void labviewer_change_ship_lod(Tree* caller);
 void labviewer_change_ship(Tree* caller);
 void labviewer_make_desc_window(Button* caller);
 void labviewer_update_flags_window();
+void labviewer_update_actions_window();
 
 // ---------------------- General/Utility Functions ----------------------------
 
@@ -304,6 +305,7 @@ void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 	}
 
 	labviewer_update_flags_window();
+	labviewer_update_actions_window();
 }
 
 void labviewer_recalc_camera()
@@ -457,8 +459,6 @@ void labviewer_render_model(float frametime)
 			model_render_set_wireframe_color(&Color_white);
 
 		if (Lab_render_show_thrusters) {
-			
-			physics_paused = 0;
 			obj->phys_info.forward_thrust = 1.0f;
 			if (obj->type == OBJ_SHIP) {
 				Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
@@ -469,7 +469,6 @@ void labviewer_render_model(float frametime)
 				obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
 		}
 		else {
-			physics_paused = 1;
 			obj->phys_info.forward_thrust = 0.0f;
 
 			if (obj->type == OBJ_SHIP)
@@ -858,7 +857,7 @@ void labviewer_variables_add(int* Y, const char* var_name)
 	Lab_variables_window->AddChild(new Text((var_name), (var_name), 0, y, VAR_POS_LEFTWIDTH));
 	// edit box
 	new_text = (Text*)Lab_variables_window->AddChild(new Text(SCP_string((var_name)) + SCP_string("Editbox"), "",
-	                                                          VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, 12, T_EDITTABLE));
+	                                                          VAR_POS_RIGHTX, y, VAR_POS_RIGHTWIDTH, gr_get_font_height() + 2, T_EDITTABLE));
 
 	if (Y) {
 		*Y += new_text->GetHeight() + 2;
@@ -1058,9 +1057,9 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->shockwave_count, 0);
 
 		VAR_SET_VALUE_SAVE(sip->closeup_zoom, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.x, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.y, 0);
-		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.z, 0);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.x, 0.0f);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.y, 0.0f);
+		VAR_SET_VALUE_SAVE(sip->closeup_pos.xyz.z, 0.0f);
 	}
 	// weapon variables ...
 	else if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1648,7 +1647,6 @@ void labviewer_change_ship_lod(Tree* caller)
 	labviewer_recalc_camera();
 
 	Lab_viewer_flags &= ~LAB_FLAG_SHIP_EXPLODING;
-	physics_paused = 1;
 }
 
 void labviewer_change_ship(Tree* caller)
@@ -2108,11 +2106,52 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 		obj->flags.remove(Object::Object_Flags::Player_ship);
 		ship_self_destruct(obj);
 		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
-		physics_paused = 0;
 	}
 }
 
-void labviewer_make_actions_window(Button* /*caller*/) 
+void labviewer_actions_destroy_subsystem(Tree* caller) {
+	auto selected_subsys_subobj_num = caller->GetSelectedItem()->GetData();
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				if (ssp->system_info->subobj_num == selected_subsys_subobj_num) {
+					do_subobj_destroyed_stuff(sp, ssp, nullptr);
+				}
+
+				ssp = GET_NEXT(ssp);
+			}
+		}
+	}
+}
+
+void labviewer_fill_actions_menu()
+{
+	int y = 0;
+
+	auto btn = new Button("Destroy Ship", 0, y, labviewer_actions_destroy_ship);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
+
+	auto subsys_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Subsystem List", 0, y));
+	auto head_item = subsys_tree->AddItem(nullptr, "Destroy Subsystem", 0, false);
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				subsys_tree->AddItem(head_item, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
+
+				ssp = GET_NEXT(ssp);
+			}
+		}
+	}
+}
+
+void labviewer_make_actions_window(Button* /*caller*/)
 {
 	if (Lab_actions_window != nullptr)
 		return;
@@ -2122,7 +2161,15 @@ void labviewer_make_actions_window(Button* /*caller*/)
 	);
 	Lab_actions_window->SetCloseFunction(lab_actions_window_close);
 
-	Lab_actions_window->AddChild(new Button("Destroy Ship", 0, 0, labviewer_actions_destroy_ship));
+	labviewer_fill_actions_menu();
+}
+
+// Called when the viewed ship changes while the action window is open
+void labviewer_update_actions_window() {
+	if (Lab_actions_window != nullptr) { 
+		Lab_actions_window->DeleteChildren();
+		labviewer_fill_actions_menu();
+	}
 }
 
 // ----------------------------- Lab functions ---------------------------------
