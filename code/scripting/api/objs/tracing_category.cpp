@@ -26,7 +26,7 @@ ADE_FUNC(trace,
 	}
 
 	TRACE_SCOPE(*category);
-	func();
+	func(L);
 	return ADE_RETURN_NIL;
 }
 

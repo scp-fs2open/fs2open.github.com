@@ -34,7 +34,7 @@ class LuaEventCallback {
 		LuaValueList lua_args;
 		convert_args(_func.getLuaState(), lua_args, args...);
 
-		_func(lua_args);
+		_func(_func.getLuaState(), lua_args);
 	}
 };
 

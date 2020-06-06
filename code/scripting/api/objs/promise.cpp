@@ -36,7 +36,9 @@ ADE_FUNC(continueWith,
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "o", l_Promise.Set(promise->then(thenFunc)));
+	return ade_set_args(L,
+		"o",
+		l_Promise.Set(promise->then([L, thenFunc](const luacpp::LuaValueList& val) { return thenFunc(L, val); })));
 }
 
 ADE_FUNC(catch,
@@ -62,7 +64,9 @@ ADE_FUNC(catch,
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "o", l_Promise.Set(promise->catchError(thenFunc)));
+	return ade_set_args(L, "o", l_Promise.Set(promise->catchError([L, thenFunc](const luacpp::LuaValueList& val) {
+		return thenFunc(L, val);
+	})));
 }
 
 ADE_FUNC(isResolved,

@@ -71,8 +71,8 @@ TEST_F(LuaFunctionTest, Call) {
 		// Test execution with failure
 		LuaFunction function = LuaFunction::createFromCode(L, "invalid()");
 
-		ASSERT_THROW(function.call(), luacpp::LuaException);
-		ASSERT_THROW(function(), luacpp::LuaException);
+		ASSERT_THROW(function.call(L), luacpp::LuaException);
+		ASSERT_THROW(function(L), luacpp::LuaException);
 	}
 	{
 		ScopedLuaStackTest stackTest(L);
@@ -80,8 +80,8 @@ TEST_F(LuaFunctionTest, Call) {
 		// Test execution without failure
 		LuaFunction function = LuaFunction::createFromCode(L, "local a = 1");
 
-		ASSERT_NO_THROW(function.call());
-		ASSERT_NO_THROW(function());
+		ASSERT_NO_THROW(function.call(L));
+		ASSERT_NO_THROW(function(L));
 	}
 	{
 		ScopedLuaStackTest stackTest(L);
@@ -90,7 +90,7 @@ TEST_F(LuaFunctionTest, Call) {
 		LuaFunction function = LuaFunction::createFromCode(L, "return 'abc', 5");
 
 
-		LuaValueList returnValues = function();
+		LuaValueList returnValues = function(L);
 
 		ASSERT_EQ(luacpp::ValueType::STRING, returnValues[0].getValueType());
 		ASSERT_EQ(luacpp::ValueType::NUMBER, returnValues[1].getValueType());
@@ -107,7 +107,7 @@ TEST_F(LuaFunctionTest, Call) {
 		ASSERT_TRUE(convert::popValue(L, func));
 
 		LuaValue arg = LuaValue::createValue(L, "testString");
-		LuaValueList returnVals = func({ arg });
+		LuaValueList returnVals = func(L, { arg });
 
 		ASSERT_EQ(1, (int)returnVals.size());
 		ASSERT_EQ(ValueType::STRING, returnVals[0].getValueType());
@@ -127,7 +127,7 @@ TEST_F(LuaFunctionTest, SetEnvironment) {
 
 		func.setEnvironment(envionment);
 
-		LuaValueList returnVals = func();
+		LuaValueList returnVals = func(L);
 
 		ASSERT_EQ(1, (int)returnVals.size());
 		ASSERT_EQ(ValueType::STRING, returnVals[0].getValueType());
@@ -142,7 +142,7 @@ TEST_F(LuaFunctionTest, SetCFunction) {
 
 		LuaFunction func = LuaFunction::createFromCFunction(L, testCFunction);
 
-		LuaValueList retVals = func();
+		LuaValueList retVals = func(L);
 
 		ASSERT_EQ(1, (int)retVals.size());
 		ASSERT_EQ(ValueType::NUMBER, retVals[0].getValueType());
@@ -158,7 +158,7 @@ TEST_F(LuaFunctionTest, SetErrorFunction) {
 		func.setErrorFunction(LuaFunction::createFromCFunction(L, &testErrorFunction));
 
 		try {
-			func();
+			func(L);
 			FAIL();
 		}
 		catch (const LuaException& err) {
@@ -192,7 +192,7 @@ TEST_F(LuaFunctionTest, ErrorFunctionMultipleReturnValues) {
 	func.setErrorFunction(LuaFunction::createFromCFunction(L, &testErrorFunctionTwoRetVals));
 
 	try {
-		func();
+		func(L);
 		FAIL();
 	}
 	catch (const LuaException& err) {
@@ -207,7 +207,7 @@ TEST_F(LuaFunctionTest, ErrorFunctionNoReturnValues) {
 	func.setErrorFunction(LuaFunction::createFromCFunction(L, &testErrorFunctionNoRetVals));
 
 	try {
-		func();
+		func(L);
 		FAIL();
 	} catch (const LuaException& err) {
 		ASSERT_STREQ("Invalid lua value on stack!", err.what());
@@ -222,7 +222,7 @@ TEST_F(LuaFunctionTest, Upvalues)
 
 	LuaFunction func = LuaFunction::createFromCFunction(L, upvalueTest, {upval});
 
-	auto ret = func();
+	auto ret = func(L);
 
 	ASSERT_EQ(1, (int)ret.size());
 	ASSERT_TRUE(ret.front().is(ValueType::BOOLEAN));
@@ -244,7 +244,7 @@ TEST_F(LuaFunctionTest, CreateFromStdFunction)
 
 	const auto stdFuncObj = LuaFunction::createFromStdFunction(L, stdFunc);
 
-	const auto testRet = stdFuncObj({LuaValue::createValue(L, 42), LuaValue::createValue(L, "TestString")});
+	const auto testRet = stdFuncObj(L, {LuaValue::createValue(L, 42), LuaValue::createValue(L, "TestString")});
 
 	EXPECT_EQ(2, static_cast<int>(testRet.size()));
 

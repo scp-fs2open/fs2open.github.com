@@ -386,7 +386,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
 
 		try {
-			auto ret = function.call();
+			auto ret = function.call(LuaState);
 
 			if (rtn != nullptr && ret.size() >= 1) {
 				auto stack_start = lua_gettop(LuaState);
@@ -424,7 +424,7 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 	GR_DEBUG_SCOPE("Lua code");
 
 	try {
-		auto ret = hd.function.call();
+		auto ret = hd.function.call(LuaState);
 
 		if (data != nullptr && ret.size() >= 1) {
 			auto stack_start = lua_gettop(LuaState);

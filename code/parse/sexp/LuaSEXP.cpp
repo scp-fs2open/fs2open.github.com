@@ -2,24 +2,23 @@
 //
 #include "LuaSEXP.h"
 
-#include "parse/parselo.h"
-#include "parse/sexp/sexp_lookup.h"
-#include "parse/sexp.h"
-
-#include "object/waypoint.h"
 #include "iff_defs/iff_defs.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
 #include "mission/missionmessage.h"
-
+#include "object/waypoint.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/message.h"
 #include "scripting/api/objs/sexpvar.h"
-#include "scripting/api/objs/team.h"
-#include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/team.h"
+#include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wing.h"
-#include "scripting/api/objs/message.h"
+#include "scripting/scripting.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 using namespace luacpp;
 
@@ -288,7 +287,7 @@ int LuaSEXP::execute(int node) {
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
-		auto retVals = _action.call(luaParameters);
+		auto retVals = _action.call(Script_system.GetLuaSession(), luaParameters);
 
 		return getSexpReturnValue(retVals);
 	} catch(const LuaException&) {

@@ -1293,7 +1293,7 @@ bool script_state::EvalString(const char* string, const char* debug_str)
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
 
 		try {
-			function.call();
+			function.call(LuaState);
 		} catch (const LuaException&) {
 			return false;
 		}
@@ -1316,7 +1316,7 @@ int script_state::RunBytecode(script_function& hd)
 	GR_DEBUG_SCOPE("Lua code");
 
 	try {
-		hd.function.call();
+		hd.function.call(LuaState);
 	} catch (const LuaException&) {
 		return 0;
 	}
@@ -1469,7 +1469,7 @@ bool script_state::IsOverride(script_hook &hd)
 
 void script_state::RunInitFunctions() {
 	for (const auto& initFunc : GameInitFunctions) {
-		initFunc.function();
+		initFunc.function(LuaState);
 	}
 	// We don't need this anymore so no need to keep references to those functions around anymore
 	GameInitFunctions.clear();

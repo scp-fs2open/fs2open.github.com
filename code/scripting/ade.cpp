@@ -1146,7 +1146,7 @@ void load_default_script(lua_State* L, const char* name)
 		auto func = LuaFunction::createFromCode(L, source, source_name);
 		func.setErrorFunction(LuaFunction::createFromCFunction(L, ade_friendly_error));
 		try {
-			func();
+			func(L);
 		} catch (const LuaException&) {
 			// The execution of the function may also throw an exception but that should have been handled by a LuaError
 			// before

@@ -117,19 +117,20 @@ class LuaFunction: public LuaValue {
      * the arguments and then the function. After that the function is called with lua_pcall
      * and the return values are converted into a LuaValueList.
      *
+     * @param L The state in which the function should be executed
      * @param arguments The arguments passed to the functions. Defaults to none
      * @return luacpp::LuaValueList The values returned by the function call
      *
      * @exception LuaException If an error occurs while executing the function an exception is thrown
      * 	with the message of the error.
      */
-	LuaValueList call(const LuaValueList& arguments = LuaValueList()) const;
+	LuaValueList call(lua_State* L, const LuaValueList& arguments = LuaValueList()) const;
 
 	/**
      * @brief Calls the function. See call().
      * @return Same as call().
      */
-	LuaValueList operator()(const LuaValueList& arguments = LuaValueList()) const;
+	LuaValueList operator()(lua_State* L, const LuaValueList& arguments = LuaValueList()) const;
  private:
 	LuaReference _errorFunction;
 };
