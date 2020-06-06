@@ -153,11 +153,11 @@ void static_rand_cone(int num, vec3d* out, const vec3d* const in, float min_angl
 	}
 
 	// get an orientation matrix
-	if (orient != NULL) {
+	if (orient != nullptr) {
 		rot = orient;
 	}
 	else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		vm_vector_2_matrix(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 
