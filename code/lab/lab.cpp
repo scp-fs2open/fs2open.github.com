@@ -161,6 +161,7 @@ void labviewer_change_ship_lod(Tree* caller);
 void labviewer_change_ship(Tree* caller);
 void labviewer_make_desc_window(Button* caller);
 void labviewer_update_flags_window();
+void labviewer_update_actions_window();
 
 // ---------------------- General/Utility Functions ----------------------------
 
@@ -193,8 +194,6 @@ void reset_view()
 		bloom_sldr->SetSliderValue((float)orig_cmdline_bloom);
 	}
 }
-
-void labviewer_update_actions_window();
 
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 {

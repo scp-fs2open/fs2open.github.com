@@ -12,5 +12,3 @@
 void lab_init();
 void lab_close();
 void lab_do_frame(float frametime);
-
-void labviewer_fill_actions_menu();
