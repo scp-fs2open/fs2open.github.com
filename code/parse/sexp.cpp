@@ -4193,10 +4193,13 @@ int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
 }
 
 /**
- * Takes a ship entry and returns the player for that ship or NULL if it is an AI ship
+ * Takes a ship entry and returns the player for that ship or NULL if it is an AI ship.
+ * In singleplayer mode, this is *the* player, but in multiplayer mode it could be any player.
  */
 player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool test_respawns = false, int *netplayer_index = nullptr)
 {
+	Assertion(ship_entry, "ship_entry cannot be null!");
+
 	if (netplayer_index)
 		*netplayer_index = -1;
 
@@ -4234,7 +4237,7 @@ player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool t
 }
 
 /**
- * Takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
+ * Forwards to get_player_from_ship_entry using a ship_entry generated from this SEXP node.
  */
 player *get_player_from_ship_node(int node, bool test_respawns = false, int *netplayer_index = nullptr)
 {
@@ -23243,7 +23246,7 @@ void sexp_script_eval_multi(int node)
 			}
 			else {
 				// if this is me, flag that we should execute the script
-				if (p == Player) {					
+				if (p == Player) {
 					execute_on_server = true;
 				}
 				// otherwise notify the clients
@@ -23282,7 +23285,7 @@ void multi_sexp_script_eval_multi()
 	else {
 		while (Current_sexp_network_packet.get_string(ship_name)) {
 			auto ship_entry = ship_registry_get(ship_name);
-			Assertion(ship_entry, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %s does not exist!", ship_name);
+			Assertion(ship_entry, "Illegal value for the ship name sent in multi_sexp_script_eval_multi()! Ship %s does not exist!", ship_name);
 			if (Player == get_player_from_ship_entry(ship_entry)) {
 				success = Script_system.EvalString(script, script);
 			}
