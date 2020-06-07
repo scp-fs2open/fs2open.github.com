@@ -24113,7 +24113,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// destroy type sexpressions
 			case OP_IS_DESTROYED:
-				sexp_val = sexp_is_destroyed( node, NULL );
+				sexp_val = sexp_is_destroyed(node, nullptr);
 				break;
 
 			case OP_WAS_DESTROYED_BY_DELAY:
@@ -24121,7 +24121,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_SUBSYSTEM_DESTROYED:
-				sexp_val = sexp_is_subsystem_destroyed(node);
+				sexp_val = sexp_is_subsystem_destroyed(node, nullptr);
 				break;
 
 			case OP_HAS_ARRIVED:
@@ -24133,15 +24133,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_DISABLED:
-				sexp_val = sexp_is_disabled( node, NULL );
+				sexp_val = sexp_is_disabled_xor_disarmed( node, true, nullptr );
 				break;
 
 			case OP_IS_DISARMED:
-				sexp_val = sexp_is_disarmed( node, NULL );
+				sexp_val = sexp_is_disabled_xor_disarmed( node, false, nullptr );
 				break;
 
 			case OP_WAYPOINTS_DONE:
-				sexp_val = sexp_are_waypoints_done(node);
+				sexp_val = sexp_are_waypoints_done( node, nullptr );
 				break;
 
 			// objective operators that use a delay
@@ -24169,11 +24169,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_DISABLED_DELAY:
-				sexp_val = sexp_is_disabled_delay(node);
+				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, true);
 				break;
 
 			case OP_IS_DISARMED_DELAY:
-				sexp_val = sexp_is_disarmed_delay(node);
+				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, true);
 				break;
 
 			case OP_WAYPOINTS_DONE_DELAY:
