@@ -8667,7 +8667,7 @@ int sexp_special_warpout_name( int node )
  * to work multiple times in a row and also to fix the potential bug where exited ships are
  * checked against their departure time, not against their cargo known time
  */
-int sexp_is_cargo_known( int n, int check_delay )
+int sexp_is_cargo_known( int n, bool check_delay )
 {
 	bool is_nan, is_nan_forever;
 	int count, ship_num, num_known, delay;
@@ -24345,7 +24345,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_IS_CARGO_KNOWN:
 			case OP_CARGO_KNOWN_DELAY:
-				sexp_val = sexp_is_cargo_known( node, (op_num==OP_IS_CARGO_KNOWN)?0:1 );
+				sexp_val = sexp_is_cargo_known( node, op_num == OP_CARGO_KNOWN_DELAY );
 				break;
 
 			case OP_HAS_BEEN_TAGGED_DELAY:
