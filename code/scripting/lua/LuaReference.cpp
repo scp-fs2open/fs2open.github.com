@@ -41,10 +41,10 @@ UniqueLuaReference::UniqueLuaReference(lua_State* state, int reference) : _luaSt
 }
 UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(LUA_NOREF) {}
 
-UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) SCP_NOEXCEPT : _luaState(nullptr), _reference(LUA_NOREF) {
+UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) noexcept : _luaState(nullptr), _reference(LUA_NOREF) {
 	*this = std::move(other);
 }
-UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) SCP_NOEXCEPT {
+UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) noexcept {
 	std::swap(_luaState, other._luaState);
 	std::swap(_reference, other._reference);
 	return *this;

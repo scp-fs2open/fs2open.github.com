@@ -36,12 +36,13 @@ class LuaPromise {
 	 * @brief Initializes an invalid promise
 	 */
 	LuaPromise();
+	virtual ~LuaPromise();
 
 	/**
 	 * @brief Creates a pending promise
 	 * @param resolveContext The context to register on
 	 */
-	explicit LuaPromise(std::shared_ptr<resolve_context> resolveContext);
+	explicit LuaPromise(const std::shared_ptr<resolve_context>& resolveContext);
 
 	LuaPromise(const LuaPromise&);
 	LuaPromise& operator=(const LuaPromise&);

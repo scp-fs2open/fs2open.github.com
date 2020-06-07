@@ -29,7 +29,9 @@ typedef struct state_stack {
 	int	current_state;
 	int previous_state;
 	int	event_queue[MAX_GAMESEQ_EVENTS];
-	int	queue_tail, queue_head;
+	int	queue_tail;
+	int queue_head;
+	int instance_id;
 } state_stack;
 
 // DO NOT MAKE THIS NON-STATIC!!!!
@@ -39,6 +41,7 @@ LOCAL int gs_current_stack = -1;						// index of top state on stack.
 static int state_reentry = 0;  // set if we are already in state processing
 static int state_processing_event_post = 0;  // set if we are already processing an event to switch states
 static int state_in_event_processer = 0;
+static int next_instance_id = 1;
 
 // Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
@@ -185,10 +188,11 @@ void gameseq_init()
 
 	for (i=0; i<GS_STACK_SIZE; i++ )	{
 		// gs[i].current_state = GS_STATE_MAIN_MENU;
-		gs[i].current_state = 0;
+		gs[i].current_state  = 0;
 		gs[i].previous_state = 0;
-		gs[i].queue_tail=0;
-		gs[i].queue_head=0;
+		gs[i].queue_tail     = 0;
+		gs[i].queue_head     = 0;
+		gs[i].instance_id    = 0;
 	}
 
 	gs_current_stack = 0;
@@ -274,6 +278,7 @@ void gameseq_set_state(int new_state, int override)
 
 	gs[gs_current_stack].current_state = new_state;
 	gs[gs_current_stack].previous_state = old_state;
+	gs[gs_current_stack].instance_id = ++next_instance_id;
 
 	game_enter_state(old_state,gs[gs_current_stack].current_state);
 	state_reentry--;
@@ -308,6 +313,7 @@ void gameseq_push_state( int new_state )
 	gs[gs_current_stack].previous_state = old_state;
 	gs[gs_current_stack].queue_tail = 0;
 	gs[gs_current_stack].queue_head = 0;
+	gs[gs_current_stack].instance_id = ++next_instance_id;
 
 	game_enter_state(old_state,gs[gs_current_stack].current_state);
 	state_reentry--;
@@ -418,4 +424,10 @@ int gameseq_get_state_idx(int state)
 	}
 
 	return -1;
+}
+
+int gameseq_get_state_instance_id(int depth) {
+	Assert(depth <= gs_current_stack);
+
+	return gs[gs_current_stack - depth].instance_id;
 }

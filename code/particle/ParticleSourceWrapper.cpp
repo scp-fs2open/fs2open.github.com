@@ -12,7 +12,7 @@ namespace particle
 		m_sources.push_back(source);
 	}
 
-	ParticleSourceWrapper::ParticleSourceWrapper(ParticleSourceWrapper&& other) SCP_NOEXCEPT
+	ParticleSourceWrapper::ParticleSourceWrapper(ParticleSourceWrapper&& other) noexcept
 	{
 		*this = std::move(other);
 	}
@@ -28,7 +28,7 @@ namespace particle
 		}
 	}
 
-	ParticleSourceWrapper& ParticleSourceWrapper::operator=(ParticleSourceWrapper&& other) SCP_NOEXCEPT
+	ParticleSourceWrapper& ParticleSourceWrapper::operator=(ParticleSourceWrapper&& other) noexcept
 	{
 		std::swap(other.m_sources, m_sources);
 		return *this;

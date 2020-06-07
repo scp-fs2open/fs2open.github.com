@@ -3,13 +3,17 @@
 
 #include "mission.h"
 
+#include "globalincs/linklist.h"
+
 #include "freespace.h"
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "executor/GameStateExecutionContext.h"
+#include "executor/global_executors.h"
 #include "gamesequence/gamesequence.h"
-#include "globalincs/linklist.h"
 #include "hud/hudescort.h"
+#include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -22,6 +26,7 @@
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/background_element.h"
@@ -32,6 +37,7 @@
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
+#include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -784,8 +790,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 		return ADE_RETURN_FALSE;
 	}
 
-	if (time < 0)
-	{
+	if (time < 0) {
 		LuaError(L, "Got invalid time of %d seconds!", time);
 		return ADE_RETURN_FALSE;
 	}
@@ -795,12 +800,37 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
+ADE_FUNC(sendPlainMessage,
+	l_Mission,
+	"string message",
+	"Sends a plain text message without it being present in the mission message list",
+	"boolean",
+	"true if successful false otherwise")
+{
+	const char* message = nullptr;
+
+	if (!ade_get_args(L, "s", &message))
+		return ADE_RETURN_FALSE;
+
+	if (message == nullptr)
+		return ADE_RETURN_FALSE;
+
+	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", message);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(createShip,
+	l_Mission,
+	"[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"ship",
+	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
 	const char* name = nullptr;
-	int sclass = -1;
-	matrix_h *orient = NULL;
-	vec3d pos = vmd_zero_vector;
+	int sclass       = -1;
+	matrix_h* orient = nullptr;
+	vec3d pos        = vmd_zero_vector;
 	ade_get_args(L, "|sooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
 	matrix *real_orient = &vmd_identity_matrix;
@@ -1263,6 +1293,58 @@ ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ship
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(waitAsync,
+	l_Mission,
+	"number seconds",
+	"Performs an asynchronous wait until the specified amount of mission time has passed.",
+	"promise",
+	"A promise with no return value that resolves when the specified time has passed")
+{
+	float time = -1.0f;
+	if (!ade_get_args(L, "f", &time)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (time <= 0.0f) {
+		LuaError(L, "Invalid wait time %f specified. Must be greater than zero.", time);
+		return ADE_RETURN_NIL;
+	}
+
+	class time_resolve_context : public resolve_context, public std::enable_shared_from_this<time_resolve_context> {
+	  public:
+		time_resolve_context(int timestamp) : m_timestamp(timestamp) {}
+		void setResolver(Resolver resolver) override
+		{
+			// Keep checking the time until the timestamp is elapsed
+			auto self = shared_from_this();
+			auto cb = [this, self, resolver](
+						  executor::IExecutionContext::State contextState) {
+				if (contextState == executor::IExecutionContext::State::Invalid) {
+					resolver(true, luacpp::LuaValueList());
+					return executor::Executor::CallbackResult::Done;
+				}
+
+				if (timestamp_elapsed(m_timestamp)) {
+					resolver(false, luacpp::LuaValueList());
+					return executor::Executor::CallbackResult::Done;
+				}
+
+				return executor::Executor::CallbackResult::Reschedule;
+			};
+
+			// Use an game state execution context here to clean up references to this as soon as possible
+			executor::OnSimulationExecutor->post(
+				executor::runInContext(executor::GameStateExecutionContext::captureContext(), std::move(cb)));
+		}
+
+	  private:
+		int m_timestamp = -1;
+	};
+	return ade_set_args(L,
+		"o",
+		l_Promise.Set(LuaPromise(std::make_shared<time_resolve_context>(timestamp(fl2i(time * 1000.f))))));
 }
 
 //****LIBRARY: Campaign

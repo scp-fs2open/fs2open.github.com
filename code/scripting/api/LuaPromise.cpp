@@ -28,6 +28,8 @@ class continuation_resolve_context : public resolve_context {
 
 	void resolve(bool error, const luacpp::LuaValueList& resolveVals)
 	{
+		Assertion(_resolver, "Promise resolved without a resolver! Probably called twice...");
+
 		// If the error value is what we want then we need to call our continuation. Otherwise the value just passes
 		// through this instance without the continuation being called
 		if (error == _wantErrors) {
@@ -54,19 +56,19 @@ struct LuaPromise::internal_state : std::enable_shared_from_this<LuaPromise::int
 
 	luacpp::LuaValueList resolvedValue;
 
-	std::shared_ptr<resolve_context> resolveCtx;
-
 	SCP_vector<std::shared_ptr<continuation_resolve_context>> continuationContexts;
 
-	void registerResolveCallback()
+	void registerResolveCallback(const std::shared_ptr<resolve_context>& resolveCtx)
 	{
-		// Need a weak pointer here to avoid circular dependency. Lua will keep this object alive as long as needed
-		std::weak_ptr<LuaPromise::internal_state> weak_self = shared_from_this();
-		resolveCtx->setResolver([this, weak_self](bool error, const luacpp::LuaValueList& resolveVals) {
-			if (auto _ = weak_self.lock()) {
-				// Now we know that "this" is still valid
-				resolveCb(error, resolveVals);
-			}
+		// Weak pointer here since if our pointer is cleaned up that means no one is interested in our promise anymore.
+		auto self = shared_from_this();
+		resolveCtx->setResolver([this, self](bool error, const luacpp::LuaValueList& resolveVals) mutable {
+			Assertion(self != nullptr, "Resolver called multiple times!");
+
+			resolveCb(error, resolveVals);
+
+			// Remove the reference to ourself in case the resolver does not dispose of this function object
+			self = nullptr;
 		});
 	}
 
@@ -79,18 +81,19 @@ struct LuaPromise::internal_state : std::enable_shared_from_this<LuaPromise::int
 		for (const auto& cont : continuationContexts) {
 			cont->resolve(error, resolveVals);
 		}
+		// This will only be needed once so we can clear out the references now
+		continuationContexts.clear();
 	}
 };
 
 LuaPromise::LuaPromise() : m_state(std::make_shared<LuaPromise::internal_state>()) {}
 
-LuaPromise::LuaPromise(std::shared_ptr<resolve_context> resolveContext) : LuaPromise()
+LuaPromise::LuaPromise(const std::shared_ptr<resolve_context>& resolveContext) : LuaPromise()
 {
-	m_state->state      = State::Pending;
-	m_state->resolveCtx = std::move(resolveContext);
+	m_state->state = State::Pending;
 
 	// This executes promises eagerly since registering the callback kicks of the async operation
-	m_state->registerResolveCallback();
+	m_state->registerResolveCallback(resolveContext);
 }
 
 LuaPromise::LuaPromise(const LuaPromise&) = default;
@@ -179,6 +182,7 @@ LuaPromise LuaPromise::registerContinuation(bool catchErrors, LuaPromise::Contin
 
 	return LuaPromise(continuationContext);
 }
+LuaPromise::~LuaPromise() = default;
 
 } // namespace api
 } // namespace scripting

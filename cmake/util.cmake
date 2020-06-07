@@ -184,7 +184,7 @@ function(detect_simd_instructions _out_var)
 endfunction()
 
 function (check_linker_flag _flag _out_var)
-	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
+	SET(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
 	CHECK_C_COMPILER_FLAG("" ${_out_var})
 endfunction(check_linker_flag)
 

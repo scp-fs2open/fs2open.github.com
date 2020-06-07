@@ -4,8 +4,6 @@
 
 #include "LuaHeaders.h"
 
-#include <scp_compiler_detection.h>
-
 #include <memory>
 
 namespace luacpp {
@@ -76,8 +74,8 @@ class UniqueLuaReference {
 	UniqueLuaReference(const UniqueLuaReference&) = delete;
 	UniqueLuaReference& operator=(const UniqueLuaReference&) = delete;
 
-	UniqueLuaReference(UniqueLuaReference&& other) SCP_NOEXCEPT;
-	UniqueLuaReference& operator=(UniqueLuaReference&& other) SCP_NOEXCEPT;
+	UniqueLuaReference(UniqueLuaReference&& other) noexcept;
+	UniqueLuaReference& operator=(UniqueLuaReference&& other) noexcept;
 
 	lua_State* getState() { return _luaState; }
 

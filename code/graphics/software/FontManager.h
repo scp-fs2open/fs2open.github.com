@@ -21,12 +21,12 @@ namespace font {
 
 		TrueTypeFontData() : size(0) { }
 
-		TrueTypeFontData(TrueTypeFontData &&other) SCP_NOEXCEPT {
+		TrueTypeFontData(TrueTypeFontData &&other) noexcept {
 			std::swap(data, other.data);
 			size = other.size;
 		}
 
-		TrueTypeFontData &operator=(TrueTypeFontData &&other) SCP_NOEXCEPT {
+		TrueTypeFontData &operator=(TrueTypeFontData &&other) noexcept {
 			std::swap(data, other.data);
 			size = other.size;
 

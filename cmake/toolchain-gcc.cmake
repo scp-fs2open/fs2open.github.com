@@ -98,7 +98,7 @@ set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variabl
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 
-# Always use the base flags and add our compiler flags at the bacl
+# Always use the base flags and add our compiler flags at the back
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")
 set(CMAKE_C_FLAGS "${C_BASE_FLAGS} ${COMPILER_FLAGS}")
 
