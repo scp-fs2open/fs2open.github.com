@@ -1004,10 +1004,10 @@ DCF(model_darkening,"Makes models darker with distance")
 
 
 /**
- * Find the distance from p0 to the closest point on a box.
+ * Find the distance-squared from p0 to the closest point on a box.
  * The box's dimensions from 'min' to 'max'.
  */
-float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
+float interp_closest_dist_sq_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
 {
 	float *origin = (float *)&p0->xyz.x;
 	float *minB = (float *)min;
@@ -1032,7 +1032,7 @@ float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *ma
 		return 0.0f;
 	}
 
-	return vm_vec_dist(hitpt,p0);
+	return vm_vec_dist_squared(hitpt,p0);
 }
 
 
@@ -1046,10 +1046,10 @@ float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *ma
 // Returns:
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
-//   Also fills in outpnt with the actual closest point.
-float model_find_closest_point( vec3d * /*outpnt*/, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos )
+//   Also fills in outpnt with the actual closest point (in local coordinates).
+float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, const matrix *orient, const vec3d *pos, const vec3d *eye_pos )
 {
-	vec3d closest_pos, tempv, eye_rel_pos;
+	vec3d tempv, eye_rel_pos;
 	
 	polymodel *pm = model_get(model_num);
 
@@ -1058,10 +1058,57 @@ float model_find_closest_point( vec3d * /*outpnt*/, int model_num, int submodel_
 	}
 
 	// Rotate eye pos into object coordinates
-	vm_vec_sub(&tempv,pos,eye_pos );
-	vm_vec_rotate(&eye_rel_pos,&tempv,orient );
+	vm_vec_sub(&tempv, pos, eye_pos);
+	vm_vec_rotate(&eye_rel_pos, &tempv, orient);
 
-	return interp_closest_dist_to_box( &closest_pos, &eye_rel_pos, &pm->submodel[submodel_num].min, &pm->submodel[submodel_num].max );
+	return fl_sqrt( interp_closest_dist_sq_to_box( outpnt, &eye_rel_pos, &pm->submodel[submodel_num].min, &pm->submodel[submodel_num].max ) );
+}
+
+// Like the above, but finds the closest two points to each other.
+float model_find_closest_points(vec3d *outpnt1, int model_num1, int submodel_num1, const matrix *orient1, const vec3d *pos1, vec3d *outpnt2, int model_num2, int submodel_num2, const matrix *orient2, const vec3d *pos2)
+{
+	polymodel *pm1 = model_get(model_num1);
+	if (submodel_num1 < 0)
+		submodel_num1 = pm1->detail[0];
+
+	polymodel *pm2 = model_get(model_num2);
+	if (submodel_num2 < 0)
+		submodel_num2 = pm2->detail[0];
+
+	// determine obj2's bounding box
+	vec3d bounding_box[8];
+	model_calc_bound_box(bounding_box, &pm2->submodel[submodel_num2].min, &pm2->submodel[submodel_num2].max);
+
+	float closest_dist_sq = -1.0f;
+
+	// check each point on it
+	for (const auto &pt : bounding_box)
+	{
+		vec3d temp, rel_pt;
+
+		// find world coordinates of this point
+		vm_vec_unrotate(&temp, &pt, orient2);
+		vm_vec_add(&rel_pt, &temp, pos2);
+
+		// now find coordinates relative to obj1
+		vm_vec_sub(&temp, pos1, &rel_pt);
+		vm_vec_rotate(&rel_pt, &temp, orient1);
+
+		// test this point
+		float dist_sq = interp_closest_dist_sq_to_box(&temp, &rel_pt, &pm1->submodel[submodel_num1].min, &pm1->submodel[submodel_num1].max);
+		if (closest_dist_sq < 0.0f || dist_sq < closest_dist_sq)
+		{
+			closest_dist_sq = dist_sq;
+
+			// Note: As in the other function, both of these points are
+			// in local coordinates relative to each of their models.
+			*outpnt1 = temp;
+			*outpnt2 = pt;
+		}
+	}
+
+	// we have now found the closest point
+	return fl_sqrt(closest_dist_sq);
 }
 
 int tiling = 1;

@@ -1224,7 +1224,10 @@ void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
 //   Also fills in outpnt with the actual closest point.
-float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos);
+float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, const matrix *orient, const vec3d *pos, const vec3d *eye_pos);
+
+// Like the above, but finds the closest two points to each other.
+float model_find_closest_points(vec3d *outpnt1, int model_num1, int submodel_num1, const matrix *orient1, const vec3d *pos1, vec3d *outpnt2, int model_num2, int submodel_num2, const matrix *orient2, const vec3d *pos2);
 
 // see if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
 int model_find_texture(int model_num, int bitmap);
