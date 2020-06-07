@@ -418,9 +418,6 @@ void multi_ts_init_objnums();
 // assign the correct flags to the correct slots
 void multi_ts_init_flags();
 
-// get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch);
-
 // handle an available ship scroll down button press
 void multi_ts_avail_scroll_down();
 
@@ -872,7 +869,7 @@ void multi_ts_assign_players_all()
 		// find a valid player ship - ignoring the ship which was assigned to the host
 		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup) != 0){
 			// determine what team and slot this ship is				
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
+			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);
 			Assert((team_index != -1) && (slot_index != -1));
 
 			// in a team vs. team situation
@@ -1673,69 +1670,36 @@ void multi_ts_init_objnums()
 	}		
 }
 
-bool multi_ts_validate_ship(char *shipname, char *wingname) 
-{
-	int wing_number, wing_idx; 
-
-	// check name isn't too short to be valid
-	if (strlen(shipname) < (strlen (wingname) + 2) ) {		
-		return false;
-	}
-
-	wing_idx = wing_lookup(wingname); 
-	Assert (wing_idx >= 0 && wing_idx < MAX_WINGS); 
-	wing_number = atoi(shipname+strlen(wingname)); 
-
-	if (wing_number > 0 && wing_number <= Wings[wing_idx].wave_count) {
-		return true; 
-	}
-
-	return false;
-}
-
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch)
+void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_index)
 {
-	int idx; 
 
 	// set the return values to default values
 	*team_index = -1;
 	*slot_index = -1;
 
+	// set up the ship registry pointer
+	const ship_registry_entry* ship_regp = ship_registry_get(ship_name);
+
+	// For a player usable ship, there has to be a parse object, a team and a position within a wing.
+	Assert(ship_regp != nullptr && ship_regp->p_objp != nullptr); 
+	if (ship_regp == nullptr || ship_regp->p_objp == nullptr) {
+		return;
+	}
+
+	*team_index = ship_regp->p_objp->team;
+
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
-		for (idx = 0; idx < MAX_TVT_WINGS; idx++) {
-			// get team (wing)
-			if ( !strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])) && multi_ts_validate_ship(ship_name, TVT_wing_names[idx]) ) {				
-				*team_index = idx;
-				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
-
-				// just Assert(), if this is wrong then we're pretty much screwed either way
-				Assert( (*slot_index >= 0) && (*slot_index < MAX_WSS_SLOTS) );
-			}
-		}
+		// get the slot within the wing, since there's only one wing each in team vs. team.
+		*slot_index = ship_regp->p_objp->pos_in_wing;
 	} 
 	// if we're _not_ in team vs. team mode
 	else {
-		int wing_index, ship;
-		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
-			// get wing
-			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) && multi_ts_validate_ship(ship_name, Starting_wing_names[idx]) ) {
-				wing_index = idx;
-				ship = (ship_name[strlen(ship_name)-1] - '1');
-
-				// just Assert(), if this is wrong then we're pretty much screwed either way
-				Assert( (ship >= 0) && (ship < MULTI_TS_NUM_SHIP_SLOTS_TEAM) );
-
-				// team is 0, slot is the starting slot for all ships
-				*team_index = 0;
-				*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
-			}
-		}
+		// get the wing index first.
+		int wing_index = ship_regp->p_objp->wing_status_wing_index;
+		*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp->pos_in_wing; 
 	}
-	if(mantis2757switch)
-		Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
 }
 
 // function to return the shipname of the ship in the slot designated by the team and slot
