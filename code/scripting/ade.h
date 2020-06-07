@@ -8,6 +8,7 @@
 #include "globalincs/version.h"
 
 #include "object/object.h"
+#include "scripting/ade_doc.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -95,56 +96,6 @@ struct ade_odata_setter {
 //v - virtual variable
 //
 //u - oh wait...
-
-enum class ade_type_info_type {
-	Empty,
-	Simple,
-	Tuple,
-	Array
-};
-
-class ade_type_array;
-
-/**
- * @brief A definition of a type used in the ADE system
- */
-class ade_type_info {
-	ade_type_info_type _type = ade_type_info_type::Empty;
-
-	const char* _simple_name = nullptr;
-
-	SCP_vector<ade_type_info> _elements;
-
-  public:
-	ade_type_info() = default;
-	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
-	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
-	/*implicit*/ ade_type_info(const ade_type_array& listType);
-
-	ade_type_info_type getType() const;
-
-	bool isEmpty() const;
-
-	bool isSimple() const;
-
-	bool isTuple() const;
-
-	bool isArray() const;
-
-	const char* getSimpleName() const;
-
-	const ade_type_info& arrayType() const;
-
-	const SCP_vector<ade_type_info>& elements() const;
-};
-
-class ade_type_array {
-	ade_type_info _element_type;
-  public:
-	explicit ade_type_array(ade_type_info elementType);
-
-	const ade_type_info& getElementType() const;
-};
 
 /**
  * @ingroup ade_api

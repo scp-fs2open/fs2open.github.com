@@ -103,7 +103,7 @@ ADE_FUNC(isPlaybackReady, l_MoviePlayer, nullptr,
 	return ade_set_args(L, "b", ret);
 }
 
-ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1[, number x2, number y2]",
+ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1, [number x2, number y2]",
          "Draws the current frame of the movie at the specified coordinates.", nullptr, "Returns nothing")
 {
 	movie_player_h* ph = nullptr;

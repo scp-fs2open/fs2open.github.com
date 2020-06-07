@@ -337,7 +337,7 @@ ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current
 }
 
 ADE_FUNC(
-    checkRayCollision, l_Object, "vector Start Point, vector End Point[, boolean Local=false]",
+    checkRayCollision, l_Object, "vector StartPoint, vector EndPoint, [boolean Local=false]",
     "Checks the collisions between the polygons of the current object and a ray. Start and end vectors are in world "
     "coordinates",
     ade_type_info({"vector", "collision_info"}),

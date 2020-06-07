@@ -3,13 +3,14 @@
 
 #include "scripting/ade.h"
 
+#include "globalincs/version.h"
+
 #include "ade.h"
 #include "ade_api.h"
 #include "ade_args.h"
 #include "scripting.h"
 
 #include "def_files/def_files.h"
-#include "globalincs/version.h"
 #include "mod_table/mod_table.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/beam.h"
@@ -20,6 +21,8 @@
 #include "scripting/api/objs/weapon.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
+
+#include <utility>
 
 namespace {
 using namespace scripting;
@@ -281,6 +284,29 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
 		ade_output_type_link(fp, type_info.arrayType());
 		fputs(" ... }", fp);
 		break;
+	case ade_type_info_type::Map:
+		fputs("{ ", fp);
+		ade_output_type_link(fp, type_info.elements()[0]);
+		fputs(" -> ", fp);
+		ade_output_type_link(fp, type_info.elements()[1]);
+		fputs(" ... }", fp);
+		break;
+	case ade_type_info_type::Iterator:
+		fputs("iterator< ", fp);
+		ade_output_type_link(fp, type_info.arrayType());
+		fputs(" >", fp);
+		break;
+	case ade_type_info_type::Alternative: {
+		bool first = true;
+		for (const auto& type : type_info.elements()) {
+			if (!first) {
+				fputs(" | ", fp);
+			}
+			first = false;
+
+			ade_output_type_link(fp, type);
+		}
+	}
 	}
 }
 
@@ -649,15 +675,45 @@ void ade_table_entry::OutputMeta(FILE *fp)
 							fprintf(fp, "<b>%s", ade_Operators[ao].dest);
 					}
 				}
-				if(ao < 0)
-				{
-					if(Arguments != NULL) {
-						fprintf(fp, "(</b><i>%s</i><b>)</b>\n", Arguments);
-					} else {
-						fprintf(fp, "()</b>\n");
+
+				if(ao < 0) {
+					fputs("(</b>", fp);
+					if (Arguments != nullptr) {
+						argument_list_parser arg_parser;
+						if (arg_parser.parse(Arguments)) {
+							bool first    = true;
+							bool optional = false;
+							for (const auto& arg : arg_parser.getArgList()) {
+								if (!first) {
+									fputs(", ", fp);
+								}
+								first = false;
+
+								if (arg.optional && !optional) {
+									fputs("[", fp);
+									optional = true;
+								}
+
+								ade_output_type_link(fp, arg.type);
+
+								if (!arg.name.empty()) {
+									fprintf(fp, " <i>%s</i>", arg.name.c_str());
+
+									if (!arg.def_val.empty()) {
+										fprintf(fp, " = <i>%s</i>", arg.def_val.c_str());
+									}
+								}
+							}
+
+							if (optional) {
+								fputs("]", fp);
+							}
+						} else {
+							fprintf(fp, "<i>%s</i>", Arguments);
+						}
 					}
-				}
-				else
+					fputs("<b>)</b>\n", fp);
+				} else
 				{
 					fputs("</b>", fp);
 					if(Arguments != NULL) {
@@ -793,7 +849,22 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 		obj->returnType = ReturnType;
 
 		if (Arguments != nullptr) {
-			obj->parameters = Arguments;
+			argument_list_parser arg_parser;
+			if (arg_parser.parse(Arguments)) {
+				bool optional = false;
+				for (const auto& arg : arg_parser.getArgList()) {
+					if (!optional && (arg.optional || !arg.def_val.empty())) {
+						optional = true;
+					}
+
+					auto argCopy     = arg;
+					argCopy.optional = optional;
+
+					obj->parameters.arguments.push_back(std::move(argCopy));
+				}
+			} else {
+				obj->parameters.simple.assign(Arguments);
+			}
 		}
 
 		if (ReturnDescription != nullptr) {
@@ -889,12 +960,12 @@ ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& p
 
 	ate.Name = name;
 	ate.Instanced = true;
-	ate.Type = 'u';
-	ate.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
-	ate.ReturnDescription = ret_desc;
+	ate.Type               = 'u';
+	ate.Function           = func;
+	ate.Arguments          = args;
+	ate.Description        = desc;
+	ate.ReturnType         = std::move(ret_type);
+	ate.ReturnDescription  = ret_desc;
 	ate.DeprecationVersion = deprecation_version;
 	ate.DeprecationMessage = deprecation_message;
 
@@ -1157,57 +1228,5 @@ void load_default_script(lua_State* L, const char* name)
 }
 
 ade_table_entry& internal::getTableEntry(size_t idx) { return ade_manager::getInstance()->getEntry(idx); }
-
-ade_type_info::ade_type_info(std::initializer_list<ade_type_info> tuple_types) :
-	_type(ade_type_info_type::Tuple), _elements(tuple_types) {
-	Assertion(tuple_types.size() >= 1, "Tuples must have more than one element!");
-}
-ade_type_info::ade_type_info(const char* single_type) : _type(ade_type_info_type::Simple), _simple_name{ single_type }
-{
-	if (single_type == nullptr) {
-		// It would be better to handle this via an overload with std::nullptr_t but there are a lot of NULL usages left
-		// so this is the soltuion that requires fewer changes
-		_type = ade_type_info_type::Empty;
-		return;
-	}
-
-	// Otherwise, make sure no one tries to specify a tuple with a single string.
-	Assertion(strchr(single_type, ',') == nullptr,
-	          "Type string '%s' may not contain commas! Use the intializer list instead.", single_type);
-}
-ade_type_info::ade_type_info(const ade_type_array& listType) :
-	_type(ade_type_info_type::Array), _elements{ listType.getElementType() } {
-
-}
-bool ade_type_info::isEmpty() const {
-	return _type == ade_type_info_type::Empty;
-}
-bool ade_type_info::isTuple() const {
-	return _type == ade_type_info_type::Tuple;
-}
-bool ade_type_info::isSimple() const {
-	return _type == ade_type_info_type::Simple;
-}
-bool ade_type_info::isArray() const {
-	return _type == ade_type_info_type::Array;
-}
-const SCP_vector<ade_type_info>& ade_type_info::elements() const {
-	return _elements;
-}
-const char* ade_type_info::getSimpleName() const {
-	return _simple_name;
-}
-ade_type_info_type ade_type_info::getType() const {
-	return _type;
-}
-const ade_type_info& ade_type_info::arrayType() const {
-	return _elements.front();
-}
-
-ade_type_array::ade_type_array(ade_type_info  elementType) : _element_type(std::move(elementType)) {
-}
-const ade_type_info& ade_type_array::getElementType() const {
-	return _element_type;
-}
 
 }

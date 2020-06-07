@@ -232,17 +232,68 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 		                 "element",
 		                 json_doc_generate_return_type(type_info.elements().front()));
 	}
-	default:
-		UNREACHABLE("Unknown type type!");
-		return nullptr;
+	case ade_type_info_type::Map: {
+		return json_pack("{sssoso}",
+			"type",
+			"map",
+			"key",
+			json_doc_generate_return_type(type_info.elements()[0]),
+			"value",
+			json_doc_generate_return_type(type_info.elements()[1]));
+	}
+	case ade_type_info_type::Iterator: {
+		return json_pack("{ssso}",
+			"type",
+			"iterator",
+			"element",
+			json_doc_generate_return_type(type_info.elements().front()));
+	}
+	case ade_type_info_type::Alternative: {
+		json_t* alternativeTypes = json_array();
+
+		for (const auto& type : type_info.elements()) {
+			json_array_append_new(alternativeTypes, json_doc_generate_return_type(type));
+		}
+
+		return json_pack("{ssso}", "type", "alternative", "elements", alternativeTypes);
+	}
 	}
 
+	UNREACHABLE("Unknown type type!");
+	return nullptr;
+}
+static json_t* json_doc_function_signature(const SCP_vector<scripting::argument_def>& args) {
+	json_t* arr = json_array();
+
+	for (const auto& arg : args)
+	{
+		json_array_append(arr,
+			json_pack("{sosssssb}",
+				"type",
+				json_doc_generate_return_type(arg.type),
+				"name",
+				arg.name.c_str(),
+				"default",
+				arg.def_val.c_str(),
+				"optional",
+				arg.optional));
+	}
+
+	return arr;
 }
 static void json_doc_generate_function(json_t* elObj, const DocumentationElementFunction* lib)
 {
 	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
-	json_object_set_new(elObj, "parameters", json_string(lib->parameters.c_str()));
 	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
+
+	if (!lib->parameters.arguments.empty()) {
+		// For future compatibility, the complex case can contain multiple separate parameter lists
+		json_object_set_new(elObj,
+			"parameters",
+			json_pack("[o]", json_doc_function_signature(lib->parameters.arguments)));
+	} else {
+		json_object_set_new(elObj, "parameters", json_string(lib->parameters.simple.c_str()));
+	}
 }
 static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
 {

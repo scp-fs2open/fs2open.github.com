@@ -167,7 +167,7 @@ ADE_FUNC(drawRectangle, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, n
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawImage, l_HudGaugeDrawFuncs, "texture handle Texture, [number X=0, Y=0]",
+ADE_FUNC(drawImage, l_HudGaugeDrawFuncs, "texture Texture, [number X=0, number Y=0]",
          "Draws an image in the context of the HUD gauge.", "boolean",
          "true on success, false otherwise")
 {

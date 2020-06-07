@@ -8,6 +8,7 @@
 
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
+#include "scripting/ade_doc.h"
 
 namespace scripting {
 

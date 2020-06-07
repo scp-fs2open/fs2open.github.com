@@ -80,7 +80,7 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
+ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);
@@ -88,7 +88,7 @@ ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]",
 	return ade_set_args(L, "f", b ? flRealframetime : flFrametime);
 }
 
-ADE_FUNC(getCurrentGameState, l_Base, "[Depth (number)]", "Gets current FreeSpace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.", "gamestate", "Current game state at specified depth, or invalid handle if no game state is active yet")
+ADE_FUNC(getCurrentGameState, l_Base, "[number depth]", "Gets current FreeSpace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.", "gamestate", "Current game state at specified depth, or invalid handle if no game state is active yet")
 {
 	int depth = 0;
 	ade_get_args(L, "|i", &depth);
@@ -228,7 +228,7 @@ ADE_FUNC(getControlInfo, l_Base, nullptr, "Gets the control info handle.", "cont
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
-ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the day the next time the current pilot enters the mainhall.", NULL, NULL)
+ADE_FUNC(setTips, l_Base, "boolean", "Sets whether to display tips of the day the next time the current pilot enters the mainhall.", nullptr, nullptr)
 {
 	if (Player == NULL)
 		return ADE_RETURN_NIL;
@@ -299,7 +299,7 @@ ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is r
 
 ADE_FUNC(isEngineVersionAtLeast,
 		 l_Base,
-		 "number major, number minor, number build[, number revision = 0]",
+		 "number major, number minor, number build, [number revision = 0]",
 		 "Checks if the current version of the engine is at least the specified version. This can be used to check if a feature introduced in a later version of the engine is available.",
 		 "boolean",
 		 "true if the version is at least the specified version. false otherwise.") {
@@ -380,7 +380,7 @@ ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is curre
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 
-ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
+ADE_INDEXER(l_Base_Events, "number/string IndexOrName", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -410,7 +410,7 @@ ADE_FUNC(__len, l_Base_Events, NULL, "Number of events", "number", "Number of ev
 //**********SUBLIBRARY: Base/States
 ADE_LIB_DERIV(l_Base_States, "GameStates", NULL, "Freespace 2 states", l_Base);
 
-ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
+ADE_INDEXER(l_Base_States, "number/string IndexOrName", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))

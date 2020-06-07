@@ -463,7 +463,13 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 	return ade_set_args(L, "b", b);
 }
 
-ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0, Bank %=40, number Zoom=1.3]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel,
+	l_Shipclass,
+	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
+	"BankPercent=40, number Zoom=1.3]",
+	"Draws ship model as if in techroom",
+	"boolean",
+	"Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};

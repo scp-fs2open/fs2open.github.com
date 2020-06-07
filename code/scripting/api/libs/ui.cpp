@@ -77,7 +77,7 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 }
 
 ADE_FUNC(playElementSound, l_UserInterface,
-         "Rocket::Element element, string event, string state = "
+         "Rocket::Element element, string event, string state = \"\""
          "",
          "Plays an element specific sound with an optional state for differentiating different UI states.", "boolean",
          "true if a sound was played, false otherwise")
@@ -190,7 +190,7 @@ ADE_FUNC(deletePilot, l_UserInterface_PilotSelect, "string callsign",
 }
 
 ADE_FUNC(
-    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi[, string copy_from]",
+    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi, [string copy_from]",
     "Creates a new pilot in either single or multiplayer mode and optionally copies settings from an existing pilot.",
     "boolean", "true on success, false otherwise")
 {

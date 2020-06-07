@@ -59,7 +59,7 @@ static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
-ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
+ADE_INDEXER(l_Graphics_Cameras, "number/string IndexOrName", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
 	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
@@ -93,7 +93,7 @@ ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Num
 	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
 }
 
-ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
+ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
 {
 	if (lua_isnumber(L, 2))
 	{
@@ -451,7 +451,7 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	}
 }
 
-ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
+ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
 	if(!ade_get_args(L, "|o", l_Camera.Get(&cid)))
@@ -1285,12 +1285,15 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
-ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
-		 "Draws an image or texture. Any image extension passed will be ignored."
-			 "The UV variables specify the UV value for each corner of the image. "
-			 "In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
-		 "boolean",
-		 "Whether image was drawn")
+ADE_FUNC(drawImage,
+	l_Graphics,
+	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
+	"Draws an image file or texture. Any image extension passed will be ignored."
+	"The UV variables specify the UV value for each corner of the image. "
+	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
+	"boolean",
+	"Whether image was drawn")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
@@ -1351,7 +1354,12 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]", "Draws a monochrome image using the current color", "boolean", "Whether image was drawn")
+ADE_FUNC(drawMonochromeImage,
+	l_Graphics,
+	"string|texture fileNameOrTexture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]",
+	"Draws a monochrome image from a texture or file using the current color",
+	"boolean",
+	"Whether image was drawn")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
@@ -1622,15 +1630,17 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
 }
 
-ADE_FUNC(createPersistentParticle, l_Graphics,
-         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
-         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-         "Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
-         "function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
-         "the returned handle is not required. Use PARTICLE_* enumerations for type."
-         "Reverse reverse animation, if one is specified"
-         "Attached object specifies object that Position will be (and always be) relative to.",
-         "particle", "Handle to the created particle")
+ADE_FUNC(createPersistentParticle,
+	l_Graphics,
+	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
+	"Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
+	"function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
+	"the returned handle is not required. Use PARTICLE_* enumerations for type."
+	"Reverse reverse animation, if one is specified"
+	"Attached object specifies object that Position will be (and always be) relative to.",
+	"particle",
+	"Handle to the created particle")
 {
 	particle::particle_info pi;
 	pi.type            = particle::PARTICLE_DEBUG;
@@ -1692,13 +1702,15 @@ ADE_FUNC(createPersistentParticle, l_Graphics,
 		return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createParticle, l_Graphics,
-         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
-         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-         "Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
-         "Reverse reverse animation, if one is specified"
-         "Attached object specifies object that Position will be (and always be) relative to.",
-         "boolean", "true if particle was created, false otherwise")
+ADE_FUNC(createParticle,
+	l_Graphics,
+	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
+	"Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
+	"Reverse reverse animation, if one is specified"
+	"Attached object specifies object that Position will be (and always be) relative to.",
+	"boolean",
+	"true if particle was created, false otherwise")
 {
 	particle::particle_info pi;
 	pi.type            = particle::PARTICLE_DEBUG;

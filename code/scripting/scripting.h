@@ -197,7 +197,14 @@ struct DocumentationElementFunction : public DocumentationElement {
 	~DocumentationElementFunction() override = default;
 
 	scripting::ade_type_info returnType;
-	SCP_string parameters;
+
+	struct argument_list {
+		SCP_string simple;
+
+		SCP_vector<scripting::argument_def> arguments;
+	};
+
+	argument_list parameters;
 
 	SCP_string returnDocumentation;
 };

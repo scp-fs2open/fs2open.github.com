@@ -221,7 +221,7 @@ ADE_FUNC(__len, l_Mission_EscortShips, NULL, "Current number of escort ships", "
 //****SUBLIBRARY: Mission/Events
 ADE_LIB_DERIV(l_Mission_Events, "Events", NULL, "Events", l_Mission);
 
-ADE_INDEXER(l_Mission_Events, "number Index/string Name", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
+ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "*s", &s))
@@ -253,7 +253,7 @@ ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number",
 //****SUBLIBRARY: Mission/SEXPVariables
 ADE_LIB_DERIV(l_Mission_SEXPVariables, "SEXPVariables", NULL, "SEXP Variables", l_Mission);
 
-ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
+ADE_INDEXER(l_Mission_SEXPVariables, "number/string IndexOrName", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
 	const char* name   = nullptr;
 	const char* newval = nullptr;
@@ -301,7 +301,7 @@ ADE_FUNC(__len, l_Mission_SEXPVariables, NULL, "Current number of SEXP variables
 //****SUBLIBRARY: Mission/Ships
 ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission);
 
-ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
+ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -393,7 +393,7 @@ ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Gets number of waypoints in mission.
 //****SUBLIBRARY: Mission/WaypointLists
 ADE_LIB_DERIV(l_Mission_WaypointLists, "WaypointLists", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
+ADE_INDEXER(l_Mission_WaypointLists, "number/string IndexOrWaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
 {
 	waypointlist_h wpl;
 	const char* name;
@@ -488,7 +488,7 @@ ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note 
 //****SUBLIBRARY: Mission/Wings
 ADE_LIB_DERIV(l_Mission_Wings, "Wings", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
+ADE_INDEXER(l_Mission_Wings, "number/string IndexOrWingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -517,7 +517,7 @@ ADE_FUNC(__len, l_Mission_Wings, NULL, "Number of wings in mission", "number", "
 //****SUBLIBRARY: Mission/Teams
 ADE_LIB_DERIV(l_Mission_Teams, "Teams", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
+ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -546,7 +546,7 @@ ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "
 //****SUBLIBRARY: Mission/Messages
 ADE_LIB_DERIV(l_Mission_Messages, "Messages", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
+ADE_INDEXER(l_Mission_Messages, "number/string IndexOrMessageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -593,7 +593,7 @@ ADE_FUNC(__len, l_Mission_Messages, NULL, "Number of messages in the mission", "
 //****SUBLIBRARY: Mission/BuiltinMessages
 ADE_LIB_DERIV(l_Mission_BuiltinMessages, "BuiltinMessages", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
+ADE_INDEXER(l_Mission_BuiltinMessages, "number/string IndexOrMessageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -638,7 +638,7 @@ ADE_FUNC(__len, l_Mission_BuiltinMessages, NULL, "Number of built-in messages in
 //****SUBLIBRARY: Mission/Personas
 ADE_LIB_DERIV(l_Mission_Personas, "Personas", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
+ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -673,7 +673,7 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 	return ade_set_args(L, "i", Num_personas);
 }
 
-ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
+ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
 	const char* name = nullptr;
 	const char* text = nullptr;
@@ -693,11 +693,16 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "
 	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
 }
 
-ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
-		 "Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the missions command source.<br>"
-			 "If delay is specified the message will be delayed by the specified time in seconds<br>"
-			 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
-		 "boolean", "true if successfull, false otherwise")
+ADE_FUNC(sendMessage,
+	l_Mission,
+	"string sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"fromCommand = false]",
+	"Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the "
+	"missions command source.<br>"
+	"If delay is specified the message will be delayed by the specified time in seconds<br>"
+	"If you pass <i>nil</i> as the sender then the message will not have a sender.",
+	"boolean",
+	"true if successfull, false otherwise")
 {
 	const char* sender = nullptr;
 	int messageIdx = -1;
@@ -770,7 +775,7 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number delay=0.0]",
+ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
 		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
 		 "boolean", "true if successfull, false otherwise")
 {
@@ -891,11 +896,14 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h()));
 }
 
-ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientation Orientation=null, world vector Position={0,0,0}, object Parent = nil, number Group = -1",
-		 "Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
-			 " for example, quad lasers would only need to act as one light source.",
-		 "weapon",
-		 "Weapon handle, or invalid weapon handle if weapon couldn't be created.")
+ADE_FUNC(createWeapon,
+	l_Mission,
+	"[weaponclass Class=FirstTableWeapon, orientation Orientation=identity, vector WorldPosition={0,0,0}, object Parent = "
+	"nil, number Group = -1]",
+	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
+	" for example, quad lasers would only need to act as one light source.",
+	"weapon",
+	"Weapon handle, or invalid weapon handle if weapon couldn't be created.")
 {
 	int wclass = -1;
 	object_h *parent = NULL;
@@ -1288,8 +1296,12 @@ static int arrivalListIter(lua_State* L)
 	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(next)));
 }
 
-ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ships for this mission", "iterator[parse_object]",
-            "An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+ADE_FUNC(getArrivalList,
+	l_Mission,
+	nullptr,
+	"Get the list of yet to arrive ships for this mission",
+	ade_type_iterator("parse_object"),
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
