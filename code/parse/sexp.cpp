@@ -6062,9 +6062,9 @@ int sexp_is_disabled_xor_disarmed_delay(int n, bool check_disabled)
 {
 	// since we can't use captured-value lambdas as function pointers, we need a stateless lambda for each value of the variable
 	if (check_disabled)
-		return sexp_check_objective_delay(n, CDR(n), [](int n, fix *time)->int { return sexp_is_disabled_xor_disarmed(n, true, time); });
+		return sexp_check_objective_delay(n, CDR(n), [](int _n, fix *_time)->int { return sexp_is_disabled_xor_disarmed(_n, true, _time); });
 	else
-		return sexp_check_objective_delay(n, CDR(n), [](int n, fix *time)->int { return sexp_is_disabled_xor_disarmed(n, false, time); });
+		return sexp_check_objective_delay(n, CDR(n), [](int _n, fix *_time)->int { return sexp_is_disabled_xor_disarmed(_n, false, _time); });
 }
 
 /**
