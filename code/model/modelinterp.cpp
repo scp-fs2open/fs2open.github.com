@@ -1004,25 +1004,25 @@ DCF(model_darkening,"Makes models darker with distance")
 
 
 /**
- * Find the distance-squared from p0 to the closest point on a box.
- * The box's dimensions from 'min' to 'max'.
+ * Find the distance-squared from p0 to the closest point on a box.  Fills in closest_pt.
+ * The box's dimensions are from 'min' to 'max'.
  */
-float interp_closest_dist_sq_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *max )
+float interp_closest_dist_sq_to_box( vec3d *closest_pt, const vec3d *p0, const vec3d *min, const vec3d *max )
 {
-	float *origin = (float *)&p0->xyz.x;
-	float *minB = (float *)min;
-	float *maxB = (float *)max;
-	float *coord = (float *)&hitpt->xyz.x;
-	int inside = 1;
+	auto origin = p0->a1d;
+	auto minB = min->a1d;
+	auto maxB = max->a1d;
+	auto coord = closest_pt->a1d;
+	bool inside = true;
 	int i;
 
 	for (i=0; i<3; i++ )	{
 		if ( origin[i] < minB[i] )	{
 			coord[i] = minB[i];
-			inside = 0;
+			inside = false;
 		} else if (origin[i] > maxB[i] )	{
 			coord[i] = maxB[i];
-			inside = 0;
+			inside = false;
 		} else {
 			coord[i] = origin[i];
 		}
@@ -1032,7 +1032,7 @@ float interp_closest_dist_sq_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d 
 		return 0.0f;
 	}
 
-	return vm_vec_dist_squared(hitpt,p0);
+	return vm_vec_dist_squared(closest_pt, p0);
 }
 
 
