@@ -292,8 +292,8 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Distance and Coordinates Sub-Category
 	{ "distance",						OP_DISTANCE,							2,	2,			SEXP_INTEGER_OPERATOR,	},
-	{ "distance-center",				OP_DISTANCE_CENTER,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
-	{ "distance-bbox",					OP_DISTANCE_BBOX,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-to-center",				OP_DISTANCE_CENTER,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-to-bbox",				OP_DISTANCE_BBOX,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-center-subsystem",		OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "distance-bbox-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-nav",				OP_NAV_DISTANCE,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// Kazan
@@ -32115,7 +32115,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe name of the other object."
 	},
 
-	{ OP_DISTANCE_CENTER, "Distance-Center (Status operator)\r\n"
+	{ OP_DISTANCE_CENTER, "Distance-To-Center (Status operator)\r\n"
 		"\tReturns the distance between the centers of two objects.  These can be ships, wings, or waypoints.\r\n"
 		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
@@ -32123,7 +32123,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe name of the other object."
 	},
 
-	{ OP_DISTANCE_BBOX, "Distance-BBox (Status operator)\r\n"
+	{ OP_DISTANCE_BBOX, "Distance-To-BBox (Status operator)\r\n"
 		"\tReturns the distance between the bounding boxes of two objects.  These can be ships, wings, or waypoints.\r\n"
 		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
