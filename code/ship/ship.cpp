@@ -15215,7 +15215,7 @@ SCP_string ship_return_orders(ship* sp)
 	case AI_GOAL_CHASE_WING:
 		if (aigp->target_name) {
 			outbuf += target_name;
-			outbuf += XSTR("'s wing", 494);
+			outbuf += XSTR(" wing", 494);
 		} else {
 			outbuf += XSTR("no orders", 495);
 		}
