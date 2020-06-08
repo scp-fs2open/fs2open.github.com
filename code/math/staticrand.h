@@ -23,7 +23,8 @@ extern float static_randf(int num);
 extern void static_randvec(int num, vec3d *vp);
 extern int static_rand_range(int num, int min, int max);
 extern float static_randf_range(int num, float min, float max);
-void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient = nullptr);
+void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angle, const matrix* const orient = nullptr);
+void static_rand_cone(int num, vec3d *out, const vec3d* const in, float min_angle, float max_angle, const matrix* const orient = nullptr);
 
 // Alternate random number generator that doesn't affect rand() sequence
 /// Get a random integer between 1 and RND_MAX

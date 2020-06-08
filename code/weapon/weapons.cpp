@@ -2039,6 +2039,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
         }
 	}
 
+	int num_spawn_min_angs_defined = 0;
+
+	while (optional_string("$Spawn Minimum Angle:"))
+	{
+		stuff_float(&dum_float);
+		
+		if (num_spawn_min_angs_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+		{
+			wip->spawn_info[num_spawn_min_angs_defined].spawn_min_angle = dum_float;
+			num_spawn_min_angs_defined++;
+		}
+	}
+
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
 	{
 		if(optional_string("+Warpout Delay:")) {
@@ -5644,9 +5657,15 @@ void spawn_child_weapons(object *objp)
 			// for multiplayer, use the static randvec functions based on the network signatures to provide
 			// the randomness so that it is the same on all machines.
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				if (wip->spawn_info[i].spawn_min_angle <= 0)
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				else
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
 			} else {
-				vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+				if(wip->spawn_info[i].spawn_min_angle <= 0)
+					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+				else
+					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
 			}
 			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
@@ -7693,6 +7712,7 @@ void weapon_info::reset()
 	{
 		this->spawn_info[i].spawn_type = -1;
 		this->spawn_info[i].spawn_angle = 180;
+		this->spawn_info[i].spawn_min_angle = 0;
 		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
 	}
 
