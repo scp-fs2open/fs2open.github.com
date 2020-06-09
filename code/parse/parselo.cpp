@@ -1398,7 +1398,6 @@ void compact_multitext_string(char *str)
 	while (*p_src)
 	{
 		char ch = *p_src;
-		p_src++;
 
 		// skip CR
 		// convert LF to space
@@ -1412,6 +1411,7 @@ void compact_multitext_string(char *str)
 
 			p_dest++;
 		}
+		p_src++;
 	}
 
 	if (p_dest != p_src)
@@ -1427,7 +1427,6 @@ void compact_multitext_string(SCP_string &str)
 	while (p_src != str.end())
 	{
 		char ch = *p_src;
-		p_src++;
 
 		// skip CR
 		// convert LF to space
@@ -1441,6 +1440,7 @@ void compact_multitext_string(SCP_string &str)
 
 			p_dest++;
 		}
+		p_src++;
 	}
 
 	if (p_dest != p_src)
