@@ -16,7 +16,7 @@ ADE_OBJ(l_Executor, executor_h, "executor", "An executor that can be used for sc
 
 ADE_FUNC(schedule,
 	l_Executor,
-	"function() -> boolean",
+	"function() => boolean",
 	"Takes a function that returns a boolean and schedules that for execution on this executor. If the function "
 	"returns true it will be run again the. If it returns false it will be removed from the executor.<br>Note: Use "
 	"this with care since using this without proper care can lead to the function being run in states that are not "

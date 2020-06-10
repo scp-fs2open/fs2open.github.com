@@ -230,7 +230,7 @@ class ade_lib : public ade_lib_handle {
  */
 class ade_func : public ade_lib_handle {
   public:
-	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, ade_overload_list args, const char* desc,
 	         ade_type_info ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
 	         const char* deprecation_message);
 };

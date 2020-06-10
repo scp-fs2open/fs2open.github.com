@@ -38,7 +38,7 @@ add_file_folder("Pilotfile"
 
 add_file_folder("Scripting"
     scripting/ade_args.cpp
-    scripting/ade_doc.cpp
+    scripting/doc_parser.cpp
     scripting/require.cpp
     scripting/ScriptingTestFixture.h
     scripting/ScriptingTestFixture.cpp

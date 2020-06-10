@@ -38,3 +38,5 @@ include(libRocket.cmake)
 add_subdirectory(libpcp)
 
 add_subdirectory(vulkan-hpp)
+
+include(antlr4.cmake)

@@ -9,7 +9,7 @@ ADE_OBJ(l_TracingCategory, tracing::Category, "tracing_category", "A category fo
 
 ADE_FUNC(trace,
 	l_TracingCategory,
-	"function body()",
+	"function() => void body",
 	"Traces the run time of the specified function that will be invoked in this call.",
 	nullptr,
 	nullptr)

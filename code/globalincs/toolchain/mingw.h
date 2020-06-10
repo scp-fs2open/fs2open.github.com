@@ -17,6 +17,8 @@
  * the detected toolchain.
  */
 
+#if defined(__MINGW32__)
+
 #include <stdio.h>
 
 #define SCP_FORMAT_STRING
@@ -77,4 +79,19 @@
 	} while (false)
 #else
 #define UNREACHABLE(msg, ...) __builtin_unreachable()
+#endif
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS \
+_Pragma("GCC diagnostic push") \
+_Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS \
+_Pragma("GCC diagnostic pop")
+
 #endif

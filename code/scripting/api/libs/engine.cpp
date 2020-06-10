@@ -12,10 +12,13 @@ namespace api {
 //**********LIBRARY: Engine
 ADE_LIB(l_Engine, "Engine", "engine", "Basic engine access functions");
 
-ADE_FUNC(addHook, l_Engine,
-		 "string name, function hookFunction, [table conditionals = {}], [function override_func = return false]",
-		 "Adds a function to be called from the specified game hook", "boolean",
-		 "true if hook was installed properly, false otherwise")
+ADE_FUNC(addHook,
+	l_Engine,
+	"string name, function() => void hookFunction, [table conditionals = <{}>, function() => boolean override_func = "
+	"<return false>]",
+	"Adds a function to be called from the specified game hook",
+	"boolean",
+	"true if hook was installed properly, false otherwise")
 {
 	using namespace luacpp;
 

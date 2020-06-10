@@ -221,7 +221,7 @@ ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argumen
 }
 
 
-ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]",
+ADE_FUNC(setPosition, l_Sound, "number value, boolean percent = true",
 		 "Sets the absolute position of the sound. If boolean argument is true then the value is given as a percentage<br>"
 			 "This operation fails if there is no backing soundentry!",
 		 "boolean", "true if successfull, false otherwise")

@@ -126,7 +126,7 @@ class ade_table_entry {
 	size_t Size = 0;
 
 	//Metadata
-	const char* Arguments = nullptr;
+	ade_overload_list Arguments;
 	const char* Description = nullptr;
 	ade_type_info ReturnType;
 	const char* ReturnDescription = nullptr;

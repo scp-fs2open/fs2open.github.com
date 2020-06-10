@@ -7432,6 +7432,7 @@ void game_unpause()
 	}
 }
 
+#define DONT_CATCH_MAIN_EXCEPTIONS
 int main(int argc, char *argv[])
 {
 	int result = -1;
