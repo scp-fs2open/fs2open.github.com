@@ -160,6 +160,9 @@ bool Lab_emissive_light_override = (Cmdline_emissive != 0);
 
 fix Lab_Save_Missiontime;
 
+int Lab_fire_primaries = 0;
+int Lab_fire_secondaries = 0;
+
 // functions
 void labviewer_change_ship_lod(Tree* caller);
 void labviewer_change_ship(Tree* caller);
@@ -413,6 +416,31 @@ void labviewer_render_model(float frametime)
 			}
 			else {
 				obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
+			}
+
+			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+				if (Lab_fire_primaries & (1 << i)) {
+					auto objp = &Objects[Lab_selected_object];
+					auto sp = &Ships[objp->instance];
+					sp->flags.set(Ship::Ship_Flags::Trigger_down);
+					if (i < sp->weapons.num_primary_banks) {
+						sp->weapons.current_primary_bank = i;
+
+						ship_fire_primary(objp, 0);
+					}
+				}
+			}
+
+			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
+				if (Lab_fire_secondaries & (1 << i)) {
+					auto objp = &Objects[Lab_selected_object];
+					auto sp = &Ships[objp->instance];
+					if (i < sp->weapons.num_secondary_banks) {
+						sp->weapons.current_secondary_bank = i;
+
+						ship_fire_secondary(objp);
+					}
+				}
 			}
 		}
 
@@ -2108,6 +2136,10 @@ void labviewer_actions_change_primary(Tree* caller) {
 
 	auto sp = &Ships[Objects[Lab_selected_object].instance];
 	sp->weapons.primary_bank_weapons[bank_num] = weapon_index;
+
+	if (Weapon_info[weapon_index].wi_flags[Weapon::Info_Flags::Ballistic]) {
+		sp->weapons.primary_bank_ammo[bank_num] = 10000;
+	}
 }
 
 void labviewer_actions_change_secondary(Tree* caller) {
@@ -2118,24 +2150,6 @@ void labviewer_actions_change_secondary(Tree* caller) {
 
 	auto sp = &Ships[Objects[Lab_selected_object].instance];
 	sp->weapons.secondary_bank_weapons[bank_num] = weapon_index;
-}
-
-void labviewer_actions_fire_primary(Tree* caller) {
-	auto bank_num = caller->GetSelectedItem()->GetData();
-	auto objp = &Objects[Lab_selected_object];
-	auto sp = &Ships[objp->instance];
-	sp->weapons.current_primary_bank = bank_num;
-
-	ship_fire_primary(objp, 0, 1);
-}
-
-void labviewer_actions_fire_secondary(Tree* caller) {
-	auto bank_num = caller->GetSelectedItem()->GetData();
-	auto objp = &Objects[Lab_selected_object];
-	auto sp = &Ships[objp->instance];
-	sp->weapons.current_secondary_bank = bank_num;
-
-	ship_fire_secondary(objp);
 }
 
 void labviewer_fill_subsystem_menu() {
@@ -2243,23 +2257,27 @@ void labviewer_actions_make_loadout_window(Button* /*caller*/) {
 
 void labviewer_fill_fire_weapon_menu() {
 	if (Lab_weapon_fire_window == nullptr) return; 
-	
-	auto fire_tree = (Tree*)Lab_weapon_fire_window->AddChild(new Tree("Fire teh lazors", 0, 0));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 
+			int y = 0;
+
 			for (auto i = 0; i < sp->weapons.num_primary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Primary bank %i", i);
-				fire_tree->AddItem(nullptr, bank_string, i, true, labviewer_actions_fire_primary);
+				auto cbp = (Checkbox*)Lab_weapon_fire_window->AddChild(new Checkbox((bank_string), 2, y));
+				cbp->SetFlag(&Lab_fire_primaries, 1 << i);
+				y += cbp->GetHeight() + 1;                                                                          
 			}
 
 			for (auto i = 0; i < sp->weapons.num_secondary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Secondary bank %i", i);
-				fire_tree->AddItem(nullptr, bank_string, i, true, labviewer_actions_fire_secondary);
+				auto cbp = (Checkbox*)Lab_weapon_fire_window->AddChild(new Checkbox((bank_string), 2, y));
+				cbp->SetFlag(&Lab_fire_secondaries, 1 << i);
+				y += cbp->GetHeight() + 1;
 			}
 		}
 	}
@@ -2449,7 +2467,7 @@ void lab_pseudomission_setup() {
 
 	// In the lab, all ships are valid
 	for (size_t i = 0; i < Ship_info.size(); ++i) {
-		teamp->ship_list[i] = i;
+		teamp->ship_list[i] = static_cast<int>(i);
 		strcpy_s(teamp->ship_list_variables[i], "");
 		teamp->ship_count[i] = 1;
 		teamp->loadout_total += 1;
@@ -2460,7 +2478,7 @@ void lab_pseudomission_setup() {
 
 	// you want guns? you get guns.
 	for (size_t i = 0; i < Weapon_info.size(); ++i) {
-		teamp->weaponry_pool[i] = i;
+		teamp->weaponry_pool[i] = static_cast<int>(i);
 		teamp->weaponry_count[i] = 640; // should be enough for everyone
 		strcpy_s(teamp->weaponry_amount_variable[i], "");
 		strcpy_s(teamp->weaponry_pool_variable[i], "");
