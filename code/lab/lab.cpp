@@ -71,6 +71,9 @@ static Window* Lab_variables_window         = nullptr;
 static Window* Lab_description_window       = nullptr;
 static Window* Lab_background_window        = nullptr;
 static Window* Lab_actions_window           = nullptr;
+static Window* Lab_subsystems_window		= nullptr;
+static Window* Lab_loadout_window			= nullptr;
+static Window* Lab_weapon_fire_window		= nullptr;
 static Text* Lab_description_text           = nullptr;
 static TreeItem** Lab_species_nodes         = nullptr;
 
@@ -2058,6 +2061,18 @@ void lab_actions_window_close(GUIObject* /*caller*/) {
 	Lab_actions_window = nullptr;
 }
 
+void lab_subsystems_window_close(GUIObject* /*caller*/) {
+	Lab_subsystems_window = nullptr;
+}
+
+void lab_loadout_window_close(GUIObject* /*caller*/) {
+	Lab_loadout_window = nullptr;
+}
+
+void lab_weapon_fire_window_close(GUIObject* /*caller*/) {
+	Lab_weapon_fire_window = nullptr;
+}
+
 void labviewer_actions_destroy_ship(Button* /*caller*/) {
 	auto obj = &Objects[Lab_selected_object];
 
@@ -2112,7 +2127,7 @@ void labviewer_actions_fire_primary(Tree* caller) {
 	auto sp = &Ships[objp->instance];
 	sp->weapons.current_primary_bank = bank_num;
 
-	ship_fire_primary(objp, 0);
+	ship_fire_primary(objp, 0, 1);
 }
 
 void labviewer_actions_fire_secondary(Tree* caller) {
@@ -2124,35 +2139,50 @@ void labviewer_actions_fire_secondary(Tree* caller) {
 	ship_fire_secondary(objp);
 }
 
-void labviewer_fill_actions_menu()
-{
-	int y = 0;
+void labviewer_fill_subsystem_menu() {
+	if (Lab_subsystems_window == nullptr) return; 
+	
+	auto subsys_tree = (Tree*)Lab_subsystems_window->AddChild(new Tree("Subsystem List", 0, 0));
 
-	auto btn = new Button("Destroy Ship", 0, y, labviewer_actions_destroy_ship);
-	Lab_actions_window->AddChild(btn);
-	y += btn->GetHeight();
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				subsys_tree->AddItem(nullptr, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
+				ssp = GET_NEXT(ssp);
+			}
+		}
+	}
+}
 
-	auto subsys_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Subsystem List", 0, y));
-	auto subsys_tree_head_item = subsys_tree->AddItem(nullptr, "Destroy Subsystem", 0, false);
 
-	y += subsys_tree->GetHeight();
+void labviewer_actions_make_subsys_window(Button* /*caller*/) {
+	if (Lab_subsystems_window != nullptr)
+		return;
 
-	auto weapons_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Weapons stuff", 0, y));
-	auto weapons_tree_head_item = weapons_tree->AddItem(nullptr, "Change loadout", 0, false);
+	Lab_subsystems_window = (Window*)Lab_screen->Add(
+		new Window("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
+	);
+	Lab_subsystems_window->SetCloseFunction(lab_subsystems_window_close);
+
+	labviewer_fill_subsystem_menu();
+}
+
+void labviewer_fill_loadout_window() {
+	if (Lab_loadout_window == nullptr)
+		return;
+	
+	auto weapons_tree = (Tree*)Lab_loadout_window->AddChild(new Tree("Weapons stuff", 0, 0));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 			auto sip = &Ship_info[sp->ship_info_index];
-			auto ssp = GET_FIRST(&sp->subsys_list);
-			while (ssp != END_OF_LIST(&sp->subsys_list)) {
-				subsys_tree->AddItem(subsys_tree_head_item, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
-				ssp = GET_NEXT(ssp);
-			}
 
 			if (sip->is_flyable()) {
-				auto primaries_head = weapons_tree->AddItem(weapons_tree_head_item, "Primaries", 0, false);
-				auto secondaries_head = weapons_tree->AddItem(weapons_tree_head_item, "Secondaries", 0, false);
+				auto primaries_head = weapons_tree->AddItem(nullptr, "Primaries", 0, false);
+				auto secondaries_head = weapons_tree->AddItem(nullptr, "Secondaries", 0, false);
 
 				for (auto i = 0; i < sip->num_primary_banks; ++i) {
 					SCP_string bank_string;
@@ -2160,11 +2190,11 @@ void labviewer_fill_actions_menu()
 					auto bank_head = weapons_tree->AddItem(primaries_head, bank_string, 0, false);
 					auto tabled_weapons_head = weapons_tree->AddItem(bank_head, "Tabled weapons", 0, false);
 					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
-					
+
 					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
 					for (auto j = 0; j < n_weapons; ++j) {
 						auto wip = &Weapon_info[j];
-						if (wip->subtype == WP_LASER) {
+						if (wip->subtype == WP_LASER || wip->subtype == WP_BEAM) {
 							if (sip->allowed_weapons[j] != 0) {
 								weapons_tree->AddItem(tabled_weapons_head, wip->name, i, true, labviewer_actions_change_primary);
 							}
@@ -2198,30 +2228,76 @@ void labviewer_fill_actions_menu()
 			}
 		}
 	}
+}
 
-	y += weapons_tree->GetHeight();
+void labviewer_actions_make_loadout_window(Button* /*caller*/) {
+	if (Lab_loadout_window != nullptr)
+		return;
 
-	auto fire_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Fire teh lazors", 0, y));
-	auto fire_tree_head_item = fire_tree->AddItem(nullptr, "Fire bank", 0, false);
+	Lab_loadout_window = (Window*)Lab_screen->Add(
+		new Window("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
+	);
+	Lab_loadout_window->SetCloseFunction(lab_loadout_window_close);
+
+	labviewer_fill_loadout_window();
+}
+
+void labviewer_fill_fire_weapon_menu() {
+	if (Lab_weapon_fire_window == nullptr) return; 
+	
+	auto fire_tree = (Tree*)Lab_weapon_fire_window->AddChild(new Tree("Fire teh lazors", 0, 0));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
-			auto sip = &Ship_info[sp->ship_info_index];
 
 			for (auto i = 0; i < sp->weapons.num_primary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Primary bank %i", i);
-				fire_tree->AddItem(fire_tree_head_item, bank_string, i, true, labviewer_actions_fire_primary);
+				fire_tree->AddItem(nullptr, bank_string, i, true, labviewer_actions_fire_primary);
 			}
 
-			for (auto i = 0; i < sp->weapons.num_primary_banks; ++i) {
+			for (auto i = 0; i < sp->weapons.num_secondary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Secondary bank %i", i);
-				fire_tree->AddItem(fire_tree_head_item, bank_string, i, true, labviewer_actions_fire_secondary);
+				fire_tree->AddItem(nullptr, bank_string, i, true, labviewer_actions_fire_secondary);
 			}
 		}
 	}
+	
+}
+
+void labviewer_actions_make_weapon_fire_window(Button* /*caller*/) {
+	if (Lab_weapon_fire_window != nullptr)
+		return;
+
+	Lab_weapon_fire_window = (Window*)Lab_screen->Add(
+		new Window("Fire weapons", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
+	);
+	Lab_weapon_fire_window->SetCloseFunction(lab_weapon_fire_window_close);
+
+	labviewer_fill_fire_weapon_menu();
+}
+
+void labviewer_fill_actions_menu()
+{
+	int y = 0;
+
+	auto btn = new Button("Destroy Ship", 0, y, labviewer_actions_destroy_ship);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
+
+	btn = new Button("Destroy Subsystems", 0, y, labviewer_actions_make_subsys_window);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
+
+	btn = new Button("Change Loadout", 0, y, labviewer_actions_make_loadout_window);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
+
+	btn = new Button("Fire Weapons", 0, y, labviewer_actions_make_weapon_fire_window);
+	Lab_actions_window->AddChild(btn);
+	y += btn->GetHeight();
 }
 
 void labviewer_make_actions_window(Button* /*caller*/)
@@ -2242,6 +2318,22 @@ void labviewer_update_actions_window() {
 	if (Lab_actions_window != nullptr) { 
 		Lab_actions_window->DeleteChildren();
 		labviewer_fill_actions_menu();
+	}
+
+	// update the submenus
+	if (Lab_subsystems_window != nullptr) {
+		Lab_subsystems_window->DeleteChildren();
+		labviewer_fill_subsystem_menu();
+	}
+
+	if (Lab_weapon_fire_window != nullptr) {
+		Lab_weapon_fire_window->DeleteChildren();
+		labviewer_fill_fire_weapon_menu();
+	}
+
+	if (Lab_loadout_window != nullptr) {
+		Lab_loadout_window->DeleteChildren();
+		labviewer_fill_loadout_window();
 	}
 }
 
