@@ -2192,7 +2192,7 @@ void labviewer_fill_loadout_window() {
 					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
 
 					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
-					for (auto j = 0; j < n_weapons; ++j) {
+					for (size_t j = 0; j < n_weapons; ++j) {
 						auto wip = &Weapon_info[j];
 						if (wip->subtype == WP_LASER || wip->subtype == WP_BEAM) {
 							if (sip->allowed_weapons[j] != 0) {
@@ -2213,7 +2213,7 @@ void labviewer_fill_loadout_window() {
 					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
 
 					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
-					for (auto j = 0; j < n_weapons; ++j) {
+					for (size_t j = 0; j < n_weapons; ++j) {
 						auto wip = &Weapon_info[j];
 						if (wip->subtype == WP_MISSILE) {
 							if (sip->allowed_weapons[j] != 0) {
@@ -2449,7 +2449,7 @@ void lab_pseudomission_setup() {
 	team_data* teamp = &Team_data[0];
 
 	// In the lab, all ships are valid
-	for (auto i = 0; i < Ship_info.size(); ++i) {
+	for (size_t i = 0; i < Ship_info.size(); ++i) {
 		teamp->ship_list[i] = i;
 		strcpy_s(teamp->ship_list_variables[i], "");
 		teamp->ship_count[i] = 1;
@@ -2460,7 +2460,7 @@ void lab_pseudomission_setup() {
 	teamp->num_ship_choices = static_cast<int>(Ship_info.size());
 
 	// you want guns? you get guns.
-	for (auto i = 0; i < Weapon_info.size(); ++i) {
+	for (size_t i = 0; i < Weapon_info.size(); ++i) {
 		teamp->weaponry_pool[i] = i;
 		teamp->weaponry_count[i] = 640; // should be enough for everyone
 		strcpy_s(teamp->weaponry_amount_variable[i], "");
