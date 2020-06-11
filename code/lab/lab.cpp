@@ -2586,6 +2586,7 @@ void lab_init()
 	shockwave_level_init();
 	shipfx_flash_init();
 	mflash_page_in(true);
+	beam_level_init();
 	particle::init();
 
 	lab_pseudomission_setup();
@@ -2841,6 +2842,7 @@ void lab_close()
 	obj_init();
 
 	shockwave_level_close();
+	beam_level_close();
 
 	ai_paused = 0;
 	physics_paused = 0;
