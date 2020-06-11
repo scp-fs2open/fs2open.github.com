@@ -103,7 +103,6 @@ static int Lab_last_selected_weapon = -1;
 static int Lab_model_num = -1;
 static int Lab_model_LOD = 0;
 static char Lab_model_filename[MAX_FILENAME_LEN];
-static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 
 static vec3d Lab_model_pos = ZERO_VECTOR;
 
