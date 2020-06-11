@@ -2452,7 +2452,6 @@ void lab_scroll_down()
 void lab_pseudomission_setup() {
 
 	// External weapon displays require a call to weapons_page_in, which in turn requires team data to be set
-	extern int Num_teams;
 	Num_teams = 1;
 
 	team_data* teamp = &Team_data[0];
