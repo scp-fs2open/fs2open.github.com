@@ -30,6 +30,7 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
+#include "ship/shipfx.h"
 #include "debris/debris.h"
 #include "species_defs/species_defs.h"
 #include "starfield/nebula.h"
@@ -38,6 +39,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include <utility>
+#include <weapon\muzzleflash.h>
 
 // flags
 #define LAB_FLAG_NORMAL (0)                    // default
@@ -96,7 +98,6 @@ static int Lab_selected_object      = -1;
 static int Lab_last_selected_weapon = -1;
 
 static int Lab_model_num = -1;
-static int Lab_weaponmodel_num[MAX_SHIP_WEAPONS];
 static int Lab_model_LOD = 0;
 static char Lab_model_filename[MAX_FILENAME_LEN];
 static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
@@ -143,6 +144,7 @@ bool Lab_render_without_light  = false;
 bool Lab_render_show_thrusters = false;
 bool Lab_render_show_detail    = false;
 bool Lab_render_show_shields   = false;
+bool Lab_render_show_weapons   = true;
 bool Lab_rotate_subobjects     = true;
 
 bool Lab_Basemap_override        = false;
@@ -198,7 +200,7 @@ void reset_view()
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
-	int j, l;
+	int l;
 	ship_info* sip = nullptr;
 
 	anim_timer_start = timer_get_milliseconds();
@@ -218,14 +220,6 @@ void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 			model_page_out_textures(Lab_model_num, true);
 			model_unload(Lab_model_num);
 			Lab_model_num = -1;
-
-			for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
-				if (Lab_weaponmodel_num[j] >= 0) {
-					model_page_out_textures(Lab_weaponmodel_num[j], true);
-					model_unload(Lab_weaponmodel_num[j]);
-					Lab_weaponmodel_num[j] = -1;
-				}
-			}
 
 			if (Lab_last_selected_ship >= 0) {
 				ship_page_out_textures(Lab_last_selected_ship, true);
@@ -249,46 +243,10 @@ void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 			if (Lab_mode == LAB_MODE_SHIP) {
 				sip = &Ship_info[Lab_selected_index];
 				l   = 0;
-				for (j = 0; j < sip->num_primary_banks; j++) {
-					weapon_info* wip = &Weapon_info[sip->primary_bank_weapons[j]];
-					if (!sip->draw_primary_models[j])
-						continue;
-					Lab_weaponmodel_num[l] = -1;
-					if (strlen(wip->external_model_name)) {
-						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, nullptr);
-					}
-					if (Lab_weaponmodel_num[l] >= 0) {
-						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
-					} else {
-						memset(Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]));
-					}
-					l++;
-				}
-
-				for (j = 0; j < sip->num_secondary_banks; j++) {
-					weapon_info* wip = &Weapon_info[sip->secondary_bank_weapons[j]];
-					if (!sip->draw_secondary_models[j])
-						continue;
-					Lab_weaponmodel_num[l] = -1;
-					if (strlen(wip->external_model_name)) {
-						Lab_weaponmodel_num[l] = model_load(wip->external_model_name, 0, nullptr);
-					}
-					if (Lab_weaponmodel_num[l] >= 0) {
-						strcpy_s(Lab_weaponmodel_filename[l], wip->external_model_name);
-					} else {
-						memset(Lab_weaponmodel_filename[l], 0, sizeof(Lab_weaponmodel_filename[l]));
-					}
-					l++;
-				}
 			}
 		} else {
 			// clear out the model filename
 			memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
-			if (Lab_weaponmodel_num[0] >= 0) {
-				for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
-					memset(Lab_weaponmodel_filename[j], 0, sizeof(Lab_weaponmodel_filename[j]));
-				}
-			}
 		}
 	}
 
@@ -442,6 +400,7 @@ void labviewer_render_model(float frametime)
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !Lab_render_show_weapons);
 
 			ship_model_update_instance(obj);
 
@@ -1216,7 +1175,7 @@ void labviewer_make_render_options_window(Button* /*caller*/)
 	ADD_RENDER_BOOL("No Lighting", Lab_render_without_light);
 	ADD_RENDER_BOOL("Show Full Detail", Lab_render_show_detail);
 	ADD_RENDER_BOOL("Show Thrusters", Lab_render_show_thrusters);
-	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
+	ADD_RENDER_BOOL("Show Ship Weapons", Lab_render_show_weapons);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
 
@@ -2127,6 +2086,44 @@ void labviewer_actions_destroy_subsystem(Tree* caller) {
 	}
 }
 
+void labviewer_actions_change_primary(Tree* caller) {
+	auto weapon_name = caller->GetSelectedItem()->Name;
+	auto bank_num = caller->GetSelectedItem()->GetData();
+
+	auto weapon_index = weapon_info_lookup(weapon_name.c_str());
+
+	auto sp = &Ships[Objects[Lab_selected_object].instance];
+	sp->weapons.primary_bank_weapons[bank_num] = weapon_index;
+}
+
+void labviewer_actions_change_secondary(Tree* caller) {
+	auto weapon_name = caller->GetSelectedItem()->Name;
+	auto bank_num = caller->GetSelectedItem()->GetData();
+
+	auto weapon_index = weapon_info_lookup(weapon_name.c_str());
+
+	auto sp = &Ships[Objects[Lab_selected_object].instance];
+	sp->weapons.secondary_bank_weapons[bank_num] = weapon_index;
+}
+
+void labviewer_actions_fire_primary(Tree* caller) {
+	auto bank_num = caller->GetSelectedItem()->GetData();
+	auto objp = &Objects[Lab_selected_object];
+	auto sp = &Ships[objp->instance];
+	sp->weapons.current_primary_bank = bank_num;
+
+	ship_fire_primary(objp, 0);
+}
+
+void labviewer_actions_fire_secondary(Tree* caller) {
+	auto bank_num = caller->GetSelectedItem()->GetData();
+	auto objp = &Objects[Lab_selected_object];
+	auto sp = &Ships[objp->instance];
+	sp->weapons.current_secondary_bank = bank_num;
+
+	ship_fire_secondary(objp);
+}
+
 void labviewer_fill_actions_menu()
 {
 	int y = 0;
@@ -2136,16 +2133,92 @@ void labviewer_fill_actions_menu()
 	y += btn->GetHeight();
 
 	auto subsys_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Subsystem List", 0, y));
-	auto head_item = subsys_tree->AddItem(nullptr, "Destroy Subsystem", 0, false);
+	auto subsys_tree_head_item = subsys_tree->AddItem(nullptr, "Destroy Subsystem", 0, false);
+
+	y += subsys_tree->GetHeight();
+
+	auto weapons_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Weapons stuff", 0, y));
+	auto weapons_tree_head_item = weapons_tree->AddItem(nullptr, "Change loadout", 0, false);
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto sip = &Ship_info[sp->ship_info_index];
 			auto ssp = GET_FIRST(&sp->subsys_list);
 			while (ssp != END_OF_LIST(&sp->subsys_list)) {
-				subsys_tree->AddItem(head_item, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
-
+				subsys_tree->AddItem(subsys_tree_head_item, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
 				ssp = GET_NEXT(ssp);
+			}
+
+			if (sip->is_flyable()) {
+				auto primaries_head = weapons_tree->AddItem(weapons_tree_head_item, "Primaries", 0, false);
+				auto secondaries_head = weapons_tree->AddItem(weapons_tree_head_item, "Secondaries", 0, false);
+
+				for (auto i = 0; i < sip->num_primary_banks; ++i) {
+					SCP_string bank_string;
+					sprintf(bank_string, "Bank %i", i);
+					auto bank_head = weapons_tree->AddItem(primaries_head, bank_string, 0, false);
+					auto tabled_weapons_head = weapons_tree->AddItem(bank_head, "Tabled weapons", 0, false);
+					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
+					
+					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
+					for (auto j = 0; j < n_weapons; ++j) {
+						auto wip = &Weapon_info[j];
+						if (wip->subtype == WP_LASER) {
+							if (sip->allowed_weapons[j] != 0) {
+								weapons_tree->AddItem(tabled_weapons_head, wip->name, i, true, labviewer_actions_change_primary);
+							}
+							else {
+								weapons_tree->AddItem(others_head, wip->name, i, true, labviewer_actions_change_primary);
+							}
+						}
+					}
+				}
+
+				for (auto i = 0; i < sip->num_secondary_banks; ++i) {
+					SCP_string bank_string;
+					sprintf(bank_string, "Bank %i", i);
+					auto bank_head = weapons_tree->AddItem(secondaries_head, bank_string, 0, false);
+					auto tabled_weapons_head = weapons_tree->AddItem(bank_head, "Tabled weapons", 0, false);
+					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
+
+					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
+					for (auto j = 0; j < n_weapons; ++j) {
+						auto wip = &Weapon_info[j];
+						if (wip->subtype == WP_MISSILE) {
+							if (sip->allowed_weapons[j] != 0) {
+								weapons_tree->AddItem(tabled_weapons_head, wip->name, i, true, labviewer_actions_change_secondary);
+							}
+							else {
+								weapons_tree->AddItem(others_head, wip->name, i, true, labviewer_actions_change_secondary);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	y += weapons_tree->GetHeight();
+
+	auto fire_tree = (Tree*)Lab_actions_window->AddChild(new Tree("Fire teh lazors", 0, y));
+	auto fire_tree_head_item = fire_tree->AddItem(nullptr, "Fire bank", 0, false);
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_selected_object != -1) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto sip = &Ship_info[sp->ship_info_index];
+
+			for (auto i = 0; i < sp->weapons.num_primary_banks; ++i) {
+				SCP_string bank_string;
+				sprintf(bank_string, "Primary bank %i", i);
+				fire_tree->AddItem(fire_tree_head_item, bank_string, i, true, labviewer_actions_fire_primary);
+			}
+
+			for (auto i = 0; i < sp->weapons.num_primary_banks; ++i) {
+				SCP_string bank_string;
+				sprintf(bank_string, "Secondary bank %i", i);
+				fire_tree->AddItem(fire_tree_head_item, bank_string, i, true, labviewer_actions_fire_secondary);
 			}
 		}
 	}
@@ -2273,10 +2346,41 @@ void lab_scroll_down()
 	}
 }
 
+// The lab simulates a mission environment; in order for all the various bits to work, we need to initialize a bunch of stuff that
+// would normally be done during mission parse.
+void lab_pseudomission_setup() {
+
+	// External weapon displays require a call to weapons_page_in, which in turn requires team data to be set
+	extern int Num_teams;
+	Num_teams = 1;
+
+	team_data* teamp = &Team_data[0];
+
+	// In the lab, all ships are valid
+	for (auto i = 0; i < Ship_info.size(); ++i) {
+		teamp->ship_list[i] = i;
+		strcpy_s(teamp->ship_list_variables[i], "");
+		teamp->ship_count[i] = 1;
+		teamp->loadout_total += 1;
+		strcpy_s(teamp->ship_count_variables[i], "");
+	}
+	teamp->default_ship = 0;
+	teamp->num_ship_choices = static_cast<int>(Ship_info.size());
+
+	// you want guns? you get guns.
+	for (auto i = 0; i < Weapon_info.size(); ++i) {
+		teamp->weaponry_pool[i] = i;
+		teamp->weaponry_count[i] = 640; // should be enough for everyone
+		strcpy_s(teamp->weaponry_amount_variable[i], "");
+		strcpy_s(teamp->weaponry_pool_variable[i], "");
+	}
+	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
+}
+
 void lab_init()
 {
 	GUIObject* cbp;
-	int x, i;
+	int x;
 
 	weapon_pause_sounds();
 
@@ -2315,9 +2419,6 @@ void lab_init()
 	Lab_mode             = LAB_MODE_NONE;
 	Lab_thrust_len       = 1.0f;
 	Lab_thrust_afterburn = false;
-	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
-		Lab_weaponmodel_num[i] = -1;
-	}
 
 	orig_cmdline_ambient = Cmdline_ambient_factor;
 	orig_cmdline_direct = static_light_factor;
@@ -2380,9 +2481,15 @@ void lab_init()
 	fireball_init();
 	debris_init();
 	extern void debris_page_in();
-	debris_page_in();
+	debris_page_in();	
 	shockwave_level_init();
+	shipfx_flash_init();
+	mflash_page_in(true);
 	particle::init();
+
+	lab_pseudomission_setup();
+	extern void weapons_page_in();
+	weapons_page_in();
 
 	ai_paused = 1;
 	Game_mode |= GM_LAB;
@@ -2596,14 +2703,6 @@ void lab_close()
 		model_page_out_textures(Lab_model_num, true);
 		model_unload(Lab_model_num);
 		Lab_model_num = -1;
-	}
-
-	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
-		if (Lab_weaponmodel_num[i] >= 0) {
-			model_page_out_textures(Lab_weaponmodel_num[i], true);
-			model_unload(Lab_weaponmodel_num[i]);
-			Lab_weaponmodel_num[i] = -1;
-		}
 	}
 
 	Lab_selected_mission = "None";

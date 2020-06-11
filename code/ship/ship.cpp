@@ -18860,7 +18860,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 
-	if ( !(sip->flags[Ship::Info_Flags::Draw_weapon_models]) || (shipp->flags[Ship_Flags::Cloaked]) ) {
+	if ( !(sip->flags[Ship::Info_Flags::Draw_weapon_models]) || (shipp->flags[Ship_Flags::Cloaked]) || (shipp->flags[Ship_Flags::Render_without_weapons]) ) {
 		return;
 	}
 
