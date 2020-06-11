@@ -39,7 +39,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include <utility>
-#include <weapon\muzzleflash.h>
+#include <weapon/muzzleflash.h>
 
 // flags
 #define LAB_FLAG_NORMAL (0)                    // default
