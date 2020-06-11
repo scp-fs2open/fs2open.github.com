@@ -205,8 +205,6 @@ void reset_view()
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 {
 	bool change_model = true;
-	int l;
-	ship_info* sip = nullptr;
 
 	anim_timer_start = timer_get_milliseconds();
 
@@ -242,12 +240,6 @@ void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
 				if (Lab_model_num >= 0) {
 					model_page_in_textures(Lab_model_num, sel_index);
 				}
-			}
-
-			// do the same for weapon models if necessary
-			if (Lab_mode == LAB_MODE_SHIP) {
-				sip = &Ship_info[Lab_selected_index];
-				l   = 0;
 			}
 		} else {
 			// clear out the model filename
