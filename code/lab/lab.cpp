@@ -2104,18 +2104,20 @@ void labviewer_actions_destroy_ship(Button* /*caller*/) {
 }
 
 void labviewer_actions_destroy_subsystem(Tree* caller) {
-	auto selected_subsys_subobj_num = caller->GetSelectedItem()->GetData();
+	auto selected_subsys_index = caller->GetSelectedItem()->GetData();
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 			auto ssp = GET_FIRST(&sp->subsys_list);
+			auto subsys_index = 0;
 			while (ssp != END_OF_LIST(&sp->subsys_list)) {
-				if (ssp->system_info->subobj_num == selected_subsys_subobj_num) {
+				if (subsys_index == selected_subsys_index) {
 					do_subobj_destroyed_stuff(sp, ssp, nullptr);
 				}
 
 				ssp = GET_NEXT(ssp);
+				++subsys_index;
 			}
 		}
 	}
@@ -2154,9 +2156,11 @@ void labviewer_fill_subsystem_menu() {
 		if (Lab_selected_object != -1) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 			auto ssp = GET_FIRST(&sp->subsys_list);
+			auto subsys_index = 0;
 			while (ssp != END_OF_LIST(&sp->subsys_list)) {
-				subsys_tree->AddItem(nullptr, ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_destroy_subsystem);
+				subsys_tree->AddItem(nullptr, ssp->system_info->name, subsys_index, true, labviewer_actions_destroy_subsystem);
 				ssp = GET_NEXT(ssp);
+				++subsys_index;
 			}
 		}
 	}
