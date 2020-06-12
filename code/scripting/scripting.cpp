@@ -479,7 +479,6 @@ void script_init()
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			documentation_to_json(doc);
 		}
-		exit(1);
 	}
 
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
