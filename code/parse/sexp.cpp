@@ -1023,7 +1023,7 @@ void arg_item::add_data_set_dup(char *str, int n)
 	arg_item *item, *ptr;
 
 	// create item
-	item = new arg_item;
+	item = new arg_item();
 	item->text = str;
 	item->flags |= ARG_ITEM_F_DUP;
 	item->node = n;
@@ -4328,9 +4328,8 @@ const ship_registry_entry *eval_ship(int node)
 	auto ship_it = Ship_registry_map.find(CTEXT(node));
 	if (ship_it != Ship_registry_map.end())
 	{
-		// cache the value, unless this node is a variable because the value may change
-		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		// cache the value, unless this node is a variable or argument because the value may change
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_SHIP, -1, ship_it->second);
 
 		return &Ship_registry[ship_it->second];
@@ -4370,9 +4369,8 @@ wing *eval_wing(int node)
 	{
 		auto wingp = &Wings[wing_num];
 
-		// cache the value, unless this node is a variable because the value may change
-		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		// cache the value, unless this node is a variable or argument because the value may change
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
 
 		return wingp;
@@ -4412,9 +4410,8 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable because the value may change
-	// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+	// cache the value, unless this node is a variable or argument because the value may change
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -21459,6 +21456,16 @@ int sexp_string_to_int(int n)
 	if (Sexp_nodes[n].cache)
 		return Sexp_nodes[n].cache->numeric_literal;
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return sexp_string_to_int(arg_node);
+	}
+
 	// copy all numeric characters to buf
 	// also, copy a sign symbol if we haven't copied numbers yet
 	buf_ch = buf;
@@ -21482,8 +21489,8 @@ int sexp_string_to_int(int n)
 
 	int num = atoi(buf);
 
-	// cache this number unless the node is a variable
-	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE))
+	// cache the value, unless this node is a variable or argument because the value may change
+	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE))
 		Sexp_nodes[n].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
