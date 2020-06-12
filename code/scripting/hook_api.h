@@ -74,6 +74,15 @@ detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameter
 	return detail::HookParameterInstanceList<Args...>(std::move(params)...);
 }
 
+struct HookVariableDocumentation {
+	const char* name = nullptr;
+	scripting::ade_type_info type;
+	const char* description = nullptr;
+
+	HookVariableDocumentation(const char* name_, scripting::ade_type_info type_, const char* description_);
+};
+
+
 class HookBase {
   public:
 	HookBase(SCP_string hookName,

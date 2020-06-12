@@ -1,6 +1,8 @@
 
 #include "scripting/scripting.h"
 
+#include "scripting_doc.h"
+
 #include "scripting/lua/LuaUtil.h"
 
 /**
@@ -171,37 +173,6 @@ void script_state::EndLuaFrame()
 	scripting::api::graphics_on_frame();
 }
 
-void ade_output_toc(FILE *fp, ade_table_entry *ate)
-{
-	Assert(fp != NULL);
-	Assert(ate != NULL);
-
-	//WMC - sanity checking
-	if(ate->Name == NULL && ate->ShortName == NULL) {
-		Warning(LOCATION, "Found ade_table_entry with no name or shortname");
-		return;
-	}
-
-	fputs("<dd>", fp);
-
-	if(ate->Name == NULL)
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->ShortName, ate->ShortName);
-	}
-	else
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->Name, ate->Name);
-		if(ate->ShortName)
-			fprintf(fp, " (%s)", ate->ShortName);
-	}
-	fputs("</a>", fp);
-
-	if(ate->Description)
-		fprintf(fp, " - %s\n", ate->Description);
-
-	fputs("</dd>\n", fp);
-}
-
 static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
 	const char* leftCmp = left->Name != nullptr ? left->Name : left->ShortName;
 	const char* rightCmp = right->Name != nullptr ? right->Name : left->ShortName;
@@ -259,82 +230,4 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 		doc.enumerations.push_back(e);
 	}
-}
-
-void script_state::OutputLuaMeta(FILE *fp)
-{
-	fputs("<dl>\n", fp);
-
-	//***Version info
-	fprintf(fp, "<dd>Version: %s</dd>\n", LUA_RELEASE);
-
-	SCP_vector<ade_table_entry*> table_entries;
-
-	//***TOC: Libraries
-	fputs("<dt><b>Libraries</b></dt>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Objects
-	fputs("<dt><b>Types</b></dt>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Enumerations
-	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
-
-	//***End TOC
-	fputs("</dl><br/><br/>", fp);
-
-	//***Everything
-	fputs("<dl>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX)
-			table_entries.push_back(ate);
-	}
-
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
-	for (auto entry : table_entries) {
-		entry->OutputMeta(fp);
-	}
-	table_entries.clear();
-
-	//***Enumerations
-	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
-	for (uint32_t i = 0; i < Num_enumerations; i++) {
-
-		// Cyborg17 -- Omit the deprecated flag
-		if (!stricmp(Enumerations[i].name,
-		             "VM_EXTERNAL_CAMERA_LOCKED") /* || !stricmp(Enumerations[i], "ADD DEPRECATED ENUM HERE"*/) {
-			continue;
-		}		
-		// WMC - This is in case we ever want to add descriptions to enums.
-		// fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
-  
-		// WMC - For now, print to the file without the description.
-		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);		
-	}
-	fputs("</dl>\n", fp);
-
-	//***End LUA
-	fputs("</dl>\n", fp);
 }

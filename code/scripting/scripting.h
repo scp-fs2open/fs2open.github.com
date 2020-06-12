@@ -3,19 +3,21 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+
 #include "graphics/2d.h"
 #include "scripting/ade_args.h"
-#include "scripting/doc_parser.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
-
-#include <cstdio>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
 
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
+
+namespace scripting {
+struct ScriptingDocumentation;
+}
 
 struct image_desc
 {
@@ -148,90 +150,6 @@ public:
 	bool Run(class script_state* sys, int action);
 };
 
-enum class ElementType {
-	Unknown,
-	Library,
-	Class,
-	Function,
-	Operator,
-	Property,
-};
-
-struct HookVariableDocumentation {
-	const char* name = nullptr;
-	scripting::ade_type_info type;
-	const char* description = nullptr;
-
-	HookVariableDocumentation(const char* name_, scripting::ade_type_info type_, const char* description_);
-};
-
-
-struct DocumentationElement {
-	virtual ~DocumentationElement() = default;
-
-	ElementType type = ElementType::Unknown;
-
-	SCP_string name;
-	SCP_string shortName;
-
-	SCP_string description;
-
-	SCP_vector<std::unique_ptr<DocumentationElement>> children;
-};
-
-struct DocumentationElementClass : public DocumentationElement {
-	~DocumentationElementClass() override = default;
-
-	SCP_string superClass;
-};
-
-struct DocumentationElementProperty : public DocumentationElement {
-	~DocumentationElementProperty() override = default;
-
-	scripting::ade_type_info getterType;
-	SCP_string setterType;
-
-	SCP_string returnDocumentation;
-};
-
-struct DocumentationElementFunction : public DocumentationElement {
-	~DocumentationElementFunction() override = default;
-
-	scripting::ade_type_info returnType;
-
-	struct argument_list {
-		SCP_string simple;
-
-		SCP_vector<scripting::argument_def> arguments;
-	};
-
-	SCP_vector<argument_list> overloads;
-
-	SCP_string returnDocumentation;
-};
-
-struct DocumentationEnum {
-	SCP_string name;
-	int value;
-};
-
-struct DocumentationAction {
-	SCP_string name;
-	SCP_string description;
-	SCP_vector<HookVariableDocumentation> parameters;
-	bool overridable;
-};
-
-struct ScriptingDocumentation {
-	SCP_vector<SCP_string> conditions;
-	SCP_vector<HookVariableDocumentation> globalVariables;
-	SCP_vector<DocumentationAction> actions;
-
-	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
-
-	SCP_vector<DocumentationEnum> enumerations;
-};
-
 //**********Main script_state function
 class script_state
 {
@@ -254,8 +172,7 @@ private:
 
 	void SetLuaSession(struct lua_State *L);
 
-	void OutputLuaMeta(FILE *fp);
-	void OutputLuaDocumentation(ScriptingDocumentation& doc);
+	void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc);
 
 	//Lua private helper functions
 	bool OpenHookVarTable();
@@ -288,8 +205,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	ScriptingDocumentation OutputDocumentation();
-	int OutputMeta(const char *filename);
+	scripting::ScriptingDocumentation OutputDocumentation();
 
 	//***Moves data
 	//void MoveData(script_state &in);
