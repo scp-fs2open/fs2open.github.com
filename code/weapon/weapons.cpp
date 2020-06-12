@@ -5173,8 +5173,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
-		if (((Weapon_info[weapon_type].subtype == WP_LASER && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) || 
-			 (Weapon_info[weapon_type].subtype == WP_MISSILE && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire])) && 
+		if (((Weapon_info[weapon_type].subtype == WP_LASER && parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) ||
+			 (Weapon_info[weapon_type].subtype == WP_MISSILE && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire])) &&
 			 (curr_pos > 0)) {
 			curr_pos--;
 		}
