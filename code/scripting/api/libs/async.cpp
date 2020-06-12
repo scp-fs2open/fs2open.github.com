@@ -169,7 +169,7 @@ ADE_FUNC(errored,
 
 ADE_FUNC(run,
 	l_Async,
-	"function body()",
+	"function() => any body",
 	"Runs an asynchronous function. Inside this function you can use async.await to suspend the function until a "
 	"promise resolves.",
 	"promise",

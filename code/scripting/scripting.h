@@ -5,6 +5,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "scripting/ade_args.h"
+#include "scripting/doc_parser.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
 
@@ -204,7 +205,7 @@ struct DocumentationElementFunction : public DocumentationElement {
 		SCP_vector<scripting::argument_def> arguments;
 	};
 
-	argument_list parameters;
+	SCP_vector<argument_list> overloads;
 
 	SCP_string returnDocumentation;
 };

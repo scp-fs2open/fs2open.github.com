@@ -215,7 +215,7 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 	case ade_type_info_type::Empty:
 		return json_string("void");
 	case ade_type_info_type::Simple:
-		return json_string(type_info.getSimpleName());
+		return json_string(type_info.getIdentifier());
 	case ade_type_info_type::Tuple: {
 		json_t* tupleTypes = json_array();
 
@@ -257,6 +257,26 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 
 		return json_pack("{ssso}", "type", "alternative", "elements", alternativeTypes);
 	}
+	case ade_type_info_type::Function: {
+		const auto& elements = type_info.elements();
+
+		json_t* parameterTypes = json_array();
+
+		if (elements.size() > 1) {
+			for (auto iter = elements.begin() + 1; iter != elements.end(); ++iter) {
+				json_array_append_new(parameterTypes,
+					json_pack("{ssso}", "name", iter->getName().c_str(), "type", json_doc_generate_return_type(*iter)));
+			}
+		}
+
+		return json_pack("{sssoso}",
+			"type",
+			"function",
+			"returnType",
+			json_doc_generate_return_type(elements.front()),
+			"parameters",
+			parameterTypes);
+	}
 	}
 
 	UNREACHABLE("Unknown type type!");
@@ -286,13 +306,21 @@ static void json_doc_generate_function(json_t* elObj, const DocumentationElement
 	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
 	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
 
-	if (!lib->parameters.arguments.empty()) {
-		// For future compatibility, the complex case can contain multiple separate parameter lists
-		json_object_set_new(elObj,
-			"parameters",
-			json_pack("[o]", json_doc_function_signature(lib->parameters.arguments)));
+	if (lib->overloads.size() == 1 && lib->overloads.front().arguments.empty()) {
+		// Simple overload
+		json_object_set_new(elObj, "parameters", json_string(lib->overloads.front().simple.c_str()));
 	} else {
-		json_object_set_new(elObj, "parameters", json_string(lib->parameters.simple.c_str()));
+		json_t* arr = json_array();
+
+		for (const auto& overload : lib->overloads) {
+			if (!overload.simple.empty()) {
+				json_array_append_new(arr, json_string(overload.simple.c_str()));
+			} else {
+				json_array_append_new(arr, json_doc_function_signature(overload.arguments));
+			}
+		}
+
+		json_object_set_new(elObj, "parameters", arr);
 	}
 }
 static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
@@ -451,6 +479,7 @@ void script_init()
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			documentation_to_json(doc);
 		}
+		exit(1);
 	}
 
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));

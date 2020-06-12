@@ -17,6 +17,8 @@
  * the detected toolchain.
  */
 
+#if defined(__clang__)
+
 #define SCP_FORMAT_STRING
 #define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
 
@@ -89,4 +91,19 @@
 	} while (false)
 #else
 #define UNREACHABLE(msg, ...) __builtin_unreachable()
+#endif
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wattributes\"") \
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS \
+_Pragma("clang diagnostic pop")
+
 #endif

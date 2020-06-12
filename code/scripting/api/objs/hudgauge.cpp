@@ -44,9 +44,9 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 
 ADE_VIRTVAR(RenderFunction,
             l_HudGauge,
-            "function (HudGaugeDrawFunctions gauge_handle)",
+            "function (HudGaugeDrawFunctions gauge_handle) => void",
             "For scripted HUD gauges, the function that will be called for rendering the HUD gauge",
-            "function (HudGaugeDrawFunctions gauge_handle)",
+            "function (HudGaugeDrawFunctions gauge_handle) => void",
             "Render function or nil if no action is set or handle is invalid") {
 	HudGauge* gauge;
 	luacpp::LuaFunction func;

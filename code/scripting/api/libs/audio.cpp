@@ -111,7 +111,7 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	}
 }
 
-ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
+ADE_FUNC(play3DSound, l_Audio, "soundentry, [vector source, vector listener]",
          "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current "
          "viewposition",
          "sound3D", "A handle to the playing sound")
@@ -223,7 +223,13 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 	return ade_set_args(L, "i", ah);
 }
 
-ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'briefing|credits|mainhall']", "Stops a playing music file, provided audiohandle is valid. If the 3rd arg is set to one of briefing,credits,mainhall then that music will be stopped despite the audiohandle given.", NULL, NULL)
+ADE_FUNC(stopMusic,
+	l_Audio,
+	"int audiohandle, [bool fade = false, string music_type = 'briefing|credits|mainhall']",
+	"Stops a playing music file, provided audiohandle is valid. If the 3rd arg is set to one of "
+	"briefing,credits,mainhall then that music will be stopped despite the audiohandle given.",
+	nullptr,
+	nullptr)
 {
 	int ah;
 	bool fade = false;

@@ -17,6 +17,8 @@
  * the detected toolchain.
  */
 
+#if defined(_MSC_VER)
+
 #include <sal.h>
 
 #define SCP_FORMAT_STRING            _Printf_format_string_
@@ -75,4 +77,16 @@
 	} while (false)
 #else
 #define UNREACHABLE(msg, ...) __assume(false)
+#endif
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS
+
 #endif

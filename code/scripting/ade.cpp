@@ -261,10 +261,10 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
 		fputs("nothing", fp);
 		break;
 	case ade_type_info_type::Simple:
-		if (is_internal_type(type_info.getSimpleName())) {
-			fputs(type_info.getSimpleName(), fp);
+		if (is_internal_type(type_info.getIdentifier())) {
+			fputs(type_info.getIdentifier(), fp);
 		} else {
-			fprintf(fp, "<a href=\"#%s\">%s</a>", type_info.getSimpleName(), type_info.getSimpleName());
+			fprintf(fp, "<a href=\"#%s\">%s</a>", type_info.getIdentifier(), type_info.getIdentifier());
 		}
 		break;
 	case ade_type_info_type::Tuple: {
@@ -306,6 +306,28 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
 
 			ade_output_type_link(fp, type);
 		}
+		break;
+	}
+	case ade_type_info_type::Function: {
+		const auto& elements = type_info.elements();
+		if (elements.size() == 1) {
+			fputs("function() -> ", fp);
+		} else {
+			fputs("function(", fp);
+			bool first = true;
+			for (auto iter = elements.begin() + 1; iter != elements.end(); ++iter) {
+				if (!first) {
+					fputs(", ", fp);
+				}
+				first = false;
+
+				ade_output_type_link(fp, *iter);
+
+				fprintf(fp, " %s", iter->getName().c_str());
+			}
+			fputs(") -> ", fp);
+		}
+		ade_output_type_link(fp, elements.front());
 	}
 	}
 }
@@ -632,95 +654,88 @@ void ade_table_entry::OutputMeta(FILE *fp)
 				}
 			}
 				break;
-			case 'u':
-			{
+			case 'u': {
 				//***Name(ShortName)(Arguments)
-				fputs("<dt>", fp);
-				int ao = -1;
+				for (const auto& overload : Arguments.overloads()) {
+					fputs("<dt>", fp);
+					int ao = -1;
 
-				fputs("<i>", fp);
-			    if (!ReturnType.isEmpty())
-				    ade_output_type_link(fp, ReturnType);
-				else
-					fputs("nil", fp);
-				fputs(" </i>", fp);
-				if(Name == NULL) {
-					fprintf(fp, "<b>%s", ShortName);
-				}
-				else
-				{
-					ao = ade_get_operator(Name);
-
-					//WMC - Do we have an operator?
-					if(ao < 0)
-					{
-						fprintf(fp, "<b>%s", Name);
-						if(ShortName != NULL)
-						{
-							int ao2 = ade_get_operator(ShortName);
-							if(ao2 < 0)
-								fprintf(fp, "(%s)", ShortName);
-							else
-								fprintf(fp, "(%s)", ade_Operators[ao2].dest);
-						}
-					}
+					fputs("<i>", fp);
+					if (!ReturnType.isEmpty())
+						ade_output_type_link(fp, ReturnType);
 					else
-					{
-						//WMC - Hack
-						if(ParentIdx != UINT_MAX && getTableEntry(ParentIdx).ParentIdx != UINT_MAX && getTableEntry(ParentIdx).Name != NULL && !stricmp(Name, "__indexer"))
-						{
-							fprintf(fp, "<b>%s%s", getTableEntry(ParentIdx).Name, ade_Operators[ao].dest);
-						}
-						else
-							fprintf(fp, "<b>%s", ade_Operators[ao].dest);
-					}
-				}
+						fputs("nil", fp);
+					fputs(" </i>", fp);
+					if (Name == nullptr) {
+						fprintf(fp, "<b>%s", ShortName);
+					} else {
+						ao = ade_get_operator(Name);
 
-				if(ao < 0) {
-					fputs("(</b>", fp);
-					if (Arguments != nullptr) {
-						argument_list_parser arg_parser;
-						if (arg_parser.parse(Arguments)) {
-							bool first    = true;
-							bool optional = false;
-							for (const auto& arg : arg_parser.getArgList()) {
-								if (!first) {
-									fputs(", ", fp);
-								}
-								first = false;
-
-								if (arg.optional && !optional) {
-									fputs("[", fp);
-									optional = true;
-								}
-
-								ade_output_type_link(fp, arg.type);
-
-								if (!arg.name.empty()) {
-									fprintf(fp, " <i>%s</i>", arg.name.c_str());
-
-									if (!arg.def_val.empty()) {
-										fprintf(fp, " = <i>%s</i>", arg.def_val.c_str());
-									}
-								}
-							}
-
-							if (optional) {
-								fputs("]", fp);
+						// WMC - Do we have an operator?
+						if (ao < 0) {
+							fprintf(fp, "<b>%s", Name);
+							if (ShortName != nullptr) {
+								int ao2 = ade_get_operator(ShortName);
+								if (ao2 < 0)
+									fprintf(fp, "(%s)", ShortName);
+								else
+									fprintf(fp, "(%s)", ade_Operators[ao2].dest);
 							}
 						} else {
-							fprintf(fp, "<i>%s</i>", Arguments);
+							// WMC - Hack
+							if (ParentIdx != UINT_MAX && getTableEntry(ParentIdx).ParentIdx != UINT_MAX &&
+								getTableEntry(ParentIdx).Name != nullptr && !stricmp(Name, "__indexer")) {
+								fprintf(fp, "<b>%s%s", getTableEntry(ParentIdx).Name, ade_Operators[ao].dest);
+							} else
+								fprintf(fp, "<b>%s", ade_Operators[ao].dest);
 						}
 					}
-					fputs("<b>)</b>\n", fp);
-				} else
-				{
-					fputs("</b>", fp);
-					if(Arguments != NULL) {
-						fprintf(fp, " <i>%s</i>\n", Arguments);
+
+					if (ao < 0) {
+						fputs("(</b>", fp);
+						if (overload != nullptr) {
+							argument_list_parser arg_parser;
+							if (arg_parser.parse(overload)) {
+								bool first    = true;
+								bool optional = false;
+								for (const auto& arg : arg_parser.getArgList()) {
+									if (!first) {
+										fputs(", ", fp);
+									}
+									first = false;
+
+									if (arg.optional && !optional) {
+										fputs("[", fp);
+										optional = true;
+									}
+
+									ade_output_type_link(fp, arg.type);
+
+									if (!arg.name.empty()) {
+										fprintf(fp, " <i>%s</i>", arg.name.c_str());
+
+										if (!arg.def_val.empty()) {
+											fprintf(fp, " = <i>%s</i>", arg.def_val.c_str());
+										}
+									}
+								}
+
+								if (optional) {
+									fputs("]", fp);
+								}
+							} else {
+								fprintf(fp, "<i>%s</i>", overload);
+							}
+						}
+						fputs("<b>)</b>\n", fp);
+					} else {
+						fputs("</b>", fp);
+						if (overload != nullptr) {
+							fprintf(fp, " <i>%s</i>\n", overload);
+						}
 					}
+					fputs("</dt>\n", fp);
 				}
-				fputs("</dt>\n", fp);
 
 				//***Description
 				if(Description != NULL) {
@@ -755,29 +770,28 @@ void ade_table_entry::OutputMeta(FILE *fp)
 			case 'i':
 			case 's':
 			case 'x':
-			case 'v':
-			{
+			case 'v': {
 				//***Type Name(ShortName)
-				fputs("<dt>\n", fp);
-			    if (!ReturnType.isEmpty()) {
-				    fputs("<i>", fp);
-					ade_output_type_link(fp, ReturnType);
-					fputs(" </i>", fp);
-			    }
+				for (const auto& overload : Arguments.overloads()) {
+					fputs("<dt>\n", fp);
+					if (!ReturnType.isEmpty()) {
+						fputs("<i>", fp);
+						ade_output_type_link(fp, ReturnType);
+						fputs(" </i>", fp);
+					}
 
-			    if(Name == nullptr) {
-					fprintf(fp, "<b>%s</b>\n", ShortName);
+					if (Name == nullptr) {
+						fprintf(fp, "<b>%s</b>\n", ShortName);
+					} else {
+						fprintf(fp, "<b>%s", Name);
+						if (ShortName != nullptr)
+							fputs(ShortName, fp);
+						fputs("</b>\n", fp);
+					}
+					if (overload != nullptr)
+						fprintf(fp, " = <i>%s</i>", overload);
+					fputs("</dt>\n", fp);
 				}
-				else
-				{
-					fprintf(fp, "<b>%s", Name);
-					if(ShortName != NULL)
-						fputs(ShortName, fp);
-					fputs("</b>\n", fp);
-				}
-				if(Arguments != NULL)
-					fprintf(fp, " = <i>%s</i>", Arguments);
-				fputs("</dt>\n", fp);
 
 				//***Description
 				if(Description != NULL)
@@ -848,23 +862,28 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 
 		obj->returnType = ReturnType;
 
-		if (Arguments != nullptr) {
-			argument_list_parser arg_parser;
-			if (arg_parser.parse(Arguments)) {
-				bool optional = false;
-				for (const auto& arg : arg_parser.getArgList()) {
-					if (!optional && (arg.optional || !arg.def_val.empty())) {
-						optional = true;
+		for (const auto& overload : Arguments.overloads()) {
+			DocumentationElementFunction::argument_list overloadArgList;
+			if (overload != nullptr) {
+				argument_list_parser arg_parser;
+				if (arg_parser.parse(overload)) {
+					bool optional = false;
+					for (const auto& arg : arg_parser.getArgList()) {
+						if (!optional && (arg.optional || !arg.def_val.empty())) {
+							optional = true;
+						}
+
+						auto argCopy     = arg;
+						argCopy.optional = optional;
+
+						overloadArgList.arguments.push_back(std::move(argCopy));
 					}
-
-					auto argCopy     = arg;
-					argCopy.optional = optional;
-
-					obj->parameters.arguments.push_back(std::move(argCopy));
+				} else {
+					overloadArgList.simple.assign(overload);
 				}
-			} else {
-				obj->parameters.simple.assign(Arguments);
 			}
+
+			obj->overloads.push_back(overloadArgList);
 		}
 
 		if (ReturnDescription != nullptr) {
@@ -881,8 +900,8 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 		//***Type Name(ShortName)
 		obj->getterType = ReturnType;
 
-		if (Arguments != nullptr) {
-			obj->setterType = Arguments;
+		if (Arguments.overloads().front() != nullptr) {
+			obj->setterType = Arguments.overloads().front();
 		}
 
 		if (ReturnDescription != nullptr) {
@@ -950,19 +969,25 @@ const char *ade_lib::GetName() const
 	return getTableEntry(GetIdx()).GetName();
 }
 
-ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
-                   const char* desc, ade_type_info ret_type, const char* ret_desc,
-                   const gameversion::version& deprecation_version, const char* deprecation_message)
+ade_func::ade_func(const char* name,
+	lua_CFunction func,
+	const ade_lib_handle& parent,
+	ade_overload_list args,
+	const char* desc,
+	ade_type_info ret_type,
+	const char* ret_desc,
+	const gameversion::version& deprecation_version,
+	const char* deprecation_message)
 {
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
 
 	ade_table_entry ate;
 
-	ate.Name = name;
-	ate.Instanced = true;
+	ate.Name               = name;
+	ate.Instanced          = true;
 	ate.Type               = 'u';
 	ate.Function           = func;
-	ate.Arguments          = args;
+	ate.Arguments          = std::move(args);
 	ate.Description        = desc;
 	ate.ReturnType         = std::move(ret_type);
 	ate.ReturnDescription  = ret_desc;
@@ -980,14 +1005,14 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 
 	ade_table_entry ate;
 
-	ate.Name = name;
-	ate.Instanced = true;
-	ate.Type = 'v';
-	ate.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
-	ate.ReturnDescription = ret_desc;
+	ate.Name               = name;
+	ate.Instanced          = true;
+	ate.Type               = 'v';
+	ate.Function           = func;
+	ate.Arguments          = args;
+	ate.Description        = desc;
+	ate.ReturnType         = std::move(ret_type);
+	ate.ReturnDescription  = ret_desc;
 	ate.DeprecationVersion = deprecation_version;
 	ate.DeprecationMessage = deprecation_message;
 
@@ -997,16 +1022,16 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
                          ade_type_info ret_type, const char* ret_desc)
 {
-	//Add function for meta
+	// Add function for meta
 	ade_table_entry ate;
 
-	ate.Name = "__indexer";
-	ate.Instanced = true;
-	ate.Type = 'u';
-	ate.Function = func;
-	ate.Arguments = args;
-	ate.Description = desc;
-	ate.ReturnType = ret_type;
+	ate.Name              = "__indexer";
+	ate.Instanced         = true;
+	ate.Type              = 'u';
+	ate.Function          = func;
+	ate.Arguments         = args;
+	ate.Description       = desc;
+	ate.ReturnType        = std::move(ret_type);
 	ate.ReturnDescription = ret_desc;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);

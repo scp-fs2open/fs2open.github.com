@@ -827,7 +827,7 @@ ADE_FUNC(sendPlainMessage,
 
 ADE_FUNC(createShip,
 	l_Mission,
-	"[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]",
+	"[string Name, shipclass Class=<Shipclass[1]>, orientation Orientation=null, vector Position=<{0,0,0}>]",
 	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
@@ -898,7 +898,7 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 
 ADE_FUNC(createWeapon,
 	l_Mission,
-	"[weaponclass Class=FirstTableWeapon, orientation Orientation=identity, vector WorldPosition={0,0,0}, object Parent = "
+	"[weaponclass Class=FirstTableWeapon, orientation Orientation=identity, vector WorldPosition=<{0,0,0}>, object Parent = "
 	"nil, number Group = -1]",
 	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
 	" for example, quad lasers would only need to act as one light source.",

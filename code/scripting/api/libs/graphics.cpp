@@ -278,7 +278,7 @@ ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, numbe
 }
 
 ADE_FUNC(createCamera, l_Graphics,
-		 "string Name, [wvector Position, orientation Orientation]",
+		 "string Name, [vector Position, orientation Orientation]",
 		 "Creates a new camera using the specified position and orientation (World)",
 		 "camera",
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
@@ -606,7 +606,12 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=nil, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
+ADE_FUNC(drawPolygon,
+	l_Graphics,
+	"texture Texture, [vector Position=<{0,0,0}>, orientation Orientation=nil, number Width=1.0, number Height=1.0]",
+	"Draws a polygon. May not work properly in hooks other than On Object Render.",
+	nullptr,
+	nullptr)
 {
 	texture_h* tdx = nullptr;
 	vec3d pos = vmd_zero_vector;

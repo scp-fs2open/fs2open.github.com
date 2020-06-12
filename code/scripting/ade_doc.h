@@ -12,12 +12,14 @@ enum class ade_type_info_type {
 	Map,
 	Iterator,
 	Alternative,
+	Function,
 };
 
 class ade_type_array;
 class ade_type_map;
 class ade_type_iterator;
 class ade_type_alternative;
+class ade_type_function;
 
 /**
  * @brief A definition of a type used in the ADE system
@@ -25,20 +27,31 @@ class ade_type_alternative;
 class ade_type_info {
 	ade_type_info_type _type = ade_type_info_type::Empty;
 
-	SCP_string _simple_name;
-
+	SCP_string _identifier;
 	SCP_vector<ade_type_info> _elements;
 
+	SCP_string _name;
   public:
 	ade_type_info() = default;
 	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
+	/*implicit*/ ade_type_info(SCP_string single_type);
 	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
 	/*implicit*/ ade_type_info(const ade_type_array& listType);
 	/*implicit*/ ade_type_info(const ade_type_map& listType);
 	/*implicit*/ ade_type_info(const ade_type_iterator& iteratorType);
-	/*implicit*/ ade_type_info(const ade_type_alternative& iteratorType);
+	/*implicit*/ ade_type_info(const ade_type_alternative& alternativeType);
+	/*implicit*/ ade_type_info(const ade_type_function& functionType);
+
+	ade_type_info(const ade_type_info&) = default;
+	ade_type_info& operator=(const ade_type_info&) = default;
+
+	ade_type_info(ade_type_info&&) noexcept;
+	ade_type_info& operator=(ade_type_info&&) noexcept;
 
 	ade_type_info_type getType() const;
+
+	const SCP_string& getName() const;
+	void setName(const SCP_string& name);
 
 	bool isEmpty() const;
 
@@ -48,7 +61,9 @@ class ade_type_info {
 
 	bool isArray() const;
 
-	const char* getSimpleName() const;
+	bool isAlternative() const;
+
+	const char* getIdentifier() const;
 
 	const ade_type_info& arrayType() const;
 
@@ -94,21 +109,26 @@ class ade_type_alternative {
 	const SCP_vector<ade_type_info>& getElementTypes() const;
 };
 
-struct argument_def {
-	ade_type_info type;
-	SCP_string name;
-	SCP_string def_val;
-	bool optional = false;
+class ade_type_function {
+	ade_type_info _returnType;
+	SCP_vector<ade_type_info> _argumentTypes;
+
+  public:
+	explicit ade_type_function(ade_type_info returnType, SCP_vector<ade_type_info> argumentTypes);
+
+	const ade_type_info& getReturnType() const;
+	const SCP_vector<scripting::ade_type_info>& getArgumentTypes() const;
 };
 
-class argument_list_parser {
+class ade_overload_list {
+	SCP_vector<const char*> arg_lists;
+
   public:
-	bool parse(const SCP_string& argumentList);
+	/*implicit*/ ade_overload_list();
+	/*implicit*/ ade_overload_list(const char* arglist);
+	/*implicit*/ ade_overload_list(std::initializer_list<const char*> overloads);
 
-	const SCP_vector<scripting::argument_def>& getArgList() const;
-
-  private:
-	SCP_vector<argument_def> _argList;
+	const SCP_vector<const char*>& overloads();
 };
 
 } // namespace scripting

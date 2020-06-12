@@ -6,6 +6,7 @@
  * the source.
  */
 
+#if defined(DOXYGEN)
 /**
  * @file
  *
@@ -70,3 +71,15 @@
  * @param ... Format arguments for the message
  */
 #define UNREACHABLE(msg, ...)
+
+/**
+ * @brief Suppresses all warnings and allows to pop back to normal afterwards
+ */
+#define PUSH_SUPPRESS_WARNINGS
+
+/**
+ * @brief Restored previous warning settings
+ */
+#define POP_SUPPRESS_WARNINGS
+
+#endif

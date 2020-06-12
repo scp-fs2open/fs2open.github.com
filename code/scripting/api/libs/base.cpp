@@ -46,7 +46,15 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createOrientation, l_Base, "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, r3c1, r3c2, r3c3]", "Given 0, 3, or 9 arguments, creates an orientation object with that orientation.", "orientation", "New orientation object, or null orientation on failure")
+ADE_FUNC(createOrientation,
+	l_Base,
+	ade_overload_list({nullptr,
+		"number p, number b, number h",
+		"number r1c1, number r1c2, number r1c3, number r2c1, number r2c2, number r2c3, number r3c1, number r3c2, "
+		"number r3c3"}),
+	"Given 0, 3, or 9 arguments, creates an orientation object with that orientation.",
+	"orientation",
+	"New orientation object, or null orientation on failure")
 {
 	matrix m;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
@@ -67,7 +75,7 @@ ADE_FUNC(createOrientation, l_Base, "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, 
 	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 }
 
-ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector", "Vector object")
+ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
 {
 	vec3d v3 = vmd_zero_vector;
 	ade_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
@@ -99,7 +107,7 @@ ADE_FUNC(getCurrentGameState, l_Base, "[number depth]", "Gets current FreeSpace 
 	return ade_set_args(L, "o", l_GameState.Set(gamestate_h(gameseq_get_state(depth))));
 }
 
-ADE_FUNC(getCurrentMPStatus, l_Base, "NIL", "Gets this computers current MP status", "string", "Current MP status" )
+ADE_FUNC(getCurrentMPStatus, l_Base, nullptr, "Gets this computers current MP status", "string", "Current MP status" )
 {
 	if ( MULTIPLAYER_MASTER )
 		return ade_set_args(L, "s", "MULTIPLAYER_MASTER");

@@ -47,6 +47,8 @@ target_link_libraries(code PUBLIC pcp)
 
 target_link_libraries(code PUBLIC vulkan-hpp)
 
+target_link_libraries(code PUBLIC parsers)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)

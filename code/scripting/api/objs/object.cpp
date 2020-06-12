@@ -414,7 +414,7 @@ ADE_FUNC(
 		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(hull_check)));
 }
 
-ADE_FUNC(addPreMoveHook, l_Object, "function(object) callback",
+ADE_FUNC(addPreMoveHook, l_Object, "function(object object) => void callback",
          "Registers a callback on this object which is called every time <i>before</i> the physics rules are applied "
          "to the object. The callback is attached to this specific object and will not be called anymore once the "
          "object is deleted. The parameter of the function is the object that is being moved.",
@@ -438,7 +438,7 @@ ADE_FUNC(addPreMoveHook, l_Object, "function(object) callback",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(addPostMoveHook, l_Object, "function(object) callback",
+ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
          "Registers a callback on this object which is called every time <i>after</i> the physics rules are applied "
          "to the object. The callback is attached to this specific object and will not be called anymore once the "
          "object is deleted. The parameter of the function is the object that is being moved.",
