@@ -3448,7 +3448,7 @@ void game_simulation_frame()
 			sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
-			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
+			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) && (Objects[moveup->objnum].net_signature != STANDALONE_SHIP_SIG) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
