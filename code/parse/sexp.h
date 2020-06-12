@@ -1103,8 +1103,10 @@ typedef struct sexp_node {
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)
 #define SNF_ARGUMENT_SELECT			(1<<1)
-#define SNF_SPECIAL_ARG_IN_TREE		(1<<2)
-#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<3)
+#define SNF_SPECIAL_ARG_IN_NODE		(1<<2)
+#define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
+#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
+#define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1112,29 +1114,6 @@ typedef struct sexp_variable {
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
-
-
-#define ARG_ITEM_F_DUP	(1<<0)
-
-// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
-class arg_item
-{
-	public:
-		char *text;
-		arg_item *next;
-		int flags;
-		int nesting_level;
-
-		arg_item() : text(NULL), next(NULL), flags(0), nesting_level(0) {}
-		void add_data(char *str);
-		void add_data_dup(char *str);
-		void add_data_set_dup(char *str);
-		void expunge();
-		int is_empty();
-		arg_item *get_next();
-		void clear_nesting_level(); 
-};
-
 
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.

@@ -919,15 +919,41 @@ void sexp_set_variable_by_index(int node);
 void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
 
-SCP_vector<char*> Sexp_replacement_arguments;
+
+#define ARG_ITEM_F_DUP	(1<<0)
+
+// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
+struct arg_item
+{
+	char *text = nullptr;
+	int node = -1;
+
+	arg_item *next = nullptr;
+	int flags = 0;
+	int nesting_level = 0;
+
+	arg_item() = default;
+
+	void add_data(char *str, int n);
+	void add_data(const std::pair<char*, int> &data);
+	void add_data_dup(char *str, int n);
+	void add_data_dup(const std::pair<char*, int> &data);
+	void add_data_set_dup(char *str, int n);
+	void add_data_set_dup(const std::pair<char*, int> &data);
+	void expunge();
+	int is_empty();
+	arg_item *get_next();
+	void clear_nesting_level(); 
+};
+
+arg_item Sexp_applicable_argument_list;
+SCP_vector<std::pair<char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
-SCP_vector<char*> Applicable_arguments_temp;
+
 
 // Goober5000
-arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
-
 int get_handler_for_x_of_operator(int node);
 
 //Karajorma
@@ -949,13 +975,14 @@ SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
-void arg_item::add_data(char *str)
+void arg_item::add_data(char *str, int n)
 {
 	arg_item *item, *ptr;
 
 	// create item
-	item = new arg_item;
+	item = new arg_item();
 	item->text = str;
+	item->node = n;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
@@ -964,14 +991,20 @@ void arg_item::add_data(char *str)
 	item->next = ptr;
 }
 
-void arg_item::add_data_dup(char *str)
+void arg_item::add_data(const std::pair<char*, int> &data)
+{
+	add_data(data.first, data.second);
+}
+
+void arg_item::add_data_dup(char *str, int n)
 {
 	arg_item *item, *ptr;
 
 	// create item
-	item = new arg_item;
+	item = new arg_item();
 	item->text = vm_strdup(str);
 	item->flags |= ARG_ITEM_F_DUP;
+	item->node = n;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
@@ -980,20 +1013,31 @@ void arg_item::add_data_dup(char *str)
 	item->next = ptr;
 }
 
-void arg_item::add_data_set_dup(char *str)
+void arg_item::add_data_dup(const std::pair<char*, int> &data)
+{
+	add_data_dup(data.first, data.second);
+}
+
+void arg_item::add_data_set_dup(char *str, int n)
 {
 	arg_item *item, *ptr;
 
 	// create item
-	item = new arg_item;
+	item = new arg_item();
 	item->text = str;
 	item->flags |= ARG_ITEM_F_DUP;
+	item->node = n;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
 	ptr = this->next;
 	this->next = item;
 	item->next = ptr;
+}
+
+void arg_item::add_data_set_dup(const std::pair<char*, int> &data)
+{
+	add_data_set_dup(data.first, data.second);
 }
 
 arg_item* arg_item::get_next()
@@ -3263,9 +3307,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 }
 
 // Goober5000
-void get_unformatted_sexp_variable_name(char *unformatted, char *formatted_pre)
+void get_unformatted_sexp_variable_name(char *unformatted, const char *formatted_pre)
 {
-	char *formatted;
+	const char *formatted;
 
 	// Goober5000 - trim @ if needed
 	if (formatted_pre[0] == SEXP_VARIABLE_CHAR)
@@ -3304,7 +3348,7 @@ void get_sexp_text_for_variable(char *text, char *token)
 void do_preload_for_arguments(void (*preloader)(char *), int arg_node, int arg_handler_node)
 {
 	// we have a special argument
-	if (!strcmp(Sexp_nodes[arg_node].text, SEXP_ARGUMENT_STRING))
+	if (Sexp_nodes[arg_node].flags & SNF_SPECIAL_ARG_IN_NODE)
 	{
 		int n;
 
@@ -3449,6 +3493,10 @@ int get_sexp()
 				strncpy(token, Mp + 1, len);
 				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
+
+				// special-arg?
+				if (!strcmp(token, SEXP_ARGUMENT_STRING))
+					Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_NODE;
 			}
 
 			// bump past closing \" by 1 char
@@ -3609,7 +3657,7 @@ int get_sexp()
 				n = CDR(n);
 
 				// set flag for taylor
-				if (CAR(n) != -1 || !strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))	// if it's evaluating a sexp or a special argument
+				if (CAR(n) != -1 || Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)		// if it's evaluating a sexp or a special argument
 					Knossos_warp_ani_used = 1;												// set flag just in case
 				else if (atoi(CTEXT(n)) != 0)											// if it's not the default 0
 					Knossos_warp_ani_used = 1;												// set flag just in case
@@ -4257,6 +4305,7 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
  */
 const ship_registry_entry *eval_ship(int node)
 {
+	// check cache
 	if (Sexp_nodes[node].cache)
 	{
 		// have we cached something else?
@@ -4266,12 +4315,21 @@ const ship_registry_entry *eval_ship(int node)
 		return &Ship_registry[Sexp_nodes[node].cache->ship_registry_index];
 	}
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return eval_ship(arg_node);
+	}
+
 	auto ship_it = Ship_registry_map.find(CTEXT(node));
 	if (ship_it != Ship_registry_map.end())
 	{
-		// cache the value, unless this node is a variable because the value may change
-		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		// cache the value, unless this node is a variable or argument because the value may change
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_SHIP, -1, ship_it->second);
 
 		return &Ship_registry[ship_it->second];
@@ -4286,6 +4344,7 @@ const ship_registry_entry *eval_ship(int node)
  */
 wing *eval_wing(int node)
 {
+	// check cache
 	if (Sexp_nodes[node].cache)
 	{
 		// have we cached something else?
@@ -4295,14 +4354,23 @@ wing *eval_wing(int node)
 		return static_cast<wing*>(Sexp_nodes[node].cache->pointer);
 	}
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return eval_wing(arg_node);
+	}
+
 	int wing_num = wing_lookup(CTEXT(node));
 	if (wing_num >= 0)
 	{
 		auto wingp = &Wings[wing_num];
 
-		// cache the value, unless this node is a variable because the value may change
-		// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		// cache the value, unless this node is a variable or argument because the value may change
+		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
 
 		return wingp;
@@ -4320,6 +4388,7 @@ int sexp_atoi(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 
+	// check cache
 	if (Sexp_nodes[node].cache)
 	{
 		// have we cached something else?
@@ -4329,11 +4398,20 @@ int sexp_atoi(int node)
 		return Sexp_nodes[node].cache->numeric_literal;
 	}
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return sexp_atoi(arg_node);
+	}
+
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable because the value may change
-	// (we don't worry about <argument> because the cache will be cleared on re-evaluation)
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+	// cache the value, unless this node is a variable or argument because the value may change
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -4349,11 +4427,23 @@ bool sexp_can_construe_as_integer(int node)
 	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
 		return true;
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return sexp_can_construe_as_integer(arg_node);
+	}
+
 	return can_construe_as_integer(CTEXT(node));
 }
 
 /*
  * This can be used by both FRED and FSO.  When in FSO, it incorporates caching that runs parallel to the main data caching.
+ * Note that this function does not do special-arg forwarding because it operates on the node text, not the CTEXT, and thus
+ * there is no possibility of processing a special argument.
  */
 int sexp_get_variable_index(int node)
 {
@@ -9138,10 +9228,10 @@ void eval_when_for_each_special_argument( int cur_node )
 	while (ptr != NULL)
 	{
 		// acquire argument to be used
-		Sexp_replacement_arguments.push_back(ptr->text);	
+		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
 
 		Sexp_current_argument_nesting_level++;
-		Sexp_applicable_argument_list.add_data(ptr->text);
+		Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		eval_sexp(cur_node);
@@ -9169,7 +9259,7 @@ void do_action_for_each_special_argument( int cur_node )
 	while (ptr != NULL)
 	{
 		// acquire argument to be used
-		Sexp_replacement_arguments.push_back(ptr->text);
+		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		// (since these are all actions, they don't return any meaningful values)
@@ -9196,7 +9286,7 @@ bool special_argument_appears_in_sexp_tree(int node)
 		return false;
 
 	// special argument?
-	if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
 		return true;
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
@@ -9225,7 +9315,7 @@ bool special_argument_appears_in_sexp_list(int node)
 	while (node != -1)
 	{
 		// special argument?
-		if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
 			return true;
 
 		node = CDR(node);
@@ -9314,7 +9404,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	while (ptr != NULL)
 	{	
 		// acquire argument to be used
-		Sexp_replacement_arguments.push_back(ptr->text);
+		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
 		actions = all_actions; 
 
 		while (actions != -1)
@@ -9338,7 +9428,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 					case OP_EVERY_TIME:
 					case OP_IF_THEN_ELSE:				
 						Sexp_current_argument_nesting_level++;
-						Sexp_applicable_argument_list.add_data(ptr->text);
+						Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 						eval_sexp(exp);
 						Sexp_applicable_argument_list.clear_nesting_level();
 						Sexp_current_argument_nesting_level--;
@@ -9562,6 +9652,7 @@ int eval_cond(int n)
 int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
+	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
 	Assert(n != -1 && condition_node != -1);
 	Assert((num_true != NULL) && (num_false != NULL) && (num_known_true != NULL) && (num_known_false != NULL));
 
@@ -9586,7 +9677,7 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 			flush_sexp_tree(condition_node);
 
 			// evaluate conditional for current argument
-			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 			val = eval_sexp(condition_node);
 			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
@@ -9600,7 +9691,7 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 			{
 				case SEXP_TRUE:
 					(*num_true)++;
-					Applicable_arguments_temp.push_back(Sexp_nodes[n].text);
+					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
 					break;
 
 				case SEXP_FALSE:
@@ -9609,7 +9700,7 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 
 				case SEXP_KNOWN_TRUE:
 					(*num_known_true)++;
-					Applicable_arguments_temp.push_back(Sexp_nodes[n].text);
+					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
 					break;
 
 				case SEXP_KNOWN_FALSE:
@@ -9641,9 +9732,10 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 
 // Goober5000
 // NOTE: if you change this function, check to see if the previous function should also be changed!
-int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
+	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
 	Assert(condition_node != -1);
 	Assert((num_true != NULL) && (num_false != NULL) && (num_known_true != NULL) && (num_known_false != NULL));
 
@@ -9659,7 +9751,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 	*num_known_false = 0;
 
 	// loop through all arguments
-	for (size_t i = 0; i < argument_vector.size(); i++)
+	for (const auto &argument : argument_vector)
 	{
 		// since we can't see or modify the validity, assume all are valid
 		{
@@ -9667,7 +9759,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 			flush_sexp_tree(condition_node);
 
 			// evaluate conditional for current argument
-			Sexp_replacement_arguments.push_back(argument_vector[i]);
+			Sexp_replacement_arguments.push_back(argument);
 			val = eval_sexp(condition_node);
 			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
@@ -9681,7 +9773,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 			{
 				case SEXP_TRUE:
 					(*num_true)++;
-					Applicable_arguments_temp.push_back(argument_vector[i]);
+					Applicable_arguments_temp.push_back(argument);
 					break;
 
 				case SEXP_FALSE:
@@ -9690,7 +9782,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 
 				case SEXP_KNOWN_TRUE:
 					(*num_known_true)++;
-					Applicable_arguments_temp.push_back(argument_vector[i]);
+					Applicable_arguments_temp.push_back(argument);
 					break;
 
 				case SEXP_KNOWN_FALSE:
@@ -9701,7 +9793,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 			// if the argument was already dup'd, but not added as an applicable argument,
 			// we need to free it here before we cause a memory leak
 			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
-				vm_free(argument_vector[i]);
+				vm_free(argument.first);
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
@@ -9880,14 +9972,16 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
-		} else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
+		}
+		else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		{
 			val = SEXP_KNOWN_FALSE;	// If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
 		
@@ -9931,14 +10025,16 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
-		} else if ((Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
+		}
+		else if ((Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		{
 			val = SEXP_KNOWN_FALSE;	// If we're wasting our time evaluating this ever again, just go ahead and short-circuit.
 		}
 
@@ -9988,11 +10084,11 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	}
 
 	// build a vector of counter values
-	SCP_vector<char*> argument_vector;
+	SCP_vector<std::pair<char*, int>> argument_vector;
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
 		sprintf(buf, "%d", i);
-		argument_vector.push_back(vm_strdup(buf));
+		argument_vector.emplace_back(vm_strdup(buf), -1);
 		// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
 		// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
 		// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
@@ -21360,6 +21456,16 @@ int sexp_string_to_int(int n)
 	if (Sexp_nodes[n].cache)
 		return Sexp_nodes[n].cache->numeric_literal;
 
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return sexp_string_to_int(arg_node);
+	}
+
 	// copy all numeric characters to buf
 	// also, copy a sign symbol if we haven't copied numbers yet
 	buf_ch = buf;
@@ -21383,8 +21489,8 @@ int sexp_string_to_int(int n)
 
 	int num = atoi(buf);
 
-	// cache this number unless the node is a variable
-	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE))
+	// cache the value, unless this node is a variable or argument because the value may change
+	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE))
 		Sexp_nodes[n].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -23923,7 +24029,7 @@ void add_to_event_log_buffer(int op_num, int result)
 
 	if (True_loop_argument_sexps && !Sexp_replacement_arguments.empty()) {
 		tmp.append(" for argument ");
-		tmp.append(Sexp_replacement_arguments.back());
+		tmp.append(Sexp_replacement_arguments.back().first);
 	}
 	
 	if (!Current_event_log_argument_buffer->empty()) {
@@ -30015,14 +30121,29 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 
+int check_text_for_variable_name(const char *text)
+{
+	char variable_name[TOKEN_LENGTH];
+
+	// if the text is a variable name, get the variable index
+	int sexp_variable_index = get_index_sexp_variable_name(text);
+
+	// if the text is a formatted variable name, get the variable index
+	if (sexp_variable_index < 0 && text[0] == SEXP_VARIABLE_CHAR)
+	{
+		get_unformatted_sexp_variable_name(variable_name, text);
+		sexp_variable_index = get_index_sexp_variable_name(variable_name);
+	}
+
+	return sexp_variable_index;
+}
+
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
 char *CTEXT(int n)
 {
 	int sexp_variable_index = -1;
-	char variable_name[TOKEN_LENGTH];
-	char *current_argument; 
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 || n >= Num_sexp_nodes ) {
@@ -30032,7 +30153,7 @@ char *CTEXT(int n)
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
 	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
-	if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
+	if (Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)
 	{
 		if (Fred_running)
 		{
@@ -30046,23 +30167,33 @@ char *CTEXT(int n)
 				return Sexp_nodes[n].text;
 		}
 
-		// if the replacement argument is a variable name, get the variable index
-		sexp_variable_index = get_index_sexp_variable_name(Sexp_replacement_arguments.back());
+		auto current_argument = Sexp_replacement_arguments.back();
+		auto text = current_argument.first;
 
-		current_argument = Sexp_replacement_arguments.back();
-
-		// if the replacement argument is a formatted variable name, get the variable index
-		if (current_argument[0] == SEXP_VARIABLE_CHAR)
+		// check referenced node for a variable
+		if (current_argument.second >= 0)
 		{
-			get_unformatted_sexp_variable_name(variable_name, current_argument);
-			sexp_variable_index = get_index_sexp_variable_name(variable_name);
+			int arg_n = current_argument.second;
+
+			if (!(Sexp_nodes[arg_n].flags & SNF_CHECKED_ARG_FOR_VAR))
+			{
+				Sexp_nodes[arg_n].cached_variable_index = check_text_for_variable_name(text);
+				Sexp_nodes[arg_n].flags |= SNF_CHECKED_ARG_FOR_VAR;
+			}
+
+			sexp_variable_index = Sexp_nodes[arg_n].cached_variable_index;
+		}
+		// just check the text of the argument for a variable
+		else
+		{
+			sexp_variable_index = check_text_for_variable_name(text);
 		}
 
 		// if we have a variable, return the variable value, else return the regular argument
-		if (sexp_variable_index != -1)
+		if (sexp_variable_index >= 0)
 			return Sexp_variables[sexp_variable_index].text;
 		else
-			return Sexp_replacement_arguments.back();
+			return text;
 	}
 
 	// Goober5000 - if not special argument, proceed as normal
@@ -32864,7 +32995,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"vector of the point and the player, and the forward facing vector is within the "
 		"given angle.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 argument...\r\n"
-		"\t1:\tShip to check is withing forward cone.\r\n"
+		"\t1:\tShip to check is within forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
 
 	{ OP_IS_FACING, "Is Facing (Boolean training operator)\r\n"
