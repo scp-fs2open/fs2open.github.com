@@ -146,7 +146,7 @@ bool Lab_render_without_light  = false;
 bool Lab_render_show_thrusters = false;
 bool Lab_render_show_detail    = false;
 bool Lab_render_show_shields   = false;
-bool Lab_render_show_weapons   = true;
+bool Lab_render_show_weapons   = false;
 bool Lab_rotate_subobjects     = true;
 
 bool Lab_Basemap_override        = false;
@@ -163,12 +163,15 @@ fix Lab_Save_Missiontime;
 int Lab_fire_primaries = 0;
 int Lab_fire_secondaries = 0;
 
+bool Lab_weapons_loaded = false;
+
 // functions
 void labviewer_change_ship_lod(Tree* caller);
 void labviewer_change_ship(Tree* caller);
 void labviewer_make_desc_window(Button* caller);
 void labviewer_update_flags_window();
 void labviewer_update_actions_window();
+void labviewer_load_weapons();
 
 // ---------------------- General/Utility Functions ----------------------------
 
@@ -399,6 +402,9 @@ void labviewer_render_model(float frametime)
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !Lab_render_show_weapons);
 
+			if (Lab_render_show_weapons && !Lab_weapons_loaded)
+				labviewer_load_weapons();
+
 			ship_model_update_instance(obj);
 
 			Ships[obj->instance].team_name = Lab_team_color;
@@ -410,27 +416,26 @@ void labviewer_render_model(float frametime)
 				obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
 			}
 
+			bool weapons_firing = false;
 			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
 				if (Lab_fire_primaries & (1 << i)) {
-					auto objp = &Objects[Lab_selected_object];
-					auto sp = &Ships[objp->instance];
-					sp->flags.set(Ship::Ship_Flags::Trigger_down);
-					if (i < sp->weapons.num_primary_banks) {
-						sp->weapons.current_primary_bank = i;
+					weapons_firing = true;
+					if (i < Ships[obj->instance].weapons.num_primary_banks) {
+						Ships[obj->instance].weapons.current_primary_bank = i;
 
-						ship_fire_primary(objp, 0);
+						ship_fire_primary(obj, 0);
 					}
 				}
 			}
 
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Trigger_down, weapons_firing);
+
 			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 				if (Lab_fire_secondaries & (1 << i)) {
-					auto objp = &Objects[Lab_selected_object];
-					auto sp = &Ships[objp->instance];
-					if (i < sp->weapons.num_secondary_banks) {
-						sp->weapons.current_secondary_bank = i;
+					if (i < Ships[obj->instance].weapons.num_secondary_banks) {
+						Ships[obj->instance].weapons.current_secondary_bank = i;
 
-						ship_fire_secondary(objp);
+						ship_fire_secondary(obj);
 					}
 				}
 			}
@@ -2314,6 +2319,9 @@ void labviewer_make_actions_window(Button* /*caller*/)
 	if (Lab_actions_window != nullptr)
 		return;
 
+	if (!Lab_weapons_loaded)
+		labviewer_load_weapons();
+
 	Lab_actions_window = (Window*)Lab_screen->Add(
 		new Window("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50)
 	);
@@ -2589,11 +2597,16 @@ void lab_init()
 	particle::init();
 
 	lab_pseudomission_setup();
-	extern void weapons_page_in();
-	weapons_page_in();
 
 	ai_paused = 1;
 	Game_mode |= GM_LAB;
+}
+
+void labviewer_load_weapons() {
+	extern void weapons_page_in();
+	weapons_page_in();
+
+	Lab_weapons_loaded = true;
 }
 
 #include "lab.h"
