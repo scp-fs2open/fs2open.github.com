@@ -919,14 +919,41 @@ void sexp_set_variable_by_index(int node);
 void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
 
+
+#define ARG_ITEM_F_DUP	(1<<0)
+
+// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
+struct arg_item
+{
+	char *text = nullptr;
+	int node = -1;
+
+	arg_item *next = nullptr;
+	int flags = 0;
+	int nesting_level = 0;
+
+	arg_item() = default;
+
+	void add_data(char *str, int n);
+	void add_data(const std::pair<char*, int> &data);
+	void add_data_dup(char *str, int n);
+	void add_data_dup(const std::pair<char*, int> &data);
+	void add_data_set_dup(char *str, int n);
+	void add_data_set_dup(const std::pair<char*, int> &data);
+	void expunge();
+	int is_empty();
+	arg_item *get_next();
+	void clear_nesting_level(); 
+};
+
+arg_item Sexp_applicable_argument_list;
 SCP_vector<std::pair<char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
 
+
 // Goober5000
-arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
-
 int get_handler_for_x_of_operator(int node);
 
 //Karajorma
@@ -948,14 +975,36 @@ SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
-void arg_item::add_data(const std::pair<char*, int> &data)
+void arg_item::add_data(char *str, int n)
 {
 	arg_item *item, *ptr;
 
 	// create item
 	item = new arg_item();
-	item->text = data.first;
-	item->node = data.second;
+	item->text = str;
+	item->node = n;
+	item->nesting_level = Sexp_current_argument_nesting_level;
+
+	// prepend item to existing list
+	ptr = this->next;
+	this->next = item;
+	item->next = ptr;
+}
+
+void arg_item::add_data(const std::pair<char*, int> &data)
+{
+	add_data(data.first, data.second);
+}
+
+void arg_item::add_data_dup(char *str, int n)
+{
+	arg_item *item, *ptr;
+
+	// create item
+	item = new arg_item();
+	item->text = vm_strdup(str);
+	item->flags |= ARG_ITEM_F_DUP;
+	item->node = n;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
@@ -966,13 +1015,18 @@ void arg_item::add_data(const std::pair<char*, int> &data)
 
 void arg_item::add_data_dup(const std::pair<char*, int> &data)
 {
+	add_data_dup(data.first, data.second);
+}
+
+void arg_item::add_data_set_dup(char *str, int n)
+{
 	arg_item *item, *ptr;
 
 	// create item
-	item = new arg_item();
-	item->text = vm_strdup(data.first);
+	item = new arg_item;
+	item->text = str;
 	item->flags |= ARG_ITEM_F_DUP;
-	item->node = data.second;
+	item->node = n;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
@@ -983,19 +1037,7 @@ void arg_item::add_data_dup(const std::pair<char*, int> &data)
 
 void arg_item::add_data_set_dup(const std::pair<char*, int> &data)
 {
-	arg_item *item, *ptr;
-
-	// create item
-	item = new arg_item;
-	item->text = data.first;
-	item->flags |= ARG_ITEM_F_DUP;
-	item->node = data.second;
-	item->nesting_level = Sexp_current_argument_nesting_level;
-
-	// prepend item to existing list
-	ptr = this->next;
-	this->next = item;
-	item->next = ptr;
+	add_data_set_dup(data.first, data.second);
 }
 
 arg_item* arg_item::get_next()
@@ -9192,7 +9234,7 @@ void eval_when_for_each_special_argument( int cur_node )
 		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
 
 		Sexp_current_argument_nesting_level++;
-		Sexp_applicable_argument_list.add_data(std::pair<char*, int>(ptr->text, ptr->node));
+		Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		eval_sexp(cur_node);
@@ -9389,7 +9431,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 					case OP_EVERY_TIME:
 					case OP_IF_THEN_ELSE:				
 						Sexp_current_argument_nesting_level++;
-						Sexp_applicable_argument_list.add_data(std::pair<char*, int>(ptr->text, ptr->node));
+						Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 						eval_sexp(exp);
 						Sexp_applicable_argument_list.clear_nesting_level();
 						Sexp_current_argument_nesting_level--;
@@ -9939,7 +9981,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			Sexp_applicable_argument_list.add_data(std::pair<char*, int>(Sexp_nodes[n].text, n));
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
 		else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
 		{
@@ -9992,7 +10034,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			Sexp_applicable_argument_list.add_data(std::pair<char*, int>(Sexp_nodes[n].text, n));
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
 		else if ((Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
 		{

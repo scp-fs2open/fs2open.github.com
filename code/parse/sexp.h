@@ -1115,32 +1115,6 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
-
-#define ARG_ITEM_F_DUP	(1<<0)
-
-// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
-class arg_item
-{
-	public:
-		char *text = nullptr;
-		int node = -1;
-
-		arg_item *next = nullptr;
-		int flags = 0;
-		int nesting_level = 0;
-
-		arg_item() = default;
-
-		void add_data(const std::pair<char*, int> &data);
-		void add_data_dup(const std::pair<char*, int> &data);
-		void add_data_set_dup(const std::pair<char*, int> &data);
-		void expunge();
-		int is_empty();
-		arg_item *get_next();
-		void clear_nesting_level(); 
-};
-
-
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
