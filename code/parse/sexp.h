@@ -1103,8 +1103,10 @@ typedef struct sexp_node {
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)
 #define SNF_ARGUMENT_SELECT			(1<<1)
-#define SNF_SPECIAL_ARG_IN_TREE		(1<<2)
-#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<3)
+#define SNF_SPECIAL_ARG_IN_NODE		(1<<2)
+#define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
+#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
+#define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1120,15 +1122,18 @@ typedef struct sexp_variable {
 class arg_item
 {
 	public:
-		char *text;
-		arg_item *next;
-		int flags;
-		int nesting_level;
+		char *text = nullptr;
+		int node = -1;
 
-		arg_item() : text(NULL), next(NULL), flags(0), nesting_level(0) {}
-		void add_data(char *str);
-		void add_data_dup(char *str);
-		void add_data_set_dup(char *str);
+		arg_item *next = nullptr;
+		int flags = 0;
+		int nesting_level = 0;
+
+		arg_item() = default;
+
+		void add_data(const std::pair<char*, int> &data);
+		void add_data_dup(const std::pair<char*, int> &data);
+		void add_data_set_dup(const std::pair<char*, int> &data);
 		void expunge();
 		int is_empty();
 		arg_item *get_next();
