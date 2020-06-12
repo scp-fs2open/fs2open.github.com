@@ -417,26 +417,22 @@ void labviewer_render_model(float frametime)
 			}
 
 			bool weapons_firing = false;
-			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+			for (auto i = 0; i < Ships[obj->instance].weapons.num_primary_banks; ++i) {
 				if (Lab_fire_primaries & (1 << i)) {
 					weapons_firing = true;
-					if (i < Ships[obj->instance].weapons.num_primary_banks) {
-						Ships[obj->instance].weapons.current_primary_bank = i;
+					Ships[obj->instance].weapons.current_primary_bank = i;
 
-						ship_fire_primary(obj, 0);
-					}
+					ship_fire_primary(obj, 0);
 				}
 			}
 
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Trigger_down, weapons_firing);
 
-			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
+			for (auto i = 0; i < Ships[obj->instance].weapons.num_secondary_banks; ++i) {
 				if (Lab_fire_secondaries & (1 << i)) {
-					if (i < Ships[obj->instance].weapons.num_secondary_banks) {
-						Ships[obj->instance].weapons.current_secondary_bank = i;
+					Ships[obj->instance].weapons.current_secondary_bank = i;
 
-						ship_fire_secondary(obj);
-					}
+					ship_fire_secondary(obj);
 				}
 			}
 		}
