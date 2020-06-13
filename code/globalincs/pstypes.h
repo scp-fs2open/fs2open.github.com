@@ -350,7 +350,12 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define FALSE	0
 
 int myrand();
-int rand32(); // returns a random number between 0 and 0x7fffffff
+
+// Returns a random number between 0 and 0x7fffffff
+int rand32();
+
+// Returns a random integer from low to high, inclusive
+int rand32(int low, int high);
 
 
 // lod checker for (modular) table parsing

@@ -228,6 +228,9 @@ void main_hall_mouse_grab_region(int region);
 // handles to the sound instances of the doors opening/closing
 SCP_vector<sound_handle> Main_hall_door_sound_handles;
 
+// handles to the sound instances of the misc anims
+SCP_list<sound_handle> Main_hall_misc_sound_handles;
+
 // sound handle for looping ambient sound
 sound_handle Main_hall_ambient_loop = sound_handle::invalid();
 
@@ -432,6 +435,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 		main_hall_get_name(main_hall_to_load, 0);
 	} else {
 		main_hall_to_load = main_hall_name;
+	}
+
+	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
+	if (Main_hall && Main_hall->name != main_hall_to_load) {
+		main_hall_stop_ambient();
 	}
 
 	// if we're switching to a different mainhall we may need to change music
@@ -1064,7 +1072,7 @@ void main_hall_close()
 	}
 
 	// stop any playing door sounds
-	for (idx = 0; idx < Main_hall->num_door_animations-2; idx++) {
+	for (idx = 0; idx < Main_hall->num_door_animations - 2; idx++) {        // don't cut off the glow sounds (requested by Dan)
 		if ((Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
 			snd_stop(Main_hall_door_sound_handles.at(idx));
 			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
@@ -1262,7 +1270,8 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 						if (sound.isValid())
 						{
 							// play the sound
-							snd_play(gamesnd_get_interface_sound(sound),Main_hall->misc_anim_sound_pan.at(idx));
+							auto handle = snd_play(gamesnd_get_interface_sound(sound), Main_hall->misc_anim_sound_pan.at(idx));
+							Main_hall_misc_sound_handles.push_back(handle);
 						}
 						break;
 					}
@@ -1508,14 +1517,17 @@ void main_hall_handle_right_clicks()
  */
 void main_hall_cull_door_sounds()
 {
-	int idx;
-	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
-	Assert(Main_hall_door_sound_handles.size() < INT_MAX);
-	for (idx = 0; idx < (int)Main_hall_door_sound_handles.size(); idx++) {
-		if ((Main_hall_door_sound_handles.at(idx).isValid()) && !snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
-			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
+	// basically just set the handle of any finished sound to be -1, so that we know its free anywhere else in the code we may need it
+	for (auto &handle : Main_hall_door_sound_handles) {
+		if (handle.isValid() && !snd_is_playing(handle)) {
+			handle = sound_handle::invalid();
 		}
 	}
+
+	// for misc sounds, we just remove the handle from the list if it's done
+	Main_hall_misc_sound_handles.remove_if([](const sound_handle &handle)->bool {
+		return !snd_is_playing(handle);
+	});
 }
 
 /**
@@ -1529,11 +1541,10 @@ void main_hall_handle_random_intercom_sounds()
 		return;
 	}
 
-	// if we have no timestamp for the next random sound, then set on
+	// if we have no timestamp for the next random sound, then set one
 	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
-		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+		int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+		Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 	}
 
 	// if the there is no sound playing
@@ -1570,9 +1581,8 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-				(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-					- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+			int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+			Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 
 			// release the sound handle
 			Main_hall_intercom_sound_handle = sound_handle::invalid();
@@ -1639,6 +1649,8 @@ void main_hall_start_ambient()
 	if (play_ambient_loop) {
 		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT));
 	}
+
+	// no need to restart the intercom, since the game will set the timestamp for a new one
 }
 
 /**
@@ -1649,6 +1661,30 @@ void main_hall_stop_ambient()
 	if (Main_hall_ambient_loop.isValid()) {
 		snd_stop(Main_hall_ambient_loop);
 		Main_hall_ambient_loop = sound_handle::invalid();
+	}
+
+	// also stop any PA announcements
+	if (Main_hall_intercom_sound_handle.isValid()) {
+		snd_stop(Main_hall_intercom_sound_handle);
+		Main_hall_intercom_sound_handle = sound_handle::invalid();
+	}
+
+	// stop any playing door sounds
+	if (Main_hall) {
+		for (int idx = 0; idx < Main_hall->num_door_animations - 2; idx++) {        // don't cut off the glow sounds (requested by Dan)
+			if ((Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
+				snd_stop(Main_hall_door_sound_handles.at(idx));
+				Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
+			}
+		}
+	}
+
+	// also stop any misc sounds
+	for (auto &handle : Main_hall_misc_sound_handles) {
+		if (handle.isValid() && snd_is_playing(handle)) {
+			snd_stop(handle);
+			handle = sound_handle::invalid();
+		}
 	}
 }
 

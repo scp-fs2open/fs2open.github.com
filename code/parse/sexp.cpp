@@ -4701,18 +4701,11 @@ int mod_sexps(int n)
 
 int rand_internal(int low, int high, int seed = 0)
 {
-	int diff;
-
 	// maybe seed it
 	if (seed > 0)
 		srand(seed);
 
-	// get diff - don't allow negative or zero
-	diff = high - low;
-	if (diff < 0)
-		diff = 0;
-
-	return (low + rand32() % (diff + 1));
+	return rand32(low, high);
 }
 
 // Goober5000
