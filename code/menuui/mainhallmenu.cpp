@@ -434,6 +434,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 		main_hall_to_load = main_hall_name;
 	}
 
+	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
+	if (Main_hall && Main_hall->name != main_hall_to_load) {
+		main_hall_stop_ambient();
+	}
+
 	// if we're switching to a different mainhall we may need to change music
 	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != Main_hall_music_index) {
 		main_hall_stop_music(true);
