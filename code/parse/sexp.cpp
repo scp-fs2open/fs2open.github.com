@@ -294,8 +294,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "distance",						OP_DISTANCE,							2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "distance-to-center",				OP_DISTANCE_CENTER,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-bbox",				OP_DISTANCE_BBOX,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
-	{ "distance-center-subsystem",		OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
-	{ "distance-bbox-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-center-to-subsystem",	OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
+	{ "distance-bbox-to-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-nav",				OP_NAV_DISTANCE,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// Kazan
 	{ "num-within-box",					OP_NUM_WITHIN_BOX,						7,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	//WMC
 	{ "is-in-box",						OP_IS_IN_BOX,							7,	8,			SEXP_INTEGER_OPERATOR,	},	//Sushi
@@ -3561,7 +3561,7 @@ int get_sexp()
 			else if (!stricmp(token, "variable-array-set"))
 				strcpy_s(token, "set-variable-by-index");
 			else if (!stricmp(token, "distance-ship-subsystem"))
-				strcpy_s(token, "distance-center-subsystem");
+				strcpy_s(token, "distance-center-to-subsystem");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
