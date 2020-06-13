@@ -40,6 +40,7 @@
 #include "weapon/weapon.h"
 #include <utility>
 #include <weapon/muzzleflash.h>
+#include <ai/aiinternal.h>
 
 // flags
 #define LAB_FLAG_NORMAL (0)                    // default
@@ -2156,6 +2157,26 @@ void labviewer_actions_change_secondary(Tree* caller) {
 
 void labviewer_actions_fire_turret(Tree* caller) {
 	auto turret_subsys_index = caller->GetSelectedItem()->GetData();
+
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto sp = &Ships[Objects[Lab_selected_object].instance];
+			auto ssp = GET_FIRST(&sp->subsys_list);
+			auto subsys_index = 0;
+			while (ssp != END_OF_LIST(&sp->subsys_list)) {
+				if (turret_subsys_index == subsys_index && ssp->system_info->type == SUBSYSTEM_TURRET) {
+					vec3d gpos, gvec;
+
+					ship_get_global_turret_gun_info(&Objects[Lab_selected_object], ssp, &gpos, &gvec, 1, nullptr);
+
+					extern bool turret_fire_weapon(int weapon_num, ship_subsys * turret, int parent_objnum, vec3d * turret_pos, vec3d * turret_fvec, vec3d * predicted_pos, float flak_range_override);
+					turret_fire_weapon(0, ssp, Lab_selected_object, &gpos, &gvec, nullptr, 100.0f);
+				}
+				ssp = GET_NEXT(ssp);
+				++subsys_index;
+			}
+		}
+	}
 }
 
 void labviewer_fill_subsystem_menu() {
@@ -2346,7 +2367,7 @@ void labviewer_fill_fire_turret_menu() {
 	if (Lab_turret_fire_window == nullptr)
 		return;
 
-	auto turret_tree = (Tree*)Lab_subsystems_window->AddChild(new Tree("Turret List", 0, 0));
+	auto turret_tree = (Tree*)Lab_turret_fire_window->AddChild(new Tree("Turret List", 0, 0));
 
 
 	if (Lab_selected_object != -1) {
@@ -2356,7 +2377,10 @@ void labviewer_fill_fire_turret_menu() {
 			auto subsys_index = 0;
 
 			while (ssp != END_OF_LIST(&sp->subsys_list)) {
-				turret_tree->AddItem(nullptr, ssp->system_info->name, subsys_index, true, labviewer_actions_fire_turret);
+				if (ssp->system_info->type == SUBSYSTEM_TURRET) {
+					turret_tree->AddItem(nullptr, ssp->system_info->name, subsys_index, true, labviewer_actions_fire_turret);
+				}
+				
 				ssp = GET_NEXT(ssp);
 				++subsys_index;
 			}
@@ -2371,7 +2395,7 @@ void labviewer_actions_make_turret_fire_window(Button* /*caller*/) {
 	Lab_turret_fire_window = (Window*)Lab_screen->Add(
 		new Window("Fire turrets", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
-	Lab_weapon_fire_window->SetCloseFunction(lab_turret_fire_window_close);
+	Lab_turret_fire_window->SetCloseFunction(lab_turret_fire_window_close);
 
 	labviewer_fill_fire_turret_menu();
 }
