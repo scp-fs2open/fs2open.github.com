@@ -1529,11 +1529,10 @@ void main_hall_handle_random_intercom_sounds()
 		return;
 	}
 
-	// if we have no timestamp for the next random sound, then set on
+	// if we have no timestamp for the next random sound, then set one
 	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
-		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+		int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+		Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 	}
 
 	// if the there is no sound playing
@@ -1570,9 +1569,8 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
-				(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
-					- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
+			int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+			Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 
 			// release the sound handle
 			Main_hall_intercom_sound_handle = sound_handle::invalid();
@@ -1639,6 +1637,8 @@ void main_hall_start_ambient()
 	if (play_ambient_loop) {
 		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT));
 	}
+
+	// no need to restart the intercom, since the game will set the timestamp for a new one
 }
 
 /**
@@ -1649,6 +1649,15 @@ void main_hall_stop_ambient()
 	if (Main_hall_ambient_loop.isValid()) {
 		snd_stop(Main_hall_ambient_loop);
 		Main_hall_ambient_loop = sound_handle::invalid();
+	}
+
+	// also stop any PA announcements
+	if (Main_hall_intercom_sound_handle.isValid()) {
+		snd_stop(Main_hall_intercom_sound_handle);
+		Main_hall_intercom_sound_handle = sound_handle::invalid();
+
+		// reset the timestamp so that the game will eventually pick a new intercom sound
+		Main_hall_next_intercom_sound_stamp = -1;
 	}
 }
 

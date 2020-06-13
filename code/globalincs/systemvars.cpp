@@ -136,6 +136,20 @@ int rand32()
 	}
 }
 
+int rand32(int low, int high)
+{
+	int diff;
+
+	// get diff - don't allow negative or zero
+	diff = high - low;
+	if (diff < 0)
+		diff = 0;
+
+	// To get a range of values between min and max, inclusive:
+	// random value = min + random number % (max - min + 1)
+	return (low + rand32() % (diff + 1));
+}
+
 // Variables for the loading callback hooks
 static int cf_timestamp = -1;
 static void (*cf_callback)(int count) = NULL;
