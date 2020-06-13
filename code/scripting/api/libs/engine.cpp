@@ -14,8 +14,9 @@ ADE_LIB(l_Engine, "Engine", "engine", "Basic engine access functions");
 
 ADE_FUNC(addHook,
 	l_Engine,
-	"string name, function() => void hookFunction, [table conditionals = <{}>, function() => boolean override_func = "
-	"<return false>]",
+	"string name, function() => void hookFunction, [table conditionals /* Empty table by default */, function() => "
+	"boolean override_func "
+	"/* Function returning false by default */]",
 	"Adds a function to be called from the specified game hook",
 	"boolean",
 	"true if hook was installed properly, false otherwise")

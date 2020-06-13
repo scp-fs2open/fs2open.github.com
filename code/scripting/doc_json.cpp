@@ -77,6 +77,25 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 			"parameters",
 			parameterTypes);
 	}
+	case ade_type_info_type::Generic: {
+		const auto& elements = type_info.elements();
+
+		json_t* parameterTypes = json_array();
+
+		if (elements.size() > 1) {
+			for (auto iter = elements.begin() + 1; iter != elements.end(); ++iter) {
+				json_array_append_new(parameterTypes, json_doc_generate_return_type(*iter));
+			}
+		}
+
+		return json_pack("{sssoso}",
+			"type",
+			"generic",
+			"baseType",
+			json_doc_generate_return_type(elements.front()),
+			"parameters",
+			parameterTypes);
+	}
 	}
 
 	UNREACHABLE("Unknown type type!");
@@ -108,8 +127,8 @@ static void json_doc_generate_function(json_t* elObj, const DocumentationElement
 	json_object_set_new(elObj, "returnType", json_doc_generate_return_type(lib->returnType));
 	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
 
-	if (lib->overloads.size() == 1 && lib->overloads.front().arguments.empty()) {
-		// Simple overload
+	if (lib->overloads.size() == 1 && !lib->overloads.front().simple.empty()) {
+		// Legacy argument list not filled with argument data
 		json_object_set_new(elObj, "parameters", json_string(lib->overloads.front().simple.c_str()));
 	} else {
 		json_t* arr = json_array();

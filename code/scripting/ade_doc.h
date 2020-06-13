@@ -13,6 +13,7 @@ enum class ade_type_info_type {
 	Iterator,
 	Alternative,
 	Function,
+	Generic,
 };
 
 class ade_type_array;
@@ -20,6 +21,7 @@ class ade_type_map;
 class ade_type_iterator;
 class ade_type_alternative;
 class ade_type_function;
+class ade_type_generic;
 
 /**
  * @brief A definition of a type used in the ADE system
@@ -41,6 +43,7 @@ class ade_type_info {
 	/*implicit*/ ade_type_info(const ade_type_iterator& iteratorType);
 	/*implicit*/ ade_type_info(const ade_type_alternative& alternativeType);
 	/*implicit*/ ade_type_info(const ade_type_function& functionType);
+	/*implicit*/ ade_type_info(const ade_type_generic& genericType);
 
 	ade_type_info(const ade_type_info&) = default;
 	ade_type_info& operator=(const ade_type_info&) = default;
@@ -120,9 +123,21 @@ class ade_type_function {
 	const SCP_vector<scripting::ade_type_info>& getArgumentTypes() const;
 };
 
-class ade_overload_list {
-	SCP_vector<const char*> arg_lists;
+class ade_type_generic {
+	ade_type_info _baseType;
+	SCP_vector<ade_type_info> _genericTypes;
 
+  public:
+	ade_type_generic(ade_type_info baseType, SCP_vector<ade_type_info> genericTypes);
+
+	const ade_type_info& getBaseType() const;
+	const SCP_vector<scripting::ade_type_info>& getGenericTypes() const;
+};
+
+class ade_overload_list {
+	SCP_vector<const char*> _arg_lists;
+
+	void fixNullPointers();
   public:
 	/*implicit*/ ade_overload_list();
 	/*implicit*/ ade_overload_list(const char* arglist);

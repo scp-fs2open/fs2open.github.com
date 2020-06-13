@@ -47,7 +47,7 @@ ADE_FUNC(getMouseY, l_Mouse, NULL, "Gets Mouse Y pos", "number", "Mouse y positi
 ADE_FUNC(isMouseButtonDown,
 	l_Mouse,
 	"enumeration buttonCheck1 /* MOUSE_*_BUTTON */, [ enumeration buttonCheck2 /* MOUSE_*_BUTTON */, enumeration "
-	"buttonCheck2 /* MOUSE_*_BUTTON */ ]",
+	"buttonCheck3 /* MOUSE_*_BUTTON */ ]",
 	"Returns whether the specified mouse buttons are up or down",
 	"boolean",
 	"Whether specified mouse buttons are down, or false if mouse is not initialized yet")
@@ -80,7 +80,7 @@ ADE_FUNC(isMouseButtonDown,
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
 

@@ -166,7 +166,9 @@ class ade_table_entry {
 class ade_manager {
 	SCP_vector<ade_table_entry> _table_entries;
 
-	ade_manager() {}
+	SCP_vector<SCP_string> _type_names;
+
+	ade_manager();
  public:
 	static ade_manager* getInstance();
 
@@ -184,6 +186,8 @@ class ade_manager {
 	const ade_table_entry& getEntry(size_t idx) const;
 
 	size_t getNumEntries() const { return _table_entries.size(); }
+
+	const SCP_vector<SCP_string>& getTypeNames() const;
 };
 
 /**

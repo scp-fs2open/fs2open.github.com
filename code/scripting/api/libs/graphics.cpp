@@ -468,7 +468,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [integer Alpha]",
+ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number Alpha]",
          "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
 {
 	if(!Gr_inited)
@@ -608,7 +608,8 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 
 ADE_FUNC(drawPolygon,
 	l_Graphics,
-	"texture Texture, [vector Position=<{0,0,0}>, orientation Orientation=nil, number Width=1.0, number Height=1.0]",
+	"texture Texture, [vector Position /* Default is null vector */, orientation Orientation=nil, number Width=1.0, "
+	"number Height=1.0]",
 	"Draws a polygon. May not work properly in hooks other than On Object Render.",
 	nullptr,
 	nullptr)
@@ -720,7 +721,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
+ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
          "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
          "properly in all scripting hooks.",
          "number", "Zero if successful, otherwise an integer error code")
@@ -789,7 +790,7 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [number Flags]",
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Orientation, [number Flags]",
          "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
          "operate properly only in On Object Render hooks.",
          "number", "Zero if successful, otherwise an integer error code")
@@ -829,7 +830,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orienta
 }
 
 // Aardwolf's targeting brackets function
-ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
+ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
@@ -1444,7 +1445,7 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(getImageHeight, l_Graphics, "Image name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
+ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1591,7 +1592,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "x, y, width, height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
 

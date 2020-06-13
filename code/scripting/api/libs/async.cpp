@@ -105,7 +105,7 @@ class lua_func_resolve_context : public resolve_context {
 
 ADE_FUNC(promise,
 	l_Async,
-	"function(function resolve(...), function reject(...))",
+	"function(function(any resolveVal) => void resolve, function(any errorVal) => void reject) => void body",
 	"Creates a promise that resolves when the resolve function of the callback is called or errors if the reject "
 	"function is called. The function will be called "
 	"on it's own.",

@@ -26,7 +26,6 @@ boolean: TRUE | FALSE;
 
 value
  : STRING
- | PLACEHOLDER
  | NIL
  | NUMBER
  | ID
@@ -79,7 +78,11 @@ R_BRACKET: ']';
 
 L_PAREN: '(';
 R_PAREN: ')';
+
 ARROW: '=>';
+
+L_ANGLE_BRACKET: '<';
+R_ANGLE_BRACKET: '>';
 
 ARG_COMMENT: '/*' .*? '*/';
 

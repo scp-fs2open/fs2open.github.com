@@ -221,6 +221,8 @@ static const char *Lua_type_names[] = {
 	"function",
 	"userdata",
 	"thread",
+	"any", // Special type which means any possible type
+	"void",
 };
 
 const ptrdiff_t Lua_type_names_num = std::distance(std::begin(Lua_type_names), std::end(Lua_type_names));
@@ -233,9 +235,18 @@ ade_manager* ade_manager::getInstance() {
 	static std::unique_ptr<ade_manager> manager(new ade_manager());
 	return manager.get();
 }
+ade_manager::ade_manager() {
+	_type_names.insert(_type_names.end(), std::begin(Lua_type_names), std::end(Lua_type_names));
+}
 size_t ade_manager::addTableEntry(const ade_table_entry& entry) {
 	_table_entries.push_back(entry);
 	_table_entries.back().Idx = _table_entries.size() - 1;
+
+	if (entry.Type == 'o' && !entry.Instanced) {
+		// Collect valid type names
+		_type_names.push_back(entry.Name);
+	}
+
 	return _table_entries.size() - 1;
 }
 ade_table_entry& ade_manager::getEntry(size_t idx) {
@@ -247,6 +258,7 @@ const ade_table_entry& ade_manager::getEntry(size_t idx) const
 	Assertion(idx < _table_entries.size(), "Invalid index " SIZE_T_ARG " specified!", idx);
 	return _table_entries[idx];
 }
+const SCP_vector<SCP_string>& ade_manager::getTypeNames() const { return _type_names; }
 
 static int deprecatedFunctionHandler(lua_State* L)
 {
@@ -534,25 +546,25 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 
 		obj->returnType = ReturnType;
 
+		auto typeNames = ade_manager::getInstance()->getTypeNames();
+
 		for (const auto& overload : Arguments.overloads()) {
 			DocumentationElementFunction::argument_list overloadArgList;
-			if (overload != nullptr) {
-				argument_list_parser arg_parser;
-				if (arg_parser.parse(overload)) {
-					bool optional = false;
-					for (const auto& arg : arg_parser.getArgList()) {
-						if (!optional && (arg.optional || !arg.def_val.empty())) {
-							optional = true;
-						}
-
-						auto argCopy     = arg;
-						argCopy.optional = optional;
-
-						overloadArgList.arguments.push_back(std::move(argCopy));
+			argument_list_parser arg_parser(typeNames);
+			if (arg_parser.parse(overload)) {
+				bool optional = false;
+				for (const auto& arg : arg_parser.getArgList()) {
+					if (!optional && (arg.optional || !arg.def_val.empty())) {
+						optional = true;
 					}
-				} else {
-					overloadArgList.simple.assign(overload);
+
+					auto argCopy     = arg;
+					argCopy.optional = optional;
+
+					overloadArgList.arguments.push_back(std::move(argCopy));
 				}
+			} else {
+				overloadArgList.simple.assign(overload);
 			}
 
 			obj->overloads.push_back(overloadArgList);
@@ -571,10 +583,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 
 		//***Type Name(ShortName)
 		obj->getterType = ReturnType;
-
-		if (Arguments.overloads().front() != nullptr) {
-			obj->setterType = Arguments.overloads().front();
-		}
+		obj->setterType = Arguments.overloads().front();
 
 		if (ReturnDescription != nullptr) {
 			obj->returnDocumentation = ReturnDescription;
