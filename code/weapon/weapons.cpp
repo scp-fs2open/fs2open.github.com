@@ -7953,13 +7953,17 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			float damage;
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
-				damage = wi.damage * wi.b_info.beam_life * 5.5;
+				damage = wi.damage * wi.b_info.beam_life * (1000.0f / i2fl(BEAM_DAMAGE_TIME));
 			else
 				damage = wi.damage;
 
 			float fire_rate;
-			if (wi.burst_shots > 1) //Still need to examine burst implementation to avoid off-by-one errors here
-				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * wi.burst_shots);
+			//We need to count the length of a firing cycle and then divide by the number of shots in that cycle
+			//In random length bursts, average between the longest and shortest firing cycle to get average rof
+			if (wi.burst_shots > 1 && (wi.burst_flags[Weapon::Burst_Flags::Random_length]))
+				fire_rate = (wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1)) + (1 / wi.fire_wait)) / 2;
+			else if (wi.burst_shots > 1)
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1));
 			else
 				fire_rate = 1 / wi.fire_wait;
 
@@ -8040,13 +8044,17 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			float damage;
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
-				damage = wi.damage * wi.b_info.beam_life * 5.5;
+				damage = wi.damage * wi.b_info.beam_life * (1000.0f / i2fl(BEAM_DAMAGE_TIME));
 			else
 				damage = wi.damage;
 
 			float fire_rate;
-			if (wi.burst_shots > 1) //Still need to examine burst implementation to avoid off-by-one errors here
-				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * wi.burst_shots);
+			//We need to count the length of a firing cycle and then divide by the number of shots in that cycle
+			//In random length bursts, average between the longest and shortest firing cycle to get average rof
+			if (wi.burst_shots > 1 && (wi.burst_flags[Weapon::Burst_Flags::Random_length]))
+				fire_rate = (wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1)) + (1 / wi.fire_wait)) / 2;
+			else if (wi.burst_shots > 1)
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1));
 			else
 				fire_rate = 1 / wi.fire_wait;
 
