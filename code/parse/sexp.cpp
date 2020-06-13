@@ -5778,57 +5778,133 @@ int sexp_current_speed(int n)
 	return 0;
 }
 
+int sexp_check_objective_delay(int delay_node, int objective_node, int(*objective_function)(int, fix*))
+{
+	fix delay, time;
+	int val;
+	bool is_nan, is_nan_forever;
+
+	time = 0;
+
+	delay = i2f(eval_num(delay_node, is_nan, is_nan_forever));
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
+	// check value of function
+	val = objective_function(objective_node, &time);
+
+	if ((val == SEXP_TRUE) || (val == SEXP_KNOWN_TRUE))
+	{
+		if ((Missiontime - time) >= delay)
+			return val;
+		else
+			return SEXP_FALSE;
+	}
+
+	return val;
+}
+
 /**
  * Evaluate if given ship is destroyed.
  * @return true if the ship in the expression has been destroyed.
  */
 int sexp_is_destroyed(int n, fix *latest_time)
 {
-	char	*name;
 	int	count, num_destroyed, wing_index;
-	fix	time;
-
-	Assert ( n != -1 );
+	bool has_been_destroyed;
+	fix	time = 0;
 
 	count = 0;
 	num_destroyed = 0;
 	wing_index = -1;
-	while (n != -1) {
-		count++;
-		name = CTEXT(n);
+	while (n != -1)
+	{
+		++count;
 
-		if (sexp_query_has_yet_to_arrive(name))
-			return SEXP_CANT_EVAL;
+		auto ship_entry = eval_ship(n);
+		wing *wingp = nullptr;
+		has_been_destroyed = false;
 
-		// check to see if this ship/wing has departed.  If so, then function is known false
-		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
+		// this might be a ship
+		if (ship_entry)
+		{
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+				return SEXP_CANT_EVAL;
 
-		// check the mission log.  If ship/wing not destroyed, immediately return SEXP_FALSE.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time)) {
-			num_destroyed++;
-			if ( latest_time && (time > *latest_time) )
+			if (ship_entry->status == ShipStatus::EXITED)
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_entry->name, nullptr, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_entry->name, nullptr, &time))
+				{
+					has_been_destroyed = true;
+				}
+				// exited without being destroyed
+				else
+				{
+					return SEXP_KNOWN_FALSE;
+				}
+			}
+		}
+		else
+			wingp = eval_wing(n);
+
+		// this might be a wing
+		if (wingp)
+		{
+			if (wing_has_yet_to_arrive(wingp))
+				return SEXP_CANT_EVAL;
+
+			if (wingp->flags[Ship::Wing_Flags::Gone])
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_WING_DESTROYED, wingp->name, nullptr, &time))
+				{
+					has_been_destroyed = true;
+				}
+				// exited without being destroyed
+				else
+				{
+					return SEXP_KNOWN_FALSE;
+				}
+			}
+		}
+
+		if (has_been_destroyed)
+		{
+			++num_destroyed;
+			if (latest_time && (time > *latest_time))
 				*latest_time = time;
-		} else {
+		}
+		// at this point we assume the ship or wing is in-mission, even if no ship or wing actually exists
+		else
+		{
 			// If a previous SEXP already had an empty wing then this code would expose the internal value as the
 			// directive count. Instead, we reset the count to zero here to make sure that the wing or ship count is
 			// correct.
-			if (Directive_count == DIRECTIVE_WING_ZERO) {
+			if (Directive_count == DIRECTIVE_WING_ZERO)
+			{
 #ifndef NDEBUG
 				static bool wing_zero_warning_shown = false;
-				if (!wing_zero_warning_shown) {
+				if (!wing_zero_warning_shown)
+				{
 					mprintf(("SEXP: is-destroyed-delay was used multiple times in a directive event! This might have "
-					         "unintended effects and should be replaced by a single use of is-destroyed-delay.\n"));
+						"unintended effects and should be replaced by a single use of is-destroyed-delay.\n"));
 					wing_zero_warning_shown = true;
 				}
 #endif
 				Directive_count = 0;
 			}
+
 			// ship or wing isn't destroyed -- add to directive count
-			if ( (wing_index = wing_name_lookup( name, 1 )) >= 0 ) {
+			if (wingp)
+			{
+				wing_index = static_cast<int>(wingp - Wings);
 				Directive_count += Wings[wing_index].current_count;
-			} else
-				Directive_count++;
+			}
+			else
+				++Directive_count;
 		}
 
 		// move to next ship/wing in list
@@ -5848,30 +5924,37 @@ int sexp_is_destroyed(int n, fix *latest_time)
 		return SEXP_FALSE;
 }
 
+int sexp_is_destroyed_delay(int n)
+{
+	return sexp_check_objective_delay(n, CDR(n), sexp_is_destroyed);
+}
+
 /**
  * Return true if the subsystem of the given ship has been destroyed
  */
-int sexp_is_subsystem_destroyed(int n)
+int sexp_is_subsystem_destroyed(int n, fix *time)
 {
-	char *ship_name, *subsys_name;
-
-	Assert( n != -1 );
-	
-	ship_name = CTEXT(n);
-	subsys_name = CTEXT(CDR(n));
-
-	if (sexp_query_has_yet_to_arrive(ship_name))
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
+		return SEXP_KNOWN_FALSE;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 
-	// if the ship has departed, no way to destroy it's subsystem.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL ))
-		return SEXP_KNOWN_FALSE;
-	
-	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_name, subsys_name, NULL) )
+	auto subsys_name = CTEXT(CDR(n));
+
+	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_entry->name, subsys_name, time) )
 		return SEXP_KNOWN_TRUE;
 
-	return SEXP_FALSE;
+	// if the ship has exited, no way to destroy its subsystem.
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 
+	return SEXP_FALSE;
+}
+
+int sexp_is_subsystem_destroyed_delay(int n)
+{
+	return sexp_check_objective_delay(CDDR(n), n, sexp_is_subsystem_destroyed);
 }
 
 /**
@@ -5879,21 +5962,52 @@ int sexp_is_subsystem_destroyed(int n)
  */
 int sexp_has_arrived(int n, fix *latest_time)
 {
-	char *name;
 	int	count, num_arrived;
-	fix	time;
+	bool has_arrived;
+	fix	time = 0;
 
 	count = 0;
 	num_arrived = 0;
-	while ( n != -1 ) {
-		count++;
-		name = CTEXT(n);
-		// if there is no log entry for this ship/wing for arrival, sexpression is false
-		if ( mission_log_get_time(LOG_SHIP_ARRIVED, name, NULL, &time) || mission_log_get_time(LOG_WING_ARRIVED, name, NULL, &time) ) {
-			num_arrived++;
-			if ( latest_time && (time > *latest_time) )
+	while ( n != -1 )
+	{
+		++count;
+
+		auto ship_entry = eval_ship(n);
+		wing *wingp = nullptr;
+		has_arrived = false;
+
+		// this might be a ship
+		if (ship_entry)
+		{
+			if (ship_entry->status != ShipStatus::NOT_YET_PRESENT)
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_SHIP_ARRIVED, ship_entry->name, nullptr, &time))
+					has_arrived = true;
+			}
+		}
+		else
+			wingp = eval_wing(n);
+
+		// this might be a wing
+		if (wingp)
+		{
+			if (!wing_has_yet_to_arrive(wingp))
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_WING_ARRIVED, wingp->name, nullptr, &time))
+					has_arrived = true;
+			}
+		}
+
+		if (has_arrived)
+		{
+			++num_arrived;
+			if (latest_time && (time > *latest_time))
 				*latest_time = time;
 		}
+
+		// move to next ship/wing in list
 		n = CDR(n);
 	}
 
@@ -5903,33 +6017,82 @@ int sexp_has_arrived(int n, fix *latest_time)
 		return SEXP_FALSE;
 }
 
+int sexp_has_arrived_delay(int n)
+{
+	return sexp_check_objective_delay(n, CDR(n), sexp_has_arrived);
+}
+
 /**
  * Determine if a ship/wing has departed
  */
 int sexp_has_departed(int n, fix *latest_time)
 {
-	char *name;
 	int count, num_departed;
-	fix time;
+	bool has_departed;
+	fix time = 0;
 
 	count = 0;
 	num_departed = 0;
-	while ( n != -1 ) {
-		count++;
-		name = CTEXT(n);
+	while ( n != -1 )
+	{
+		++count;
 
-		if (sexp_query_has_yet_to_arrive(name))
-			return SEXP_CANT_EVAL;
+		auto ship_entry = eval_ship(n);
+		wing *wingp = nullptr;
+		has_departed = false;
 
-		// if ship/wing destroyed, sexpression is known false.  Also, if there is no departure log entry, then
-		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL))
-			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_WING_DEPARTED, name, NULL, &time) ) {
-			num_departed++;
-			if ( latest_time && (time > *latest_time) )
+		// this might be a ship
+		if (ship_entry)
+		{
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+				return SEXP_CANT_EVAL;
+
+			if (ship_entry->status == ShipStatus::EXITED)
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_entry->name, nullptr, &time))
+				{
+					has_departed = true;
+				}
+				// exited without departing
+				else
+				{
+					return SEXP_KNOWN_FALSE;
+				}
+			}
+		}
+		else
+			wingp = eval_wing(n);
+
+		// this might be a wing
+		if (wingp)
+		{
+			if (wing_has_yet_to_arrive(wingp))
+				return SEXP_CANT_EVAL;
+
+			if (wingp->flags[Ship::Wing_Flags::Gone])
+			{
+				// check the mission log
+				if (mission_log_get_time(LOG_WING_DEPARTED, wingp->name, nullptr, &time))
+				{
+					has_departed = true;
+				}
+				// exited without departing
+				else
+				{
+					return SEXP_KNOWN_FALSE;
+				}
+			}
+		}
+
+		if (has_departed)
+		{
+			++num_departed;
+			if (latest_time && (time > *latest_time))
 				*latest_time = time;
 		}
+
+		// move to next ship/wing in list
 		n = CDR(n);
 	}
 
@@ -5939,173 +6102,165 @@ int sexp_has_departed(int n, fix *latest_time)
 		return SEXP_FALSE;
 }
 
-/**
- * Determine if a ship is disabled
- */
-int sexp_is_disabled( int n, fix *latest_time )
+int sexp_has_departed_delay(int n)
 {
-	char *name;
-	int count, num_disabled;
+	return sexp_check_objective_delay(n, CDR(n), sexp_has_departed);
+}
+
+/**
+ * Determine if a ship is disabled or disarmed, but not both
+ */
+int sexp_is_disabled_xor_disarmed(int n, bool check_disabled, fix *latest_time)
+{
+	int count, num_satisfied;
 	fix time;
 
 	count = 0;
-	num_disabled = 0;
-	while ( n != -1 ) {
-		count++;
-		name = CTEXT(n);
+	num_satisfied = 0;
+	while ( n != -1 )
+	{
+		++count;
 
-		if (sexp_query_has_yet_to_arrive(name))
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_KNOWN_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
-		// if ship/wing destroyed, sexpression is known false.  Also, if there is no disable log entry, then
-		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time) )
-			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DISABLED, name, NULL, &time) ) {
-			num_disabled++;
-			if ( latest_time && (time > *latest_time) )
+		// check mission log
+		if (mission_log_get_time(check_disabled ? LOG_SHIP_DISABLED : LOG_SHIP_DISARMED, ship_entry->name, nullptr, &time))
+		{
+			++num_satisfied;
+			if (latest_time && (time > *latest_time))
 				*latest_time = time;
 		}
+		// if the ship has exited, no way to destroy its subsystem.
+		else if (ship_entry->status == ShipStatus::EXITED)
+			return SEXP_KNOWN_FALSE;
+
+		// move to next ship in list
 		n = CDR(n);
 	}
 
-	if ( count == num_disabled )
+	if ( count == num_satisfied )
 		return SEXP_KNOWN_TRUE;
 	else
 		return SEXP_FALSE;
+}
+
+int sexp_is_disabled_xor_disarmed_delay(int n, bool check_disabled)
+{
+	// since we can't use captured-value lambdas as function pointers, we need a stateless lambda for each value of the variable
+	if (check_disabled)
+		return sexp_check_objective_delay(n, CDR(n), [](int _n, fix *_time)->int { return sexp_is_disabled_xor_disarmed(_n, true, _time); });
+	else
+		return sexp_check_objective_delay(n, CDR(n), [](int _n, fix *_time)->int { return sexp_is_disabled_xor_disarmed(_n, false, _time); });
 }
 
 /**
  * Determine if a ship is done flying waypoints
  */
-int sexp_are_waypoints_done(int n)
+int sexp_are_waypoints_done(int n, fix *time, int count = 1)
 {
-	char *ship_name, *waypoint_name;
-
-	ship_name = CTEXT(n);
-	waypoint_name = CTEXT(CDR(n));
-
-	if (sexp_query_has_yet_to_arrive(ship_name))
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
+		return SEXP_KNOWN_FALSE;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 
-	// a destroyed or departed ship will never reach their goal -- return known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
-		return SEXP_KNOWN_FALSE;
-	else if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) )
-		return SEXP_KNOWN_FALSE;
+	auto waypoint_name = CTEXT(CDR(n));
 
-	// now check the log for the waypoints done entry
-	if ( mission_log_get_time(LOG_WAYPOINTS_DONE, ship_name, waypoint_name, NULL) )
+	if (mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, ship_entry->name, waypoint_name, count, time))
 		return SEXP_KNOWN_TRUE;
+
+	// if the ship has exited, no way to complete waypoints
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 
 	return SEXP_FALSE;
 }
 
-
-/**
- * Determine if ships are disarmed
- */
-int sexp_is_disarmed( int n, fix *latest_time )
+// since we can't use lambda-captures as function pointers (see also disabled_xor_disarmed), we need a lot of code duplication from sexp_check_objective_delay
+int sexp_are_waypoints_done_delay(int n)
 {
-	char *name;
-	int count, num_disarmed;
-	fix time;
-
-	count = 0;
-	num_disarmed = 0;
-	while ( n != -1 ) {
-		count++;
-		name = CTEXT(n);
-
-		if (sexp_query_has_yet_to_arrive(name))
-			return SEXP_CANT_EVAL;
-
-		// if ship/wing destroyed, sexpression is known false.  Also, if there is no disarm log entry, then
-		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time) )
-			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DISARMED, name, NULL, &time) ) {
-			num_disarmed++;
-			if ( latest_time && (time > *latest_time) )
-				*latest_time = time;
-		}
-		n = CDR(n);
-	}
-
-	if ( count == num_disarmed )
-		return SEXP_KNOWN_TRUE;
-	else
-		return SEXP_FALSE;
-}
-
-// the following functions are similar to the above objective functions but return true/false
-// if N seconds have elasped after the corresponding function is true.
-int sexp_is_destroyed_delay(int n)
-{
+	int delay_node = CDDR(n), objective_node = n, count_node = CDDDR(n);
 	fix delay, time;
-	int val;
+	int count, val;
 	bool is_nan, is_nan_forever;
 
-	Assert ( n >= 0 );
-
 	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
 
+	delay = i2f(eval_num(delay_node, is_nan, is_nan_forever));
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	// check value of is_destroyed function.  KNOWN_FALSE should be returned immediately
-	val = sexp_is_destroyed( CDR(n), &time );
-	if ( val == SEXP_KNOWN_FALSE )
-		return val;
+	if (count_node >= 0)
+	{
+		count = i2f(eval_num(count_node, is_nan, is_nan_forever));
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
 
-	if ( val == SEXP_CANT_EVAL )
-		return SEXP_CANT_EVAL;
+		if (count <= 0)
+		{
+			Warning(LOCATION, "Are-waypoints-done-delay count should be at least 1!  This has been automatically adjusted.");
+			count = 1;
+		}
+	}
+	else
+		count = 1;
 
-	if ( val ) {
+	// check value of function
+	val = sexp_are_waypoints_done(objective_node, &time, count);
 
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
+	if ((val == SEXP_TRUE) || (val == SEXP_KNOWN_TRUE))
+	{
+		if ((Missiontime - time) >= delay)
+			return val;
+		else
+			return SEXP_FALSE;
 	}
 
-	return SEXP_FALSE;
+	return val;
 }
 
 // First ship is the destroyer, rest of the arguments are the destroyed ships.
-int sexp_was_destroyed_by(int n, fix* latest_time)
+int sexp_was_destroyed_by(int n, fix *latest_time)
 {
-	char* destroyer_ship_name;
-	char* destroyed_ship_name;
-	int count = 0, num_destroyed;
+	int count, num_destroyed;
 	fix time;
 
-	Assert(n != -1);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
+		return SEXP_KNOWN_FALSE;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
 
-	destroyer_ship_name = CTEXT(n);
-
+	count = 0;
 	num_destroyed = 0;
-
 	for (n = CDR(n); n != -1; n = CDR(n))
 	{
-		count++;
-		destroyed_ship_name = CTEXT(n);
+		++count;
 
-		if (sexp_query_has_yet_to_arrive(destroyed_ship_name))
+		auto destroyed_ship_entry = eval_ship(n);
+		if (!destroyed_ship_entry)
+			return SEXP_KNOWN_FALSE;
+		if (destroyed_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
-		// check to see if this ship/wing has departed.  If so, then function is known false
-		if (mission_log_get_time(LOG_SHIP_DEPARTED, destroyed_ship_name, NULL, NULL))
-			return SEXP_KNOWN_FALSE;
-
-		// check the mission log.  If ship/wing not destroyed, immediately return SEXP_FALSE.
-		if (mission_log_get_time(LOG_SHIP_DESTROYED, destroyed_ship_name, destroyer_ship_name, &time))
+		// check the mission log
+		if (mission_log_get_time(LOG_SHIP_DESTROYED, destroyed_ship_entry->name, ship_entry->name, &time))
 		{
-			num_destroyed++;
+			++num_destroyed;
 			if (latest_time && (time > *latest_time))
 				*latest_time = time;
 		}
+		// if the ship has exited, no way to destroy it
+		else if (ship_entry->status == ShipStatus::EXITED)
+			return SEXP_KNOWN_FALSE;
 	}
 
 	if (count == num_destroyed)
@@ -6116,131 +6271,7 @@ int sexp_was_destroyed_by(int n, fix* latest_time)
 
 int sexp_was_destroyed_by_delay(int n)
 {
-	fix delay, time;
-	int val;
-	bool is_nan, is_nan_forever;
-
-	Assert(n >= 0);
-
-	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	// check value of is_destroyed function.  KNOWN_FALSE should be returned immediately
-	val = sexp_was_destroyed_by(CDR(n), &time);
-	if (val == SEXP_KNOWN_FALSE)
-		return val;
-
-	if (val == SEXP_CANT_EVAL)
-		return SEXP_CANT_EVAL;
-
-	if (val)
-	{
-		if ((Missiontime - time) >= delay)
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
-}
-
-int sexp_is_subsystem_destroyed_delay(int n)
-{
-	char *ship_name, *subsys_name;
-	fix delay, time;
-	bool is_nan, is_nan_forever;
-
-	Assert( n != -1 );
-	
-	ship_name = CTEXT(n);
-	subsys_name = CTEXT(CDR(n));
-	delay = i2f(eval_num(CDDR(n), is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	if (sexp_query_has_yet_to_arrive(ship_name))
-		return SEXP_CANT_EVAL;
-
-	// if the ship has departed, no way to destroy it's subsystem.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL ))
-		return SEXP_KNOWN_FALSE;
-
-	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_name, subsys_name, &time) ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
-}
-
-int sexp_is_disabled_delay(int n)
-{
-	fix delay, time;
-	int val;
-	bool is_nan, is_nan_forever;
-
-	Assert ( n >= 0 );
-
-	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	// check value of is_disable for known false and return immediately if it is.
-	val = sexp_is_disabled( CDR(n), &time );
-	if ( val == SEXP_KNOWN_FALSE )
-		return val;
-
-	if ( val == SEXP_CANT_EVAL )
-		return SEXP_CANT_EVAL;
-
-	if ( val ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
-}
-
-int sexp_is_disarmed_delay(int n)
-{
-	fix delay, time;
-	int val;
-	bool is_nan, is_nan_forever;
-
-	Assert ( n >= 0 );
-
-	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-	
-	// check value of is_disarmed for a known false value and return that immediately if it is
-	val = sexp_is_disarmed( CDR(n), &time );
-	if ( val == SEXP_KNOWN_FALSE )
-		return val;
-
-	if ( val == SEXP_CANT_EVAL )
-		return SEXP_CANT_EVAL;
-
-	if ( val ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
+	return sexp_check_objective_delay(n, CDR(n), sexp_was_destroyed_by);
 }
 
 int sexp_has_docked_or_undocked(int n, int op_num)
@@ -6248,14 +6279,27 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 	bool is_nan, is_nan_forever;
 	Assert(op_num == OP_HAS_DOCKED || op_num == OP_HAS_UNDOCKED || op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY);
 
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDDR(n), is_nan, is_nan_forever);		// count of times that we should look for
+	auto docker = eval_ship(n);
+	if (!docker)
+		return SEXP_KNOWN_FALSE;
+	if (docker->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
+	n = CDR(n);
 
+	auto dockee = eval_ship(n);
+	if (!dockee)
+		return SEXP_KNOWN_FALSE;
+	if (dockee->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
+	n = CDR(n);
+
+	// count of times that we should look for
+	int count = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
+	n = CDR(n);
 
 	if (count <= 0)
 	{
@@ -6263,15 +6307,9 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 		count = 1;
 	}
 
-	if (sexp_query_has_yet_to_arrive(docker))
-		return SEXP_CANT_EVAL;
-
-	if (sexp_query_has_yet_to_arrive(dockee))
-		return SEXP_CANT_EVAL;
-
 	if (op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY)
 	{
-		fix delay = i2f(eval_num(CDDDR(n), is_nan, is_nan_forever));
+		fix delay = i2f(eval_num(n, is_nan, is_nan_forever));
 		fix time;
 
 		if (is_nan)
@@ -6279,143 +6317,23 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED_DELAY ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) )
+		if (mission_log_get_time_indexed(op_num == OP_HAS_DOCKED_DELAY ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker->name, dockee->name, count, &time))
 		{
-			if ( (Missiontime - time) >= delay )
+			if ((Missiontime - time) >= delay)
 				return SEXP_KNOWN_TRUE;
 		}
+		// if either ship has exited, no way to dock
+		else if (docker->status == ShipStatus::EXITED || dockee->status == ShipStatus::EXITED)
+			return SEXP_KNOWN_FALSE;
 	}
 	else
 	{
-		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, nullptr) )
+		if (mission_log_get_time_indexed(op_num == OP_HAS_DOCKED ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker->name, dockee->name, count, nullptr))
+		{
 			return SEXP_KNOWN_TRUE;
-	}
-
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, nullptr, nullptr) )
-		return SEXP_KNOWN_FALSE;
-
-	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, nullptr, nullptr) )
-		return SEXP_KNOWN_FALSE;
-
-	return SEXP_FALSE;
-}
-
-int sexp_has_arrived_delay(int n)
-{
-	fix delay, time;
-	int val;
-	bool is_nan, is_nan_forever;
-
-	Assert ( n >= 0 );
-
-	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	// check return value from arrived function.  if can never arrive, then return that value here as well
-	val = sexp_has_arrived( CDR(n), &time );
-	if ( val == SEXP_KNOWN_FALSE )
-		return val;
-
-	if ( val == SEXP_CANT_EVAL )
-		return SEXP_CANT_EVAL;
-
-	if ( val ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
-}
-
-int sexp_has_departed_delay(int n)
-{
-	fix delay, time;
-	int val;
-	bool is_nan, is_nan_forever;
-
-	Assert ( n >= 0 );
-
-	time = 0;
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	// must first check to see if the departed function could ever be true/false or is true or false.
-	// if it can never be true, return that value
-	val = sexp_has_departed( CDR(n), &time);
-	if ( val == SEXP_KNOWN_FALSE )
-		return val;
-
-	if ( val == SEXP_CANT_EVAL )
-		return SEXP_CANT_EVAL;
-
-	if ( val ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	}
-
-	return SEXP_FALSE;
-}
-
-/**
- * Determine if a ship is done flying waypoints after N seconds
- */
-int sexp_are_waypoints_done_delay(int node)
-{
-	char *ship_name, *waypoint_name;
-	int count, n = node;
-	fix time, delay;
-	bool is_nan, is_nan_forever;
-
-	ship_name = CTEXT(n);
-	n = CDR(n);
-
-	waypoint_name = CTEXT(n);
-	n = CDR(n);
-
-	delay = i2f(eval_num(n, is_nan, is_nan_forever));
-	n = CDR(n);
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-
-	count = (n >= 0) ? eval_num(n, is_nan, is_nan_forever) : 1;
-	if (is_nan)
-		return SEXP_FALSE;
-	if (is_nan_forever)
-		return SEXP_KNOWN_FALSE;
-	if (count <= 0)
-	{
-		Warning(LOCATION, "Are-waypoints-done-delay count should be at least 1!  This has been automatically adjusted.");
-		count = 1;
-	}
-
-	if (sexp_query_has_yet_to_arrive(ship_name))
-		return SEXP_CANT_EVAL;
-
-	// a destroyed or departed ship will never reach their goal -- return known false
-	// 
-	// Not checking the entries below.  Ships which warp out after reaching their goal (or getting
-	// destroyed after their goal), but after reaching their waypoints, may have this goal incorrectly
-	// marked false!!!!
-
-	// now check the log for the waypoints done entry
-	if ( mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, ship_name, waypoint_name, count, &time) ) {
-		if ( (Missiontime - time) >= delay )
-			return SEXP_KNOWN_TRUE;
-	} else {
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) )
+		}
+		// if either ship has exited, no way to dock
+		else if (docker->status == ShipStatus::EXITED || dockee->status == ShipStatus::EXITED)
 			return SEXP_KNOWN_FALSE;
 	}
 
@@ -6458,7 +6376,6 @@ int sexp_ship_type_destroyed(int n)
 	
 	return SEXP_FALSE;
 }
-
 
 // following are time based functions
 int sexp_has_time_elapsed(int n)
@@ -8915,7 +8832,7 @@ int sexp_special_warpout_name( int node )
  * to work multiple times in a row and also to fix the potential bug where exited ships are
  * checked against their departure time, not against their cargo known time
  */
-int sexp_is_cargo_known( int n, int check_delay )
+int sexp_is_cargo_known( int n, bool check_delay )
 {
 	bool is_nan, is_nan_forever;
 	int count, ship_num, num_known, delay;
@@ -24386,7 +24303,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// destroy type sexpressions
 			case OP_IS_DESTROYED:
-				sexp_val = sexp_is_destroyed( node, NULL );
+				sexp_val = sexp_is_destroyed(node, nullptr);
 				break;
 
 			case OP_WAS_DESTROYED_BY_DELAY:
@@ -24394,7 +24311,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_SUBSYSTEM_DESTROYED:
-				sexp_val = sexp_is_subsystem_destroyed(node);
+				sexp_val = sexp_is_subsystem_destroyed(node, nullptr);
 				break;
 
 			case OP_HAS_ARRIVED:
@@ -24406,15 +24323,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_DISABLED:
-				sexp_val = sexp_is_disabled( node, NULL );
+				sexp_val = sexp_is_disabled_xor_disarmed( node, true, nullptr );
 				break;
 
 			case OP_IS_DISARMED:
-				sexp_val = sexp_is_disarmed( node, NULL );
+				sexp_val = sexp_is_disabled_xor_disarmed( node, false, nullptr );
 				break;
 
 			case OP_WAYPOINTS_DONE:
-				sexp_val = sexp_are_waypoints_done(node);
+				sexp_val = sexp_are_waypoints_done( node, nullptr );
 				break;
 
 			// objective operators that use a delay
@@ -24442,11 +24359,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_DISABLED_DELAY:
-				sexp_val = sexp_is_disabled_delay(node);
+				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, true);
 				break;
 
 			case OP_IS_DISARMED_DELAY:
-				sexp_val = sexp_is_disarmed_delay(node);
+				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, true);
 				break;
 
 			case OP_WAYPOINTS_DONE_DELAY:
@@ -24627,7 +24544,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_IS_CARGO_KNOWN:
 			case OP_CARGO_KNOWN_DELAY:
-				sexp_val = sexp_is_cargo_known( node, (op_num==OP_IS_CARGO_KNOWN)?0:1 );
+				sexp_val = sexp_is_cargo_known( node, op_num == OP_CARGO_KNOWN_DELAY );
 				break;
 
 			case OP_HAS_BEEN_TAGGED_DELAY:
