@@ -2152,8 +2152,8 @@ void labviewer_fill_subsystem_menu() {
 	
 	auto subsys_tree = (Tree*)Lab_subsystems_window->AddChild(new Tree("Subsystem List", 0, 0));
 
-	if (Lab_mode == LAB_MODE_SHIP) {
-		if (Lab_selected_object != -1) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 			auto ssp = GET_FIRST(&sp->subsys_list);
 			auto subsys_index = 0;
@@ -2185,8 +2185,8 @@ void labviewer_fill_loadout_window() {
 	
 	auto weapons_tree = (Tree*)Lab_loadout_window->AddChild(new Tree("Weapons stuff", 0, 0));
 
-	if (Lab_mode == LAB_MODE_SHIP) {
-		if (Lab_selected_object != -1) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 			auto sip = &Ship_info[sp->ship_info_index];
 
@@ -2194,22 +2194,50 @@ void labviewer_fill_loadout_window() {
 				auto primaries_head = weapons_tree->AddItem(nullptr, "Primaries", 0, false);
 				auto secondaries_head = weapons_tree->AddItem(nullptr, "Secondaries", 0, false);
 
-				for (auto i = 0; i < sip->num_primary_banks; ++i) {
+				for (auto bank_num = 0; bank_num < sip->num_primary_banks; ++bank_num) {
 					SCP_string bank_string;
-					sprintf(bank_string, "Bank %i", i);
+					sprintf(bank_string, "Bank %i", bank_num);
 					auto bank_head = weapons_tree->AddItem(primaries_head, bank_string, 0, false);
 					auto tabled_weapons_head = weapons_tree->AddItem(bank_head, "Tabled weapons", 0, false);
-					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
+					auto others_head = weapons_tree->AddItem(bank_head, "Other Primaries", 0, false);
+					auto beams_head = weapons_tree->AddItem(others_head, "Beams", 0, false);
+					auto ballistics_head = weapons_tree->AddItem(others_head, "Ballistics", 0, false);
+					auto player_allowed_ballistics = weapons_tree->AddItem(ballistics_head, "Player Allowed", 0, false);
+					auto lasers_head = weapons_tree->AddItem(others_head, "Lasers", 0, false);
+					auto player_allowed_lasers = weapons_tree->AddItem(lasers_head, "Player Allowed", 0, false);
+					auto capitals_head = weapons_tree->AddItem(bank_head, "Capital Ship weapons", 0, false);
 
 					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
 					for (size_t j = 0; j < n_weapons; ++j) {
 						auto wip = &Weapon_info[j];
 						if (wip->subtype == WP_LASER || wip->subtype == WP_BEAM) {
 							if (sip->allowed_weapons[j] != 0) {
-								weapons_tree->AddItem(tabled_weapons_head, wip->name, i, true, labviewer_actions_change_primary);
+								weapons_tree->AddItem(tabled_weapons_head, wip->name, bank_num, true, labviewer_actions_change_primary);
 							}
 							else {
-								weapons_tree->AddItem(others_head, wip->name, i, true, labviewer_actions_change_primary);
+								TreeItem* head_item = nullptr;
+
+								if (wip->wi_flags[Weapon::Info_Flags::Beam] || wip->subtype == WP_BEAM) {
+									head_item = beams_head;
+								} else if (wip->wi_flags[Weapon::Info_Flags::Huge, Weapon::Info_Flags::Supercap]) {
+									head_item = capitals_head;
+								} else if (wip->subtype == WP_LASER) {
+									if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
+										if (wip->wi_flags[Weapon::Info_Flags::Player_allowed])
+											head_item = player_allowed_ballistics;
+										else
+											head_item = ballistics_head;
+									} else {
+										if (wip->wi_flags[Weapon::Info_Flags::Player_allowed])
+											head_item = player_allowed_lasers;
+										else
+											head_item = lasers_head;
+									}
+								}
+
+								if (head_item != nullptr) {
+									weapons_tree->AddItem(head_item, wip->name, bank_num, true, labviewer_actions_change_primary);
+								}
 							}
 						}
 					}
@@ -2221,17 +2249,28 @@ void labviewer_fill_loadout_window() {
 					auto bank_head = weapons_tree->AddItem(secondaries_head, bank_string, 0, false);
 					auto tabled_weapons_head = weapons_tree->AddItem(bank_head, "Tabled weapons", 0, false);
 					auto others_head = weapons_tree->AddItem(bank_head, "Others", 0, false);
+					auto missiles_head = weapons_tree->AddItem(others_head, "Missiles", 0, false);
+					auto bombs_head = weapons_tree->AddItem(others_head, "Bombs", 0, false);
 
 					auto n_weapons = MIN(Weapon_info.size(), MAX_WEAPON_TYPES);
 					for (size_t j = 0; j < n_weapons; ++j) {
 						auto wip = &Weapon_info[j];
 						if (wip->subtype == WP_MISSILE) {
+							TreeItem* head_item = nullptr;
+
 							if (sip->allowed_weapons[j] != 0) {
-								weapons_tree->AddItem(tabled_weapons_head, wip->name, i, true, labviewer_actions_change_secondary);
+								head_item = tabled_weapons_head;
 							}
 							else {
-								weapons_tree->AddItem(others_head, wip->name, i, true, labviewer_actions_change_secondary);
+								if (wip->wi_flags[Weapon::Info_Flags::Bomb]) {
+									head_item = bombs_head;
+								}
+								else {
+									head_item = missiles_head;
+								}
 							}
+
+							weapons_tree->AddItem(head_item, wip->name, i, true, labviewer_actions_change_secondary);
 						}
 					}
 				}
@@ -2255,8 +2294,8 @@ void labviewer_actions_make_loadout_window(Button* /*caller*/) {
 void labviewer_fill_fire_weapon_menu() {
 	if (Lab_weapon_fire_window == nullptr) return; 
 
-	if (Lab_mode == LAB_MODE_SHIP) {
-		if (Lab_selected_object != -1) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
 			auto sp = &Ships[Objects[Lab_selected_object].instance];
 
 			int y = 0;
