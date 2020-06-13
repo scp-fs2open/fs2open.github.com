@@ -7949,7 +7949,7 @@ void weapon_spew_stats(WeaponSpewType type)
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s,%s,", wi.name, "Primary"));
-			//Beam range is set inthe binfo and velocity isn't very relevant to them.
+			//Beam range is set in the b_info and velocity isn't very relevant to them.
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
 				mprintf((",%.2f,",wi.b_info.range));
 			else
@@ -7962,7 +7962,7 @@ void weapon_spew_stats(WeaponSpewType type)
 				damage = wi.damage;
 
 			float fire_rate;
-			//We need to count the length of a firing cycle and then divide by the number of shots in that cycle
+			//To get overall fire rate, divide the number of shots in a firing cycle by the length of that cycle
 			//In random length bursts, average between the longest and shortest firing cycle to get average rof
 			if (wi.burst_shots > 1 && (wi.burst_flags[Weapon::Burst_Flags::Random_length]))
 				fire_rate = (wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1)) + (1 / wi.fire_wait)) / 2;
@@ -8044,9 +8044,9 @@ void weapon_spew_stats(WeaponSpewType type)
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s\n", wi.name));
-			//Beam range is set inthe binfo and velocity isn't very relevant to them.
+			//Beam range is set in the b_info and velocity isn't very relevant to them.
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
-				mprintf((",%.2f,", wi.b_info.range));
+				mprintf((",%.2f,",wi.b_info.range));
 			else
 				mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
