@@ -8046,9 +8046,9 @@ void weapon_spew_stats(WeaponSpewType type)
 			mprintf(("%s\n", wi.name));
 			//Beam range is set in the b_info and velocity isn't very relevant to them.
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
-				mprintf((",%.2f,",wi.b_info.range));
+				mprintf(("\tVelocity: N/A Range: %.0f\n", wi.b_info.range));
 			else
-				mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+				mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed* wi.lifetime));
 
 			float damage;
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
