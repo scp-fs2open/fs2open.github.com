@@ -8548,9 +8548,11 @@ int sexp_get_damage_caused(int node)
 	float damage_caused = 0.0f;
 
 	auto ship_entry = eval_ship(node);
+	if (!ship_entry)
+		return SEXP_NAN_FOREVER;
 
 	// a ship which hasn't arrived can't have taken any damage yet
-	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
 		return 0;
 	}
 
