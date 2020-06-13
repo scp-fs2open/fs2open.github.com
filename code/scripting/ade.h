@@ -25,10 +25,11 @@ extern "C" {
  * These functions enable the code to communicate with external scripts and expose an API for them to use
  */
 
-// Forward definition
-struct DocumentationElement;
 
 namespace scripting {
+
+// Forward definition
+struct DocumentationElement;
 
 /**
  *
@@ -153,7 +154,6 @@ class ade_table_entry {
 	//*****Functions
 	size_t AddSubentry(ade_table_entry& n_ate);
 	int SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx);
-	void OutputMeta(FILE* fp);
 	std::unique_ptr<DocumentationElement> ToDocumentationElement();
 
 	//*****Get
@@ -202,6 +202,11 @@ int ade_friendly_error(lua_State* L);
 const char* ade_get_type_string(lua_State* L, int argnum);
 
 /**
+ * @ingroup ade_api
+ */
+bool ade_is_internal_type(const char* typeName);
+
+/**
  * @brief Converts an object index to something that can be used with ade_set_args.
  *
  * This respects the actual type of the object so all appropriate functions are available in Lua.
@@ -241,12 +246,13 @@ int ade_set_object_with_breed(lua_State* L, int obj_idx);
  */
 void load_default_script(lua_State* L, const char* name);
 
-/**
- * @brief Writes HTML to fp which produces a link to the specified type info
- * @param fp The stream to write the HTML to
- * @param type_info The type to generate the link for
- */
-void ade_output_type_link(FILE* fp, const ade_type_info& type_info);
+//Struct for converting one string for another. whee!
+struct string_conv {
+	const char *src;
+	const char *dest;
+};
+
+const string_conv* ade_get_operator(const char *funcname);
 
 namespace internal {
 

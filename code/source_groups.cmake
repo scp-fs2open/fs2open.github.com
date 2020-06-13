@@ -1066,6 +1066,10 @@ add_file_folder("Scripting"
 	scripting/ade_args.h
 	scripting/ade_doc.cpp
 	scripting/ade_doc.h
+	scripting/doc_html.cpp
+	scripting/doc_html.h
+	scripting/doc_json.cpp
+	scripting/doc_json.h
 	scripting/doc_parser.cpp
 	scripting/doc_parser.h
 	scripting/hook_api.cpp
@@ -1073,6 +1077,7 @@ add_file_folder("Scripting"
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
+	scripting/scripting_doc.h
 )
 
 add_file_folder("Scripting\\\\Api"

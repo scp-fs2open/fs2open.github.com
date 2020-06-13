@@ -57,6 +57,11 @@ ade_odata_setter<object_h> convert_arg_type(object* objp)
 }
 } // namespace detail
 
+HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type_info type_, const char* description_)
+	: name(name_), type(std::move(type_)), description(description_)
+{
+}
+
 HookBase::HookBase(SCP_string hookName,
 				   SCP_string description,
 				   SCP_vector<HookVariableDocumentation> parameters,
