@@ -843,6 +843,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_X:
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
+							case OP_DISTANCE:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -892,6 +893,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_X:
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
+							case OP_DISTANCE:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -4897,7 +4899,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			break;
 
 		// these sexps check the subsystem of the *second entry* on the list, not the first
-		case OP_DISTANCE_SUBSYSTEM:
+		case OP_DISTANCE_CENTER_SUBSYSTEM:
+		case OP_DISTANCE_BBOX_SUBSYSTEM:
 		case OP_SET_CARGO:
 		case OP_IS_CARGO:
 		case OP_CHANGE_AI_CLASS:

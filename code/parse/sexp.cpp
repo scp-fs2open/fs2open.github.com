@@ -292,7 +292,10 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Distance and Coordinates Sub-Category
 	{ "distance",						OP_DISTANCE,							2,	2,			SEXP_INTEGER_OPERATOR,	},
-	{ "distance-ship-subsystem",		OP_DISTANCE_SUBSYSTEM,					3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
+	{ "distance-to-center",				OP_DISTANCE_CENTER,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-to-bbox",				OP_DISTANCE_BBOX,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-center-subsystem",		OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
+	{ "distance-bbox-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-nav",				OP_NAV_DISTANCE,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// Kazan
 	{ "num-within-box",					OP_NUM_WITHIN_BOX,						7,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	//WMC
 	{ "is-in-box",						OP_IS_IN_BOX,							7,	8,			SEXP_INTEGER_OPERATOR,	},	//Sushi
@@ -959,6 +962,7 @@ int get_handler_for_x_of_operator(int node);
 //Karajorma
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(int ship_index);
+bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
 int get_effect_from_name(const char* name);
@@ -2138,7 +2142,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				switch(get_operator_const(op_node))
 				{
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
-					case OP_DISTANCE_SUBSYSTEM:
+					case OP_DISTANCE_CENTER_SUBSYSTEM:
+					case OP_DISTANCE_BBOX_SUBSYSTEM:
 					case OP_SET_CARGO:
 					case OP_IS_CARGO:
 					case OP_CHANGE_AI_CLASS:
@@ -3555,6 +3560,8 @@ int get_sexp()
 				strcpy_s(token, "get-variable-by-index");
 			else if (!stricmp(token, "variable-array-set"))
 				strcpy_s(token, "set-variable-by-index");
+			else if (!stricmp(token, "distance-ship-subsystem"))
+				strcpy_s(token, "distance-center-subsystem");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -7219,12 +7226,60 @@ int sexp_determine_team(const char *subj)
 }
 
 /**
- * Check distance between two given objects
+ * Check distance between the center of two given objects
  */
-int sexp_distance3(object *objp1, object *objp2)
+int sexp_center_distance3(object *objp1, object *objp2)
 {
-	// if either object isn't present in the mission now
-	if (objp1 == NULL || objp2 == NULL)
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
+
+	// if the object isn't present in the mission now
+	if (!objp2)
+		return SEXP_NAN;
+
+	return (int)vm_vec_dist(&objp1->pos, &objp2->pos);
+}
+
+/**
+ * Check distance between the bounding boxes of two given objects
+ */
+int sexp_bbox_distance3(object *objp1, object *objp2)
+{
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
+
+	// if the object isn't present in the mission now
+	if (!objp2)
+		return SEXP_NAN;
+
+	if (objp1->type == OBJ_SHIP && objp2->type == OBJ_SHIP)
+	{
+		vec3d temp1, temp2;
+		int model_num1 = Ship_info[Ships[objp1->instance].ship_info_index].model_num;
+		int model_num2 = Ship_info[Ships[objp2->instance].ship_info_index].model_num;
+		return (int)model_find_closest_points(&temp1, model_num1, -1, &objp1->orient, &objp1->pos, &temp2, model_num2, -1, &objp2->orient, &objp2->pos);
+	}
+	else if (objp1->type == OBJ_SHIP)
+	{
+		return (int)hud_find_target_distance(objp1, &objp2->pos);
+	}
+	else if (objp2->type == OBJ_SHIP)
+	{
+		return (int)hud_find_target_distance(objp2, &objp1->pos);
+	}
+	else
+	{
+		return (int)vm_vec_dist(&objp1->pos, &objp2->pos);
+	}
+}
+
+/**
+ * Check distance between two given objects using the wonky retail method
+ */
+int sexp_retail_distance3(object *objp1, object *objp2)
+{
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
+
+	// if the object isn't present in the mission now
+	if (!objp2)
 		return SEXP_NAN;
 
 	if ((objp1->type == OBJ_SHIP) && (objp2->type == OBJ_SHIP))
@@ -7243,26 +7298,31 @@ int sexp_distance3(object *objp1, object *objp2)
 /**
  * Check distance between a given ship and a given subject (ship, wing, any \<team\>).
  */
-int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
+int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2, int(*distance_method)(object*, object*))
 {
-	int dist, dist_min = 0, inited = 0;
+	int dist, dist_min = 0;
+	bool inited = false;
+
+	// if the object isn't present in the mission now
+	if (!objp1)
+		return SEXP_NAN;
 
 	switch (oswpt2->type)
 	{
 		// we have a ship-on-team type, so check all ships of that type
 		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
 				if (Ships[Objects[so->objnum].instance].team == oswpt2->team)
 				{
-					dist = sexp_distance3(objp1, &Objects[so->objnum]);
+					dist = distance_method(objp1, &Objects[so->objnum]);
 					if (dist != SEXP_NAN)
 					{
 						if (!inited || (dist < dist_min))
 						{
 							dist_min = dist;
-							inited = 1;
+							inited = true;
 						}
 					}
 				}
@@ -7279,7 +7339,7 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			return sexp_distance3(objp1, oswpt2->objp);
+			return distance_method(objp1, oswpt2->objp);
 		}
 
 		// check wings
@@ -7287,13 +7347,13 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
 		{
 			for (int i = 0; i < oswpt2->wingp->current_count; i++)
 			{
-				dist = sexp_distance3(objp1, &Objects[Ships[oswpt2->wingp->ship_index[i]].objnum]);
+				dist = distance_method(objp1, &Objects[Ships[oswpt2->wingp->ship_index[i]].objnum]);
 				if (dist != SEXP_NAN)
 				{
 					if (!inited || (dist < dist_min))
 					{
 						dist_min = dist;
-						inited = 1;
+						inited = true;
 					}
 				}
 			}
@@ -7314,13 +7374,14 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
  *
  * If a wing is specified as one (or both) of the arguments to this function, we are looking for the closest distance
  */
-int sexp_distance(int n)
+int sexp_distance(int n, int(*distance_method)(object*, object*))
 {
-	int dist, dist_min = 0, inited = 0;
+	int dist, dist_min = 0;
+	bool inited = false;
 	object_ship_wing_point_team oswpt1, oswpt2;
 
-	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
-	sexp_get_object_ship_wing_point_team(&oswpt2, CTEXT(CDR(n)));
+	eval_object_ship_wing_point_team(&oswpt1, n);
+	eval_object_ship_wing_point_team(&oswpt2, CDR(n));
 
 	// check to see if either object was destroyed or departed
 	if (oswpt1.type == OSWPT_TYPE_EXITED || oswpt2.type == OSWPT_TYPE_EXITED)
@@ -7331,17 +7392,17 @@ int sexp_distance(int n)
 		// we have a ship-on-team type, so check all ships of that type
 		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
 				if (Ships[Objects[so->objnum].instance].team == oswpt1.team)
 				{
-					dist = sexp_distance2(&Objects[so->objnum], &oswpt2);
+					dist = sexp_distance2(&Objects[so->objnum], &oswpt2, distance_method);
 					if (dist != SEXP_NAN)
 					{
 						if (!inited || (dist < dist_min))
 						{
 							dist_min = dist;
-							inited = 1;
+							inited = true;
 						}
 					}
 				}
@@ -7358,7 +7419,7 @@ int sexp_distance(int n)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			return sexp_distance2(oswpt1.objp, &oswpt2);
+			return sexp_distance2(oswpt1.objp, &oswpt2, distance_method);
 		}
 
 		// check wings
@@ -7366,13 +7427,13 @@ int sexp_distance(int n)
 		{
 			for (int i = 0; i < oswpt1.wingp->current_count; i++)
 			{
-				dist = sexp_distance2(&Objects[Ships[oswpt1.wingp->ship_index[i]].objnum], &oswpt2);
+				dist = sexp_distance2(&Objects[Ships[oswpt1.wingp->ship_index[i]].objnum], &oswpt2, distance_method);
 				if (dist != SEXP_NAN)
 				{
 					if (!inited || (dist < dist_min))
 					{
 						dist_min = dist;
-						inited = 1;
+						inited = true;
 					}
 				}
 			}
@@ -7393,28 +7454,21 @@ int sexp_distance(int n)
  * 
  * Switched to a boolean so that it can report failure to do so
  */
-bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *subsys_name)
+bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, const ship_registry_entry *ship_entry, const char *subsys_name)
 {
-	Assert(subsys_name);
-	Assert(subsys_world_pos);
-
-	if(shipnum < 0)
-	{
-		Warning(LOCATION, "Error - nonexistent ship.\n");
-		return false;
-	}
+	Assert(subsys_world_pos && ship_entry && subsys_name);
 
 	// find the ship subsystem
-	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
-	if (ss != NULL)
+	ship_subsys *ss = ship_get_subsys(ship_entry->shipp, subsys_name);
+	if (ss)
 	{
 		// find world position of subsystem on this object (the ship)
-		get_subsystem_world_pos(&Objects[Ships[shipnum].objnum], ss, subsys_world_pos);
+		get_subsystem_world_pos(ship_entry->objp, ss, subsys_world_pos);
 		return true;
 	}
 
 	// we reached end of ship subsys list without finding subsys_name 
-	if (ship_class_unchanged(shipnum)) {
+	if (ship_class_unchanged(ship_entry)) {
 		// this ship should have had the subsystem named as it shouldn't have changed class
 		Warning(LOCATION, "sexp_get_subsystem_world_pos could not find subsystem '%s'", subsys_name);
 	}
@@ -7422,36 +7476,64 @@ bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *su
 }
 
 /**
+ * Check distance between the center of an object and a position
+ */
+int sexp_center_distance_point(object *objp1, vec3d *pos)
+{
+	Assertion(objp1 && pos, "Parameters should be non-NULL!");
+
+	return (int)vm_vec_dist(&objp1->pos, pos);
+}
+
+/**
+ * Check distance between the bounding box of an object and a position
+ */
+int sexp_bbox_distance_point(object *objp1, vec3d *pos)
+{
+	Assertion(objp1 && pos, "Parameters should be non-NULL!");
+
+	if (objp1->type == OBJ_SHIP)
+	{
+		return (int)hud_find_target_distance(objp1, pos);
+	}
+	else
+	{
+		return (int)vm_vec_dist(&objp1->pos, pos);
+	}
+}
+
+/**
  * Returns the distance between an object and a ship subsystem.
  *
  * If a wing is specified as the object argument to this function, we are looking for the closest distance
  */
-int sexp_distance_subsystem(int n)
+int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 {
-	int ship_with_subsys_num, dist, dist_min = 0, inited = 0;
-	char *ship_with_subsys_name, *subsys_name;
+	int dist, dist_min = 0;
+	bool inited = false;
 	vec3d subsys_pos;
 	object_ship_wing_point_team oswpt;
 
-	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
-	ship_with_subsys_name = CTEXT(CDR(n));
-	subsys_name = CTEXT(CDR(CDR(n)));
+	eval_object_ship_wing_point_team(&oswpt, n);
 
-	// for the ship with the subsystem - see if it was destroyed or departed
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_with_subsys_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_with_subsys_name, NULL, NULL))
-		return SEXP_NAN_FOREVER;
-
-	// check the other ship too
+	// quick out
 	if (oswpt.type == OSWPT_TYPE_EXITED)
 		return SEXP_NAN_FOREVER;
 
-	// for the ship with the subsystem - get its index
-	ship_with_subsys_num = ship_name_lookup(ship_with_subsys_name);
-	if (ship_with_subsys_num < 0)
+	auto ship_with_subsys = eval_ship(CDR(n));
+
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_with_subsys || ship_with_subsys->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+
+	// hmm.. if true, must not have arrived yet
+	if (ship_with_subsys->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 
+	auto subsys_name = CTEXT(CDR(CDR(n)));
+
 	// get the subsystem's coordinates or bail if we can't
-	if (!sexp_get_subsystem_world_pos(&subsys_pos, ship_with_subsys_num, subsys_name)) 
+	if (!sexp_get_subsystem_world_pos(&subsys_pos, ship_with_subsys, subsys_name)) 
 		return SEXP_NAN;
 
 	switch (oswpt.type)
@@ -7459,16 +7541,16 @@ int sexp_distance_subsystem(int n)
 		// we have a ship-on-team type, so check all ships of that type
 		case OSWPT_TYPE_SHIP_ON_TEAM:
 		{
-			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
 				if (Ships[Objects[so->objnum].instance].team == oswpt.team)
 				{
-					dist = (int) vm_vec_dist_quick(&Objects[so->objnum].pos, &subsys_pos);
+					dist = distance_method(&Objects[so->objnum], &subsys_pos);
 
 					if (!inited || (dist < dist_min))
 					{
 						dist_min = dist;
-						inited = 1;
+						inited = true;
 					}
 				}
 			}
@@ -7484,7 +7566,7 @@ int sexp_distance_subsystem(int n)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			return (int) vm_vec_dist_quick(&oswpt.objp->pos, &subsys_pos);
+			return distance_method(oswpt.objp, &subsys_pos);
 		}
 
 		// check wings
@@ -7492,12 +7574,12 @@ int sexp_distance_subsystem(int n)
 		{
 			for (int i = 0; i < oswpt.wingp->current_count; i++)
 			{
-				dist = (int) vm_vec_dist_quick(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum].pos, &subsys_pos);
+				dist = distance_method(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum], &subsys_pos);
 
 				if (!inited || (dist < dist_min))
 				{
 					dist_min = dist;
-					inited = 1;
+					inited = true;
 				}
 			}
 
@@ -7772,7 +7854,7 @@ int sexp_get_object_coordinate(int n, int axis)
 	vec3d *pos = NULL, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
 	object_ship_wing_point_team oswpt;
 
-	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
 
 	if (n >= 0)
@@ -7815,7 +7897,7 @@ int sexp_get_object_coordinate(int n, int axis)
 		{
 			pos = &subsys_pos_buf;
 			// get the world pos but bail if we can't get one
-			if (!sexp_get_subsystem_world_pos(pos, oswpt.objp->instance, subsystem_name))
+			if (!sexp_get_subsystem_world_pos(pos, oswpt.ship_entry, subsystem_name))
 				return SEXP_NAN;
 		}
 	}
@@ -16801,7 +16883,7 @@ int sexp_is_facing(int node)
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (sexp_distance3(origin_objp, target_objp) > threshold) {
+		if (sexp_retail_distance3(origin_objp, target_objp) > threshold) {
 			return SEXP_FALSE;
 		}
 	}
@@ -23813,6 +23895,7 @@ int get_generic_subsys(const char *subsys_name)
 	return SUBSYSTEM_NONE;
 }
 
+// *** TEMPORARY FOR API COMPATIBILITY
 // Karajorma - returns false if the ship class has changed since the mission was parsed in
 // Changes can be from use of the change-ship-class SEXP, loadout or any future method
 bool ship_class_unchanged(int ship_index) 
@@ -23827,6 +23910,14 @@ bool ship_class_unchanged(int ship_index)
 	}
 
 	return false;
+}
+// *** TEMPORARY FOR API COMPATIBILITY
+
+// Karajorma - returns false if the ship class has changed since the mission was parsed in
+// Changes can be from use of the change-ship-class SEXP, loadout or any future method
+bool ship_class_unchanged(const ship_registry_entry *ship_entry)
+{
+	return ship_entry->p_objp && ship_entry->p_objp->ship_class == ship_entry->shipp->ship_info_index;
 }
 
 // Goober5000 - needed because any nonzero integer value is "true"
@@ -24481,11 +24572,20 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_DISTANCE:
-				sexp_val = sexp_distance(node);
+				sexp_val = sexp_distance(node, sexp_retail_distance3);
+				break;
+			case OP_DISTANCE_CENTER:
+				sexp_val = sexp_distance(node, sexp_center_distance3);
+				break;
+			case OP_DISTANCE_BBOX:
+				sexp_val = sexp_distance(node, sexp_bbox_distance3);
 				break;
 
-			case OP_DISTANCE_SUBSYSTEM:
-				sexp_val = sexp_distance_subsystem(node);
+			case OP_DISTANCE_CENTER_SUBSYSTEM:
+				sexp_val = sexp_distance_subsystem(node, sexp_center_distance_point);
+				break;
+			case OP_DISTANCE_BBOX_SUBSYSTEM:
+				sexp_val = sexp_distance_subsystem(node, sexp_bbox_distance_point);
 				break;
 
 			case OP_NUM_WITHIN_BOX:
@@ -26961,7 +27061,10 @@ int query_operator_return_type(int op)
 		case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
 		case OP_SIM_HITS_LEFT:
 		case OP_DISTANCE:
-		case OP_DISTANCE_SUBSYSTEM:
+		case OP_DISTANCE_CENTER:
+		case OP_DISTANCE_BBOX:
+		case OP_DISTANCE_CENTER_SUBSYSTEM:
+		case OP_DISTANCE_BBOX_SUBSYSTEM:
 		case OP_NUM_WITHIN_BOX:
 		case OP_NUM_PLAYERS:
 		case OP_NUM_KILLS:
@@ -27770,6 +27873,8 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_MESSAGE_OR_STRING;
 
 		case OP_DISTANCE:
+		case OP_DISTANCE_CENTER:
+		case OP_DISTANCE_BBOX:
 			return OPF_SHIP_WING_SHIPONTEAM_POINT;
 
 		case OP_SET_OBJECT_SPEED_X:
@@ -27946,7 +28051,8 @@ int query_operator_argument_type(int op, int argnum)
 				// This shouldn't happen
 				return OPF_NONE;
 
-		case OP_DISTANCE_SUBSYSTEM:
+		case OP_DISTANCE_CENTER_SUBSYSTEM:
+		case OP_DISTANCE_BBOX_SUBSYSTEM:
 			if (argnum == 0)
 				return OPF_SHIP_WING_SHIPONTEAM_POINT;
 			else if (argnum == 1)
@@ -31362,7 +31468,10 @@ int get_subcategory(int sexp_id)
 			return STATUS_SUBCATEGORY_DAMAGE;
 		
 		case OP_DISTANCE:
-		case OP_DISTANCE_SUBSYSTEM:
+		case OP_DISTANCE_CENTER:
+		case OP_DISTANCE_BBOX:
+		case OP_DISTANCE_CENTER_SUBSYSTEM:
+		case OP_DISTANCE_BBOX_SUBSYSTEM:
 		case OP_NAV_DISTANCE:
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
@@ -31441,7 +31550,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the navpoint" },
 
 	{ OP_NAV_DISTANCE, "distance-to-nav\r\n"
-		"Returns the distance from the player ship to that nav point. Takes 1 argument..."
+		"Returns the distance from the center of the player ship to a nav point. Takes 1 argument..."
 		"\t1:\tThe name of the navpoint" },
 
 	{ OP_NAV_ADD_WAYPOINT, "add-nav-waypoint\r\n"
@@ -32128,16 +32237,42 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship to check." },
 
 	{ OP_DISTANCE, "Distance (Status operator)\r\n"
-		"\tReturns the distance between two objects.  These objects can be either a ship, "
-		"a wing, or a waypoint.\r\n"
-		"When a wing or team is given (for either argument) the answer will be the shortest distance. \r\n\r\n"
+		"\tReturns the distance between two objects.  These can be ships, wings, or waypoints.\r\n"
+		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
+		"NOTE: The standard retail SEXP measures between the center of one ship and the bounding box of another.  It is "
+		"recommended to use center-distance or bbox-distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tThe name of one of the objects.\r\n"
-		"\t2:\tThe name of the other object." },
+		"\t2:\tThe name of the other object."
+	},
 
-	{ OP_DISTANCE_SUBSYSTEM, "Distance from ship subsystem (Status operator)\r\n"
-		"\tReturns the distance between an object and a ship subsystem.  The object can be either a ship, "
-		"a wing, or a waypoint.\r\n\r\n"
+	{ OP_DISTANCE_CENTER, "Distance-To-Center (Status operator)\r\n"
+		"\tReturns the distance between the centers of two objects.  These can be ships, wings, or waypoints.\r\n"
+		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tThe name of one of the objects.\r\n"
+		"\t2:\tThe name of the other object."
+	},
+
+	{ OP_DISTANCE_BBOX, "Distance-To-BBox (Status operator)\r\n"
+		"\tReturns the distance between the bounding boxes of two objects.  These can be ships, wings, or waypoints.\r\n"
+		"When a wing or team is given (for either argument), the result will be the closest distance.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tThe name of one of the objects.\r\n"
+		"\t2:\tThe name of the other object."
+	},
+
+	{ OP_DISTANCE_CENTER_SUBSYSTEM, "Center distance from ship subsystem (Status operator)\r\n"
+		"\tReturns the distance between the center of an object and the center of a ship subsystem.  The object can be a ship, wing, or waypoint.\r\n"
+		"When a wing or team is given, the result will be the closest distance.\r\n\r\n"
+		"Returns a numeric value.  Takes 3 arguments...\r\n"
+		"\t1:\tThe name of the object.\r\n"
+		"\t2:\tThe name of the ship which houses the subsystem.\r\n"
+		"\t3:\tThe name of the subsystem." },
+
+	{ OP_DISTANCE_BBOX_SUBSYSTEM, "BBox distance from ship subsystem (Status operator)\r\n"
+		"\tReturns the distance between the bounding box of an object and the center of a ship subsystem.  The object can be a ship, wing, or waypoint.\r\n"
+		"When a wing or team is given, the result will be the closest distance.\r\n\r\n"
 		"Returns a numeric value.  Takes 3 arguments...\r\n"
 		"\t1:\tThe name of the object.\r\n"
 		"\t2:\tThe name of the ship which houses the subsystem.\r\n"

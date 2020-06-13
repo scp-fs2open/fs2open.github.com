@@ -1948,7 +1948,7 @@ void hud_target_auto_target_next()
 // how far are they?   This uses the point closest to the targeter
 // object on the targetee's bounding box.  So if targeter is inside
 // targtee's bounding box, the distance is 0.
-float hud_find_target_distance( object *targetee, object *targeter )
+float hud_find_target_distance( object *targetee, const vec3d *targeter_pos )
 {
 	vec3d tmp_pnt;
 
@@ -1980,15 +1980,20 @@ float hud_find_target_distance( object *targetee, object *targeter )
 
 	// New way, that uses bounding box.
 	if ( model_num > -1 )	{
-		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, &targeter->pos );
+		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, targeter_pos );
 	}  else {
 		// Old way, that uses radius.
-		dist = vm_vec_dist_quick(&targetee->pos, &targeter->pos) - targetee->radius;
+		dist = vm_vec_dist_quick(&targetee->pos, targeter_pos) - targetee->radius;
 		if ( dist < 0.0f )	{
 			dist = 0.0f;
 		}
 	}
 	return dist;
+}
+
+float hud_find_target_distance( object *targetee, object *targeter )
+{
+	return hud_find_target_distance(targetee, &targeter->pos);
 }
 
 //
