@@ -275,7 +275,7 @@ cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
 cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
 cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
-cmdline_parm weapon_spew("-weaponspew", nullptr, AT_NONE);			// Cmdline_spew_weapon_stats
+cmdline_parm weapon_spew("-weaponspew", nullptr, AT_STRING);			// Cmdline_spew_weapon_stats
 cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
 cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", AT_INT);				// Cmdline_timeout
 cmdline_parm bit32_arg("-32bit", "Deprecated", AT_NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
@@ -297,7 +297,7 @@ int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_network_port = -1;
 int Cmdline_restricted_game = 0;
 int Cmdline_spew_pof_info = 0;
-bool Cmdline_spew_weapon_stats = false;
+WeaponSpewType Cmdline_spew_weapon_stats = WeaponSpewType::NONE;
 int Cmdline_start_netgame = 0;
 int Cmdline_timeout = -1;
 int Cmdline_use_last_pilot = 0;
@@ -1673,7 +1673,14 @@ bool SetCmdlineParams()
 
 	// spew weapon stats
 	if (weapon_spew.found()) {
-		Cmdline_spew_weapon_stats = true;
+		Cmdline_spew_weapon_stats = WeaponSpewType::STANDARD;
+
+		// currently just one argument
+		if (weapon_spew.has_param()) {
+			if (!stricmp(weapon_spew.str(), "all")) {
+				Cmdline_spew_weapon_stats = WeaponSpewType::ALL;
+			}
+		}
 	}
 
 	// mouse coords
