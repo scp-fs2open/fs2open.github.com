@@ -940,7 +940,12 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 	return ade_set_args(L, "s", temp);
 }
 
-ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing = true]", "Starts the defined mission", "boolean", "True, or false if the function fails")
+ADE_FUNC(startMission,
+	l_Mission,
+	"string|enumeration mission /* Filename or MISSION_* enumeration */, [boolean Briefing = true]",
+	"Starts the defined mission",
+	"boolean",
+	"True, or false if the function fails")
 {
 	bool b = true;
 	char s[MAX_FILENAME_LEN];

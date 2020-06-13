@@ -137,7 +137,14 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry, [vector source, vector listener]",
 	}
 }
 
-ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
+ADE_FUNC(playGameSound,
+	l_Audio,
+	"Sound index, [number Panning = 0.0 /* -1.0 left to 1.0 right */, number Volume = 100 /* in percent */, number "
+	"Priority = 0 /* 0-3 */, boolean VoiceMessage = false]",
+	"Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will "
+	"specify the maximum number of that sound that can be played",
+	"boolean",
+	"True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
 	int idx;
 	float pan=0.0f;

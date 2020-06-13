@@ -159,7 +159,12 @@ ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boole
 	return ade_set_args(L, "b", loader.save_player(plh->get()));
 }
 
-ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+ADE_FUNC(setControlMode,
+	l_Base,
+	"nil|enumeration mode /* LE_*_CONTROL */",
+	"Sets the current control mode for the game.",
+	"string",
+	"Current control mode")
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
@@ -195,7 +200,12 @@ ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the cu
 	}
 }
 
-ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+ADE_FUNC(setButtonControlMode,
+	l_Base,
+	"nil|enumeration mode /* LE_*_BUTTON_CONTROL */",
+	"Sets the current control mode for the game.",
+	"string",
+	"Current control mode")
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {

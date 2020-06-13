@@ -1,5 +1,7 @@
 #include "doc_parser.h"
 
+#include "parse/parselo.h"
+
 #undef TRUE
 #undef FALSE
 
@@ -143,7 +145,11 @@ class TypeVisitor : public BaseVisitor {
   public:
 	antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext* context) override
 	{
-		return ade_type_info(context->ID()->getText());
+		if (context->NIL() != nullptr) {
+			return ade_type_info("nil");
+		} else {
+			return ade_type_info(context->ID()->getText());
+		}
 	}
 	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override { return visitChildren(context); }
 
@@ -186,6 +192,14 @@ antlrcpp::Any scripting::ArglistVisitor::visitFunc_arg(ArgumentListParser::Func_
 	return argType;
 }
 
+SCP_string getCommentContent(const SCP_string& content) {
+	auto base = content.substr(2, content.length() - 4); // Strip leading and trailing delimiters
+
+	drop_white_space(base);
+
+	return base;
+}
+
 class ArgumentCollectorVisitor : public BaseVisitor {
 	bool saw_optional = false;
 
@@ -215,6 +229,10 @@ class ArgumentCollectorVisitor : public BaseVisitor {
 			const auto valueAny = context->value()->accept(&valueVisit);
 			argdef.def_val      = valueAny.as<SCP_string>();
 			argdef.optional     = true;
+		}
+
+		if (context->ARG_COMMENT() != nullptr) {
+			argdef.comment = getCommentContent(context->ARG_COMMENT()->getText());
 		}
 
 		args.push_back(std::move(argdef));

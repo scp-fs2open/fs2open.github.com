@@ -172,6 +172,10 @@ void output_argument_list(FILE* fp, const DocumentationElementFunction::argument
 					fprintf(fp, " = <i>%s</i>", arg.def_val.c_str());
 				}
 			}
+
+			if (!arg.comment.empty()) {
+				fprintf(fp, " (%s)", arg.comment.c_str());
+			}
 		}
 
 		if (optional) {

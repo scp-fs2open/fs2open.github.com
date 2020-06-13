@@ -11,6 +11,7 @@ struct argument_def {
 	SCP_string name;
 	SCP_string def_val;
 	bool optional = false;
+	SCP_string comment;
 };
 
 class argument_list_parser {

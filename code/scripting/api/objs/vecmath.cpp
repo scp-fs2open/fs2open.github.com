@@ -61,10 +61,11 @@ void matrix_h::SetStatus(MatrixState n_status) {
 ADE_OBJ(l_Matrix, matrix_h, "orientation", "Orientation matrix object");
 
 ADE_INDEXER(l_Matrix,
-			"p,b,h or 1-9",
-			"Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)",
-			"number",
-			"Number at the specified index, or 0 if index is invalid.") {
+	ade_overload_list({"string axis /* p, b, h */", "number element /* 1-9 */"}),
+	"Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)",
+	"number",
+	"Number at the specified index, or 0 if index is invalid.")
+{
 	matrix_h* mh;
 	const char* s = nullptr;
 	float newval = 0.0f;
@@ -284,12 +285,12 @@ ADE_FUNC(getRvec,
 	return ade_set_args(L, "o", l_Vector.Set(mh->GetMatrix()->vec.rvec));
 }
 
-
 ADE_INDEXER(l_Vector,
-			"x,y,z or 1-3",
-			"Vector component",
-			"number",
-			"Value at index, or 0 if vector handle is invalid") {
+	ade_overload_list({"string axis /* x,y,z */", "number element /* 1-3 */"}),
+	"Vector component",
+	"number",
+	"Value at index, or 0 if vector handle is invalid")
+{
 	vec3d* v3;
 	const char* s = nullptr;
 	float newval = 0.0f;

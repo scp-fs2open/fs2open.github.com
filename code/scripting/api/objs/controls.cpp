@@ -44,7 +44,13 @@ ADE_FUNC(getMouseY, l_Mouse, NULL, "Gets Mouse Y pos", "number", "Mouse y positi
 	return ade_set_args(L, "i", y);
 }
 
-ADE_FUNC(isMouseButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]", "Returns whether the specified mouse buttons are up or down", "boolean", "Whether specified mouse buttons are down, or false if mouse is not initialized yet")
+ADE_FUNC(isMouseButtonDown,
+	l_Mouse,
+	"enumeration buttonCheck1 /* MOUSE_*_BUTTON */, [ enumeration buttonCheck2 /* MOUSE_*_BUTTON */, enumeration "
+	"buttonCheck2 /* MOUSE_*_BUTTON */ ]",
+	"Returns whether the specified mouse buttons are up or down",
+	"boolean",
+	"Whether specified mouse buttons are down, or false if mouse is not initialized yet")
 {
 	if(!mouse_inited)
 		return ade_set_error(L, "b", false);
