@@ -7949,7 +7949,11 @@ void weapon_spew_stats(WeaponSpewType type)
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s,%s,", wi.name, "Primary"));
-			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+			//Beam range is set inthe binfo and velocity isn't very relevant to them.
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				mprintf((",%.2f,",wi.b_info.range));
+			else
+				mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
 			float damage;
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
@@ -8040,7 +8044,11 @@ void weapon_spew_stats(WeaponSpewType type)
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
 		{
 			mprintf(("%s\n", wi.name));
-			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
+			//Beam range is set inthe binfo and velocity isn't very relevant to them.
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				mprintf((",%.2f,", wi.b_info.range));
+			else
+				mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
 			float damage;
 			if (wi.wi_flags[Weapon::Info_Flags::Beam])
