@@ -8,3 +8,4 @@ runtime/CMakeLists.txt:
  - added target_compile_definitions to communicate interface definitions
  - added EXCLUDE_FROM_ALL to targets
  - Added "compiler platform" links to antlr targets
+ - Disable installation rules
