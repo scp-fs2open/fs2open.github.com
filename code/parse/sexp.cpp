@@ -6487,27 +6487,81 @@ int sexp_special_warp_dist( int n)
 	return (int) (50.0f * dist_to_plane / half_length);
 }
 
-
-int sexp_time_destroyed(int n)
+int sexp_time_exited(int n, int op_num)
 {
+	bool ship = (op_num == OP_TIME_SHIP_DESTROYED || op_num == OP_TIME_SHIP_DEPARTED);
+	bool destroyed = (op_num == OP_TIME_SHIP_DESTROYED || op_num == OP_TIME_WING_DESTROYED);
 	fix time;
 
-	if ( !mission_log_get_time( LOG_SHIP_DESTROYED, CTEXT(n), NULL, &time)
-		&& !mission_log_get_time( LOG_SELF_DESTRUCTED, CTEXT(n), NULL, &time) ) {		// returns 0 when not found
-		return SEXP_NAN;
+	if (ship)
+	{
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_NAN_FOREVER;
+		if (ship_entry->status != ShipStatus::EXITED)
+			return SEXP_NAN;
+
+		if (destroyed)
+		{
+			if (!mission_log_get_time(LOG_SHIP_DESTROYED, ship_entry->name, nullptr, &time)
+				&& !mission_log_get_time(LOG_SELF_DESTRUCTED, ship_entry->name, nullptr, &time)) {		// returns 0 when not found
+				return SEXP_NAN_FOREVER;	// exited but not destroyed
+			}
+		}
+		else
+		{
+			if (!mission_log_get_time(LOG_SHIP_DEPARTED, ship_entry->name, nullptr, &time)) {			// returns 0 when not found
+				return SEXP_NAN_FOREVER;	// exited but not departed
+			}
+		}
 	}
-	
+	else
+	{
+		auto wingp = eval_wing(n);
+		if (!wingp)
+			return SEXP_NAN_FOREVER;
+		if (!wingp->flags[Ship::Wing_Flags::Gone])
+			return SEXP_NAN;
+
+		if (!mission_log_get_time(destroyed ? LOG_WING_DESTROYED : LOG_WING_DEPARTED, wingp->name, nullptr, &time)) {
+			return SEXP_NAN_FOREVER;		// exited but not de[stroy|part]ed
+		}
+	}
+
+	// if we're here we know that the ship/wing did its thing
 	return f2i(time);
 }
 
-int sexp_time_wing_destroyed(int n)
+int sexp_time_arrived(int n, bool ship)
 {
 	fix time;
 
-	if ( !mission_log_get_time( LOG_WING_DESTROYED, CTEXT(n), NULL, &time) ){
-		return SEXP_NAN;
+	if (ship)
+	{
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_NAN_FOREVER;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_NAN;
+
+		if (!mission_log_get_time(LOG_SHIP_ARRIVED, CTEXT(n), nullptr, &time)) {
+			return SEXP_NAN;
+		}
 	}
-	
+	else
+	{
+		auto wingp = eval_wing(n);
+		if (!wingp)
+			return SEXP_NAN_FOREVER;
+		if (wing_has_yet_to_arrive(wingp))
+			return SEXP_NAN;
+
+		if (!mission_log_get_time(LOG_WING_ARRIVED, CTEXT(n), nullptr, &time)) {
+			return SEXP_NAN;
+		}
+	}
+
+	// if we're here we know that the ship/wing has arrived
 	return f2i(time);
 }
 
@@ -6531,54 +6585,6 @@ int sexp_time_docked_or_undocked(int n, bool docked)
 	}
 
 	if ( !mission_log_get_time_indexed(docked ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ){
-		return SEXP_NAN;
-	}
-
-	return f2i(time);
-}
-
-int sexp_time_ship_arrived(int n)
-{
-	fix time;
-
-	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_SHIP_ARRIVED, CTEXT(n), NULL, &time ) ){
-		return SEXP_NAN;
-	}
-
-	return f2i(time);
-}
-
-int sexp_time_wing_arrived(int n)
-{
-	fix time;
-
-	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_WING_ARRIVED, CTEXT(n), NULL, &time ) ){
-		return SEXP_NAN;
-	}
-
-	return f2i(time);
-}
-
-int sexp_time_ship_departed(int n)
-{
-	fix time;
-
-	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_SHIP_DEPARTED, CTEXT(n), NULL, &time ) ){
-		return SEXP_NAN;
-	}
-
-	return f2i(time);
-}
-
-int sexp_time_wing_departed(int n)
-{
-	fix time;
-
-	Assert( n != -1 );
-	if ( !mission_log_get_time(LOG_WING_DEPARTED, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -24364,27 +24370,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TIME_SHIP_DESTROYED:
-				sexp_val = sexp_time_destroyed(node);
-				break;
-			
 			case OP_TIME_WING_DESTROYED:
-				sexp_val = sexp_time_wing_destroyed(node);
-				break;
-			
-			case OP_TIME_SHIP_ARRIVED:
-				sexp_val = sexp_time_ship_arrived(node);
-				break;
-			
-			case OP_TIME_WING_ARRIVED:
-				sexp_val = sexp_time_wing_arrived(node);
-				break;
-			
 			case OP_TIME_SHIP_DEPARTED:
-				sexp_val = sexp_time_ship_departed(node);
-				break;
-			
 			case OP_TIME_WING_DEPARTED:
-				sexp_val = sexp_time_wing_departed(node);
+				sexp_val = sexp_time_exited(node, op_num);
+				break;
+
+			case OP_TIME_SHIP_ARRIVED:
+			case OP_TIME_WING_ARRIVED:
+				sexp_val = sexp_time_arrived(node, op_num == OP_TIME_SHIP_ARRIVED);
 				break;
 
 			case OP_MISSION_TIME:
