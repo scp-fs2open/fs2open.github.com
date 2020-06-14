@@ -107,18 +107,18 @@ set_target_properties(antlr4_static
 
 target_compile_definitions(antlr4_static INTERFACE ANTLR4CPP_STATIC)
 
-install(TARGETS antlr4_shared
-        DESTINATION lib 
-        EXPORT antlr4-targets)
-install(TARGETS antlr4_static
-        DESTINATION lib
-        EXPORT antlr4-targets)
-
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/runtime/src/" 
-        DESTINATION "include/antlr4-runtime"
-        COMPONENT dev 
-        FILES_MATCHING PATTERN "*.h"
-        )
+#install(TARGETS antlr4_shared
+#        DESTINATION lib
+#        EXPORT antlr4-targets)
+#install(TARGETS antlr4_static
+#        DESTINATION lib
+#        EXPORT antlr4-targets)
+#
+#install(DIRECTORY "${PROJECT_SOURCE_DIR}/runtime/src/"
+#        DESTINATION "include/antlr4-runtime"
+#        COMPONENT dev
+#        FILES_MATCHING PATTERN "*.h"
+#    )
 
 
 
