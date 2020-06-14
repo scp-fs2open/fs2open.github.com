@@ -6763,53 +6763,22 @@ int sexp_shields_left(int n)
  *
  * This hit amount counts for all hits on the ship (hull + subsystems).  Use hits_left_hull to find hull hits remaining.
  */
-int sexp_hits_left(int n)
+int sexp_hits_left(int n, bool sim_hull)
 {
-	int shipnum, percent;
-	char *shipname;
+	auto ship_entry = eval_ship(n);
 
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
-	// since we are working with total hit points taken, not total remaining.
-	ship		*shipp = &Ships[shipnum];
-	object	*objp = &Objects[shipp->objnum];
-	percent = (int)std::lround(100.0f * get_hull_pct(objp));
-	return percent;
-}
+	float hull_pct = sim_hull ? get_sim_hull_pct(ship_entry->objp) : get_hull_pct(ship_entry->objp);
 
-int sexp_sim_hits_left(int n)
-{
-	int shipnum, percent;
-	char *shipname;
-
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
-		return SEXP_NAN_FOREVER;
-	}
-
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
-		return SEXP_NAN;
-	}
-
-	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
-	// since we are working with total hit points taken, not total remaining.
-	ship		*shipp = &Ships[shipnum];
-	object	*objp = &Objects[shipp->objnum];
-	percent = (int)std::lround(100.0f * get_sim_hull_pct(objp));
+	// now return the amount of hits left as a percentage of the whole.
+	int percent = (int)std::lround(hull_pct * 100.0f);
 	return percent;
 }
 
@@ -24354,7 +24323,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HITS_LEFT:
-				sexp_val = sexp_hits_left(node);
+			case OP_SIM_HITS_LEFT:
+				sexp_val = sexp_hits_left(node, op_num == OP_SIM_HITS_LEFT);
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
@@ -24367,10 +24337,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
 				sexp_val = sexp_hits_left_subsystem_specific(node);
-				break;
-
-			case OP_SIM_HITS_LEFT:
-				sexp_val = sexp_sim_hits_left(node);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
