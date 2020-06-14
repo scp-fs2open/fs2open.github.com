@@ -6866,55 +6866,24 @@ int sexp_is_ship_visible(int n)
 }
 
 /**
- * Determine if the stealth flag set on this ship
+ * Determine if a flag is set on this ship
  */
-int sexp_is_ship_stealthy(int n)
+int sexp_check_ship_flag(int n, Ship::Ship_Flags flag)
 {
-	char *shipname;
-	int shipnum;
+	auto ship_entry = eval_ship(n);
 
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ) {					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth])
+	if (ship_entry->shipp->flags[flag])
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
-}
-
-/**
- * Determine if the friendly stealth ship visible
- */
-int sexp_is_friendly_stealth_visible(int n)
-{
-	char *shipname;
-	int shipnum;
-
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
-		return SEXP_NAN_FOREVER;
-	}
-
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ) {					// hmm.. if true, must not have arrived yet
-		return SEXP_NAN;
-	}
-
-	if (Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis])
-		return SEXP_FALSE;
-	else
-		return SEXP_TRUE;
 }
 
 // get multi team v team score
@@ -24474,11 +24443,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_SHIP_STEALTHY:
-				sexp_val = sexp_is_ship_stealthy(node);
+				sexp_val = sexp_check_ship_flag(node, Ship::Ship_Flags::Stealth);
 				break;
 
 			case OP_IS_FRIENDLY_STEALTH_VISIBLE:
-				sexp_val = sexp_is_friendly_stealth_visible(node);
+				sexp_val = sexp_check_ship_flag(node, Ship::Ship_Flags::Friendly_stealth_invis);
 				break;
 
 			case OP_TEAM_SCORE:
@@ -34700,7 +34669,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
-		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in milliseconds)\r\n"
 	},
 
 	// Karajora
@@ -34708,7 +34677,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
-		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in milliseconds)\r\n"
 	},
 
 	// Karajora
