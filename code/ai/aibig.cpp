@@ -464,7 +464,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 				path_done=1;
 			} else {
 				// if not done check what magnitude of distance to use --wookieejedi
-				if (aip->ai_profile_flags[AI::Profile_Flags::Use_large_path_radius]) {
+				if (aip->ai_profile_flags[AI::Profile_Flags::Use_large_radii_for_subsystem_path_points]) {
 					// use large distance
 					aip->path_goal_dist = 775;
 				} else {
@@ -472,7 +472,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 					aip->path_goal_dist = 5;
 				}
 			}
-
+			mprintf(("dragon: aip->path_goal_dist: %i ...\n", aip->path_goal_dist));
 			min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
 			if ( (checked_sight && subsys_in_sight) && (dot > min_dot) ) {
 				in_view=1;
