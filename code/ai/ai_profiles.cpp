@@ -472,6 +472,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
+				set_flag(profile, "$use model path radius:", AI::Profile_Flags::Use_large_path_radius);
+
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {

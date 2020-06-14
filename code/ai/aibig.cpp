@@ -431,7 +431,6 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
 		if ( (checked_sight && ((!subsys_in_sight) || (dot < min_dot)) ) )  {
 
-			aip->path_goal_dist = 5;
 			subsys_path_num = aip->targeted_subsys->system_info->path_num;
 			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num < pm_t->n_paths ) {
 				// maybe create a new path
@@ -463,6 +462,15 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			if ( aip->path_cur >= (aip->path_start+aip->path_length-1) ) {
 				path_done=1;
+			} else {
+				// if not done check what magnitude of distance to use --wookieejedi
+				if (aip->ai_profile_flags[AI::Profile_Flags::Use_large_path_radius]) {
+					// use large distance
+					aip->path_goal_dist = 775;
+				} else {
+					// use default distance
+					aip->path_goal_dist = 5;
+				}
 			}
 
 			min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
