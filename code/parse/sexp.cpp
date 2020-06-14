@@ -15051,10 +15051,10 @@ int sexp_has_weapon(int node, int op_num)
 
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_KNOWN_FALSE;
+		return SEXP_NAN_FOREVER;
 	}
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
-		return SEXP_CANT_EVAL;
+		return SEXP_NAN;
 	}
 	shipp = ship_entry->shipp;
 
