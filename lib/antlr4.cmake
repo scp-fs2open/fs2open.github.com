@@ -22,12 +22,10 @@ add_subdirectory(antlr4-cpp-runtime)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/cmake" PARENT_SCOPE)
 suppress_warnings(antlr4_static)
-suppress_warnings(antlr4_shared)
 
 target_include_directories(antlr4_static PUBLIC "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/runtime/src")
-target_include_directories(antlr4_shared PUBLIC "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/runtime/src")
 
-set_target_properties(antlr4_static antlr4_shared
+set_target_properties(antlr4_static
     PROPERTIES
     FOLDER "3rdparty/antlr-runtime"
 )
