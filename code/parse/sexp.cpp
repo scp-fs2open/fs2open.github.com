@@ -16930,55 +16930,27 @@ void multi_sexp_send_training_message()
 	}
 }
 
-int sexp_shield_recharge_pct(int node)
+int sexp_gse_recharge_pct(int node, int op_num)
 {
-	int sindex;
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
+	int index;
+	if (op_num == OP_WEAPON_RECHARGE_PCT)
+		index = ship_entry->shipp->weapon_recharge_index;
+	else if (op_num == OP_SHIELD_RECHARGE_PCT)
+		index = ship_entry->shipp->shield_recharge_index;
+	else if (op_num == OP_ENGINE_RECHARGE_PCT)
+		index = ship_entry->shipp->engine_recharge_index;
+	else
+		return SEXP_NAN_FOREVER;
 
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].shield_recharge_index]);
-}
-
-int sexp_engine_recharge_pct(int node)
-{
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].engine_recharge_index]);
-}
-
-int sexp_weapon_recharge_pct(int node)
-{
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].weapon_recharge_index]);
+	// recharge pct
+	return (int)(100.0f * Energy_levels[index]);
 }
 
 /**
@@ -25630,16 +25602,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_motion_debris(node);
 				break;
 
-			case OP_SHIELD_RECHARGE_PCT:
-				sexp_val = sexp_shield_recharge_pct(node);
-				break;
-
-			case OP_ENGINE_RECHARGE_PCT:
-				sexp_val = sexp_engine_recharge_pct(node);
-				break;
-
 			case OP_WEAPON_RECHARGE_PCT:
-				sexp_val = sexp_weapon_recharge_pct(node);
+			case OP_SHIELD_RECHARGE_PCT:
+			case OP_ENGINE_RECHARGE_PCT:
+				sexp_val = sexp_gse_recharge_pct(node, op_num);
 				break;
 
 			case OP_GET_ETS_VALUE:
