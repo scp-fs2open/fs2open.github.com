@@ -10797,117 +10797,65 @@ void multi_sexp_change_ai_class()
 // passed in should be an ai-goal of the proper form.  The code in MissionGoal should
 // check the syntax.
 
-void sexp_add_ship_goal(int n)
-{
-	int num, sindex;
-	char *ship_name;
-
-	Assert ( n >= 0 );
-	ship_name = CTEXT(n);
-	num = ship_name_lookup(ship_name, 1);	// Goober5000 - including player
-	if ( num < 0 )									// ship not around anymore???? then forget it!
-		return;
-
-	sindex = CDR(n);
-	ai_add_ship_goal_sexp( sindex, AIG_TYPE_EVENT_SHIP, &(Ai_info[Ships[num].ai_index]) );
-}
-
-// identical to above, except add a wing
-void sexp_add_wing_goal(int n)
-{
-	int num, sindex;
-	char *wing_name;
-
-	Assert ( n >= 0 );
-	wing_name = CTEXT(n);
-	num = wing_name_lookup(wing_name);
-	if ( num < 0 )									// ship not around anymore???? then forget it!
-		return;
-
-	sindex = CDR(n);
-	ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
-}
-
 /**
  * Adds a goal to the specified entry (ships and wings have unique names between the two sets).
  */
 void sexp_add_goal(int n)
 {
-	int num, sindex;
-	char *name;
-
 	Assert ( n >= 0 );
-	name = CTEXT(n);
-	sindex = CDR(n);
 
-	// first, look for ship name -- if found, then add ship goal.  else look for wing name -- if
-	// found, add wing goal
-	if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
-		ai_add_ship_goal_sexp( sindex, AIG_TYPE_EVENT_SHIP, &(Ai_info[Ships[num].ai_index]) );
-	else if ( (num = wing_name_lookup(name)) != -1 )
-		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, &Wings[num] );
+	int goal_node = CDR(n);
+
+	auto ship_entry = eval_ship(n);
+	if (ship_entry)
+	{
+		if (ship_entry->status != ShipStatus::PRESENT)
+			return;										// ship not around anymore???? then forget it!
+
+		ai_add_ship_goal_sexp(goal_node, AIG_TYPE_EVENT_SHIP, &(Ai_info[ship_entry->shipp->ai_index]));
+		return;
+	}
+
+	auto wingp = eval_wing(n);
+	if (wingp)
+	{
+		if (wingp->flags[Ship::Wing_Flags::Gone])
+			return;										// wing not around anymore???? then forget it!
+
+		ai_add_wing_goal_sexp(goal_node, AIG_TYPE_EVENT_WING, wingp);
+	}
 }
 
 // Goober5000
 void sexp_remove_goal(int n)
 {
 	Assert( n >= 0 );
-	/* Grab the information that we need about this goal removal action */
-	int num, sindex;
-	int goalindex;
-	char *name;
 
-	name = CTEXT(n);
-	sindex = CDR(n);
+	int goal_node = CDR(n);
 
-	// first, look for ship name -- if found, then add ship goal.  else look for wing name -- if
-	// found, add wing goal
-	if ( (num = ship_name_lookup(name, 1)) != -1 )
+	auto ship_entry = eval_ship(n);
+	if (ship_entry)
 	{
-		goalindex = ai_remove_goal_sexp_sub( sindex, Ai_info[Ships[num].ai_index].goals );
-		if ( goalindex >= 0 )
+		if (ship_entry->status != ShipStatus::PRESENT)
+			return;										// ship not around anymore???? then forget it!
+
+		int goalindex = ai_remove_goal_sexp_sub(goal_node, Ai_info[ship_entry->shipp->ai_index].goals);
+		if (goalindex >= 0)
 		{
-			if ( Ai_info[Ships[num].ai_index].active_goal == goalindex )
-				Ai_info[Ships[num].ai_index].active_goal = AI_GOAL_NONE;
+			if (Ai_info[ship_entry->shipp->ai_index].active_goal == goalindex)
+				Ai_info[ship_entry->shipp->ai_index].active_goal = AI_GOAL_NONE;
 		}
-	}
-	else if ( (num = wing_name_lookup(name)) != -1 )
-	{
-		ai_remove_wing_goal_sexp( sindex, &Wings[num] );
-	}
-	
-}
-
-/**
- * Clear out all AI goals for a ship
- */
-void sexp_clear_ship_goals(int n)
-{
-	int num;
-	char *ship_name;
-
-	Assert ( n >= 0 );
-	ship_name = CTEXT(n);
-	if ( (num = ship_name_lookup(ship_name, 1)) != -1) 	// Goober5000 - include players
-	{
-		ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
-	}
-}
-
-/**
- * Clear out AI goals for a wing
- */
-void sexp_clear_wing_goals(int n)
-{
-	int num;
-	char *wing_name;
-
-	Assert ( n >= 0 );
-	wing_name = CTEXT(n);
-	num = wing_name_lookup(wing_name);
-	if ( num < 0 )
 		return;
-	ai_clear_wing_goals( &Wings[num] );
+	}
+
+	auto wingp = eval_wing(n);
+	if (wingp)
+	{
+		if (wingp->flags[Ship::Wing_Flags::Gone])
+			return;										// wing not around anymore???? then forget it!
+
+		ai_remove_wing_goal_sexp(goal_node, wingp);
+	}
 }
 
 /**
@@ -10915,18 +10863,26 @@ void sexp_clear_wing_goals(int n)
  */
 void sexp_clear_goals(int n)
 {
-	int num;
-	char *name;
+	for (; n >= 0; n = CDR(n))
+	{
+		auto ship_entry = eval_ship(n);
+		if (ship_entry)
+		{
+			if (ship_entry->status != ShipStatus::PRESENT)
+				return;										// ship not around anymore???? then forget it!
 
-	Assert ( n >= 0 );
-	while ( n != -1 ) {
-		name = CTEXT(n);
-		if ( (num = ship_name_lookup(name, 1)) != -1 )	// Goober5000 - include players
-			ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
-		else if ( (num = wing_name_lookup(name)) != -1 )
-			ai_clear_wing_goals( &Wings[num] );
+			ai_clear_ship_goals(&(Ai_info[ship_entry->shipp->ai_index]));
+			continue;
+		}
 
-		n = CDR(n);
+		auto wingp = eval_wing(n);
+		if (wingp)
+		{
+			if (wingp->flags[Ship::Wing_Flags::Gone])
+				return;										// wing not around anymore???? then forget it!
+
+			ai_clear_wing_goals(wingp);
+		}
 	}
 }
 
@@ -24632,15 +24588,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_SHIP_GOAL:
-				sexp_add_ship_goal(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_ADD_WING_GOAL:
-				sexp_add_wing_goal(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_ADD_GOAL:
 				sexp_add_goal(node);
 				sexp_val = SEXP_TRUE;
@@ -24652,15 +24600,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_CLEAR_SHIP_GOALS:
-				sexp_clear_ship_goals(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_CLEAR_WING_GOALS:
-				sexp_clear_wing_goals(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_CLEAR_GOALS:
 				sexp_clear_goals(node);
 				sexp_val = SEXP_TRUE;
