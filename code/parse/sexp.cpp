@@ -294,8 +294,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "distance",						OP_DISTANCE,							2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "distance-to-center",				OP_DISTANCE_CENTER,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-bbox",				OP_DISTANCE_BBOX,						2,	2,			SEXP_INTEGER_OPERATOR, },	// Goober5000
-	{ "distance-center-subsystem",		OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
-	{ "distance-bbox-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
+	{ "distance-center-to-subsystem",	OP_DISTANCE_CENTER_SUBSYSTEM,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
+	{ "distance-bbox-to-subsystem",		OP_DISTANCE_BBOX_SUBSYSTEM,				3,	3,			SEXP_INTEGER_OPERATOR, },	// Goober5000
 	{ "distance-to-nav",				OP_NAV_DISTANCE,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// Kazan
 	{ "num-within-box",					OP_NUM_WITHIN_BOX,						7,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	//WMC
 	{ "is-in-box",						OP_IS_IN_BOX,							7,	8,			SEXP_INTEGER_OPERATOR,	},	//Sushi
@@ -3561,7 +3561,7 @@ int get_sexp()
 			else if (!stricmp(token, "variable-array-set"))
 				strcpy_s(token, "set-variable-by-index");
 			else if (!stricmp(token, "distance-ship-subsystem"))
-				strcpy_s(token, "distance-center-subsystem");
+				strcpy_s(token, "distance-center-to-subsystem");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -8514,94 +8514,74 @@ int sexp_was_medal_granted(int n)
 	return SEXP_FALSE;
 }
 
-/**
- * @todo Add code to check the damage ships which have exited have taken
- */
-float get_damage_caused(int damaged_ship, int attacker ) 
+float get_damage_caused(const ship_registry_entry *ship_entry, int attacker_sig)
 {
-	int sindex, idx;
-	float damage_total = 0.0f; 
+	int idx;
+	float damage_total = 0.0f;
 
-
-	// is the ship that took damage in the mission still?
-	sindex = ship_get_by_signature(damaged_ship);
-
-	if (sindex >= 0 ) {
-		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
-			if (Ships[sindex].damage_ship_id[idx] == attacker) {
-				damage_total += Ships[sindex].damage_ship[idx];
-				break;
-			}
-		}
-	}
-	else {
+	// has the ship that took damage exited the mission?
+	if (ship_entry->exited_index >= 0) {
 		//TO DO - Add code to check the damage ships which have exited have taken
-	
-		sindex = ship_find_exited_ship_by_signature(damaged_ship);
-		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
-			if (Ships_exited[sindex].damage_ship_id[idx] == attacker) {
-				damage_total += Ships_exited[sindex].damage_ship[idx];
+
+		for (idx = 0; idx < MAX_DAMAGE_SLOTS; idx++) {
+			if (Ships_exited[ship_entry->exited_index].damage_ship_id[idx] == attacker_sig) {
+				damage_total += Ships_exited[ship_entry->exited_index].damage_ship[idx];
 				break;
 			}
 		}
-
-	
+	} else {
+		for (idx = 0; idx < MAX_DAMAGE_SLOTS; idx++) {
+			if (ship_entry->shipp->damage_ship_id[idx] == attacker_sig) {
+				damage_total += ship_entry->shipp->damage_ship[idx];
+				break;
+			}
+		}
 	}
-	return damage_total; 
+
+	return damage_total;
 }
 
 // Karajorma
 int sexp_get_damage_caused(int node) 
 {
-	int sindex, damaged_sig, attacker_sig; 
+	int ship_class, attacker_sig;
 	float damage_caused = 0.0f;
-	char	*name;
-	int ship_class;
 
-	name = CTEXT(node);
-	sindex = ship_name_lookup(name); 
-	if (sindex < 0) {
-		// this ship may have exited already.
-		sindex = ship_find_exited_ship_by_name(CTEXT(node));
-		if (sindex < 0) {
-			// this is probably a ship which hasn't arrived and thus can't have taken any damage yet
-			return fl2i(damage_caused);
-		}
-		else {
-			damaged_sig = Ships_exited[sindex].obj_signature;
-			ship_class = Ships_exited[sindex].ship_class;
-		}
-	}
-	else {
-		damaged_sig = Objects[Ships[sindex].objnum].signature ;
-		ship_class = Ships[sindex].ship_info_index;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry)
+		return SEXP_NAN_FOREVER;
+
+	// a ship which hasn't arrived can't have taken any damage yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return 0;
 	}
 
+	// this ship may have exited already.
+	if (ship_entry->exited_index >= 0) {
+		ship_class = Ships_exited[ship_entry->exited_index].ship_class;
+	} else {
+		ship_class = ship_entry->shipp->ship_info_index;
+	}
 
 	node = CDR(node);
 	Assert (node != -1);
 
 	// go through the list of ships who we think may have attacked the ship
 	for ( ; node != -1; node = CDR(node) ) {
-		name = CTEXT(node);
-		sindex = ship_name_lookup(name); 
-		if (sindex < 0) {
-			sindex = ship_find_exited_ship_by_name(name);
-			if (sindex < 0) {
-				continue;
-			} else {
-			attacker_sig = Ships_exited[sindex].obj_signature; 
-		}
-		}
-		else {
-			attacker_sig = Objects[Ships[sindex].objnum].signature ;
-		}
+		auto attacker = eval_ship(node);
 
-		if (attacker_sig < 0) {
+		if (!attacker || attacker->status == ShipStatus::NOT_YET_PRESENT) {
 			continue;
 		}
 
-		damage_caused += get_damage_caused (damaged_sig, attacker_sig);
+		// this ship may have exited already.
+		if (ship_entry->exited_index >= 0) {
+			attacker_sig = Ships_exited[ship_entry->exited_index].obj_signature;
+		} else {
+			attacker_sig = attacker->objp->signature;
+		}
+
+		damage_caused += get_damage_caused (ship_entry, attacker_sig);
 	}
 	
 	Assertion((ship_class > -1) && (ship_class < ship_info_size()), "Invalid ship class '%d' passed to sexp_get_damage_caused() (should be >= 0 and < %d); get a coder!\n", ship_class, ship_info_size());
@@ -8618,7 +8598,6 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 {
 	int percent;
 	int total, count;
-	char *name;
 	bool is_nan, is_nan_forever;
 
 	percent = eval_num(n, is_nan, is_nan_forever);
@@ -8632,26 +8611,33 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 	// iterate through the rest of the ships/wings in the list and tally the departures and the
 	// total
 	for ( n = CDR(n); n != -1; n = CDR(n) ) {
-		int wingnum;
-
-		name = CTEXT(n);
-
-		wingnum = wing_name_lookup( name, 1 );
-		if ( wingnum != -1 ) {
+		// this might be a wing
+		auto wingp = eval_wing(n);
+		if (wingp) {
 			// for wings, we can increment the total by the total number of ships that we expect for
 			// this wing, and the departures by the number of departures stored for this wing
-			total += (Wings[wingnum].wave_count * Wings[wingnum].num_waves);
+			total += (wingp->wave_count * wingp->num_waves);
+
 			if ( what == OP_PERCENT_SHIPS_DEPARTED )
-				count += Wings[wingnum].total_departed;
+				count += wingp->total_departed;
 			else if ( what == OP_PERCENT_SHIPS_DESTROYED )
-				count += Wings[wingnum].total_destroyed;
+				count += wingp->total_destroyed;
 			else if ( what == OP_PERCENT_SHIPS_ARRIVED )
-				count += Wings[wingnum].total_arrived_count;
+				count += wingp->total_arrived_count;
 			else
-				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable", what, name);
+				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable", what, wingp->name);
 		} else {
+			auto ship_entry = eval_ship(n);
+
 			// must be a ship, so increment the total by 1, then determine if this ship has departed
 			total++;
+
+			// no need to check invalid ships, or ones that haven't arrived
+			if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+				continue;
+			}
+			auto name = ship_entry->name;
+
 			if ( what == OP_PERCENT_SHIPS_DEPARTED ) {
 				if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, NULL) )
 					count++;
@@ -8687,7 +8673,7 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 int sexp_depart_node_delay(int n)
 {
 	int count, num_departed;
-	char *jump_node_name, *name;
+	char *jump_node_name;
 	fix delay, latest_time, this_time;
 	bool is_nan, is_nan_forever;
 
@@ -8709,20 +8695,24 @@ int sexp_depart_node_delay(int n)
 	num_departed = 0;
 	while ( n != -1 ) {
 		count++;
-		name = CTEXT(n);
 
-		if (sexp_query_has_yet_to_arrive(name))
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_KNOWN_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
-		// if ship/wing destroyed, sexpression is known false.  Also, if there is no departure log entry, then
-		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, jump_node_name, &this_time) ) {
-			num_departed++;
-			if ( this_time > latest_time )
-				latest_time = this_time;
+		if (ship_entry->status == ShipStatus::EXITED)
+		{
+			if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_entry->name, jump_node_name, &this_time)) {
+				num_departed++;
+				if (this_time > latest_time)
+					latest_time = this_time;
+			}
+			else
+				return SEXP_KNOWN_FALSE;	// exited but not departed (or not through the node)
 		}
+
 		n = CDR(n);
 	}
 
@@ -8739,7 +8729,6 @@ int sexp_destroyed_departed_delay(int n)
 {
 	int count, total;
 	fix delay, latest_time;
-	char *name;
 	bool is_nan, is_nan_forever;
 
 	Assert( n >= 0 );
@@ -8757,28 +8746,45 @@ int sexp_destroyed_departed_delay(int n)
 	total = 0;					// total number of ships/wings to check
 	latest_time = 0;
 	while ( n != -1 ) {
-		int wingnum;
 		fix time_gone = 0;
-
 		total++;
-		name = CTEXT(n);
 
-		// for wings, check the WF_GONE flag to see if there are no more ships in this wing to arrive.
-		wingnum = wing_name_lookup(name, 1);
-		if ( wingnum != -1 ) {
-			if ( Wings[wingnum].flags[Ship::Wing_Flags::Gone] ) {
+		auto wingp = eval_wing(n);
+		if (wingp) {
+			if (wing_has_yet_to_arrive(wingp)) {
+				return SEXP_CANT_EVAL;
+			}
+
+			// for wings, check the WF_GONE flag to see if there are no more ships in this wing to arrive.
+			if (wingp->flags[Ship::Wing_Flags::Gone]) {
 				// be sure to get the latest time of one of these 
-				if ( Wings[wingnum].time_gone > latest_time ){
-					time_gone = Wings[wingnum].time_gone;
+				if (wingp->time_gone > latest_time) {
+					time_gone = wingp->time_gone;
 				}
 				count++;
 			}
-		} else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time_gone) ) {
-			count++;
-		} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time_gone) ) {
-			count++;
-		} else if ( mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time_gone) ) {
-			count++;
+		} else {
+			auto ship_entry = eval_ship(n);
+			if (ship_entry) {
+				if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+					return SEXP_CANT_EVAL;
+				}
+
+				if (ship_entry->status == ShipStatus::EXITED) {
+					if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_entry->name, nullptr, &time_gone)) {
+						count++;
+					} else if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_entry->name, nullptr, &time_gone)) {
+						count++;
+					} else if (mission_log_get_time(LOG_SELF_DESTRUCTED, ship_entry->name, nullptr, &time_gone)) {
+						count++;
+					}
+					// apparently we don't count vanished ships
+					// (and we can't, because the mission log didn't record the time they left)
+					else {
+						return SEXP_KNOWN_FALSE;
+					}
+				}
+			}
 		}
 
 		// check our latest time
@@ -8795,34 +8801,18 @@ int sexp_destroyed_departed_delay(int n)
 		return SEXP_FALSE;
 }
 
-int sexp_special_warpout_name( int node )
+void sexp_special_warpout_name( int node )
 {
-	int shipnum, knossos_shipnum;
-	char *ship_name, *knossos;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
 
-	ship_name = CTEXT(node);
-	knossos = CTEXT(CDR(node));
-
-	// check to see if either ship was destroyed or departed.  If so, then make this node known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) ||
-		  mission_log_get_time(LOG_SHIP_DESTROYED, knossos, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, knossos, NULL, NULL) || mission_log_get_time( LOG_SELF_DESTRUCTED, knossos, NULL, NULL) ) 
-		return SEXP_NAN_FOREVER;
-
-	// get ship name
-	shipnum = ship_name_lookup(ship_name);
-	if (shipnum < 0) {
-		return SEXP_NAN;
-	}
-
-	// get knossos ship
-	knossos_shipnum = ship_name_lookup(knossos);
-	if (knossos_shipnum < 0) {
-		return SEXP_NAN;
-	}
+	auto knossos_entry = eval_ship(node);
+	if (!knossos_entry || !knossos_entry->shipp)
+		return;
 
 	// set special warpout objnum
-	Ships[shipnum].special_warpout_objnum = Ships[knossos_shipnum].objnum;
-	return SEXP_FALSE;
+	ship_entry->shipp->special_warpout_objnum = knossos_entry->shipp->objnum;
 }
 
 /**
@@ -8835,9 +8825,7 @@ int sexp_special_warpout_name( int node )
 int sexp_is_cargo_known( int n, bool check_delay )
 {
 	bool is_nan, is_nan_forever;
-	int count, ship_num, num_known, delay;
-
-	char *name;
+	int count, num_known, delay;
 
 	Assert ( n >= 0 );
 
@@ -8860,57 +8848,47 @@ int sexp_is_cargo_known( int n, bool check_delay )
 	while ( n != -1 )
 	{
 		fix time_known;
-		int is_known;
-
-		is_known = 0;
-
+		bool is_known = false;
 		count++;
 
 		// see if we have already checked this entry
 		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
 		{
-			num_known++;
+			is_known = true;
 		}
 		else
 		{
-			name = CTEXT(n);
-
-			// find the index in the ship array (will be -1 if not in mission)
-			ship_num = ship_name_lookup(name);
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry)
+				return SEXP_KNOWN_FALSE;
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+				return SEXP_CANT_EVAL;
 
 			// see if the ship has already exited the mission (either through departure or destruction)
-			int exited_index = ship_find_exited_ship_by_name(name);
-			if (exited_index != -1)
+			if (ship_entry->exited_index >= 0)
 			{
 				// if not known, the whole thing is known false
-				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
+				if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out
-				time_known = Missiontime - Ships_exited[exited_index].time_cargo_revealed;
+				time_known = Missiontime - Ships_exited[ship_entry->exited_index].time_cargo_revealed;
 				if ( f2i(time_known) >= delay )
 				{
-					is_known = 1;
+					is_known = true;
 
 					// here is the only place in the new sexp that this can be known true
 					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 				}
 			}
-			// ship either in mission or not arrived yet
+			// ship is in mission
 			else
 			{
-				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
-				// and we've already checked exited
-				if ( ship_num != -1 )
+				if ( ship_entry->shipp->flags[Ship::Ship_Flags::Cargo_revealed] )
 				{
-					if ( Ships[ship_num].flags[Ship::Ship_Flags::Cargo_revealed] )
-					{
-						time_known = Missiontime - Ships[ship_num].time_cargo_revealed;
-						if ( f2i(time_known) >= delay )
-						{
-							is_known = 1;
-						}
-					}
+					time_known = Missiontime - ship_entry->shipp->time_cargo_revealed;
+					if ( f2i(time_known) >= delay )
+						is_known = true;
 				}
 			}
 		}
@@ -8931,11 +8909,11 @@ int sexp_is_cargo_known( int n, bool check_delay )
 		return SEXP_FALSE;
 }
 
-void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix *time_revealed)
+void get_cap_subsys_cargo_flags(const ship *shipp, const char *subsys_name, int *known, fix *time_revealed)
 {
 	// find the ship subsystem
-	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
-	if (ss != NULL)
+	ship_subsys *ss = ship_get_subsys(shipp, subsys_name);
+	if (ss)
 	{
 		// set the flags
 		*known = (ss->flags[Ship::Subsystem_Flags::Cargo_revealed]);
@@ -8953,8 +8931,7 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 int sexp_cap_subsys_cargo_known_delay(int n)
 {
 	bool is_nan, is_nan_forever;
-	int delay, count, num_known, ship_num;
-	char *ship_name, *subsys_name;
+	int delay, count, num_known;
 
 	num_known = 0;
 	count = 0;
@@ -8970,33 +8947,32 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	// get ship name
-	ship_name = CTEXT(n);
+	// get ship
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
+		return SEXP_KNOWN_FALSE;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
 	n = CDR(n);
-
-	// find the index in the ship array
-	ship_num = ship_name_lookup(ship_name);
 
 	while ( n != -1 )
 	{
 		fix time_known;
-		int is_known;
-
-		is_known = 0;
+		bool is_known = false;
 		count++;
 
 		// see if we have already checked this entry
 		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
 		{
-			num_known++;
+			is_known = true;
 		}
 		else
 		{
 			// get subsys name
-			subsys_name = CTEXT(n);
+			auto subsys_name = CTEXT(n);
 
 			// see if the ship has already exited the mission (either through departure or destruction)
-			if (ship_find_exited_ship_by_name(ship_name) != -1)
+			if (ship_entry->status == ShipStatus::EXITED)
 			{
 				// check the delay of when we found out...
 				// Since there is no way to keep track of subsystem status once a ship has departed
@@ -9011,7 +8987,7 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 				// in this way, especially since this problem only occurs after the ship departs.  If
 				// the mission designer really needs this functionality, he or she can achieve the
 				// same result with creative combinations of event chaining and is-event-true.
-				if (!mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_name, subsys_name, &time_known))
+				if (!mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_entry->name, subsys_name, &time_known))
 				{
 					// if not known, the whole thing is known false
 					return SEXP_KNOWN_FALSE;
@@ -9019,32 +8995,27 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 
 				if (f2i(Missiontime - time_known) >= delay)
 				{
-					is_known = 1;
+					is_known = true;
 
 					// here is the only place in the new sexp that this can be known true
 					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 				}
 			}
-			// ship either in mission or not arrived yet
+			// ship is in mission
 			else
 			{
-				// if ship_name_lookup returns -1, then ship is either exited or yet to arrive,
-				// and we've already checked exited
-				if ( ship_num != -1 )
+				int cargo_revealed(0);
+				fix time_revealed(0);
+
+				// get flags
+				get_cap_subsys_cargo_flags(ship_entry->shipp, subsys_name, &cargo_revealed, &time_revealed);
+
+				if (cargo_revealed)
 				{
-					int cargo_revealed(0);
-					fix time_revealed(0);
-
-					// get flags
-					get_cap_subsys_cargo_flags(ship_num, subsys_name, &cargo_revealed, &time_revealed);
-
-					if (cargo_revealed)
+					time_known = Missiontime - time_revealed;
+					if ( f2i(time_known) >= delay )
 					{
-						time_known = Missiontime - time_revealed;
-						if ( f2i(time_known) >= delay )
-						{
-							is_known = 1;
-						}
+						is_known = true;
 					}
 				}
 			}
@@ -9069,27 +9040,10 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 // Goober5000
 void sexp_set_scanned_unscanned(int n, int flag)
 {
-	char *ship_name, *subsys_name;
-	int shipnum;
-	ship_subsys *ss;
-
-	// get ship name
-	ship_name = CTEXT(n);
-
-	// check to see the ship was destroyed or departed - if so, do nothing
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
-	{
+	// get ship
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-	}
-
-	// get ship number
-	shipnum = ship_name_lookup(ship_name);
-
-	// if the ship isn't in the mission, do nothing
-	if (shipnum == -1)
-	{
-		return;
-	}
 
 	// check for possible next optional argument: subsystem
 	n = CDR(n);
@@ -9098,9 +9052,9 @@ void sexp_set_scanned_unscanned(int n, int flag)
 	if (n == -1)
 	{
 		if (flag)
-			ship_do_cargo_revealed(&Ships[shipnum]);
+			ship_do_cargo_revealed(ship_entry->shipp);
 		else
-			ship_do_cargo_hidden(&Ships[shipnum]);
+			ship_do_cargo_hidden(ship_entry->shipp);
 
 		return;
 	}
@@ -9108,22 +9062,22 @@ void sexp_set_scanned_unscanned(int n, int flag)
 	// iterate through all subsystems
 	while (n != -1)
 	{
-		subsys_name = CTEXT(n);
+		auto subsys_name = CTEXT(n);
 
 		// find the ship subsystem
-		ss = ship_get_subsys(&Ships[shipnum], subsys_name);
-		if (ss != NULL)
+		auto ss = ship_get_subsys(ship_entry->shipp, subsys_name);
+		if (ss)
 		{
 			// do it for the subsystem
 			if (flag)
-				ship_do_cap_subsys_cargo_revealed(&Ships[shipnum], ss);
+				ship_do_cap_subsys_cargo_revealed(ship_entry->shipp, ss);
 			else
-				ship_do_cap_subsys_cargo_hidden(&Ships[shipnum], ss);
+				ship_do_cap_subsys_cargo_hidden(ship_entry->shipp, ss);
 		}
 
 		// if we didn't find the subsystem -- bad
-		if (ss == NULL && ship_class_unchanged(shipnum)) {
-			Warning(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_name);
+		if (!ss && ship_class_unchanged(ship_entry)) {
+			Warning(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_entry->name);
 		}
 
 		// but if it did, loop again
@@ -9134,8 +9088,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 int sexp_has_been_tagged_delay(int n)
 {
 	bool is_nan, is_nan_forever;
-	int count, shipnum, num_known, delay;
-	char *name;
+	int count, num_known, delay;
 
 	Assert ( n >= 0 );
 
@@ -9151,51 +9104,53 @@ int sexp_has_been_tagged_delay(int n)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	while ( n != -1 ) {
+	while ( n != -1 )
+	{
 		fix time_known;
-		int is_known;
-
-		is_known = 0;
-
+		bool is_known = false;
 		count++;
 
 		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE ) {
-			num_known++;
-		} else {
-			int exited_index;
-
-			name = CTEXT(n);
+		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		{
+			is_known = true;
+		}
+		else
+		{
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry)
+				return SEXP_KNOWN_FALSE;
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+				return SEXP_CANT_EVAL;
 
 			// see if the ship has already exited the mission (either through departure or destruction).  If so,
-			// grab the status of whether the cargo is known from this list
-			exited_index = ship_find_exited_ship_by_name( name );
-			if (exited_index != -1 ) {
-				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
+			// grab the status of the tag from this list
+			if (ship_entry->exited_index >= 0)
+			{
+				if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
 				// but won't cause huge delays.
-				time_known = Missiontime - Ships_exited[exited_index].time;
+				time_known = Missiontime - Ships_exited[ship_entry->exited_index].time;
 				if ( f2i(time_known) >= delay )
-					is_known = 1;
-			} else {
-
-				// otherwise, ship should still be in the mission.  If ship_name_lookup returns -1, then ship
-				// is yet to arrive.
-				shipnum = ship_name_lookup( name );
-				if ( shipnum != -1 ) {
-					if ( Ships[shipnum].time_first_tagged != 0 ) {
-						time_known = Missiontime - Ships[shipnum].time_first_tagged;
-						if ( f2i(time_known) >= delay )
-							is_known = 1;
-					}
+					is_known = true;
+			}
+			// ship is in mission
+			else
+			{
+				if ( ship_entry->shipp->time_first_tagged != 0 )
+				{
+					time_known = Missiontime - ship_entry->shipp->time_first_tagged;
+					if ( f2i(time_known) >= delay )
+						is_known = true;
 				}
 			}
 		}
 
-		// if cargo is known, mark our variable and this sexpression.
-		if ( is_known ) {
+		// if ship is tagged, mark our variable and this sexpression.
+		if ( is_known )
+		{
 			num_known++;
 			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
 		}
@@ -15096,10 +15051,10 @@ int sexp_has_weapon(int node, int op_num)
 
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_KNOWN_FALSE;
+		return SEXP_NAN_FOREVER;
 	}
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
-		return SEXP_CANT_EVAL;
+		return SEXP_NAN;
 	}
 	shipp = ship_entry->shipp;
 
