@@ -337,7 +337,7 @@ class ade_virtvar : public ade_lib_handle {
  */
 class ade_indexer : public ade_lib_handle {
   public:
-	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
+	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_overload_list overloads = ade_overload_list(),
 	            const char* desc = nullptr, ade_type_info ret_type = ade_type_info(), const char* ret_desc = nullptr);
 };
 

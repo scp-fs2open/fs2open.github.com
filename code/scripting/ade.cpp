@@ -6,6 +6,7 @@
 #include "globalincs/version.h"
 
 #include "ade.h"
+
 #include "ade_api.h"
 #include "ade_args.h"
 #include "doc_parser.h"
@@ -698,7 +699,7 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_overload_list overloads, const char* desc,
                          ade_type_info ret_type, const char* ret_desc)
 {
 	// Add function for meta
@@ -708,7 +709,7 @@ ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const
 	ate.Instanced         = true;
 	ate.Type              = 'u';
 	ate.Function          = func;
-	ate.Arguments         = args;
+	ate.Arguments         = std::move(overloads);
 	ate.Description       = desc;
 	ate.ReturnType        = std::move(ret_type);
 	ate.ReturnDescription = ret_desc;

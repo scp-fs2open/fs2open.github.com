@@ -2,7 +2,10 @@ grammar ArgumentList;
 
 arg_list: argument? EOF;
 
-simple_type: ID;
+simple_type
+ : ID
+ | NIL
+ ;
 
 func_arg: type ID;
 
@@ -30,7 +33,7 @@ value
  | boolean
  ;
 
-actual_argument: type ID? (EQUALS value)? (COMMA argument)?;
+actual_argument: type ID? (EQUALS value)? ARG_COMMENT? (COMMA argument)?;
 
 optional_argument: L_BRACKET actual_argument R_BRACKET;
 
@@ -78,8 +81,10 @@ L_PAREN: '(';
 R_PAREN: ')';
 ARROW: '=>';
 
+ARG_COMMENT: '/*' .*? '*/';
+
 ID
- : [a-zA-Z_] [a-zA-Z_0-9]*
+ : [a-zA-Z_] [a-zA-Z_0-9:]*
  ;
 
 SPACE

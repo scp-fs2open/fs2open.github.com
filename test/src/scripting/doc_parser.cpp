@@ -178,3 +178,62 @@ TEST_F(ArgumentListParserTest, entireListOptional) {
 	ASSERT_EQ("", arglist[2].def_val);
 	ASSERT_TRUE(arglist[2].optional);
 }
+
+TEST_F(ArgumentListParserTest, CommentOnOnlyType) {
+	ASSERT_TRUE(parser.parse("number /* test */"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(1, static_cast<int>(arglist.size()));
+
+	ASSERT_STREQ("number", arglist[0].type.getIdentifier());
+	ASSERT_EQ("", arglist[0].name);
+	ASSERT_EQ("", arglist[0].def_val);
+	ASSERT_FALSE(arglist[0].optional);
+	ASSERT_EQ("test", arglist[0].comment);
+}
+
+TEST_F(ArgumentListParserTest, CommentOnTypeAndName) {
+	ASSERT_TRUE(parser.parse("number test /* test */"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(1, static_cast<int>(arglist.size()));
+
+	ASSERT_STREQ("number", arglist[0].type.getIdentifier());
+	ASSERT_EQ("test", arglist[0].name);
+	ASSERT_EQ("", arglist[0].def_val);
+	ASSERT_FALSE(arglist[0].optional);
+	ASSERT_EQ("test", arglist[0].comment);
+}
+
+TEST_F(ArgumentListParserTest, CommentOnTypeNameAndDefault) {
+	ASSERT_TRUE(parser.parse("number test = 0 /* test */"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(1, static_cast<int>(arglist.size()));
+
+	ASSERT_STREQ("number", arglist[0].type.getIdentifier());
+	ASSERT_EQ("test", arglist[0].name);
+	ASSERT_EQ("0", arglist[0].def_val);
+	ASSERT_TRUE(arglist[0].optional);
+	ASSERT_EQ("test", arglist[0].comment);
+}
+
+TEST_F(ArgumentListParserTest, CommentOnArgWithFolliwingArg) {
+	ASSERT_TRUE(parser.parse("number /* test */, string otherArg"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(2, static_cast<int>(arglist.size()));
+
+	ASSERT_STREQ("number", arglist[0].type.getIdentifier());
+	ASSERT_EQ("", arglist[0].name);
+	ASSERT_EQ("", arglist[0].def_val);
+	ASSERT_FALSE(arglist[0].optional);
+	ASSERT_EQ("test", arglist[0].comment);
+
+	ASSERT_STREQ("string", arglist[1].type.getIdentifier());
+	ASSERT_EQ("otherArg", arglist[1].name);
+	ASSERT_EQ("", arglist[1].def_val);
+	ASSERT_FALSE(arglist[1].optional);
+	ASSERT_EQ("", arglist[1].comment);
+}
+
