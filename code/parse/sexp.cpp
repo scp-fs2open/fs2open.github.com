@@ -6570,10 +6570,21 @@ int sexp_time_docked_or_undocked(int n, bool docked)
 	fix time;
 	bool is_nan, is_nan_forever;
 
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDDR(n), is_nan, is_nan_forever);
+	auto docker = eval_ship(n);
+	if (!docker)
+		return SEXP_NAN_FOREVER;
+	if (docker->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+	n = CDR(n);
 
+	auto dockee = eval_ship(n);
+	if (!dockee)
+		return SEXP_NAN_FOREVER;
+	if (dockee->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+	n = CDR(n);
+
+	int count = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -6584,11 +6595,15 @@ int sexp_time_docked_or_undocked(int n, bool docked)
 		count = 1;
 	}
 
-	if ( !mission_log_get_time_indexed(docked ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ){
-		return SEXP_NAN;
+	if (mission_log_get_time_indexed(docked ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker->name, dockee->name, count, &time))
+	{
+		return f2i(time);
 	}
+	// if either ship has exited, no way to dock
+	else if (docker->status == ShipStatus::EXITED || dockee->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
-	return f2i(time);
+	return SEXP_NAN;
 }
 
 void sexp_set_energy_pct (int node, int op_num)
@@ -13128,29 +13143,44 @@ void sexp_change_goal_validity( int n, int flag )
 // yeesh - be careful of the cargo-no-deplete flag :p
 int sexp_is_cargo(int n)
 {
-	char *cargo, *ship_name, *subsystem;
-	int ship_num, cargo_index;
+	auto cargo = CTEXT(n);
+	n = CDR(n);
 
-	cargo = CTEXT(n);
-	ship_name = CTEXT(CDR(n));
-	if (CDR(CDR(n)) != -1)
-		subsystem = CTEXT(CDR(CDR(n)));
-	else
-		subsystem = NULL;
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
+		return SEXP_NAN_FOREVER;
+	n = CDR(n);
 
-	cargo_index = -1;
+	auto subsystem = (n >= 0) ? CTEXT(n) : nullptr;
 
-	// find ship
-	ship_num = ship_name_lookup(ship_name);
+	int cargo_index = -1;
 
+	// departed?
+	if (ship_entry->exited_index >= 0)
+	{
+		// can't check subsys of ships not in mission
+		if (subsystem)
+			return SEXP_NAN_FOREVER;
+
+		cargo_index = Ships_exited[ship_entry->exited_index].cargo1;
+	}
+	// not arrived yet?
+	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	{
+		// can't check subsys of ships not in mission
+		if (subsystem)
+			return SEXP_NAN;
+
+		cargo_index = ship_entry->p_objp->cargo1;
+	}
 	// in-mission?
-	if (ship_num != -1)
+	else
 	{
 		if (subsystem)
 		{
 			// find the ship subsystem
-			ship_subsys *ss = ship_get_subsys(&Ships[ship_num], subsystem);
-			if (ss != NULL)
+			ship_subsys *ss = ship_get_subsys(ship_entry->shipp, subsystem);
+			if (ss)
 			{
 				// set cargo
 				cargo_index = ss->subsys_cargo_name;
@@ -13158,32 +13188,7 @@ int sexp_is_cargo(int n)
 		}
 		else
 		{
-			cargo_index = Ships[ship_num].cargo1;
-		}
-	}
-	else
-	{
-		// can't check subsys of ships not in mission
-		if (subsystem)
-		{
-			return SEXP_CANT_EVAL;
-		}
-
-		// departed?
-		int exited_index = ship_find_exited_ship_by_name(ship_name);
-		if (exited_index != -1)
-		{
-			cargo_index = Ships_exited[exited_index].cargo1;
-		}
-		// not arrived yet
-		else
-		{
-			p_object *p_objp;
-
-			// find cargo for the parse object
-			p_objp = mission_parse_get_arrival_ship(ship_name);
-			Assert (p_objp);
-			cargo_index = (int) p_objp->cargo1;
+			cargo_index = ship_entry->shipp->cargo1;
 		}
 	}
 
@@ -13202,23 +13207,20 @@ int sexp_is_cargo(int n)
 // yeesh - be careful of the cargo-no-deplete flag :p
 void sexp_set_cargo(int n)
 {
-	char *cargo, *ship_name, *subsystem;
-	int ship_num, i, cargo_index;
+	auto cargo = CTEXT(n);
+	n = CDR(n);
 
-	cargo = CTEXT(n);
-	ship_name = CTEXT(CDR(n));
-	if (CDR(CDR(n)) != -1)
-		subsystem = CTEXT(CDR(CDR(n)));
-	else
-		subsystem = NULL;
-
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
 		return;
+	n = CDR(n);
 
-	cargo_index = -1;
+	auto subsystem = (n >= 0) ? CTEXT(n) : nullptr;
+
+	int cargo_index = -1;
+
 	// find this cargo in the cargo list
-	for (i = 0; i < Num_cargo; i++)
+	for (int i = 0; i < Num_cargo; ++i)
 	{
 		// found it?
 		if (!stricmp(cargo, Cargo_names[i]))
@@ -13246,39 +13248,36 @@ void sexp_set_cargo(int n)
 		strcpy(Cargo_names[cargo_index], cargo);
 	}
 
-	// get the ship
-	ship_num = ship_name_lookup(ship_name);
+	// departed?
+	if (ship_entry->exited_index >= 0)
+	{
+		return;
+	}
+	// not arrived yet?
+	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	{
+		// can't check subsys of ships not in mission
+		if (subsystem)
+			return;
 
-	// we can only set subsystems if the ship is in the mission
-	if (ship_num != -1)
+		ship_entry->p_objp->cargo1 = char(cargo_index | (ship_entry->p_objp->cargo1 & CARGO_NO_DEPLETE));
+	}
+	// in-mission?
+	else
 	{
 		if (subsystem)
 		{
-			ship_subsys *ss = ship_get_subsys(&Ships[ship_num], subsystem);
-			if (ss == NULL) {
-				Assert (!ship_class_unchanged(ship_num));
-				return;
+			ship_subsys *ss = ship_get_subsys(ship_entry->shipp, subsystem);
+			if (ss)
+			{
+				// set cargo
+				ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
 			}
-
-			// set cargo
-			ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
 		}
 		else
 		{
 			// simply set the ship cargo
-			Ships[ship_num].cargo1 = char(cargo_index | (Ships[ship_num].cargo1 & CARGO_NO_DEPLETE));
-		}
-	}
-	else
-	{
-		if (!subsystem)
-		{
-			p_object *p_objp;
-
-			// set cargo for the parse object
-			p_objp = mission_parse_get_arrival_ship(ship_name);
-			Assert (p_objp);
-			p_objp->cargo1 = char(cargo_index | (p_objp->cargo1 & CARGO_NO_DEPLETE));
+			ship_entry->shipp->cargo1 = char(cargo_index | (ship_entry->shipp->cargo1 & CARGO_NO_DEPLETE));
 		}
 	}
 }
@@ -13288,50 +13287,48 @@ void sexp_set_cargo(int n)
  */
 void sexp_transfer_cargo(int n)
 {
-	char *shipname1, *shipname2;
-	int shipnum1, shipnum2, i;
-
-	shipname1 = CTEXT(n);
-	shipname2 = CTEXT(CDR(n));
-
-	// find the ships -- if neither in the mission, the abort
-	shipnum1 = ship_name_lookup(shipname1);
-	shipnum2 = ship_name_lookup(shipname2);
-	if ( (shipnum1 == -1) || (shipnum2 == -1) )
+	// find the ships -- if neither in the mission, abort
+	auto ship1 = eval_ship(n);
+	if (!ship1 || !ship1->shipp)
+		return;
+	auto ship2 = eval_ship(CDR(n));
+	if (!ship2 || !ship2->shipp)
 		return;
 
 	// we must be sure that these two objects are indeed docked
-	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
-	{
-		Warning(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
+	if (!dock_check_find_direct_docked_object(ship1->objp, ship2->objp)) {
+		Warning(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", ship1->name, ship2->name);
 		return;
 	}
 
-	if ( !stricmp(Cargo_names[Ships[shipnum1].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
+	if ( !stricmp(Cargo_names[ship1->shipp->cargo1 & CARGO_INDEX_MASK], "nothing") ) {
 		return;
 	}
 
 	// transfer cargo from ship1 to ship2
 #ifndef NDEBUG
 	// Don't give warning for large ships (cruiser on up) 
-	if (! (Ship_info[Ships[shipnum2].ship_info_index].is_big_or_huge()) ) {
-		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") != 0 ) {
-			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
+	if (! (Ship_info[ship2->shipp->ship_info_index].is_big_or_huge()) ) {
+		if ( stricmp(Cargo_names[ship2->shipp->cargo1 & CARGO_INDEX_MASK], "nothing") != 0 ) {
+			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", ship2->name, Cargo_names[ship2->shipp->cargo1 & CARGO_INDEX_MASK] );
 		}
 	}
 #endif
-	Ships[shipnum2].cargo1 = char((Ships[shipnum1].cargo1 & CARGO_INDEX_MASK) | (Ships[shipnum2].cargo1 & CARGO_NO_DEPLETE));
+	ship2->shipp->cargo1 = char((ship1->shipp->cargo1 & CARGO_INDEX_MASK) | (ship2->shipp->cargo1 & CARGO_NO_DEPLETE));
 
-	if ( !(Ships[shipnum1].cargo1 & CARGO_NO_DEPLETE) ) {
+	if ( !(ship1->shipp->cargo1 & CARGO_NO_DEPLETE) ) {
+		int i = 0;
+
 		// need to set ship1's cargo to nothing.  scan the cargo_names array looking for the string nothing.
-		// add it if not found
-		for (i = 0; i < Num_cargo; i++ ) {
-			if ( !stricmp(Cargo_names[i], "nothing") ) {
-				Ships[shipnum1].cargo1 = char(i);
+		for (; i < Num_cargo; ++i) {
+			if ( !stricmp(Cargo_names[i], NOX("nothing")) ) {
+				ship1->shipp->cargo1 = char(i);
 				return;
 			}
 		}
-		strcpy(Cargo_names[i], "Nothing");
+
+		// add it if not found
+		strcpy(Cargo_names[i], NOX("Nothing"));
 		Num_cargo++;
 	}
 }
@@ -13341,28 +13338,23 @@ void sexp_transfer_cargo(int n)
  */
 void sexp_exchange_cargo(int n)
 {
-	char *shipname1, *shipname2;
-	int shipnum1, shipnum2, temp;
-
-	shipname1 = CTEXT(n);
-	shipname2 = CTEXT(CDR(n));
-
 	// find the ships -- if neither in the mission, abort
-	shipnum1 = ship_name_lookup(shipname1);
-	shipnum2 = ship_name_lookup(shipname2);
-	if ( (shipnum1 == -1) || (shipnum2 == -1) )
+	auto ship1 = eval_ship(n);
+	if (!ship1 || !ship1->shipp)
+		return;
+	auto ship2 = eval_ship(CDR(n));
+	if (!ship2 || !ship2->shipp)
 		return;
 
 	// we must be sure that these two objects are indeed docked
-	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
-	{
-		Warning(LOCATION, "Tried to exchange cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
+	if (!dock_check_find_direct_docked_object(ship1->objp, ship2->objp)) {
+		Warning(LOCATION, "Tried to exchange cargo between %s and %s although they aren't docked!", ship1->name, ship2->name);
 		return;
 	}
 
-	temp = (Ships[shipnum1].cargo1 & CARGO_INDEX_MASK);
-	Ships[shipnum1].cargo1 = char(Ships[shipnum2].cargo1 & CARGO_INDEX_MASK);
-	Ships[shipnum2].cargo1 = char(temp);
+	int temp = (ship1->shipp->cargo1 & CARGO_INDEX_MASK);
+	ship1->shipp->cargo1 = char(ship2->shipp->cargo1 & CARGO_INDEX_MASK);
+	ship2->shipp->cargo1 = char(temp);
 }
 
 void sexp_cap_waypoint_speed(int n)
