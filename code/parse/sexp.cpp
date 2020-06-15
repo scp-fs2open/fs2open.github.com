@@ -6763,53 +6763,22 @@ int sexp_shields_left(int n)
  *
  * This hit amount counts for all hits on the ship (hull + subsystems).  Use hits_left_hull to find hull hits remaining.
  */
-int sexp_hits_left(int n)
+int sexp_hits_left(int n, bool sim_hull)
 {
-	int shipnum, percent;
-	char *shipname;
+	auto ship_entry = eval_ship(n);
 
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
-	// since we are working with total hit points taken, not total remaining.
-	ship		*shipp = &Ships[shipnum];
-	object	*objp = &Objects[shipp->objnum];
-	percent = (int)std::lround(100.0f * get_hull_pct(objp));
-	return percent;
-}
+	float hull_pct = sim_hull ? get_sim_hull_pct(ship_entry->objp) : get_hull_pct(ship_entry->objp);
 
-int sexp_sim_hits_left(int n)
-{
-	int shipnum, percent;
-	char *shipname;
-
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
-		return SEXP_NAN_FOREVER;
-	}
-
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
-		return SEXP_NAN;
-	}
-
-	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
-	// since we are working with total hit points taken, not total remaining.
-	ship		*shipp = &Ships[shipnum];
-	object	*objp = &Objects[shipp->objnum];
-	percent = (int)std::lround(100.0f * get_sim_hull_pct(objp));
+	// now return the amount of hits left as a percentage of the whole.
+	int percent = (int)std::lround(hull_pct * 100.0f);
 	return percent;
 }
 
@@ -6866,55 +6835,24 @@ int sexp_is_ship_visible(int n)
 }
 
 /**
- * Determine if the stealth flag set on this ship
+ * Determine if a flag is set on this ship
  */
-int sexp_is_ship_stealthy(int n)
+int sexp_check_ship_flag(int n, Ship::Ship_Flags flag)
 {
-	char *shipname;
-	int shipnum;
+	auto ship_entry = eval_ship(n);
 
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ) {					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth])
+	if (ship_entry->shipp->flags[flag])
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
-}
-
-/**
- * Determine if the friendly stealth ship visible
- */
-int sexp_is_friendly_stealth_visible(int n)
-{
-	char *shipname;
-	int shipnum;
-
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
-		return SEXP_NAN_FOREVER;
-	}
-
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ) {					// hmm.. if true, must not have arrived yet
-		return SEXP_NAN;
-	}
-
-	if (Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis])
-		return SEXP_FALSE;
-	else
-		return SEXP_TRUE;
 }
 
 // get multi team v team score
@@ -16961,55 +16899,27 @@ void multi_sexp_send_training_message()
 	}
 }
 
-int sexp_shield_recharge_pct(int node)
+int sexp_gse_recharge_pct(int node, int op_num)
 {
-	int sindex;
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
+	int index;
+	if (op_num == OP_WEAPON_RECHARGE_PCT)
+		index = ship_entry->shipp->weapon_recharge_index;
+	else if (op_num == OP_SHIELD_RECHARGE_PCT)
+		index = ship_entry->shipp->shield_recharge_index;
+	else if (op_num == OP_ENGINE_RECHARGE_PCT)
+		index = ship_entry->shipp->engine_recharge_index;
+	else
+		return SEXP_NAN_FOREVER;
 
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].shield_recharge_index]);
-}
-
-int sexp_engine_recharge_pct(int node)
-{
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].engine_recharge_index]);
-}
-
-int sexp_weapon_recharge_pct(int node)
-{
-	int sindex;
-
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-
-	// shield recharge pct
-	return (int)(100.0f * Energy_levels[Ships[sindex].weapon_recharge_index]);
+	// recharge pct
+	return (int)(100.0f * Energy_levels[index]);
 }
 
 /**
@@ -24413,7 +24323,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HITS_LEFT:
-				sexp_val = sexp_hits_left(node);
+			case OP_SIM_HITS_LEFT:
+				sexp_val = sexp_hits_left(node, op_num == OP_SIM_HITS_LEFT);
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
@@ -24426,10 +24337,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
 				sexp_val = sexp_hits_left_subsystem_specific(node);
-				break;
-
-			case OP_SIM_HITS_LEFT:
-				sexp_val = sexp_sim_hits_left(node);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
@@ -24474,11 +24381,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_SHIP_STEALTHY:
-				sexp_val = sexp_is_ship_stealthy(node);
+				sexp_val = sexp_check_ship_flag(node, Ship::Ship_Flags::Stealth);
 				break;
 
 			case OP_IS_FRIENDLY_STEALTH_VISIBLE:
-				sexp_val = sexp_is_friendly_stealth_visible(node);
+				sexp_val = sexp_check_ship_flag(node, Ship::Ship_Flags::Friendly_stealth_invis);
 				break;
 
 			case OP_TEAM_SCORE:
@@ -25661,16 +25568,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_motion_debris(node);
 				break;
 
-			case OP_SHIELD_RECHARGE_PCT:
-				sexp_val = sexp_shield_recharge_pct(node);
-				break;
-
-			case OP_ENGINE_RECHARGE_PCT:
-				sexp_val = sexp_engine_recharge_pct(node);
-				break;
-
 			case OP_WEAPON_RECHARGE_PCT:
-				sexp_val = sexp_weapon_recharge_pct(node);
+			case OP_SHIELD_RECHARGE_PCT:
+			case OP_ENGINE_RECHARGE_PCT:
+				sexp_val = sexp_gse_recharge_pct(node, op_num);
 				break;
 
 			case OP_GET_ETS_VALUE:
@@ -34700,7 +34601,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
-		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in milliseconds)\r\n"
 	},
 
 	// Karajora
@@ -34708,7 +34609,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
-		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in milliseconds)\r\n"
 	},
 
 	// Karajora
