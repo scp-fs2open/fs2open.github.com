@@ -122,7 +122,7 @@ namespace AI {
 		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in http://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
-        Use_large_radii_for_subsystem_path_points,
+        Use_subsystem_path_point_radii,
         Use_additive_weapon_velocity,
         Use_newtonian_dampening,
         Use_only_single_fov_for_turrets,

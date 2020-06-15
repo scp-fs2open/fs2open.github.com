@@ -456,20 +456,44 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		if ( aip->path_length > 0 ) {
 			int path_done=0;
 			int in_view=0;
+			int default_dist = 5;
 
 			Assert(aip->path_length >= 2);
 			dist = vm_vec_dist_quick(&Path_points[aip->path_start+aip->path_length-2].pos, &Pl_objp->pos);
 
+			// distance setting --wookieejedi
 			if ( aip->path_cur >= (aip->path_start+aip->path_length-1) ) {
+				// register that path is done and reset goal distance to default
+				aip->path_goal_dist = default_dist;
 				path_done=1;
-			} else {
-				// if not done check what magnitude of distance to use --wookieejedi
-				if (aip->ai_profile_flags[AI::Profile_Flags::Use_large_radii_for_subsystem_path_points]) {
-					// use large distance
-					aip->path_goal_dist = 775;
-				} else {
-					// use default distance
-					aip->path_goal_dist = 5;
+			}
+			// if not done then set path distances based on specified options
+			else {
+				bool found_point = false;
+				// 1. use radii of path points if specified
+				if (aip->ai_profile_flags[AI::Profile_Flags::Use_subsystem_path_point_radii]) {
+					// need a valid path and point in model to use pof specified radius
+					int path_num = aip->targeted_subsys->system_info->path_num;
+					if ((0 <= path_num) && (path_num <= pm_t->n_paths)) {
+						// need a valid place in the path
+						if ((0 <= aip->path_cur) && (aip->path_cur <= aip->path_length)) {
+							float path_point_radius = pm_t->paths[path_num].verts[aip->path_cur].radius;
+							int goal_dist = fl2i(path_point_radius);
+							// only set if > 0
+							if (goal_dist) {
+								aip->path_goal_dist = goal_dist;
+								found_point = true;
+							}
+						}
+					}
+				}
+				// 2. use radii value in ai_profiles table if specified and no valid point found
+				if (!found_point && The_mission.ai_profile->subsystem_path_radii) {
+					aip->path_goal_dist = The_mission.ai_profile->subsystem_path_radii;
+				}
+				// 3. use default radii value if no valid point or specified radii
+				else {
+					aip->path_goal_dist = default_dist;
 				}
 			}
 

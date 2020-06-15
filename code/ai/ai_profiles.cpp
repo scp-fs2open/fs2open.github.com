@@ -472,7 +472,17 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
-				set_flag(profile, "$use large radii for subsytem path points:", AI::Profile_Flags::Use_large_radii_for_subsystem_path_points);
+				if (optional_string("$constant radii for subsystem path points:")) {
+					int path_radii;
+					stuff_int(&path_radii);
+					if (path_radii) {
+						profile->subsystem_path_radii = path_radii;
+					} else {
+						mprintf(("Warning: \"$constant radii for subsystem path points:\" should be greater than 0 (read %i). Value will not be used. "));
+					}
+				}
+
+				set_flag(profile, "$use model path point radii for subsystem path navigation:", AI::Profile_Flags::Use_subsystem_path_point_radii);
 
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
