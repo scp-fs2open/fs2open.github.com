@@ -472,17 +472,17 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
-				if (optional_string("$constant radii for subsystem path points:")) {
+				if (optional_string("$override radius for subsystem path points:")) {
 					int path_radii;
 					stuff_int(&path_radii);
-					if (path_radii > 0) {
+					if (path_radii >= 1) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$constant radii for subsystem path points:\" should be greater than 0 (read %i). Value will not be used. ", path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be greater than 1 (read %i). Value will not be used. ", path_radii));
 					}
 				}
 
-				set_flag(profile, "$use model path point radii for subsystem path navigation:", AI::Profile_Flags::Use_subsystem_path_point_radii);
+				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
 
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
@@ -584,6 +584,7 @@ void ai_profile_t::reset()
     flags.reset();
 
     ai_path_mode = 0;
+	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
 

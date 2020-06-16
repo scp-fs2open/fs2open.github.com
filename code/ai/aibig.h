@@ -27,6 +27,9 @@ void	ai_big_strafe_maybe_attack_turret(const object *ship_objp, const object *we
 void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov=1.0f);
 void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float weapon_travel_dist, float fov=1.0f);
 
+// default distance for following subsystem path points --wookieejedi
+// the value is 5 because that was the original value specified in ai_big_maybe_follow_subsys_path()
+const int Default_subsystem_path_pt_dist = 5;
 
 #endif
 
