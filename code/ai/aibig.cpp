@@ -478,7 +478,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 						if ((0 <= aip->path_cur) && (aip->path_cur < aip->path_length)) {
 							float path_point_radius = pm_t->paths[path_num].verts[aip->path_cur].radius;
 							int goal_dist = fl2i(path_point_radius);
-							// only set if > 1
+							// only set if >= 1
 							if (goal_dist >= 1) {
 								aip->path_goal_dist = goal_dist;
 								found_point = true;

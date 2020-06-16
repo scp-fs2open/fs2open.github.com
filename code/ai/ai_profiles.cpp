@@ -478,7 +478,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (path_radii >= 1) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$override radius for subsystem path points:\" should be greater than 1 (read %i). Value will not be used. ", path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= 1 (read %i). Value will not be used. ", path_radii));
 					}
 				}
 
