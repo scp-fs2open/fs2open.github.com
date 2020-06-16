@@ -475,7 +475,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$constant radii for subsystem path points:")) {
 					int path_radii;
 					stuff_int(&path_radii);
-					if (path_radii) {
+					if (path_radii > 0) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
 						mprintf(("Warning: \"$constant radii for subsystem path points:\" should be greater than 0 (read %i). Value will not be used. ", path_radii));

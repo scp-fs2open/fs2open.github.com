@@ -474,13 +474,13 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 				if (aip->ai_profile_flags[AI::Profile_Flags::Use_subsystem_path_point_radii]) {
 					// need a valid path and point in model to use pof specified radius
 					int path_num = aip->targeted_subsys->system_info->path_num;
-					if ((0 <= path_num) && (path_num <= pm_t->n_paths)) {
+					if ((0 <= path_num) && (path_num < pm_t->n_paths)) {
 						// need a valid place in the path
-						if ((0 <= aip->path_cur) && (aip->path_cur <= aip->path_length)) {
+						if ((0 <= aip->path_cur) && (aip->path_cur < aip->path_length)) {
 							float path_point_radius = pm_t->paths[path_num].verts[aip->path_cur].radius;
 							int goal_dist = fl2i(path_point_radius);
 							// only set if > 0
-							if (goal_dist) {
+							if (goal_dist > 0) {
 								aip->path_goal_dist = goal_dist;
 								found_point = true;
 							}
