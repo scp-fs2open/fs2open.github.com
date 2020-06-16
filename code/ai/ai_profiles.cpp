@@ -8,6 +8,7 @@
 
 
 #include "ai/ai_profiles.h"
+#include "ai/aibig.h"
 #include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
@@ -472,6 +473,18 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 
+				if (optional_string("$override radius for subsystem path points:")) {
+					int path_radii;
+					stuff_int(&path_radii);
+					if (path_radii >= Minimum_subsystem_path_pt_dist) {
+						profile->subsystem_path_radii = path_radii;
+					} else {
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
+					}
+				}
+
+				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
+
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
@@ -572,6 +585,7 @@ void ai_profile_t::reset()
     flags.reset();
 
     ai_path_mode = 0;
+	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
 
