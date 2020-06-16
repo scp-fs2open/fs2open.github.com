@@ -8,6 +8,7 @@
 
 
 #include "ai/ai_profiles.h"
+#include "ai/aibig.h"
 #include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
@@ -475,10 +476,10 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$override radius for subsystem path points:")) {
 					int path_radii;
 					stuff_int(&path_radii);
-					if (path_radii >= 1) {
+					if (path_radii >= Minimum_subsystem_path_pt_dist) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= 1 (read %i). Value will not be used. ", path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
 					}
 				}
 

@@ -30,6 +30,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 // default distance for following subsystem path points --wookieejedi
 // the value is 5 because that was the original value specified in ai_big_maybe_follow_subsys_path()
 const int Default_subsystem_path_pt_dist = 5;
+const int Minimum_subsystem_path_pt_dist = 1;
 
 #endif
 
