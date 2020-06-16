@@ -16547,73 +16547,47 @@ void sexp_set_player_throttle_speed(int node)
 }
 
 // Goober5000
-int sexp_primaries_depleted(int node)
+int sexp_weapons_depleted(int node, bool primary)
 {
-	int sindex, num_banks, num_depleted_banks;
-	ship *shipp;
+	int num_banks, num_tested_banks, num_depleted_banks;
+	int *ammo;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return SEXP_FALSE;
-	}
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 
-	shipp = &Ships[sindex];
-	if (shipp->objnum < 0) {
-		return SEXP_FALSE;
+	// get bank stuff
+	if (primary) {
+		num_banks = ship_entry->shipp->weapons.num_primary_banks;
+		ammo = ship_entry->shipp->weapons.primary_bank_ammo;
+	} else {
+		num_banks = ship_entry->shipp->weapons.num_secondary_banks;
+		ammo = ship_entry->shipp->weapons.secondary_bank_ammo;
 	}
-
-	// get num primary banks
-	num_banks = shipp->weapons.num_primary_banks;
+	num_tested_banks = 0;
 	num_depleted_banks = 0;
 
 	// get number of depleted banks
 	for (int idx=0; idx<num_banks; idx++) {
-		// is this a ballistic bank?
-		if (!(Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])) {
-			continue;
+		if (primary) {
+			// is this a ballistic bank?
+			if (!(Weapon_info[ship_entry->shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])) {
+				continue;
+			}
 		}
+		num_tested_banks++;
 
 		// is this bank out of ammo?
-		if (shipp->weapons.primary_bank_ammo[idx] == 0)	{
+		if (ammo[idx] == 0)	{
 			num_depleted_banks++;
 		}
 	}
 
 	// are they all depleted?
-	return (num_depleted_banks == num_banks) ? SEXP_TRUE : SEXP_FALSE;
-}
-
-int sexp_secondaries_depleted(int node)
-{
-	int sindex, num_banks, num_depleted_banks;
-	ship *shipp;
-
-	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return SEXP_FALSE;
-	}
-
-	shipp = &Ships[sindex];
-	if (shipp->objnum < 0) {
-		return SEXP_FALSE;
-	}
-
-	// get num secondary banks
-	num_banks = shipp->weapons.num_secondary_banks;
-	num_depleted_banks = 0;
-
-	// get number of depleted banks
-	for (int idx=0; idx<num_banks; idx++) {
-		// is this bank out of ammo?
-		if (shipp->weapons.secondary_bank_ammo[idx] == 0) {
-			num_depleted_banks++;
-		}
-	}
-
-	// are they all depleted?
-	return (num_depleted_banks == num_banks) ? SEXP_TRUE : SEXP_FALSE;
+	return (num_depleted_banks == num_tested_banks) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 int sexp_facing(int node)
@@ -20274,7 +20248,6 @@ void sexp_primitive_sensors_set_range(int n)
 	Ships[ship_num].primitive_sensor_range = range;
 }
 
-
 //*************************************************************************************************
 // Kazan
 // AutoNav/AutoPilot system SEXPS
@@ -20284,102 +20257,69 @@ void sexp_primitive_sensors_set_range(int n)
 //args: 1+, Ship/Wing name
 void set_unset_nav_carry_status(int node, bool set_it)
 {
-	int n=node, i;
-	char *name;
-	bool skip;
-
-	while (n != -1)
+	for (int n = node; n >= 0; n = CDR(n))
 	{
-		name = CTEXT(n);
-		skip = false;
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
 
-		for (i = 0; i < MAX_WINGS; i++)
+		switch (oswpt.type)
 		{
-			if (!stricmp(Wings[i].name, name))
-			{
-                Wings[i].flags.set(Ship::Wing_Flags::Nav_carry, set_it);
-				skip = true;
+			case OSWPT_TYPE_SHIP:
+				oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::Navpoint_carry, set_it);
 				break;
-			}
-		}
 
-		if (!skip)
-		{
-			for (i = 0; i < MAX_SHIPS; i++)
-			{
-				if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
-				{
-                    Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry, set_it);
-					break;
-				}
-			}
+			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
+				oswpt.wingp->flags.set(Ship::Wing_Flags::Nav_carry, set_it);
+				break;
 		}
-		
-		// move to next ship/wing in list
-		n = CDR(n);
 	}
 }
 
 //text: set-nav-needslink
 //text: unset-nav-needslink
-//args: 1+, Ship/Wing name
+//args: 1+, Ship name
 void set_unset_nav_needslink(int node, bool set_it)
 {
-	int n=node, i;
-	char *name;
-
-	while (n != -1)
+	for (int n = node; n >= 0; n = CDR(n))
 	{
-		name = CTEXT(n);
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
 
-		for (i = 0; i < MAX_SHIPS; i++)
-		{
-			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
-			{
-				if (set_it)
-					Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_carry);
+		if (set_it)
+			ship_entry->shipp->flags.remove(Ship::Ship_Flags::Navpoint_carry);
 
-				Ships[i].flags.set(Ship::Ship_Flags::Navpoint_needslink, set_it);
-				break;
-			}
-		}
-		// move to next ship/wing in list
-		n = CDR(n);
+		ship_entry->shipp->flags.set(Ship::Ship_Flags::Navpoint_needslink, set_it);
 	}
 }
 
-void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
+void add_nav_waypoint(object_ship_wing_point_team *oswpt, const char *nav, const char *WP_path, int vert)
 {	
-	int i;
-	object_ship_wing_point_team oswpt;
 	bool add_for_this_player = true; 
 
-	if (oswpt_name != NULL) {
-		sexp_get_object_ship_wing_point_team(&oswpt, oswpt_name); 
-
+	if (oswpt)
+	{
 		// we can't assume this nav should be visible to the player any more
 		add_for_this_player = false;
 
-		switch (oswpt.type)
+		switch (oswpt->type)
 		{
 			case OSWPT_TYPE_WHOLE_TEAM:
-				if (oswpt.team == Player_ship->team) {
+				if (oswpt->team == Player_ship->team)
 					add_for_this_player = true; 
-				}
 				break;
 
 			case OSWPT_TYPE_SHIP:
-				if (oswpt.shipp == Player_ship) {
+				if (oswpt->ship_entry->shipp == Player_ship)
 					add_for_this_player = true; 
-				}
 				break;
-			case OSWPT_TYPE_WING:
-				for ( i = 0; i < oswpt.wingp->current_count; i++) {
-					if (Ships[oswpt.wingp->ship_index[i]].objnum == Player_ship->objnum) {
-						add_for_this_player = true; 
-					}
-				}
 
+			case OSWPT_TYPE_WING:
+				for (int i = 0; i < oswpt->wingp->current_count; ++i)
+					if (Ships[oswpt->wingp->ship_index[i]].objnum == Player_ship->objnum)
+						add_for_this_player = true; 
+				break;
 
 			// for all other oswpt types we simply ignore this
 			default:
@@ -20390,41 +20330,38 @@ void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
 	AddNav_Waypoint(nav, WP_path, vert, add_for_this_player ? 0 : NP_HIDDEN);
 }
 
-
 //text: add-nav-waypoint
 //args: 4, Nav Name, Waypoint Path Name, Waypoint Path point, ShipWingTeam
 void add_nav_waypoint(int node)
 {
+	object_ship_wing_point_team oswpt, *oswptp = nullptr;
 	bool is_nan, is_nan_forever;
 
-	char *nav_name = CTEXT(node);
-	char *way_name = CTEXT(CDR(node));
+	auto nav_name = CTEXT(node);
+	node = CDR(node);
+	auto way_name = CTEXT(node);
+	node = CDR(node);
 
-	int  vert = eval_num(CDR(CDR(node)), is_nan, is_nan_forever);
+	int vert = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
 		return;
 	}
+	node = CDR(node);
 
-	char *oswpt_name;
-	node = CDR(CDR(CDR(node)));
-	if (node >=0) {
-		oswpt_name = CTEXT(node); 
-	}
-	else {
-		oswpt_name = NULL;
+	if (node >= 0) {
+		eval_object_ship_wing_point_team(&oswpt, node);
+		oswptp = &oswpt;
 	}
 
-	add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
+	add_nav_waypoint(oswptp, nav_name, way_name, vert);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_string(nav_name);
 	Current_sexp_network_packet.send_string(way_name);
 	Current_sexp_network_packet.send_int(vert);
-
-	if (oswpt_name != NULL) {
-		Current_sexp_network_packet.send_string(oswpt_name);
+	if (oswptp) {
+		Current_sexp_network_packet.send_string(oswptp->object_name);
 	}
-
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -20434,29 +20371,23 @@ void multi_sexp_add_nav_waypoint()
 	char way_name[TOKEN_LENGTH];
 	char oswpt_name[TOKEN_LENGTH];
 	int vert;
+	object_ship_wing_point_team *oswptp = nullptr;
 
-	if (!Current_sexp_network_packet.get_string(nav_name)) {
-		return; 
-	}
-	
-	if (!Current_sexp_network_packet.get_string(way_name)) {
+	if (!Current_sexp_network_packet.get_string(nav_name))
 		return;
-	}
-
-	if (! Current_sexp_network_packet.get_int(vert)) {
+	if (!Current_sexp_network_packet.get_string(way_name))
 		return;
+	if (!Current_sexp_network_packet.get_int(vert))
+		return;
+
+	if (Current_sexp_network_packet.get_string(oswpt_name)) {
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, -1, oswpt_name);
+		oswptp = &oswpt;
 	}
 
-	if (!Current_sexp_network_packet.get_string(oswpt_name)) {
-		add_nav_waypoint(nav_name, way_name, vert, NULL);		
-	}
-	else {
-		add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
-	}
-
-	AddNav_Waypoint(nav_name, way_name, vert, 0);
+	add_nav_waypoint(oswptp, nav_name, way_name, vert);
 }
-
 
 //text: add-nav-ship
 //args: 2, Nav Name, Ship Name
@@ -20488,7 +20419,6 @@ void multi_add_nav_ship()
 	AddNav_Ship(nav_name, ship_name, 0);
 }
 
-
 //text: del-nav
 //args: 1, Nav Name
 void del_nav(int node)
@@ -20499,7 +20429,6 @@ void del_nav(int node)
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_string(nav_name);
 	Current_sexp_network_packet.end_callback();
-
 }
 
 void multi_del_nav()
@@ -20577,15 +20506,13 @@ int is_nav_visited(int node)
 //rets: true/false
 int is_nav_linked(int node)
 {
-	char *ship_name = CTEXT(node);
-	for (int i = 0; i < MAX_SHIPS; i++)
-	{
-		if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, ship_name))
-		{
-			return (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry]) != 0;
-		}
-	}
-	return 0;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
+	return ship_entry->shipp->flags[Ship::Ship_Flags::Navpoint_carry] ? SEXP_TRUE : SEXP_FALSE;
 }
 
 //text: distance-to-nav
@@ -20609,7 +20536,6 @@ void select_unselect_nav(int node, bool select_it)
 }
 
 //*************************************************************************************************
-
 
 int sexp_is_tagged(int node)
 {
@@ -25253,11 +25179,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_PRIMARIES_DEPLETED:
-				sexp_val = sexp_primaries_depleted(node);
-				break;
-
 			case OP_SECONDARIES_DEPLETED:
-				sexp_val = sexp_secondaries_depleted(node);
+				sexp_val = sexp_weapons_depleted(node, op_num == OP_PRIMARIES_DEPLETED);
 				break;
 
 			case OP_FACING:
