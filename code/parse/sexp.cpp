@@ -6158,26 +6158,48 @@ int sexp_is_disabled_xor_disarmed_delay(int n, bool check_disabled)
 }
 
 /**
- * Determine if a ship is done flying waypoints
+ * Determine if a ship or wing is done flying waypoints
  */
 int sexp_are_waypoints_done(int n, fix *time, int count = 1)
 {
 	auto ship_entry = eval_ship(n);
-	if (!ship_entry)
-		return SEXP_KNOWN_FALSE;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
-		return SEXP_CANT_EVAL;
+	if (ship_entry)
+	{
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_CANT_EVAL;
 
-	auto waypoint_name = CTEXT(CDR(n));
+		auto waypoint_name = CTEXT(CDR(n));
 
-	if (mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, ship_entry->name, waypoint_name, count, time))
-		return SEXP_KNOWN_TRUE;
+		if (mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, ship_entry->name, waypoint_name, count, time))
+			return SEXP_KNOWN_TRUE;
 
-	// if the ship has exited, no way to complete waypoints
-	if (ship_entry->status == ShipStatus::EXITED)
-		return SEXP_KNOWN_FALSE;
+		// if the ship has exited, no way to complete waypoints
+		if (ship_entry->status == ShipStatus::EXITED)
+			return SEXP_KNOWN_FALSE;
 
-	return SEXP_FALSE;
+		return SEXP_FALSE;
+	}
+
+	auto wingp = eval_wing(n);
+	if (wingp)
+	{
+		if (wing_has_yet_to_arrive(wingp))
+			return SEXP_CANT_EVAL;
+
+		auto waypoint_name = CTEXT(CDR(n));
+
+		if (mission_log_get_time_indexed(LOG_WAYPOINTS_DONE, wingp->name, waypoint_name, count, time))
+			return SEXP_KNOWN_TRUE;
+
+		// if the wing is gone, no way to complete waypoints
+		if (wingp->flags[Ship::Wing_Flags::Gone])
+			return SEXP_KNOWN_FALSE;
+
+		return SEXP_FALSE;
+	}
+
+	// neither a ship nor a wing
+	return SEXP_KNOWN_FALSE;
 }
 
 // since we can't use lambda-captures as function pointers (see also disabled_xor_disarmed), we need a lot of code duplication from sexp_check_objective_delay
@@ -7561,38 +7583,47 @@ void sexp_set_object_speed(int n, int axis)
 		n = CDR(n);
 	}
 
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_int(speed);
+	Current_sexp_network_packet.send_int(axis);
+	Current_sexp_network_packet.send_bool(subjective);
+
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_SHIP:
+			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
+			Current_sexp_network_packet.send_object(oswpt.objp);
+			break;
+
 		case OSWPT_TYPE_WING:
 		{
-			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
+			for (int i = 0; i < oswpt.wingp->current_count; ++i)
+			{
+				auto shipp = &Ships[oswpt.wingp->ship_index[i]];
 
-			//CommanderDJ - we put the multiplayer callback stuff in here to prevent doing unnecessary checks clientside
-            Current_sexp_network_packet.start_callback();
-            Current_sexp_network_packet.send_object(oswpt.objp);
-            Current_sexp_network_packet.send_int(speed);
-            Current_sexp_network_packet.send_int(axis);
-            Current_sexp_network_packet.send_int(subjective);
-            Current_sexp_network_packet.end_callback();
-
+				sexp_set_object_speed(&Objects[shipp->objnum], speed, axis, subjective);
+				Current_sexp_network_packet.send_object(&Objects[shipp->objnum]);
+			}
 			break;
 		}
 	}
+
+	Current_sexp_network_packet.end_callback();
 }
 
 //CommanderDJ
 void multi_sexp_set_object_speed()
 {
 	object *objp;
-	int speed = 0, axis = 0, subjective = 0;
+	int speed = 0, axis = 0;
+	bool subjective = false;
 
-    Current_sexp_network_packet.get_object(objp);
     Current_sexp_network_packet.get_int(speed);
     Current_sexp_network_packet.get_int(axis);
-    Current_sexp_network_packet.get_int(subjective);
+    Current_sexp_network_packet.get_bool(subjective);
 
-	sexp_set_object_speed(objp, speed, axis, subjective != 0);
+	while (Current_sexp_network_packet.get_object(objp))
+		sexp_set_object_speed(objp, speed, axis, subjective);
 }
 
 int sexp_get_object_speed(object *objp, int axis, bool subjective)
