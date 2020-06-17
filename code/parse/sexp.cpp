@@ -24166,7 +24166,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_DISARMED_DELAY:
-				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, true);
+				sexp_val = sexp_is_disabled_xor_disarmed_delay(node, false);
 				break;
 
 			case OP_WAYPOINTS_DONE_DELAY:
