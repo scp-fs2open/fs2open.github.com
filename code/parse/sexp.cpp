@@ -1248,6 +1248,10 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].cache = nullptr;
 	Sexp_nodes[node].cached_variable_index = -1;
 
+	// special-arg?
+	if (type == SEXP_ATOM && subtype == SEXP_ATOM_STRING && !strcmp(text, SEXP_ARGUMENT_STRING))
+		Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_NODE;
+
 	return node;
 }
 
@@ -3498,10 +3502,6 @@ int get_sexp()
 				strncpy(token, Mp + 1, len);
 				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
-
-				// special-arg?
-				if (!strcmp(token, SEXP_ARGUMENT_STRING))
-					Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_NODE;
 			}
 
 			// bump past closing \" by 1 char
