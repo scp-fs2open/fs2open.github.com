@@ -73,20 +73,8 @@ void AnimationElement::OnRender()
 		GenerateGeometry();
 	}
 
-	// Use dynamic cast for debug assertions but use a static cast everywhere else for improved efficiency
-	Assertion(dynamic_cast<RocketRenderingInterface*>(GetRenderInterface()) != nullptr,
-	          "AnimationElement can only be used with the FSO rendering interface.");
-
-	auto render = static_cast<RocketRenderingInterface*>(GetRenderInterface());
-
-	// Set the frame of our texture handle. libRocket doesn't support animations so we need to use a small hack for this
-	render->setAnimationFrame(texture.GetHandle(render), current_animation_frame);
-
 	// Render the geometry beginning at this element's content region.
 	geometry.Render(GetAbsoluteOffset(Rocket::Core::Box::CONTENT));
-
-	// Reset this after rendering in case the texture object is shared with someone else
-	render->setAnimationFrame(texture.GetHandle(render), 0);
 }
 
 // Called when attributes on the element are changed.
@@ -104,8 +92,7 @@ void AnimationElement::OnAttributeChange(const Rocket::Core::AttributeNameList& 
 		dirty_layout  = true;
 
 		// Reset the animation timestamps to make sure the animation starts at the beginning
-		current_animation_frame = -1;
-		animation_start_time    = -1.f;
+		animation_last_update_time = -1.0f;
 	}
 
 	// Check for a changed 'width' attribute. If this changes, a layout is forced which will
@@ -255,23 +242,15 @@ void AnimationElement::OnUpdate()
 		return;
 	}
 
-	// Initialize start time if it hasn't been set yet
-	if (animation_start_time < 0.f) {
-		animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
+	if (animation_last_update_time > 0.0f) {
+		const auto animation_frame_time =
+			Rocket::Core::GetSystemInterface()->GetElapsedTime() - animation_last_update_time;
+
+		// Set the advance time for the render call so that the generic anim inside the handle gets rendered correctly
+		scpui::RocketRenderingInterface::advanceAnimation(texture.GetHandle(GetRenderInterface()),
+			animation_frame_time);
 	}
-
-	// Use dynamic cast for debug assertions but use a static cast everywhere else for improved efficiency
-	Assertion(dynamic_cast<RocketRenderingInterface*>(GetRenderInterface()) != nullptr,
-	          "AnimationElement can only be used with the FSO rendering interface.");
-
-	auto render = static_cast<RocketRenderingInterface*>(GetRenderInterface());
-
-	// Determine the current frame of our animation
-	auto bitmap_num = render->getBitmapNum(texture.GetHandle(render));
-
-	auto currentTime = Rocket::Core::GetSystemInterface()->GetElapsedTime() - animation_start_time;
-	// Looping is the default at the moment, could be customized with a property at some point
-	current_animation_frame = bm_get_anim_frame(bitmap_num, currentTime, 0.0f, true);
+	animation_last_update_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
 }
 
 } // namespace elements
