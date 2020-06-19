@@ -12694,16 +12694,23 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
  */
 void sexp_sabotage_subsystem(int n)
 {
-	char *shipname, *subsystem;
-	int	percentage, shipnum, index, generic_type;
+	const char *subsystem;
+	int	percentage, index, generic_type;
 	float sabotage_hits;
-	ship	*shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true, is_nan, is_nan_forever;
 
-	shipname = CTEXT(n);
-	subsystem = CTEXT(CDR(n));
-	percentage = eval_num(CDDR(n), is_nan, is_nan_forever);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	auto shipp = ship_entry->shipp;
+	n = CDR(n);
+
+	subsystem = CTEXT(n);
+	n = CDR(n);
+
+	percentage = eval_num(n, is_nan, is_nan_forever);
+	n = CDR(n);
 
 	if (is_nan || is_nan_forever)
 		return;
@@ -12713,22 +12720,13 @@ void sexp_sabotage_subsystem(int n)
 		return;
 	}
 
-	shipnum = ship_name_lookup(shipname);
-	
-	// if no ship, then return immediately.
-	if (shipnum < 0) {
-		return;
-	}
-	shipp = &Ships[shipnum];
-
 	// see if we are dealing with the HULL
 	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
 		float ihs;
-		object *objp;
+		auto objp = ship_entry->objp;
 
 		ihs = shipp->ship_max_hull_strength;
 		sabotage_hits = ihs * ((float)percentage / 100.0f);
-		objp = &Objects[shipp->objnum];
 		objp->hull_strength -= sabotage_hits;
 
 		// self destruct the ship if <= 0.
@@ -12740,11 +12738,10 @@ void sexp_sabotage_subsystem(int n)
 	// see if we are dealing with the Simulated HULL
 	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
 		float ihs;
-		object *objp;
+		auto objp = ship_entry->objp;
 
 		ihs = shipp->ship_max_hull_strength;
 		sabotage_hits = ihs * ((float)percentage / 100.0f);
-		objp = &Objects[shipp->objnum];
 		objp->sim_hull_strength -= sabotage_hits;
 
 		return;
@@ -12757,7 +12754,7 @@ void sexp_sabotage_subsystem(int n)
 	while (do_loop) {
 		if (generic_type) {
 			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
+			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
 				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
@@ -12767,7 +12764,7 @@ void sexp_sabotage_subsystem(int n)
 			}
 
 			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&Ships[shipnum].subsys_list)) {
+			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
 					return;
@@ -12804,15 +12801,17 @@ void sexp_sabotage_subsystem(int n)
  */
 void sexp_repair_subsystem(int n)
 {
-	char *shipname, *subsystem;
-	int	percentage, shipnum, index, generic_type;
+	const char *subsystem;
+	int	percentage, index, generic_type;
 	bool do_submodel_repair = true, do_ancestor_repair = true;
 	float repair_hits;
-	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true, is_nan, is_nan_forever;
 
-	shipname = CTEXT(n);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	auto shipp = ship_entry->shipp;
 	n = CDR(n);
 
 	subsystem = CTEXT(n);
@@ -12836,24 +12835,16 @@ void sexp_repair_subsystem(int n)
 		if (n >= 0)
 			do_ancestor_repair = is_sexp_true(n);
 	}
-
-	shipnum = ship_name_lookup(shipname);
-	
-	// if no ship, then return immediately.
-	if (shipnum < 0) {
-		return;
-	}
-	shipp = &Ships[shipnum];
 	
 	// see if we are dealing with the HULL
 	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
 		float ihs;
-		object *objp;
+		auto objp = ship_entry->objp;
 
 		ihs = shipp->ship_max_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
-		objp = &Objects[shipp->objnum];
 		objp->hull_strength += repair_hits;
+
 		if ( objp->hull_strength > ihs )
 			objp->hull_strength = ihs;
 		return;
@@ -12862,12 +12853,12 @@ void sexp_repair_subsystem(int n)
 	// see if we are dealing with the Simulated HULL
 	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
 		float ihs;
-		object *objp;
+		auto objp = ship_entry->objp;
 
 		ihs = shipp->ship_max_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
-		objp = &Objects[shipp->objnum];
 		objp->sim_hull_strength += repair_hits;
+
 		if ( objp->sim_hull_strength > ihs )
 			objp->sim_hull_strength = ihs;
 		return;
@@ -12880,7 +12871,7 @@ void sexp_repair_subsystem(int n)
 	while (do_loop) {
 		if (generic_type) {
 			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
+			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
 				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
@@ -12890,7 +12881,7 @@ void sexp_repair_subsystem(int n)
 			}
 
 			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&Ships[shipnum].subsys_list)) {
+			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
 					return;
@@ -12925,14 +12916,16 @@ void sexp_repair_subsystem(int n)
  */
 void sexp_set_subsystem_strength(int n)
 {
-	char *shipname, *subsystem;
-	int	percentage, shipnum, index, generic_type;
+	const char *subsystem;
+	int	percentage, index, generic_type;
 	bool do_submodel_repair = true, do_ancestor_repair = true;
-	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true, is_nan, is_nan_forever;
 
-	shipname = CTEXT(n);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	auto shipp = ship_entry->shipp;
 	n = CDR(n);
 
 	subsystem = CTEXT(n);
@@ -12952,27 +12945,18 @@ void sexp_set_subsystem_strength(int n)
 			do_ancestor_repair = is_sexp_true(n);
 	}
 
-	shipnum = ship_name_lookup(shipname);
-	
-	// if no ship, then return immediately.
-	if ( shipnum == -1 )
-		return;
-	shipp = &Ships[shipnum];
-
 	if ( percentage > 100 ) {
-		mprintf(("Percentage for set_subsystem_strength > 100 on ship %s for subsystem '%s'-- setting to 100\n", shipname, subsystem));
+		mprintf(("Percentage for set_subsystem_strength > 100 on ship %s for subsystem '%s'-- setting to 100\n", ship_entry->name, subsystem));
 		percentage = 100;
 	} else if ( percentage < 0 ) {
-		mprintf(("Percantage for set_subsystem_strength < 0 on ship %s for subsystem '%s' -- setting to 0\n", shipname, subsystem));
+		mprintf(("Percantage for set_subsystem_strength < 0 on ship %s for subsystem '%s' -- setting to 0\n", ship_entry->name, subsystem));
 		percentage = 0;
 	}
 
 	// see if we are dealing with the HULL
 	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
 		float ihs;
-		object *objp;
-
-		objp = &Objects[shipp->objnum];
+		auto objp = ship_entry->objp;
 
 		// destroy the ship if percentage is 0
 		if ( percentage == 0 ) {
@@ -12988,9 +12972,8 @@ void sexp_set_subsystem_strength(int n)
 	// see if we are dealing with the Simulated HULL
 	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
 		float ihs;
-		object *objp;
+		auto objp = ship_entry->objp;
 
-		objp = &Objects[shipp->objnum];
 		ihs = shipp->ship_max_hull_strength;
 		objp->sim_hull_strength = ihs * ((float)percentage / 100.0f);
 
@@ -13004,7 +12987,7 @@ void sexp_set_subsystem_strength(int n)
 	while (do_loop) {
 		if (generic_type) {
 			// loop until we find a subsystem of that type
-			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
+			for ( ; ss_start != END_OF_LIST(&shipp->subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
 				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
@@ -13014,7 +12997,7 @@ void sexp_set_subsystem_strength(int n)
 			}
 
 			// reached the end of the subsystem list 
-			if (ss_start == END_OF_LIST(&Ships[shipnum].subsys_list)) {
+			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
 					return;
@@ -13048,17 +13031,14 @@ void sexp_set_subsystem_strength(int n)
 // destroys a subsystem without explosions
 void sexp_destroy_subsys_instantly(int n)
 {
-	char *subsystem;
-	int	shipnum, subsys_index, generic_type;
-	ship *shipp;
+	const char *subsystem;
+	int	subsys_index, generic_type;
 	ship_subsys *ss;
 
-	shipnum = ship_name_lookup(CTEXT(n));
-	// if no ship, then return immediately.
-	if (shipnum < 0)
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-
-	shipp = &Ships[shipnum];
+	auto shipp = ship_entry->shipp;
 	n = CDR(n);
 
 	if (MULTIPLAYER_MASTER)
