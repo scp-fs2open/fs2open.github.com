@@ -12325,7 +12325,9 @@ void sexp_warp_effect(int n)
 // and priority.
 void sexp_send_one_message( char *name, char *who_from, char *priority, int group, int delay )
 {
-	int ipriority, num, ship_index, source;
+	int ipriority, source;
+	int ship_index = -1;
+	int wingnum = -1;
 	ship *shipp;
 
 	if(physics_paused){
@@ -12346,10 +12348,14 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		ipriority = MESSAGE_PRIORITY_NORMAL;
 	}
 
+	// do some pre-checks
+	auto ship_entry = ship_registry_get(who_from);
+	if (!ship_entry)
+		wingnum = wing_lookup(who_from);
+
 	// check to see if the 'who_from' string is a ship that had been destroyed or departed.  If so,
 	// then don't send the message.  We must look at 'who_from' to determine what to look for.  who_from
 	// may be any allied person, any wingman, a wingman from a specific wing, or a specific ship
-	ship_index = -1;
 	shipp = NULL;
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
@@ -12357,22 +12363,24 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
-	} else if ( (num = wing_name_lookup(who_from)) != -1 ) {
+	} else if ( wingnum >= 0 && Wings[wingnum].current_count > 0 ) {
 		// message from a wing
 		// choose wing leader to speak for wing (hence "1" at end of ship_get_random_ship_in_wing)
-		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_UNSILENCED, 1 );
+		ship_index = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED, 1 );
 		if ( ship_index == -1 ) {
 			if ( ipriority != MESSAGE_PRIORITY_HIGH )
 				return;
+			source = MESSAGE_SOURCE_COMMAND;
 		}
+	} else if ( ship_entry && ship_entry->shipp ) {
+		// Message from a specific ship
+		ship_index = ship_entry->objp->instance;
 
-	} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, who_from, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, who_from, NULL, NULL)
-		|| mission_log_get_time(LOG_WING_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_WING_DEPARTED, who_from, NULL, NULL) ) {
-		// getting into this if statement means that the ship or wing (sender) is no longer in the mission
+	} else if ( ship_entry || wingnum >= 0  ) {
+		// getting into this if statement means that the ship or wing (sender) is no longer (or not yet) in the mission
 		// if message is high priority, make it come from Terran Command
 		if ( ipriority != MESSAGE_PRIORITY_HIGH )
 			return;
-		
 		source = MESSAGE_SOURCE_COMMAND;
 
 	} else if ( !stricmp(who_from, "<any wingman>") || (wing_name_lookup(who_from) != -1) ) {
@@ -12380,21 +12388,14 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 	} else if ( !stricmp(who_from, "<none>") ) {
 		source = MESSAGE_SOURCE_NONE;
 	} else {
-		// Message from a apecific ship
-		source = MESSAGE_SOURCE_SHIP;
-		ship_index = ship_name_lookup(who_from);
-		if ( ship_index == -1 ) {
-			// bail if not high priority, otherwise reroute to command
-			if ( ipriority != MESSAGE_PRIORITY_HIGH )
-				return;
-			source = MESSAGE_SOURCE_COMMAND;
-		}
+		Assertion(false, "Curious... all message sources should have been covered");
 	}
 
 	if ( ship_index == -1 ){
 		shipp = NULL;
 	} else {
 		shipp = &Ships[ship_index];
+		source = MESSAGE_SOURCE_SHIP;
 	}
 
 	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
@@ -16913,28 +16914,23 @@ int sexp_gse_recharge_pct(int node, int op_num)
  */
 int sexp_get_ets_value(int node)
 {
-	int sindex;
-	SCP_string ets_type;
-
-	ets_type = CTEXT(node);
+	auto ets_type = CTEXT(node);
 	node = CDR(node);
 
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return SEXP_FALSE;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return SEXP_FALSE;
-	}
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 
-	if (!stricmp(ets_type.c_str(), "engine")) {
-		return Ships[sindex].engine_recharge_index;
-	} else if (!stricmp(ets_type.c_str(), "shield")) {
-		return Ships[sindex].shield_recharge_index;
-	} else if (!stricmp(ets_type.c_str(), "weapon")) {
-		return Ships[sindex].weapon_recharge_index;
+	if (!stricmp(ets_type, "engine")) {
+		return ship_entry->shipp->engine_recharge_index;
+	} else if (!stricmp(ets_type, "shield")) {
+		return ship_entry->shipp->shield_recharge_index;
+	} else if (!stricmp(ets_type, "weapon")) {
+		return ship_entry->shipp->weapon_recharge_index;
 	} else {
-		return SEXP_FALSE;
+		return SEXP_NAN_FOREVER;
 	}
 }
 
@@ -16944,7 +16940,6 @@ int sexp_get_ets_value(int node)
 void sexp_set_ets_values(int node)
 {
 	bool is_nan, is_nan_forever;
-	int sindex;
 	int ets_idx[num_retail_ets_gauges];
 
 	//get inputs
@@ -16959,14 +16954,16 @@ void sexp_set_ets_values(int node)
 
 	// apply ETS settings to specified ships
 	for ( ; node != -1; node = CDR(node)) {
-		sindex = ship_name_lookup(CTEXT(node));
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->shipp)
+			return;
 
-		if (sindex >= 0 && validate_ship_ets_indxes(sindex, ets_idx)) {
-			Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
-			Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
-			Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+		if (validate_ship_ets_indxes(ship_entry->objp->instance, ets_idx)) {
+			ship_entry->shipp->engine_recharge_index = ets_idx[ENGINES];
+			ship_entry->shipp->shield_recharge_index = ets_idx[SHIELDS];
+			ship_entry->shipp->weapon_recharge_index = ets_idx[WEAPONS];
 
-			Current_sexp_network_packet.send_ship(sindex);
+			Current_sexp_network_packet.send_ship(ship_entry->shipp);
 			Current_sexp_network_packet.send_int(ets_idx[ENGINES]);
             Current_sexp_network_packet.send_int(ets_idx[SHIELDS]);
 			Current_sexp_network_packet.send_int(ets_idx[WEAPONS]);
