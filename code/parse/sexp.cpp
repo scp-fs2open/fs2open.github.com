@@ -10627,49 +10627,44 @@ int sexp_is_ship_class_or_type(int n, bool ship_class)
 // ai class value is the first parameter, second is a ship, rest are subsystems to check
 int sexp_is_ai_class(int n)
 {
-	char *ship_name, *subsystem;
-	int i, ship_num, ai_class_to_check;
-
 	Assert ( n >= 0 );
 
+	auto ai_class_name = CTEXT(n);
+	n = CDR(n);
+
 	// find ai class
-	ai_class_to_check = -1;
-	for (i=0; i<Num_ai_classes; i++)
+	int ai_class_to_check = -1;
+	for (int i=0; i<Num_ai_classes; ++i)
 	{
-		if (!stricmp(Ai_class_names[i], CTEXT(n)))
+		if (!stricmp(Ai_class_names[i], ai_class_name))
 			ai_class_to_check = i;
 	}
 
 	if (ai_class_to_check < 0) {
-		Warning(LOCATION, "is-ai-class called with nonexistent AI class [%s].", CTEXT(n));
+		Warning(LOCATION, "is-ai-class called with nonexistent AI class [%s].", ai_class_name);
 		return SEXP_FALSE;
 	}
 
-	n = CDR(n);
-	ship_name = CTEXT(n);
-	n = CDR(n);
-
 	// find ship
-	ship_num = ship_name_lookup(ship_name);
-
-	// we can't do anything with ships that aren't present
-	if (ship_num < 0)
-		return SEXP_CANT_EVAL;
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+	n = CDR(n);
 
 	// subsys?
-	if (n != -1)
+	if (n >= 0)
 	{
-		ship_subsys *ss;
-
 		// loopity-loop
 		for ( ; n != -1; n = CDR(n) )
 		{
-			subsystem = CTEXT(n);
+			auto subsystem = CTEXT(n);
 
 			// find the ship subsystem
 			// if it doesn't match, or subsys isn't found, return false immediately
-			ss = ship_get_subsys(&Ships[ship_num], subsystem);
-			if (ss != NULL)
+			auto ss = ship_get_subsys(ship_entry->shipp, subsystem);
+			if (ss)
 			{
 				if (ss->weapons.ai_class != ai_class_to_check)
 					return SEXP_FALSE;
@@ -10684,7 +10679,7 @@ int sexp_is_ai_class(int n)
 	// just the ship
 	else
 	{
-		if (Ai_info[Ships[ship_num].ai_index].ai_class == ai_class_to_check)
+		if (Ai_info[ship_entry->shipp->ai_index].ai_class == ai_class_to_check)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
@@ -10694,45 +10689,42 @@ int sexp_is_ai_class(int n)
 // Goober5000
 void sexp_change_ai_class(int n)
 {
-	int i, ship_num, new_ai_class;
-	char *subsystem;
-
 	Assert ( n >= 0 );
 
+	auto ai_class_name = CTEXT(n);
+	n = CDR(n);
+
 	// find ai class
-	new_ai_class = -1;
-	for (i=0; i<Num_ai_classes; i++)
+	int new_ai_class = -1;
+	for (int i=0; i<Num_ai_classes; ++i)
 	{
-		if (!stricmp(Ai_class_names[i], CTEXT(n)))
+		if (!stricmp(Ai_class_names[i], ai_class_name))
 			new_ai_class = i;
 	}
 
 	if (new_ai_class < 0) {
-		Warning(LOCATION, "change-ai-class called with nonexistent AI class [%s].", CTEXT(n));
+		Warning(LOCATION, "change-ai-class called with nonexistent AI class [%s].", ai_class_name);
 		return;
 	}
 
 	// find ship
-	n = CDR(n);
-	ship_num = ship_name_lookup(CTEXT(n));
-	n = CDR(n);
-
-	// we can't do anything with ships that aren't present
-	if (ship_num < 0)
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
+	n = CDR(n);
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(ship_num);
+	Current_sexp_network_packet.send_ship(ship_entry->shipp);
 	Current_sexp_network_packet.send_int(new_ai_class);
 
 	// subsys?
-	if (n != -1)
+	if (n >= 0)
 	{
 		// loopity-loop
 		for ( ; n != -1; n = CDR(n) )
 		{
-			subsystem = CTEXT(n);
-			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
+			auto subsystem = CTEXT(n);
+			ship_subsystem_set_new_ai_class(ship_entry->shipp, subsystem, new_ai_class);
 
 			Current_sexp_network_packet.send_string(subsystem);
 		}
@@ -10740,7 +10732,7 @@ void sexp_change_ai_class(int n)
 	// just the one ship
 	else
 	{
-		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
+		ship_set_new_ai_class(ship_entry->shipp, new_ai_class);
 	}
 
 	Current_sexp_network_packet.end_callback();
@@ -10748,23 +10740,24 @@ void sexp_change_ai_class(int n)
 
 void multi_sexp_change_ai_class()
 {
-	int ship_num, new_ai_class;
-	char *subsystem = NULL;
+	int new_ai_class;
+	ship *shipp;
+	char *subsystem = nullptr;
 
-	Current_sexp_network_packet.get_ship(ship_num); 
+	Current_sexp_network_packet.get_ship(shipp); 
 	Current_sexp_network_packet.get_int(new_ai_class);
 
 	// subsystem?
 	if (Current_sexp_network_packet.get_string(subsystem)) {
-		ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
+		ship_subsystem_set_new_ai_class(shipp, subsystem, new_ai_class);
 
 		// deal with any other subsystems
 		while (Current_sexp_network_packet.get_string(subsystem)) {
-			ship_subsystem_set_new_ai_class(&Ships[ship_num], subsystem, new_ai_class);
+			ship_subsystem_set_new_ai_class(shipp, subsystem, new_ai_class);
 		}		 
 	}
 	else {
-		ship_set_new_ai_class(&Ships[ship_num], new_ai_class);
+		ship_set_new_ai_class(shipp, new_ai_class);
 	}
 }
 
