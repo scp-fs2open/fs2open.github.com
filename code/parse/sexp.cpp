@@ -6929,7 +6929,6 @@ int sexp_team_score(int node)
 	return 0;
 }
 
-
 /**
  * Return the remaining hits left on a subsystem as a percentage of the whole.
  *
@@ -6938,25 +6937,21 @@ int sexp_team_score(int node)
 int sexp_hits_left_subsystem(int n)
 {
 	bool single_subsystem = false;
-	int shipnum, percent, type;
-	char *shipname;
-	char *subsys_name;
+	int percent, type;
 
-	shipname = CTEXT(n);
+	auto ship_entry = eval_ship(n);
 	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	subsys_name = CTEXT(CDR(n));
-	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
-	if (ss != NULL)
+	auto subsys_name = CTEXT(CDR(n));
+	auto ss = ship_get_subsys(ship_entry->shipp, subsys_name);
+	if (ss)
 		type = ss->system_info->type;
 	else
 		type = SUBSYSTEM_NONE;
@@ -6971,13 +6966,13 @@ int sexp_hits_left_subsystem(int n)
 		// if the third option is present or if this is an unknown subsystem type we only want to find the percentage of the 
 		// named subsystem
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
-			if (ss != NULL) {
+			if (ss) {
 				percent = (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 				return percent;
 			}
 
 			// we reached end of ship subsys list without finding subsys_name
-			if (ship_class_unchanged(shipnum)) {
+			if (ship_class_unchanged(ship_entry)) {
 				Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 			}
 			return SEXP_NAN;
@@ -6985,7 +6980,7 @@ int sexp_hits_left_subsystem(int n)
 		// by default we return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
 		} else {
-			percent = (int)std::lround(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
+			percent = (int)std::lround(ship_get_subsystem_strength(ship_entry->shipp, type) * 100.0f);
 			return percent;
 		}
 	}
@@ -6995,25 +6990,21 @@ int sexp_hits_left_subsystem(int n)
 // Goober5000
 int sexp_hits_left_subsystem_generic(int node)
 {
-	int i, ship_num, subsys_type;
-	char *ship_name, *subsys_type_name;
+	auto ship_entry = eval_ship(node);
 
-	ship_name = CTEXT(node);
-	subsys_type_name = CTEXT(CDR(node));
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL)) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	ship_num = ship_name_lookup(ship_name);
-	if (ship_num < 0) {
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+
+	auto subsys_type_name = CTEXT(CDR(node));
 
 	// find subsystem type
-	subsys_type = -1;
-	for (i = 0; i < SUBSYSTEM_MAX; i++)
+	int subsys_type = -1;
+	for (int i = 0; i < SUBSYSTEM_MAX; i++)
 	{
 		if (!stricmp(subsys_type_name, Subsystem_types[i]))
 			subsys_type = i;
@@ -7033,38 +7024,33 @@ int sexp_hits_left_subsystem_generic(int node)
 
 	// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 	// we are returning the sum of the hits on the 3 engines)
-	return (int)std::lround(ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f);
+	return (int)std::lround(ship_get_subsystem_strength(ship_entry->shipp, subsys_type) * 100.0f);
 }
 
 // Goober5000
 int sexp_hits_left_subsystem_specific(int node)
 {
-	int ship_num;
-	char *ship_name, *subsys_name;
-	ship_subsys *ss;
+	auto ship_entry = eval_ship(node);
 
-	ship_name = CTEXT(node);
-	subsys_name = CTEXT(CDR(node));
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL)) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	ship_num = ship_name_lookup(ship_name);
-	if (ship_num < 0) {
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+
+	auto subsys_name = CTEXT(CDR(node));
 
 	// find subsystem
-	ss = ship_get_subsys(&Ships[ship_num], subsys_name);
-	if (ss != NULL) {
+	auto ss = ship_get_subsys(ship_entry->shipp, subsys_name);
+	if (ss) {
 		// return as a percentage the hits remaining on this subsystem only
 		return (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 	}
 
 	// we reached end of ship subsys list without finding subsys_name
-	if (ship_class_unchanged(ship_num)) {
+	if (ship_class_unchanged(ship_entry)) {
 		Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 	}
 	return SEXP_NAN;
