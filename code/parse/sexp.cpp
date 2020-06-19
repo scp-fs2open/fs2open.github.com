@@ -10271,19 +10271,19 @@ int sexp_is_iff(int n)
 	// iff value is the first parameter, second is a list of one or more ships/wings to check to see if the
 	// iff value matches
 	team = iff_lookup(CTEXT(n));
-
 	n = CDR(n);
+
 	for ( ; n != -1; n = CDR(n) )
 	{
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+		eval_object_ship_wing_point_team(&oswpt, n);
 
 		switch (oswpt.type)
 		{
 			case OSWPT_TYPE_SHIP:
 			{
 				// if the team doesn't match the team specified, return false immediately
-				if (oswpt.shipp->team != team)
+				if (oswpt.ship_entry->shipp->team != team)
 					return SEXP_FALSE;
 
 				break;
@@ -10292,7 +10292,7 @@ int sexp_is_iff(int n)
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
 				// if the team doesn't match the team specified, return false immediately
-				if (oswpt.p_objp->team != team)
+				if (oswpt.ship_entry->p_objp->team != team)
 					return SEXP_FALSE;
 
 				break;
@@ -10314,16 +10314,25 @@ int sexp_is_iff(int n)
 			case OSWPT_TYPE_EXITED:
 			{
 				// see if we can find information about the exited ship (if it is a ship)
-				int exited_index = ship_find_exited_ship_by_name(CTEXT(n));
-				if (exited_index >= 0)
+				if (oswpt.ship_entry)
 				{
-					// if the team doesn't match the team specified, return false immediately
-					if (Ships_exited[exited_index].team != team)
-						return SEXP_KNOWN_FALSE;
+					// be sure to handle the short period when a ship is exited without an index
+					if (oswpt.ship_entry->exited_index >= 0)
+					{
+						// if the team doesn't match the team specified, return false immediately
+						if (Ships_exited[oswpt.ship_entry->exited_index].team != team)
+							return SEXP_KNOWN_FALSE;
+					}
+					else
+					{
+						// if the team doesn't match the team specified, return false immediately
+						if (oswpt.ship_entry->shipp->team != team)
+							return SEXP_KNOWN_FALSE;
+					}
 				}
+				// it's probably an exited wing, which we don't store information about
 				else
 				{
-					// it's probably an exited wing, which we don't store information about
 					return SEXP_NAN_FOREVER;
 				}
 
@@ -10364,7 +10373,7 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 		// change ingame ship
 		case OSWPT_TYPE_SHIP:
 		{
-			sexp_ingame_ship_change_iff(oswpt.shipp, new_team);
+			sexp_ingame_ship_change_iff(oswpt.ship_entry->shipp, new_team);
 
 			break;
 		}
@@ -10372,7 +10381,7 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 		// change ship yet to arrive
 		case OSWPT_TYPE_PARSE_OBJECT:
 		{
-			sexp_parse_ship_change_iff(oswpt.p_objp, new_team);
+			sexp_parse_ship_change_iff(oswpt.ship_entry->p_objp, new_team);
 
 			break;
 		}
@@ -10401,7 +10410,6 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 void sexp_change_iff(int n)
 {
 	int new_team;
-	char *name;
 
 	new_team = iff_lookup(CTEXT(n));
 	n = CDR(n);
@@ -10411,11 +10419,10 @@ void sexp_change_iff(int n)
 
 	for ( ; n != -1; n = CDR(n) )
 	{
-		name = CTEXT(n);
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, name);
+		eval_object_ship_wing_point_team(&oswpt, n);
 
-		Current_sexp_network_packet.send_string(name);
+		Current_sexp_network_packet.send_string(CTEXT(n));
 
 		sexp_change_iff_helper(oswpt, new_team);
 	}
@@ -10432,7 +10439,7 @@ void multi_sexp_change_iff()
 	while (Current_sexp_network_packet.get_string(name)) {
 
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, name);
+		eval_object_ship_wing_point_team(&oswpt, -1, name);
 
 		sexp_change_iff_helper(oswpt, new_team);
 	}	
@@ -10461,7 +10468,7 @@ void sexp_change_iff_color_helper(object_ship_wing_point_team oswpt, int observe
 		// change ingame ship
 		case OSWPT_TYPE_SHIP:
 		{
-			sexp_ingame_ship_change_iff_color(oswpt.shipp, observer_team, observed_team, alternate_iff_color);
+			sexp_ingame_ship_change_iff_color(oswpt.ship_entry->shipp, observer_team, observed_team, alternate_iff_color);
 
 			break;
 		}
@@ -10469,7 +10476,7 @@ void sexp_change_iff_color_helper(object_ship_wing_point_team oswpt, int observe
 		// change ship yet to arrive
 		case OSWPT_TYPE_PARSE_OBJECT:
 		{
-			sexp_parse_ship_change_iff_color(oswpt.p_objp, observer_team, observed_team, alternate_iff_color);
+			sexp_parse_ship_change_iff_color(oswpt.ship_entry->p_objp, observer_team, observed_team, alternate_iff_color);
 
 			break;
 		}
@@ -10499,7 +10506,6 @@ void sexp_change_iff_color(int n)
 {
 	int observer_team, observed_team, alternate_iff_color;
 	std::array<int, 3> rgb;
-	char *name;
 	bool is_nan, is_nan_forever;
 
 	// First node
@@ -10543,11 +10549,10 @@ void sexp_change_iff_color(int n)
 	// Rest of the nodes
 	for (; n >= 0; n = CDR(n))
 	{
-		name = CTEXT(n);
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, name);
+		eval_object_ship_wing_point_team(&oswpt, n);
 
-		Current_sexp_network_packet.send_string(name);
+		Current_sexp_network_packet.send_string(CTEXT(n));
 
 		sexp_change_iff_color_helper(oswpt, observer_team, observed_team, alternate_iff_color);
 	}
@@ -10567,7 +10572,8 @@ void multi_sexp_change_iff_color()
 	while (Current_sexp_network_packet.get_string(name))
 	{ 
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, name);
+		eval_object_ship_wing_point_team(&oswpt, -1, name);
+
 		sexp_change_iff_color_helper(oswpt, observer_team, observed_team, alternate_iff_color);
 	}
 }
