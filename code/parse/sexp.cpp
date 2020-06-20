@@ -17144,7 +17144,7 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 
 	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
 	// the banks or a non-existant bank
-	if ((requested_bank > num_banks) || requested_bank < 0)
+	if ((requested_bank >= num_banks) || requested_bank < 0)
 		return;
 
 	if (primary)
