@@ -122,6 +122,7 @@ jobs:
           dir: ${{ github.workspace }}/..
           arch: win32_msvc2017
           cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
+          aqtversion: ==0.8
       - name: Install Qt (64 bit)
         uses: jurplel/install-qt-action@v2
         if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'x64' }}
@@ -130,6 +131,7 @@ jobs:
           dir: ${{ github.workspace }}/..
           arch: win64_msvc2017_64
           cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
+          aqtversion: ==0.8
 
       - name: Configure CMake
         env:
