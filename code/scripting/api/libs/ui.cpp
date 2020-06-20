@@ -12,6 +12,7 @@
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -367,6 +368,26 @@ ADE_FUNC(resetCampaign,
 	campaign_reset(filename);
 
 	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/CommandBriefing
+// This needs a slightly different name since there is already a type called "Options"
+ADE_LIB_DERIV(l_UserInterface_CmdBrief,
+	"CommandBriefing",
+	nullptr,
+	"API for accessing data related to the command briefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getBriefing,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Get the command briefing.",
+	"cmd_briefing",
+	"The briefing data")
+{
+	// The cmd briefing code has support for specifying the team but only sets the index to 0
+	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
 }
 
 } // namespace api

@@ -43,7 +43,7 @@ typedef struct generic_anim {
 			float previous_frame_time;
 		} png;
 	};
-	ubyte type;
+	BM_TYPE type;
 	unsigned char streaming;
 	ubyte *buffer;
 	int height;

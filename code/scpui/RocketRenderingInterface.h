@@ -3,7 +3,9 @@
 //
 
 #include "globalincs/pstypes.h"
+
 #include "graphics/2d.h"
+#include "graphics/generic.h"
 
 // Our Assert conflicts with the definitions inside libRocket
 #pragma push_macro("Assert")
@@ -13,14 +15,16 @@
 
 #pragma pop_macro("Assert")
 
-#include <memory>
-
 namespace scpui {
 
 class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 	struct Texture {
-		int handle    = -1;
-		int frame_num = 0;
+		bool is_animation = false;
+
+		generic_anim animation;
+
+		int bm_handle = -1;
+
 		std::unique_ptr<uint8_t[]> data;
 	};
 
@@ -135,11 +139,11 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 	static int getBitmapNum(Rocket::Core::TextureHandle handle);
 
 	/**
-	 * @brief Sets the animation frame that the TextureHandle will use when it's rendered
+	 * @brief Advances an animation by the specified amount of seconds
 	 * @param handle The libRocket texture handle to modify
-	 * @param frame The animation frame (0-based for the first frame)
+	 * @param advanceTime The time to advance the animation by
 	 */
-	static void setAnimationFrame(Rocket::Core::TextureHandle handle, int frame);
+	static void advanceAnimation(Rocket::Core::TextureHandle handle, float advanceTime);
 };
 
 } // namespace scpui

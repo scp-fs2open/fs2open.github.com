@@ -1135,6 +1135,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/beam.h
 	scripting/api/objs/camera.cpp
 	scripting/api/objs/camera.h
+	scripting/api/objs/cmd_brief.cpp
+	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_info.cpp

@@ -110,10 +110,14 @@ void set_single_arg(lua_State* L, char fmt, const char* s)
 	lua_pushstring(L, s);
 }
 
-void set_single_arg(lua_State* L, char fmt, luacpp::LuaTable* table)
+void set_single_arg(lua_State* L, char fmt, const SCP_string& s)
 {
-	set_single_arg(L, fmt, *table);
+	Assertion(fmt == 's', "Invalid format character '%c' for string type!", fmt);
+	// WMC - Isn't working with HookVar for some strange reason
+	lua_pushlstring(L, s.c_str(), s.size());
 }
+
+void set_single_arg(lua_State* L, char fmt, luacpp::LuaTable* table) { set_single_arg(L, fmt, *table); }
 void set_single_arg(lua_State* L, char fmt, const luacpp::LuaTable& table)
 {
 	Assertion(fmt == 't', "Invalid format character '%c' for table type!", fmt);
