@@ -17035,511 +17035,280 @@ int sexp_shield_quad_low(int node)
 	return SEXP_FALSE;	
 }
 
-// Goober5000
-int sexp_primary_ammo_pct(int node)
+int sexp_get_ammo_sub(ship_weapon *swp, int bank_to_check, bool primary, bool do_percent)
 {
-	ship *shipp;
-	int sindex;
-	int check, idx;
-	int ret_sum[MAX_SHIP_PRIMARY_BANKS];
-	int ret = 0;
-	bool is_nan, is_nan_forever;
+	int sum = 0;
+	int total = 0;
 
-	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0)
+	int num_banks, *ammo, *start_ammo, *weapons;
+	if (primary)
 	{
-		return 0;
-	}
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS))
-	{
-		return 0;
-	}
-	shipp = &Ships[sindex];
-	
-	// bank to check
-	check = eval_num(CDR(node), is_nan, is_nan_forever);
-
-	// bogus check?
-	if(is_nan || is_nan_forever || check < 0){
-		return 0;
-	}
-
-	// cumulative sum?
-	if(check >= shipp->weapons.num_primary_banks)
-	{
-		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
-		{
-			// ballistic
-			if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				ret_sum[idx] = (int)(((float)shipp->weapons.primary_bank_ammo[idx] / (float)shipp->weapons.primary_bank_start_ammo[idx]) * 100.0f);
-			}
-			// non-ballistic
-			else
-			{
-				ret_sum[idx] = 100;
-			}
-		}
-
-		// add it up
-		ret = 0;
-		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
-		{
-			ret += ret_sum[idx];
-		}
-		ret = (int)((float)ret / (float)shipp->weapons.num_primary_banks);
+		num_banks = swp->num_primary_banks;
+		ammo = swp->primary_bank_ammo;
+		start_ammo = swp->primary_bank_start_ammo;
+		weapons = swp->primary_bank_weapons;
 	}
 	else
 	{
-		// ballistic
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags[Weapon::Info_Flags::Ballistic])
-		{
-			ret = (int)(((float)shipp->weapons.primary_bank_ammo[check] / (float)shipp->weapons.primary_bank_start_ammo[check]) * 100.0f);
-		}
-		// non-ballistic
-		else
-		{
-			ret = 100;
-		}
-	}	
+		num_banks = swp->num_secondary_banks;
+		ammo = swp->secondary_bank_ammo;
+		start_ammo = swp->secondary_bank_start_ammo;
+		weapons = swp->secondary_bank_weapons;
+	}
 
-	// return
-	return ret;
+	for (int i = 0; i < num_banks; ++i)
+	{
+		// if this is primary, skip non-ballistic weapons
+		if (primary && !Weapon_info[weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			continue;
+
+		// if we are checking a specific bank, and this isn't it, skip it
+		if (bank_to_check >= 0 && bank_to_check < num_banks && i != bank_to_check)
+			continue;
+
+		sum += ammo[i];
+		total += start_ammo[i];
+	}
+
+	if (do_percent)
+	{
+		if (total == 0)
+			return 100;
+
+		return (int)(((float)sum / (float)total) * 100.0f);
+	}
+
+	return sum;
 }
 
-int sexp_secondary_ammo_pct(int node)
+// Goober5000 & Karajorma
+int sexp_get_ammo(int node, bool for_turret, bool primary, bool do_percent)
 {
-	ship *shipp;
-	int sindex;
-	int check, idx;
-	int ret_sum[MAX_SHIP_SECONDARY_BANKS];
-	int ret = 0;
+	ship_weapon *swp;
 	bool is_nan, is_nan_forever;
 
 	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return 0;
-	}
-	shipp = &Ships[sindex];
-	
-	// bank to check
-	check = eval_num(CDR(node), is_nan, is_nan_forever);
-
-	// bogus check?
-	if(is_nan || is_nan_forever || check < 0){
-		return 0;
-	}
-
-	// cumulative sum?
-	if(check >= shipp->weapons.num_secondary_banks){
-		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
-			ret_sum[idx] = (int)(((float)shipp->weapons.secondary_bank_ammo[idx] / (float)shipp->weapons.secondary_bank_start_ammo[idx]) * 100.0f);
-		}
-
-		// add it up
-		ret = 0;
-		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
-			ret += ret_sum[idx];
-		}
-		ret = (int)((float)ret / (float)shipp->weapons.num_secondary_banks);
-	} else {
-		ret = (int)(((float)shipp->weapons.secondary_bank_ammo[check] / (float)shipp->weapons.secondary_bank_start_ammo[check]) * 100.0f);
-	}	
-
-	// return
-	return ret;
-}
-
-
-// Karajorma - returns the number of bullets left in an ballistic ammo bank. Unlike primary_ammo_pct
-// it does this as a numerical value rather than as a percentage of the maximum
-int sexp_get_primary_ammo(int node)
-{
-	ship *shipp;
-	int ammo_left = 0;
-	int sindex;
-	int check;
-	bool is_nan, is_nan_forever;
-
-	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0)
-	{
-		return 0;
-	}
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS))
-	{
-		return 0;
-	}
-	shipp = &Ships[sindex];
-	
-	// bank to check
-	check = eval_num(CDR(node), is_nan, is_nan_forever);
-
-	// bogus check?
-	if(is_nan || is_nan_forever || check < 0){
-		return 0;
-	}
-
-	// cumulative sum?
-	if(check >= shipp->weapons.num_primary_banks)
-	{
-		for(int bank=0; bank<shipp->weapons.num_primary_banks; bank++)
-		{
-			// Only ballistic weapons need to be counted
-			if (Weapon_info[shipp->weapons.primary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				ammo_left += shipp->weapons.primary_bank_ammo[bank] ;
-			}
-		}
-	}
-	else
-	{
-		// Again only ballistic weapons need to be counted
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags[Weapon::Info_Flags::Ballistic])
-		{
-			ammo_left = shipp->weapons.primary_bank_ammo[check] ;
-		}
-	}	
-
-	// return
-	return ammo_left;
-}
-
-
-// Karajorma - sets the amount of ammo in a certain ballistic weapon bank to the specified value
-void sexp_set_primary_ammo (int node) 
-{
-	int sindex;
-	int requested_bank ;
-	int requested_weapons ;
-	int rearm_limit = -1;
-	bool is_nan, is_nan_forever;
-
-	// Check that a ship has been supplied
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) 
-	{
-		return ;
-	}
-
-	// Get the bank to set the number on
-	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_bank < 0)
-	{
-		return ;
-	}
-
-	//  Get the number of weapons requested
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 	node = CDR(node);
-	requested_weapons = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_weapons < 0)
+
+	// Get the turret
+	if (for_turret)
 	{
-		return ;
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (!turret || !(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]))
+			return 0;
+		node = CDR(node);
+
+		swp = &turret->weapons;
 	}
+	else
+		swp = &ship_entry->shipp->weapons;
 	
-	node = CDDR(node);	
+	// bank to check
+	int check = eval_num(node, is_nan, is_nan_forever);
 
-	// If a rearm limit hasn't been specified simply change the ammo. Otherwise read in the rearm limit
-	if (node >= 0) {
-		rearm_limit = eval_num(node, is_nan, is_nan_forever);
-		if (is_nan || is_nan_forever)
-			return ;
-	}
-	set_primary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+	// bogus check?
+	if (is_nan || is_nan_forever || check < 0)
+		return 0;
 
-	// do the multiplayer callback here
-	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
-	Current_sexp_network_packet.send_int(requested_bank);
-	Current_sexp_network_packet.send_int(requested_weapons);
-	Current_sexp_network_packet.send_int(rearm_limit);
-	Current_sexp_network_packet.end_callback(); 
+	return sexp_get_ammo_sub(swp, check, primary, do_percent);
 }
 
-void multi_sexp_set_primary_ammo()
+//Karajorma - Helper function for the set-*-ammo and weapon functions
+void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo, int rearm_limit, bool primary)
 {
-	int sindex;
-	int requested_bank;
-	int requested_weapons;
-	int rearm_limit;
-
-	Current_sexp_network_packet.get_ship(sindex);
-	Current_sexp_network_packet.get_int(requested_bank);
-	Current_sexp_network_packet.get_int(requested_weapons);
-	Current_sexp_network_packet.get_int(rearm_limit);
-
-	set_primary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
-}
-
-//Karajorma - Helper function for the set-primary-ammo and weapon functions
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
-{
-	ship *shipp;
-	int maximum_allowed ;
-
-	// Check that it's valid
-	if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS)){
-		return ;
+	int num_banks, *ammo_capacity, *ammo, *start_ammo, *weapons;
+	if (primary)
+	{
+		num_banks = swp->num_primary_banks;
+		ammo_capacity = swp->primary_bank_capacity;
+		ammo = swp->primary_bank_ammo;
+		start_ammo = swp->primary_bank_start_ammo;
+		weapons = swp->primary_bank_weapons;
 	}
-	shipp = &Ships[ship_index];
-	
+	else
+	{
+		num_banks = swp->num_secondary_banks;
+		ammo_capacity = swp->secondary_bank_capacity;
+		ammo = swp->secondary_bank_ammo;
+		start_ammo = swp->secondary_bank_start_ammo;
+		weapons = swp->secondary_bank_weapons;
+	}
+
 	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
 	// the banks or a non-existant bank
-	if ((requested_bank > shipp->weapons.num_primary_banks) || requested_bank < 0)
+	if ((requested_bank >= num_banks) || requested_bank < 0)
+		return;
+
+	if (primary)
 	{
-		return ;
+		// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
+		if (!(Weapon_info[weapons[requested_bank]].wi_flags[Weapon::Info_Flags::Ballistic]))
+			return;
 	}
 
-	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
-	if (!(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags[Weapon::Info_Flags::Ballistic]))
-	{
-		return ;
-	}
+	int maximum_allowed = (int)std::lround(ammo_capacity[requested_bank] / Weapon_info[weapons[requested_bank]].cargo_size);
 
 	//Check that a valid number of weapons have been specified. 
-	if (requested_ammo < 0) 
+	if (requested_ammo >= 0)
 	{
-		return ;
+		// Is the number requested larger than the maximum allowed for that particular bank? 
+		if (requested_ammo > maximum_allowed)
+			requested_ammo = maximum_allowed;
+
+		// Set the number of weapons
+		ammo[requested_bank] = requested_ammo;
 	}
 
-	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = (int)std::lround(Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank]
-		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_ammo) 
+	// Check rearm validity
+	if (rearm_limit >= 0)
 	{
-		requested_ammo = maximum_allowed ;
+		// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+		if (rearm_limit > maximum_allowed)
+			rearm_limit = maximum_allowed;
+
+		start_ammo[requested_bank] = rearm_limit;
 	}
-
-	// Set the number of weapons
-	shipp->weapons.primary_bank_ammo[requested_bank] = requested_ammo ;
-
-
-	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
-	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
-	{
-		rearm_limit = maximum_allowed;
-	}
-
-	shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
-
 }
 
-// Karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
-// it does this as a numerical value rather than as a percentage of the maximum
-int sexp_get_secondary_ammo (int node)
+// Karajorma - sets the amount of ammo in a certain ballistic or secondary weapon bank to the specified value
+void sexp_set_ammo(int node, bool for_turret, bool primary)
 {
-	int ammo_left = 0 ;
-	ship *shipp ;
-	int sindex ; 
-	int check ;
+	const char *turret_name = nullptr;
+	ship_weapon *swp;
 	bool is_nan, is_nan_forever;
 
-	// Get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) 
-	{
-		return 0;
-	}
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return 0;
-	}
-	shipp = &Ships[sindex];
-	
-	// bank to check
-	check = eval_num(CDR(node), is_nan, is_nan_forever);
-
-	// bogus check?
-	if(is_nan || is_nan_forever || check < 0){
-		return 0;
-	}
-
-	// Are we looking at the number of secondaries in all banks? 
-	if(check > shipp->weapons.num_secondary_banks)
-	{
-		for(int bank=0; bank<shipp->weapons.num_secondary_banks; bank++)
-		{
-			ammo_left += shipp->weapons.secondary_bank_ammo[bank] ;
-		}
-	}
-	// If not return the value for the bank requested.
-	else 
-	{
-		ammo_left = shipp->weapons.secondary_bank_ammo[check] ; 
-	}
-
-	return ammo_left ;
-}
-
-// Karajorma - sets the amount of ammo in a certain weapon bank to the specified value
-void sexp_set_secondary_ammo (int node) 
-{
-	int sindex;
-	int requested_bank;
-	int requested_weapons;
-	int rearm_limit = -1;
-	bool is_nan, is_nan_forever;
-
-	// Check that a ship has been supplied
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) 
-	{
-		return ;
-	}
-	
-	// Get the bank to set the number on
-	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_bank < 0)
-	{
-		return ;
-	}
-
-	//  Get the number of weapons requested	
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
 	node = CDR(node);
-	requested_weapons = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_weapons < 0)
-	{
-		return ;
-	}
 
-	node = CDDR(node);	
+	// Get the turret
+	if (for_turret)
+	{
+		turret_name = CTEXT(node);
+		auto turret = ship_get_subsys(ship_entry->shipp, turret_name);
+		if (!turret || !(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]))
+			return;
+		node = CDR(node);
+
+		swp = &turret->weapons;
+	}
+	else
+		swp = &ship_entry->shipp->weapons;
+
+	// Get the bank to set the number on
+	int requested_bank = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_bank < 0)
+		return;
+	node = CDR(node);
+
+	//  Get the number of weapons requested
+	int requested_weapons = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_weapons < 0)
+		return;
+	node = CDR(node);
 
 	// If a rearm limit hasn't been specified simply change the ammo. Otherwise read in the rearm limit
+	int rearm_limit = -1;
 	if (node >= 0) {
 		rearm_limit = eval_num(node, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
-			return ;
+			return;
 	}
-	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+
+	sexp_set_ammo_sub(swp, requested_bank, requested_weapons, rearm_limit, primary);
 
 	// do the multiplayer callback here
-	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
-	Current_sexp_network_packet.send_int(requested_bank);
-	Current_sexp_network_packet.send_int(requested_weapons);
-	Current_sexp_network_packet.send_int(rearm_limit);
-	Current_sexp_network_packet.end_callback();
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_ship(ship_entry->shipp);
+		if (for_turret)
+			Current_sexp_network_packet.send_string(turret_name);
+		Current_sexp_network_packet.send_int(requested_bank);
+		Current_sexp_network_packet.send_int(requested_weapons);
+		Current_sexp_network_packet.send_int(rearm_limit);
+		Current_sexp_network_packet.end_callback();
+	}
 }
 
-void multi_sexp_set_secondary_ammo()
+void multi_sexp_set_ammo(bool for_turret, bool primary)
 {
-	int sindex;
-	int requested_bank;
-	int requested_weapons;
-	int rearm_limit;
+	ship *shipp;
+	char turret_name[TOKEN_LENGTH];
+	ship_weapon *swp;
+	int requested_bank = -1;
+	int requested_weapons = -1;
+	int rearm_limit = -1;
 
-	Current_sexp_network_packet.get_ship(sindex);
+	Current_sexp_network_packet.get_ship(shipp);
+	if (for_turret)
+		Current_sexp_network_packet.get_string(turret_name);
 	Current_sexp_network_packet.get_int(requested_bank);
 	Current_sexp_network_packet.get_int(requested_weapons);
 	Current_sexp_network_packet.get_int(rearm_limit);
 
-	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
-}
-
-//Karajorma - Helper function for the set-secondary-ammo and weapon functions
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
-{
-	ship *shipp;
-	int maximum_allowed;
-	// Check that it's valid
-	if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS)){
-		return ;
-	}
-	shipp = &Ships[ship_index];
-
-	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
-	// the banks or a non-existant bank
-	if ((requested_bank > shipp->weapons.num_secondary_banks) || requested_bank < 0)
+	if (for_turret)
 	{
-		return ;
+		auto turret = ship_get_subsys(shipp, turret_name);
+		if (!turret)
+			return;
+		swp = &turret->weapons;
 	}
-	
-	if (requested_ammo < 0)
-	{
-		return ;
-	}
+	else
+		swp = &shipp->weapons;
 
-	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i(shipp->weapons.secondary_bank_capacity[requested_bank] 
-		/ Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_ammo) 
-	{
-		requested_ammo = maximum_allowed ;
-	}
-
-	// Set the number of weapons
-	shipp->weapons.secondary_bank_ammo[requested_bank] = requested_ammo ;
-
-	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - no matter what.
-	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
-	{
-		rearm_limit = maximum_allowed;
-	}
-	
-	shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
+	sexp_set_ammo_sub(swp, requested_bank, requested_weapons, rearm_limit, primary);
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
 // rearm limit too.  
 void sexp_set_weapon(int node, bool primary)
 {
-	ship *shipp;
-	int sindex, requested_bank, windex, requested_ammo = -1, rearm_limit = -1;
+	int requested_bank, windex, requested_ammo = -1, rearm_limit = -1;
 	bool is_nan, is_nan_forever;
 
 	Assert(node != -1);
 
 	// Check that a ship has been supplied
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0)
-	{
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-	}
-
-	// Check that it's valid
-	if ((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)) {
-		return;
-	}
-	shipp = &Ships[sindex];
+	node = CDR(node);
 
 	// Get the bank to change the weapon of
-	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	requested_bank = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
-
-	// Skip to the node holding the weapon name
-	node = CDDR(node);
+	node = CDR(node);
 
 	windex = weapon_info_lookup(CTEXT(node));
 	if (windex < 0)
-	{
 		return;
-	}
+	node = CDR(node);
 
+	// Change the weapon
 	if (primary)
-	{
-		// Change the weapon
-		shipp->weapons.primary_bank_weapons[requested_bank] = windex;
-	}
+		ship_entry->shipp->weapons.primary_bank_weapons[requested_bank] = windex;
 	else
-	{
-		// Change the weapon
-		shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
-	}
+		ship_entry->shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
 
-	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_ship(sindex);
-	Current_sexp_network_packet.send_bool(primary);
-	Current_sexp_network_packet.send_int(requested_bank);
-	Current_sexp_network_packet.send_int(windex);
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_ship(ship_entry->shipp);
+		Current_sexp_network_packet.send_bool(primary);
+		Current_sexp_network_packet.send_int(requested_bank);
+		Current_sexp_network_packet.send_int(windex);
+	}
 
 	// Check to see if the optional ammo and rearm_limit settings were supplied
-	node = CDR(node);
 	if (node >= 0) {
 		requested_ammo = eval_num(node, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
@@ -17557,61 +17326,43 @@ void sexp_set_weapon(int node, bool primary)
 				return;
 		}
 	}
-	else {
-		// read the data 
-		if (primary) {
-			requested_ammo = shipp->weapons.primary_bank_ammo[requested_bank];
-		}
-		else {
-			requested_ammo = shipp->weapons.secondary_bank_ammo[requested_bank];
-		}
-	}
 
 	// Set the ammo -- No matter what - Cyborg17
-	if (primary) {
-		set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-	} else {
-		set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-	}
+	sexp_set_ammo_sub(&ship_entry->shipp->weapons, requested_bank, requested_ammo, rearm_limit, primary);
 
 	// Now pass this info on to clients.
-	Current_sexp_network_packet.send_int(requested_ammo);
-	Current_sexp_network_packet.send_int(rearm_limit);
-	Current_sexp_network_packet.end_callback();
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.send_int(requested_ammo);
+		Current_sexp_network_packet.send_int(rearm_limit);
+		Current_sexp_network_packet.end_callback();
+	}
 }
 
 void multi_sexp_set_weapon()
 {
 	ship *shipp;
-	int sindex;
 	int requested_bank;
 	int windex;
 	int requested_ammo;
 	int rearm_limit;
 	bool primary;
 
-	Current_sexp_network_packet.get_ship(sindex);
+	Current_sexp_network_packet.get_ship(shipp);
 	Current_sexp_network_packet.get_bool(primary);
 	Current_sexp_network_packet.get_int(requested_bank);
 	Current_sexp_network_packet.get_int(windex);
 	Current_sexp_network_packet.get_int(requested_ammo);
 	Current_sexp_network_packet.get_int(rearm_limit);
 
-	shipp = &Ships[sindex];
-
-	if (primary) {
-		// Change the weapon
+	// Change the weapon
+	if (primary)
 		shipp->weapons.primary_bank_weapons[requested_bank] = windex;
-		// Set the ammo
-		set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-	}
 	else
-	{
-		// Change the weapon
 		shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
-		// Set the ammo
-		set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-	}
+
+	// Set the ammo
+	sexp_set_ammo_sub(&shipp->weapons, requested_bank, requested_ammo, rearm_limit, primary);
 }
 
 int sexp_get_countermeasures(int node) 
@@ -19156,302 +18907,6 @@ void sexp_ship_turret_target_order(int node)
 		// next item
 		turret = GET_NEXT(turret);
 	}
-}
-
-// DahBlount
-int sexp_get_turret_primary_ammo(int node)
-{
-	ship_subsys *turret = NULL;
-	ship_weapon *swp;
-	int sindex, bank, check, ammo_left = 0;
-	bool is_nan, is_nan_forever;
-
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return 0;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return 0;
-	}
-
-	node = CDR(node);
-
-	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-	if (turret == NULL) {
-		return 0;
-	}
-	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
-		return 0;
-	}
-
-	swp = &turret->weapons;
-
-	node = CDR(node);
-
-	check = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || check < 0) {
-		return 0;
-	}
-
-	if (check >= swp->num_primary_banks)
-	{
-		for (bank = 0; bank < swp->num_primary_banks; bank++)
-		{
-			// Only ballistic weapons need to be counted
-			if (Weapon_info[swp->primary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				ammo_left += swp->primary_bank_ammo[bank];
-			}
-		}
-	} else {
-		// Again only ballistic weapons need to be counted
-		if (Weapon_info[swp->primary_bank_weapons[check]].wi_flags[Weapon::Info_Flags::Ballistic])
-		{
-			ammo_left = swp->primary_bank_ammo[check];
-		}
-	}
-
-	return ammo_left;
-}
-
-// DahBlount - Sets a turrets primary ammo capacity
-void sexp_set_turret_primary_ammo(int node)
-{
-	ship_subsys *turret = NULL;
-	int sindex, requested_bank, requested_weapons;
-	bool is_nan, is_nan_forever;
-
-	// Check that a ship has been supplied
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0)
-	{
-		return;
-	}
-
-	node = CDR(node);
-
-	// Get the turret
-	char *subsys = CTEXT(node);
-	turret = ship_get_subsys(&Ships[sindex], subsys);
-	if (turret == NULL) {
-		return;
-	}
-
-	node = CDR(node);
-
-	// Get the bank to set the number on
-	requested_bank = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_bank < 0)
-	{
-		return;
-	}
-
-	//  Get the number of weapons requested	
-	node = CDR(node);
-	requested_weapons = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_weapons < 0)
-	{
-		return;
-	}
-
-	set_turret_primary_ammo(turret, requested_bank, requested_weapons);
-
-	// Multiplayer call back
-	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(sindex);
-	Current_sexp_network_packet.send_string(subsys);
-	Current_sexp_network_packet.send_int(requested_bank);
-	Current_sexp_network_packet.send_int(requested_weapons);
-	Current_sexp_network_packet.end_callback();
-}
-
-void multi_sexp_set_turret_primary_ammo()
-{
-	int sindex, requested_bank, requested_weapons;
-	char subsys[TOKEN_LENGTH];
-	Current_sexp_network_packet.get_int(sindex);
-	Current_sexp_network_packet.get_string(subsys);
-	Current_sexp_network_packet.get_int(requested_bank);
-	Current_sexp_network_packet.get_int(requested_weapons);
-
-	ship_subsys *turret = ship_get_subsys(&Ships[sindex], subsys);
-
-	set_turret_primary_ammo(turret, requested_bank, requested_weapons);
-}
-
-// DahBlount - Helper function for setting turret primary ammo
-void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo)
-{
-	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
-	// the banks or a non-existant bank
-	if ((requested_bank > turret->weapons.num_primary_banks) || requested_bank < 0)
-	{
-		return;
-	}
-
-	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
-	if (!(Weapon_info[turret->weapons.primary_bank_weapons[requested_bank]].wi_flags[Weapon::Info_Flags::Ballistic]))
-	{
-		return;
-	}
-
-	if (requested_ammo < 0)
-	{
-		return;
-	}
-
-	// Is the number requested larger than the maximum allowed for that particular bank? 
-	int maximum_allowed = fl2i(turret->weapons.primary_bank_capacity[requested_bank]
-		/ Weapon_info[turret->weapons.primary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_ammo)
-	{
-		requested_ammo = maximum_allowed;
-	}
-
-	// Set the number of weapons
-	turret->weapons.primary_bank_ammo[requested_bank] = requested_ammo;
-}
-
-// DahBlount - Gets a turrets secondary ammo capacity
-int sexp_get_turret_secondary_ammo(int node)
-{
-	ship_subsys *turret = NULL;
-	ship_weapon *swp;
-	int sindex, bank, check, ammo_left = 0;
-	bool is_nan, is_nan_forever;
-
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return 0;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return 0;
-	}
-
-	node = CDR(node);
-
-	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-	if (turret == NULL) {
-		return 0;
-	}
-	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
-		return 0;
-	}
-
-	swp = &turret->weapons;
-
-	node = CDR(node);
-
-	check = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || check < 0) {
-		return 0;
-	}
-
-	if (check >= swp->num_secondary_banks)
-	{
-		for (bank = 0; bank < swp->num_secondary_banks; bank++)
-		{
-			ammo_left += swp->secondary_bank_ammo[bank];
-		}
-	} else {
-		ammo_left = swp->primary_bank_ammo[check];
-	}
-
-	return ammo_left;
-}
-
-// DahBlount - Sets a turrets secondary ammo capacity
-void sexp_set_turret_secondary_ammo(int node)
-{
-	ship_subsys *turret = NULL;
-	int sindex, requested_bank, requested_weapons;
-	bool is_nan, is_nan_forever;
-
-	// Check that a ship has been supplied
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0)
-	{
-		return;
-	}
-
-	node = CDR(node);
-
-	// Get the turret
-	char *subsys = CTEXT(node);
-	turret = ship_get_subsys(&Ships[sindex], subsys);
-	if (turret == NULL) {
-		return;
-	}
-
-	node = CDR(node);
-
-	// Get the bank to set the number on
-	requested_bank = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_bank < 0)
-	{
-		return;
-	}
-
-	//  Get the number of weapons requested
-
-	node = CDR(node);
-
-	requested_weapons = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || requested_weapons < 0)
-	{
-		return;
-	}
-
-	set_turret_secondary_ammo(turret, requested_bank, requested_weapons);
-
-	// Multiplayer call back
-	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(sindex);
-	Current_sexp_network_packet.send_string(subsys);
-	Current_sexp_network_packet.send_int(requested_bank);
-	Current_sexp_network_packet.send_int(requested_weapons);
-	Current_sexp_network_packet.end_callback();
-}
-
-void multi_sexp_set_turret_secondary_ammo()
-{
-	int sindex, requested_bank, requested_weapons;
-	char subsys[TOKEN_LENGTH];
-	Current_sexp_network_packet.get_int(sindex);
-	Current_sexp_network_packet.get_string(subsys);
-	Current_sexp_network_packet.get_int(requested_bank);
-	Current_sexp_network_packet.get_int(requested_weapons);
-
-	ship_subsys *turret = ship_get_subsys(&Ships[sindex], subsys);
-
-	set_turret_secondary_ammo(turret, requested_bank, requested_weapons);
-}
-
-// DahBlount - Helper function for setting turret secondary ammo
-void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo)
-{
-	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
-	// the banks or a non-existant bank
-	if ((requested_bank > turret->weapons.num_secondary_banks) || requested_bank < 0)
-	{
-		return;
-	}
-
-	if (requested_ammo < 0)
-	{
-		return;
-	}
-
-	// Is the number requested larger than the maximum allowed for that particular bank? 
-	int maximum_allowed = fl2i(turret->weapons.secondary_bank_capacity[requested_bank]
-		/ Weapon_info[turret->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_ammo)
-	{
-		requested_ammo = maximum_allowed;
-	}
-
-	// Set the number of weapons
-	turret->weapons.secondary_bank_ammo[requested_bank] = requested_ammo;
 }
 
 // Goober5000
@@ -25488,21 +24943,28 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_PRIMARY_AMMO_PCT:
-				sexp_val = sexp_primary_ammo_pct(node);
-				break;
-
 			case OP_SECONDARY_AMMO_PCT:
-				sexp_val = sexp_secondary_ammo_pct(node);
-				break;
-
-			// Karajorma
 			case OP_GET_PRIMARY_AMMO:
-				sexp_val = sexp_get_primary_ammo(node);
+			case OP_GET_SECONDARY_AMMO:
+				sexp_val = sexp_get_ammo(node, false, op_num == OP_PRIMARY_AMMO_PCT || op_num == OP_GET_PRIMARY_AMMO, op_num == OP_PRIMARY_AMMO_PCT || op_num == OP_SECONDARY_AMMO_PCT);
+				break;
+
+			case OP_TURRET_GET_PRIMARY_AMMO:
+			case OP_TURRET_GET_SECONDARY_AMMO:
+				sexp_val = sexp_get_ammo(node, true, op_num == OP_TURRET_GET_PRIMARY_AMMO, false);
 				break;
 
 			// Karajorma
-			case OP_GET_SECONDARY_AMMO:
-				sexp_val = sexp_get_secondary_ammo(node);
+			case OP_SET_PRIMARY_AMMO:
+			case OP_SET_SECONDARY_AMMO:
+				sexp_set_ammo(node, false, op_num == OP_SET_PRIMARY_AMMO);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_TURRET_SET_PRIMARY_AMMO:
+			case OP_TURRET_SET_SECONDARY_AMMO:
+				sexp_set_ammo(node, true, op_num == OP_TURRET_SET_PRIMARY_AMMO);
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Karajorma
@@ -25606,19 +25068,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_trigger_submodel_animation(node);
 				sexp_val = SEXP_TRUE;
 				break;
-				
-			// Karajorma
-			case OP_SET_PRIMARY_AMMO:
-				sexp_set_primary_ammo(node);
-				sexp_val = SEXP_TRUE;
-				break;
-				
-			// Karajorma
-			case OP_SET_SECONDARY_AMMO:
-				sexp_set_secondary_ammo(node);
-				sexp_val = SEXP_TRUE;
-				break;
-				
+
 			// Karajorma
 			case OP_SET_PRIMARY_WEAPON:
 			case OP_SET_SECONDARY_WEAPON:
@@ -26008,24 +25458,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_player_is_cheating_bastard();
 				break;
 
-			case OP_TURRET_GET_PRIMARY_AMMO:
-				sexp_val = sexp_get_turret_primary_ammo(node);
-				break;
-
-			case OP_TURRET_GET_SECONDARY_AMMO:
-				sexp_val = sexp_get_turret_secondary_ammo(node);
-				break;
-
-			case OP_TURRET_SET_PRIMARY_AMMO:
-				sexp_val = SEXP_TRUE;
-				sexp_set_turret_primary_ammo(node);
-				break;
-
-			case OP_TURRET_SET_SECONDARY_AMMO:
-				sexp_val = SEXP_TRUE;
-				sexp_set_turret_secondary_ammo(node);
-				break;
-
 			case OP_IS_IN_TURRET_FOV:
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
@@ -26390,24 +25822,18 @@ void multi_sexp_eval()
 				break;
 
 			case OP_SET_PRIMARY_AMMO:
-				multi_sexp_set_primary_ammo();
+			case OP_SET_SECONDARY_AMMO:
+				multi_sexp_set_ammo(false, op_num == OP_SET_PRIMARY_AMMO);
 				break;
 
-			case OP_SET_SECONDARY_AMMO:
-				multi_sexp_set_secondary_ammo();
+			case OP_TURRET_SET_PRIMARY_AMMO:
+			case OP_TURRET_SET_SECONDARY_AMMO:
+				multi_sexp_set_ammo(true, op_num == OP_TURRET_SET_PRIMARY_AMMO);
 				break;
 
 			case OP_SET_PRIMARY_WEAPON:
 			case OP_SET_SECONDARY_WEAPON:
 				multi_sexp_set_weapon();
-				break;
-
-			case OP_TURRET_SET_PRIMARY_AMMO:
-				multi_sexp_set_turret_primary_ammo();
-				break;
-
-			case OP_TURRET_SET_SECONDARY_AMMO:
-				multi_sexp_set_turret_secondary_ammo();
 				break;
 
 			case OP_CHANGE_AI_CLASS:
@@ -33959,19 +33385,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative percentage for all ballistic banks)" },
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
-		"\tReturns the amount of ammo remaining in the specified bank\r\n"
+		"\tReturns the amount of ammo remaining in the specified ballistic primary bank.  Non-ballistic primary banks return as 0.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative total for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative total for all ballistic banks)" },
 
-	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative percentage for all banks)" },
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
