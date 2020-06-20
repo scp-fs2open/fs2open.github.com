@@ -5371,6 +5371,114 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 	}
 
+	// use new cases that accounts for hull and shield armor values in armor.tbl --wookieejedi
+	// if a subsystem is targetted it also takes the subystem armor and subsystem damage multiplire into account
+	if (other_is_ship && (Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_Flags::Use_full_check_primary_selection]))
+	{
+		// variables to track
+		float i_factor_prev = 0;		// Previous weapon bank factor (this is the safe way to do it)
+		int i_factor_prev_bank = -1;	// Bank which gave us this factor
+		bool is_target_shielded;
+
+		// determine if shielded as bool, that way the primary check loop only runs once
+		if (enemy_remaining_shield >= 0.05f) {
+			is_target_shielded = true;
+		} else {
+			is_target_shielded = false;
+		}
+
+		// Find the weapon with the best damage for the situation
+		for (int i = 0; i < swp->num_primary_banks; i++)
+		{
+			// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		
+			{
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				// determine armor and shield armor type of target
+				ship* other_shipp = &Ships[other_objp->instance];
+				ai_info* aip = &Ai_info[shipp->ai_index];
+				int armor_type;
+				float armor_damage;
+				int parent_armor_flags = 0;
+
+				// check ignore subsystem armor
+				if (other_shipp->armor_type_idx > -1) {
+					parent_armor_flags = Armor_types[other_shipp->armor_type_idx].flags;
+				}
+
+				// target is subsystem or ship
+				if ((aip->targeted_subsys != nullptr) && !(parent_armor_flags & SAF_IGNORE_SS_ARMOR)) 
+				{
+					// subsystem armor
+					armor_type = aip->targeted_subsys->armor_type_idx;
+					armor_damage = (wip->subsystem_factor) * (wip->damage);
+				}
+				else {
+					// ship armor
+					armor_type = other_shipp->armor_type_idx;
+					armor_damage = (wip->armor_factor) * (wip->damage);
+				}
+
+				// notes about 'Armor_types[type].GetDamage'
+				// if there is no armor values then it simply returns the input damage
+				// difficulty scale doesn't matter since it would be the same applied to each weapon 
+				// assuming these are not a beam weapons, so last argument is 0
+
+				float final_damage;
+
+				// check shields
+				if (is_target_shielded) 
+				{
+					// 1A. if shields, get shield damage and account for shield armor and puncture
+					float shield_damage = (wip->shield_factor) * (wip->damage);
+					int shield_armor_type = other_shipp->shield_armor_type_idx;
+					shield_damage = Armor_types[shield_armor_type].GetDamage(shield_damage, wip->damage_type_idx, 1.0f, 0);
+
+					// 1B. check puncture and get pierce damage
+					int pierce_damage = 0;
+					float piercing_pct = Armor_types[shield_armor_type].GetShieldPiercePCT(wip->damage_type_idx);
+					if (piercing_pct > 0.0f) {
+						pierce_damage = armor_damage * (1.0f - piercing_pct);
+						pierce_damage = Armor_types[armor_type].GetDamage(pierce_damage, wip->damage_type_idx, 1.0f, 0);
+						// 1C. choose the pierce weapon if is larger enough
+						float scaled_pierce_damage = pierce_damage * 1.33;
+						if (scaled_pierce_damage > shield_damage) {
+							final_damage = scaled_pierce_damage;
+						} else {
+							final_damage = shield_damage;
+						}
+					}
+
+				} else {
+					// 2A. no shields, just scale with armor type and damage
+					final_damage = Armor_types[armor_type].GetDamage(armor_damage, wip->damage_type_idx, 1.0f, 0);
+				}
+
+				// set i factor current by accounting for damage per second
+				float i_factor_current = (final_damage / wip->fire_wait);
+
+				// check with previous value 
+				if (i_factor_current > i_factor_prev)
+				{
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					{
+						// This weapon is the new candidate
+						i_factor_prev = i_factor_current;
+						i_factor_prev_bank = i;
+					}
+				}
+			}
+		}
+		if (i_factor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		{
+			i_factor_prev_bank = 0;		// Just switch to the first one
+		}
+		swp->current_primary_bank = i_factor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_factor_prev_bank]].name, (other_is_ship ? Ships[other_objp->instance].ship_name : "non-ship") ));
+		return i_factor_prev_bank;							// Return
+	}
+
 	// Is the target shielded by say only 5%?
 	if (enemy_remaining_shield <= 0.05f)	
 	{

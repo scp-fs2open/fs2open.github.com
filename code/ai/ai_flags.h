@@ -115,6 +115,7 @@ namespace AI {
         Shockwaves_damage_small_ship_subsystems,
         Smart_afterburner_management,
         Smart_primary_weapon_selection,
+		Use_full_check_primary_selection,
         Smart_secondary_weapon_selection,
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,

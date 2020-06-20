@@ -352,6 +352,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$smart primary weapon selection:", AI::Profile_Flags::Smart_primary_weapon_selection);
 
+				set_flag(profile, "$use full checks for smart primary weapon selection:", AI::Profile_Flags::Use_full_check_primary_selection);
+
 				set_flag(profile, "$smart secondary weapon selection:", AI::Profile_Flags::Smart_secondary_weapon_selection);
 
 				set_flag(profile, "$smart shield management:", AI::Profile_Flags::Smart_shield_management);
