@@ -5378,14 +5378,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		// variables to track
 		float i_factor_prev = 0;		// Previous weapon bank factor (this is the safe way to do it)
 		int i_factor_prev_bank = -1;	// Bank which gave us this factor
-		bool is_target_shielded;
 
 		// determine if shielded as bool, that way the primary check loop only runs once
-		if (enemy_remaining_shield >= 0.05f) {
-			is_target_shielded = true;
-		} else {
-			is_target_shielded = false;
-		}
+		bool is_target_shielded = (enemy_remaining_shield >= 0.05f);
 
 		// Find the weapon with the best damage for the situation
 		for (int i = 0; i < swp->num_primary_banks; i++)
