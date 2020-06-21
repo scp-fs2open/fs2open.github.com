@@ -2360,8 +2360,7 @@ void labviewer_actions_trigger_animation(Tree* caller) {
 bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
 bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
 
-static std::map<int, bool> manual_turret_firing = {};
-static std::map<int, bool> manual_turret_fired = {};
+static std::map<AnimationTriggerType, std::map<int, bool>> manual_animation_triggers = {};
 
 void labviewer_actions_reset_animations(Tree* /*caller*/) {
 	if (Lab_selected_object != -1) {
@@ -2389,17 +2388,14 @@ void labviewer_actions_reset_animations(Tree* /*caller*/) {
 				}
 			}
 
-			for (auto entry = manual_turret_firing.begin(); entry != manual_turret_firing.end(); ++entry) {
-				if (entry->second) {
-					model_anim_start_type(shipp, AnimationTriggerType::TurretFiring, 0, -1, true);
-					entry->second = false;
-				}
-			}
+			for (auto entry = manual_animation_triggers.begin(); entry != manual_animation_triggers.end(); ++entry) {
+				auto animation_type = entry->first;
+				auto manual_trigger_map = entry->second;
 
-			for (auto entry = manual_turret_fired.begin(); entry != manual_turret_fired.end(); ++entry) {
-				if (entry->second) {
-					model_anim_start_type(shipp, AnimationTriggerType::TurretFired, 0, -1, false);
-					entry->second = false;
+				for (auto manual_trigger : manual_trigger_map) {
+					if (manual_trigger.second) {
+						model_anim_start_type(shipp, animation_type, manual_trigger.first, -1, false);
+					}
 				}
 			}
 		}
@@ -2439,19 +2435,21 @@ void labviewer_actions_do_turret_anim(AnimationTriggerType type, int subobj_num,
 
 void labviewer_actions_trigger_turret_firing(Tree* caller) {
 	auto subobj_num = caller->GetSelectedItem()->GetData();
-	auto direction = manual_turret_firing[subobj_num] ? -1 : 1;
+	auto turret_firing_triggers = manual_animation_triggers[AnimationTriggerType::TurretFiring];
+	auto direction = turret_firing_triggers[subobj_num] ? -1 : 1;
 
 	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFiring, subobj_num, direction);
 
-	manual_turret_firing[subobj_num] = !manual_turret_firing[subobj_num];
+	turret_firing_triggers[subobj_num] = !turret_firing_triggers[subobj_num];
 }
 
 void labviewer_actions_trigger_turret_fired(Tree* caller) {
 	auto subobj_num = caller->GetSelectedItem()->GetData();
-	auto direction = manual_turret_firing[subobj_num] ? -1 : 1;
+	auto turret_fired_triggers = manual_animation_triggers[AnimationTriggerType::TurretFired];
+	auto direction = turret_fired_triggers[subobj_num] ? -1 : 1;
 
 	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFired, subobj_num, direction);
-	manual_turret_fired[subobj_num] = !manual_turret_fired[subobj_num];
+	turret_fired_triggers[subobj_num] = !turret_fired_triggers[subobj_num];
 }
 
 void labviewer_fill_animations_window() {
@@ -2463,46 +2461,88 @@ void labviewer_fill_animations_window() {
 			auto shipp = &Ships[Objects[Lab_selected_object].instance];
 
 			auto animations_tree = (Tree*)Lab_trigger_animations_window->AddChild(new Tree("Animations stuff", 0, 0));
+		
+			std::map<AnimationTriggerType, TreeItem*> subsystem_headers;
 
 			animations_tree->AddItem(nullptr, "Reset animation state", 0, true, labviewer_actions_reset_animations);
-			auto primary_head = animations_tree->AddItem(nullptr, "Primary bank animations");
+
+			auto subsystems_head = animations_tree->AddItem(nullptr, "Subsystem triggers");
+
+			manual_animation_triggers.clear();
+
+			for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
+				if (entry->first == AnimationTriggerType::Initial)
+					continue;
+
+				subsystem_headers[entry->first] = animations_tree->AddItem(subsystems_head, entry->second);
+			}
+
 			for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Trigger animations for Bank %i", i);
-				animations_tree->AddItem(primary_head, bank_string, i, true, labviewer_actions_trigger_primary_bank);
+				animations_tree->AddItem(subsystem_headers[AnimationTriggerType::PrimaryBank], bank_string, i, true, labviewer_actions_trigger_primary_bank);
 			}
 			
 			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i)
 				triggered_primary_banks[i] = false;
 
-			auto secondary_head = animations_tree->AddItem(nullptr, "Secondary bank animations");
 			for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
 				SCP_string bank_string;
 				sprintf(bank_string, "Trigger animations for Bank %i", i);
-				animations_tree->AddItem(secondary_head, bank_string, i, true, labviewer_actions_trigger_secondary_bank);
+				animations_tree->AddItem(subsystem_headers[AnimationTriggerType::SecondaryBank], bank_string, i, true, labviewer_actions_trigger_secondary_bank);
 			}
 
 			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
 				triggered_secondary_banks[i] = false;
 
-			auto turret_head = animations_tree->AddItem(nullptr, "Turret animations");
-			auto turret_fired_head = animations_tree->AddItem(turret_head, "Turret fired");
-			auto turret_firing_head = animations_tree->AddItem(turret_head, "Turret firing");
-
 			auto ssp = GET_FIRST(&shipp->subsys_list);
 			auto subsys_index = 0;
-			manual_turret_fired.clear();
-			manual_turret_firing.clear();
+
+			// We use these vectors to handle cases where several subsystems have animations defined for the same turret firing/having fired
+			SCP_vector<int> turret_firing_subsystem_triggers; 
+			SCP_vector<int> turret_fired_subsystem_triggers;
+
+			std::map<int, model_subsystem*> stupid_workaround_map; // this is a stupid workaround to avoid having to iterate over the subsys list a billion times
+
 			while (ssp != END_OF_LIST(&shipp->subsys_list)) {
-				if (ssp->system_info->type == SUBSYSTEM_TURRET) {
-					animations_tree->AddItem(turret_firing_head, ssp->system_info->subobj_name, ssp->system_info->subobj_num, true, labviewer_actions_trigger_turret_firing);
-					animations_tree->AddItem(turret_fired_head, ssp->system_info->subobj_name, ssp->system_info->subobj_num, true, labviewer_actions_trigger_turret_fired);
-					manual_turret_fired[ssp->system_info->subobj_num] = false;
-					manual_turret_firing[ssp->system_info->subobj_num] = false;
+				stupid_workaround_map[ssp->system_info->subobj_num] = ssp->system_info;
+
+				if (ssp->system_info->n_triggers != 0) {
+					for (auto i = 0; i < ssp->system_info->n_triggers; ++i) {
+						auto trigger = ssp->system_info->triggers[i];
+						if (trigger.type == AnimationTriggerType::Initial)
+							continue;
+
+						switch (trigger.type) {
+							case AnimationTriggerType::TurretFiring: 
+								if (!SCP_vector_contains(turret_firing_subsystem_triggers, trigger.subtype)) {
+									// For "turret-firing" animations, subtype contains the subobject number of the firing turret
+									turret_firing_subsystem_triggers.push_back(trigger.subtype);
+									manual_animation_triggers[trigger.type][trigger.subtype] = false;
+
+								}
+							break;
+							case AnimationTriggerType::TurretFired: 
+								if (!SCP_vector_contains(turret_fired_subsystem_triggers, trigger.subtype)) {
+									// Same as above
+									turret_fired_subsystem_triggers.push_back(trigger.subtype);
+									manual_animation_triggers[trigger.type][ssp->system_info->subobj_num] = false;
+								}
+							break;
+						}
+					}
 				}
 
 				ssp = GET_NEXT(ssp);
 				++subsys_index;
+			}
+
+			for (auto subobj_num : turret_firing_subsystem_triggers) {
+				animations_tree->AddItem(subsystem_headers[AnimationTriggerType::TurretFiring], stupid_workaround_map[subobj_num]->subobj_name, subobj_num, true, labviewer_actions_trigger_turret_firing);
+			}
+
+			for (auto subobj_num : turret_fired_subsystem_triggers) {
+				animations_tree->AddItem(subsystem_headers[AnimationTriggerType::TurretFired], stupid_workaround_map[subobj_num]->subobj_name, subobj_num, true, labviewer_actions_trigger_turret_fired);
 			}
 
 			auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");

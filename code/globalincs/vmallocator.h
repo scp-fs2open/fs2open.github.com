@@ -17,6 +17,11 @@ template< typename T >
 using SCP_vector = std::vector< T, std::allocator< T > >;
 
 template< typename T >
+bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
+	return std::find(vector.begin(), vector.end(), item) != vector.end();
+}
+
+template< typename T >
 using SCP_list = std::list< T, std::allocator< T > >;
 
 typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > SCP_string;
