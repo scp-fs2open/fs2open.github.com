@@ -3103,8 +3103,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				i = model_anim_match_type(CTEXT(node));
-				if ( i == TRIGGER_TYPE_NONE )
+				if (model_anim_match_type(CTEXT(node)) == AnimationTriggerType::None )
 					return SEXP_CHECK_INVALID_ANIMATION_TYPE;
 
 				break;
@@ -19641,7 +19640,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 void sexp_trigger_submodel_animation(int node)
 {
-	int ship_num, animation_type, animation_subtype, direction, n = node;
+	int ship_num, animation_subtype, direction, n = node;
 	bool instant, is_nan, is_nan_forever;
 
 	// get the ship
@@ -19653,8 +19652,8 @@ void sexp_trigger_submodel_animation(int node)
 	n = CDR(n);
 
 	// get the type
-	animation_type = model_anim_match_type(CTEXT(n));
-	if (animation_type == TRIGGER_TYPE_NONE)
+	auto animation_type = model_anim_match_type(CTEXT(n));
+	if (animation_type == AnimationTriggerType::None)
 	{
 		Warning(LOCATION, "Unable to match animation type \"%s\"!", CTEXT(n));
 		return;
