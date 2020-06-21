@@ -2529,6 +2529,8 @@ void labviewer_fill_animations_window() {
 									manual_animation_triggers[trigger.type][ssp->system_info->subobj_num] = false;
 								}
 							break;
+							default:
+								break;
 						}
 					}
 				}
