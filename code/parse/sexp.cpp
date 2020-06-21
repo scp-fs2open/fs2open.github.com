@@ -923,8 +923,6 @@ void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
 
 int verify_vector(const char *text);
-void skip_white(const char **str);
-int validate_float(const char **str);
 
 
 #define ARG_ITEM_F_DUP	(1<<0)
@@ -28476,6 +28474,37 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	return SRC_UNKNOWN;
 }
 
+void skip_white(const char **str)
+{
+	if ((**str == ' ') || (**str == '\t')) {
+		(*str)++;
+	}
+}
+
+int validate_float(const char **str)
+{
+	int count = 0, dot = 0;
+
+	while (isdigit(**str) || **str == '.') {
+		if (**str == '.') {
+			if (dot) {
+				return -1;
+			}
+
+			dot = 1;
+		}
+
+		(*str)++;
+		count++;
+	}
+
+	if (!count) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int verify_vector(const char *text)
 {
 	const char *str;
@@ -28518,37 +28547,6 @@ int verify_vector(const char *text)
 	str++;
 	skip_white(&str);
 	if (*str){
-		return -1;
-	}
-
-	return 0;
-}
-
-void skip_white(const char **str)
-{
-	if ((**str == ' ') || (**str == '\t')){
-		(*str)++;
-	}
-}
-
-int validate_float(const char **str)
-{
-	int count = 0, dot = 0;
-
-	while (isdigit(**str) || **str == '.') {
-		if (**str == '.') {
-			if (dot){
-				return -1;
-			}
-
-			dot = 1;
-		}
-
-		(*str)++;
-		count++;
-	}
-
-	if (!count){
 		return -1;
 	}
 
