@@ -5401,6 +5401,14 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				int armor_type;
 				float armor_damage;
 				int parent_armor_flags = 0;
+				
+				// also account for shockwave damage
+				float armor_damage_shockwave = 0;
+				bool use_shockwave = false;
+				if (wip->shockwave.inner_rad > 0.0f) {
+					use_shockwave = true;
+					armor_damage_shockwave = wip->shockwave.damage;
+				}
 
 				// check ignore subsystem armor
 				if (other_shipp->armor_type_idx > -1) {
@@ -5413,11 +5421,13 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 					// subsystem armor
 					armor_type = aip->targeted_subsys->armor_type_idx;
 					armor_damage = (wip->subsystem_factor) * (wip->damage);
+					armor_damage_shockwave = (wip->subsystem_factor) * (wip->shockwave.damage);
 				}
 				else {
 					// ship armor
 					armor_type = other_shipp->armor_type_idx;
 					armor_damage = (wip->armor_factor) * (wip->damage);
+					armor_damage_shockwave = (wip->armor_factor) * (wip->shockwave.damage);
 				}
 
 				// notes about 'Armor_types[type].GetDamage'
@@ -5430,23 +5440,36 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				// check shields
 				if (is_target_shielded) 
 				{
-					// 1A. if shields, get shield damage and account for shield armor and piercing
-					float shield_damage = (wip->shield_factor) * (wip->damage);
+					// 1A. if shields, get shield damage and account for shield armor and piercing with shockwave
 					int shield_armor_type = other_shipp->shield_armor_type_idx;
+					float shield_damage = (wip->shield_factor) * (wip->damage);
 					shield_damage = Armor_types[shield_armor_type].GetDamage(shield_damage, wip->damage_type_idx, 1.0f, 0);
 
-					// 1B. get and check pierce damage
-					int pierce_damage = 0;
+					float shield_damage_shockwave = (wip->shield_factor) * (wip->shockwave.damage);
+					shield_damage_shockwave = Armor_types[shield_armor_type].GetDamage(shield_damage, wip->shockwave.damage_type_idx, 1.0f, 0);
+
+					// 1B. get and check pierce damage, including with shockwave
+					float pierce_damage = 0;
 					float piercing_pct = Armor_types[shield_armor_type].GetShieldPiercePCT(wip->damage_type_idx);
-					if (piercing_pct > 0.0f) {
+
+					float pierce_damage_shockwave = 0;
+					float piercing_pct_shockwave  = Armor_types[shield_armor_type].GetShieldPiercePCT(wip->shockwave.damage_type_idx);
+
+					if ((piercing_pct > 0.0f) || (piercing_pct_shockwave > 0.0f)) {
 						pierce_damage = armor_damage * (1.0f - piercing_pct);
 						pierce_damage = Armor_types[armor_type].GetDamage(pierce_damage, wip->damage_type_idx, 1.0f, 0);
-						// 1C. choose the pierce weapon if is larger enough
-						float scaled_pierce_damage = pierce_damage * 1.33;
-						if (scaled_pierce_damage > shield_damage) {
+
+						pierce_damage_shockwave = armor_damage * (1.0f - piercing_pct_shockwave);
+						pierce_damage_shockwave = Armor_types[armor_type].GetDamage(pierce_damage_shockwave, wip->shockwave.damage_type_idx, 1.0f, 0);
+
+						// 1C. choose the pierce weapon if it is larger enough
+						float scaled_pierce_damage = (pierce_damage + pierce_damage_shockwave) * 1.33;
+						float fullshield_damage = shield_damage + shield_damage_shockwave;
+
+						if (scaled_pierce_damage > fullshield_damage) {
 							final_damage = scaled_pierce_damage;
 						} else {
-							final_damage = shield_damage;
+							final_damage = fullshield_damage;
 						}
 					}
 					else {
@@ -5454,8 +5477,10 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 					}
 
 				} else {
-					// 2A. no shields, just scale with armor type and damage
-					final_damage = Armor_types[armor_type].GetDamage(armor_damage, wip->damage_type_idx, 1.0f, 0);
+					// 2A. no shields, just scale with armor type and damage with shockwave
+					armor_damage = Armor_types[armor_type].GetDamage(armor_damage, wip->damage_type_idx, 1.0f, 0);
+					armor_damage_shockwave = Armor_types[armor_type].GetDamage(armor_damage_shockwave, wip->shockwave.damage_type_idx, 1.0f, 0);
+					final_damage = armor_damage_shockwave + armor_damage;
 				}
 
 				// set i factor current by accounting for damage per second
