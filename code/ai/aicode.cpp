@@ -5430,12 +5430,12 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				// check shields
 				if (is_target_shielded) 
 				{
-					// 1A. if shields, get shield damage and account for shield armor and puncture
+					// 1A. if shields, get shield damage and account for shield armor and piercing
 					float shield_damage = (wip->shield_factor) * (wip->damage);
 					int shield_armor_type = other_shipp->shield_armor_type_idx;
 					shield_damage = Armor_types[shield_armor_type].GetDamage(shield_damage, wip->damage_type_idx, 1.0f, 0);
 
-					// 1B. check puncture and get pierce damage
+					// 1B. get and check pierce damage
 					int pierce_damage = 0;
 					float piercing_pct = Armor_types[shield_armor_type].GetShieldPiercePCT(wip->damage_type_idx);
 					if (piercing_pct > 0.0f) {
@@ -5448,6 +5448,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 						} else {
 							final_damage = shield_damage;
 						}
+					}
+					else {
+						final_damage = shield_damage;
 					}
 
 				} else {
