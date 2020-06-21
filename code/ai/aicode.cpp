@@ -5404,9 +5404,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				
 				// also account for shockwave damage
 				float armor_damage_shockwave = 0;
-				bool use_shockwave = false;
 				if (wip->shockwave.inner_rad > 0.0f) {
-					use_shockwave = true;
 					armor_damage_shockwave = wip->shockwave.damage;
 				}
 
