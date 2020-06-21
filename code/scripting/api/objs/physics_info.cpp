@@ -299,7 +299,7 @@ ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->vel));
 }
 
-ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, ie derivative of velocity. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
+ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	float f = 0.0f;
