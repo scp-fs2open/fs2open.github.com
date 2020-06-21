@@ -461,6 +461,7 @@ void labviewer_render_model(float frametime)
 		}
 
 		obj_move_all(frametime);
+		process_subobjects(Lab_selected_object);
 		particle::move_all(frametime);
 		particle::ParticleManager::get()->doFrame(frametime);
 		shockwave_move_all(frametime);
@@ -2340,7 +2341,75 @@ void labviewer_actions_make_weapon_fire_window(Button* /*caller*/) {
 	labviewer_fill_fire_weapon_menu();
 }
 
-void labviewer_actions_trigger_animation(Tree* caller) {}
+static std::map<AnimationTriggerType, bool> manual_animations = {};
+
+void labviewer_actions_trigger_animation(Tree* caller) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+			
+			auto anim_type = static_cast<AnimationTriggerType>(caller->GetSelectedItem()->GetData());
+
+			// bool model_anim_start_type(ship *shipp, AnimationTriggerType animation_type, int subtype, int direction, bool instant = false);		// for all valid subsystems
+			model_anim_start_type(shipp, anim_type, 0, manual_animations[anim_type] ? -1 : 1, false);
+			manual_animations[anim_type] = !manual_animations[anim_type];
+		}
+	}
+}
+
+bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
+bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
+
+void labviewer_actions_reset_animations(Tree* /*caller*/) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+			
+			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+				if (triggered_primary_banks[i]) {
+					model_anim_start_type(shipp, AnimationTriggerType::PrimaryBank, i, -1, false);
+					triggered_primary_banks[i] = false;
+				}
+			}
+
+			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
+				if (triggered_secondary_banks[i]) {
+					model_anim_start_type(shipp, AnimationTriggerType::SecondaryBank, i, -1, false);
+					triggered_secondary_banks[i] = false;
+				}
+			}
+
+			for (auto entry = manual_animations.begin(); entry != manual_animations.end(); ++entry) {
+				if (manual_animations[entry->first]) {
+					model_anim_start_type(shipp, entry->first, 0, -1, false);
+					manual_animations[entry->first] = false;
+				}
+			}
+		}
+	}
+}
+
+void labviewer_actions_trigger_primary_bank(Tree* caller) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+			auto bank = caller->GetSelectedItem()->GetData();
+			model_anim_start_type(shipp, AnimationTriggerType::PrimaryBank, bank, triggered_primary_banks[bank] ? -1 : 1, false);
+			triggered_primary_banks[bank] = !triggered_primary_banks[bank];
+		}
+	}
+}
+
+void labviewer_actions_trigger_secondary_bank(Tree* caller) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+			auto bank = caller->GetSelectedItem()->GetData();
+			model_anim_start_type(shipp, AnimationTriggerType::SecondaryBank, bank, triggered_secondary_banks[bank] ? -1 : 1, false);
+			triggered_secondary_banks[bank] = !triggered_secondary_banks[bank];
+		}
+	}
+}
 
 void labviewer_fill_animations_window() {
 	if (Lab_trigger_animations_window == nullptr)
@@ -2348,9 +2417,37 @@ void labviewer_fill_animations_window() {
 
 	if (Lab_selected_object != -1) {
 		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+
 			auto animations_tree = (Tree*)Lab_trigger_animations_window->AddChild(new Tree("Animations stuff", 0, 0));
 
-			animations_tree->AddItem(nullptr, "Reset to initial state", static_cast<int>(AnimationTriggerType::Initial), false, labviewer_actions_trigger_animation);
+			animations_tree->AddItem(nullptr, "Reset animation state", 0, true, labviewer_actions_reset_animations);
+			auto primary_head = animations_tree->AddItem(nullptr, "Primary bank animations");
+			for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
+				SCP_string bank_string;
+				sprintf(bank_string, "Trigger animations for Bank %i", i);
+				animations_tree->AddItem(primary_head, bank_string, i, true, labviewer_actions_trigger_primary_bank);
+			}
+			
+			for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i)
+				triggered_primary_banks[i] = false;
+
+			auto secondary_head = animations_tree->AddItem(nullptr, "Secondary bank animations");
+			for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
+				SCP_string bank_string;
+				sprintf(bank_string, "Trigger animations for Bank %i", i);
+				animations_tree->AddItem(secondary_head, bank_string, i, true, labviewer_actions_trigger_secondary_bank);
+			}
+
+			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
+				triggered_secondary_banks[i] = false;
+
+			auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");
+
+			for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
+				manual_animations[entry->first] = false;
+				animations_tree->AddItem(shipwide_head, entry->second, static_cast<int>(entry->first), false, labviewer_actions_trigger_animation);
+			}
 		}
 	}
 }
@@ -2362,7 +2459,7 @@ void labviewer_actions_make_animations_window(Button* /*caller*/) {
 	Lab_trigger_animations_window = (Window*)Lab_screen->Add(
 		new Window("Trigger animations", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
-	Lab_weapon_fire_window->SetCloseFunction(lab_animations_window_close);
+	Lab_trigger_animations_window->SetCloseFunction(lab_animations_window_close);
 
 	labviewer_fill_animations_window();
 }
