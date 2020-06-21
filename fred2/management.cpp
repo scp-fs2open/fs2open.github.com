@@ -2455,7 +2455,6 @@ CJumpNode *jumpnode_get_by_name(const CString& name)
 // building up ship lists for arrival/departure targets
 void management_add_ships_to_combo( CComboBox *box, int flags )
 {
-	int get_special_anchor(char *name);
 	object *objp;
 	int id, i, restrict_to_players;
 

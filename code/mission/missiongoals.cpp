@@ -1182,7 +1182,7 @@ int mission_goals_met()
 
 // function used to actually change the status (valid/invalid) of a goal.  Called externally
 // with multiplayer code
-void mission_goal_validation_change( int goal_num, int valid )
+void mission_goal_validation_change( int goal_num, bool valid )
 {
 	// only incomplete goals can have their status changed
 	if ( Mission_goals[goal_num].satisfied != GOAL_INCOMPLETE ){
@@ -1202,29 +1202,16 @@ void mission_goal_validation_change( int goal_num, int valid )
 	}
 }
 
-	// the following function marks a goal invalid.  It can only mark the goal invalid if the goal
-// is not complete.  The name passed into this funciton should match the name field in the goal
-// structure
-void mission_goal_mark_invalid( char *name )
+// the following function marks a goal valid or invalid.
+// * It can only mark the goal invalid if the goal is not complete.  The name passed into this function should match the name field in the goal structure
+// * A goal may always be marked valid.
+void mission_goal_mark_valid( const char *name, bool valid )
 {
 	int i;
 
 	for (i=0; i<Num_goals; i++) {
 		if ( !stricmp(Mission_goals[i].name, name) ) {
-			mission_goal_validation_change( i, 0 );
-			return;
-		}
-	}
-}
-
-// the next function marks a goal as valid.  A goal may always be marked valid.
-void mission_goal_mark_valid( char *name )
-{
-	int i;
-
-	for (i=0; i<Num_goals; i++) {
-		if ( !stricmp(Mission_goals[i].name, name) ) {
-			mission_goal_validation_change( i, 1 );
+			mission_goal_validation_change( i, valid );
 			return;
 		}
 	}

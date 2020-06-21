@@ -145,9 +145,8 @@ int	mission_goals_met();
 // function used by single and multiplayer code to change the status on goals	
 void	mission_goal_status_change( int goal_num, int new_status);
 
-// functions used to change goal validity status
-void mission_goal_mark_invalid( char *name );
-void mission_goal_mark_valid( char *name );
+// function used to change goal validity status
+void mission_goal_mark_valid( const char *name, bool valid );
 
 // function used to mark all goals as invalid, and incomplete goals as invalid.
 extern void mission_goal_fail_all();
@@ -160,7 +159,7 @@ void mission_goal_mark_events_complete();
 
 int mission_get_event_status(int event);
 void mission_event_shutdown();
-void mission_goal_validation_change( int goal_num, int valid );
+void mission_goal_validation_change( int goal_num, bool valid );
 
 // mark an event as directive special
 void mission_event_set_directive_special(int event);

@@ -1863,7 +1863,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( char *id, void *data, int m_source, int priority, int group, int delay )
+void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay )
 {
 	int i, source;
 	const char *who_from;
@@ -1881,7 +1881,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				who_from = The_mission.command_sender;
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
-				who_from = (char *)data;
+				who_from = (const char *)data;
 				source = HUD_SOURCE_IMPORTANT;
 			} else if ( m_source == MESSAGE_SOURCE_WINGMAN ) {
 				int m_persona, ship_index;
@@ -1907,9 +1907,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				}
 
 			} else if ( m_source == MESSAGE_SOURCE_SHIP ) {
-				ship *shipp;
-
-				shipp = (ship *)data;
+				auto shipp = (const ship *)data;
 				who_from = shipp->ship_name;
 				source = HUD_team_get_source(shipp->team);
 			} else if ( m_source == MESSAGE_SOURCE_NONE ) {

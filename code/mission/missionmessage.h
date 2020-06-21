@@ -206,7 +206,7 @@ void	message_kill_all( int kill_all );
 void	message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type=-1 );
 
 // functions which send messages to player -- called externally
-void	message_send_unique_to_player( char *id, void *data, int source, int priority, int group, int delay);
+void	message_send_unique_to_player( const char *id, const void *data, int source, int priority, int group, int delay);
 void	message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter );
 
 // functions to deal with personas

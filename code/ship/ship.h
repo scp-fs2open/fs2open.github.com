@@ -1733,7 +1733,7 @@ void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos);
 
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(ship *shipp, int new_ai_class);
-extern void ship_subsystem_set_new_ai_class(ship *shipp, char *subsystem, int new_ai_class);
+extern void ship_subsystem_set_new_ai_class(ship *shipp, const char *subsystem, int new_ai_class);
 
 // wing squad logos - Goober5000
 extern void wing_load_squad_bitmap(wing *w);

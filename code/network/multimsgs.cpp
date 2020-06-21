@@ -5582,7 +5582,7 @@ void process_mission_goal_info_packet( ubyte *data, header *hinfo )
 	if ( new_status != -1 ){
 		mission_goal_status_change( goal_num, new_status );
 	} else {
-		mission_goal_validation_change( goal_num, valid );
+		mission_goal_validation_change( goal_num, valid != 0 );
 	}
 }
 

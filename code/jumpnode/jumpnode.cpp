@@ -32,7 +32,7 @@ CJumpNode::CJumpNode()
 /**
  * Constructor for CJumpNode class, with world position argument
  */
-CJumpNode::CJumpNode(vec3d* position)
+CJumpNode::CJumpNode(const vec3d* position)
 {	
 	Assert(position != NULL);
 	
@@ -127,7 +127,7 @@ CJumpNode::~CJumpNode()
 /**
  * @return Name of jump node
  */
-char *CJumpNode::GetName()
+const char *CJumpNode::GetName()
 {
 	return m_name;
 }
@@ -208,7 +208,7 @@ void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
  * @param model_name Name of model file to load
  * @param show_polys Whether to render wireframe or not
  */
-void CJumpNode::SetModel(char *model_name, bool show_polys)
+void CJumpNode::SetModel(const char *model_name, bool show_polys)
 {
 	Assert(model_name != NULL);
 	
@@ -436,7 +436,7 @@ CJumpNode *jumpnode_get_by_objnum(int objnum)
  * @param objp Object
  * @return Jump node object or NULL if not in one
  */
-CJumpNode *jumpnode_get_which_in(object *objp)
+CJumpNode *jumpnode_get_which_in(const object *objp)
 {
 	Assert(objp != NULL);
 	SCP_list<CJumpNode>::iterator jnp;

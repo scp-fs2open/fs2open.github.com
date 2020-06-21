@@ -143,7 +143,7 @@ extern void hud_squadmsg_shortcut( int command );	// use of a shortcut key
 extern int hud_squadmsg_hotkey_select( int k );	// a hotkey was hit -- maybe send a message to those ship(s)
 extern void hud_squadmsg_save_keys( int do_scroll = 0 );					// saves into local area keys which need to be saved/restored when in messaging mode
 extern int hud_squadmsg_do_frame();
-extern int hud_query_order_issued(char *to, char *order_name, char *target = NULL, int timestamp = 0, char *from = NULL, char *special_index = NULL);
+extern int hud_query_order_issued(const char *to, const char *order_name, const char *target = nullptr, int timestamp = 0, const char *from = nullptr, const char *special_index = nullptr);
 extern int hud_squadmsg_read_key( int k );			// called from high level keyboard code
 
 extern void hud_squadmsg_repair_rearm( int toggle_state, object *obj = NULL );
