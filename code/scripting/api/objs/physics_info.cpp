@@ -299,6 +299,23 @@ ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->vel));
 }
 
+ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, ie derivative of velocity. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
+{
+	physics_info_h *pih;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		pih->pi->side_slip_time_const = f;
+	}
+
+	return ade_set_args(L, "f", pih->pi->side_slip_time_const);
+}
+
 ADE_VIRTVAR(VelocityDesired, l_Physics, "vector", "Desired velocity (World vector)", "vector", "Desired velocity, or null vector if handle is invalid")
 {
 	physics_info_h *pih;
