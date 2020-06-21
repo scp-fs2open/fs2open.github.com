@@ -15692,116 +15692,85 @@ void sexp_ships_bomb_targetable(int n, bool targetable)
 // Goober5000
 void sexp_ship_guardian_threshold(int node)
 {
-	char *ship_name;
-	int ship_num, threshold, n = node;
+	int threshold, n = node;
 	bool is_nan, is_nan_forever;
 
 	threshold = eval_num(n, is_nan, is_nan_forever);
-	n = CDR(n);
 	if (is_nan || is_nan_forever)
 		return;
+	n = CDR(n);
 
 	// for all ships
 	for ( ; n != -1; n = CDR(n) ) {
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		ship_name = CTEXT(n);
-
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) ) {
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp) {
 			continue;
 		}
 
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
-		ship_num = ship_name_lookup(ship_name);
-
-		if (ship_num != -1) {
-			Ships[ship_num].ship_guardian_threshold = threshold;
-		}
+		ship_entry->shipp->ship_guardian_threshold = threshold;
 	}
 }
 
 // Goober5000
 void sexp_ship_subsys_guardian_threshold(int node)
 {
-	char *ship_name, *hull_name;
-	int ship_num, threshold, n = node;
+	char *subsys_name;
+	int threshold, n = node;
 	bool is_nan, is_nan_forever;
 	ship_subsys *ss;
 
 	threshold = eval_num(n, is_nan, is_nan_forever);
-	n = CDR(n);
 	if (is_nan || is_nan_forever)
 		return;
-
-	ship_name = CTEXT(n);
 	n = CDR(n);
 
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) ) {
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-	}
-
-	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
-	ship_num = ship_name_lookup(ship_name);
-	if (ship_num == -1) {
-		return;
-	}
+	n = CDR(n);
 
 	// for all subsystems
 	for ( ; n != -1; n = CDR(n) ) {
 		// check for HULL
-		hull_name = CTEXT(n);
-
-		int generic_type = get_generic_subsys(hull_name);
-		if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
-			Ships[ship_num].ship_guardian_threshold = threshold;
+		subsys_name = CTEXT(n);
+		if (!strcmp(subsys_name, SEXP_HULL_STRING)) {
+			ship_entry->shipp->ship_guardian_threshold = threshold;
+			continue;
 		}
-		else if (generic_type) {
+
+		int generic_type = get_generic_subsys(subsys_name);
+		if (generic_type) {
 			// search through all subsystems
-			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
+			for (ss = GET_FIRST(&ship_entry->shipp->subsys_list); ss != END_OF_LIST(&ship_entry->shipp->subsys_list); ss = GET_NEXT(ss)) {
 				if (generic_type == ss->system_info->type) {
 					ss->subsys_guardian_threshold = threshold;
 				}
 			}
 		}				
 		else {
-			ss = ship_get_subsys(&Ships[ship_num], hull_name);
-			if ( ss == nullptr) {
-				if (ship_class_unchanged(ship_num)) {
-					Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
-				}
-			} 
-			else {
+			ss = ship_get_subsys(ship_entry->shipp, subsys_name);
+			if (ss) {
 				ss->subsys_guardian_threshold = threshold;
+			} else if (ship_class_unchanged(ship_entry)) {
+				Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_entry->name, subsys_name);
 			}
 		}
 	}
 }
 
 // sexpression to toggle KEEP ALIVE flag of ship object
-void sexp_ships_guardian( int n, int guardian )
+void sexp_ships_guardian( int n, bool guardian )
 {
-	char *ship_name;
-	int num;
-
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) )
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 			continue;
 
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			Ships[num].ship_guardian_threshold = guardian ? SHIP_GUARDIAN_THRESHOLD_DEFAULT : 0;
+		if (ship_entry->shipp) {
+			ship_entry->shipp->ship_guardian_threshold = guardian ? SHIP_GUARDIAN_THRESHOLD_DEFAULT : 0;
 		} else {
-			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
-			if (p_objp)
-			{
-                p_objp->flags.set(Mission::Parse_Object_Flags::SF_Guardian, guardian != 0);
-			}
+			ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_Guardian, guardian);
 		}
 	}
 }
