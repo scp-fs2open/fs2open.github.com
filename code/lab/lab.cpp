@@ -2360,6 +2360,9 @@ void labviewer_actions_trigger_animation(Tree* caller) {
 bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
 bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
 
+static std::map<int, bool> manual_turret_firing = {};
+static std::map<int, bool> manual_turret_fired = {};
+
 void labviewer_actions_reset_animations(Tree* /*caller*/) {
 	if (Lab_selected_object != -1) {
 		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
@@ -2383,6 +2386,20 @@ void labviewer_actions_reset_animations(Tree* /*caller*/) {
 				if (manual_animations[entry->first]) {
 					model_anim_start_type(shipp, entry->first, 0, -1, false);
 					manual_animations[entry->first] = false;
+				}
+			}
+
+			for (auto entry = manual_turret_firing.begin(); entry != manual_turret_firing.end(); ++entry) {
+				if (entry->second) {
+					model_anim_start_type(shipp, AnimationTriggerType::TurretFiring, 0, -1, true);
+					entry->second = false;
+				}
+			}
+
+			for (auto entry = manual_turret_fired.begin(); entry != manual_turret_fired.end(); ++entry) {
+				if (entry->second) {
+					model_anim_start_type(shipp, AnimationTriggerType::TurretFired, 0, -1, false);
+					entry->second = false;
 				}
 			}
 		}
@@ -2409,6 +2426,32 @@ void labviewer_actions_trigger_secondary_bank(Tree* caller) {
 			triggered_secondary_banks[bank] = !triggered_secondary_banks[bank];
 		}
 	}
+}
+
+void labviewer_actions_do_turret_anim(AnimationTriggerType type, int subobj_num, int direction) {
+	if (Lab_selected_object != -1) {
+		if (Objects[Lab_selected_object].type == OBJ_SHIP) {
+			auto shipp = &Ships[Objects[Lab_selected_object].instance];
+			model_anim_start_type(shipp, type, subobj_num, direction);
+		}
+	}
+}
+
+void labviewer_actions_trigger_turret_firing(Tree* caller) {
+	auto subobj_num = caller->GetSelectedItem()->GetData();
+	auto direction = manual_turret_firing[subobj_num] ? -1 : 1;
+
+	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFiring, subobj_num, direction);
+
+	manual_turret_firing[subobj_num] = !manual_turret_firing[subobj_num];
+}
+
+void labviewer_actions_trigger_turret_fired(Tree* caller) {
+	auto subobj_num = caller->GetSelectedItem()->GetData();
+	auto direction = manual_turret_firing[subobj_num] ? -1 : 1;
+
+	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFired, subobj_num, direction);
+	manual_turret_fired[subobj_num] = !manual_turret_fired[subobj_num];
 }
 
 void labviewer_fill_animations_window() {
@@ -2441,6 +2484,26 @@ void labviewer_fill_animations_window() {
 
 			for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
 				triggered_secondary_banks[i] = false;
+
+			auto turret_head = animations_tree->AddItem(nullptr, "Turret animations");
+			auto turret_fired_head = animations_tree->AddItem(turret_head, "Turret fired");
+			auto turret_firing_head = animations_tree->AddItem(turret_head, "Turret firing");
+
+			auto ssp = GET_FIRST(&shipp->subsys_list);
+			auto subsys_index = 0;
+			manual_turret_fired.clear();
+			manual_turret_firing.clear();
+			while (ssp != END_OF_LIST(&shipp->subsys_list)) {
+				if (ssp->system_info->type == SUBSYSTEM_TURRET) {
+					animations_tree->AddItem(turret_firing_head, ssp->system_info->subobj_name, ssp->system_info->subobj_num, true, labviewer_actions_trigger_turret_firing);
+					animations_tree->AddItem(turret_fired_head, ssp->system_info->subobj_name, ssp->system_info->subobj_num, true, labviewer_actions_trigger_turret_fired);
+					manual_turret_fired[ssp->system_info->subobj_num] = false;
+					manual_turret_firing[ssp->system_info->subobj_num] = false;
+				}
+
+				ssp = GET_NEXT(ssp);
+				++subsys_index;
+			}
 
 			auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");
 

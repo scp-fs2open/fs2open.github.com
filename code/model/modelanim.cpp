@@ -22,22 +22,6 @@ SCP_vector<triggered_rotation> Triggered_rotations;
 // forward declaration
 int model_anim_instance_get_actual_time(queued_animation *properties);
 
-//const char *Animation_type_names[AnimationTriggerType::MaxAnimationTypes] =
-//{
-//	"initial",
-//	"docking-stage-1",
-//	"docking-stage-2",
-//	"docking-stage-3",
-//	"docked",
-//	"primary-bank",
-//	"secondary-bank",
-//	"fighterbay",
-//	"afterburner",
-//	"turret-firing",
-//	"scripted",
-//	"turret-fired"
-//};
-
 const std::map<AnimationTriggerType, SCP_string> Animation_type_names = {
 	{AnimationTriggerType::Initial, "initial"},
 	{AnimationTriggerType::Docking_Stage1, "docking-stage-1"},
