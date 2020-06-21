@@ -95,7 +95,7 @@ void triggered_rotation::start(queued_animation *q)
 {
 	instance = q->instance;
 
-	nprintf(("ModelAnim", "Starting animation type %i at %i ...\n", q->type, timestamp()));
+	nprintf(("ModelAnim", "Starting animation type %i at %i ...\n", static_cast<int>(q->type), timestamp()));
 
 	current_snd = gamesnd_id();
 	current_snd_index = start_sound = q->start_sound;
