@@ -18178,26 +18178,6 @@ void sexp_beam_or_turret_free_or_lock_all(int node, bool is_beam, bool free)
 	}
 }
 
-void sexp_turret_tagged_only_or_clear_all(int node, bool set_it)
-{
-	for (int n = node; n >= 0; n = CDR(n))
-	{
-		// get the firing ship
-		auto shooter = eval_ship(n);
-		if (!shooter || !shooter->shipp)
-			continue;
-
-		// visit all turrets
-		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
-		{
-			if (turret->system_info->type != SUBSYSTEM_TURRET)
-				continue;
-
-			turret->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only, set_it);
-		}
-	}
-}
-
 void sexp_turret_tagged_or_clear_specific(int node, bool set_it)
 {
 	// get the firing ship
@@ -18218,23 +18198,42 @@ void sexp_turret_tagged_or_clear_specific(int node, bool set_it)
 	}
 }
 
+void sexp_turret_tagged_only_or_clear_all(int node, bool set_it)
+{
+	for (int n = node; n >= 0; n = CDR(n))
+	{
+		// get the firing ship
+		auto shooter = eval_ship(n);
+		if (!shooter || !shooter->shipp)
+			continue;
+
+		// visit all turrets
+		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
+		{
+			if (turret->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			turret->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only, set_it);
+		}
+	}
+}
+
 void sexp_turret_change_weapon(int node)
 {
-	int sindex;
 	int windex;	//hehe
-	ship_subsys *turret = nullptr;
-	ship_weapon *swp = nullptr;
+	ship_subsys *turret;
+	ship_weapon *swp;
 
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
 	node = CDR(node);
 
 	//Get subsystem
-	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-	if (turret == nullptr) {
+	turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+	if (!turret) {
 		return;
 	}
 	swp = &turret->weapons;
@@ -18307,7 +18306,7 @@ void sexp_turret_change_weapon(int node)
 }
 
 void sexp_set_armor_type(int node)
-{	
+{
 	int sindex;
 	int armor;
 	bool rset;
@@ -18378,7 +18377,7 @@ void sexp_set_armor_type(int node)
 }
 
 void sexp_weapon_set_damage_type(int node)
-{	
+{
 	int windex, damage;
 	bool swave, rset;
 	size_t t;
@@ -18432,7 +18431,7 @@ void sexp_weapon_set_damage_type(int node)
 }
 
 void sexp_ship_set_damage_type(int node)
-{	
+{
 	int sindex, damage;
 	bool debris, rset;
 	size_t t;
@@ -18492,7 +18491,7 @@ void sexp_ship_set_damage_type(int node)
 }
 
 void sexp_ship_shockwave_set_damage_type(int node)
-{	
+{
 	int sindex, damage;
 	bool rset;
 	size_t t;
@@ -18536,7 +18535,7 @@ void sexp_ship_shockwave_set_damage_type(int node)
 }
 
 void sexp_field_set_damage_type(int node)
-{	
+{
 	int damage, rset;
 	size_t t;
 
@@ -18569,24 +18568,18 @@ void sexp_field_set_damage_type(int node)
 }
 
 void sexp_turret_set_target_order(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-	int oindex;
-	int i;
+{
+	int i, oindex;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
 
 	//Get turret subsys
 	node = CDR(node);
-	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 	if(turret == NULL){
 		return;
 	}
@@ -18616,17 +18609,12 @@ void sexp_turret_set_target_order(int node)
 }
 
 void sexp_turret_set_direction_preference(int node)
-{	
-	int sindex;
+{
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = NULL;	
 	
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
 
@@ -18638,11 +18626,10 @@ void sexp_turret_set_direction_preference(int node)
 	node = CDR(node);
 
 	//Set range
-	while(node != -1){
+	for (; node != -1; node = CDR(node)) {
 		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
@@ -18656,23 +18643,19 @@ void sexp_turret_set_direction_preference(int node)
 				CAP(dirpref, 1, 100);
 				turret->favor_current_facing = 1.0f + (((float) (100 - dirpref)) / 10.0f);
 			}
-		
-		// next
-		node = CDR(node);
 	}
 }
 
 void sexp_turret_set_rate_of_fire(int node)
 {
-	int sindex;
 	float rof;
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = nullptr;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0)
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
+	}
 
 	//store rof
 	node = CDR(node);
@@ -18685,7 +18668,7 @@ void sexp_turret_set_rate_of_fire(int node)
 	while (node >= 0)
 	{
 		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (turret != nullptr)
 		{
 			// set the range
@@ -18702,15 +18685,14 @@ void sexp_turret_set_rate_of_fire(int node)
 
 void sexp_turret_set_optimum_range(int node)
 {
-	int sindex;
 	float range;
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = nullptr;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0)
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
+	}
 
 	// store range
 	node = CDR(node);
@@ -18723,7 +18705,7 @@ void sexp_turret_set_optimum_range(int node)
 	while (node >= 0)
 	{
 		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (turret != nullptr)
 		{
 			// set the range
@@ -18739,24 +18721,18 @@ void sexp_turret_set_optimum_range(int node)
 }
 
 void sexp_turret_set_target_priorities(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-	int i;
-	int j;
+{
+	int i, j;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
 
 	//Get turret subsys
 	node = CDR(node);
-	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 	if(turret == NULL){
 		return;
 	}
@@ -18794,22 +18770,17 @@ void sexp_turret_set_target_priorities(int node)
 }
 
 void sexp_ship_turret_target_order(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
+{
 	int oindex;
 	int i;
 	int new_target_order[NUM_TURRET_ORDER_TYPES];
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-	
+
 	//Reset order
 	for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
 		new_target_order[i] = -1;
@@ -18833,34 +18804,38 @@ void sexp_ship_turret_target_order(int node)
 		node = CDR(node);
 	}
 
-	turret = GET_FIRST(&Ships[sindex].subsys_list);
-	while(turret != END_OF_LIST(&Ships[sindex].subsys_list))
+	for (auto turret = GET_FIRST(&ship_entry->shipp->subsys_list); turret != END_OF_LIST(&ship_entry->shipp->subsys_list); turret = GET_NEXT(turret))
 	{
 		memcpy(turret->turret_targeting_order, new_target_order, NUM_TURRET_ORDER_TYPES*sizeof(int));
-
-		// next item
-		turret = GET_NEXT(turret);
 	}
 }
 
 // Goober5000
 int sexp_is_in_turret_fov(int node)
 {
-	char *target_ship_name;
-	char *turret_ship_name;
-	char *turret_subsys_name;
-	int target_shipnum, turret_shipnum, range;
+	int n = node, range;
 	bool is_nan, is_nan_forever;
-	object *target_objp, *turret_objp;
-	ship_subsys *turret_subsys;
 	vec3d tpos, tvec;
 
-	target_ship_name = CTEXT(node);
-	turret_ship_name = CTEXT(CDR(node));
-	turret_subsys_name = CTEXT(CDDR(node));
+	auto target_ship = eval_ship(n);
+	if (!target_ship || target_ship->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
+	if (target_ship->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_FALSE;
+	n = CDR(n);
 
-	if (CDDDR(node) >= 0) {
-		range = eval_num(CDDDR(node), is_nan, is_nan_forever);
+	auto turret_ship = eval_ship(n);
+	if (!turret_ship || turret_ship->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
+	if (turret_ship->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_FALSE;
+	n = CDR(n);
+
+	auto turret_subsys_name = CTEXT(n);
+	n = CDR(n);
+
+	if (n >= 0) {
+		range = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan)
 			return SEXP_FALSE;
 		if (is_nan_forever)
@@ -18869,46 +18844,25 @@ int sexp_is_in_turret_fov(int node)
 	else
 		range = -1;
 
-	if (sexp_query_has_yet_to_arrive(target_ship_name) || sexp_query_has_yet_to_arrive(turret_ship_name))
-		return SEXP_CANT_EVAL;
-
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, target_ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, target_ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, target_ship_name, NULL, NULL)) {
-		return SEXP_NAN_FOREVER;
-	}
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, turret_ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, turret_ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, turret_ship_name, NULL, NULL)) {
-		return SEXP_NAN_FOREVER;
-	}
-
-	// find the two ships...
-	target_shipnum = ship_name_lookup(target_ship_name);
-	turret_shipnum = ship_name_lookup(turret_ship_name);
-	Assertion(target_shipnum >= 0, "Couldn't find target ship '%s' in sexp_is_in_turret_fov!", target_ship_name);
-	Assertion(turret_shipnum >= 0, "Couldn't find turreted ship '%s' in sexp_is_in_turret_fov!", turret_ship_name);
-
-	// ...and their objects
-	target_objp = &Objects[Ships[target_shipnum].objnum];
-	turret_objp = &Objects[Ships[turret_shipnum].objnum];
-
 	// find the turret
-	turret_subsys = ship_get_subsys(&Ships[turret_shipnum], turret_subsys_name);
+	auto turret_subsys = ship_get_subsys(turret_ship->shipp, turret_subsys_name);
 	if (turret_subsys == nullptr) {
-		Warning(LOCATION, "Couldn't find turret subsystem '%s' on ship '%s' in sexp_is_in_turret_fov!", turret_subsys_name, turret_ship_name);
-		return SEXP_FALSE;
+		Warning(LOCATION, "Couldn't find turret subsystem '%s' on ship '%s' in sexp_is_in_turret_fov!", turret_subsys_name, turret_ship->name);
+		return SEXP_KNOWN_FALSE;
 	}
 
 	// find out where the turret is
-	ship_get_global_turret_info(turret_objp, turret_subsys->system_info, &tpos, &tvec);
+	ship_get_global_turret_info(turret_ship->objp, turret_subsys->system_info, &tpos, &tvec);
 
 	// see how far away is the target (this isn't used for a range check, only for vector math)
-	float dist = vm_vec_dist(&target_objp->pos, &tpos);
+	float dist = vm_vec_dist(&target_ship->objp->pos, &tpos);
 
 	// but we can still use it for the range check if we are optionally checking that
 	if (range >= 0 && dist > range)
 		return SEXP_FALSE;
 
 	// perform the check
-	return object_in_turret_fov(target_objp, turret_subsys, &tvec, &tpos, dist) != 0 ? SEXP_TRUE : SEXP_FALSE;
+	return object_in_turret_fov(target_ship->objp, turret_subsys, &tvec, &tpos, dist) != 0 ? SEXP_TRUE : SEXP_FALSE;
 }
 
 // Goober5000
