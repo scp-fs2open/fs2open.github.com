@@ -13394,20 +13394,13 @@ void sexp_cap_waypoint_speed(int n)
  */
 void sexp_jettison_cargo(int n, bool jettison_new)
 {
-	char *shipname;
-	int ship_index;
 	float jettison_speed;
 	bool is_nan, is_nan_forever;
 
-	// get some data
-	shipname = CTEXT(n);
-	n = CDR(n);
-
-	// lookup the ship
-	ship_index = ship_name_lookup(shipname);
-	if(ship_index < 0)
+	auto parent = eval_ship(n);
+	if (!parent || !parent->shipp)
 		return;
-	object *parent_objp = &Objects[Ships[ship_index].objnum];
+	n = CDR(n);
 
 	// in jettison-cargo-delay, this is the delay (which is unimplemented)
 	// in jettison-cargo, this is the jettison speed, which is optional
@@ -13430,9 +13423,9 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 	{
 		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
 		// undocking things.  So just repeatedly jettison the first object.
-		while (object_is_docked(parent_objp))
+		while (object_is_docked(parent->objp))
 		{
-			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp), jettison_speed, jettison_new);
+			object_jettison_cargo(parent->objp, dock_get_first_docked_object(parent->objp), jettison_speed, jettison_new);
 		}
 	}
 	// arguments - jettison only those objects
@@ -13441,15 +13434,15 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 		for (; n != -1; n = CDR(n))
 		{
 			// make sure ship exists
-			ship_index = ship_name_lookup(CTEXT(n));
-			if (ship_index < 0)
+			auto child = eval_ship(n);
+			if (!child || !child->shipp)
 				continue;
 
 			// make sure we are docked to it
-			if (!dock_check_find_direct_docked_object(parent_objp, &Objects[Ships[ship_index].objnum]))
+			if (!dock_check_find_direct_docked_object(parent->objp, child->objp))
 				continue;
 
-			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum], jettison_speed, jettison_new);
+			object_jettison_cargo(parent->objp, child->objp, jettison_speed, jettison_new);
 		}
 	}
 }
@@ -13457,67 +13450,58 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 void sexp_set_docked(int n)
 {
 	// get some data
-	char* docker_ship_name = CTEXT(n);
+	auto docker = eval_ship(n);
+	if (!docker || !docker->shipp)
+		return;
 	n = CDR(n);
+
 	char* docker_point_name = CTEXT(n);
 	n = CDR(n);
-	char* dockee_ship_name = CTEXT(n);
-	n = CDR(n);
-	char* dockee_point_name = CTEXT(n);
-	n = CDR(n);
 
-	// lookup the ships
-	int docker_ship_index = ship_name_lookup(docker_ship_name);
-	int dockee_ship_index = ship_name_lookup(dockee_ship_name);
-	if(docker_ship_index < 0 || dockee_ship_index < 0)
+	auto dockee = eval_ship(n);
+	if (!dockee || !dockee->shipp)
 		return;
+	n = CDR(n);
 
-	ship* docker_ship = &Ships[docker_ship_index];
-	ship* dockee_ship = &Ships[dockee_ship_index];
-	object* docker_objp = &Objects[docker_ship->objnum];
-	object* dockee_objp = &Objects[dockee_ship->objnum];
+	char* dockee_point_name = CTEXT(n);
 
 	//Get dockpoints by name
-	int docker_point_index = model_find_dock_name_index(Ship_info[docker_ship->ship_info_index].model_num, docker_point_name);
-	int dockee_point_index = model_find_dock_name_index(Ship_info[dockee_ship->ship_info_index].model_num, dockee_point_name);
+	int docker_point_index = model_find_dock_name_index(Ship_info[docker->shipp->ship_info_index].model_num, docker_point_name);
+	int dockee_point_index = model_find_dock_name_index(Ship_info[dockee->shipp->ship_info_index].model_num, dockee_point_name);
 
-	Assertion(docker_point_index >= 0, "Docker point '%s' not found on docker ship '%s'", docker_point_name, docker_ship_name);
-	Assertion(dockee_point_index >= 0, "Dockee point '%s' not found on dockee ship '%s'", dockee_point_name, dockee_ship_name);
+	Assertion(docker_point_index >= 0, "Docker point '%s' not found on docker ship '%s'", docker_point_name, docker->name);
+	Assertion(dockee_point_index >= 0, "Dockee point '%s' not found on dockee ship '%s'", dockee_point_name, dockee->name);
 
 	//Make sure that the specified dockpoints are all free (if not, do nothing)
-	if (dock_find_object_at_dockpoint(docker_objp, docker_point_index) != NULL || 
-		dock_find_object_at_dockpoint(dockee_objp, dockee_point_index) != NULL)
+	if (dock_find_object_at_dockpoint(docker->objp, docker_point_index) != nullptr || 
+		dock_find_object_at_dockpoint(dockee->objp, dockee_point_index) != nullptr)
 	{
 		return;
 	}
 
 	//Set docked
-	dock_orient_and_approach(docker_objp, docker_point_index, dockee_objp, dockee_point_index, DOA_DOCK_STAY);
-	ai_do_objects_docked_stuff(docker_objp, docker_point_index, dockee_objp, dockee_point_index, true);
+	dock_orient_and_approach(docker->objp, docker_point_index, dockee->objp, dockee_point_index, DOA_DOCK_STAY);
+	ai_do_objects_docked_stuff(docker->objp, docker_point_index, dockee->objp, dockee_point_index, true);
 }
 
 void sexp_cargo_no_deplete(int n)
 {
-	char *shipname;
-	int ship_index, no_deplete = 1;
+	int no_deplete = 1;
 	bool is_nan, is_nan_forever;
 
 	// get some data
-	shipname = CTEXT(n);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	n = CDR(n);
 
-	// lookup the ship
-	ship_index = ship_name_lookup(shipname);
-	if(ship_index < 0){
+	if ( !(Ship_info[ship_entry->shipp->ship_info_index].is_big_or_huge()) ) {
+		Warning(LOCATION, "Trying to make non BIG or HUGE ship %s with non-depletable cargo.\n", ship_entry->name);
 		return;
 	}
 
-	if ( !(Ship_info[Ships[ship_index].ship_info_index].is_big_or_huge()) ) {
-		Warning(LOCATION, "Trying to make non BIG or HUGE ship %s with non-depletable cargo.\n", Ships[ship_index].ship_name);
-		return;
-	}
-
-	if (CDR(n) != -1) {
-		no_deplete = eval_num(CDR(n), is_nan, is_nan_forever);
+	if (n != -1) {
+		no_deplete = eval_num(n, is_nan, is_nan_forever);
 		Assert((no_deplete == 0) || (no_deplete == 1));
 		if (is_nan || is_nan_forever) {
 			no_deplete = 0;
@@ -13528,9 +13512,9 @@ void sexp_cargo_no_deplete(int n)
 	}
 
 	if (no_deplete) {
-		Ships[ship_index].cargo1 |= CARGO_NO_DEPLETE;
+		ship_entry->shipp->cargo1 |= CARGO_NO_DEPLETE;
 	} else {
-		Ships[ship_index].cargo1 &= (~CARGO_NO_DEPLETE);
+		ship_entry->shipp->cargo1 &= (~CARGO_NO_DEPLETE);
 	}
 }
 
@@ -22704,39 +22688,29 @@ int sexp_is_in_mission(int node)
 
 int sexp_is_docked(int node)
 {
-	const ship *host_shipp = nullptr;
+	object *host_objp = nullptr;
 
 	for (int n = node; n != -1; n = CDR(n))
 	{
-		const char *shipname;
-		int shipnum;
-		const ship *current_shipp;
-
-		shipname = CTEXT(n);
-	
-		// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-		if (mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL))
+		auto current_entry = eval_ship(n);
+		if (!current_entry || current_entry->status == ShipStatus::EXITED)
 			return SEXP_NAN_FOREVER;
-
-		shipnum = ship_name_lookup( shipname, 1 );
-		if (shipnum == -1)					// hmm.. if true, must not have arrived yet
+		if (current_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_NAN;
 
-		current_shipp = &Ships[shipnum];
-
-		// if host_shipp is a nullptr then we're on the 1st loop iteration
-		if (host_shipp == nullptr)
+		// if host_objp is a nullptr then we're on the 1st loop iteration
+		if (host_objp == nullptr)
 		{
 			// if the host isn't docked to anything, no need to check each ship individually
-			if (!object_is_docked(&Objects[current_shipp->objnum]))
+			if (!object_is_docked(current_entry->objp))
 				return SEXP_FALSE;
 
-			host_shipp = current_shipp;
+			host_objp = current_entry->objp;
 			continue;
 		}
 
 		// if we are not docked, do a quick out
-		if (!dock_check_find_direct_docked_object(&Objects[host_shipp->objnum], &Objects[current_shipp->objnum]))
+		if (!dock_check_find_direct_docked_object(host_objp, current_entry->objp))
 			return SEXP_FALSE;
 	}
 
