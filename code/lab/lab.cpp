@@ -2374,16 +2374,16 @@ void labviewer_actions_reset_animations(Tree* /*caller*/) {
 			}
 		}
 
-		for (auto entry = manual_animations.begin(); entry != manual_animations.end(); ++entry) {
-			if (manual_animations[entry->first]) {
-				model_anim_start_type(shipp, entry->first, 0, -1, false);
-				manual_animations[entry->first] = false;
+		for (auto entry: manual_animations) {
+			if (manual_animations[entry.first]) {
+				model_anim_start_type(shipp, entry.first, 0, -1, false);
+				manual_animations[entry.first] = false;
 			}
 		}
 
-		for (auto entry = manual_animation_triggers.begin(); entry != manual_animation_triggers.end(); ++entry) {
-			auto animation_type = entry->first;
-			auto manual_trigger_map = entry->second;
+		for (auto entry: manual_animation_triggers) {
+			auto animation_type = entry.first;
+			auto manual_trigger_map = entry.second;
 
 			for (auto manual_trigger : manual_trigger_map) {
 				if (manual_trigger.second) {
@@ -2476,8 +2476,8 @@ void labviewer_fill_animations_window() {
 			animations_tree->AddItem(subsystem_headers[AnimationTriggerType::PrimaryBank], bank_string, i, true, labviewer_actions_trigger_primary_bank);
 		}
 			
-		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i)
-			triggered_primary_banks[i] = false;
+		for (bool& triggered_primary_bank : triggered_primary_banks)
+			triggered_primary_bank = false;
 
 		for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
 			SCP_string bank_string;
@@ -2485,8 +2485,8 @@ void labviewer_fill_animations_window() {
 			animations_tree->AddItem(subsystem_headers[AnimationTriggerType::SecondaryBank], bank_string, i, true, labviewer_actions_trigger_secondary_bank);
 		}
 
-		for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
-			triggered_secondary_banks[i] = false;
+		for (bool& triggered_secondary_bank : triggered_secondary_banks)
+			triggered_secondary_bank = false;
 
 		auto ssp = GET_FIRST(&shipp->subsys_list);
 		auto subsys_index = 0;
@@ -2546,9 +2546,9 @@ void labviewer_fill_animations_window() {
 
 		auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");
 
-		for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
-			manual_animations[entry->first] = false;
-			animations_tree->AddItem(shipwide_head, entry->second, static_cast<int>(entry->first), false, labviewer_actions_trigger_animation);
+		for (auto entry: Animation_type_names) {
+			manual_animations[entry.first] = false;
+			animations_tree->AddItem(shipwide_head, entry.second, static_cast<int>(entry.first), false, labviewer_actions_trigger_animation);
 		}
 	}
 }

@@ -40,9 +40,9 @@ const std::map<AnimationTriggerType, SCP_string> Animation_type_names = {
 AnimationTriggerType model_anim_match_type(const char* p)
 {	
 	// standard match
-	for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
-		if (!strnicmp(p, entry->second.c_str(), entry->second.length()))
-			return entry->first;
+	for (const auto& entry: Animation_type_names) {
+		if (!strnicmp(p, entry.second.c_str(), entry.second.length()))
+			return entry.first;
 	}
 
 	// Goober5000 - misspelling
@@ -70,15 +70,15 @@ AnimationTriggerType model_anim_match_type(const char* p)
 	}
 
 	// Goober5000 - with quotes
-	for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
+	for (const auto& entry: Animation_type_names) {
 		char quoted_name[NAME_LENGTH + 2];
 		strcpy(quoted_name, "\"");
-		strcat(quoted_name, entry->second.c_str());
+		strcat(quoted_name, entry.second.c_str());
 		strcat(quoted_name, "\"");
 
 		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
 			mprintf(( "Old usage warning: Please remove quotes from animation type %s.\n", quoted_name));
-			return entry->first;
+			return entry.first;
 		}
 	}
 
@@ -719,15 +719,15 @@ void model_anim_fix_reverse_times(ship_info *sip)
 	int i, j;
 	int ani_time = 0;
 
-	for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
+	for (const auto& entry: Animation_type_names) {
 		// figure out how long it's going to take for the animation to complete
-		ani_time = model_anim_get_actual_time_type(sip, entry->first, ANIMATION_SUBTYPE_ALL);
+		ani_time = model_anim_get_actual_time_type(sip, entry.first, ANIMATION_SUBTYPE_ALL);
 
 		for (i = 0; i < sip->n_subsystems; i++) {
 			psub = &sip->subsystems[i];
 
 			for (j = 0; j < psub->n_triggers; j++) {
-				if (psub->triggers[j].type == entry->first) {
+				if (psub->triggers[j].type == entry.first) {
 					// if there isn't a user defined overide already present
 					if (psub->triggers[j].reverse_start == -1)
 						psub->triggers[j].reverse_start = ani_time - model_anim_instance_get_actual_time(&psub->triggers[j]);
