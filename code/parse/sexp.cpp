@@ -12598,12 +12598,12 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 		int percentage = *assign_percent;
 		Assertion(percentage >= 0 && percentage <= 100, "Percentage must be in range [0, 100]");
 
-		// maybe blow up subsys
-		if (ss->current_hits > 0 && percentage < 1)
-			do_subobj_destroyed_stuff(shipp, ss, nullptr);
-
 		// assign the hitpoints
 		ss->current_hits = ss->max_hits * ((float)percentage / 100.0f);
+
+		// maybe blow up subsys
+		if (ss->current_hits <= 0 && !originally_zero)
+			do_subobj_destroyed_stuff(shipp, ss, nullptr);
 	}
 	else if (repair_percent != nullptr)
 	{
@@ -12751,11 +12751,11 @@ void sexp_sabotage_subsystem(int n)
 
 			// reached the end of the subsystem list 
 			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
+				do_loop = false;
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
-					return;
+					continue;
 				}
-				do_loop = false;
 			}			
 		}
 		else {
@@ -12763,21 +12763,22 @@ void sexp_sabotage_subsystem(int n)
 			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for sabotage subsystem\n", subsystem, shipp->ship_name));
-				return;
+				continue;
 			}
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is > given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
 			if (ss == NULL) {
 				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", index, shipp->ship_name));
-				return;
+				continue;
 			}
 		}
 
 		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, nullptr, &percentage, false, false);
-
-		ship_recalc_subsys_strength( shipp );
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 }
 
 /**
@@ -12868,11 +12869,11 @@ void sexp_repair_subsystem(int n)
 
 			// reached the end of the subsystem list 
 			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
+				do_loop = false;
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
-					return;
+					continue;
 				}
-				do_loop = false;
 			}			
 		}
 		else {
@@ -12880,21 +12881,22 @@ void sexp_repair_subsystem(int n)
 			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for repair subsystem\n", subsystem, shipp->ship_name));
-				return;
+				continue;
 			}
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 			// set the strength to the given percentage if current strength is < given percentage
 			ss = ship_get_indexed_subsys( shipp, index );
 			if (ss == NULL) {
 				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for repair subsystem\n", index, shipp->ship_name));
-				return;
+				continue;
 			}
 		}
 
 		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, &percentage, nullptr, do_submodel_repair, do_ancestor_repair);
-
-		ship_recalc_subsys_strength( shipp );
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 }
 
 /**
@@ -12984,11 +12986,11 @@ void sexp_set_subsystem_strength(int n)
 
 			// reached the end of the subsystem list 
 			if (ss_start == END_OF_LIST(&shipp->subsys_list)) {
+				do_loop = false;
 				// If the last subsystem wasn't of interest we don't need to go any further
 				if (ss == NULL) { 
-					return;
+					continue;
 				}
-				do_loop = false;
 			}			
 		}
 		else {
@@ -12996,7 +12998,7 @@ void sexp_set_subsystem_strength(int n)
 			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for set subsystem strength\n", subsystem, shipp->ship_name));
-				return;
+				continue;
 			}
 
 			// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
@@ -13004,14 +13006,15 @@ void sexp_set_subsystem_strength(int n)
 			ss = ship_get_indexed_subsys( shipp, index );
 			if (ss == NULL) {
 				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for set subsystem strength\n", index, shipp->ship_name));
-				return;
+				continue;
 			}
 		}
 
 		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, &percentage, nullptr, nullptr, do_submodel_repair, do_ancestor_repair);
-
-		ship_recalc_subsys_strength( shipp );
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 }
 
 // destroys a subsystem without explosions
