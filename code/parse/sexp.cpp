@@ -6630,11 +6630,7 @@ int sexp_time_docked_or_undocked(int n, bool docked)
 
 void sexp_set_energy_pct (int node, int op_num)
 {
-	int sindex;
 	float new_pct; 
-	char *shipname;
-	ship * shipp; 
-	ship_info * sip; 
 	bool is_nan, is_nan_forever;
 
 	Assert (node >= 0);
@@ -6654,18 +6650,14 @@ void sexp_set_energy_pct (int node, int op_num)
 
 	node = CDR(node); 
 
-	while (node > -1) {
+	for (; node >= 0; node = CDR(node)) {
 		// get the ship
-		shipname = CTEXT(node);
-
-		sindex = ship_name_lookup( shipname );
-		if ( sindex == -1 ){					// hmm.. if true, must not have arrived yet
-			node = CDR(node);
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->shipp) {
 			continue;
 		}
-		
-		shipp = &Ships[sindex]; 
-		sip = &Ship_info[Ships[sindex].ship_info_index]; 
+		auto shipp = ship_entry->shipp;
+		auto sip = &Ship_info[shipp->ship_info_index]; 
 
 		switch (op_num) {
 			case OP_SET_AFTERBURNER_ENERGY:
@@ -6674,7 +6666,6 @@ void sexp_set_energy_pct (int node, int op_num)
 
 			case OP_SET_WEAPON_ENERGY:
 				if (!(ship_has_energy_weapons(shipp)) ) {
-					node = CDR(node); 
 					continue;
 				}
 				
@@ -6683,7 +6674,6 @@ void sexp_set_energy_pct (int node, int op_num)
 
 			case OP_SET_SHIELD_ENERGY:
 				if (shipp->ship_max_shield_strength == 0.0f) {
-					node = CDR(node); 
 					continue;
 				}	
 
@@ -6694,8 +6684,6 @@ void sexp_set_energy_pct (int node, int op_num)
 		if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
             Current_sexp_network_packet.send_ship(shipp);
 		}
-
-		node = CDR(node); 
 	}
 
 	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
@@ -6731,25 +6719,18 @@ void multi_sexp_set_energy_pct()
 	}
 }
 
-
 int sexp_get_energy_pct (int node, int op_num)
 {
-	int sindex;
 	float maximum = 0.0f, current = 0.0f; 
-	ship * shipp; 
-	ship_info * sip; 
-	char *shipname;
 
 	// get the ship
-	shipname = CTEXT(node);
-
-	sindex = ship_name_lookup( shipname );
-	if ( sindex == -1 ){					// has either not arrived yet or has departed
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
-
-	shipp = &Ships[sindex]; 
-	sip = &Ship_info[Ships[sindex].ship_info_index]; 
+	auto shipp = ship_entry->shipp;
+	auto sip = &Ship_info[shipp->ship_info_index]; 
 
 	switch (op_num) {
 		case OP_AFTERBURNER_LEFT:
@@ -6775,29 +6756,24 @@ int sexp_get_energy_pct (int node, int op_num)
  */
 int sexp_shields_left(int n)
 {
-	int shipnum, percent;
-	char *shipname;
+	auto ship_entry = eval_ship(n);
 
-	shipname = CTEXT(n);
-	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
 	// Goober5000: in case ship has no shields
-	if (Ships[shipnum].ship_max_shield_strength == 0.0f)
+	if (ship_entry->shipp->ship_max_shield_strength == 0.0f)
 	{
 		return 0;
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)std::lround(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
+	int percent = (int)std::lround(get_shield_pct(ship_entry->objp) * 100.0f);
 	return percent;
 }
 
@@ -20369,62 +20345,39 @@ void sexp_supernova_stop(int  /*node*/)
 	supernova_stop();
 }
 
-int sexp_is_secondary_selected(int node)
+int sexp_is_weapon_selected(int node, bool primary)
 {
-	int sindex, bank;
+	int bank, num_banks;
 	bool is_nan, is_nan_forever;
-	ship *shipp;
 
 	// lookup ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return SEXP_FALSE;
-	}
-	shipp = &Ships[sindex];
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
+	num_banks = primary ? ship_entry->shipp->weapons.num_primary_banks : ship_entry->shipp->weapons.num_secondary_banks;
 
 	// bogus value?
 	bank = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan_forever) {
+	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
-	}
-	if (is_nan || bank >= shipp->weapons.num_secondary_banks) {
+	if (is_nan || bank >= num_banks)
 		return SEXP_FALSE;
-	}
 
 	// is this the bank currently selected
-	if( bank == shipp->weapons.current_secondary_bank ){
-		return SEXP_TRUE;
+	if (primary)
+	{
+		if (ship_entry->shipp->flags[Ship::Ship_Flags::Primary_linked])
+			return SEXP_TRUE;
+		if (bank == ship_entry->shipp->weapons.current_primary_bank)
+			return SEXP_TRUE;
 	}
-
-	// nope
-	return SEXP_FALSE;
-}
-
-int sexp_is_primary_selected(int node)
-{
-	int sindex, bank;
-	bool is_nan, is_nan_forever;
-	ship *shipp;
-
-	// lookup ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
-		return SEXP_FALSE;
-	}
-	shipp = &Ships[sindex];
-
-	// bogus value?
-	bank = eval_num(CDR(node), is_nan, is_nan_forever);
-	if (is_nan_forever) {
-		return SEXP_KNOWN_FALSE;
-	}
-	if (is_nan || bank >= shipp->weapons.num_primary_banks) {
-		return SEXP_FALSE;
-	}
-
-	// is this the bank currently selected
-	if( (bank == shipp->weapons.current_primary_bank) || (shipp->flags[Ship::Ship_Flags::Primary_linked]) ){
-		return SEXP_TRUE;
+	else
+	{
+		if (bank == ship_entry->shipp->weapons.current_secondary_bank)
+			return SEXP_TRUE;
 	}
 
 	// nope
@@ -23623,9 +23576,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_AFTERBURNER_LEFT:
-				sexp_val = sexp_get_energy_pct(node, op_num);
-				break;
-
 			case OP_WEAPON_ENERGY_LEFT:
 				sexp_val = sexp_get_energy_pct(node, op_num);
 				break;
@@ -24903,12 +24853,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_countermeasures(node);
 				break;
 
-			case OP_IS_SECONDARY_SELECTED:
-				sexp_val = sexp_is_secondary_selected(node);
-				break;
-
 			case OP_IS_PRIMARY_SELECTED:
-				sexp_val = sexp_is_primary_selected(node);
+			case OP_IS_SECONDARY_SELECTED:
+				sexp_val = sexp_is_weapon_selected(node, op_num == OP_IS_PRIMARY_SELECTED);
 				break;
 
 			// Goober5000
