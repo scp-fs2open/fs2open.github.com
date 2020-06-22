@@ -2463,11 +2463,11 @@ void labviewer_fill_animations_window() {
 
 		manual_animation_triggers.clear();
 
-		for (const auto& entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
-			if (entry->first == AnimationTriggerType::Initial)
+		for (const auto& entry : Animation_type_names) {
+			if (entry.first == AnimationTriggerType::Initial)
 				continue;
 
-			subsystem_headers[entry->first] = animations_tree->AddItem(subsystems_head, entry->second);
+			subsystem_headers[entry.first] = animations_tree->AddItem(subsystems_head, entry.second);
 		}
 
 		for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
