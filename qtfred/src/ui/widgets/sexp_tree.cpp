@@ -4436,11 +4436,10 @@ sexp_list_item* sexp_tree::get_listing_opf_damage_type() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_animation_type() {
-	size_t t;
 	sexp_list_item head;
 
 	for (auto animation_type_name: Animation_type_names) {
-		head.add_data(animation_type_name.second);
+		head.add_data(animation_type_name.second.c_str());
 	}
 
 	return head.next;
