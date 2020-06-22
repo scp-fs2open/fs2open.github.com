@@ -19089,15 +19089,12 @@ void sexp_trigger_submodel_animation(int node)
 
 void sexp_add_remove_escort(int node)
 {
-	int sindex, flag;
+	int flag;
 	bool is_nan, is_nan_forever;
 
 	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
 
@@ -19108,35 +19105,35 @@ void sexp_add_remove_escort(int node)
 	}
 
 	// add/remove
-	if(flag){
-		Ships[sindex].escort_priority = flag ;	
-		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
+	if (flag) {
+		ship_entry->shipp->escort_priority = flag;
+		hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 	} else {
-		hud_remove_ship_from_escort(Ships[sindex].objnum);
+		hud_remove_ship_from_escort(ship_entry->shipp->objnum);
 	}
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(sindex);
+	Current_sexp_network_packet.send_ship(ship_entry->shipp);
 	Current_sexp_network_packet.send_int(flag); 
 	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_add_remove_escort()
 {
-	int sindex;
+	ship *shipp;
 	int flag;
 
-	Current_sexp_network_packet.get_int(sindex); 
+	Current_sexp_network_packet.get_ship(shipp);
 	if (!(Current_sexp_network_packet.get_int(flag))) {
 		return;
 	}
 
 	// add/remove
-	if(flag){
-		Ships[sindex].escort_priority = flag ;	
-		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
+	if (flag) {
+		shipp->escort_priority = flag;
+		hud_add_ship_to_escort(shipp->objnum, 1);
 	} else {
-		hud_remove_ship_from_escort(Ships[sindex].objnum);
+		hud_remove_ship_from_escort(shipp->objnum);
 	}
 }
 
@@ -19149,11 +19146,9 @@ void sexp_damage_escort_list(int node)
 	int priority2;		//""         ""   to set the other ships
 	bool is_nan, is_nan_forever;
 
-	ship* shipp;
 	float smallest_hull_pct=1;		//smallest hull pct found
-	int small_shipnum=-1;		//index in Ships[] of the above
+	ship *small_shipp=nullptr;		//entry in Ships[] of the above
 	float current_hull_pct;			//hull pct of current ship we are evaluating
-	int shipnum=-1;				//index in Ships[] of the above
 
 	eval_nums(n, is_nan, is_nan_forever, priority1, priority2);
 	if (is_nan || is_nan_forever)
@@ -19162,41 +19157,30 @@ void sexp_damage_escort_list(int node)
 	//loop through the ships
 	for ( ; n != -1; n = CDR(n) )
 	{
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, CTEXT(n), NULL, NULL) )
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
 			continue;
-
-		shipnum=ship_name_lookup(CTEXT(n));
-		
-		//it may be dead
-		if (shipnum < 0)
-			continue;
-
-		if (Ships[shipnum].objnum < 0)
-			continue;
-
-		shipp=&Ships[shipnum];
 
 		//calc hull integrity and compare
-		current_hull_pct = get_hull_pct(&Objects[Ships[shipnum].objnum]);
+		current_hull_pct = get_hull_pct(ship_entry->objp);
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
-			if (small_shipnum != -1) // avoid negative array index during 1st loop iteration
+			if (small_shipp)	// avoid null during 1st loop iteration
 			{
-				Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+				small_shipp->escort_priority=priority2;				//give the previous smallest the lower priority
 			}
 			
-			smallest_hull_pct=current_hull_pct;
-			small_shipnum=shipnum;
+			smallest_hull_pct = current_hull_pct;
+			small_shipp = ship_entry->shipp;
 	
-			shipp->escort_priority=priority1;					//give the new smallest the higher priority
-			hud_add_ship_to_escort(Ships[shipnum].objnum,1);
+			ship_entry->shipp->escort_priority = priority1;			//give the new smallest the higher priority
+			hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 		}
 		else														//if its bigger to begin with give it lower priority
 		{
-			shipp->escort_priority=priority2;
-			hud_add_ship_to_escort(Ships[shipnum].objnum,1);
+			ship_entry->shipp->escort_priority = priority2;
+			hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 		}
 	}
 }
@@ -19522,7 +19506,6 @@ void sexp_damage_escort_list_all(int n)
 	int i, j, num_escort_ships, num_priorities, temp_i;
 	bool is_nan, is_nan_forever;
 	float temp_f;
-	ship *shipp;
 
 	// build list of priorities
 	num_priorities = eval_array(priority, n, is_nan, is_nan_forever);
@@ -19531,23 +19514,20 @@ void sexp_damage_escort_list_all(int n)
 
 	// build custom list of escort ships
 	num_escort_ships = 0;
-	for (i = 0; i < MAX_SHIPS; i++)
+	for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
-		shipp = &Ships[i];
-
-		// make sure it exists
-		if ( shipp->objnum < 0 )
-			continue;
+		auto objp = &Objects[so->objnum];
+		Assertion(objp->type == OBJ_SHIP, "All objects on Ship_obj_list must be ships!");
 
 		// make sure it's on the escort list
-		if ( !(shipp->flags[Ship::Ship_Flags::Escort]) )
+		if ( !(Ships[objp->instance].flags[Ship::Ship_Flags::Escort]) )
 			continue;
 
 		// set index
-		escort_ship[num_escort_ships].index = i;
+		escort_ship[num_escort_ships].index = objp->instance;
 
 		// calc and set hull integrity
-		escort_ship[num_escort_ships].hull = get_hull_pct(&Objects[shipp->objnum]);
+		escort_ship[num_escort_ships].hull = get_hull_pct(objp);
 
 		num_escort_ships++;
 	}
