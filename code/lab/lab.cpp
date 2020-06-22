@@ -2463,7 +2463,7 @@ void labviewer_fill_animations_window() {
 
 		manual_animation_triggers.clear();
 
-		for (auto entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
+		for (const auto& entry = Animation_type_names.begin(); entry != Animation_type_names.end(); ++entry) {
 			if (entry->first == AnimationTriggerType::Initial)
 				continue;
 
