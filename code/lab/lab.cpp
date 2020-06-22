@@ -2381,7 +2381,7 @@ void labviewer_actions_reset_animations(Tree* /*caller*/) {
 			}
 		}
 
-		for (auto entry: manual_animation_triggers) {
+		for (const auto& entry: manual_animation_triggers) {
 			auto animation_type = entry.first;
 			auto manual_trigger_map = entry.second;
 
@@ -2546,7 +2546,7 @@ void labviewer_fill_animations_window() {
 
 		auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");
 
-		for (auto entry: Animation_type_names) {
+		for (const auto& entry: Animation_type_names) {
 			manual_animations[entry.first] = false;
 			animations_tree->AddItem(shipwide_head, entry.second, static_cast<int>(entry.first), false, labviewer_actions_trigger_animation);
 		}
