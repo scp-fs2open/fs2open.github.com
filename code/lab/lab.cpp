@@ -2412,7 +2412,7 @@ void labviewer_actions_trigger_secondary_bank(Tree* caller) {
 	}
 }
 
-void labviewer_actions_do_turret_anim(AnimationTriggerType type, int subobj_num, int direction) {
+void labviewer_actions_do_triggered_anim(AnimationTriggerType type, int subobj_num, int direction) {
 	if (actions_window_is_safe()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 		model_anim_start_type(shipp, type, subobj_num, direction);
@@ -2424,8 +2424,7 @@ void labviewer_actions_trigger_turret_firing(Tree* caller) {
 	auto turret_firing_triggers = manual_animation_triggers[AnimationTriggerType::TurretFiring];
 	auto direction = turret_firing_triggers[subobj_num] ? -1 : 1;
 
-	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFiring, subobj_num, direction);
-
+	labviewer_actions_do_triggered_anim(AnimationTriggerType::TurretFiring, subobj_num, direction);
 	turret_firing_triggers[subobj_num] = !turret_firing_triggers[subobj_num];
 }
 
@@ -2434,8 +2433,17 @@ void labviewer_actions_trigger_turret_fired(Tree* caller) {
 	auto turret_fired_triggers = manual_animation_triggers[AnimationTriggerType::TurretFired];
 	auto direction = turret_fired_triggers[subobj_num] ? -1 : 1;
 
-	labviewer_actions_do_turret_anim(AnimationTriggerType::TurretFired, subobj_num, direction);
+	labviewer_actions_do_triggered_anim(AnimationTriggerType::TurretFired, subobj_num, direction);
 	turret_fired_triggers[subobj_num] = !turret_fired_triggers[subobj_num];
+}
+
+void labviewer_actions_trigger_scripted(Tree* caller) {
+	auto subobj_num = caller->GetSelectedItem()->GetData();
+	auto scripted_anim_triggers = manual_animation_triggers[AnimationTriggerType::Scripted];
+	auto direction = scripted_anim_triggers[subobj_num] ? -1 : 1;
+	
+	labviewer_actions_do_triggered_anim(AnimationTriggerType::Scripted, subobj_num, direction);
+	scripted_anim_triggers[subobj_num] = !scripted_anim_triggers[subobj_num];
 }
 
 void labviewer_fill_animations_window() {
@@ -2514,6 +2522,10 @@ void labviewer_fill_animations_window() {
 								manual_animation_triggers[trigger.type][ssp->system_info->subobj_num] = false;
 							}
 						break;
+						case AnimationTriggerType::Scripted:
+							manual_animation_triggers[trigger.type][ssp->system_info->subobj_num] = false;
+							animations_tree->AddItem(subsystem_headers[AnimationTriggerType::Scripted], ssp->system_info->name, ssp->system_info->subobj_num, true, labviewer_actions_trigger_scripted);
+							break;
 						default:
 							break;
 					}
