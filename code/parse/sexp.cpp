@@ -5675,11 +5675,9 @@ int sexp_num_ships_in_battle(int n)
 {
 	int count=0;
 	ship_obj	*so;
-	ship		*shipp;
-	object_ship_wing_point_team oswpt1;
+
 	if ( n == -1) {
     	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		    shipp=&Ships[Objects[so->objnum].instance];
 		    count++;
 	    }
 
@@ -5687,16 +5685,17 @@ int sexp_num_ships_in_battle(int n)
 	}
 
 	while (n != -1) {
-		sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
+		object_ship_wing_point_team oswpt1;
+		eval_object_ship_wing_point_team(&oswpt1, n);
 
-	    switch (oswpt1.type){
+	    switch (oswpt1.type) {
  		    case OSWPT_TYPE_WHOLE_TEAM:
-				  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-					  shipp=&Ships[Objects[so->objnum].instance];
+			  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+				  auto shipp=&Ships[Objects[so->objnum].instance];
 				  if (shipp->team == oswpt1.team) {
 						 count++;
 					  }
-				  }
+			  }
 			  break;
 
   		    case OSWPT_TYPE_SHIP:
@@ -5719,8 +5718,7 @@ int sexp_num_ships_in_battle(int n)
  */
 int sexp_num_ships_in_wing(int n)
 {
-	char *name;
-	int num_ships = 0 ;
+	int num_ships = 0;
 
 	// A wing name must be provided, Assert that there is one.
 	Assert ( n != -1 );
@@ -5729,15 +5727,12 @@ int sexp_num_ships_in_wing(int n)
 	while (n != -1)
 	{
 		// Get the name of the wing
-		name = CTEXT(n);
-
-		int wingnum;
-		wingnum = wing_name_lookup( name, 0 );
+		auto wingp = eval_wing(n);
 
 		//If the wing exists add the number of ships in it to the total
-		if (wingnum > -1)
+		if (wingp)
 		{
-			num_ships += Wings[wingnum].current_count ;
+			num_ships += wingp->current_count;
 		}
 
 		//get the next node
@@ -7489,8 +7484,6 @@ bool sexp_helper_is_within_box(const std::array<float, 6> &box_vals, const vec3d
 int sexp_num_within_box(int n)
 {
 	std::array<float, 6> box_vals;//x,y,z,width,height,depth
-	char *ship_wing;
-	int i, idx;
 	int retval = 0;
 	bool is_nan, is_nan_forever;
 
@@ -7502,37 +7495,38 @@ int sexp_num_within_box(int n)
 	
 	for(; n >= 0; n = CDR(n))
 	{
-		ship_wing = CTEXT(n);
-
-		idx = ship_name_lookup(ship_wing);
-		if(idx >= 0)
+		// this might be a ship
+		auto ship_entry = eval_ship(n);
+		if (ship_entry)
 		{
-			if(sexp_helper_is_within_box(box_vals, &Objects[Ships[idx].objnum].pos))
+			if (ship_entry->objp && sexp_helper_is_within_box(box_vals, &ship_entry->objp->pos))
 				retval++;
 		}
 		else
 		{
-			idx = wing_name_lookup(ship_wing);
-			if(idx >= 0)
+			// this might be a wing.  if it is, someone in the wing must be present
+			auto wingp = eval_wing(n);
+			if (wingp && wingp->current_count > 0)
 			{
+				// every present member in the wing must be in the box
 				bool wing_check = true;
-				for(i = 0; i < Wings[idx].current_count; i++)
+				for (int i = 0; i < wingp->current_count; i++)
 				{
-					if(!sexp_helper_is_within_box(box_vals, &Objects[Ships[Wings[idx].ship_index[i]].objnum].pos))
+					if (!sexp_helper_is_within_box(box_vals, &Objects[Ships[wingp->ship_index[i]].objnum].pos))
 					{
 						wing_check = false;
 						break;
 					}
 				}
 
-				if(wing_check)
+				if (wing_check)
 					retval++;
 			}
 		}
 	}
 
 	return retval;
-}	
+}
 
 // Goober5000
 // wookieejedi - this sexp is deprecated in favor of sexp_set_ship_man
@@ -28391,7 +28385,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NUM_SHIPS_IN_BATTLE:	//phreak modified by FUBAR
 			return OPF_SHIP_WING_WHOLETEAM;
 
-		case OP_NUM_SHIPS_IN_WING:	// Karajorma	
+		case OP_NUM_SHIPS_IN_WING:	// Karajorma
 			return OPF_WING;
 
 		case OP_CURRENT_SPEED:
