@@ -8336,9 +8336,8 @@ void sexp_set_ship_maneuver(int n, int op_num)
  */
 int sexp_last_order_time(int n)
 {
-	int instance, i;
+	int i;
 	fix time;
-	char *name;
 	ai_goal *aigp;
 	bool is_nan, is_nan_forever;
 
@@ -8351,18 +8350,26 @@ int sexp_last_order_time(int n)
 
 	n = CDR(n);
 	while ( n != -1 ) {
-		name = CTEXT(n);
-		instance = ship_name_lookup(name);
-		if ( instance != -1 ) {
-			aigp = Ai_info[Ships[instance].ai_index].goals;
+		aigp = nullptr;
+
+		auto ship_entry = eval_ship(n);
+		if (ship_entry) {
+			if (ship_entry->status == ShipStatus::PRESENT) {
+				aigp = Ai_info[ship_entry->shipp->ai_index].goals;
+			}
 		} else {
-			instance = wing_name_lookup(name);
-			if ( instance == -1 )						// if we cannot find ship or wing, return SEXP_FALSE
-				return SEXP_FALSE;
-			aigp = Wings[instance].ai_goals;
+			auto wingp = eval_wing(n);
+			if (wingp && !wing_has_yet_to_arrive(wingp) && !wingp->flags[Ship::Wing_Flags::Gone]) {
+				aigp = wingp->ai_goals;
+			}
 		}
 
-		// with the ship, check the ai_goals structure for this ship and determine if there are any
+		// if we cannot find ship or wing, return SEXP_FALSE
+		if (!aigp) {
+			return SEXP_FALSE;
+		}
+
+		// check the ai_goals structure and determine if there are any
 		// orders which are < time seconds since current mission time
 		for ( i = 0; i < MAX_AI_GOALS; i++ ) {
 			int mode;
@@ -11181,17 +11188,15 @@ void sexp_allow_treason (int n)
 
 void sexp_set_player_orders(int n) 
 {
-	ship *shipp; 
-	int i;
 	bool allow_order;
 	int orders = 0;
-	int default_orders; 
+	int i, default_orders; 
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
-	shipp = ship_entry->shipp;
+	auto shipp = ship_entry->shipp;
 
 	// we need to know which orders this ship class can accept.
 	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
@@ -15832,28 +15837,18 @@ void sexp_weapon_create(int n)
 		weapon_set_tracking_info(weapon_objnum, parent_objnum, target_objnum, is_locked, targeted_ss);
 }
 
-// make ship vanish without a trace (and what its docked to)
+// make ship vanish without a trace (and what it's docked to)
 void sexp_ship_vanish(int n)
 {
-	char *ship_name;
-	int num;
-
 	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER) {
+	if (Game_mode & GM_MULTIPLAYER)
 		return;
-	}
 
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 )
-			ship_actually_depart(num, SHIP_VANISHED);
+	for ( ; n != -1; n = CDR(n) )
+	{
+		auto ship_entry = eval_ship(n);
+		if (ship_entry && ship_entry->status == ShipStatus::PRESENT)
+			ship_actually_depart(ship_entry->objp->instance, SHIP_VANISHED);
 	}
 }
 
@@ -16880,29 +16875,21 @@ void multi_sexp_set_ets_values()
 
 int sexp_shield_quad_low(int node)
 {
-	int sindex, idx;	
 	float max_quad, check;
 	bool is_nan, is_nan_forever;
-	ship_info *sip;
-	object *objp;
 
 	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return SEXP_FALSE;
-	}
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return SEXP_FALSE;
-	}
-	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= ship_info_size())){
-		return SEXP_FALSE;
-	}
-	objp = &Objects[Ships[sindex].objnum];
-	sip = &Ship_info[Ships[sindex].ship_info_index];
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
+	auto sip = &Ship_info[ship_entry->shipp->ship_info_index];
 	if(!(sip->is_small_ship())){
-		return SEXP_FALSE;
+		return SEXP_KNOWN_FALSE;
 	}
-	max_quad = shield_get_max_quad(objp);	
+	max_quad = shield_get_max_quad(ship_entry->objp);	
 
 	// shield pct
 	check = (float)eval_num(CDR(node), is_nan, is_nan_forever);
@@ -16912,8 +16899,8 @@ int sexp_shield_quad_low(int node)
 		return SEXP_KNOWN_FALSE;
 
 	// check his quadrants
-	for(idx=0; idx<objp->n_quadrants; idx++){
-		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
+	for (int idx = 0; idx < ship_entry->objp->n_quadrants; ++idx) {
+		if (((ship_entry->objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check) {
 			return SEXP_TRUE;
 		}
 	}
