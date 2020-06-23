@@ -43,7 +43,7 @@ enum class AnimationTriggerType: int {
 	MaxAnimationTypes
 };
 
-extern const std::map<AnimationTriggerType, SCP_string> Animation_type_names;
+extern const std::map<AnimationTriggerType, const char*> Animation_type_names;
 
 
 // Model Animation Position settings

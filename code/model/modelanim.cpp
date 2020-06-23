@@ -22,7 +22,7 @@ SCP_vector<triggered_rotation> Triggered_rotations;
 // forward declaration
 int model_anim_instance_get_actual_time(queued_animation *properties);
 
-const std::map<AnimationTriggerType, SCP_string> Animation_type_names = {
+const std::map<AnimationTriggerType, const char*> Animation_type_names = {
 	{AnimationTriggerType::Initial, "initial"},
 	{AnimationTriggerType::Docking_Stage1, "docking-stage-1"},
 	{AnimationTriggerType::Docking_Stage2, "docking-stage-2"},
@@ -41,7 +41,7 @@ AnimationTriggerType model_anim_match_type(const char* p)
 {	
 	// standard match
 	for (const auto& entry: Animation_type_names) {
-		if (!strnicmp(p, entry.second.c_str(), entry.second.length()))
+		if (!strnicmp(p, entry.second, strlen(entry.second)))
 			return entry.first;
 	}
 
@@ -53,19 +53,24 @@ AnimationTriggerType model_anim_match_type(const char* p)
 
 	// Goober5000 - deprecation
 	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
-		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"docking-stage-2\" instead.\n"));
+		auto docking_string = Animation_type_names.find(AnimationTriggerType::Docking_Stage2)->second;
+		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
 		return AnimationTriggerType::Docking_Stage2;
 	} else if ( !strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14) ) {
-		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"primary-bank\" instead.\n"));
+		auto pbank_string = Animation_type_names.find(AnimationTriggerType::PrimaryBank)->second;
+		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", pbank_string));
 		return AnimationTriggerType::PrimaryBank;
 	} else if ( !strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16) ) {
-		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"secondary-bank\" instead.\n"));
+		auto sbank_string = Animation_type_names.find(AnimationTriggerType::SecondaryBank)->second;
+		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", sbank_string));
 		return AnimationTriggerType::SecondaryBank;
 	} else if ( !strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6) ) {
-		mprintf(("The \"door\" animation type name is deprecated.  Specify \"fighterbay\" instead.\n"));
+		auto docking_string = Animation_type_names.find(AnimationTriggerType::DockBayDoor)->second;
+		mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
 		return AnimationTriggerType::DockBayDoor;
 	} else if ( !strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15) ) {
-		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"turret-firing\" instead.\n"));
+		auto turret_string = Animation_type_names.find(AnimationTriggerType::TurretFiring)->second;
+		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", turret_string));
 		return AnimationTriggerType::TurretFiring;
 	}
 
@@ -73,7 +78,7 @@ AnimationTriggerType model_anim_match_type(const char* p)
 	for (const auto& entry: Animation_type_names) {
 		char quoted_name[NAME_LENGTH + 2];
 		strcpy(quoted_name, "\"");
-		strcat(quoted_name, entry.second.c_str());
+		strcat(quoted_name, entry.second);
 		strcat(quoted_name, "\"");
 
 		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
@@ -95,7 +100,7 @@ void triggered_rotation::start(queued_animation *q)
 {
 	instance = q->instance;
 
-	nprintf(("ModelAnim", "Starting animation type %i at %i ...\n", static_cast<int>(q->type), timestamp()));
+	nprintf(("ModelAnim", "Starting animation type %s at %i ...\n", Animation_type_names.find(q->type)->second, timestamp()));
 
 	current_snd = gamesnd_id();
 	current_snd_index = start_sound = q->start_sound;

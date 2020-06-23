@@ -2101,27 +2101,25 @@ void lab_animations_window_close(GUIObject* /*caller*/) {
 	Lab_trigger_animations_window = nullptr;
 }
 
-void labviewer_actions_destroy_ship(Button* /*caller*/) {
-	if (Lab_selected_object != -1) {
-		auto obj = &Objects[Lab_selected_object];
-
-		if (obj->type == OBJ_SHIP) {
-			obj->flags.remove(Object::Object_Flags::Player_ship);
-			ship_self_destruct(obj);
-			Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
-		}
-	}
+// Returns true if it is safe to access the Ships array
+bool action_is_safe_for_ships() {
+	return Lab_selected_object != -1 && Objects[Lab_selected_object].type == OBJ_SHIP;
 }
 
-// Returns true if it is safe to access the Ships array
-bool actions_window_is_safe() {
-	return Lab_selected_object != -1 && Objects[Lab_selected_object].type == OBJ_SHIP;
+void labviewer_actions_destroy_ship(Button* /*caller*/) {
+	if (action_is_safe_for_ships()) {
+		auto obj = &Objects[Lab_selected_object];
+
+		obj->flags.remove(Object::Object_Flags::Player_ship);
+		ship_self_destruct(obj);
+		Lab_viewer_flags |= LAB_FLAG_SHIP_EXPLODING;
+	}
 }
 
 void labviewer_actions_destroy_subsystem(Tree* caller) {
 	auto selected_subsys_index = caller->GetSelectedItem()->GetData();
 
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto sp = &Ships[Objects[Lab_selected_object].instance];
 		auto ssp = GET_FIRST(&sp->subsys_list);
 		auto subsys_index = 0;
@@ -2165,7 +2163,7 @@ void labviewer_fill_subsystem_menu() {
 	
 	auto subsys_tree = (Tree*)Lab_subsystems_window->AddChild(new Tree("Subsystem List", 0, 0));
 
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto sp = &Ships[Objects[Lab_selected_object].instance];
 		auto ssp = GET_FIRST(&sp->subsys_list);
 		auto subsys_index = 0;
@@ -2195,7 +2193,7 @@ void labviewer_fill_loadout_window() {
 	
 	auto weapons_tree = (Tree*)Lab_loadout_window->AddChild(new Tree("Weapons stuff", 0, 0));
 
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto sp = &Ships[Objects[Lab_selected_object].instance];
 		auto sip = &Ship_info[sp->ship_info_index];
 
@@ -2302,7 +2300,7 @@ void labviewer_actions_make_loadout_window(Button* /*caller*/) {
 void labviewer_fill_fire_weapon_menu() {
 	if (Lab_weapon_fire_window == nullptr) return; 
 
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto sp = &Ships[Objects[Lab_selected_object].instance];
 
 		int y = 0;
@@ -2340,7 +2338,7 @@ void labviewer_actions_make_weapon_fire_window(Button* /*caller*/) {
 static std::map<AnimationTriggerType, bool> manual_animations = {};
 
 void labviewer_actions_trigger_animation(Tree* caller) {
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 			
 		auto anim_type = static_cast<AnimationTriggerType>(caller->GetSelectedItem()->GetData());
@@ -2357,7 +2355,7 @@ bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
 static std::map<AnimationTriggerType, std::map<int, bool>> manual_animation_triggers = {};
 
 void labviewer_actions_reset_animations(Tree* /*caller*/) {
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 			
 		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
@@ -2395,7 +2393,7 @@ void labviewer_actions_reset_animations(Tree* /*caller*/) {
 }
 
 void labviewer_actions_trigger_primary_bank(Tree* caller) {
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
 		model_anim_start_type(shipp, AnimationTriggerType::PrimaryBank, bank, triggered_primary_banks[bank] ? -1 : 1, false);
@@ -2404,7 +2402,7 @@ void labviewer_actions_trigger_primary_bank(Tree* caller) {
 }
 
 void labviewer_actions_trigger_secondary_bank(Tree* caller) {
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
 		model_anim_start_type(shipp, AnimationTriggerType::SecondaryBank, bank, triggered_secondary_banks[bank] ? -1 : 1, false);
@@ -2413,7 +2411,7 @@ void labviewer_actions_trigger_secondary_bank(Tree* caller) {
 }
 
 void labviewer_actions_do_triggered_anim(AnimationTriggerType type, int subobj_num, int direction) {
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 		model_anim_start_type(shipp, type, subobj_num, direction);
 	}
@@ -2450,7 +2448,7 @@ void labviewer_fill_animations_window() {
 	if (Lab_trigger_animations_window == nullptr)
 		return;
 
-	if (actions_window_is_safe()) {
+	if (action_is_safe_for_ships()) {
 		auto shipp = &Ships[Objects[Lab_selected_object].instance];
 
 		auto animations_tree = (Tree*)Lab_trigger_animations_window->AddChild(new Tree("Animations stuff", 0, 0));
