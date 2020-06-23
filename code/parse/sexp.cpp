@@ -18822,24 +18822,17 @@ int sexp_is_in_turret_fov(int node)
 // Goober5000
 void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 {
-	int ship_num;		
-	ship_subsys *rotate;
-
 	// get the ship
-	ship_num = ship_name_lookup(CTEXT(node));
-	if (ship_num < 0)
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-	
-	if (Ships[ship_num].objnum < 0)
-		return;
-
 	node = CDR(node);
 
 	// loop for all specified subsystems
 	for ( ; node >= 0; node = CDR(node) )
 	{
 		// get the rotating subsystem
-		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
+		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (rotate == NULL)
 			continue;
 
@@ -18849,7 +18842,7 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		{   
             if (rotate->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 			{
-				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
+				obj_snd_delete_type(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, rotate);
                 rotate->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		}
@@ -18857,7 +18850,7 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		{
 			if (rotate->system_info->rotation_snd.isValid())
 			{
-				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
+				obj_snd_assign(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
                 rotate->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
             }
 		}
@@ -18867,24 +18860,17 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 // Goober5000
 void sexp_reverse_rotating_subsystem(int node)
 {
-	int ship_num;
-	ship_subsys *rotate;
-
 	// get the ship
-	ship_num = ship_name_lookup(CTEXT(node));
-	if (ship_num < 0)
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
-	
-	if (Ships[ship_num].objnum < 0)
-		return;
-
 	node = CDR(node);
 
 	// loop for all specified subsystems
 	for ( ; node >= 0; node = CDR(node) )
 	{
 		// get the rotating subsystem
-		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
+		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (rotate == NULL)
 			continue;
 
@@ -18898,21 +18884,18 @@ void sexp_reverse_rotating_subsystem(int node)
 // Goober5000
 void sexp_rotating_subsys_set_turn_time(int node)
 {
-	int ship_num, n = node;
+	int n = node;
 	bool is_nan, is_nan_forever;
 	float turn_time, turn_accel;
-	ship_subsys *rotate;
 
 	// get the ship
-	ship_num = ship_name_lookup(CTEXT(n));
-	if (ship_num < 0)
-		return;
-	if (Ships[ship_num].objnum < 0)
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
 	n = CDR(n);
 
 	// get the rotating subsystem
-	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(n));
+	auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(n));
 	if (rotate == NULL)
 		return;
 	n = CDR(n);
@@ -18938,14 +18921,12 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 void sexp_trigger_submodel_animation(int node)
 {
-	int ship_num, animation_type, animation_subtype, direction, n = node;
+	int animation_type, animation_subtype, direction, n = node;
 	bool instant, is_nan, is_nan_forever;
 
 	// get the ship
-	ship_num = ship_name_lookup(CTEXT(n));
-	if (ship_num < 0)
-		return;
-	if (Ships[ship_num].objnum < 0)
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
 		return;
 	n = CDR(n);
 
@@ -18981,8 +18962,8 @@ void sexp_trigger_submodel_animation(int node)
 	// do we narrow it to a specific subsystem?
 	if (n >= 0)
 	{
-		ship_subsys *ss = ship_get_subsys(&Ships[ship_num], CTEXT(n));
-		if (ss == NULL)
+		ship_subsys *ss = ship_get_subsys(ship_entry->shipp, CTEXT(n));
+		if (!ss)
 		{
 			Warning(LOCATION, "Subsystem \"%s\" not found on ship \"%s\"!", CTEXT(n), CTEXT(node));
 			return;
@@ -18991,7 +18972,7 @@ void sexp_trigger_submodel_animation(int node)
 	}
 	else
 	{
-		model_anim_start_type(&Ships[ship_num], animation_type, animation_subtype, direction, instant);
+		model_anim_start_type(ship_entry->shipp, animation_type, animation_subtype, direction, instant);
 	}
 }
 
