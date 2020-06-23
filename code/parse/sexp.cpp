@@ -15494,6 +15494,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag,
 	if (sendit)
 		Current_sexp_network_packet.end_callback();
 }
+
 void multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags ss_flag)
 {
 	bool setit = false;
@@ -15526,29 +15527,23 @@ void multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags ss_flag)
 		}
 	}
 }
+
 // Goober5000
 void sexp_ship_tag( int n, int tag )
 {
-	int ship_num, tag_level, tag_time, ssm_index(0), ssm_team(0);
+	int tag_level, tag_time, ssm_index(0), ssm_team(0);
 	bool is_nan, is_nan_forever;
 
-	char *ship_name = CTEXT(n);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
 	n = CDR(n);
-
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) )
-		return;
-
-	// get the ship num
-	ship_num = ship_name_lookup(ship_name);
-	if ( ship_num < 0 )
-		return;
 
 	// if untag, then unset everything and leave
 	if (!tag)
 	{
-		Ships[ship_num].tag_left = -1.0f;
-		Ships[ship_num].level2_tag_left = -1.0f;
+		ship_entry->shipp->tag_left = -1.0f;
+		ship_entry->shipp->level2_tag_left = -1.0f;
 		return;
 	}
 
@@ -15576,7 +15571,7 @@ void sexp_ship_tag( int n, int tag )
             ssm_team = iff_lookup(CTEXT(n));
 	}
 
-	ship_apply_tag(&Ships[ship_num], tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
+	ship_apply_tag(ship_entry->shipp, tag_level, (float)tag_time, ship_entry->objp, &start, ssm_index, ssm_team);
 }
 
 // sexpression to toggle invulnerability flag of ships.
@@ -19754,23 +19749,13 @@ void select_unselect_nav(int node, bool select_it)
 
 int sexp_is_tagged(int node)
 {
-	int sindex;
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return SEXP_FALSE;
-	}
-	if(Ships[sindex].objnum < 0){
-		return SEXP_FALSE;
-	}
-	object *caller = &Objects[Ships[sindex].objnum];
-	if(ship_is_tagged(caller)) { // This line and the one above were added.
-		return SEXP_TRUE;
-	}
-
-	// not tagged
-	return SEXP_FALSE;
+	return ship_is_tagged(ship_entry->objp) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 // Joint effort of Sesquipedalian and Goober5000.  Sesq found the code, mucked around making
@@ -19975,17 +19960,16 @@ void sexp_add_remove_hotkey(int node)
 // helper function for the remove-weapons SEXP
 void actually_remove_weapons(int weapon_info_index)
 {
-	int i; 
-
-	for (i = 0; i<MAX_WEAPONS; i++) {
-		// weapon doesn't match the optional weapon 
-		if ((weapon_info_index > -1) && (Weapons[i].weapon_info_index != weapon_info_index)) {
+	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
+	{
+		if (objp->type != OBJ_WEAPON)
 			continue;
-		}
 
-		if (Weapons[i].objnum >= 0) {
-			Objects[Weapons[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
-		}		
+		// weapon doesn't match the optional weapon
+		if ((weapon_info_index >= 0) && (Weapons[objp->instance].weapon_info_index != weapon_info_index))
+			continue;
+
+		objp->flags.set(Object::Object_Flags::Should_be_dead);
 	}
 }
 
@@ -21286,16 +21270,25 @@ void multi_sexp_set_camera_facing()
 /**
  * Helper function for set_camera_facing_object
  */
-void actually_set_camera_facing_object(char *object_name, float rot_time, float rot_acc_time, float rot_dec_time)
+void actually_set_camera_facing_object(vec3d *pos, float rot_time, float rot_acc_time, float rot_dec_time)
+{
+	camera *cam = sexp_get_set_camera();
+	if (cam == nullptr)
+		return;
+	cam->set_rotation_facing(pos, rot_time, rot_acc_time, rot_dec_time);
+}
+
+void sexp_set_camera_facing_object(int n)
 {
 	object_ship_wing_point_team oswpt;
-	sexp_get_object_ship_wing_point_team(&oswpt, object_name);
+	vec3d *pos;
 
+	eval_object_ship_wing_point_team(&oswpt, n);
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_EXITED:
 		{
-			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
+			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", CTEXT(n));
 			return;
 		}
 
@@ -21303,18 +21296,13 @@ void actually_set_camera_facing_object(char *object_name, float rot_time, float 
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			camera *cam = sexp_get_set_camera();
-			if (cam == nullptr)
-				return;
-			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
-			return;
+			pos = &oswpt.objp->pos;
+			break;
 		}
-	}
-}
 
-void sexp_set_camera_facing_object(int n)
-{
-	char *object_name = CTEXT(n);
+		default:
+			return;
+	}
 	n = CDR(n);
 
 	bool is_nan, is_nan_forever;
@@ -21330,11 +21318,11 @@ void sexp_set_camera_facing_object(int n)
 	rot_acc_time /= 1000.0f;
 	rot_dec_time /= 1000.0f;
 
-	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
+	actually_set_camera_facing_object(pos, rot_time, rot_acc_time, rot_dec_time);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_string(object_name);
+	Current_sexp_network_packet.send_vec3d(pos);
 	Current_sexp_network_packet.send_float(rot_time);
 	Current_sexp_network_packet.send_float(rot_acc_time);
 	Current_sexp_network_packet.send_float(rot_dec_time);
@@ -21344,17 +21332,17 @@ void sexp_set_camera_facing_object(int n)
 //CommanderDJ
 void multi_sexp_set_camera_facing_object()
 {
-	char object_name[TOKEN_LENGTH];
+	vec3d pos;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
 	float rot_dec_time = 0.0f;
 	
-	Current_sexp_network_packet.get_string(object_name);
+	Current_sexp_network_packet.get_vec3d(&pos);
 	Current_sexp_network_packet.get_float(rot_time);
 	Current_sexp_network_packet.get_float(rot_acc_time);
 	Current_sexp_network_packet.get_float(rot_dec_time);
 	
-	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
+	actually_set_camera_facing_object(&pos, rot_time, rot_acc_time, rot_dec_time);
 }
 
 extern float VIEWER_ZOOM_DEFAULT;
@@ -21416,24 +21404,22 @@ void multi_sexp_set_camera_fov()
 //Internal helper function for set-target and set-host
 object *sexp_camera_get_objsub(int node, int *o_submodel)
 {
-	//Get arguments
-	int n = node;
-	char *obj_name = nullptr;
-	char *sub_name = nullptr;
-	
-	obj_name = CTEXT(n);
-	n = CDR(n);
-	if(n != -1)
-		sub_name = CTEXT(n);
-	
 	//Important variables
 	object *objp = nullptr;
 	int submodel = -1;
 	
-	//*****Process obj_name
-	object_ship_wing_point_team oswpt;
-	sexp_get_object_ship_wing_point_team(&oswpt, obj_name);
+	//Get arguments
+	int n = node;
 	
+	object_ship_wing_point_team oswpt;
+	eval_object_ship_wing_point_team(&oswpt, n);
+	n = CDR(n);
+
+	char *sub_name = nullptr;
+	if (n >= 0)
+		sub_name = CTEXT(n);
+
+	//*****Process object
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_SHIP:
