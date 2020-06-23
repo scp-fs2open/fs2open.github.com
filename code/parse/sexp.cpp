@@ -18261,7 +18261,6 @@ void sexp_turret_change_weapon(int node)
 
 void sexp_set_armor_type(int node)
 {
-	int sindex;
 	int armor;
 	bool rset;
 	ship_subsys *ss = NULL;
@@ -18269,30 +18268,28 @@ void sexp_set_armor_type(int node)
 	ship_info *sip = NULL;
 
 	// get ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0) {
-		return;
-	}
-	shipp = &Ships[sindex];
+	shipp = ship_entry->shipp;
 	sip = &Ship_info[shipp->ship_info_index];
+	node = CDR(node);
 
 	// set or reset
-	node = CDR(node);
 	rset = is_sexp_true(node);
+	node = CDR(node);
 
 	// get armor
-	node = CDR(node);
 	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
 		armor = -1;
 	} else {
 		armor = armor_type_get_idx(CTEXT(node));
 	}
-	
+	node = CDR(node);
+
 	//Set armor
-	while(node != -1)
+	for (; node != -1; node = CDR(node))
 	{
 		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
 		{
@@ -18313,9 +18310,8 @@ void sexp_set_armor_type(int node)
 		else 
 		{
 			// get the subsystem
-			ss = ship_get_subsys(&Ships[sindex], CTEXT(node));
+			ss = ship_get_subsys(shipp, CTEXT(node));
 			if(ss == NULL){
-				node = CDR(node);
 				continue;
 			}
 		
@@ -18325,8 +18321,6 @@ void sexp_set_armor_type(int node)
 			else
 				ss->armor_type_idx = armor;
 		}
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -18386,10 +18380,9 @@ void sexp_weapon_set_damage_type(int node)
 
 void sexp_ship_set_damage_type(int node)
 {
-	int sindex, damage;
+	int damage;
 	bool debris, rset;
 	size_t t;
-	ship *shipp = NULL;
 
 	// collision or debris
 	debris = is_sexp_true(node);
@@ -18419,10 +18412,11 @@ void sexp_ship_set_damage_type(int node)
 	while(node != -1)
 	{
 		// get the ship
-		sindex = ship_name_lookup(CTEXT(node));
-		if(sindex >= 0) 
+		auto ship_entry = eval_ship(node);
+		if (ship_entry && ship_entry->shipp)
 		{
-			shipp = &Ships[sindex];
+			auto shipp = ship_entry->shipp;
+
 			// set the damage type
 			if (debris)
 			{
@@ -18438,8 +18432,9 @@ void sexp_ship_set_damage_type(int node)
 				else
 					shipp->debris_damage_type_idx = damage;
 			}
-			// next
 		}
+
+		// next
 		node = CDR(node);
 	}
 }
@@ -19223,7 +19218,7 @@ void sexp_set_arrival_info(int node)
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
-	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
 
 	// get arrival location
@@ -19278,12 +19273,13 @@ void sexp_set_arrival_info(int node)
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
 	{
-		oswpt.shipp->arrival_location = arrival_location;
-		oswpt.shipp->arrival_anchor = arrival_anchor;
-		oswpt.shipp->arrival_path_mask = arrival_mask;
-		oswpt.shipp->arrival_distance = arrival_distance;
-		oswpt.shipp->arrival_delay = arrival_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, !show_warp);
+		oswpt.ship_entry->shipp->arrival_location = arrival_location;
+		oswpt.ship_entry->shipp->arrival_anchor = arrival_anchor;
+		oswpt.ship_entry->shipp->arrival_path_mask = arrival_mask;
+		oswpt.ship_entry->shipp->arrival_distance = arrival_distance;
+		oswpt.ship_entry->shipp->arrival_delay = arrival_delay;
+
+		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -19297,13 +19293,13 @@ void sexp_set_arrival_info(int node)
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
-		oswpt.p_objp->arrival_location = arrival_location;
-		oswpt.p_objp->arrival_anchor = arrival_anchor;
-		oswpt.p_objp->arrival_path_mask = arrival_mask;
-		oswpt.p_objp->arrival_distance = arrival_distance;
-		oswpt.p_objp->arrival_delay = arrival_delay;
+		oswpt.ship_entry->p_objp->arrival_location = arrival_location;
+		oswpt.ship_entry->p_objp->arrival_anchor = arrival_anchor;
+		oswpt.ship_entry->p_objp->arrival_path_mask = arrival_mask;
+		oswpt.ship_entry->p_objp->arrival_distance = arrival_distance;
+		oswpt.ship_entry->p_objp->arrival_delay = arrival_delay;
 
-        oswpt.p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, !show_warp);
+        oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, !show_warp);
 	}
 }
 
@@ -19315,7 +19311,7 @@ void sexp_set_departure_info(int node)
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
-	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
 
 	// get departure location
@@ -19370,11 +19366,12 @@ void sexp_set_departure_info(int node)
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
 	{
-		oswpt.shipp->departure_location = departure_location;
-		oswpt.shipp->departure_anchor = departure_anchor;
-		oswpt.shipp->departure_path_mask = departure_mask;
-		oswpt.shipp->departure_delay = departure_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
+		oswpt.ship_entry->shipp->departure_location = departure_location;
+		oswpt.ship_entry->shipp->departure_anchor = departure_anchor;
+		oswpt.ship_entry->shipp->departure_path_mask = departure_mask;
+		oswpt.ship_entry->shipp->departure_delay = departure_delay;
+
+        oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -19387,11 +19384,12 @@ void sexp_set_departure_info(int node)
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
-		oswpt.p_objp->departure_location = departure_location;
-		oswpt.p_objp->departure_anchor = departure_anchor;
-		oswpt.p_objp->departure_path_mask = departure_mask;
-		oswpt.p_objp->departure_delay = departure_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
+		oswpt.ship_entry->p_objp->departure_location = departure_location;
+		oswpt.ship_entry->p_objp->departure_anchor = departure_anchor;
+		oswpt.ship_entry->p_objp->departure_path_mask = departure_mask;
+		oswpt.ship_entry->p_objp->departure_delay = departure_delay;
+
+        oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_departure_warp, !show_warp);
 	}
 }
 
