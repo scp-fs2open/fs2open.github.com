@@ -1047,8 +1047,8 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 	if(!objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	int type = model_anim_match_type(s);
-	if(type < 0)
+	auto type = model_anim_match_type(s);
+	if(type == AnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
 	int time_ms = model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype);
@@ -1439,8 +1439,8 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
-	int type = model_anim_match_type(s);
-	if(type < 0)
+	auto type = model_anim_match_type(s);
+	if(type == AnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
 	int dir = 1;

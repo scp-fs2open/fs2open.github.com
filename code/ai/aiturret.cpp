@@ -2081,7 +2081,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set has fired flag for scriptng - nuke
 
 	//Fire animation stuff
-	model_anim_start_type(turret, TRIGGER_TYPE_TURRET_FIRED, ANIMATION_SUBTYPE_ALL, 1);
+	model_anim_start_type(turret, AnimationTriggerType::TurretFired, ANIMATION_SUBTYPE_ALL, 1);
 	return true;
 }
 
@@ -2691,8 +2691,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			{
 				// starting animation checks
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
-					if ( model_anim_start_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num, 1) ) {
-						ss->turret_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num);
+					if ( model_anim_start_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num, 1) ) {
+						ss->turret_animation_done_time = model_anim_get_time_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num);
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}
