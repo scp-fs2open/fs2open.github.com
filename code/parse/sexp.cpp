@@ -8521,8 +8521,8 @@ int sexp_get_damage_caused(int node)
 		}
 
 		// this ship may have exited already.
-		if (ship_entry->exited_index >= 0) {
-			attacker_sig = Ships_exited[ship_entry->exited_index].obj_signature;
+		if (attacker->exited_index >= 0) {
+			attacker_sig = Ships_exited[attacker->exited_index].obj_signature;
 		} else {
 			attacker_sig = attacker->objp->signature;
 		}
