@@ -4439,7 +4439,7 @@ sexp_list_item* sexp_tree::get_listing_opf_animation_type() {
 	sexp_list_item head;
 
 	for (const auto &animation_type_name: Animation_type_names) {
-		head.add_data(animation_type_name.second.c_str());
+		head.add_data(animation_type_name.second);
 	}
 
 	return head.next;

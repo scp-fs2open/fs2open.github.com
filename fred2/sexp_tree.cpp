@@ -6003,7 +6003,7 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 	sexp_list_item head;
 
 	for (auto animation_type : Animation_type_names) {
-		head.add_data(animation_type.second.c_str());
+		head.add_data(animation_type.second);
 	}
 
 	return head.next;
