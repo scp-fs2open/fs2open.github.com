@@ -83,7 +83,7 @@ void update_ets(object* objp, float fl_frametime)
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
-	max_new_weapon_energy = fl_frametime * sinfo_p->max_weapon_regen_per_second * max_g;
+	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
@@ -95,7 +95,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
+	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {

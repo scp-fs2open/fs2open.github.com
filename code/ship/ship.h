@@ -492,6 +492,8 @@ public:
 	float ship_max_hull_strength;
 
 	float max_shield_recharge;
+	float max_shield_regen_per_second;		// wookieejedi - make this a ship object variable
+	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
