@@ -21266,20 +21266,12 @@ void multi_sexp_set_camera_facing()
 	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
 }
 
-//CommanderDJ
-/**
- * Helper function for set_camera_facing_object
- */
-void actually_set_camera_facing_object(vec3d *pos, float rot_time, float rot_acc_time, float rot_dec_time)
+void sexp_set_camera_facing_object(int n)
 {
 	camera *cam = sexp_get_set_camera();
 	if (cam == nullptr)
 		return;
-	cam->set_rotation_facing(pos, rot_time, rot_acc_time, rot_dec_time);
-}
 
-void sexp_set_camera_facing_object(int n)
-{
 	object_ship_wing_point_team oswpt;
 	vec3d *pos;
 
@@ -21288,7 +21280,7 @@ void sexp_set_camera_facing_object(int n)
 	{
 		case OSWPT_TYPE_EXITED:
 		{
-			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", CTEXT(n));
+			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", oswpt.object_name);
 			return;
 		}
 
@@ -21318,7 +21310,7 @@ void sexp_set_camera_facing_object(int n)
 	rot_acc_time /= 1000.0f;
 	rot_dec_time /= 1000.0f;
 
-	actually_set_camera_facing_object(pos, rot_time, rot_acc_time, rot_dec_time);
+	cam->set_rotation_facing(pos, rot_time, rot_acc_time, rot_dec_time);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
@@ -21332,17 +21324,21 @@ void sexp_set_camera_facing_object(int n)
 //CommanderDJ
 void multi_sexp_set_camera_facing_object()
 {
+	camera *cam = sexp_get_set_camera();
+	if (cam == nullptr)
+		return;
+
 	vec3d pos;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
 	float rot_dec_time = 0.0f;
-	
+
 	Current_sexp_network_packet.get_vec3d(&pos);
 	Current_sexp_network_packet.get_float(rot_time);
 	Current_sexp_network_packet.get_float(rot_acc_time);
 	Current_sexp_network_packet.get_float(rot_dec_time);
-	
-	actually_set_camera_facing_object(&pos, rot_time, rot_acc_time, rot_dec_time);
+
+	cam->set_rotation_facing(&pos, rot_time, rot_acc_time, rot_dec_time);
 }
 
 extern float VIEWER_ZOOM_DEFAULT;
