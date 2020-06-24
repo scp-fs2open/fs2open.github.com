@@ -15767,12 +15767,18 @@ void sexp_weapon_create(int n)
 	bool is_nan, is_nan_forever;
 
 	parent_objnum = -1;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
+	auto parent = eval_ship(n);
+	if (parent)
 	{
-		int parent_ship = ship_name_lookup(CTEXT(n));
-
-		if (parent_ship >= 0)
-			parent_objnum = Ships[parent_ship].objnum;
+		if (parent->shipp)
+			parent_objnum = parent->shipp->objnum;
+		else
+			return;		// parent ship isn't present
+	}
+	else if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
+	{
+		Warning(LOCATION, "A nonexistent ship %s was specified as a parent for weapon-create!", CTEXT(n));
+		return;
 	}
 	n = CDR(n);
 	
@@ -15801,15 +15807,14 @@ void sexp_weapon_create(int n)
 	target_objnum = -1;
 	if (n >= 0)
 	{
-		int target_ship = ship_name_lookup(CTEXT(n));
-
-		if (target_ship >= 0)
-			target_objnum = Ships[target_ship].objnum;
+		auto ship_entry = eval_ship(n);
+		if (ship_entry && ship_entry->shipp)
+			target_objnum = ship_entry->shipp->objnum;
 
 		n = CDR(n);
 	}
 
-	targeted_ss = NULL;
+	targeted_ss = nullptr;
 	if (n >= 0)
 	{
 		if (target_objnum >= 0)
@@ -22619,8 +22624,6 @@ int get_effect_from_name(const char* name)
 
 void sexp_ship_effect(int n)
 {
-	char	*name;
-	int ship_index, wing_index;
 	bool is_nan, is_nan_forever;
 	
 	int effect_num = get_effect_from_name(CTEXT(n));
@@ -22635,61 +22638,44 @@ void sexp_ship_effect(int n)
 		return;
 	n = CDR(n);
 
-	ship_index = -1;
-	wing_index = -1;
-	while (n != -1) {
-		name = CTEXT(n);
+	for (; n != -1; n = CDR(n))
+	{
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
 
-		// check to see if this ship/wing has arrived yet.
-		if (sexp_query_has_yet_to_arrive(name)) {
-			n = CDR(n);
-			continue;
-		}
-
-		// check to see if this ship/wing has departed.
-		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) ) {
-			n = CDR(n);
-			continue;
-		}
-
-		// check to see if this ship/wing has been destroyed.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, NULL)) {
-			n = CDR(n);
-			continue;
-		}
-
-		ship *sp;
-		if((wing_index = wing_name_lookup(name)) >= 0)
+		// we only handle ships and wings that are present
+		switch (oswpt.type)
 		{
-			wing *wp = &Wings[wing_index];
-			for(int i = 0; i < wp->current_count; i++)
+			case OSWPT_TYPE_SHIP:
 			{
-				if(wp->ship_index[i] >= 0)
-				{
-					sp = &Ships[wp->ship_index[i]];
-					sp->shader_effect_active = true;
-					sp->shader_effect_num = effect_num;
-					sp->shader_effect_duration = effect_duration;
-					sp->shader_effect_start_time = timer_get_milliseconds();
-				}
-			}
-		}
-		else
-		{
-			if((ship_index = ship_name_lookup(name)) >= 0)
-			{
-				sp = &Ships[ship_index];
+				auto sp = oswpt.ship_entry->shipp;
 				sp->shader_effect_active = true;
 				sp->shader_effect_num = effect_num;
 				sp->shader_effect_duration = effect_duration;
 				sp->shader_effect_start_time = timer_get_milliseconds();
+				break;
 			}
-			else
+
+			case OSWPT_TYPE_WING:
+			{
+				auto wp = oswpt.wingp;
+				for (int i = 0; i < wp->current_count; ++i)
+				{
+					if (wp->ship_index[i] >= 0)
+					{
+						auto sp = &Ships[wp->ship_index[i]];
+						sp->shader_effect_active = true;
+						sp->shader_effect_num = effect_num;
+						sp->shader_effect_duration = effect_duration;
+						sp->shader_effect_start_time = timer_get_milliseconds();
+					}
+				}
+				break;
+			}
+
+			default:
 				mprintf(("Invalid Shipname in SEXP ship-effect\n"));
 		}
-
-		// move to next ship/wing in list
-		n = CDR(n);
 	}
 }
 
