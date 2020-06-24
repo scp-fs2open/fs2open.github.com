@@ -17332,32 +17332,24 @@ void sexp_deal_with_secondary_lock (int node, bool lock)
 //Karajorma - Changes the subsystem name displayed on the HUD.  
 void sexp_change_subsystem_name(int node) 
 {
-	ship *shipp;
-	int ship_index;
 	char *new_name;
 	ship_subsys *subsystem_to_rename;
 
 	Assert (node != -1);
 
 	// Check that a ship has been supplied
-	ship_index = ship_name_lookup(CTEXT(node));
-	if (ship_index < 0) {
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
-
-	shipp = &Ships[ship_index];
 	node = CDR(node);
-
-	if (node < 0) {
-		return;
-	}
 
 	new_name = CTEXT(node);
 	node = CDR(node);
 	
 	if (MULTIPLAYER_MASTER) {
 		Current_sexp_network_packet.start_callback();
-		Current_sexp_network_packet.send_ship(shipp); 
+		Current_sexp_network_packet.send_ship(ship_entry->shipp); 
 		Current_sexp_network_packet.send_string(new_name); 
 	}
 
@@ -17365,7 +17357,7 @@ void sexp_change_subsystem_name(int node)
 	while (node >= 0) {
 
 		//Get the new subsystem name
-		subsystem_to_rename = ship_get_subsys(&Ships[ship_index], CTEXT(node));
+		subsystem_to_rename = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (subsystem_to_rename != NULL) {
 			ship_subsys_set_name(subsystem_to_rename, new_name); 
 	
@@ -17402,9 +17394,9 @@ void multi_sexp_change_subsystem_name()
 // Goober5000
 void sexp_change_ship_class(int n)
 {
-	int ship_num, class_num = ship_info_lookup(CTEXT(n));
-	Assert(class_num != -1);
-
+	int class_num = ship_info_lookup(CTEXT(n));
+	if (class_num < 0)
+		return;
 	n = CDR(n);
 
 	if (MULTIPLAYER_MASTER) {
@@ -17415,51 +17407,34 @@ void sexp_change_ship_class(int n)
 	// all ships in the sexp
 	for ( ; n != -1; n = CDR(n))
 	{
-		ship_num = ship_name_lookup(CTEXT(n), 1);
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+			continue;
 
 		// If the ship hasn't arrived we still want the ability to change its class.
-		if (ship_num == -1)
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
-			// Get the name of the ship that we are interested in
-			char* ship_name = CTEXT(n); 
-			p_object *pobj ;
-			bool match_found = false;
-			
+			swap_parse_object(ship_entry->p_objp, class_num);
 
-			// Search the Ship_arrival_list to see if the ship is waiting to arrive
-			for (pobj = GET_FIRST(&Ship_arrival_list); pobj != END_OF_LIST(&Ship_arrival_list); pobj = GET_NEXT(pobj))
-			{
-				if (!(strcmp(pobj->name, ship_name)))
-				{
-					match_found = true;
-					break;
-				}
-			}
-
-			if (match_found)
-			{
-				swap_parse_object(pobj, class_num);
-
-				if (MULTIPLAYER_MASTER) {
-					Current_sexp_network_packet.send_bool(false); 
-					Current_sexp_network_packet.send_parse_object(pobj); 
-				}
+			if (MULTIPLAYER_MASTER) {
+				Current_sexp_network_packet.send_bool(false); 
+				Current_sexp_network_packet.send_parse_object(ship_entry->p_objp);
 			}
 		}
 		// If the ship is already in the mission
 		else 
 		{
 			// don't mess with a ship that's occupied
-			if (!(Ships[ship_num].is_arriving() || Ships[ship_num].is_dying_or_departing()))
+			if (!ship_entry->shipp->is_arriving() && !ship_entry->shipp->is_dying_or_departing())
 			{
-				change_ship_type(ship_num, class_num, 1);
-				if (&Ships[ship_num] == Player_ship) {
+				change_ship_type(ship_entry->objp->instance, class_num, 1);
+				if (ship_entry->shipp == Player_ship) {
 					set_current_hud();
 				}
 
 				if (MULTIPLAYER_MASTER) {
 					Current_sexp_network_packet.send_bool(true); 
-					Current_sexp_network_packet.send_ship(ship_num);
+					Current_sexp_network_packet.send_ship(ship_entry->shipp); 
 				}
 			}
 		}
@@ -17596,30 +17571,31 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 // Goober5000
 void sexp_ship_copy_damage(int node)
 {
-	int n, source_shipnum, target_shipnum;
-	p_object *target_pobjp;
+	int n;
 
 	// source ship must be present
-	source_shipnum = ship_name_lookup(CTEXT(node));
-	if (source_shipnum < 0)
+	auto source = eval_ship(node);
+	if (!source || !source->shipp)
 		return;
 
 	// loop through all subsequent arguments
 	for (n = CDR(node); n != -1; n = CDR(n))
 	{
+		auto target = eval_ship(n);
+		if (!target)
+			continue;
+
 		// maybe it's present in-mission
-		target_shipnum = ship_name_lookup(CTEXT(n));
-		if (target_shipnum >= 0)
+		if (target->status == ShipStatus::PRESENT)
 		{
-			ship_copy_damage(&Ships[target_shipnum], &Ships[source_shipnum]);
+			ship_copy_damage(target->shipp, source->shipp);
 			continue;
 		}
 
 		// maybe it's on the arrival list
-		target_pobjp = mission_parse_get_arrival_ship(CTEXT(n));
-		if (target_pobjp != nullptr)
+		if (target->status == ShipStatus::NOT_YET_PRESENT)
 		{
-			parse_copy_damage(target_pobjp, &Ships[source_shipnum]);
+			parse_copy_damage(target->p_objp, source->shipp);
 			continue;
 		}
 
@@ -17627,61 +17603,49 @@ void sexp_ship_copy_damage(int node)
 	}
 }
 
-
 //-Bobboau
 void sexp_activate_deactivate_glow_points(int n, bool activate)
 {
-	int sindex;
-	size_t i;
-
 	for ( ; n != -1; n = CDR(n))
 	{
-		sindex = ship_name_lookup(CTEXT(n), 1);
-		if (sindex >= 0)
-		{
-			for (i = 0; i < Ships[sindex].glow_point_bank_active.size(); i++)
-				Ships[sindex].glow_point_bank_active[i] = activate;
-		}
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
+
+		for (auto &bank_active : ship_entry->shipp->glow_point_bank_active)
+			bank_active = activate;
 	}
 }
 
 //-Bobboau
 void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 {
-	int sindex, num;
-	bool is_nan, is_nan_forever;
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
 
-	sindex = ship_name_lookup(CTEXT(n), 1);
-	if (sindex >= 0)
+	for ( n = CDR(n); n != -1; n = CDR(n))
 	{
-		for ( n = CDR(n); n != -1; n = CDR(n))
-		{
-			num = eval_num(n, is_nan, is_nan_forever);
-			if (is_nan || is_nan_forever)
-				continue;
+		bool is_nan, is_nan_forever;
+		int num = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			continue;
 
-			if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
-			{
-				Ships[sindex].glow_point_bank_active[num] = activate;
-			}
-		}
+		if (num >= 0 && num < (int)ship_entry->shipp->glow_point_bank_active.size())
+			ship_entry->shipp->glow_point_bank_active[num] = activate;
 	}
 }
 
 //-Bobboau
-void sexp_activate_deactivate_glow_maps(int n, int activate)
+void sexp_activate_deactivate_glow_maps(int n, bool activate)
 {
-	int sindex;
-	ship *shipp;
-
 	for ( ; n != -1; n = CDR(n))
 	{
-		sindex = ship_name_lookup(CTEXT(n), 1);
-		if (sindex >= 0)
-		{
-			shipp = &Ships[sindex];
-            shipp->flags.set(Ship::Ship_Flags::Glowmaps_disabled, activate == 0);
-		}
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
+
+		ship_entry->shipp->flags.set(Ship::Ship_Flags::Glowmaps_disabled, !activate);
 	}
 }
 
