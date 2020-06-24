@@ -6433,36 +6433,27 @@ int sexp_mission_time_msecs()
  */
 int sexp_special_warp_dist( int n)
 {
-	char *ship_name;
-	int shipnum;
-	ship *shipp;
-	ship_info *sip;
 	vec3d center_pos, actual_local_center;
 	float half_length, dist_to_plane;
 
-	// get shipname
-	ship_name = CTEXT(n);
+	// get ship
+	auto ship_entry = eval_ship(n);
 
-	// check to see if either ship was destroyed or departed.  If so, then make this node known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) ) {
+	// ships which aren't present get NAN
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
-
-	// get ship name
-	shipnum = ship_name_lookup(ship_name);
-	if (shipnum < 0) {
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
-	shipp = &Ships[shipnum];
-	sip = &Ship_info[shipp->ship_info_index];
+	auto shipp = ship_entry->shipp;
 
 	// check that ship has warpout_objnum
 	if (shipp->special_warpout_objnum < 0 || shipp->special_warpout_objnum >= MAX_OBJECTS) {
 		return SEXP_NAN;
 	}
 
-	object *objp = &Objects[shipp->objnum];
+	auto sip = &Ship_info[shipp->ship_info_index];
+	auto objp = ship_entry->objp;
 	object *knossos_objp = &Objects[shipp->special_warpout_objnum];
 
 	// check the special warpout device is valid
@@ -13324,23 +13315,15 @@ void sexp_exchange_cargo(int n)
 
 void sexp_cap_waypoint_speed(int n)
 {
-	char *shipname;
-	int shipnum;
-	int speed;
 	bool is_nan, is_nan_forever;
 
-	shipname = CTEXT(n);
-	speed = eval_num(CDR(n), is_nan, is_nan_forever);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
 
+	int speed = eval_num(CDR(n), is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
-
-	shipnum = ship_name_lookup(shipname);
-
-	if (shipnum == -1) {
-		// trying to set waypoint speed of ship not already in game
-		return;
-	}
 
 	// cap speed to range (-1, 32767) to store within int
 	if (speed < 0) {
@@ -13351,7 +13334,7 @@ void sexp_cap_waypoint_speed(int n)
 		speed = 32767;
 	}
 
-	Ai_info[Ships[shipnum].ai_index].waypoint_speed_cap = speed;
+	Ai_info[ship_entry->shipp->ai_index].waypoint_speed_cap = speed;
 }
 
 /**
@@ -14646,16 +14629,23 @@ void sexp_set_subspace_drive(int node)
  */
 void sexp_good_secondary_time(int n)
 {
-	char *team_name, *weapon_name, *ship_name;
+	char *team_name, *weapon_name;
 	int num_weapons, weapon_index, team;
 	bool is_nan, is_nan_forever;
 
 	team_name = CTEXT(n);
-	num_weapons = eval_num(CDR(n), is_nan, is_nan_forever);
-	weapon_name = CTEXT(CDR(CDR(n)));
-	ship_name = CTEXT(CDR(CDR(CDR(n))));
+	n = CDR(n);
 
+	num_weapons = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
+		return;
+	n = CDR(n);
+
+	weapon_name = CTEXT(n);
+	n = CDR(n);
+
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry)
 		return;
 
 	weapon_index = weapon_info_lookup(weapon_name);
@@ -14667,12 +14657,11 @@ void sexp_good_secondary_time(int n)
 	// get the team type from the team_name
 	team = iff_lookup(team_name);
 
-	// see if the ship has departed or has been destroyed.  If so, then we don't need to set up the
-	// AI stuff
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
+	// see if the ship has exited.  If so, then we don't need to set up the AI stuff
+	if (ship_entry->status == ShipStatus::EXITED)
 		return;
 
-	ai_good_secondary_time( team, weapon_index, num_weapons, ship_name );
+	ai_good_secondary_time( team, weapon_index, num_weapons, ship_entry->name );
 }
 
 // Karajorma - Turns the built in messages for pilots and command on or off
@@ -14723,7 +14712,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 
 void sexp_set_persona (int node) 
 {
-	int persona_index = -1, sindex, i; 
+	int persona_index = -1, i;
 	char *persona_name; 
 
 	persona_name = CTEXT(node);
@@ -14750,20 +14739,15 @@ void sexp_set_persona (int node)
 
 	// now loop through the list of ships
 	for ( ; node >= 0; node = CDR(node) ) {
-		sindex = ship_name_lookup( CTEXT(node) );
-
-		if (sindex < 0) {
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->shipp) {
 			continue;
 		}
 
-		if (Ships[sindex].objnum < 0) {
-			continue;
-		}
-
-		Ships[sindex].persona_index = persona_index; 
+		ship_entry->shipp->persona_index = persona_index; 
 
 		if (MULTIPLAYER_MASTER) {
-			Current_sexp_network_packet.send_ship(sindex);
+			Current_sexp_network_packet.send_ship(ship_entry->shipp);
 		}
 	}
 
@@ -22523,8 +22507,13 @@ int sexp_is_in_box(int n)
 int sexp_is_in_mission(int node)
 {
 	for (int n = node; n != -1; n = CDR(n))
-		if (ship_name_lookup(CTEXT(n)) < 0)
+	{
+		// For this sexp, we do not short-circuit known-false because we want to handle two exceptions that are normally optimized away.
+		// For confirmed-exited ships, they might be respawned in multiplayer.  For nonexistent ships, they might be ship-created.
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT)
 			return SEXP_FALSE;
+	}
 
 	return SEXP_TRUE;
 }
