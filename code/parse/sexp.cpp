@@ -6804,8 +6804,6 @@ int sexp_hits_left(int n, bool sim_hull)
  */
 int sexp_is_ship_visible(int n)
 {
-	char *shipname;
-	int shipnum;
 	int ship_is_visible = 0;
 
 	// if multiplayer, bail
@@ -6813,30 +6811,28 @@ int sexp_is_ship_visible(int n)
 		return SEXP_NAN_FOREVER;
 	}
 
-	shipname = CTEXT(n);
+	auto ship_entry = eval_ship(n);
 	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL) ) {
+	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	}
 
-	shipnum = ship_name_lookup( shipname );
-	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+	// hmm.. if true, must not have arrived yet
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
 
 	// get ship's *radar* visiblity
-	if (Player_ship != NULL)
+	if (Player_ship)
 	{
-		if (ship_is_visible_by_team(&Objects[Ships[shipnum].objnum], Player_ship))
+		if (ship_is_visible_by_team(ship_entry->objp, Player_ship))
 		{
 			ship_is_visible = 2;
 		}
 	}
 
 	// only check awacs level if ship is not visible by team
-	if (Player_ship != NULL && !ship_is_visible) {
-		float awacs_level = awacs_get_level(&Objects[Ships[shipnum].objnum], Player_ship);
+	if (Player_ship && !ship_is_visible) {
+		float awacs_level = awacs_get_level(ship_entry->objp, Player_ship);
 		if (awacs_level >= 1.0f) {
 			ship_is_visible = 2;
 		} else if (awacs_level > 0) {
@@ -15387,15 +15383,15 @@ void sexp_ships_visible(int n, bool visible)
 	// we also have to add any escort ships that were made visible
 	for (; n >= 0; n = CDR(n))
 	{
-		int shipnum = ship_name_lookup(CTEXT(n));
-		if (shipnum < 0)
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->shipp)
 			continue;
 
-		if (!visible && Player_ai->target_objnum == Ships[shipnum].objnum) {
+		if (!visible && Player_ai->target_objnum == ship_entry->shipp->objnum) {
 			hud_cease_targeting(); 
 		}
-		else if (visible && (Ships[shipnum].flags[Ship::Ship_Flags::Escort])) {
-			hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+		else if (visible && (ship_entry->shipp->flags[Ship::Ship_Flags::Escort])) {
+			hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 		}		
 	}
 }
@@ -15410,12 +15406,12 @@ void sexp_ships_stealthy(int n, bool stealthy)
 	{
 		for (; n >= 0; n = CDR(n))
 		{
-			int shipnum = ship_name_lookup(CTEXT(n));
-			if (shipnum < 0)
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry || !ship_entry->shipp)
 				continue;
 
-			if (Ships[shipnum].flags[Ship::Ship_Flags::Escort])
-				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+			if (ship_entry->shipp->flags[Ship::Ship_Flags::Escort])
+				hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 		}
 	}
 }
@@ -15430,14 +15426,14 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 	{
 		for (; n >= 0; n = CDR(n))
 		{
-			int shipnum = ship_name_lookup(CTEXT(n));
-			if (shipnum < 0)
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry || !ship_entry->shipp)
 				continue;
 
-			if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth] && Player_ship->team == Ships[shipnum].team)
+			if (ship_entry->shipp->flags[Ship::Ship_Flags::Stealth] && Player_ship->team == ship_entry->shipp->team)
 			{
-				if (Ships[shipnum].flags[Ship::Ship_Flags::Escort])
-					hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+				if (ship_entry->shipp->flags[Ship::Ship_Flags::Escort])
+					hud_add_ship_to_escort(ship_entry->shipp->objnum, 1);
 			}
 		}
 	}
