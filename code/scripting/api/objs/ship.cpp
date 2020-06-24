@@ -412,6 +412,42 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
+ADE_VIRTVAR(ShieldRegenRate, l_Ship, "number", "Maximum percentage/100 of shield energy regenerated per second. For example, 0.02 = 2% recharge per second.", "number", "Ship maximum shield regeneration rate, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_shield_regen = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_shield_regen))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && new_shield_regen > -1)
+		shipp->max_shield_regen_per_second = new_shield_regen;
+
+	return ade_set_args(L, "f", shipp->max_shield_regen_per_second);
+}
+
+ADE_VIRTVAR(WeaponRegenRate, l_Ship, "number", "Maximum percentage/100 of weapon energy regenerated per second. For example, 0.02 = 2% recharge per second.", "number", "Ship maximum weapon regeneration rate, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_weapon_regen = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_weapon_regen))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && new_weapon_regen > -1)
+		shipp->max_weapon_regen_per_second = new_weapon_regen;
+
+	return ade_set_args(L, "f", shipp->max_weapon_regen_per_second);
+}
+
 ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves", "number", "Ship current weapon energy reserve level, or 0 if invalid")
 {
 	object_h *objh;

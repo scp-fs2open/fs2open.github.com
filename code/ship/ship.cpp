@@ -6315,6 +6315,8 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
+	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
+	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 }
 
 /**
