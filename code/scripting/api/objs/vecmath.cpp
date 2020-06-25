@@ -477,7 +477,7 @@ ADE_FUNC(getMagnitude,
 	return ade_set_args(L, "f", vm_vec_mag(v3));
 }
 
-ADE_FUNC(getDistance, l_Vector, "Vector", "Distance", "number", "Returns distance from another vector") {
+ADE_FUNC(getDistance, l_Vector, "vector otherPos", "Distance", "number", "Returns distance from another vector") {
 	vec3d* v3a, * v3b;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b))) {
 		return ade_set_error(L, "f", 0.0f);

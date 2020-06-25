@@ -827,7 +827,8 @@ ADE_FUNC(sendPlainMessage,
 
 ADE_FUNC(createShip,
 	l_Mission,
-	"[string Name, shipclass Class=<Shipclass[1]>, orientation Orientation=null, vector Position=<{0,0,0}>]",
+	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
+	"null vector by default */]",
 	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
@@ -898,7 +899,8 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 
 ADE_FUNC(createWeapon,
 	l_Mission,
-	"[weaponclass Class=FirstTableWeapon, orientation Orientation=identity, vector WorldPosition=<{0,0,0}>, object Parent = "
+	"[weaponclass Class /* first weapon in table by default*/, orientation Orientation=identity, vector "
+	"WorldPosition/* null vector by default */, object Parent = "
 	"nil, number Group = -1]",
 	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
 	" for example, quad lasers would only need to act as one light source.",
@@ -1023,7 +1025,7 @@ ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the missio
 }
 
 //WMC - These are in freespace.cpp
-ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
+ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1114,11 +1116,13 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-ADE_FUNC(addBackgroundBitmap, l_Mission,
-         "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0, int div_x = 1.0, int "
-         "div_y = 1.0",
-         "Adds a background bitmap to the mission with the specified parameters.", "background_element",
-         "A handle to the background element, or invalid handle if the function failed.")
+ADE_FUNC(addBackgroundBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1168,9 +1172,12 @@ ADE_FUNC(addBackgroundBitmap, l_Mission,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap, l_Mission, "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0",
-         "Adds a sun bitmap to the mission with the specified parameters.", "background_element",
-         "A handle to the background element, or invalid handle if the function failed.")
+ADE_FUNC(addSunBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;

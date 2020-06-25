@@ -14,8 +14,8 @@ public:
   enum {
     COMMA = 1, EQUALS = 2, STRING = 3, PLACEHOLDER = 4, NIL = 5, TRUE = 6, 
     FALSE = 7, FUNCTION = 8, NUMBER = 9, TYPE_ALT = 10, L_BRACKET = 11, 
-    R_BRACKET = 12, L_PAREN = 13, R_PAREN = 14, ARROW = 15, ARG_COMMENT = 16, 
-    ID = 17, SPACE = 18, OTHER = 19
+    R_BRACKET = 12, L_PAREN = 13, R_PAREN = 14, ARROW = 15, L_ANGLE_BRACKET = 16, 
+    R_ANGLE_BRACKET = 17, ARG_COMMENT = 18, ID = 19, SPACE = 20, OTHER = 21
   };
 
   ArgumentListLexer(antlr4::CharStream *input);

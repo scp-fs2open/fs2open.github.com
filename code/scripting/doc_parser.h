@@ -16,11 +16,14 @@ struct argument_def {
 
 class argument_list_parser {
   public:
+	explicit argument_list_parser(const SCP_vector<SCP_string>& validTypeNames);
+
 	bool parse(const SCP_string& argumentList);
 
 	const SCP_vector<scripting::argument_def>& getArgList() const;
 
   private:
+	SCP_unordered_set<SCP_string> _validTypeNames;
 	SCP_vector<argument_def> _argList;
 };
 

@@ -11,6 +11,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 template< typename T >
@@ -76,5 +77,8 @@ using SCP_hash = std::hash<T>;
 
 template <typename Key, typename T, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>;
+
+template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
+using SCP_unordered_set = std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>;
 
 #endif // _VMALLOCATOR_H_INCLUDED_

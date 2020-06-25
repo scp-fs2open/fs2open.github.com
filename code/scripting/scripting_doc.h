@@ -57,6 +57,8 @@ struct DocumentationElementFunction : public DocumentationElement {
 		SCP_string simple;
 
 		SCP_vector<scripting::argument_def> arguments;
+
+		SCP_vector<SCP_string> genericTypes;
 	};
 
 	SCP_vector<argument_list> overloads;

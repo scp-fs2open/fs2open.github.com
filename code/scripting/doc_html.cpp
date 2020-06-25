@@ -143,6 +143,24 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info)
 			fputs(") -> ", fp);
 		}
 		ade_output_type_link(fp, elements.front());
+		break;
+	}
+	case ade_type_info_type::Generic: {
+		const auto& elements = type_info.elements();
+		ade_output_type_link(fp, elements.front());
+		if (elements.size() > 1) {
+			fputs("<", fp);
+			bool first = true;
+			for (auto iter = elements.begin() + 1; iter != elements.end(); ++iter) {
+				if (!first) {
+					fputs(", ", fp);
+				}
+				first = false;
+
+				ade_output_type_link(fp, *iter);
+			}
+			fputs(">", fp);
+		}
 	}
 	}
 }

@@ -65,6 +65,15 @@ ade_type_info::ade_type_info(const ade_type_function& functionType) : _type(ade_
 	_elements.insert(_elements.end(), functionType.getArgumentTypes().begin(), functionType.getArgumentTypes().end());
 }
 
+ade_type_info::ade_type_info(const ade_type_generic& genericType) : _type(ade_type_info_type::Generic) {
+	_elements.reserve(genericType.getGenericTypes().size() + 1);
+
+	// First is base type
+	_elements.push_back(genericType.getBaseType());
+	// Rest are parameters
+	_elements.insert(_elements.end(), genericType.getGenericTypes().begin(), genericType.getGenericTypes().end());
+}
+
 ade_type_info::ade_type_info(ade_type_info&&) noexcept = default;
 ade_type_info& ade_type_info::operator=(ade_type_info&&) noexcept = default;
 
@@ -104,8 +113,26 @@ ade_type_function::ade_type_function(ade_type_info returnType, SCP_vector<ade_ty
 const ade_type_info& ade_type_function::getReturnType() const { return _returnType; }
 const SCP_vector<scripting::ade_type_info>& ade_type_function::getArgumentTypes() const { return _argumentTypes; }
 
-ade_overload_list::ade_overload_list(const char* arglist) : ade_overload_list({arglist}) {}
-ade_overload_list::ade_overload_list(std::initializer_list<const char*> overloads) : arg_lists(overloads) {}
+ade_type_generic::ade_type_generic(ade_type_info baseType, SCP_vector<ade_type_info> genericTypes)
+	: _baseType(std::move(baseType)), _genericTypes(std::move(genericTypes))
+{
+}
+const ade_type_info& ade_type_generic::getBaseType() const { return _baseType; }
+const SCP_vector<scripting::ade_type_info>& ade_type_generic::getGenericTypes() const { return _genericTypes; }
+
+ade_overload_list::ade_overload_list(const char* arglist) : ade_overload_list({arglist}) { fixNullPointers(); }
+ade_overload_list::ade_overload_list(std::initializer_list<const char*> overloads) : _arg_lists(overloads)
+{
+	fixNullPointers();
+}
 ade_overload_list::ade_overload_list() : ade_overload_list({nullptr}) {}
-const SCP_vector<const char*>& ade_overload_list::overloads() { return arg_lists; }
+const SCP_vector<const char*>& ade_overload_list::overloads() { return _arg_lists; }
+void ade_overload_list::fixNullPointers() {
+	for (auto& arg : _arg_lists) {
+		if (arg == nullptr) {
+			// Fix null pointers to empty strings so we don't have to deal with that elsewhere
+			arg = "";
+		}
+	}
+}
 } // namespace scripting

@@ -35,7 +35,7 @@ struct ErrorListener : public antlr4::BaseErrorListener {
 		// Apparently stop < start is a thing?
 		const auto left   = std::min(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
 		const auto right  = std::max(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
-		const auto length = right - left;
+		const auto length = right - left + 1;
 
 		diagnostics.push_back(Diagnostic{line, charPositionInLine, length, msg});
 	}
@@ -151,7 +151,9 @@ class TypeVisitor : public BaseVisitor {
 			return ade_type_info(context->ID()->getText());
 		}
 	}
-	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override { return visitChildren(context); }
+	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override {
+		return visitChildren(context);
+	}
 
 	antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext* context) override
 	{
@@ -257,7 +259,85 @@ class ArgumentCollectorVisitor : public BaseVisitor {
 	}
 };
 
+class TypeCheckVisitor : public BaseVisitor {
+	ArgumentListParser* _parser = nullptr;
+	const SCP_unordered_set<SCP_string>& _validTypeNames;
+
+  public:
+	TypeCheckVisitor(ArgumentListParser* parser, const SCP_unordered_set<SCP_string>& validTypeNames)
+		: _parser(parser), _validTypeNames(validTypeNames)
+	{
+	}
+
+	antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext* context) override
+	{
+		// Nil is always valid
+		if (context->NIL() != nullptr) {
+			return antlrcpp::Any();
+		}
+
+		if (_validTypeNames.find(context->ID()->getText()) == _validTypeNames.end()) {
+			_parser->notifyErrorListeners(context->ID()->getSymbol(),
+				"Invalid type name <" + context->ID()->getText() + ">",
+				nullptr);
+		}
+
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override { return visitChildren(context); }
+
+	antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext* context) override
+	{
+		visit(context->type());
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitFunc_arglist(ArgumentListParser::Func_arglistContext* context) override
+	{
+		visitChildren(context);
+		return antlrcpp::Any();
+	}
+
+	antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext* context) override
+	{
+		visitChildren(context);
+		return antlrcpp::Any();
+	}
+
+	antlrcpp::Any visitActual_argument(ArgumentListParser::Actual_argumentContext* context) override
+	{
+		visit(context->type());
+
+		// Now also look at the remaining arguments
+		if (context->argument() != nullptr)
+		{
+			visit(context->argument());
+		}
+		return antlrcpp::Any();
+	}
+
+	antlrcpp::Any visitOptional_argument(ArgumentListParser::Optional_argumentContext* context) override
+	{
+		visitChildren(context);
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitArgument(ArgumentListParser::ArgumentContext* context) override
+	{
+		visitChildren(context);
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitArg_list(ArgumentListParser::Arg_listContext* context) override
+	{
+		visitChildren(context);
+		return antlrcpp::Any();
+	}
+};
+
 } // namespace
+
+argument_list_parser::argument_list_parser(const SCP_vector<SCP_string>& validTypeNames)
+	: _validTypeNames(validTypeNames.begin(), validTypeNames.end())
+{
+}
 
 bool argument_list_parser::parse(const SCP_string& argumentList)
 {
@@ -272,6 +352,9 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 	parser.addErrorListener(&errListener);
 
 	antlr4::tree::ParseTree* tree = parser.arg_list();
+
+	TypeCheckVisitor typeChecker(&parser, _validTypeNames);
+	tree->accept(&typeChecker);
 
 	// If there were errors, output them
 	if (!errListener.diagnostics.empty()) {

@@ -139,7 +139,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry, [vector source, vector listener]",
 
 ADE_FUNC(playGameSound,
 	l_Audio,
-	"Sound index, [number Panning = 0.0 /* -1.0 left to 1.0 right */, number Volume = 100 /* in percent */, number "
+	"sound index, [number Panning = 0.0 /* -1.0 left to 1.0 right */, number Volume = 100 /* in percent */, number "
 	"Priority = 0 /* 0-3 */, boolean VoiceMessage = false]",
 	"Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will "
 	"specify the maximum number of that sound that can be played",
@@ -174,7 +174,7 @@ ADE_FUNC(playGameSound,
 	}
 }
 
-ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
+ADE_FUNC(playInterfaceSound, l_Audio, "sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
 	int idx;
 	if(!ade_get_args(L, "i", &idx))
@@ -211,7 +211,7 @@ ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
 	}
 }
 
-ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
+ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	const char* s;
 	float volume = 1.0f;
@@ -232,7 +232,7 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping
 
 ADE_FUNC(stopMusic,
 	l_Audio,
-	"int audiohandle, [bool fade = false, string music_type = 'briefing|credits|mainhall']",
+	"number audiohandle, [boolean fade = false, string music_type /* briefing|credits|mainhall */]",
 	"Stops a playing music file, provided audiohandle is valid. If the 3rd arg is set to one of "
 	"briefing,credits,mainhall then that music will be stopped despite the audiohandle given.",
 	nullptr,
@@ -265,7 +265,13 @@ ADE_FUNC(stopMusic,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(pauseMusic, l_Audio, "int audiohandle, bool pause", "Pauses or unpauses a playing music file, provided audiohandle is valid. The boolean argument should be true to pause and false to unpause. If the audiohandle is -1, *all* audio streams are paused or unpaused.", NULL, NULL)
+ADE_FUNC(pauseMusic,
+	l_Audio,
+	"number audiohandle, boolean pause",
+	"Pauses or unpauses a playing music file, provided audiohandle is valid. The boolean argument should be true to "
+	"pause and false to unpause. If the audiohandle is -1, *all* audio streams are paused or unpaused.",
+	nullptr,
+	nullptr)
 {
 	int ah;
 	bool pause;
