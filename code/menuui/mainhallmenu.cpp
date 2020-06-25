@@ -226,19 +226,23 @@ void main_hall_mouse_grab_region(int region);
 #define ALLENDER_REGION		4
 
 // handles to the sound instances of the doors opening/closing
-SCP_vector<sound_handle> Main_hall_door_sound_handles;
+SCP_vector<std::pair<game_snd*, sound_handle>> Main_hall_door_sound_handles;
 
 // handles to the sound instances of the misc anims
-SCP_list<sound_handle> Main_hall_misc_sound_handles;
+SCP_list<std::pair<game_snd*, sound_handle>> Main_hall_misc_sound_handles;
 
 // sound handle for looping ambient sound
 sound_handle Main_hall_ambient_loop = sound_handle::invalid();
 
+// this generalizes the "don't cut off the glow sounds (requested by Dan)" comment
+SCP_vector<game_snd*> Main_hall_sounds_to_not_truncate;
+bool main_hall_can_truncate(const game_snd *snd)
+{
+	return std::find(Main_hall_sounds_to_not_truncate.begin(), Main_hall_sounds_to_not_truncate.end(), snd) == Main_hall_sounds_to_not_truncate.end();
+}
+
 // cull any door sounds that have finished playing
 void main_hall_cull_door_sounds();
-
-// handle starting, stopping and reversing "door" animations
-void main_hall_handle_region_anims();
 
 // to determine if we should continue playing sounds and random animations
 static int Main_hall_paused = 0;
@@ -603,7 +607,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// initialize door sound handles
 	Main_hall_door_sound_handles.clear();
 	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
-		Main_hall_door_sound_handles.push_back(sound_handle::invalid());
+		Main_hall_door_sound_handles.emplace_back(nullptr, sound_handle::invalid());
 	}
 
 	// skip the first frame
@@ -1039,8 +1043,6 @@ void main_hall_do(float frametime)
  */
 void main_hall_close()
 {
-	int idx;
-
 	if (!Main_hall_inited) {
 		return;
 	}
@@ -1058,24 +1060,26 @@ void main_hall_close()
 	}
 
 	// free up any (possibly) playing misc animation handles
-	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
-		if (Main_hall_misc_anim.at(idx).num_frames > 0) {
-			generic_anim_unload(&Main_hall_misc_anim.at(idx));
+	for (auto &misc_anim : Main_hall_misc_anim) {
+		if (misc_anim.num_frames > 0) {
+			generic_anim_unload(&misc_anim);
 		}
 	}
 
 	// free up any (possibly) playing door animation handles
-	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
-		if (Main_hall_door_anim.at(idx).num_frames > 0) {
-			generic_anim_unload(&Main_hall_door_anim.at(idx));
+	for (auto &door_anim : Main_hall_door_anim) {
+		if (door_anim.num_frames > 0) {
+			generic_anim_unload(&door_anim);
 		}
 	}
 
 	// stop any playing door sounds
-	for (idx = 0; idx < Main_hall->num_door_animations - 2; idx++) {        // don't cut off the glow sounds (requested by Dan)
-		if ((Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
-			snd_stop(Main_hall_door_sound_handles.at(idx));
-			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if ((sound_pair.second.isValid()) && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {        // don't cut off the glow sounds (requested by Dan)
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
+			}
 		}
 	}
 
@@ -1270,8 +1274,9 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 						if (sound.isValid())
 						{
 							// play the sound
-							auto handle = snd_play(gamesnd_get_interface_sound(sound), Main_hall->misc_anim_sound_pan.at(idx));
-							Main_hall_misc_sound_handles.push_back(handle);
+							auto snd = gamesnd_get_interface_sound(sound);
+							auto handle = snd_play(snd, Main_hall->misc_anim_sound_pan.at(idx));
+							Main_hall_misc_sound_handles.emplace_back(snd, handle);
 						}
 						break;
 					}
@@ -1394,20 +1399,23 @@ void main_hall_mouse_release_region(int region)
 
 	// check for door sounds, ignoring the OPTIONS_REGION (which isn't a door)
 	if (Main_hall_door_anim.at(region).num_frames > 0) {
+		auto sound_pair = &Main_hall_door_sound_handles.at(region);
+
 		// don't stop the toaster oven or microwave regions from playing all the way through
-		if (Main_hall_door_sound_handles.at(region).isValid()) {
-			snd_stop(Main_hall_door_sound_handles.at(region));
+		if (sound_pair->second.isValid()) {
+			snd_stop(sound_pair->second);
 		}
 
 		auto sound = Main_hall->door_sounds.at(region).at(1);
 
 		if (sound.isValid())
 		{
-			Main_hall_door_sound_handles.at(region) = snd_play(gamesnd_get_interface_sound(sound), Main_hall->door_sound_pan.at(region));
+			sound_pair->first = gamesnd_get_interface_sound(sound);
+			sound_pair->second = snd_play(sound_pair->first, Main_hall->door_sound_pan.at(region));
 		}
 
 		// TODO: track current frame
-		snd_set_pos(Main_hall_door_sound_handles.at(region),
+		snd_set_pos(sound_pair->second,
 					(float) ((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe :
 							 Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame)
 						/ (float) Main_hall_door_anim.at(region).num_frames,
@@ -1438,8 +1446,9 @@ void main_hall_mouse_grab_region(int region)
 
 	// check for opening/starting sounds
 	// kill the currently playing sounds if necessary
-	if (Main_hall_door_sound_handles.at(region).isValid()) {
-		snd_stop(Main_hall_door_sound_handles.at(region));
+	auto sound_pair = &Main_hall_door_sound_handles.at(region);
+	if (sound_pair->second.isValid()) {
+		snd_stop(sound_pair->second);
 	}
 
 
@@ -1447,12 +1456,13 @@ void main_hall_mouse_grab_region(int region)
 
 	if (sound.isValid())
 	{
-		Main_hall_door_sound_handles.at(region) = snd_play(gamesnd_get_interface_sound(sound),Main_hall->door_sound_pan.at(region));
+		sound_pair->first = gamesnd_get_interface_sound(sound);
+		sound_pair->second = snd_play(sound_pair->first, Main_hall->door_sound_pan.at(region));
 	}
 
 	// start the sound playing at the right spot relative to the completion of the animation
 	if ( (Main_hall_door_anim.at(region).num_frames > 0) && (Main_hall_door_anim.at(region).current_frame != -1) ) {
-		snd_set_pos(Main_hall_door_sound_handles.at(region),
+		snd_set_pos(sound_pair->second,
 					(float) Main_hall_door_anim.at(region).current_frame
 						/ (float) Main_hall_door_anim.at(region).num_frames,
 					1);
@@ -1518,15 +1528,15 @@ void main_hall_handle_right_clicks()
 void main_hall_cull_door_sounds()
 {
 	// basically just set the handle of any finished sound to be -1, so that we know its free anywhere else in the code we may need it
-	for (auto &handle : Main_hall_door_sound_handles) {
-		if (handle.isValid() && !snd_is_playing(handle)) {
-			handle = sound_handle::invalid();
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if (sound_pair.second.isValid() && !snd_is_playing(sound_pair.second)) {
+			sound_pair.second = sound_handle::invalid();
 		}
 	}
 
 	// for misc sounds, we just remove the handle from the list if it's done
-	Main_hall_misc_sound_handles.remove_if([](const sound_handle &handle)->bool {
-		return !snd_is_playing(handle);
+	Main_hall_misc_sound_handles.remove_if([](const std::pair<game_snd*, sound_handle> &sound_pair)->bool {
+		return !snd_is_playing(sound_pair.second);
 	});
 }
 
@@ -1670,20 +1680,22 @@ void main_hall_stop_ambient()
 	}
 
 	// stop any playing door sounds
-	if (Main_hall) {
-		for (int idx = 0; idx < Main_hall->num_door_animations - 2; idx++) {        // don't cut off the glow sounds (requested by Dan)
-			if ((Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
-				snd_stop(Main_hall_door_sound_handles.at(idx));
-				Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
+	for (auto &sound_pair : Main_hall_door_sound_handles) {
+		if ((sound_pair.second.isValid()) && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {        // don't cut off the glow sounds (requested by Dan)
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
 			}
 		}
 	}
 
 	// also stop any misc sounds
-	for (auto &handle : Main_hall_misc_sound_handles) {
-		if (handle.isValid() && snd_is_playing(handle)) {
-			snd_stop(handle);
-			handle = sound_handle::invalid();
+	for (auto &sound_pair : Main_hall_misc_sound_handles) {
+		if (sound_pair.second.isValid() && snd_is_playing(sound_pair.second)) {
+			if (main_hall_can_truncate(sound_pair.first)) {
+				snd_stop(sound_pair.second);
+				sound_pair.second = sound_handle::invalid();
+			}
 		}
 	}
 }
@@ -2076,6 +2088,7 @@ void main_hall_table_init()
 {
 	// clear the main hall entries
 	Main_hall_defines.clear();
+	Main_hall_sounds_to_not_truncate.clear();
 
 	// if mainhall.tbl exists, parse it
 	if (cf_exists_full("mainhall.tbl", CF_TYPE_TABLES)) {
@@ -2084,6 +2097,17 @@ void main_hall_table_init()
 
 	// parse any modular tables
 	parse_modular_table("*-hall.tbm", parse_main_hall_table);
+
+	// these are the retail sounds, but in the future we may want to add
+	// main hall table configs for other sounds to not truncate
+	// (these indexes are the activate/deactivate sounds for the non-door hotspots in the door lists)
+	auto retail_indexes = { 32, 33, 34, 35, 43, 44, 56, 57, 54, 55, 51, 52, 25, 61 };
+	for (auto idx: retail_indexes) {
+		auto iface_entry = gamesnd_get_by_iface_tbl_index(idx);
+		if (iface_entry.isValid()) {
+			Main_hall_sounds_to_not_truncate.push_back(gamesnd_get_interface_sound(iface_entry));
+		}
+	}
 }
 
 // read in main hall table
