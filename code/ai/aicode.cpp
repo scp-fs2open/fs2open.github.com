@@ -8751,11 +8751,13 @@ void ai_chase()
 						scale = (scale - 0.6f) * 1.5f;
 					else
 						scale = 0.0f;
-					float range = pwip->max_speed * (1.0f + scale);
+					float range_min = 0.0f;
+					float range_max = pwip->max_speed * (1.0f + scale);
 					if (aip->ai_profile_flags[AI::Profile_Flags::Use_actual_primary_range]) {
-						range = std::min( {range, pwip->max_speed * pwip->lifetime, pwip->weapon_range} );
+						range_max = std::min({range_max, pwip->max_speed * pwip->lifetime, pwip->weapon_range});
+						range_min = pwip->WeaponMinRange;
 					}
-					if (dist_to_enemy < range) {
+					if ((dist_to_enemy < range_max) && (dist_to_enemy >= range_min)) {
 						if(ai_fire_primary_weapon(Pl_objp) == 1){
 							has_fired = 1;
 						}else{
