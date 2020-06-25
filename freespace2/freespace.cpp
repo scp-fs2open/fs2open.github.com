@@ -81,7 +81,7 @@
 #include "io/mouse.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
-#include "lab/lab.h"
+#include "lab/labv2.h"
 #include "lab/wmcgui.h" //So that GUI_System can be initialized
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"

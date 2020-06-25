@@ -591,10 +591,33 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/lab.cpp
-	lab/lab.h
 	lab/wmcgui.cpp
 	lab/wmcgui.h
+	lab/labv2.h
+	lab/labv2_internal.h
+	lab/labv2.cpp
+)
+
+add_file_folder("Lab\\\\Dialogs"
+	lab/dialogs/lab_dialog.h
+	lab/dialogs/ship_classes.h
+	lab/dialogs/ship_classes.cpp
+	lab/dialogs/class_descriptions.h
+	lab/dialogs/class_descriptions.cpp
+	lab/dialogs/class_options.h
+	lab/dialogs/class_options.cpp
+	lab/dialogs/class_variables.h
+	lab/dialogs/class_variables.cpp
+)
+
+add_file_folder("Lab\\\\Manager"
+	lab/manager/lab_manager.h
+	lab/manager/lab_manager.cpp
+)
+
+add_file_folder("Lab\\\\Renderer"
+	lab/renderer/lab_renderer.h
+	lab/renderer/lab_renderer.cpp
 )
 
 add_file_folder("Libs"
