@@ -4,7 +4,7 @@
 #include "ship/shipfx.h"
 #include "weapon/weapon.h"
 
-void Variables::open(Button* caller) {
+void Variables::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr) {
 		dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - 285,
 			gr_screen.center_offset_y + 200));
@@ -24,7 +24,7 @@ void Variables::update(LabMode newLabMode, int classIndex) {
 	weapon_info* wip = nullptr;
 
 	if (classIndex > -1) {
-		switch (LMGR->CurrentMode) {
+		switch (newLabMode) {
 		case LabMode::Ship:
 			sip = &Ship_info[classIndex];
 

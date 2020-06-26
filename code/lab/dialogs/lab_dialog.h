@@ -31,8 +31,6 @@ public:
 	~DialogWindow() {
 		if (Owner != nullptr)
 			Owner->close();
-
-		GUIObject::~GUIObject();
 	}
 private:
 	LabDialog* Owner = nullptr;

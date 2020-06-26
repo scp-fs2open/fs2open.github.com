@@ -1,7 +1,7 @@
 #include "lab/dialogs/class_descriptions.h"
 #include "lab/labv2_internal.h"
 
-void Descriptions::open(Button* caller) {
+void Descriptions::open(Button* /*caller*/) {
 	if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)LMGR->Screen->Add(
 			new DialogWindow("Description", gr_screen.center_offset_x + gr_screen.center_w - gr_screen.center_w / 3 - 50,
