@@ -7644,8 +7644,8 @@ int sexp_get_object_coordinate(int n, int axis)
 {
 	Assert(n >= 0);
 
-	const char *subsystem_name = NULL;
-	vec3d *pos = NULL, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
+	const char *subsystem_name = nullptr;
+	vec3d *pos = nullptr, *relative_location = nullptr, relative_location_buf, subsys_pos_buf;
 	object_ship_wing_point_team oswpt;
 
 	eval_object_ship_wing_point_team(&oswpt, n);
