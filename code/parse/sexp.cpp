@@ -9102,7 +9102,7 @@ bool special_argument_appears_in_sexp_tree(int node)
 {
 	// empty tree
 	if (node < 0)
-		return 0;
+		return false;
 
 	// cached?
 	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_TREE)
@@ -10879,7 +10879,7 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i].get());
+				auto* gauge = static_cast<HudGaugeMessages*>(Ship_info[Player_ship->ship_info_index].hud_gauges[i].get());
 				gauge->clearMessages();
 			}
 		}
@@ -10888,7 +10888,7 @@ void sexp_hud_clear_messages()
 
 		for(size_t i = 0; i < num_gauges; i++) {
 			if (default_hud_gauges[i]->getObjectType() == HUD_OBJECT_MESSAGES) {
-				HudGaugeMessages* gauge = static_cast<HudGaugeMessages*>(default_hud_gauges[i].get());
+				auto* gauge = static_cast<HudGaugeMessages*>(default_hud_gauges[i].get());
 				gauge->clearMessages();
 			}
 		}
@@ -11535,7 +11535,7 @@ void sexp_play_sound_from_file(int n)
 	{
 		Current_sexp_network_packet.start_callback();
 		Current_sexp_network_packet.send_string(filename);
-		Current_sexp_network_packet.send_bool(loop ? true : false); 
+		Current_sexp_network_packet.send_bool(loop);
 		Current_sexp_network_packet.send_int(type);
 		Current_sexp_network_packet.send_int(sexp_var);
 		Current_sexp_network_packet.end_callback();
@@ -22200,8 +22200,6 @@ void sexp_force_glide(int node)
 	bool glide = is_sexp_true(CDR(node));
 
 	object_set_gliding(ship_entry->objp, glide, true);
-
-	return;
 }
 
 bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_corner_2, object *reference_ship_obj)
@@ -22764,7 +22762,7 @@ void add_to_event_log_buffer(int op_num, int result)
 		tmp.append(" for the following arguments");
 		while (!Current_event_log_argument_buffer->empty()) {
 			tmp.append("\n");
-			tmp.append(Current_event_log_argument_buffer->back().c_str());
+			tmp.append(Current_event_log_argument_buffer->back());
 			Current_event_log_argument_buffer->pop_back();
 		}
 	}
@@ -22772,10 +22770,10 @@ void add_to_event_log_buffer(int op_num, int result)
 	if (!Current_event_log_variable_buffer->empty()) {
 		tmp.append("\nVariables:\n");
 		while (!Current_event_log_variable_buffer->empty()) {
-			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("[");
-			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
+			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
 		}
