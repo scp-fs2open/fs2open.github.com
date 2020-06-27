@@ -857,7 +857,7 @@ class waypoint_list;
 #define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
 #define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
-char *CTEXT(int n);
+const char *CTEXT(int n);
 
 // added by Goober5000
 #define CDDR(n)		CDR(CDR(n))
@@ -1191,9 +1191,6 @@ extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
-extern int verify_vector(char *text);
-extern void skip_white(char **str);
-extern int validate_float(char **str);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern const char *sexp_error_message(int num);

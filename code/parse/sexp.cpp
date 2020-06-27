@@ -836,7 +836,7 @@ const char *HUD_gauge_text[NUM_HUD_GAUGES] =
 };
 
 
-void sexp_set_skybox_model_preload(char *name); // taylor
+void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
 const char *Skybox_flags[] = {
 	"force-clamp",
@@ -886,16 +886,16 @@ SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of p
 #define SEO_VOLUME		0
 #define SEO_DECAY_TIME	1
 #define SEO_DAMPING		2
-int sexp_sound_environment_option_lookup(char *text);
+int sexp_sound_environment_option_lookup(const char *text);
 const char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
 
 // for adjust-audio-volume - The E
 const char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
 int Num_adjust_audio_options = 3;
-int audio_volume_option_lookup(char *text);
+int audio_volume_option_lookup(const char *text);
 
-int hud_gauge_type_lookup(char* name);
+int hud_gauge_type_lookup(const char* name);
 
 // for explosions - Goober5000
 #define EO_DAMAGE			0
@@ -904,7 +904,7 @@ int hud_gauge_type_lookup(char* name);
 #define EO_OUTER_RADIUS		3
 #define EO_SHOCKWAVE_SPEED	4
 #define EO_DEATH_ROLL_TIME	5
-int sexp_explosion_option_lookup(char *text);
+int sexp_explosion_option_lookup(const char *text);
 const char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
 int Num_explosion_options = 6;
 
@@ -921,6 +921,8 @@ int sexp_get_variable_by_index(int node);
 void sexp_set_variable_by_index(int node);
 void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
+
+int verify_vector(const char *text);
 
 
 #define ARG_ITEM_F_DUP	(1<<0)
@@ -1891,10 +1893,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			}
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
-			char *ptr;
-
 			type2 = OPR_POSITIVE;
-			ptr = CTEXT(node);
+			auto ptr = CTEXT(node);
 			if (*ptr == '-') {
 				type2 = OPR_NUMBER;
 				ptr++;
@@ -2119,7 +2119,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SUBSYSTEM_OR_NONE:
 			case OPF_SUBSYS_OR_GENERIC:
 			{
-				char *shipname;
 				int shipnum,ship_class;
 				int ship_index;				
 
@@ -2182,7 +2181,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						break;
 				}
 
-				shipname = CTEXT(ship_index);
+				auto shipname = CTEXT(ship_index);
 				shipnum = ship_name_lookup(shipname, 1);
 				if (shipnum >= 0)
 				{
@@ -2359,7 +2358,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				else
 				{
-					int get_special_anchor(char *name);
 					int valid = 0;
 
 					// <any friendly>, etc.
@@ -2412,7 +2410,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_SHIP_WITH_BAY:
 			{
-				char *name = CTEXT(node);
+				auto name = CTEXT(node);
 				int shipnum = -1;
 
 				if (type2 != SEXP_ATOM_STRING)
@@ -2612,9 +2610,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {  // should still check in Fred though..
-					char *name;
-
-					name = CTEXT(node);
+					auto name = CTEXT(node);
 					if (!stricmp(name, "low") || !stricmp(name, "normal") || !stricmp(name, "high"))
 						break;
 
@@ -3232,7 +3228,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else {
-					char *gauge = CTEXT(node);
+					auto gauge = CTEXT(node);
 					if ( strcmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
 						break;
 					}
@@ -3337,7 +3333,7 @@ void get_unformatted_sexp_variable_name(char *unformatted, const char *formatted
  * If Fred_running - stuff Sexp_variables[].variable_name
  * otherwise - stuff index into Sexp_variables array.
  */
-void get_sexp_text_for_variable(char *text, char *token)
+void get_sexp_text_for_variable(char *text, const char *token)
 {
 	int sexp_var_index;
 	
@@ -3352,7 +3348,7 @@ void get_sexp_text_for_variable(char *text, char *token)
 }
 
 // Goober5000
-void do_preload_for_arguments(void (*preloader)(char *), int arg_node, int arg_handler_node)
+void do_preload_for_arguments(void (*preloader)(const char *), int arg_node, int arg_handler_node)
 {
 	// we have a special argument
 	if (Sexp_nodes[arg_node].flags & SNF_SPECIAL_ARG_IN_NODE)
@@ -3379,7 +3375,7 @@ void do_preload_for_arguments(void (*preloader)(char *), int arg_node, int arg_h
 }
 
 // Goober5000
-void preload_change_ship_class(char *text)
+void preload_change_ship_class(const char *text)
 {
 	int idx;
 	ship_info *sip;
@@ -3398,7 +3394,7 @@ void preload_change_ship_class(char *text)
 }
 
 // Goober5000
-void preload_turret_change_weapon(char *text)
+void preload_turret_change_weapon(const char *text)
 {
 	int idx;
 
@@ -5355,7 +5351,7 @@ int sexp_string_compare(int n, int op)
 	int first_node = n;
 	int current_node;
 	int val;
-	char *first_string = CTEXT(first_node);
+	auto first_string = CTEXT(first_node);
 
 	// compare first node with each of the others
 	for (current_node = CDR(first_node); current_node != -1; current_node = CDR(current_node))
@@ -6320,20 +6316,17 @@ int sexp_has_docked_or_undocked(int n, int op_num)
  */
 int sexp_ship_type_destroyed(int n)
 {
-	int percent;
-	int type;
-	char *shiptype;
 	bool is_nan, is_nan_forever;
 
-	percent = eval_num(n, is_nan, is_nan_forever);
+	int percent = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	shiptype = CTEXT(CDR(n));
+	auto shiptype = CTEXT(CDR(n));
 
-	type = ship_type_name_lookup(shiptype);
+	int type = ship_type_name_lookup(shiptype);
 
 	// bogus if we reach the end of this array!!!!
 	if ( type < 0 ) {
@@ -7651,8 +7644,8 @@ int sexp_get_object_coordinate(int n, int axis)
 {
 	Assert(n >= 0);
 
-	char *subsystem_name = NULL;
-	vec3d *pos = NULL, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
+	const char *subsystem_name = nullptr;
+	vec3d *pos = nullptr, *relative_location = nullptr, relative_location_buf, subsys_pos_buf;
 	object_ship_wing_point_team oswpt;
 
 	eval_object_ship_wing_point_team(&oswpt, n);
@@ -8353,15 +8346,11 @@ int sexp_num_players()
  */
 int sexp_skill_level_at_least(int n)
 {
-	int i;
-	char *level_name;
+	auto level_name = CTEXT(n);
+	if (!level_name)
+		return SEXP_KNOWN_FALSE;
 
-	level_name = CTEXT(n);
-
-	if (level_name == NULL)
-		return SEXP_FALSE;
-
-	for (i = 0; i < NUM_SKILL_LEVELS; i++ ) {
+	for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
 		if ( !stricmp(level_name, Skill_level_names(i, 0)) ) {
 			if ( Game_skill_level >= i ){
 				return SEXP_TRUE;
@@ -8385,9 +8374,6 @@ int sexp_was_promotion_granted(int  /*n*/)
 
 int sexp_was_medal_granted(int n)
 {
-	int i;
-	char *medal_name;
-
 	if (n < 0) {
 		if (Player->stats.m_medal_earned >= 0)
 			return SEXP_TRUE;
@@ -8395,16 +8381,18 @@ int sexp_was_medal_granted(int n)
 		return SEXP_FALSE;
 	}
 
-	medal_name = CTEXT(n);
+	auto medal_name = CTEXT(n);
 
-	for (i=0; i<Num_medals; i++) {
-		if (!stricmp(medal_name, Medals[i].name))
-			break;
+	for (int i=0; i<Num_medals; ++i) {
+		if (!stricmp(medal_name, Medals[i].name)) {
+			if (Player->stats.m_medal_earned == i) {
+				return SEXP_TRUE;
+			} else {
+				break;
+			}
+		}
 	}
-
-	if ( (i < Num_medals) && (Player->stats.m_medal_earned == i) )
-		return SEXP_TRUE;
-
+	
 	return SEXP_FALSE;
 }
 
@@ -8567,7 +8555,6 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 int sexp_depart_node_delay(int n)
 {
 	int count, num_departed;
-	char *jump_node_name;
 	fix delay, latest_time, this_time;
 	bool is_nan, is_nan_forever;
 
@@ -8580,7 +8567,7 @@ int sexp_depart_node_delay(int n)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	jump_node_name = CTEXT(n);
+	auto jump_node_name = CTEXT(n);
 	n = CDR(n);
 
 	// iterate through the list of ships
@@ -10815,7 +10802,7 @@ void multi_sexp_hud_disable_except_messages()
 void sexp_hud_set_text_num(int n)
 {
 	bool is_nan, is_nan_forever;
-	char* gaugename = CTEXT(n);
+	auto gaugename = CTEXT(n);
 	char tmp[16] = "";
 
 	HudGauge* cg = hud_get_gauge(gaugename);
@@ -10833,8 +10820,8 @@ void sexp_hud_set_text_num(int n)
 
 void sexp_hud_set_text(int n)
 {
-	char* gaugename = CTEXT(n);
-	char* text = CTEXT(CDR(n));
+	auto gaugename = CTEXT(n);
+	auto text = CTEXT(CDR(n));
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
@@ -10844,8 +10831,8 @@ void sexp_hud_set_text(int n)
 
 void sexp_hud_set_message(int n)
 {
-	char* gaugename = CTEXT(n);
-	char* text = CTEXT(CDR(n));
+	auto gaugename = CTEXT(n);
+	auto text = CTEXT(CDR(n));
 	SCP_string message;
 
 	for (int i = 0; i < Num_messages; i++) {
@@ -10869,8 +10856,8 @@ void sexp_hud_set_message(int n)
 
 void sexp_hud_set_directive(int n)
 {
-	char* gaugename = CTEXT(n);
-	char* text = CTEXT(CDR(n));
+	auto gaugename = CTEXT(n);
+	auto text = CTEXT(CDR(n));
 	char message[MESSAGE_LENGTH];
 
 	message_translate_tokens(message, text);
@@ -10916,7 +10903,7 @@ void sexp_hud_set_coords(int n)
 	int coord_x, coord_y;
 	bool is_nan, is_nan_forever;
 
-	char* gaugename = CTEXT(n);
+	auto gaugename = CTEXT(n);
 	n = CDR(n);
 
 	eval_nums(n, is_nan, is_nan_forever, coord_x, coord_y);
@@ -10932,7 +10919,7 @@ void sexp_hud_set_coords(int n)
 void sexp_hud_set_frame(int n)
 {
 	bool is_nan, is_nan_forever;
-	char* gaugename = CTEXT(n);
+	auto gaugename = CTEXT(n);
 
 	int frame_num = eval_num(CDR(n), is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
@@ -10946,7 +10933,7 @@ void sexp_hud_set_frame(int n)
 
 void sexp_hud_set_color(int n)
 {
-	char* gaugename = CTEXT(n);
+	auto gaugename = CTEXT(n);
 	n = CDR(n);
 
 	std::array<int, 3> rgb;
@@ -11003,7 +10990,7 @@ void sexp_hud_display_gauge(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	char* gauge = CTEXT(CDR(n));
+	auto gauge = CTEXT(CDR(n));
 
 	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
@@ -11013,7 +11000,7 @@ void sexp_hud_display_gauge(int n)
 void sexp_hud_gauge_set_active(int n)
 {
 	HudGauge* hg;
-	char* name = CTEXT(n);
+	auto name = CTEXT(n);
 	bool active = is_sexp_true(CDR(n));
 
 	hg = hud_get_gauge(name);
@@ -11030,7 +11017,7 @@ void sexp_hud_set_custom_gauge_active(int node)
 	node = CDR(node);
 	for(; node >= 0; node = CDR(node)) {
 
-		char* name = CTEXT(node);
+		auto name = CTEXT(node);
 		hg = hud_get_gauge(name);
 
 		if (hg != NULL) {
@@ -11039,7 +11026,7 @@ void sexp_hud_set_custom_gauge_active(int node)
 	}
 }
 
-int hud_gauge_type_lookup(char* name)
+int hud_gauge_type_lookup(const char* name)
 {
 	for(int i = 0; i < Num_hud_gauge_types; i++) {
 		if(!stricmp(name, Hud_gauge_types[i].name))
@@ -11617,7 +11604,7 @@ void multi_sexp_pause_sound_from_file()
 	sexp_pause_unpause_music(pause, sexp_var);
 }
 
-int sexp_sound_environment_option_lookup(char *text)
+int sexp_sound_environment_option_lookup(const char *text)
 {
 	int i;
 
@@ -11643,7 +11630,7 @@ void sexp_set_sound_environment(int node)
 	int preset_id = -1;
 	bool is_nan, is_nan_forever;
 
-	char *preset = CTEXT(n);
+	auto preset = CTEXT(n);
 	n = CDR(n);
 
 	if ( preset && !stricmp(preset, SEXP_NONE_STRING) ) {
@@ -11725,7 +11712,7 @@ void sexp_update_sound_environment(int node)
 	//	"\t2:\tPercentage of the users' settings to adjust to, 0 will be silence, 100 means the maximum volume as set by the user\r\n"
 	//	"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
 
-int audio_volume_option_lookup(char *text)
+int audio_volume_option_lookup(const char *text)
 {
 	int i;
 
@@ -11777,7 +11764,7 @@ void sexp_adjust_audio_volume(int node)
 	}
 }
 
-int sexp_explosion_option_lookup(char *text)
+int sexp_explosion_option_lookup(const char *text)
 {
 	int i;
 
@@ -12223,7 +12210,7 @@ void sexp_warp_effect(int n)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( char *name, char *who_from, char *priority, int group, int delay )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -12303,21 +12290,19 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 
 void sexp_send_message(int n)
 {
-	char *name, *who_from, *priority, *tmp;
-
 	if(physics_paused){
 		return;
 	}
 
 	Assert ( n != -1 );
-	who_from = CTEXT(n);
-	priority = CTEXT(CDR(n));
-	name = CTEXT(CDR(CDR(n)));
+	auto who_from = CTEXT(n);
+	auto priority = CTEXT(CDR(n));
+	auto name = CTEXT(CDR(CDR(n)));
 
 	// a temporary check to see if the name field matched a priority since I am in the process
 	// of reordering the arguments
 	if ( !stricmp(name, "low") || !stricmp(name, "normal") || !stricmp(name, "high") ) {
-		tmp = name;
+		auto tmp = name;
 		name = priority;
 		priority = tmp;
 	}
@@ -12331,7 +12316,6 @@ void sexp_send_message(int n)
 
 void sexp_send_message_list(int n)
 {
-	char *name, *who_from, *priority;
 	int delay;
 	bool is_nan, is_nan_forever;
 
@@ -12342,7 +12326,7 @@ void sexp_send_message_list(int n)
 	// send a bunch of messages
 	delay = 0;
 	while(n != -1){
-		who_from = CTEXT(n);
+		auto who_from = CTEXT(n);
 		n = CDR(n);
 
 		// next node
@@ -12350,7 +12334,7 @@ void sexp_send_message_list(int n)
 			Warning(LOCATION, "Detected incomplete parameter list in sexp-send-message-list");
 			return;
 		}
-		priority = CTEXT(n);
+		auto priority = CTEXT(n);
 		n = CDR(n);
 
 		// next node
@@ -12358,7 +12342,7 @@ void sexp_send_message_list(int n)
 			Warning(LOCATION, "Detected incomplete parameter list in sexp-send-message-list");
 			return;
 		}
-		name = CTEXT(n);
+		auto name = CTEXT(n);
 		n = CDR(n);
 
 		// next node
@@ -12385,12 +12369,11 @@ void sexp_send_message_list(int n)
 
 void sexp_send_random_message(int n)
 {
-	char *name, *who_from, *priority;
 	int temp, num_messages, message_num;
 
 	Assert ( n != -1 );
-	who_from = CTEXT(n);
-	priority = CTEXT(CDR(n));
+	auto who_from = CTEXT(n);
+	auto priority = CTEXT(CDR(n));
 
 	if(physics_paused){
 		return;
@@ -12416,7 +12399,7 @@ void sexp_send_random_message(int n)
 		n = CDR(n);
 	}
 	Assert (n != -1);		// should have found the message!!!
-	name = CTEXT(n);
+	auto name = CTEXT(n);
 
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
@@ -12436,16 +12419,13 @@ void sexp_self_destruct(int node)
 
 void sexp_next_mission(int n)
 {
-	char *mission_name;
-	int i;
-
-	mission_name = CTEXT(n);
+	auto mission_name = CTEXT(n);
 
 	if (mission_name == NULL) {
 		Error( LOCATION, "Mission name is NULL in campaign file for next-mission command!");
 	}
 
-	for (i = 0; i < Campaign.num_missions; i++) {
+	for (int i = 0; i < Campaign.num_missions; ++i) {
 		if ( !stricmp(Campaign.missions[i].name, mission_name) ) {
 			Campaign.next_mission = i;
 			return;
@@ -13037,16 +13017,11 @@ void multi_sexp_destroy_subsys_instantly()
  * 
  * The flag paramater tells us whether to mark the goals as valid or invalid
  */
-void sexp_change_goal_validity( int n, int flag )
+void sexp_change_goal_validity( int n, bool flag )
 {
-	char *name;
-
 	while ( n != -1 ) {
-		name = CTEXT(n);
-		if ( flag )
-			mission_goal_mark_valid( name );
-		else
-			mission_goal_mark_invalid( name );
+		auto name = CTEXT(n);
+		mission_goal_mark_valid( name, flag );
 
 		n = CDR(n);
 	}
@@ -13360,7 +13335,7 @@ void sexp_set_docked(int n)
 		return;
 	n = CDR(n);
 
-	char* docker_point_name = CTEXT(n);
+	auto docker_point_name = CTEXT(n);
 	n = CDR(n);
 
 	auto dockee = eval_ship(n);
@@ -13368,7 +13343,7 @@ void sexp_set_docked(int n)
 		return;
 	n = CDR(n);
 
-	char* dockee_point_name = CTEXT(n);
+	auto dockee_point_name = CTEXT(n);
 
 	//Get dockpoints by name
 	int docker_point_index = model_find_dock_name_index(Ship_info[docker->shipp->ship_info_index].model_num, docker_point_name);
@@ -13614,7 +13589,7 @@ void sexp_nebula_change_storm(int n)
 
 void sexp_nebula_toggle_poof(int n)
 {
-	char *name = CTEXT(n);
+	auto name = CTEXT(n);
 	bool result = is_sexp_true(CDR(n));
 	int i;
 
@@ -13737,13 +13712,12 @@ void sexp_grant_promotion()
 void sexp_grant_medal(int n)
 {
 	int i;
-	char *medal_name;
 
 	// don't give medals in normal gameplay when not in campaign mode
 	if ( (Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	medal_name = CTEXT(n);
+	auto medal_name = CTEXT(n);
 
 	if (Player->stats.m_medal_earned >= 0) {
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
@@ -13825,17 +13799,13 @@ void sexp_change_team_score(int node)
 
 void sexp_tech_add_ship(int node)
 {
-	int i;
-	char *name;
-
-	Assert(node >= 0);
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
 	while (node >= 0) {
-		name = CTEXT(node);
-		i = ship_info_lookup(name);
+		auto name = CTEXT(node);
+		int i = ship_info_lookup(name);
         if (i >= 0)
             Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
@@ -13847,17 +13817,13 @@ void sexp_tech_add_ship(int node)
 
 void sexp_tech_add_weapon(int node)
 {
-	int i;
-	char *name;
-
-	Assert(node >= 0);
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
 	while (node >= 0) {
-		name = CTEXT(node);
-		i = weapon_info_lookup(name);
+		auto name = CTEXT(node);
+		int i = weapon_info_lookup(name);
         if (i >= 0)
             Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 		else
@@ -13871,10 +13837,8 @@ void sexp_tech_add_weapon(int node)
 // expanded with remove parameter by wookieejedi
 void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 {
-	int i, id, n = node;
-	char *name;
+	int id, n = node;
 
-	Assert(n >= 0);
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
@@ -13882,7 +13846,7 @@ void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 	while (n >= 0)
 	{
 		// don't use things like CTEXT or eval_num, since we didn't in the preloader
-		name = Sexp_nodes[n].text;
+		auto name = Sexp_nodes[n].text;
 		n = CDR(n);
 
 		// the xstr variant must have an id
@@ -13897,7 +13861,7 @@ void sexp_tech_toggle_intel(int node, bool add, bool xstr)
 			id = -1;
 
 		// if we have an xstr, we already translated this node in the preloader, so just look it up
-		i = intel_info_lookup(name);
+		int i = intel_info_lookup(name);
 		if (i >= 0) {
 			if (add) {
 				Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
@@ -13928,16 +13892,13 @@ void sexp_tech_reset_to_default()
  */
 void sexp_allow_ship(int n)
 {
-	int sindex;
-	char *name;
-
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
 	// get the name of the ship and lookup up the ship_info index for it
-	name = CTEXT(n);
-	sindex = ship_info_lookup( name );
+	auto name = CTEXT(n);
+	int sindex = ship_info_lookup( name );
 	if ( sindex == -1 )
 		return;
 
@@ -13947,16 +13908,13 @@ void sexp_allow_ship(int n)
 
 void sexp_allow_weapon(int n)
 {
-	int sindex;
-	char *name;
-
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
 	// get the name of the weapon and lookup up the weapon_info index for it
-	name = CTEXT(n);
-	sindex = weapon_info_lookup( name );
+	auto name = CTEXT(n);
+	int sindex = weapon_info_lookup( name );
 	if ( sindex == -1 )
 		return;
 
@@ -14586,33 +14544,31 @@ void sexp_set_subspace_drive(int node)
  */
 void sexp_good_secondary_time(int n)
 {
-	char *team_name, *weapon_name;
-	int num_weapons, weapon_index, team;
 	bool is_nan, is_nan_forever;
 
-	team_name = CTEXT(n);
+	auto team_name = CTEXT(n);
 	n = CDR(n);
 
-	num_weapons = eval_num(n, is_nan, is_nan_forever);
+	int num_weapons = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
 	n = CDR(n);
 
-	weapon_name = CTEXT(n);
+	auto weapon_name = CTEXT(n);
 	n = CDR(n);
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
 		return;
 
-	weapon_index = weapon_info_lookup(weapon_name);
+	int weapon_index = weapon_info_lookup(weapon_name);
 	if ( weapon_index == -1 ) {
 		nprintf(("Warning", "couldn't find weapon %s for good-secondary-time\n", weapon_name));
 		return;
 	}
 
 	// get the team type from the team_name
-	team = iff_lookup(team_name);
+	int team = iff_lookup(team_name);
 
 	// see if the ship has exited.  If so, then we don't need to set up the AI stuff
 	if (ship_entry->status == ShipStatus::EXITED)
@@ -14624,9 +14580,6 @@ void sexp_good_secondary_time(int n)
 // Karajorma - Turns the built in messages for pilots and command on or off
 void sexp_toggle_builtin_messages (int node, bool enable_messages)
 {
-	char *ship_name;
-	int wingnum, shipnum, ship_index;
-
 	// If no arguments were supplied then turn off all messages then bail
 	if (node < 0)
 	{
@@ -14637,7 +14590,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 	// iterate through all the nodes supplied
 	while (node >= 0)
 	{		
-		ship_name = CTEXT(node);
+		auto ship_name = CTEXT(node);
 
 		// check that this isn't a request to silence command. 
 		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
@@ -14649,9 +14602,9 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		{
 			// Since trying to determine whose wingman in a stand alone multiplayer game opens a can of worms
 			// Any Wingman silences all ships in wings regardless of whose side they're on. 
-			for (wingnum = 0; wingnum < Num_wings; wingnum++ ) {
-				for ( shipnum = 0; shipnum < Wings[wingnum].current_count; shipnum++ ) {
-					ship_index = Wings[wingnum].ship_index[shipnum];
+			for (int wingnum = 0; wingnum < Num_wings; ++wingnum) {
+				for (int shipnum = 0; shipnum < Wings[wingnum].current_count; ++shipnum) {
+					int ship_index = Wings[wingnum].ship_index[shipnum];
 					Assert( ship_index != -1 );
                     Ships[ship_index].flags.set(Ship::Ship_Flags::No_builtin_messages, !enable_messages);
 				}
@@ -14669,12 +14622,10 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 
 void sexp_set_persona (int node) 
 {
-	int persona_index = -1, i;
-	char *persona_name; 
+	int persona_index = -1;
+	auto persona_name = CTEXT(node);
 
-	persona_name = CTEXT(node);
-
-	for (i = 0 ; i < Num_personas ; i++) {
+	for (int i = 0 ; i < Num_personas; ++i) {
 		if (!strcmp(persona_name, Personas[i].name) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			persona_index = i;
 			break;
@@ -14732,9 +14683,7 @@ void multi_sexp_set_persona()
 
 void sexp_set_mission_mood (int node)
 {
-	char *mood; 
-
-	mood = CTEXT(node);
+	auto mood = CTEXT(node);
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 		if (!strcmp(iter->c_str(), mood)) {
 			Current_mission_mood = (int)std::distance(Builtin_moods.begin(), iter);
@@ -14894,12 +14843,11 @@ int sexp_has_weapon(int node, int op_num)
 int sexp_previous_goal_status( int n, int status )
 {
 	int rval = 0;
-	char *goal_name, *mission_name;
 	int i, mission_num;
 	bool default_value = false, use_defaults = true;
 
-	mission_name = CTEXT(n);
-	goal_name = CTEXT(CDR(n));
+	auto mission_name = CTEXT(n);
+	auto goal_name = CTEXT(CDR(n));
 
 	// check for possible next optional argument
 	n = CDR(CDR(n));
@@ -14974,12 +14922,11 @@ int sexp_previous_goal_status( int n, int status )
 int sexp_previous_event_status( int n, int status )
 {
 	int rval = 0;
-	char *name, *mission_name;
 	int i, mission_num;
 	bool default_value = false, use_defaults = true;
 
-	mission_name = CTEXT(n);
-	name = CTEXT(CDR(n));
+	auto mission_name = CTEXT(n);
+	auto name = CTEXT(CDR(n));
 
 	// check for possible optional parameter
 	n = CDR(CDR(n));
@@ -15055,15 +15002,12 @@ int sexp_previous_event_status( int n, int status )
  */
 int sexp_event_status( int n, int want_true )
 {
-	char *name;
-	int i, result;
+	auto name = CTEXT(n);
 
-	name = CTEXT(n);
-
-	for (i = 0; i < Num_mission_events; i++ ) {
+	for (int i = 0; i < Num_mission_events; ++i) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
-			result = Mission_events[i].result;
+			int result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
 				if ( (want_true && result) || (!want_true && !result) )
 					return SEXP_KNOWN_TRUE;
@@ -15089,14 +15033,12 @@ int sexp_event_status( int n, int want_true )
  */
 int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 {
-	char *name;
 	bool is_nan, is_nan_forever;
-	int i, result;
 	fix delay;
 	int rval = SEXP_FALSE;
 	bool use_as_directive = false;
 
-	name = CTEXT(n);
+	auto name = CTEXT(n);
 
 	if (use_msecs) {
 		uint64_t tempDelay = eval_num(CDR(n), is_nan, is_nan_forever);
@@ -15121,7 +15063,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 		}
 	}
 
-	for (i = 0; i < Num_mission_events; i++ ) {
+	for (int i = 0; i < Num_mission_events; ++i) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
 			if ( (fix) Mission_events[i].timestamp + delay >= Missiontime ) {
@@ -15129,7 +15071,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 				break;
 			}
 
-			result = Mission_events[i].result;
+			int result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
 				if ( (want_true && result) || (!want_true && !result) ) {
 					rval = SEXP_KNOWN_TRUE;
@@ -15167,12 +15109,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
  */
 int sexp_event_incomplete(int n)
 {
-	char *name;
-	int i;
-
-	name = CTEXT(n);
+	auto name = CTEXT(n);
 	
-	for (i = 0; i < Num_mission_events; i++ ) {
+	for (int i = 0; i < Num_mission_events; ++i) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
@@ -15193,11 +15132,10 @@ int sexp_event_incomplete(int n)
  */
 int sexp_goal_delay_status( int n, int want_true )
 {
-	char *name;
 	fix delay, time;
 	bool is_nan, is_nan_forever;
 
-	name = CTEXT(n);
+	auto name = CTEXT(n);
 	delay = i2f(eval_num(CDR(n), is_nan, is_nan_forever));
 	if (is_nan) {
 		return SEXP_FALSE;
@@ -15232,9 +15170,7 @@ int sexp_goal_delay_status( int n, int want_true )
  */
 int sexp_goal_incomplete(int n)
 {
-	char *name;
-
-	name = CTEXT(n);
+	auto name = CTEXT(n);
 
 	if ( mission_log_get_time( LOG_GOAL_SATISFIED, name, NULL, NULL) || mission_log_get_time( LOG_GOAL_FAILED, name, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
@@ -15272,7 +15208,7 @@ void sexp_beam_protect_ships(int n, bool flag)
  */
 void sexp_turret_protect_ships(int n, bool flag)
 {
-	char *turret_type = CTEXT(n);
+	auto turret_type = CTEXT(n);
 	n = CDR(n);
 
 	if (!stricmp(turret_type, "beam"))
@@ -15564,7 +15500,6 @@ void sexp_ship_guardian_threshold(int node)
 // Goober5000
 void sexp_ship_subsys_guardian_threshold(int node)
 {
-	char *subsys_name;
 	int threshold, n = node;
 	bool is_nan, is_nan_forever;
 	ship_subsys *ss;
@@ -15582,7 +15517,7 @@ void sexp_ship_subsys_guardian_threshold(int node)
 	// for all subsystems
 	for ( ; n != -1; n = CDR(n) ) {
 		// check for HULL
-		subsys_name = CTEXT(n);
+		auto subsys_name = CTEXT(n);
 		if (!strcmp(subsys_name, SEXP_HULL_STRING)) {
 			ship_entry->shipp->ship_guardian_threshold = threshold;
 			continue;
@@ -15628,7 +15563,6 @@ void sexp_ships_guardian( int n, bool guardian )
 void sexp_ship_create(int n)
 {
 	int new_ship_class, angle_count;
-	char *new_ship_name;
 	vec3d new_ship_pos;
 	angles new_ship_ang;
 	matrix new_ship_ori;
@@ -15637,7 +15571,7 @@ void sexp_ship_create(int n)
 	Assert( n >= 0 );
 
 	// get ship name
-	new_ship_name = CTEXT(n);
+	auto new_ship_name = CTEXT(n);
 	n = CDR(n);
 
 	// none means don't specify it
@@ -15969,10 +15903,9 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, bo
 void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 {
 	int n = node, new_index;
-	char *new_string;
 
 	// get the string
-	new_string = CTEXT(n);
+	auto new_string = CTEXT(n);
 	n = CDR(n);
 
 	// and its index
@@ -16520,7 +16453,7 @@ int sexp_facing2(int node)
 	}
 
 	// get waypoint name
-	char *waypoint_name = CTEXT(node);
+	auto waypoint_name = CTEXT(node);
 
 	// get position of first waypoint
 	waypoint_list *wp_list = find_matching_waypoint_list(waypoint_name);
@@ -16553,9 +16486,9 @@ int sexp_facing2(int node)
 
 int sexp_order(int n)
 {
-	char *order_to = CTEXT(n);
-	char *order = CTEXT(CDR(n));
-	char *target = NULL;
+	auto order_to = CTEXT(n);
+	auto order = CTEXT(CDR(n));
+	const char *target = nullptr;
 
 	//target
 	n = CDDR(n); 
@@ -16567,11 +16500,11 @@ int sexp_order(int n)
 
 int sexp_query_orders (int n)
 {
-	char *order_to = CTEXT(n);
-	char *order = CTEXT(CDR(n));
-	char *target = NULL;
-	char *order_from = NULL;
-	char *special = NULL;
+	auto order_to = CTEXT(n);
+	auto order = CTEXT(CDR(n));
+	const char *target = nullptr;
+	const char *order_from = nullptr;
+	const char *special = nullptr;
 	int timestamp = 0;
 	bool is_nan, is_nan_forever;
 
@@ -16657,10 +16590,10 @@ void sexp_send_training_message(int node)
 	Assert(node >= 0);
 	Assert(Event_index >= 0);
 
-	char *primary_message = CTEXT(n);
+	auto primary_message = CTEXT(n);
 	n = CDR(n);
 
-	char *secondary_message = (n >= 0) ? CTEXT(n) : nullptr;
+	auto secondary_message = (n >= 0) ? CTEXT(n) : nullptr;
 	n = CDR(n);
 
 	count = eval_nums(n, is_nan, is_nan_forever, delay, duration);
@@ -17251,9 +17184,6 @@ void sexp_deal_with_secondary_lock (int node, bool lock)
 //Karajorma - Changes the subsystem name displayed on the HUD.  
 void sexp_change_subsystem_name(int node) 
 {
-	char *new_name;
-	ship_subsys *subsystem_to_rename;
-
 	Assert (node != -1);
 
 	// Check that a ship has been supplied
@@ -17263,7 +17193,7 @@ void sexp_change_subsystem_name(int node)
 	}
 	node = CDR(node);
 
-	new_name = CTEXT(node);
+	auto new_name = CTEXT(node);
 	node = CDR(node);
 	
 	if (MULTIPLAYER_MASTER) {
@@ -17276,7 +17206,7 @@ void sexp_change_subsystem_name(int node)
 	while (node >= 0) {
 
 		//Get the new subsystem name
-		subsystem_to_rename = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		auto subsystem_to_rename = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (subsystem_to_rename != NULL) {
 			ship_subsys_set_name(subsystem_to_rename, new_name); 
 	
@@ -17620,7 +17550,7 @@ void sexp_set_post_effect(int node)
 	vec3d rgb;
 	bool is_nan, is_nan_forever;
 
-	char *name = CTEXT(node);
+	auto name = CTEXT(node);
 	if (name == nullptr || *name == '\0')
 		return;
 	node = CDR(node);
@@ -17717,7 +17647,7 @@ void sexp_set_skybox_model(int n)
 }
 
 // taylor - preload a skybox model.  this doesn't set anything as viewable, just loads it into memory
-void sexp_set_skybox_model_preload(char *name)
+void sexp_set_skybox_model_preload(const char *name)
 {
 	int i;
 
@@ -19514,8 +19444,8 @@ void multi_sexp_add_nav_waypoint()
 //args: 2, Nav Name, Ship Name
 void add_nav_ship(int node)
 {
-	char *nav_name = CTEXT(node);
-	char *ship_name = CTEXT(CDR(node));
+	auto nav_name = CTEXT(node);
+	auto ship_name = CTEXT(CDR(node));
 	AddNav_Ship(nav_name, ship_name, 0);
 
 	Current_sexp_network_packet.start_callback();
@@ -19544,7 +19474,7 @@ void multi_add_nav_ship()
 //args: 1, Nav Name
 void del_nav(int node)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	DelNavPoint(nav_name);
 
 	Current_sexp_network_packet.start_callback();
@@ -19582,7 +19512,7 @@ void set_use_ap(int node)
 //args: 1, Nav Name
 void hide_unhide_nav(int node, bool hide_it)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	if (hide_it)
 		Nav_Set_Hidden(nav_name);
 	else
@@ -19594,7 +19524,7 @@ void hide_unhide_nav(int node, bool hide_it)
 //args: 1, nav name
 void restrict_unrestrict_nav(int node, bool restrict_it)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	if (restrict_it)
 		Nav_Set_NoAccess(nav_name);
 	else
@@ -19606,7 +19536,7 @@ void restrict_unrestrict_nav(int node, bool restrict_it)
 //args: 1, Nav Name
 void set_unset_nav_visited(int node, bool set_it)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	if (set_it)
 		Nav_Set_Visited(nav_name);
 	else
@@ -19618,7 +19548,7 @@ void set_unset_nav_visited(int node, bool set_it)
 //rets: true/false
 int is_nav_visited(int node)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	return IsVisited(nav_name);
 }
 
@@ -19641,7 +19571,7 @@ int is_nav_linked(int node)
 //rets: distance to nav
 int distance_to_nav(int node)
 {
-	char *nav_name = CTEXT(node);
+	auto nav_name = CTEXT(node);
 	return DistanceTo(nav_name);
 }
 
@@ -19649,7 +19579,7 @@ void select_unselect_nav(int node, bool select_it)
 {
 	if (select_it)
 	{
-		char *nav_name = CTEXT(node);
+		auto nav_name = CTEXT(node);
 		SelectNav(nav_name);
 	}
 	else
@@ -19887,8 +19817,7 @@ void sexp_remove_weapons(int node)
 	if (node >= 0) {
 		weapon_info_index = weapon_info_lookup(CTEXT(node));
 		if (weapon_info_index == -1) {
-			char *buf = CTEXT(node); 
-			mprintf(("Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission\n", buf)); 
+			Warning(LOCATION, "Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission\n", CTEXT(node));
 		}
 	}
 
@@ -20335,7 +20264,7 @@ int process_special_sexps(int index)
 int sexp_string_to_int(int n)
 {
 	bool first_ch = true;
-	char *ch, *buf_ch, buf[TOKEN_LENGTH];
+	char *buf_ch, buf[TOKEN_LENGTH];
 	Assert (n != -1);
 
 	if (Sexp_nodes[n].cache)
@@ -20354,7 +20283,7 @@ int sexp_string_to_int(int n)
 	// copy all numeric characters to buf
 	// also, copy a sign symbol if we haven't copied numbers yet
 	buf_ch = buf;
-	for (ch = CTEXT(n); *ch != 0; ch++)
+	for (auto ch = CTEXT(n); *ch != 0; ch++)
 	{
 		if ((first_ch && (*ch == '-' || *ch == '+')) || strchr("0123456789", *ch))
 		{
@@ -20425,9 +20354,9 @@ void sexp_string_concatenate(int n)
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
-	char *str1 = CTEXT(n);
+	auto str1 = CTEXT(n);
 	n = CDR(n);
-	char *str2 = CTEXT(n);
+	auto str2 = CTEXT(n);
 	n = CDR(n);
 
 	// get sexp_variable index
@@ -20513,7 +20442,7 @@ void sexp_string_get_substring(int node)
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
-	char *parent = CTEXT(n);
+	auto parent = CTEXT(n);
 	n = CDR(n);
 
 	eval_nums(n, is_nan, is_nan_forever, pos, len);
@@ -20573,14 +20502,14 @@ void sexp_string_set_substring(int node)
 	if ( MULTIPLAYER_CLIENT )
 		return;
 
-	char *parent = CTEXT(n);
+	auto parent = CTEXT(n);
 	n = CDR(n);
 
 	eval_nums(n, is_nan, is_nan_forever, pos, len);
 	if (is_nan || is_nan_forever)
 		return;
 
-	char *new_substring = CTEXT(n);
+	auto new_substring = CTEXT(n);
 	n = CDR(n);
 
 	// get sexp_variable index
@@ -20733,11 +20662,8 @@ int sexp_special_training_check(int node)
 // sexpression to flash a hud gauge.  gauge name is text valud of node
 void sexp_flash_hud_gauge( int node )
 {
-	char *name;
-	int i;
-
-	name = CTEXT(node);
-	for (i = 0; i < NUM_HUD_GAUGES; i++ ) {
+	auto name = CTEXT(node);
+	for (int i = 0; i < NUM_HUD_GAUGES; ++i) {
 		if ( !stricmp(HUD_gauge_text[i], name) ) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
 
@@ -20992,7 +20918,7 @@ void sexp_set_camera(int node)
 		return;
 	}
 
-	char *cam_name = CTEXT(node);
+	auto cam_name = CTEXT(node);
 	camid cid = cam_lookup(cam_name);
 	if (!cid.isValid())
 	{
@@ -21317,7 +21243,7 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
 
-	char *sub_name = nullptr;
+	const char *sub_name = nullptr;
 	if (n >= 0)
 		sub_name = CTEXT(n);
 
@@ -21510,7 +21436,7 @@ void sexp_show_subtitle(int node)
 {
 	//These should be set to the default if not required to be explicitly defined
 	int x_pos, y_pos, width = 0;
-	char *text, *imageanim = nullptr;
+	const char *text, *imageanim = nullptr;
 	float display_time, fade_time = 0.0f;
 	int r = 255, g = 255, b = 255, n = node;
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
@@ -21598,7 +21524,7 @@ void sexp_show_subtitle_text(int node)
 	char text[MESSAGE_LENGTH];
 
 	// we'll suppose it's the string for now
-	char *ctext = CTEXT(n);
+	auto ctext = CTEXT(n);
 	n = CDR(n);
 
 	// but use an actual message if one exists
@@ -21652,7 +21578,7 @@ void sexp_show_subtitle_text(int node)
 	int fontnum = -1;
 	if (n >= 0)
 	{
-		char *font_name = CTEXT(n);
+		auto font_name = CTEXT(n);
 		n = CDR(n);
 
 		fontnum = font::FontManager::getFontIndex(font_name);
@@ -21715,7 +21641,7 @@ void multi_sexp_show_subtitle_text()
 		Current_sexp_network_packet.get_string(text);
 	}
 	else {
-		char *ctext = Messages[message_index].message;
+		auto ctext = Messages[message_index].message;
 		message_translate_tokens(text, ctext);
 	}
 	Current_sexp_network_packet.get_float(display_time);
@@ -21747,7 +21673,7 @@ void sexp_show_subtitle_image(int node)
 	bool is_nan, is_nan_forever;
 	int n = node;
 
-	char *image = CTEXT(n);
+	auto image = CTEXT(n);
 	n = CDR(n);
 
 	std::array<int, 2> xy_pct;
@@ -21960,14 +21886,14 @@ void multi_sexp_set_camera_shudder()
 
 void sexp_set_jumpnode_name(int n) //CommanderDJ
 {
-	char *old_name = CTEXT(n);
+	auto old_name = CTEXT(n);
 	n = CDR(n);
 
-	CJumpNode *jnp = jumpnode_get_by_name(old_name);
-	if (jnp == nullptr)
+	auto jnp = jumpnode_get_by_name(old_name);
+	if (!jnp)
 		return;
 
-	char *new_name = CTEXT(n);
+	auto new_name = CTEXT(n);
 	jnp->SetName(new_name);
 
 	//multiplayer callback
@@ -21994,11 +21920,11 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 
 void sexp_set_jumpnode_color(int n)
 {
-	char *jumpnode_name = CTEXT(n);
+	auto jumpnode_name = CTEXT(n);
 	n = CDR(n);
 
-	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
-	if (jnp == nullptr)
+	auto jnp = jumpnode_get_by_name(jumpnode_name);
+	if (!jnp)
 		return;
 
 	bool is_nan, is_nan_forever;
@@ -22045,14 +21971,14 @@ void multi_sexp_set_jumpnode_color()
 
 void sexp_set_jumpnode_model(int n)
 {
-	char *jumpnode_name = CTEXT(n);
+	auto jumpnode_name = CTEXT(n);
 	n = CDR(n);
 
-	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
-	if (jnp == nullptr)
+	auto jnp = jumpnode_get_by_name(jumpnode_name);
+	if (!jnp)
 		return;
 
-	char *model_name = CTEXT(n);
+	auto model_name = CTEXT(n);
 	n = CDR(n);
 
 	bool show_polys = is_sexp_true(n);
@@ -22092,8 +22018,8 @@ void sexp_show_hide_jumpnode(int node, bool show)
 
 	for (int n = node; n >= 0; n = CDR(n))
 	{
-		CJumpNode *jnp = jumpnode_get_by_name(CTEXT(n));
-		if (jnp != nullptr)
+		auto jnp = jumpnode_get_by_name(CTEXT(n));
+		if (jnp)
 		{
 			jnp->SetVisibility(show);
 			Current_sexp_network_packet.send_string(CTEXT(n));
@@ -22125,7 +22051,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 	{
 		case OPR_NUMBER:
 			{
-				char* s = CTEXT(n);
+				auto s = CTEXT(n);
 				int r = -1;
 				bool success = Script_system.EvalStringWithReturn(s, "|i", &r);
 
@@ -22137,7 +22063,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 		case OPR_STRING:
 			{
 				const char* ret = nullptr;
-				char* s = CTEXT(n);
+				auto s = CTEXT(n);
 
 				bool success = Script_system.EvalStringWithReturn(s, "|s", &ret);
 				n = CDR(n);
@@ -22168,7 +22094,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 				SCP_string script_cmd;
 				while (n != -1)
 				{
-					char* s = CTEXT(n);
+					auto s = CTEXT(n);
 
 					if (concat_args)
 					{
@@ -28402,7 +28328,7 @@ void update_sexp_references(const char *old_name, const char *new_name)
 	{
 		if ((SEXP_NODE_TYPE(i) == SEXP_ATOM) && (Sexp_nodes[i].subtype == SEXP_ATOM_STRING))
 			if (!stricmp(CTEXT(i), old_name))
-				strcpy(CTEXT(i), new_name);
+				strcpy(Sexp_nodes[i].text, new_name);
 	}
 }
 
@@ -28466,7 +28392,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 			if (query_operator_argument_type(op, i) == format)
 			{
 				if (!stricmp(CTEXT(n), old_name))
-					strcpy(CTEXT(n), new_name);
+					strcpy(Sexp_nodes[n].text, new_name);
 			}
 		}
 
@@ -28548,9 +28474,40 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	return SRC_UNKNOWN;
 }
 
-int verify_vector(char *text)
+void skip_white(const char **str)
 {
-	char *str;
+	if ((**str == ' ') || (**str == '\t')) {
+		(*str)++;
+	}
+}
+
+int validate_float(const char **str)
+{
+	int count = 0, dot = 0;
+
+	while (isdigit(**str) || **str == '.') {
+		if (**str == '.') {
+			if (dot) {
+				return -1;
+			}
+
+			dot = 1;
+		}
+
+		(*str)++;
+		count++;
+	}
+
+	if (!count) {
+		return -1;
+	}
+
+	return 0;
+}
+
+int verify_vector(const char *text)
+{
+	const char *str;
 
 	if (text == NULL)
 		return -1;
@@ -28590,37 +28547,6 @@ int verify_vector(char *text)
 	str++;
 	skip_white(&str);
 	if (*str){
-		return -1;
-	}
-
-	return 0;
-}
-
-void skip_white(char **str)
-{
-	if ((**str == ' ') || (**str == '\t')){
-		(*str)++;
-	}
-}
-
-int validate_float(char **str)
-{
-	int count = 0, dot = 0;
-
-	while (isdigit(**str) || **str == '.') {
-		if (**str == '.') {
-			if (dot){
-				return -1;
-			}
-
-			dot = 1;
-		}
-
-		(*str)++;
-		count++;
-	}
-
-	if (!count){
 		return -1;
 	}
 
@@ -28903,14 +28829,13 @@ int check_text_for_variable_name(const char *text)
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
-char *CTEXT(int n)
+const char *CTEXT(int n)
 {
 	int sexp_variable_index = -1;
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 || n >= Num_sexp_nodes ) {
-		// we should make CTEXT return const char*, but that's for another PR
-		return const_cast<char*>("!INVALID CTEXT NODE INDEX!");
+		return "!INVALID CTEXT NODE INDEX!";
 	}
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
@@ -29127,7 +29052,6 @@ void sexp_modify_variable(int n)
 {
 	int sexp_variable_index;
 	int new_number;
-	char *new_text;
 	char number_as_str[TOKEN_LENGTH];
 
 	Assert(n >= 0);
@@ -29151,7 +29075,7 @@ void sexp_modify_variable(int n)
 	else if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)
 	{
 		// get new string
-		new_text = CTEXT(CDR(n));
+		auto new_text = CTEXT(CDR(n));
 
 		// assign to variable
 		sexp_modify_variable(new_text, sexp_variable_index);
@@ -29184,7 +29108,6 @@ void sexp_set_variable_by_index(int node)
 {
 	int sexp_variable_index, new_number;
 	bool is_nan, is_nan_forever;
-	char *new_text;
 	char number_as_str[TOKEN_LENGTH];
 
 	Assert(node >= 0);
@@ -29227,7 +29150,7 @@ void sexp_set_variable_by_index(int node)
 	else if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)
 	{
 		// get new string
-		new_text = CTEXT(CDR(node));
+		auto new_text = CTEXT(CDR(node));
 
 		// assign to variable
 		sexp_modify_variable(new_text, sexp_variable_index);

@@ -38,6 +38,8 @@ struct p_dock_instance;
 #define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
 #define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
 
+int get_special_anchor(const char *name);
+
 // update version when mission file format changes, and add approprate code
 // to check loaded mission version numbers in the parse code.  Also, be sure
 // to update both MissionParse and MissionSave (FRED) when changing the

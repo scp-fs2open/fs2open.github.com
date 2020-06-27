@@ -291,7 +291,7 @@ void CMessageEditorDlg::update_cur_message()
 
 int CMessageEditorDlg::find_event()
 {
-	char *str;
+	const char *str;
 	int i, formula, node;
 	CComboBox *box;
 

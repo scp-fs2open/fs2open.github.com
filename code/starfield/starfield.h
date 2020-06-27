@@ -115,21 +115,21 @@ void stars_camera_cut();
 
 // call this to set a specific model as the background model
 void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
-void stars_set_background_orientation(matrix *orient = NULL);
+void stars_set_background_orientation(const matrix *orient = nullptr);
 
 // lookup a starfield bitmap, return index or -1 on fail
-int stars_find_bitmap(char *name);
+int stars_find_bitmap(const char *name);
 
 // lookup a sun by bitmap filename, return index or -1 on fail
-int stars_find_sun(char *name);
+int stars_find_sun(const char *name);
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
 
 // for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
 // or not there is an instance for it yet
-void stars_preload_sun_bitmap(char *fname);
-void stars_preload_background_bitmap(char *fname);
+void stars_preload_sun_bitmap(const char *fname);
+void stars_preload_background_bitmap(const char *fname);
 
 void stars_set_nebula(bool activate);
 

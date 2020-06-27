@@ -192,7 +192,7 @@ void mission_campaign_build_list(bool desc = false, bool sort = true, bool multi
 void mission_campaign_free_list();
 
 // returns index of mission with passed name
-extern int mission_campaign_find_mission( char *name );
+extern int mission_campaign_find_mission( const char *name );
 
 // maybe play a movie.  type indicates before or after mission
 extern void mission_campaign_maybe_play_movie(int type);

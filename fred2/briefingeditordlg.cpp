@@ -936,7 +936,7 @@ void briefing_editor_dlg::update_positions()
 
 void briefing_editor_dlg::OnMakeIcon() 
 {
-	char *name;
+	const char *name;
 	int z, team, ship, waypoint, count = -1;
 	int cargo = 0, cargo_count = 0, freighter_count = 0;
 	object *ptr;

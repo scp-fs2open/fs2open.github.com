@@ -47,7 +47,7 @@ private:
 public:
     //Constructors
     CJumpNode();
-    CJumpNode(vec3d *position);
+    CJumpNode(const vec3d *position);
 	CJumpNode(CJumpNode&& other) noexcept;
 
 	CJumpNode& operator=(CJumpNode&&) noexcept;
@@ -56,7 +56,7 @@ public:
     ~CJumpNode();
 	
 	//Getting
-    char *GetName();
+    const char *GetName();
     int GetModelNumber();
     int GetSCPObjectNumber();
 	int GetPolymodelInstanceNum(); 
@@ -66,7 +66,7 @@ public:
 
     //Setting
     void SetAlphaColor(int r, int g, int b, int alpha);
-    void SetModel(char *model_name, bool show_polys=false);
+    void SetModel(const char *model_name, bool show_polys=false);
     void SetName(const char *new_name);
     void SetVisibility(bool enabled);
     
@@ -86,7 +86,7 @@ extern SCP_list<CJumpNode> Jump_nodes;
 //-----Functions-----
 CJumpNode *jumpnode_get_by_name(const char *name);
 CJumpNode *jumpnode_get_by_objnum(int objnum);
-CJumpNode *jumpnode_get_which_in(object *objp);
+CJumpNode *jumpnode_get_which_in(const object *objp);
 
 void jumpnode_render_all();
 void jumpnode_level_close();

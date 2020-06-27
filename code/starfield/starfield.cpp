@@ -1828,7 +1828,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	Rendering_to_env = 0;
 }
 
-void stars_preload_sun_bitmap(char *fname)
+void stars_preload_sun_bitmap(const char *fname)
 {
 	int idx;
 
@@ -1844,7 +1844,7 @@ void stars_preload_sun_bitmap(char *fname)
 	Sun_bitmaps[idx].preload = 1;
 }
 
-void stars_preload_background_bitmap(char *fname)
+void stars_preload_background_bitmap(const char *fname)
 {
 	int idx;
 
@@ -2168,7 +2168,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 }
 
 // call this to set a specific orientation for the background
-void stars_set_background_orientation(matrix *orient)
+void stars_set_background_orientation(const matrix *orient)
 {
 	if (orient == NULL) {
 		vm_set_identity(&Nmodel_orient);
@@ -2178,7 +2178,7 @@ void stars_set_background_orientation(matrix *orient)
 }
 
 // lookup a starfield bitmap, return index or -1 on fail
-int stars_find_bitmap(char *name)
+int stars_find_bitmap(const char *name)
 {
 	int idx;
 
@@ -2197,7 +2197,7 @@ int stars_find_bitmap(char *name)
 }
 
 // lookup a sun by bitmap filename, return index or -1 on fail
-int stars_find_sun(char *name)
+int stars_find_sun(const char *name)
 {
 	int idx;
 

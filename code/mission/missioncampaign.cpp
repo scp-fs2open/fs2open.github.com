@@ -1463,7 +1463,7 @@ void read_mission_goal_list(int num)
  *
  * @return index of mission in campaign structure.  -1 if mission name not found.
  */
-int mission_campaign_find_mission( char *name )
+int mission_campaign_find_mission( const char *name )
 {
 	int i;
 	char realname[_MAX_PATH];

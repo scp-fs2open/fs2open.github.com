@@ -7481,7 +7481,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
-	char *jumpnode_name = nullptr;
+	const char *jumpnode_name = nullptr;
 
 	// this should never happen
 	Assertion(Ship_registry_map.find(shipp->ship_name) != Ship_registry_map.end(), "Ship %s was destroyed, but was never stored in the ship registry!", shipp->ship_name);
@@ -7535,8 +7535,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if ((cleanup_mode == SHIP_DEPARTED_WARP) || (cleanup_mode == SHIP_DEPARTED_BAY) || (cleanup_mode == SHIP_DEPARTED)) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
-		CJumpNode *jnp = jumpnode_get_which_in(objp);
-		if (jnp != nullptr)
+		auto jnp = jumpnode_get_which_in(objp);
+		if (jnp)
 			jumpnode_name = jnp->GetName();
 
 		mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jumpnode_name, shipp->wingnum);
@@ -17397,7 +17397,7 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 }
 
 // Goober5000
-void ship_subsystem_set_new_ai_class(ship *shipp, char *subsystem, int new_ai_class)
+void ship_subsystem_set_new_ai_class(ship *shipp, const char *subsystem, int new_ai_class)
 {
 	Assert(shipp);
 	Assert(subsystem);

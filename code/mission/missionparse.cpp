@@ -382,11 +382,10 @@ int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
 int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
-int get_anchor(char *name);
+int get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
-int parse_lookup_alt_name(char *name);
 void parse_init(bool basic = false);
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
@@ -7540,7 +7539,7 @@ continue_outer_loop:
 /**
  * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
-int get_special_anchor(char *name)
+int get_special_anchor(const char *name)
 {
 	char tmp[NAME_LENGTH + 15];
 	const char *iff_name;
@@ -7567,7 +7566,7 @@ int get_special_anchor(char *name)
 		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG);
 }
 
-int get_anchor(char *name)
+int get_anchor(const char *name)
 {
 	int special_anchor = get_special_anchor(name);
 

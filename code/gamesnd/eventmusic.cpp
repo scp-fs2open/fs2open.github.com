@@ -1615,7 +1615,7 @@ int event_music_next_soundtrack(int delta)
 }
 
 // Goober5000 - along the same lines; this is for the sexp
-void event_sexp_change_soundtrack(char *name)
+void event_sexp_change_soundtrack(const char *name)
 {
 	Assert(name);
 
@@ -1653,7 +1653,7 @@ void event_music_get_soundtrack_name(char *outbuf)
 }
 
 // set the current soundtrack based on name
-void event_music_set_soundtrack(char *name)
+void event_music_set_soundtrack(const char *name)
 {
 	Current_soundtrack_num = event_music_get_soundtrack_index(name);
 
