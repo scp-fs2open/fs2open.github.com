@@ -42,7 +42,6 @@
 #include "graphics/light.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
-#include "hud/hudconfig.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
 #include "hud/hudmessage.h"
@@ -965,8 +964,6 @@ int get_handler_for_x_of_operator(int node);
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
-
-int get_effect_from_name(const char* name);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -4241,7 +4238,7 @@ int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
 }
 
 /**
- * Takes a ship entry and returns the player for that ship or nullptr if it is an AI ship.
+ * Takes a ship entry and returns the player for that ship or NULL if it is an AI ship.
  * In singleplayer mode, this is *the* player, but in multiplayer mode it could be any player.
  */
 player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool test_respawns = false, int *netplayer_index = nullptr)
@@ -4301,7 +4298,7 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
 // -----------------------------------------------------------------------------------
 
 /**
- * Gets a ship from a sexp node.  Returns the ship registry entry, or nullptr if the ship is unknown.
+ * Gets a ship from a sexp node.  Returns the ship registry entry, or NULL if the ship is unknown.
  */
 const ship_registry_entry *eval_ship(int node)
 {
@@ -4340,7 +4337,7 @@ const ship_registry_entry *eval_ship(int node)
 }
 
 /**
- * Gets a wing from a sexp node.  Returns the wing pointer, or nullptr if the wing is unknown.
+ * Gets a wing from a sexp node.  Returns the wing pointer, or NULL if the wing is unknown.
  */
 wing *eval_wing(int node)
 {
@@ -7016,7 +7013,7 @@ int sexp_determine_team(const char *subj)
  */
 int sexp_center_distance3(object *objp1, object *objp2)
 {
-	Assertion(objp1, "First object should be non-nullptr based on check in sexp_distance2");
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
 
 	// if the object isn't present in the mission now
 	if (!objp2)
@@ -7030,7 +7027,7 @@ int sexp_center_distance3(object *objp1, object *objp2)
  */
 int sexp_bbox_distance3(object *objp1, object *objp2)
 {
-	Assertion(objp1, "First object should be non-nullptr based on check in sexp_distance2");
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
 
 	// if the object isn't present in the mission now
 	if (!objp2)
@@ -7062,7 +7059,7 @@ int sexp_bbox_distance3(object *objp1, object *objp2)
  */
 int sexp_retail_distance3(object *objp1, object *objp2)
 {
-	Assertion(objp1, "First object should be non-nullptr based on check in sexp_distance2");
+	Assertion(objp1, "First object should be non-NULL based on check in sexp_distance2");
 
 	// if the object isn't present in the mission now
 	if (!objp2)
@@ -7266,7 +7263,7 @@ bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, const ship_registry_e
  */
 int sexp_center_distance_point(object *objp1, vec3d *pos)
 {
-	Assertion(objp1 && pos, "Parameters should be non-nullptr!");
+	Assertion(objp1 && pos, "Parameters should be non-NULL!");
 
 	return (int)vm_vec_dist(&objp1->pos, pos);
 }
@@ -7276,7 +7273,7 @@ int sexp_center_distance_point(object *objp1, vec3d *pos)
  */
 int sexp_bbox_distance_point(object *objp1, vec3d *pos)
 {
-	Assertion(objp1 && pos, "Parameters should be non-nullptr!");
+	Assertion(objp1 && pos, "Parameters should be non-NULL!");
 
 	if (objp1->type == OBJ_SHIP)
 	{
@@ -12422,7 +12419,7 @@ void sexp_next_mission(int n)
 	auto mission_name = CTEXT(n);
 
 	if (mission_name == nullptr) {
-		Error( LOCATION, "Mission name is nullptr in campaign file for next-mission command!");
+		Error( LOCATION, "Mission name is NULL in campaign file for next-mission command!");
 	}
 
 	for (int i = 0; i < Campaign.num_missions; ++i) {
@@ -14525,7 +14522,7 @@ void sexp_deal_with_warp(int n, bool repairable, bool damage_it)
     else
     {
         ship_flag = Ship::Ship_Flags::Warp_never;
-        p_object_flag = Mission::Parse_Object_Flags::SF_Warp_never;;
+        p_object_flag = Mission::Parse_Object_Flags::SF_Warp_never;
     }
 
     sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, ship_flag, p_object_flag, damage_it);
@@ -17143,20 +17140,6 @@ void sexp_set_countermeasures(int node)
 	Current_sexp_network_packet.send_ship(shipp);
 	Current_sexp_network_packet.send_int(num_cmeasures);
 	Current_sexp_network_packet.end_callback();
-}
-
-void multi_sexp_set_countermeasures()
-{	
-	int num_cmeasures = 0;
-	ship *shipp; 
-
-	Current_sexp_network_packet.get_ship(shipp);
-	if (shipp == nullptr) {
-		return;
-	}
-	if (Current_sexp_network_packet.get_int(num_cmeasures)) {
-		shipp->cmeasure_count = num_cmeasures;
-	}
 }
 
 // KeldorKatarn - Locks or unlocks the afterburner on the requested ship
@@ -21173,7 +21156,6 @@ void multi_sexp_set_camera_facing_object()
 	cam->set_rotation_facing(&pos, rot_time, rot_acc_time, rot_dec_time);
 }
 
-extern float VIEWER_ZOOM_DEFAULT;
 void sexp_set_camera_fov(int n)
 {
 	camera *cam = sexp_get_set_camera();
@@ -21816,14 +21798,6 @@ void sexp_reset_time_compression()
 	 Current_sexp_network_packet.start_callback();
 	 Current_sexp_network_packet.end_callback();
 }
-
-void multi_sexp_reset_time_compression() 
-{
-	set_time_compression(1);
-	lock_time_compression(false);
-}
-
-extern bool Perspective_locked;
 
 void sexp_force_perspective(int n)
 {
@@ -29579,17 +29553,6 @@ int sexp_var_compare(const void *var1, const void *var2)
 void sexp_variable_sort()
 {
 	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
-}
-
-// Goober5000
-int get_sexp_id(char *sexp_name)
-{
-	for (size_t i=0; i < Operators.size(); i++)
-	{
-		if (!stricmp(sexp_name, Operators[i].text.c_str()))
-			return Operators[i].value;
-	}
-	return -1;
 }
 
 // Goober5000
