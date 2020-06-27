@@ -8,11 +8,12 @@ void changeShip(Tree* caller) {
 }
 
 void ShipClasses::open(Button* /*caller*/) {
-	if (List_window != nullptr)
+	if (dialogWindow != nullptr)
 		return;
 
-	List_window = (Window*)LMGR->Screen->Add(new Window("Ship Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
-	auto tree = (Tree*)List_window->AddChild(new Tree("Ship Tree", 0, 0));
+	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Ship Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
+	dialogWindow->SetOwner(this);
+	auto tree = (Tree*)dialogWindow->AddChild(new Tree("Ship Tree", 0, 0));
 
 	/* Ship tree layout
 		Species1
@@ -39,10 +40,12 @@ void ShipClasses::open(Button* /*caller*/) {
 }
 
 void ShipClasses::update(LabMode newLabMode, int classIndex) {
+	if (Class_toolbar == nullptr) {
+		Class_toolbar = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Class Toolbar", gr_screen.center_offset_x + 0,
+			gr_screen.center_offset_y + LMGR->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+		Class_toolbar->SetOwner(this);
+	}
 	Class_toolbar->DeleteChildren();
-
-	Class_toolbar = (Window*)LMGR->Screen->Add(new Window("Class Toolbar", gr_screen.center_offset_x + 0,
-		gr_screen.center_offset_y + LMGR->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 
 	auto x = 0;
 	for (auto subdialog : Subdialogs) {

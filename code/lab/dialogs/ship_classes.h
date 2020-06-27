@@ -16,7 +16,7 @@ public:
 		Subdialogs.push_back(new Options());
 		Subdialogs.push_back(new Variables());
 
-		List_window = nullptr;
+		dialogWindow = nullptr;
 		Class_toolbar = nullptr;
 	}
 
@@ -25,15 +25,13 @@ public:
 	bool safeToOpen(LabMode /*labMode*/) override { return true; }
 
 	void close() override {
-		if (List_window != nullptr) {
-			List_window->DeleteChildren();
-			List_window->Delete();
-			List_window = nullptr;
+		if (dialogWindow != nullptr) {
+			dialogWindow->DeleteChildren();
+			dialogWindow = nullptr;
 		}
 
 		if (Class_toolbar != nullptr) {
 			Class_toolbar->DeleteChildren();
-			Class_toolbar->Delete();
 			Class_toolbar = nullptr;
 		}
 	}
@@ -43,7 +41,7 @@ public:
 	void update(LabMode newLabMode, int classIndex) override;
 
 private:
-	Window* List_window = nullptr;
-	Window* Class_toolbar = nullptr;
+	DialogWindow* dialogWindow = nullptr;
+	DialogWindow* Class_toolbar = nullptr;
 	SCP_vector<LabDialog*> Subdialogs;
 };

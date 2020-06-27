@@ -7,7 +7,6 @@ class Descriptions : public LabDialog {
 
 	void close() override {
 		dialogWindow->DeleteChildren();
-		dialogWindow->Delete();
 		dialogWindow = nullptr;
 	}
 

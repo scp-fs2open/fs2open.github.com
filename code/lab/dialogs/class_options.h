@@ -15,7 +15,6 @@ class Options : public LabDialog {
 	// Called when the dialog is closed
 	void close() override {
 		dialogWindow->DeleteChildren();
-		dialogWindow->Delete();
 		dialogWindow = nullptr;
 	}
 
