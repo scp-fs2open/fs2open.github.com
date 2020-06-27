@@ -7,12 +7,12 @@ void changeShip(Tree* caller) {
 	LMGR->changeDisplayedObject(LabMode::Ship, class_index);
 }
 
-void ShipClasses::open(Button* caller) {
-	if (already_opened)
+void ShipClasses::open(Button* /*caller*/) {
+	if (List_window != nullptr)
 		return;
 
 	List_window = (Window*)LMGR->Screen->Add(new Window("Ship Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
-	Class_tree = (Tree*)List_window->AddChild(new Tree("Ship Tree", 0, 0));
+	auto tree = (Tree*)List_window->AddChild(new Tree("Ship Tree", 0, 0));
 
 	/* Ship tree layout
 		Species1
@@ -26,18 +26,16 @@ void ShipClasses::open(Button* caller) {
 	SCP_vector<TreeItem*> species_headers;
 
 	for (auto const& species_def : Species_info) {
-		auto header = Class_tree->AddItem(nullptr, species_def.species_name);
+		auto header = tree->AddItem(nullptr, species_def.species_name);
 		species_headers.push_back(header);
 	}
 
 	auto idx = 0;
 	for (auto const& class_def : Ship_info) {
 		auto header = species_headers[class_def.species];
-		Class_tree->AddItem(header, class_def.name, idx, true, changeShip);
+		tree->AddItem(header, class_def.name, idx, true, changeShip);
 		++idx;
 	}
-
-	already_opened = true;
 }
 
 void ShipClasses::update(LabMode newLabMode, int classIndex) {

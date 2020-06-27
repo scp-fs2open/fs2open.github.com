@@ -3,7 +3,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
-void Options::open(Button* caller) {
+void Options::open(Button* /*caller*/) {
 	if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow(
 			"Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
