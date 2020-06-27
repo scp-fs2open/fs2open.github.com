@@ -11,28 +11,48 @@
 namespace {
 using namespace sexp;
 
-SCP_unordered_map<int, std::unique_ptr<sexp::DynamicSEXP>> operator_const_mapping;
+struct global_state {
+	// Track if we already have called our init function
+	bool initialized = false;
+	// Before we are initialized it is not safe to add sexps to the system so we add them to a pending list which we
+	// process while initializing
+	SCP_vector<std::unique_ptr<DynamicSEXP>> pending_sexps;
 
-// This contains which operator is the next free operator in a specific category
-SCP_unordered_map<int, int> next_free_operator_mapping;
+	SCP_unordered_map<int, std::unique_ptr<sexp::DynamicSEXP>> operator_const_mapping;
 
-int get_next_free_operator(int category) {
-	Assertion(category != OP_CATEGORY_CHANGE, "The primary change category is full so it can't be used for new operators!");
+	// This contains which operator is the next free operator in a specific category
+	SCP_unordered_map<int, int> next_free_operator_mapping;
+};
 
-	auto iter = next_free_operator_mapping.find(category);
+// Static initialization to avoid initialization order issues
+global_state& globals()
+{
+	static global_state state;
+	return state;
+}
 
-	if (iter == next_free_operator_mapping.end()) {
+int get_next_free_operator(int category)
+{
+	Assertion(category != OP_CATEGORY_CHANGE,
+		"The primary change category is full so it can't be used for new operators!");
+
+	auto& global = globals();
+
+	auto iter = global.next_free_operator_mapping.find(category);
+
+	if (iter == global.next_free_operator_mapping.end()) {
 		// The next operator number isn't initialized yet so we initialize that here
 		int max_op_value = 0;
 		for (auto& oper : Operators) {
-			// We need to do some ugly bit masking here since the SEXP system uses different bytes of the operator number for storing various things
+			// We need to do some ugly bit masking here since the SEXP system uses different bytes of the operator
+			// number for storing various things
 			if ((oper.value & OP_CATEGORY_MASK) == category) {
 				// This operator has the right category
 				// We only store the number part which is the lowest byte of the operator number
 				max_op_value = std::max(max_op_value, oper.value & 0xFF);
 			}
 		}
-		iter = next_free_operator_mapping.insert(std::make_pair(category, max_op_value + 1)).first;
+		iter = global.next_free_operator_mapping.insert(std::make_pair(category, max_op_value + 1)).first;
 	}
 
 	auto value = iter->second;
@@ -85,15 +105,17 @@ void parse_sexp_table(const char* filename) {
 
 void free_lua_sexps(lua_State* /*L*/)
 {
+	auto& global = globals();
+
 	// Remove all Lua sexps from our list so that there are no dangling pointers on the lua state
-	for (auto iter = operator_const_mapping.begin(); iter != operator_const_mapping.end();) {
+	for (auto iter = global.operator_const_mapping.begin(); iter != global.operator_const_mapping.end();) {
 		auto lua_sexp = dynamic_cast<LuaSEXP*>(iter->second.get());
 		if (lua_sexp == nullptr) {
 			++iter;
 			continue;
 		}
 
-		iter = operator_const_mapping.erase(iter);
+		iter = global.operator_const_mapping.erase(iter);
 	}
 }
 
@@ -101,7 +123,18 @@ void free_lua_sexps(lua_State* /*L*/)
 
 namespace sexp {
 
-void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp) {
+void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp)
+{
+	auto& global = globals();
+
+	if (!global.initialized) {
+		// Do nothing now and delay this until we know that we are properly initialized
+		global.pending_sexps.emplace_back(std::move(sexp));
+		return;
+	}
+
+	sexp->initialize();
+
 	auto name = sexp->getName();
 	auto help_text = sexp->getHelpText();
 
@@ -114,7 +147,7 @@ void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp) {
 	new_op.value = get_next_free_operator(sexp->getCategory()) | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
 	new_op.type = SEXP_ACTION_OPERATOR;
 
-	operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
+	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
 
 	// Now actually add the operator to the SEXP containers
 	Operators.push_back(new_op);
@@ -124,24 +157,43 @@ void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp) {
 	new_help.help = help_text;
 	Sexp_help.push_back(new_help);
 }
-DynamicSEXP* get_dynamic_sexp(int operator_const) {
-	auto iter = operator_const_mapping.find(operator_const);
-	if (iter == operator_const_mapping.end()) {
+DynamicSEXP* get_dynamic_sexp(int operator_const)
+{
+	auto& global = globals();
+
+	auto iter = global.operator_const_mapping.find(operator_const);
+	if (iter == global.operator_const_mapping.end()) {
 		return nullptr;
 	}
 
 	return iter->second.get();
 }
-void dynamic_sexp_init() {
+void dynamic_sexp_init()
+{
+	auto& global = globals();
+	global.initialized = true;
+
+	// Add pending sexps now when it is safe to do so
+	for (auto&& pending : global.pending_sexps) {
+		add_dynamic_sexp(std::move(pending));
+	}
+	global.pending_sexps.clear();
+
 	parse_modular_table("*-sexp.tbm", parse_sexp_table, CF_TYPE_TABLES);
 
 	Script_system.OnStateDestroy.add(free_lua_sexps);
 }
-void dynamic_sexp_shutdown() {
-	operator_const_mapping.clear();
-	next_free_operator_mapping.clear();
+void dynamic_sexp_shutdown()
+{
+	auto& global = globals();
+
+	global.operator_const_mapping.clear();
+	global.next_free_operator_mapping.clear();
+
+	global.initialized = false;
 }
-int add_subcategory(int parent_category, const SCP_string& name) {
+int add_subcategory(int parent_category, const SCP_string& name)
+{
 	// Another hack to make sure change2 is interpreted as the normal change category
 	if (parent_category == OP_CATEGORY_CHANGE2) {
 		parent_category = OP_CATEGORY_CHANGE;
