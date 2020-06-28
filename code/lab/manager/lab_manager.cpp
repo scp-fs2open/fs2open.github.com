@@ -2,6 +2,7 @@
 #include "lab/manager/lab_manager.h"
 #include "lab/renderer/lab_renderer.h"
 #include "lab/dialogs/ship_classes.h"
+#include "lab/dialogs/weapon_classes.h"
 #include "io/key.h"
 
 LabManager::LabManager() {
@@ -11,6 +12,7 @@ LabManager::LabManager() {
 	Renderer = new LabRenderer();
 
 	Dialogs.push_back(new ShipClasses());
+	Dialogs.push_back(new WeaponClasses());
 
 	int x = 0;
 	for (auto dialog : Dialogs) {
@@ -20,6 +22,9 @@ LabManager::LabManager() {
 }
 
 void LabManager::onFrame(float frametime) {
+	
+	Renderer->onFrame(frametime);
+
 	bool keyPressed = (GUI_system.OnFrame(frametime, true, false) == GSOF_NOTHINGPRESSED);
 
 	if (keyPressed) {
@@ -47,12 +52,6 @@ void LabManager::onFrame(float frametime) {
 
 		// handle any key presses
 		switch (key) {
-			// switch between the current insignia bitmap to render with
-		case KEY_DIVIDE: {
-			Renderer->toggleInsigniaRendering();
-			break;
-		}
-
 		// Adjust AA presets
 		case KEY_0:
 			if (!PostProcessing_override)
@@ -146,7 +145,7 @@ void LabManager::onFrame(float frametime) {
 		}
 	}
 
-	Renderer->onFrame(frametime);
+	gr_flip();
 }
 
 void LabManager::changeDisplayedObject(LabMode mode, int info_index) {

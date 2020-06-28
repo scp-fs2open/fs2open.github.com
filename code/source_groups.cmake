@@ -602,12 +602,18 @@ add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/lab_dialog.h
 	lab/dialogs/ship_classes.h
 	lab/dialogs/ship_classes.cpp
+	lab/dialogs/weapon_classes.h
+	lab/dialogs/weapon_classes.cpp
 	lab/dialogs/class_descriptions.h
 	lab/dialogs/class_descriptions.cpp
 	lab/dialogs/class_options.h
 	lab/dialogs/class_options.cpp
 	lab/dialogs/class_variables.h
 	lab/dialogs/class_variables.cpp
+	lab/dialogs/render_options.h
+	lab/dialogs/render_options.cpp
+	lab/dialogs/material_overrides.h
+	lab/dialogs/material_overrides.cpp
 )
 
 add_file_folder("Lab\\\\Manager"

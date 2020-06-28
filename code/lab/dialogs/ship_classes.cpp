@@ -40,6 +40,12 @@ void ShipClasses::open(Button* /*caller*/) {
 }
 
 void ShipClasses::update(LabMode newLabMode, int classIndex) {
+	// if the incoming mode is not LabMode::Ship, close this dialog
+	if (newLabMode != LabMode::Ship) {
+		close();
+		return;
+	}
+
 	if (Class_toolbar == nullptr) {
 		Class_toolbar = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Class Toolbar", gr_screen.center_offset_x + 0,
 			gr_screen.center_offset_y + LMGR->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));

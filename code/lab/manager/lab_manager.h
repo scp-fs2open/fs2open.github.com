@@ -27,13 +27,13 @@ public:
 
 	GUIScreen* Screen;
 	Window* Toolbar;
+	LabRenderer* Renderer;
 
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
 	int CurrentClass = -1;
 private:
 	SCP_vector<LabDialog*> Dialogs = {};
-	LabRenderer* Renderer;
 
 	int Trackball_active;
 	int Trackball_mode;

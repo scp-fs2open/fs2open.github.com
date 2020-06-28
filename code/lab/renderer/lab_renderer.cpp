@@ -10,7 +10,6 @@ void LabRenderer::onFrame(float frametime) {
 	gr_clear();	
 	// TODO: Actually render a thing
 
-	gr_flip();
 }
 
 void LabRenderer::useBackground(SCP_string* mission_name) {}
