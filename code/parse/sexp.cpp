@@ -17142,6 +17142,20 @@ void sexp_set_countermeasures(int node)
 	Current_sexp_network_packet.end_callback();
 }
 
+void multi_sexp_set_countermeasures()
+{
+	int num_cmeasures = 0;
+	ship *shipp;
+
+	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
+	if (Current_sexp_network_packet.get_int(num_cmeasures)) {
+		shipp->cmeasure_count = num_cmeasures;
+	}
+}
+
 // KeldorKatarn - Locks or unlocks the afterburner on the requested ship
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
@@ -21799,6 +21813,12 @@ void sexp_reset_time_compression()
 	 Current_sexp_network_packet.end_callback();
 }
 
+void multi_sexp_reset_time_compression()
+{
+	set_time_compression(1);
+	lock_time_compression(false);
+}
+
 void sexp_force_perspective(int n)
 {
 	Perspective_locked = is_sexp_true(n);
@@ -25271,7 +25291,7 @@ void multi_sexp_eval()
 				break;
 
 			case OP_CUTSCENES_RESET_TIME_COMPRESSION:
-				sexp_reset_time_compression();
+				multi_sexp_reset_time_compression();
 				break;
 
 			case OP_SET_ETS_VALUES:
@@ -25295,6 +25315,10 @@ void multi_sexp_eval()
 			case OP_SET_PRIMARY_WEAPON:
 			case OP_SET_SECONDARY_WEAPON:
 				multi_sexp_set_weapon();
+				break;
+
+			case OP_SET_NUM_COUNTERMEASURES:
+				multi_sexp_set_countermeasures();
 				break;
 
 			case OP_CHANGE_AI_CLASS:
@@ -28909,7 +28933,7 @@ void add_block_variable(const char *text, const char *var_name, int type, int in
 	strcpy_s(Block_variables[index].variable_name, var_name);
 	Block_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 	Block_variables[index].type = (type | SEXP_VARIABLE_SET);
-	
+
 }
 
 /**
