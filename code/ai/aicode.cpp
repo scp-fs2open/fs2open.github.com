@@ -1156,6 +1156,11 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 			return;
 	}
 
+	//	Don't allow a ship to turn if it's immobile.
+	if ( objp->flags[Object::Object_Flags::Immobile] ) {
+		return;
+	}
+
 	pip = &objp->phys_info;
 
 	vel_in = pip->rotvel;
@@ -13920,7 +13925,7 @@ void ai_frame(int objnum)
 	ai_process_mission_orders( objnum, aip );
 
 	//	Avoid a shockwave, if necessary.  If a shockwave and rearming, stop rearming.
-	if (aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship, AI::AI_Flags::Avoid_shockwave_weapon]) {
+	if (aip->mode != AIM_PLAY_DEAD && aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship, AI::AI_Flags::Avoid_shockwave_weapon]) {
 		if (ai_avoid_shockwave(Pl_objp, aip)) {
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_1);
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_2);
@@ -14185,7 +14190,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 		return;
 	}
 
-	int rfc = 1;		//	Assume will be Reading Flying Controls.
+	bool rfc = true;		//	Assume will be Reading Flying Controls.
 
 	Assert( obj->type == OBJ_SHIP );
 	Assert( ai_index >= 0 );
@@ -14213,17 +14218,17 @@ void ai_process( object * obj, int ai_index, float frametime )
 	switch (aip->mode) {
 	case AIM_DOCK:
 		if ((aip->submode >= AIS_DOCK_2) && (aip->submode != AIS_UNDOCK_3))
-			rfc = 0;
+			rfc = false;
 		break;
 	case AIM_WARP_OUT:
 		if (aip->submode >= AIS_WARP_3)
-			rfc = 0;
+			rfc = false;
 		break;
 	default:
 		break;
 	}
 
-	if (rfc == 1) {
+	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
 		ai_control_info_check(aip, &obj->phys_info);
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
