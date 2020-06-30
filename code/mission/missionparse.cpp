@@ -3015,16 +3015,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
-	if (!Fred_running && (p_objp->arrival_cue >= 0))
-	{
-		// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
-		Assert (p_objp->arrival_delay <= 0);
-
-		// don't eval arrival_cues when just looking for player information.
-		// evaluate to determine if sexp is always false.
-		if (eval_sexp(p_objp->arrival_cue))
-			p_objp->arrival_delay = timestamp(-p_objp->arrival_delay * 1000);
-	}
 
 	p_objp->departure_anchor = -1;
 	p_objp->departure_path_mask = -1;	// -1 only until resolved
@@ -4476,11 +4466,6 @@ void parse_wing(mission *pm)
 
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
-	if ( !Fred_running && (wingp->arrival_cue >= 0) ) {
-		if ( eval_sexp(wingp->arrival_cue) )			// evaluate to determine if sexp is always false.
-			wingp->arrival_delay = timestamp( -wingp->arrival_delay * 1000 );
-	}
-
 	
 	wingp->departure_anchor = -1;
 	wingp->departure_path_mask = -1;	// -1 only until resolved
@@ -4786,19 +4771,32 @@ void post_process_ships_wings()
 
 	// Goober5000 - now add all the parse objects to the ship registry.  This must be done before
 	// any ships are created from the parse objects.
-	for (auto &pobjp : Parse_objects)
+	for (auto &p_obj : Parse_objects)
 	{
-		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, pobjp.name, &pobjp, nullptr, nullptr, 0, -1 };
+		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, p_obj.name, &p_obj, nullptr, nullptr, 0, -1 };
 		Ship_registry.push_back(entry);
-		Ship_registry_map[pobjp.name] = static_cast<int>(Ship_registry.size() - 1);
+		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
 	}
 
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
 	// but can't be done until the dock references are resolved.  This was originally done
 	// in parse_object().
-	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
+	for (auto &p_obj : Parse_objects)
 	{
-		mission_parse_maybe_create_parse_object(&(*ii));
+		// evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
+		// (because SEXPs now require a complete ship registry) but must be done before the arrival list check inside
+		// mission_parse_maybe_create_parse_object.  That check is, in fact, the only reason this is needed.  We don't need to
+		// pre-emptively set up the delay for wings because there is no equivalent wing arrival list check.  In any case, the
+		// arrival_delay is always validated in mission_did_ship_arrive (for ships) and parse_wing_create_ships (for wings).
+		if (!Fred_running && (p_obj.arrival_cue >= 0))
+		{
+			// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
+			if (eval_sexp(p_obj.arrival_cue))
+				p_obj.arrival_delay = timestamp(-p_obj.arrival_delay * 1000);
+		}
+
+		// create as usual
+		mission_parse_maybe_create_parse_object(&p_obj);
 	}
 
 
