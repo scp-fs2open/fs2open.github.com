@@ -325,14 +325,14 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, NULL, msg, (int)(ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, (int)(ptr + 2 - msg));
 			offset = sw;
 		}
 
 		x = 0;
 		split_str = msg;
 
-		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != NULL) {		// the 7 is a fudge hack
+		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != nullptr) {		// the 7 is a fudge hack
 			// make sure that split went ok, if not then bail
 			if (ptr == split_str) {
 				break;
