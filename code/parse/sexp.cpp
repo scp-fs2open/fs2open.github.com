@@ -8401,7 +8401,7 @@ float get_damage_caused(const ship_registry_entry *ship_entry, int attacker_sig)
 	int idx;
 	float damage_total = 0.0f;
 
-	// has the ship that took damage exited the mission?
+	// is the ship that took damage on the exit list?
 	if (ship_entry->exited_index >= 0) {
 		//TO DO - Add code to check the damage ships which have exited have taken
 
@@ -8411,7 +8411,9 @@ float get_damage_caused(const ship_registry_entry *ship_entry, int attacker_sig)
 				break;
 			}
 		}
-	} else {
+	}
+	// is it referenceable?
+	else if (ship_entry->shipp) {
 		for (idx = 0; idx < MAX_DAMAGE_SLOTS; idx++) {
 			if (ship_entry->shipp->damage_ship_id[idx] == attacker_sig) {
 				damage_total += ship_entry->shipp->damage_ship[idx];
@@ -8441,8 +8443,11 @@ int sexp_get_damage_caused(int node)
 	// this ship may have exited already.
 	if (ship_entry->exited_index >= 0) {
 		ship_class = Ships_exited[ship_entry->exited_index].ship_class;
-	} else {
+	} else if (ship_entry->shipp) {
 		ship_class = ship_entry->shipp->ship_info_index;
+	} else {
+		// it probably vanished
+		return SEXP_NAN_FOREVER;
 	}
 
 	node = CDR(node);
@@ -8459,8 +8464,11 @@ int sexp_get_damage_caused(int node)
 		// this ship may have exited already.
 		if (attacker->exited_index >= 0) {
 			attacker_sig = Ships_exited[attacker->exited_index].obj_signature;
-		} else {
+		} else if (ship_entry->shipp) {
 			attacker_sig = attacker->objp->signature;
+		} else {
+			// it probably vanished
+			continue;
 		}
 
 		damage_caused += get_damage_caused (ship_entry, attacker_sig);
@@ -8763,7 +8771,7 @@ int sexp_is_cargo_known( int n, bool check_delay )
 				}
 			}
 			// ship is in mission
-			else
+			else if (ship_entry->shipp)
 			{
 				if ( ship_entry->shipp->flags[Ship::Ship_Flags::Cargo_revealed] )
 				{
@@ -8772,6 +8780,9 @@ int sexp_is_cargo_known( int n, bool check_delay )
 						is_known = true;
 				}
 			}
+			// ship probably vanished
+			else
+				return SEXP_NAN_FOREVER;
 		}
 
 		// if cargo is known, mark our variable, but not the sexp, because it may change later
@@ -9018,7 +9029,7 @@ int sexp_has_been_tagged_delay(int n)
 					is_known = true;
 			}
 			// ship is in mission
-			else
+			else if (ship_entry->shipp)
 			{
 				if ( ship_entry->shipp->time_first_tagged != 0 )
 				{
@@ -9027,6 +9038,9 @@ int sexp_has_been_tagged_delay(int n)
 						is_known = true;
 				}
 			}
+			// ship probably vanished
+			else
+				return SEXP_NAN_FOREVER;
 		}
 
 		// if ship is tagged, mark our variable and this sexpression.
@@ -10207,19 +10221,23 @@ int sexp_is_iff(int n)
 				// see if we can find information about the exited ship (if it is a ship)
 				if (oswpt.ship_entry)
 				{
-					// be sure to handle the short period when a ship is exited without an index
+					// ship is properly exited
 					if (oswpt.ship_entry->exited_index >= 0)
 					{
 						// if the team doesn't match the team specified, return false immediately
 						if (Ships_exited[oswpt.ship_entry->exited_index].team != team)
 							return SEXP_KNOWN_FALSE;
 					}
-					else
+					// ship is in the EXITED state but probably in the process of exploding
+					else if (oswpt.ship_entry->shipp)
 					{
 						// if the team doesn't match the team specified, return false immediately
 						if (oswpt.ship_entry->shipp->team != team)
 							return SEXP_KNOWN_FALSE;
 					}
+					// ship has vanished
+					else
+						return SEXP_NAN_FOREVER;
 				}
 				// it's probably an exited wing, which we don't store information about
 				else
@@ -10234,7 +10252,6 @@ int sexp_is_iff(int n)
 			default:
 				return SEXP_NAN;
 		}
-
 	}
 
 	// got this far: we must be okay for all ships/wings
@@ -10499,10 +10516,12 @@ int sexp_is_ship_class_or_type(int n, bool ship_class)
 		{
 			other_index = Ships_exited[ship_entry->exited_index].ship_class;
 		}
-		else
+		else if (ship_entry->shipp)
 		{
 			other_index = ship_entry->shipp->ship_info_index;
 		}
+		else
+			return SEXP_NAN_FOREVER;
 
 		// maybe convert from class to type
 		if (!ship_class)
@@ -13043,7 +13062,7 @@ int sexp_is_cargo(int n)
 
 	int cargo_index = -1;
 
-	// departed?
+	// exited (on the exited_ships list)?
 	if (ship_entry->exited_index >= 0)
 	{
 		// can't check subsys of ships not in mission
@@ -13062,7 +13081,7 @@ int sexp_is_cargo(int n)
 		cargo_index = ship_entry->p_objp->cargo1;
 	}
 	// in-mission?
-	else
+	else if (ship_entry->shipp)
 	{
 		if (subsystem)
 		{
@@ -13079,6 +13098,9 @@ int sexp_is_cargo(int n)
 			cargo_index = ship_entry->shipp->cargo1;
 		}
 	}
+	// probably vanished
+	else
+		return SEXP_NAN_FOREVER;
 
 	// did we get any cargo
 	if (cargo_index < 0)
@@ -13136,7 +13158,7 @@ void sexp_set_cargo(int n)
 		strcpy(Cargo_names[cargo_index], cargo);
 	}
 
-	// departed?
+	// exited (on the exited_ships list)?
 	if (ship_entry->exited_index >= 0)
 	{
 		return;
@@ -13151,7 +13173,7 @@ void sexp_set_cargo(int n)
 		ship_entry->p_objp->cargo1 = char(cargo_index | (ship_entry->p_objp->cargo1 & CARGO_NO_DEPLETE));
 	}
 	// in-mission?
-	else
+	else if (ship_entry->shipp)
 	{
 		if (subsystem)
 		{
