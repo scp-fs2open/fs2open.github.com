@@ -313,7 +313,7 @@ void HudGaugeMessages::pageIn()
 
 void HudGaugeMessages::processMessageBuffer()
 {
-	int sw, x, offset = 0;
+	int x, offset = 0;
 	size_t i;
 	char *msg;
 	char *split_str, *ptr;
@@ -322,10 +322,10 @@ void HudGaugeMessages::processMessageBuffer()
 		msg = new char [HUD_msg_buffer[i].text.size()+1];
 		strcpy(msg, HUD_msg_buffer[i].text.c_str());
 
-		ptr = strstr(msg, NOX(": ")) + 2;
-
+		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
-			gr_get_string_size(&sw, NULL, msg, (int)(ptr - msg));
+			int sw;
+			gr_get_string_size(&sw, NULL, msg, (int)(ptr + 2 - msg));
 			offset = sw;
 		}
 
