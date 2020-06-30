@@ -777,7 +777,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 		}
 	}
 	
-	if ( player_ship_class >= static_cast<int>(Ship_info.size()) ) {
+	if ( player_ship_class >= ship_info_size() ) {
 		nprintf(("Network","Network ==> Ship class was %d. Creating a default ship for multiplayer\n", player_ship_class));
 		player_ship_class = multi_ship_class_lookup(default_player_ship);
 	}
@@ -2157,7 +2157,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		((Player_obj->type == OBJ_SHIP) && ( Player_ship->cannot_warp())) ){		
+		((Player_obj->type == OBJ_SHIP) && !(ship_can_warp_full_check(Player_ship)))){		
 
 		multi_handle_sudden_mission_end(); 
 
@@ -3030,6 +3030,7 @@ void multi_update_valid_missions()
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_create_gen_dialog("Validating missions");
 		std_gen_set_text("Querying:", 1);
+		mprintf(("Standalone: Validating missions\n"));
 	}
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN

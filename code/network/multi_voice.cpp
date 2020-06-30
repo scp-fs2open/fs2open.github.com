@@ -671,7 +671,7 @@ void multi_voice_player_process()
 			// if we've recorded the max time allowed, send the data
 			if((Multi_voice_recording_stamp != -1) && timestamp_elapsed(Multi_voice_recording_stamp)){
 #ifdef MULTI_VOICE_VERBOSE
-				nprintf(("Network","MULTI VOICE : timestamp popped"));
+				nprintf(("Network","MULTI VOICE : timestamp popped\n"));
 #endif
 				// mark me as no longer recording
 				Multi_voice_recording = 0;			
@@ -1082,14 +1082,14 @@ void multi_voice_player_send_stream()
 	msg_mode = (ubyte)Multi_voice_send_mode;
 	// get the specific target if we're in MSG_TARGET mode
 	target_index = -1;
-	ushort target_signature = 0;  // Cyborg17 - 0 is the invalid value for net_signature
+	ushort target_net_signature = 0;  // Cyborg17 - 0 is the invalid value for net_signature
 	if(msg_mode == MULTI_MSG_TARGET){
 		if(Player_ai->target_objnum != -1){
 			target_index = multi_find_player_by_object(&Objects[Player_ai->target_objnum]);
 			if(target_index == -1){
 				return;
 			}
-			target_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
+			target_net_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
 		} else {
 			return;
 		}
@@ -1114,8 +1114,8 @@ void multi_voice_player_send_stream()
 		ADD_DATA(msg_mode);
 		
 		// Cyborg17 - add the target signature only if it's been set, which only happens in MSG_TARGET mode
-		if (target_signature != 0) {
-			ADD_USHORT(target_signature);
+		if (target_net_signature != 0) {
+			ADD_USHORT(target_net_signature);
 		}
 
 		// add my id#
@@ -1783,7 +1783,7 @@ void multi_voice_client_send_pending()
 
 	// get the specific target if we're in MSG_TARGET mode
 	target_index = -1;
-	ushort target_signature = 0; // Cyborg17 - 0 is the invalid value for net_signature
+	ushort target_net_signature = 0; // Cyborg17 - 0 is the invalid value for net_signature
 	if (msg_mode == MULTI_MSG_TARGET) {
 		Assert(Game_mode & GM_IN_MISSION);
 
@@ -1792,7 +1792,7 @@ void multi_voice_client_send_pending()
 			if (target_index == -1) {
 				return;
 			}
-			target_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
+			target_net_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
 		} else {
 			return;
 		}
@@ -1834,8 +1834,8 @@ void multi_voice_client_send_pending()
 		ADD_DATA(msg_mode);
 
 		// Cyborg17 - add the target signature only if it's been set, which only happens in MSG_TARGET mode
-		if (target_signature != 0){
-			ADD_USHORT(target_signature);
+		if (target_net_signature != 0){
+			ADD_USHORT(target_net_signature);
 		}
 
 		// add my address 

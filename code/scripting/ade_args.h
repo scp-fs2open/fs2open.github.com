@@ -291,6 +291,7 @@ set_single_arg(lua_State* L, char fmt, T i)
 	}
 }
 void set_single_arg(lua_State* L, char fmt, const char* s);
+void set_single_arg(lua_State* L, char fmt, const SCP_string& s);
 template<typename T>
 void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 {

@@ -496,7 +496,7 @@ void pilotfile_convert::plr_import()
 
 	// two briefing related values
 	plr->readyroom_listing_mode = cfread_int(cfp);
-	Briefing_voice_enabled = cfread_int(cfp);
+	Briefing_voice_enabled = cfread_int(cfp) != 0;
 
 	plr->net_protocol = cfread_int(cfp);
 

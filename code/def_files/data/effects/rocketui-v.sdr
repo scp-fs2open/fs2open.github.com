@@ -6,8 +6,13 @@ in vec2 vertTexCoord;
 out vec2 fragTexCoord;
 out vec4 fragColor;
 
-uniform mat4 modelViewMatrix;
-uniform mat4 projMatrix;
+layout (std140) uniform genericData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+
+	bool textured;
+	int baseMapIndex;
+};
 
 void main()
 {

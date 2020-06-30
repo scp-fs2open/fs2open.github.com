@@ -436,7 +436,7 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { //DTP singleplayer ship choice fix 
+	for ( i = 0; i < ship_info_size(); i++ ) { //DTP singleplayer ship choice fix 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
@@ -452,7 +452,7 @@ void clear_active_list()
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { 
+	for ( i = 0; i < ship_info_size(); i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
@@ -504,7 +504,7 @@ void init_active_list()
 	clear_active_list();
 
 	// build the active list
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			sai = get_free_active_list_node();
 			if ( sai != NULL ) {
@@ -1853,6 +1853,58 @@ bool is_weapon_carried(int weapon_index)
 	return false;
 }
 
+bool check_for_gaps_in_weapon_slots()
+{
+	for (int slot = 0; slot < MAX_WING_BLOCKS*MAX_WING_SLOTS; ++slot)
+	{
+		// a ship must exist in this slot
+		if (Wss_slots[slot].ship_class >= 0)
+		{
+			// if the player can't modify the weapons, then an empty bank is not his fault
+			auto ss_slot = &Ss_wings[slot / MAX_WING_SLOTS].ss_slots[slot % MAX_WING_SLOTS];
+			if (ss_slot->status & WING_SLOT_WEAPONS_DISABLED)
+				continue;
+
+			ship_info *sip = &Ship_info[Wss_slots[slot].ship_class];
+			bool empty_slot = false;
+
+			// check primary banks
+			for (int bank = 0; bank < sip->num_primary_banks; ++bank)	// NOLINT(modernize-loop-convert)
+			{
+				// is the slot empty?
+				if (Wss_slots[slot].wep_count[bank] <= 0)
+				{
+					empty_slot = true;
+				}
+				// is there a full slot following a gap?
+				else if (empty_slot)
+				{
+					return true;
+				}
+			}
+
+			empty_slot = false;
+
+			// check secondary banks
+			for (int bank = 0; bank < sip->num_secondary_banks; ++bank)
+			{
+				// is the slot empty?
+				if (Wss_slots[slot].wep_count[MAX_SHIP_PRIMARY_BANKS + bank] <= 0)
+				{
+					empty_slot = true;
+				}
+				// is there a full slot following a gap?
+				else if (empty_slot)
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
@@ -1891,7 +1943,7 @@ void commit_pressed()
 	int num_required_weapons = 0;
 	int num_satisfied_weapons = 0;
 	SCP_string weapon_list;
-	for (j=0; j<MAX_WEAPON_TYPES; j++)
+	for (j=0; j<weapon_info_size(); j++)
 	{
 		if (Team_data[Common_team].weapon_required[j])
 		{
@@ -1918,6 +1970,16 @@ void commit_pressed()
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
 			return;
 		}
+	}
+
+	// Goober5000 - check that there are no gaps in weapon slots (Mantis 2715)
+	// Any incomplete loadouts that make it through the loadout screen will be condensed so that gaps are moved to the bottom.  This check adds that responsibility to the player.
+	// Note: don't check for training, scramble, or red-alert missions
+	// Note2: don't check missions without briefings either
+	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
+	{
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.", 1642), weapon_list.c_str());
+		return;
 	}
 
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
@@ -2158,7 +2220,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 						color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 
 					// in multiplayer, determine if this it the special case where the slot is disabled, and 
-					// it is also _my_ slot (ie, team capatains/host have not locked players yet)
+					// it is also _my_ slot (ie, team captains/hosts have not locked players yet)
 					if((Game_mode & GM_MULTIPLAYER) && multi_ts_disabled_high_slot(slot_index)){
 						if(icon->model_index == -1)
 							bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED_HIGH];
@@ -2703,7 +2765,7 @@ void ss_reset_selected_ship()
 
 	if ( Selected_ss_class == -1 ) {
 		Int3();
-		for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+		for ( i = 0; i < ship_info_size(); i++ ) {
 			if ( Ss_pool[i] > 0 ) {
 				Selected_ss_class = i;
 			}

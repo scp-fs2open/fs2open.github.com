@@ -53,8 +53,6 @@ bool GL_initted = 0;
 //3==NV Radial
 int OGL_fogmode = 0;
 
-static ushort *GL_original_gamma_ramp = NULL;
-
 int Use_PBOs = 0;
 
 static ubyte *GL_saved_screen = NULL;
@@ -68,16 +66,6 @@ extern SCP_string Window_title;
 
 extern GLfloat GL_anisotropy;
 
-extern float FreeSpace_gamma;
-void gr_opengl_set_gamma(float gamma);
-
-extern float FreeSpace_gamma;
-void gr_opengl_set_gamma(float gamma);
-
-static int GL_fullscreen = 0;
-static int GL_windowed = 0;
-static int GL_minimized = 0;
-
 static GLenum GL_read_format = GL_BGRA;
 
 GLuint GL_vao = 0;
@@ -89,74 +77,6 @@ static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
 static os::Viewport* current_viewport = nullptr;
-
-static bool mode_change_func(os::ViewportState state, bool initial)
-{
-	if (initial) {
-		return false;
-	}
-
-	auto window = os::getMainViewport();
-	if (window == nullptr) {
-		return false;
-	}
-
-	window->setState(state);
-
-	return true;
-}
-static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
-                                                                         "Controls how the game window is created.")
-                                   .category("Graphics")
-                                   .level(options::ExpertLevel::Beginner)
-                                   .values({{os::ViewportState::Fullscreen, "Fullscreen"},
-                                            {os::ViewportState::Borderless, "Borderless"},
-                                            {os::ViewportState::Windowed, "Windowed"}})
-                                   .importance(98)
-                                   .default_val(os::ViewportState::Fullscreen)
-                                   .change_listener(mode_change_func)
-                                   .finish();
-
-void opengl_go_fullscreen()
-{
-	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
-		return;
-
-	gr_opengl_set_gamma(FreeSpace_gamma);
-
-	GL_fullscreen = 1;
-	GL_minimized = 0;
-	GL_windowed = 0;
-}
-
-void opengl_go_windowed()
-{
-	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
-		return;
-
-	GL_windowed = 1;
-	GL_minimized = 0;
-	GL_fullscreen = 0;
-}
-
-void opengl_minimize()
-{
-	GL_minimized = 1;
-	GL_windowed = 0;
-	GL_fullscreen = 0;
-}
-
-void gr_opengl_activate(int active)
-{
-	if (active) {
-		if (Cmdline_fullscreen_window||Cmdline_window)
-			opengl_go_windowed();
-		else
-			opengl_go_fullscreen();
-	} else {
-		opengl_minimize();
-	}
-}
 
 void gr_opengl_clear()
 {
@@ -383,15 +303,6 @@ void gr_opengl_shutdown()
 	glDeleteVertexArrays(1, &GL_vao);
 	GL_vao = 0;
 
-	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
-	}
-
-	if (GL_original_gamma_ramp != NULL) {
-		vm_free(GL_original_gamma_ramp);
-		GL_original_gamma_ramp = NULL;
-	}
-
 	graphic_operations->makeOpenGLContextCurrent(nullptr, nullptr);
 	GL_context = nullptr;
 }
@@ -548,89 +459,6 @@ int gr_opengl_alpha_mask_set(int mode, float alpha)
 
 	// alpha masking is deprecated
 	return mode;
-}
-
-// I feel dirty...
-static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
-{
-	ushort x, y;
-	ushort base_ramp[256];
-
-	Assert( ramp != NULL );
-
-	// generate the base ramp values first off
-
-	// if no gamma set then just do this quickly
-	if (gamma <= 0.0f) {
-		memset( ramp, 0, 3 * 256 * sizeof(ushort) );
-		return;
-	}
-	// identity gamma, avoid all of the math
-	else if ( (gamma == 1.0f) || (GL_original_gamma_ramp == NULL) ) {
-		if (GL_original_gamma_ramp != NULL) {
-			memcpy( ramp, GL_original_gamma_ramp, 3 * 256 * sizeof(ushort) );
-		}
-		// set identity if no original ramp
-		else {
-			for (x = 0; x < 256; x++) {
-				ramp[x]	= (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
-			}
-		}
-
-		return;
-	}
-	// for everything else we need to actually figure it up
-	else {
-		double g = 1.0 / (double)gamma;
-		double val;
-
-		Assert( GL_original_gamma_ramp != NULL );
-
-		for (x = 0; x < 256; x++) {
-			val = (pow(x/255.0, g) * 65535.0 + 0.5);
-			CLAMP( val, 0, 65535 );
-
-			base_ramp[x] = (ushort)val;
-		}
-
-		for (y = 0; y < 3; y++) {
-			for (x = 0; x < 256; x++) {
-				val = (base_ramp[x] * 2) - GL_original_gamma_ramp[x + y * 256];
-				CLAMP( val, 0, 65535 );
-
-				ramp[x + y * 256] = (ushort)val;
-			}
-		}
-	}
-}
-
-void gr_opengl_set_gamma(float gamma)
-{
-	ushort *gamma_ramp = NULL;
-
-	Gr_gamma = gamma;
-	Gr_gamma_int = int (Gr_gamma*10);
-
-	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
-		gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (gamma_ramp == NULL) {
-			Int3();
-			return;
-		}
-
-		memset( gamma_ramp, 0, 3 * 256 * sizeof(ushort) );
-
-		// Create the Gamma lookup table
-		opengl_make_gamma_ramp(gamma, gamma_ramp);
-
-		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
-
-		vm_free(gamma_ramp);
-	}
 }
 
 void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
@@ -890,113 +718,6 @@ void gr_opengl_use_viewport(os::Viewport* view) {
 
 int opengl_init_display_device()
 {
-	int bpp = gr_screen.bits_per_pixel;
-
-	Assertion((bpp == 16) || (bpp == 32), "Invalid bits-per-pixel value %d!", bpp);
-
-	// screen format
-	switch (bpp) {
-		case 16: {
-			Gr_red.bits = 5;
-			Gr_red.shift = 11;
-			Gr_red.scale = 8;
-			Gr_red.mask = 0xF800;
-
-			Gr_green.bits = 6;
-			Gr_green.shift = 5;
-			Gr_green.scale = 4;
-			Gr_green.mask = 0x7E0;
-
-			Gr_blue.bits = 5;
-			Gr_blue.shift = 0;
-			Gr_blue.scale = 8;
-			Gr_blue.mask = 0x1F;
-
-			break;
-		}
-
-		case 32: {
-			Gr_red.bits = 8;
-			Gr_red.shift = 16;
-			Gr_red.scale = 1;
-			Gr_red.mask = 0xff0000;
-
-			Gr_green.bits = 8;
-			Gr_green.shift = 8;
-			Gr_green.scale = 1;
-			Gr_green.mask = 0x00ff00;
-
-			Gr_blue.bits = 8;
-			Gr_blue.shift = 0;
-			Gr_blue.scale = 1;
-			Gr_blue.mask = 0x0000ff;
-
-			Gr_alpha.bits = 8;
-			Gr_alpha.shift = 24;
-			Gr_alpha.mask = 0xff000000;
-			Gr_alpha.scale = 1;
-
-			break;
-		}
-	}
-
-	// texture format
-	Gr_t_red.bits = 5;
-	Gr_t_red.mask = 0x7c00;
-	Gr_t_red.shift = 10;
-	Gr_t_red.scale = 8;
-
-	Gr_t_green.bits = 5;
-	Gr_t_green.mask = 0x03e0;
-	Gr_t_green.shift = 5;
-	Gr_t_green.scale = 8;
-
-	Gr_t_blue.bits = 5;
-	Gr_t_blue.mask = 0x001f;
-	Gr_t_blue.shift = 0;
-	Gr_t_blue.scale = 8;
-
-	Gr_t_alpha.bits = 1;
-	Gr_t_alpha.mask = 0x8000;
-	Gr_t_alpha.scale = 255;
-	Gr_t_alpha.shift = 15;
-
-	// alpha-texture format
-	Gr_ta_red.bits = 4;
-	Gr_ta_red.mask = 0x0f00;
-	Gr_ta_red.shift = 8;
-	Gr_ta_red.scale = 17;
-
-	Gr_ta_green.bits = 4;
-	Gr_ta_green.mask = 0x00f0;
-	Gr_ta_green.shift = 4;
-	Gr_ta_green.scale = 17;
-
-	Gr_ta_blue.bits = 4;
-	Gr_ta_blue.mask = 0x000f;
-	Gr_ta_blue.shift = 0;
-	Gr_ta_blue.scale = 17;
-
-	Gr_ta_alpha.bits = 4;
-	Gr_ta_alpha.mask = 0xf000;
-	Gr_ta_alpha.shift = 12;
-	Gr_ta_alpha.scale = 17;
-
-	// allocate storage for original gamma settings
-	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
-		GL_original_gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (GL_original_gamma_ramp == NULL) {
-			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
-			Cmdline_no_set_gamma = 1;
-		} else {
-			// assume identity ramp by default, to be overwritten by true ramp later
-			for (ushort x = 0; x < 256; x++) {
-				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
-			}
-		}
-	}
-
 	os::ViewPortProperties attrs;
 	attrs.enable_opengl = true;
 
@@ -1019,7 +740,7 @@ int opengl_init_display_device()
 	}
 
 	if (Using_in_game_options) {
-		switch (WindowModeOption->getValue()) {
+		switch (Gr_configured_window_state) {
 		case os::ViewportState::Windowed:
 			// That's the default
 			break;
@@ -1071,11 +792,6 @@ int opengl_init_display_device()
 	graphic_operations->makeOpenGLContextCurrent(port, GL_context.get());
 	current_viewport = port;
 
-	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
-		SDL_GetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256),
-								(GL_original_gamma_ramp+512) );
-	}
-
 	return 0;
 }
 
@@ -1104,8 +820,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_save_screen		= gr_opengl_save_screen;
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
 	gr_screen.gf_free_screen		= gr_opengl_free_screen;
-
-	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_opengl_get_region;
@@ -1296,8 +1010,6 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 		nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 			sourceStr, typeStr, id, severityStr, message));
 	}
-	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
-		   sourceStr, typeStr, id, severityStr, message);
 }
 
 static bool hasPendingDebugMessage() {
@@ -1462,12 +1174,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
 	GL_binary_formats.resize(formats);
 	glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, GL_binary_formats.data());
-
-	if (Cmdline_fullscreen_window || Cmdline_window) {
-		opengl_go_windowed();
-	} else {
-		opengl_go_fullscreen();
-	}
 
 	init_extensions();
 
@@ -1660,26 +1366,6 @@ uint opengl_data_type_size(GLenum data_type)
 	}
 
 	return 0;
-}
-
-DCF(ogl_minimize, "Minimizes opengl")
-{
-	bool minimize_ogl = false;
-
-	if ( gr_screen.mode != GR_OPENGL ) {
-		dc_printf("Command only available in OpenGL mode.\n");
-		return;
-	}
-
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf("[bool] If true is passed, then the OpenGL window will minimize.\n");
-		return;
-	}
-	dc_stuff_boolean(&minimize_ogl);
-
-	if (minimize_ogl) {
-		opengl_minimize();
-	}
 }
 
 DCF(ogl_anisotropy, "toggles anisotropic filtering")

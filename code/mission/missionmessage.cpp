@@ -1,14 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "mission/missionmessage.h"
 
 #include "anim/animplay.h"
 #include "gamesequence/gamesequence.h"
@@ -21,15 +20,16 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "localization/localize.h"
-#include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "scripting/api/objs/message.h"
+#include "scripting/hook_api.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "sound/fsspeech.h"
@@ -39,11 +39,11 @@
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
+int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 // here is the list of the builtin message names and the settings which control how frequently
-// they are heard.  These names are used to match against names read in for builtin message 
-// radio bits to see what message to play.  
-// These are generic names, meaning that there will be the same message type for a 
+// they are heard.  These names are used to match against names read in for builtin message
+// radio bits to see what message to play.
+// These are generic names, meaning that there will be the same message type for a
 // number of different personas
 builtin_message Builtin_messages[] =
 {
@@ -215,9 +215,26 @@ int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
+const auto OnMessageReceivedHook = scripting::Hook::Factory(
+	"On Message Received",
+	"Invoked when a mission sends a message.",
+	{
+		{"Name", "string", "The name of the message in the mission"},
+		{"Message",
+		 "string",
+		 "The text of the sent message. This will have any placeholder expanded (e.g. SEXP "
+		 "variables) and will be what the player sees on the HUD."},
+		{"SenderString", "string", "The source of the message as a string. Same as used by the engine on the HUD."},
+		{"Builtin", "boolean", "true if this is a builtin message, false of this is a mission message"},
+		{"Sender",
+		 "ship",
+		 "If sent from an object, the object that has sent the message. Invalid if not sent from an object"},
+		{"MessageHandle", "message", "The scripting handle of the message being sent."},
+	});
+
 // forward declarations
-void message_maybe_distort_text(char *text, int shipnum);
-int comm_between_player_and_ship(int other_shipnum);
+void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream);
+int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
@@ -278,19 +295,12 @@ void persona_parse()
 	char cstrtemp[NAME_LENGTH];
 	if ( optional_string("+") )
 	{
-		int j;
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
+		int j = species_info_lookup(cstrtemp);
 
-		for (j = 0; j < (int)Species_info.size(); j++)
-		{
-			if (!strcmp(cstrtemp, Species_info[j].species_name))
-			{
-				Personas[Num_personas].species = j;
-				break;
-			}
-		}
-
-		if ( j == (int)Species_info.size() )
+		if (j >= 0)
+			Personas[Num_personas].species = j;
+		else
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
@@ -615,6 +625,7 @@ void parse_msgtbl()
 		generic_message_filenames.clear();
 		generic_message_filenames.push_back("none");
 		generic_message_filenames.push_back("cuevoice");
+		generic_message_filenames.push_back("cue_voice");
 		generic_message_filenames.push_back("emptymsg");
 		generic_message_filenames.push_back("generic");
 		generic_message_filenames.push_back("msgstart");
@@ -854,9 +865,8 @@ void message_kill_all( int kill_all )
 
 	if ( kill_all ) {
 		Num_messages_playing = 0;
+		fsspeech_stop();
 	}
-
-	fsspeech_stop();
 }
 
 // function to kill nth playing message
@@ -1135,7 +1145,7 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 	}
 
 	if ( start_frame < 0 ) {
-		Int3();
+		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.", ani->filename));
 		start_frame=0;
 	}
 
@@ -1440,6 +1450,47 @@ void message_queue_process()
 	Assert ( q->priority != -1 );
 	Assert ( q->time_added != -1 );
 
+	int provisional_message_shipnum = -1;
+
+	// Do some checks to see if we are actually going to play this message at all.  These checks have been moved above the
+	// "if ( Num_messages_playing )" block because we don't want to cancel an existing message if we have nothing to replace it with.
+
+	// Goober5000 - argh, don't conflate special sources with ships!
+	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
+	if ( q->source != HUD_SOURCE_IMPORTANT ) {
+		provisional_message_shipnum = ship_name_lookup( q->who_from );
+
+		// see if we need to check if sending ship is alive
+		if ( (provisional_message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
+			goto all_done;
+		}
+	}
+
+	// AL: added 07/14/97.. only play avi/sound if in gameplay
+	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
+		goto all_done;
+
+	// AL 4-7-98: Can't receive messages if comm is destroyed
+	if ( hud_communications_state(Player_ship) == COMM_DESTROYED ) {
+		goto all_done;
+	}
+	// G5K 4-26-20: Can't send messages if comm is destroyed
+	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
+		goto all_done;
+	}
+
+	//	Don't play death scream unless a small ship.
+	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
+		if (provisional_message_shipnum < 0) {
+			goto all_done;
+		}
+		if (!(Ship_info[Ships[provisional_message_shipnum].ship_info_index].is_small_ship() || (Ships[provisional_message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
+			goto all_done;
+		}
+	}
+
+	// At this point we think we're going to play the queued message.
+
 	if ( Num_messages_playing ) {
 		// peek at the first message on the queue to see if it should interrupt, or overlap a currently
 		// playing message.  Mission specific messages will always interrupt builtin messages.  They
@@ -1499,30 +1550,23 @@ void message_queue_process()
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
-	// Goober5000 - argh, don't conflate special sources with ships!
-	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
-	if ( q->source != HUD_SOURCE_IMPORTANT ) {
-		Message_shipnum = ship_name_lookup( q->who_from );
-
-		// see if we need to check if sending ship is alive
-		if ( (Message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
-			goto all_done;
-		}
-	}
-
 	// if this is a ship, then don't play anything if this ship is already talking
-	if ( Message_shipnum != -1 ) {
+	if ( provisional_message_shipnum != -1 ) {
 		for ( i = 0; i < Num_messages_playing; i++ ) {
-			if ( (Playing_messages[i].shipnum != -1) && (Playing_messages[i].shipnum == Message_shipnum) ){
+			if ( (Playing_messages[i].shipnum != -1) && (Playing_messages[i].shipnum == provisional_message_shipnum) ){
 				return;
 			}
 		}
 	}
 
+	// At this point we are definitely going to play the queued message.
+
+	Message_shipnum = provisional_message_shipnum;
+
 	// set up module globals for this message
 	m = &Messages[q->message_num];
 	Playing_messages[Num_messages_playing].anim_data = NULL;
-	Playing_messages[Num_messages_playing].wave         = sound_handle::invalid();
+	Playing_messages[Num_messages_playing].wave = sound_handle::invalid();
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
 	Playing_messages[Num_messages_playing].shipnum = Message_shipnum;
@@ -1537,24 +1581,6 @@ void message_queue_process()
 		message_translate_tokens(buf, q->special_message);
 
 	Message_expire = timestamp(static_cast<int>(42 * strlen(buf)));
-	// AL: added 07/14/97.. only play avi/sound if in gameplay
-	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
-		goto all_done;
-
-	// AL 4-7-98: Can't receive messages if comm is destroyed
-	if ( hud_communications_state(Player_ship) == COMM_DESTROYED ) {
-		goto all_done;
-	}
-
-	//	Don't play death scream unless a small ship.
-	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-		if (Message_shipnum < 0) {
-			goto all_done;
-		}
-		if (!(Ship_info[Ships[Message_shipnum].ship_info_index].is_small_ship() || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
-			goto all_done;
-		}
-	}
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
@@ -1565,7 +1591,7 @@ void message_queue_process()
 	message_play_anim(q);
 	
 	// distort the message if comms system is damaged
-	message_maybe_distort_text(buf, Message_shipnum);
+	message_maybe_distort_text(buf, Message_shipnum, (q->builtin_type == MESSAGE_WINGMAN_SCREAM));
 
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
@@ -1597,25 +1623,22 @@ void message_queue_process()
 		hud_target_last_transmit_add(Message_shipnum);
 	}
 
-	Script_system.SetHookVar("Name", 's', m->name);
-	Script_system.SetHookVar("Message", 's', buf);
-	Script_system.SetHookVar("SenderString", 's', who_from);
-
 	builtinMessage = q->builtin_type != -1;
-	Script_system.SetHookVar("Builtin", 'b', builtinMessage);
 
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
-	Script_system.SetHookObject("Sender", sender);
+	OnMessageReceivedHook->run(scripting::hook_param_list(
+		scripting::hook_param("Name", 's', m->name),
+		scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
+		scripting::hook_param("Message", 's', buf),
+		scripting::hook_param("SenderString", 's', who_from),
+		scripting::hook_param("Builtin", 'b', builtinMessage),
+		scripting::hook_param("Sender", 'o', sender)));
 
-	Script_system.RunCondition(CHA_MSGRECEIVED, sender);
-
-	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
-
+	Num_messages_playing++;		// this has to be done at the end because some sound functions use it to index into the array
 all_done:
-	Num_messages_playing++;
-	message_remove_from_queue( q );
+	message_remove_from_queue(q);
 }
 
 // queues up a message to display to the player
@@ -1840,7 +1863,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( char *id, void *data, int m_source, int priority, int group, int delay )
+void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay )
 {
 	int i, source;
 	const char *who_from;
@@ -1858,7 +1881,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				who_from = The_mission.command_sender;
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
-				who_from = (char *)data;
+				who_from = (const char *)data;
 				source = HUD_SOURCE_IMPORTANT;
 			} else if ( m_source == MESSAGE_SOURCE_WINGMAN ) {
 				int m_persona, ship_index;
@@ -1884,9 +1907,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				}
 
 			} else if ( m_source == MESSAGE_SOURCE_SHIP ) {
-				ship *shipp;
-
-				shipp = (ship *)data;
+				auto shipp = (const ship *)data;
 				who_from = shipp->ship_name;
 				source = HUD_team_get_source(shipp->team);
 			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
@@ -2050,7 +2071,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_PERSONA_EXCLUDED:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else
@@ -2059,7 +2080,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_SPECIES:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else
@@ -2068,7 +2089,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		case BUILTIN_MATCHES_TYPE:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
 			else
@@ -2188,7 +2209,7 @@ void message_maybe_distort()
 
 		was_muted = 0;
 
-		if ( comm_between_player_and_ship(Playing_messages[i].shipnum) != COMM_OK) {
+		if ( comm_between_player_and_ship(Playing_messages[i].shipnum, Playing_messages[i].builtin_type == MESSAGE_WINGMAN_SCREAM) != COMM_OK ) {
 			was_muted = Message_wave_muted;
 			if ( timestamp_elapsed(Next_mute_time) ) {
 				Next_mute_time = fl2i(Distort_patterns[Distort_num][Distort_next++] * Message_wave_duration);
@@ -2219,11 +2240,11 @@ void message_maybe_distort()
 //					 Blank out portions of the sound based on Distort_num, this this is that same
 //					 data that will be used to blank out portions of the audio playback
 //
-void message_maybe_distort_text(char *text, int shipnum)
+void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 {
 	int voice_duration;
 
-	if (comm_between_player_and_ship(shipnum) == COMM_OK) {
+	if (comm_between_player_and_ship(shipnum, for_death_scream) == COMM_OK) {
 		return;
 	}
 
@@ -2364,31 +2385,28 @@ bool change_message(const char* name, const char* message, int persona_index, in
 }
 
 /**
- * Ideally, this would return the minimum of the comm state between the player and the other ship.  In practice, retail has no checks whatsoever on a ship's ability
- * to send messages unless that ship is the player, so such a change would require an AI profiles option and we must default to the player's state.  However, we
- * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the newly enhanced scramble-messages SEXP.  Thus any comm
- * dropout does not cause an unanticipated deviation in the mission design.
+ * This returns the minimum of the comm state between the player and the other ship.  In practice, retail has no checks whatsoever on a ship's ability
+ * to send messages unless that ship is the player, so such a change requires an AI profiles option and we must default to the player's state.  However, we
+ * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the scramble-messages SEXP.
  */
-int comm_between_player_and_ship(int other_shipnum)
+int comm_between_player_and_ship(int other_shipnum, bool for_death_scream)
 {
 	int player_comm_state = hud_communications_state(Player_ship);
 
 	if (other_shipnum < 0)
 		return player_comm_state;
 
-	int other_comm_state = hud_communications_state(&Ships[other_shipnum]);
+	int other_comm_state = hud_communications_state(&Ships[other_shipnum], for_death_scream);
 
-	/* here is where you would check the flag
-	if (hypothetical_ai_profiles_flag)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships])
 	{
 		return MIN(player_comm_state, other_comm_state);
 	}
 	else
-	*/
 	{
 		if (player_comm_state == COMM_OK && other_comm_state == COMM_OK)
 			return COMM_OK;
-		else if (player_comm_state == COMM_SCRAMBLED || other_comm_state == COMM_SCRAMBLED)
+		else if (player_comm_state == COMM_OK && other_comm_state == COMM_SCRAMBLED)
 			return COMM_SCRAMBLED;
 		else
 			return player_comm_state;

@@ -1059,6 +1059,8 @@ int multi_fs_tracker_validate_mission(char *filename)
 	if(!Multi_fs_tracker_inited){
 		return MVALID_STATUS_UNKNOWN;
 	}
+
+	mprintf(("Standalone: Validating '%s'\n", filename));
 	
 	// get the checksum of the local file	
 	memset(&mission, 0, sizeof(mission));

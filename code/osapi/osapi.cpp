@@ -125,6 +125,7 @@ namespace
 	}
 	
 	bool quit_handler(const SDL_Event&  /*e*/) {
+		mprintf(("Recevied quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}
@@ -285,7 +286,7 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
-		mprintf(("Couldn't init SDL: %s", SDL_GetError()));
+		mprintf(("Couldn't init SDL: %s\n", SDL_GetError()));
 
 		exit(1);
 		return;
@@ -327,9 +328,9 @@ void os_cleanup()
 {
 	os_deinit_registry_stuff();
 
-#ifndef NDEBUG
-	outwnd_close();
-#endif
+	if (LoggingEnabled) {
+		outwnd_close();
+	}
 
 	os_deinit();
 }

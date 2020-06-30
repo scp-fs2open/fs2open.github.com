@@ -108,7 +108,7 @@ bool Sel_NextNav()
 
 
 // ********************************************************************************************
-vec3d *NavPoint::GetPosition()
+const vec3d *NavPoint::GetPosition()
 {
 	if (flags & NP_WAYPOINT)
 	{
@@ -123,7 +123,7 @@ vec3d *NavPoint::GetPosition()
 }
 
 // ********************************************************************************************
-bool CanAutopilot(vec3d targetPos, bool send_msg)
+bool CanAutopilot(const vec3d *targetPos, bool send_msg)
 {
 	if (CurrentNav == -1)
 	{
@@ -140,7 +140,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 	}
 
 	// You cannot autopilot if you're within 1000 meters of your destination nav point
-	if (vm_vec_dist_quick(&targetPos, Navs[CurrentNav].GetPosition()) < 1000) {
+	if (vm_vec_dist_quick(targetPos, Navs[CurrentNav].GetPosition()) < 1000) {
 		if (send_msg)
 					send_autopilot_msgID(NP_MSG_FAIL_TOCLOSE);
 		return false;
@@ -156,7 +156,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])) // ignore cargo
 			{
 				// Cannot autopilot if enemy within AutopilotMinEnemyDistance meters
-				if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < AutopilotMinEnemyDistance) {
+				if (vm_vec_dist_quick(targetPos, &other_objp->pos) < AutopilotMinEnemyDistance) {
 					if (send_msg)
 						send_autopilot_msgID(NP_MSG_FAIL_HOSTILES);
 					return false;
@@ -173,7 +173,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 			if (Asteroids[n].flags & AF_USED)
 			{
 				// Cannot autopilot if asteroid within AutopilotMinAsteroidDistance meters
-				if (vm_vec_dist_quick(&targetPos, &Objects[Asteroids[n].objnum].pos) < AutopilotMinAsteroidDistance) {
+				if (vm_vec_dist_quick(targetPos, &Objects[Asteroids[n].objnum].pos) < AutopilotMinAsteroidDistance) {
 					if (send_msg)
 						send_autopilot_msgID(NP_MSG_FAIL_HAZARD);
 					return false;
@@ -218,9 +218,9 @@ bool StartAutopilot()
 			if (shipp->team != Player_ship->team)
 				continue;
 
-			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < static_cast<int>(Ship_info.size())),
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < ship_info_size()),
 				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
-				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
+				shipp->ship_name, shipp->ship_info_index, ship_info_size());
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 			if ( !(sip->flags[Ship::Info_Flags::Support]) )
@@ -413,7 +413,7 @@ bool StartAutopilot()
 				}
 				else
 				{
-					ai_clear_wing_goals(wingnum);
+					ai_clear_wing_goals(&Wings[wingnum]);
 					j = 1+int( (float)floor(double(wcount-1)/2.0) );
 					switch (wcount % 2)
 					{
@@ -484,7 +484,7 @@ bool StartAutopilot()
 				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
 				//ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 				
-				ai_clear_wing_goals( i );
+				ai_clear_wing_goals( &Wings[i] );
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
@@ -989,7 +989,7 @@ void nav_warp(bool prewarp=false)
 	/* using the vector of the flight leaders's path, simulate moving the 
 	flight along this path by checking the autopilot conditions as specific
 	intervals along the path*/
-	while (CanAutopilot(tpos))
+	while (CanAutopilot(&tpos))
 	{
 		vm_vec_add(&tpos, &tpos, &pos);
 	}
@@ -1192,7 +1192,7 @@ void send_autopilot_msgID(int msgid)
 }
 // ********************************************************************************************
 
-void send_autopilot_msg(char *msg, char *snd)
+void send_autopilot_msg(const char *msg, const char *snd)
 {
 	// setup
 	if (audio_handle != -1)
@@ -1312,7 +1312,7 @@ void parse_autopilot_table(const char *filename)
 
 // ********************************************************************************************
 // Finds a Nav point by name
-int FindNav(char *Nav)
+int FindNav(const char *Nav)
 {
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
@@ -1325,7 +1325,7 @@ int FindNav(char *Nav)
 
 // ********************************************************************************************
 // Removes a Nav
-bool DelNavPoint(char *Nav)
+bool DelNavPoint(const char *Nav)
 {
 	int n = FindNav(Nav);
 
@@ -1354,7 +1354,7 @@ bool DelNavPoint(int nav)
 
 // ********************************************************************************************
 // adds a Nav
-bool AddNav_Ship(char *Nav, char *TargetName, int flags)
+bool AddNav_Ship(const char *Nav, const char *TargetName, int flags)
 {
 	// find an empty nav - should be the end
 
@@ -1397,7 +1397,7 @@ bool AddNav_Ship(char *Nav, char *TargetName, int flags)
 }
 
 
-bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
+bool AddNav_Waypoint(const char *Nav, const char *WP_Path, int node, int flags)
 {
 	// find an empty nav - should be the end
 
@@ -1435,7 +1435,7 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 
 // ********************************************************************************************
 //Get Flags
-int Nav_Get_Flags(char *Nav)
+int Nav_Get_Flags(const char *Nav)
 {
 	int flags = 0;
 
@@ -1451,7 +1451,7 @@ int Nav_Get_Flags(char *Nav)
 // Sexp Accessors
 
 //Generic
-bool Nav_Set_Flag(char *Nav, int flag)
+bool Nav_Set_Flag(const char *Nav, int flag)
 {
 	Assert(!(flag & NP_VALIDTYPE));
 	int nav = FindNav(Nav);
@@ -1467,7 +1467,7 @@ bool Nav_Set_Flag(char *Nav, int flag)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_UnSet_Flag(char *Nav, int flag)
+bool Nav_UnSet_Flag(const char *Nav, int flag)
 {
 	Assert(!(flag & NP_VALIDTYPE));
 
@@ -1484,7 +1484,7 @@ bool Nav_UnSet_Flag(char *Nav, int flag)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //Named
-bool Nav_Set_Hidden(char *Nav)
+bool Nav_Set_Hidden(const char *Nav)
 {
 	return Nav_Set_Flag(Nav, NP_HIDDEN);
 
@@ -1492,14 +1492,14 @@ bool Nav_Set_Hidden(char *Nav)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_Set_NoAccess(char *Nav)
+bool Nav_Set_NoAccess(const char *Nav)
 {
 	return Nav_Set_Flag(Nav, NP_NOACCESS);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_Set_Visited(char *Nav)
+bool Nav_Set_Visited(const char *Nav)
 {
 	
 	return Nav_Set_Flag(Nav, NP_VISITED);
@@ -1507,28 +1507,28 @@ bool Nav_Set_Visited(char *Nav)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_UnSet_Hidden(char *Nav)
+bool Nav_UnSet_Hidden(const char *Nav)
 {
 	return Nav_UnSet_Flag(Nav, NP_HIDDEN);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_UnSet_NoAccess(char *Nav)
+bool Nav_UnSet_NoAccess(const char *Nav)
 {
 	return Nav_UnSet_Flag(Nav, NP_NOACCESS);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool Nav_UnSet_Visited(char *Nav)
+bool Nav_UnSet_Visited(const char *Nav)
 {
 	return Nav_UnSet_Flag(Nav, NP_VISITED);
 }
 
 // ********************************************************************************************
 // Selects a navpoint by name.
-void SelectNav(char *Nav)
+void SelectNav(const char *Nav)
 {
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
@@ -1547,7 +1547,7 @@ void DeselectNav()
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
-unsigned int DistanceTo(char *nav)
+unsigned int DistanceTo(const char *nav)
 {
 	int n = FindNav(nav);
 
@@ -1564,7 +1564,7 @@ unsigned int DistanceTo(int nav)
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-bool IsVisited(char *nav)
+bool IsVisited(const char *nav)
 {
 	int n = FindNav(nav);
 

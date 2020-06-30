@@ -103,14 +103,17 @@ void init_new_pilot(player *p, int reset)
 		Game_skill_level = game_get_default_skill_level();
 
 		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
-		Use_mouse_to_fly = 1;
+		Use_mouse_to_fly = true;
 		Mouse_sensitivity = 4;
-		Joy_sensitivity = 9;
-		Joy_dead_zone_size = 10;
+		if (!Using_in_game_options) {
+			// This is handled by the in game options in this case
+			Joy_sensitivity = 9;
+			Joy_dead_zone_size = 10;
+		}
 
-		Master_sound_volume = Default_sound_volume;
-		Master_event_music_volume = Default_music_volume;
-		Master_voice_volume = Default_voice_volume;
+		snd_set_effects_volume(Default_sound_volume);
+		event_music_set_volume(Default_music_volume);
+		snd_set_voice_volume(Default_voice_volume);
 
 		p->variables.clear();
 	}

@@ -4,8 +4,6 @@
 
 #include "LuaHeaders.h"
 
-#include <scp_compiler_detection.h>
-
 #include <memory>
 
 namespace luacpp {
@@ -76,8 +74,8 @@ class UniqueLuaReference {
 	UniqueLuaReference(const UniqueLuaReference&) = delete;
 	UniqueLuaReference& operator=(const UniqueLuaReference&) = delete;
 
-	UniqueLuaReference(UniqueLuaReference&& other) SCP_NOEXCEPT;
-	UniqueLuaReference& operator=(UniqueLuaReference&& other) SCP_NOEXCEPT;
+	UniqueLuaReference(UniqueLuaReference&& other) noexcept;
+	UniqueLuaReference& operator=(UniqueLuaReference&& other) noexcept;
 
 	lua_State* getState() { return _luaState; }
 
@@ -101,8 +99,9 @@ class UniqueLuaReference {
 
 	/**
     * @brief Pushes the referenced value onto the stack.
+    * @param thread A specific thread state to push the value to. nullptr for the default state of this reference
     */
-	void pushValue() const;
+	void pushValue(lua_State* thread) const;
 };
 }
 

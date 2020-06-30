@@ -22,70 +22,72 @@ SCP_vector<triggered_rotation> Triggered_rotations;
 // forward declaration
 int model_anim_instance_get_actual_time(queued_animation *properties);
 
-const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
-{
-	"initial",
-	"docking-stage-1",
-	"docking-stage-2",
-	"docking-stage-3",
-	"docked",
-	"primary-bank",
-	"secondary-bank",
-	"fighterbay",
-	"afterburner",
-	"turret-firing",
-	"scripted",
-	"turret-fired"
+const std::map<AnimationTriggerType, const char*> Animation_type_names = {
+	{AnimationTriggerType::Initial, "initial"},
+	{AnimationTriggerType::Docking_Stage1, "docking-stage-1"},
+	{AnimationTriggerType::Docking_Stage2, "docking-stage-2"},
+	{AnimationTriggerType::Docking_Stage3, "docking-stage-3"},
+	{AnimationTriggerType::Docked, "docked"},
+	{AnimationTriggerType::PrimaryBank, "primary-bank"},
+	{AnimationTriggerType::SecondaryBank, "secondary-bank"},
+	{AnimationTriggerType::DockBayDoor, "fighterbay"},
+	{AnimationTriggerType::Afterburner, "afterburner"},
+	{AnimationTriggerType::TurretFiring, "turret-firing"},
+	{AnimationTriggerType::Scripted, "scripted"},
+	{AnimationTriggerType::TurretFired, "turret-fired"}
 };
 
-int model_anim_match_type(const char* p)
+AnimationTriggerType model_anim_match_type(const char* p)
 {	
-	int i;
-
 	// standard match
-	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
-		if ( !strnicmp(p, Animation_type_names[i], strlen(Animation_type_names[i])) )
-			return i;
+	for (const auto& entry: Animation_type_names) {
+		if (!strnicmp(p, entry.second, strlen(entry.second)))
+			return entry.first;
 	}
 
 	// Goober5000 - misspelling
 	if ( !strnicmp(p, "inital", 6) || !strnicmp(p, "\"inital\"", 8) ) {
 		Warning(LOCATION, "Spelling error in table file.  Please change \"inital\" to \"initial\".");
-		return TRIGGER_TYPE_INITIAL;
+		return AnimationTriggerType::Initial;
 	}
 
 	// Goober5000 - deprecation
 	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
-		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCKING_STAGE_2]));
-		return TRIGGER_TYPE_DOCKING_STAGE_2;
+		auto docking_string = Animation_type_names.find(AnimationTriggerType::Docking_Stage2)->second;
+		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
+		return AnimationTriggerType::Docking_Stage2;
 	} else if ( !strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14) ) {
-		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_PRIMARY_BANK]));
-		return TRIGGER_TYPE_PRIMARY_BANK;
+		auto pbank_string = Animation_type_names.find(AnimationTriggerType::PrimaryBank)->second;
+		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", pbank_string));
+		return AnimationTriggerType::PrimaryBank;
 	} else if ( !strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16) ) {
-		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_SECONDARY_BANK]));
-		return TRIGGER_TYPE_SECONDARY_BANK;
+		auto sbank_string = Animation_type_names.find(AnimationTriggerType::SecondaryBank)->second;
+		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", sbank_string));
+		return AnimationTriggerType::SecondaryBank;
 	} else if ( !strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6) ) {
-		mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCK_BAY_DOOR]));
-		return TRIGGER_TYPE_DOCK_BAY_DOOR;
+		auto docking_string = Animation_type_names.find(AnimationTriggerType::DockBayDoor)->second;
+		mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
+		return AnimationTriggerType::DockBayDoor;
 	} else if ( !strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15) ) {
-		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_TURRET_FIRING]));
-		return TRIGGER_TYPE_TURRET_FIRING;
+		auto turret_string = Animation_type_names.find(AnimationTriggerType::TurretFiring)->second;
+		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", turret_string));
+		return AnimationTriggerType::TurretFiring;
 	}
 
 	// Goober5000 - with quotes
-	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
+	for (const auto& entry: Animation_type_names) {
 		char quoted_name[NAME_LENGTH + 2];
 		strcpy(quoted_name, "\"");
-		strcat(quoted_name, Animation_type_names[i]);
+		strcat(quoted_name, entry.second);
 		strcat(quoted_name, "\"");
 
 		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
 			mprintf(( "Old usage warning: Please remove quotes from animation type %s.\n", quoted_name));
-			return i;
+			return entry.first;
 		}
 	}
 
-	return TRIGGER_TYPE_NONE;
+	return AnimationTriggerType::None;
 }
 
 
@@ -98,7 +100,7 @@ void triggered_rotation::start(queued_animation *q)
 {
 	instance = q->instance;
 
-	nprintf(("ModelAnim", "Starting animation type %i at %i ...\n", q->type, timestamp()));
+	nprintf(("ModelAnim", "Starting animation type %s at %i ...\n", Animation_type_names.find(q->type)->second, timestamp()));
 
 	current_snd = gamesnd_id();
 	current_snd_index = start_sound = q->start_sound;
@@ -358,7 +360,7 @@ void queued_animation_init(queued_animation *qa)
 
 	qa->start = 0;
 	qa->end = 0;
-	qa->type = TRIGGER_TYPE_NONE;
+	qa->type = AnimationTriggerType::None;
 	qa->subtype = ANIMATION_SUBTYPE_ALL;
 
 	qa->absolute = false;
@@ -410,7 +412,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub->flags[Model::Subsystem_Flags::Triggered] );
 	
 	if (ss->triggered_rotation_index < 0) {
-		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!", psub->name, model_get(Ship_info[Ships[Objects[ss->parent_objnum].instance].ship_info_index].model_num)->filename));
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[Ships[Objects[ss->parent_objnum].instance].ship_info_index].model_num)->filename));
 		return;
 	}
 
@@ -550,7 +552,7 @@ bool subtype_check(model_subsystem *psub, queued_animation *anim_q, int subtype)
 
 	// Fighterbay door animations can have negative subtypes, so handle those
 	// separately here
-	if (anim_q->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
+	if (anim_q->type == AnimationTriggerType::DockBayDoor) {
 		int anim_subtype = anim_q->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
 
 		if (anim_subtype < 0) {
@@ -570,7 +572,7 @@ bool subtype_check(model_subsystem *psub, queued_animation *anim_q, int subtype)
 	return false;
 }
 
-bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant)
+bool model_anim_start_type(ship_subsys *pss, AnimationTriggerType animation_type, int subtype, int direction, bool instant)
 {
 	Assert( pss != NULL );
 
@@ -583,7 +585,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return false;
 	if (pss->triggered_rotation_index < 0) {
-		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!", psub->name, model_get(Ship_info[Ships[Objects[pss->parent_objnum].instance].ship_info_index].model_num)->filename));
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[Ships[Objects[pss->parent_objnum].instance].ship_info_index].model_num)->filename));
 		return false;
 	}
 	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
@@ -610,7 +612,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 	return retval;
 }
 
-bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction, bool instant)
+bool model_anim_start_type(ship *shipp, AnimationTriggerType animation_type, int subtype, int direction, bool instant)
 {
 	// this makes the logic for docking triggers a bit cleaner
 	if (shipp == NULL)
@@ -661,7 +663,7 @@ int model_anim_instance_get_actual_time(queued_animation *properties)
 	return ret;
 }
 
-int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype)
+int model_anim_get_actual_time_type(ship *shipp, AnimationTriggerType animation_type, int subtype)
 {
 	ship_subsys	*pss;
 	model_subsystem	*psub;
@@ -693,7 +695,7 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 	return ret;
 }
 
-int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subtype)
+int model_anim_get_actual_time_type(ship_info *sip, AnimationTriggerType animation_type, int subtype)
 {
 	model_subsystem *psub;
 	int ret = 0;
@@ -721,17 +723,16 @@ void model_anim_fix_reverse_times(ship_info *sip)
 	model_subsystem *psub;
 	int i, j;
 	int ani_time = 0;
-	int type = 0;
 
-	for (type = 0; type < MAX_TRIGGER_ANIMATION_TYPES; type++) {
+	for (const auto& entry: Animation_type_names) {
 		// figure out how long it's going to take for the animation to complete
-		ani_time = model_anim_get_actual_time_type(sip, type, ANIMATION_SUBTYPE_ALL);
+		ani_time = model_anim_get_actual_time_type(sip, entry.first, ANIMATION_SUBTYPE_ALL);
 
 		for (i = 0; i < sip->n_subsystems; i++) {
 			psub = &sip->subsystems[i];
 
 			for (j = 0; j < psub->n_triggers; j++) {
-				if (psub->triggers[j].type == type) {
+				if (psub->triggers[j].type == entry.first) {
 					// if there isn't a user defined overide already present
 					if (psub->triggers[j].reverse_start == -1)
 						psub->triggers[j].reverse_start = ani_time - model_anim_instance_get_actual_time(&psub->triggers[j]);
@@ -751,7 +752,7 @@ void model_anim_fix_reverse_times(ship_info *sip)
 /**
  * Needs to always return a valid timestamp, even if it's just the current one
  */
-int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
+int model_anim_get_time_type(ship_subsys *pss, AnimationTriggerType animation_type, int subtype)
 {
 	Assert( pss != NULL );
 
@@ -764,7 +765,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return timestamp();
 	if (pss->triggered_rotation_index < 0) {
-		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!", psub->name, model_get(Ship_info[Ships[Objects[pss->parent_objnum].instance].ship_info_index].model_num)->filename));
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[Ships[Objects[pss->parent_objnum].instance].ship_info_index].model_num)->filename));
 		return timestamp();
 	}
 	triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
@@ -828,7 +829,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
  * @param subtype
  * @return Should already be a valid timestamp
  */
-int model_anim_get_time_type(ship *shipp, int animation_type, int subtype)
+int model_anim_get_time_type(ship *shipp, AnimationTriggerType animation_type, int subtype)
 {
 	ship_subsys	*pss;
 	int ani_time = 0, ret = 0;
@@ -864,14 +865,14 @@ void model_anim_set_initial_states(ship *shipp)
 		psub = pss->system_info;
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+			if (psub->triggers[i].type == AnimationTriggerType::Initial) {
 				if (psub->type == SUBSYSTEM_TURRET) {
 					// special case for turrets
 					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				} else {
 					if (pss->triggered_rotation_index < 0) {
-						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!", psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
+						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
 						continue;
 					}
 					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
@@ -914,16 +915,16 @@ void model_anim_handle_multiplayer(ship *shipp)
 			continue;
 
 		if (pss->triggered_rotation_index < 0) {
-			mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!", pss->system_info->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
+			mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", pss->system_info->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
 			continue;
 		}
 		
 		for (int i = 0; i < psub->n_triggers; i++) {
 			switch (psub->triggers[i].type)
 			{
-				case TRIGGER_TYPE_PRIMARY_BANK:
-				case TRIGGER_TYPE_SECONDARY_BANK:
-				case TRIGGER_TYPE_AFTERBURNER:
+				case AnimationTriggerType::PrimaryBank:
+				case AnimationTriggerType::SecondaryBank:
+				case AnimationTriggerType::Afterburner:
 				{
 					Triggered_rotations[pss->triggered_rotation_index].process_queue();
 					model_anim_submodel_trigger_rotate(psub, pss );
@@ -942,7 +943,7 @@ void model_anim_handle_multiplayer(ship *shipp)
 
 SCP_map<int, animation_stack> Animation_map;
 
-bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant)
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, AnimationTriggerType animation_type, int subtype, int direction, bool instant)
 {
 	stack_item item;
 	item.shipp = shipp;

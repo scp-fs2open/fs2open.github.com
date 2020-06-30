@@ -11,7 +11,7 @@ namespace api {
 
 ADE_LIB(l_Parsing, "Parsing", "parse", "Engine parsing library");
 
-ADE_FUNC(readFileText, l_Parsing, "string file, string directory = <any>",
+ADE_FUNC(readFileText, l_Parsing, "string file, [string directory /* by default searches everywhere */]",
          "Reads the text of the given file into the parsing system. If a directory is given then the file is read from "
          "that location.",
          "boolean", "true if the operation was successful, false otherwise")

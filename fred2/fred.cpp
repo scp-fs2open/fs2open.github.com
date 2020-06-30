@@ -175,9 +175,9 @@ CFREDApp::CFREDApp() {
 
 	SCP_mspdbcs_Initialise();
 
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 }
 
 CFREDApp::~CFREDApp() {
@@ -231,9 +231,8 @@ BOOL CFREDApp::InitInstance() {
 	Lighting_on = GetProfileInt("Preferences", "Lighting On", Lighting_on);
 
 	// Goober5000
-	Format_fs2_open = GetProfileInt("Preferences", "FS2 open format", Format_fs2_open);
-	Format_fs2_retail = GetProfileInt("Preferences", "FS2 retail format", Format_fs2_retail);
-	Format_fs1_retail = GetProfileInt("Preferences", "FS1 retail format", Format_fs1_retail);
+	Mission_save_format = GetProfileInt("Preferences", "FS2 open format", FSO_FORMAT_STANDARD);
+	Mission_save_format = GetProfileInt("Preferences", "Mission save format", Mission_save_format);
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -493,9 +492,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Lighting On", Lighting_on);
 
 	// Goober5000
-	WriteProfileInt("Preferences", "FS2 open format", Format_fs2_open);
-	WriteProfileInt("Preferences", "FS2 retail format", Format_fs2_retail);
-	WriteProfileInt("Preferences", "FS1 retail format", Format_fs1_retail);
+	WriteProfileInt("Preferences", "Mission save format", Mission_save_format);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);

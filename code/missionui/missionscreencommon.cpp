@@ -44,6 +44,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
 #include "weapon/weapon.h"
@@ -1037,6 +1038,16 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 	return 0;
 }
 
+void common_fire_stage_script_hook(int old_stage, int new_stage)
+{
+	// call a scripting hook for switching stages
+	// note that we add 1 because Lua arrays are 1-based
+	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
+	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
+	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
+	Script_system.RemHookVars(2, "OldStage", "NewStage");
+}
+
 // NEWSTUFF BEGIN
 
 // save ship selection loadout to the Player_loadout struct
@@ -1101,11 +1112,11 @@ void wss_maybe_restore_loadout()
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
-		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
+				if ((slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1114,11 +1125,11 @@ void wss_maybe_restore_loadout()
 
 	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < ship_info_size())) {
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < Num_weapon_types)) {
+				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < weapon_info_size())) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1127,7 +1138,7 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+	for (i = 0; i < ship_info_size(); i++) {
 		if (Ss_pool[i] >= 1) {
 			this_loadout_ships[i] += Ss_pool[i];
 		}
@@ -1136,7 +1147,7 @@ void wss_maybe_restore_loadout()
 		}
 	}
 	
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		if (Wl_pool[i] >= 1) {
 			this_loadout_weapons[i] += Wl_pool[i];
 		}
@@ -1149,7 +1160,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1158,7 +1169,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
+			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
@@ -1169,12 +1180,12 @@ void wss_maybe_restore_loadout()
 	}	
 
 	// restore the ship pool
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
 	// restore the weapons pool
-	for ( i = 0; i < Num_weapon_types; i++ ) {
+	for ( i = 0; i < weapon_info_size(); i++ ) {
 		Wl_pool[i] = this_loadout_weapons[i]; 
 	}
 }
@@ -1335,7 +1346,7 @@ int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player
 
 
 	// write the ship pool 
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		if ( Ss_pool[i] > 0 ) {	
 			block[offset++] = (ubyte)i;
 			Assert( Ss_pool[i] < UCHAR_MAX );
@@ -1352,7 +1363,7 @@ int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player
 	block[offset++] = 0xff;	// signals start of weapons pool
 
 	// write the weapon pool
-	for ( i = 0; i < Num_weapon_types; i++ ) {
+	for ( i = 0; i < weapon_info_size(); i++ ) {
 		if ( Wl_pool[i] > 0 ) {
 			block[offset++] = (ubyte)i;
 			ishort = INTEL_SHORT( (short)Wl_pool[i] );
@@ -1525,7 +1536,7 @@ int restore_wss_data(ubyte *block)
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
-	angles rot_angles = {0.0f,0.0f,0.0f};
+	angles rot_angles = vmd_zero_angles;
 	float zoom = closeup_zoom * 2.5f;
 
 	if(sip == NULL)

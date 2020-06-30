@@ -108,7 +108,7 @@ void swarm_maybe_fire_missile(int shipnum)
 	}
 
 	weapon_info_index = swp->secondary_bank_weapons[sp->swarm_missile_bank];
-	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
+	Assert( weapon_info_index >= 0 && weapon_info_index < weapon_info_size() );
 
 	// if swarm secondary bank is not a swarm missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Swarm]) ) {
@@ -437,8 +437,8 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	// weapon info pointer
 	//Removed check in the interests of speed -WMC
 	/*
-	Assert((turret_weapon_class >= 0) && (turret_weapon_class < Num_weapon_types));
-	if((turret_weapon_class < 0) || (turret_weapon_class >= Num_weapon_types)){
+	Assert((turret_weapon_class >= 0) && (turret_weapon_class < weapon_info_size()));
+	if((turret_weapon_class < 0) || (turret_weapon_class >= weapon_info_size())){
 		return;
 	}
 	*/
@@ -505,7 +505,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	int bank_fired = swp->current_secondary_bank;
 
 	// initialize tsi
-	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
+	tsi->weapon_class = weapon_info_get_index(wip);
 	if (wip->wi_flags[Weapon::Info_Flags::Swarm]) {
 		tsi->num_to_launch = wip->swarm_count;
 	} else {

@@ -38,7 +38,8 @@
 namespace fso {
 namespace fred {
 
-int CFred_mission_save::autosave_mission_file(char* pathname) {
+int CFred_mission_save::autosave_mission_file(char* pathname)
+{
 	char backup_name[256], name2[256];
 	int i;
 
@@ -60,7 +61,8 @@ int CFred_mission_save::autosave_mission_file(char* pathname) {
 	return err;
 }
 
-void CFred_mission_save::bypass_comment(const char* comment, const char* end) {
+void CFred_mission_save::bypass_comment(const char* comment, const char* end)
+{
 	char* ch = strstr(raw_ptr, comment);
 	if (ch != NULL) {
 		if (end != NULL) {
@@ -84,17 +86,20 @@ void CFred_mission_save::bypass_comment(const char* comment, const char* end) {
 	}
 }
 
-void CFred_mission_save::convert_special_tags_to_retail(char* text, int max_len) {
+void CFred_mission_save::convert_special_tags_to_retail(char* text, int max_len)
+{
 	replace_all(text, "$quote", "''", max_len);
 	replace_all(text, "$semicolon", ",", max_len);
 }
 
-void CFred_mission_save::convert_special_tags_to_retail(SCP_string& text) {
+void CFred_mission_save::convert_special_tags_to_retail(SCP_string& text)
+{
 	replace_all(text, "$quote", "''");
 	replace_all(text, "$semicolon", ",");
 }
 
-void CFred_mission_save::convert_special_tags_to_retail() {
+void CFred_mission_save::convert_special_tags_to_retail()
+{
 	int i, team, stage;
 
 	if (save_format != MissionFormat::RETAIL) {
@@ -123,7 +128,13 @@ void CFred_mission_save::convert_special_tags_to_retail() {
 	}
 }
 
-int CFred_mission_save::fout(const char* format, ...) {
+int CFred_mission_save::fout(const char* format, ...)
+{
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
+		return 0;
+	}
+
 	SCP_string str;
 	va_list args;
 
@@ -139,7 +150,13 @@ int CFred_mission_save::fout(const char* format, ...) {
 	return 0;
 }
 
-int CFred_mission_save::fout_ext(const char* pre_str, const char* format, ...) {
+int CFred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
+{
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
+		return 0;
+	}
+
 	SCP_string str_scp;
 	SCP_string str_out_scp;
 	va_list args;
@@ -241,13 +258,19 @@ int CFred_mission_save::fout_ext(const char* pre_str, const char* format, ...) {
 	return 0;
 }
 
-int CFred_mission_save::fout_version(const char* format, ...) {
+int CFred_mission_save::fout_version(const char* format, ...)
+{
 	SCP_string str_scp;
 	char* ch = NULL;
 	va_list args;
 
 	if (err) {
 		return err;
+	}
+
+	// don't output anything if we're saving in retail and have version-specific comments active
+	if (save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
+		return 0;
 	}
 
 	// output the version first thing, but skip the special case where we use
@@ -330,7 +353,8 @@ int CFred_mission_save::fout_version(const char* format, ...) {
 	return 0;
 }
 
-void CFred_mission_save::parse_comments(int newlines) {
+void CFred_mission_save::parse_comments(int newlines)
+{
 	char* comment_start = NULL;
 	int state = 0, same_line = 0, first_comment = 1, tab = 0, flag = 0;
 	bool version_added = false;
@@ -507,7 +531,8 @@ void CFred_mission_save::parse_comments(int newlines) {
 	return;
 }
 
-void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship) {
+void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
+{
 	const char* str = NULL;
 	char buf[80];
 	int i, valid, flag = 1;
@@ -668,7 +693,8 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship) {
 	fso_comment_pop(true);
 }
 
-int CFred_mission_save::save_asteroid_fields() {
+int CFred_mission_save::save_asteroid_fields()
+{
 	int i;
 
 	fred_parse_flag = 0;
@@ -763,7 +789,8 @@ int CFred_mission_save::save_asteroid_fields() {
 	return err;
 }
 
-int CFred_mission_save::save_bitmaps() {
+int CFred_mission_save::save_bitmaps()
+{
 	int i;
 	uint j;
 
@@ -909,7 +936,8 @@ int CFred_mission_save::save_bitmaps() {
 	return err;
 }
 
-int CFred_mission_save::save_briefing() {
+int CFred_mission_save::save_briefing()
+{
 	int i, j, k, nb;
 	SCP_string sexp_out;
 	brief_stage* bs;
@@ -1097,7 +1125,8 @@ int CFred_mission_save::save_briefing() {
 	return err;
 }
 
-int CFred_mission_save::save_cmd_brief() {
+int CFred_mission_save::save_cmd_brief()
+{
 	int stage;
 
 	stage = 0;
@@ -1140,7 +1169,8 @@ int CFred_mission_save::save_cmd_brief() {
 	return err;
 }
 
-int CFred_mission_save::save_cmd_briefs() {
+int CFred_mission_save::save_cmd_briefs()
+{
 	int i;
 
 	for (i = 0; i < Num_teams; i++) {
@@ -1151,7 +1181,8 @@ int CFred_mission_save::save_cmd_briefs() {
 	return err;
 }
 
-void CFred_mission_save::fso_comment_push(const char* ver) {
+void CFred_mission_save::fso_comment_push(const char* ver)
+{
 	if (fso_ver_comment.empty()) {
 		fso_ver_comment.push_back(SCP_string(ver));
 		return;
@@ -1186,7 +1217,8 @@ void CFred_mission_save::fso_comment_push(const char* ver) {
 	}
 }
 
-void CFred_mission_save::fso_comment_pop(bool pop_all) {
+void CFred_mission_save::fso_comment_pop(bool pop_all)
+{
 	if (fso_ver_comment.empty()) {
 		return;
 	}
@@ -1199,7 +1231,8 @@ void CFred_mission_save::fso_comment_pop(bool pop_all) {
 	fso_ver_comment.pop_back();
 }
 
-int CFred_mission_save::save_common_object_data(object* objp, ship* shipp) {
+int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
+{
 	int j, z;
 	ship_subsys* ptr = NULL;
 	ship_info* sip = NULL;
@@ -1219,7 +1252,7 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp) {
 	}
 
 	// Goober5000
-	if (save_format != MissionFormat::RETAIL && (shipp->special_hitpoints)) {
+	if (save_format != MissionFormat::RETAIL && (shipp->special_hitpoints > 0)) {
 		temp_max_hull_strength = (float) shipp->special_hitpoints;
 	} else {
 		temp_max_hull_strength = sip->max_hull_strength;
@@ -1396,7 +1429,8 @@ void CFred_mission_save::save_custom_bitmap(const char* expected_string_640,
 											const char* expected_string_1024,
 											const char* string_field_640,
 											const char* string_field_1024,
-											int blank_lines) {
+											int blank_lines)
+{
 	if (save_format != MissionFormat::RETAIL) {
 		if ((*string_field_640 != '\0') || (*string_field_1024 != '\0')) {
 			while (blank_lines-- > 0) {
@@ -1414,7 +1448,8 @@ void CFred_mission_save::save_custom_bitmap(const char* expected_string_640,
 	}
 }
 
-int CFred_mission_save::save_cutscenes() {
+int CFred_mission_save::save_cutscenes()
+{
 	char type[NAME_LENGTH];
 	SCP_string sexp_out;
 
@@ -1481,7 +1516,8 @@ int CFred_mission_save::save_cutscenes() {
 	return err;
 }
 
-int CFred_mission_save::save_debriefing() {
+int CFred_mission_save::save_debriefing()
+{
 	int j, i;
 	SCP_string sexp_out;
 
@@ -1541,7 +1577,8 @@ int CFred_mission_save::save_debriefing() {
 	return err;
 }
 
-int CFred_mission_save::save_events() {
+int CFred_mission_save::save_events()
+{
 	SCP_string sexp_out;
 	int i, j, add_flag;
 
@@ -1651,6 +1688,25 @@ int CFred_mission_save::save_events() {
 			fout(" %d", Mission_events[i].team);
 		}
 
+		// save flags, if any
+		// (the transient flags are not used in FRED, so if the flags field is nonzero they will all be meaningful flags from the flag list)
+		if (save_format != MissionFormat::RETAIL && Mission_events[i].flags != 0) {
+			fso_comment_push(";;FSO 20.0.0;;");
+			if (optional_string_fred("+Event Flags: (", "$Formula:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Event Flags: (");
+			}
+			fso_comment_pop();
+
+			for (j = 0; j < Num_mission_event_flags; ++j) {
+				if (Mission_events[i].flags & Mission_event_flags[j].def) {
+					fout(" \"%s\"", Mission_event_flags[j].name);
+				}
+			}
+			fout(" )");
+		}
+
 		if (save_format != MissionFormat::RETAIL && Mission_events[i].mission_log_flags != 0) {
 			fso_comment_push(";;FSO 3.6.11;;");
 			if (optional_string_fred("+Event Log Flags: (", "$Formula:")) {
@@ -1677,7 +1733,8 @@ int CFred_mission_save::save_events() {
 	return err;
 }
 
-int CFred_mission_save::save_fiction() {
+int CFred_mission_save::save_fiction()
+{
 	if (mission_has_fiction()) {
 		if (save_format != MissionFormat::RETAIL) {
 			if (optional_string_fred("#Fiction Viewer")) {
@@ -1768,7 +1825,8 @@ int CFred_mission_save::save_fiction() {
 	return err;
 }
 
-int CFred_mission_save::save_goals() {
+int CFred_mission_save::save_goals()
+{
 	SCP_string sexp_out;
 	int i;
 
@@ -1852,14 +1910,16 @@ int CFred_mission_save::save_goals() {
 	return err;
 }
 
-int CFred_mission_save::save_matrix(matrix& m) {
+int CFred_mission_save::save_matrix(matrix& m)
+{
 	fout("\n\t%f, %f, %f,\n", m.vec.rvec.xyz.x, m.vec.rvec.xyz.y, m.vec.rvec.xyz.z);
 	fout("\t%f, %f, %f,\n", m.vec.uvec.xyz.x, m.vec.uvec.xyz.y, m.vec.uvec.xyz.z);
 	fout("\t%f, %f, %f", m.vec.fvec.xyz.x, m.vec.fvec.xyz.y, m.vec.fvec.xyz.z);
 	return 0;
 }
 
-int CFred_mission_save::save_messages() {
+int CFred_mission_save::save_messages()
+{
 	int i;
 
 	fred_parse_flag = 0;
@@ -1939,7 +1999,8 @@ int CFred_mission_save::save_messages() {
 	return err;
 }
 
-int CFred_mission_save::save_mission_file(const char* pathname_in) {
+int CFred_mission_save::save_mission_file(const char* pathname_in)
+{
 	char backup_name[256], savepath[MAX_PATH_LEN], pathname[MAX_PATH_LEN];
 
 	strcpy_s(pathname, pathname_in);
@@ -1971,7 +2032,8 @@ int CFred_mission_save::save_mission_file(const char* pathname_in) {
 	return err;
 }
 
-int CFred_mission_save::save_mission_info() {
+int CFred_mission_save::save_mission_info()
+{
 	required_string_fred("#Mission Info");
 	parse_comments(0);
 
@@ -2324,7 +2386,8 @@ int CFred_mission_save::save_mission_info() {
 	return err;
 }
 
-void CFred_mission_save::save_mission_internal(const char* pathname) {
+void CFred_mission_save::save_mission_internal(const char* pathname)
+{
 	time_t rawtime;
 
 	time(&rawtime);
@@ -2397,7 +2460,8 @@ void CFred_mission_save::save_mission_internal(const char* pathname) {
 		mprintf(("Mission saving error code #%d\n", err));
 }
 
-int CFred_mission_save::save_music() {
+int CFred_mission_save::save_music()
+{
 	required_string_fred("#Music");
 	parse_comments(2);
 
@@ -2459,7 +2523,7 @@ int CFred_mission_save::save_music() {
 			 Mission_music[SCORE_DEBRIEF_SUCCESS] < 0 ? "None"
 													  : Spooled_music[Mission_music[SCORE_DEBRIEF_SUCCESS]].name);
 	}
-	if (Mission_music[SCORE_DEBRIEF_AVERAGE] != event_music_get_spooled_music_index("Average")) {
+	if (save_format != MissionFormat::RETAIL && Mission_music[SCORE_DEBRIEF_AVERAGE] != event_music_get_spooled_music_index("Average")) {
 		if (optional_string_fred("$Debriefing Average Music:")) {
 			parse_comments(1);
 		} else {
@@ -2500,6 +2564,9 @@ int CFred_mission_save::save_music() {
 
 int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 {
+	if (save_format == MissionFormat::RETAIL)
+		return err;
+
 	// for writing to file; c.f. parse_warp_params
 	const char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 
@@ -2594,7 +2661,8 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 	return err;
 }
 
-int CFred_mission_save::save_objects() {
+int CFred_mission_save::save_objects()
+{
 	SCP_string sexp_out;
 	int i, z;
 	ai_info* aip;
@@ -2658,7 +2726,7 @@ int CFred_mission_save::save_objects() {
 		}
 
 		// optional callsign
-		if (strlen(Fred_callsigns[i])) {
+		if (save_format != MissionFormat::RETAIL && strlen(Fred_callsigns[i])) {
 			fout("\n$Callsign: %s\n", Fred_callsigns[i]);
 		}
 
@@ -2666,7 +2734,7 @@ int CFred_mission_save::save_objects() {
 		parse_comments();
 		fout(" %s", Iff_info[shipp->team].iff_name);
 
-		if (Ship_info[shipp->ship_info_index].uses_team_colors) {
+		if (save_format != MissionFormat::RETAIL && Ship_info[shipp->ship_info_index].uses_team_colors) {
 			required_string_fred("$Team Color Setting:");
 			parse_comments();
 			fout(" %s", shipp->team_name.c_str());
@@ -3222,7 +3290,7 @@ int CFred_mission_save::save_objects() {
 			}
 		}
 
-		// check the ship flag about killing off the ship before a missino starts.  Write out the appropriate
+		// check the ship flag about killing off the ship before a mission starts.  Write out the appropriate
 		// variable if necessary
 		if (shipp->flags[Ship::Ship_Flags::Kill_before_mission]) {
 			if (optional_string_fred("+Destroy At:", "$Name:")) {
@@ -3356,7 +3424,9 @@ int CFred_mission_save::save_objects() {
 	return err;
 }
 
-int CFred_mission_save::save_players() {
+int CFred_mission_save::save_players()
+{
+	bool wrote_fso_data = false;
 	int i, j;
 	int var_idx;
 	int used_pool[MAX_WEAPON_TYPES];
@@ -3382,7 +3452,7 @@ int CFred_mission_save::save_players() {
 	}
 
 	// write out callsign list
-	if (Mission_callsign_count > 0) {
+	if (save_format != MissionFormat::RETAIL && Mission_callsign_count > 0) {
 		fout("\n\n#Callsigns:\n");
 
 		// write them all out
@@ -3413,6 +3483,7 @@ int CFred_mission_save::save_players() {
 			if (strlen(Team_data[i].ship_list_variables[j])) {
 				var_idx = get_index_sexp_variable_name(Team_data[i].ship_list_variables[j]);
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
+				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
@@ -3423,6 +3494,7 @@ int CFred_mission_save::save_players() {
 			if (strlen(Team_data[i].ship_count_variables[j])) {
 				var_idx = get_index_sexp_variable_name(Team_data[i].ship_count_variables[j]);
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
+				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
@@ -3440,11 +3512,13 @@ int CFred_mission_save::save_players() {
 
 		fout(" (\n");
 		generate_weaponry_usage_list_team(i, used_pool);
+
 		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
 			// first output the weapon name or a variable that sets it 
 			if (strlen(Team_data[i].weaponry_pool_variable[j])) {
 				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[j]);
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
+				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
@@ -3457,6 +3531,7 @@ int CFred_mission_save::save_players() {
 			if (strlen(Team_data[i].weaponry_amount_variable[j])) {
 				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[j]);
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
+				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
@@ -3470,7 +3545,7 @@ int CFred_mission_save::save_players() {
 		}
 
 		// now we add anything left in the used pool as a static entry
-		for (j = 0; j < Num_weapon_types; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (used_pool[j] > 0) {
 				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
@@ -3478,15 +3553,24 @@ int CFred_mission_save::save_players() {
 
 		fout(")");
 
+		// sanity check
+		if (save_format == MissionFormat::RETAIL && wrote_fso_data) {
+			// this is such an unlikely (and hard-to-fix) case that a warning should be sufficient
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"Incompatibility with retail mission format",
+				"Warning: This mission contains variable-based team loadout information, but you are saving in the retail mission format. Retail FRED and FS2 will not be able to read this information.",
+				{ DialogButton::Ok });
+		}
+
 		// Goober5000 - mjn.mixael's required weapon feature
 		bool uses_required_weapon = false;
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (Team_data[i].weapon_required[j]) {
 				uses_required_weapon = true;
 				break;
 			}
 		}
-		if (uses_required_weapon) {
+		if (save_format != MissionFormat::RETAIL && uses_required_weapon) {
 			if (optional_string_fred("+Required for mission:", "$Starting Shipname:")) {
 				parse_comments(2);
 			} else {
@@ -3494,7 +3578,7 @@ int CFred_mission_save::save_players() {
 			}
 
 			fout(" (");
-			for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+			for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 				if (Team_data[i].weapon_required[j]) {
 					fout(" \"%s\"", Weapon_info[j].name);
 				}
@@ -3510,7 +3594,8 @@ int CFred_mission_save::save_players() {
 	return err;
 }
 
-int CFred_mission_save::save_plot_info() {
+int CFred_mission_save::save_plot_info()
+{
 	if (save_format == MissionFormat::RETAIL) {
 		if (optional_string_fred("#Plot Info")) {
 			parse_comments(2);
@@ -3560,7 +3645,8 @@ int CFred_mission_save::save_plot_info() {
 	return err;
 }
 
-int CFred_mission_save::save_reinforcements() {
+int CFred_mission_save::save_reinforcements()
+{
 	int i, j, type;
 
 	fred_parse_flag = 0;
@@ -3633,7 +3719,8 @@ int CFred_mission_save::save_reinforcements() {
 	return err;
 }
 
-void CFred_mission_save::save_single_dock_instance(ship* shipp, dock_instance* dock_ptr) {
+void CFred_mission_save::save_single_dock_instance(ship* shipp, dock_instance* dock_ptr)
+{
 	Assert(shipp && dock_ptr);
 	Assert(dock_ptr->docked_objp->type == OBJ_SHIP || dock_ptr->docked_objp->type == OBJ_START);
 
@@ -3670,7 +3757,8 @@ void CFred_mission_save::save_single_dock_instance(ship* shipp, dock_instance* d
 	fso_comment_pop(true);
 }
 
-void CFred_mission_save::save_turret_info(ship_subsys* ptr, int ship) {
+void CFred_mission_save::save_turret_info(ship_subsys* ptr, int ship)
+{
 	int i, z;
 	ship_weapon* wp = &ptr->weapons;
 
@@ -3762,7 +3850,8 @@ void CFred_mission_save::save_turret_info(ship_subsys* ptr, int ship) {
 	fso_comment_pop(true);
 }
 
-int CFred_mission_save::save_variables() {
+int CFred_mission_save::save_variables()
+{
 	char* type;
 	char number[] = "number";
 	char string[] = "string";
@@ -3845,12 +3934,14 @@ int CFred_mission_save::save_variables() {
 	return err;
 }
 
-int CFred_mission_save::save_vector(vec3d& v) {
+int CFred_mission_save::save_vector(vec3d& v)
+{
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
 }
 
-int CFred_mission_save::save_waypoints() {
+int CFred_mission_save::save_waypoints()
+{
 	//object *ptr;
 
 	fred_parse_flag = 0;
@@ -3868,43 +3959,48 @@ int CFred_mission_save::save_waypoints() {
 		parse_comments();
 		fout(" %s", jnp->GetName());
 
-		if (jnp->IsSpecialModel()) {
-			if (optional_string_fred("+Model File:", "$Jump Node:")) {
+		if (save_format != MissionFormat::RETAIL) {
+			if (jnp->IsSpecialModel()) {
+				if (optional_string_fred("+Model File:", "$Jump Node:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Model File:");
+				}
+
+				int model = jnp->GetModelNumber();
+				polymodel* pm = model_get(model);
+				fout(" %s", pm->filename);
+			}
+
+			if (jnp->IsColored()) {
+				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Alphacolor:");
+				}
+
+				color jn_color = jnp->GetColor();
+				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
+			}
+
+			int hidden_is_there = optional_string_fred("+Hidden:", "$Jump Node:");
+			if (hidden_is_there) {
 				parse_comments();
-			} else {
-				fout("\n+Model File:");
 			}
 
-			int model = jnp->GetModelNumber();
-			polymodel* pm = model_get(model);
-			fout(" %s", pm->filename);
-		}
+			if (hidden_is_there || jnp->IsHidden()) {
+				if (!hidden_is_there) {
+					fout("\n+Hidden:");
+				}
 
-		if (jnp->IsColored()) {
-			if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
-				parse_comments();
-			} else {
-				fout("\n+Alphacolor:");
-			}
-
-			color jn_color = jnp->GetColor();
-			fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
-		}
-
-		int hidden_is_there = optional_string_fred("+Hidden:", "$Jump Node:");
-		if (hidden_is_there) {
-			parse_comments();
-		}
-
-		if (hidden_is_there || jnp->IsHidden()) {
-			if (!hidden_is_there) {
-				fout("\n+Hidden:");
-			}
-
-			if (jnp->IsHidden()) {
-				fout(" %s", "true");
-			} else {
-				fout(" %s", "false");
+				if (jnp->IsHidden()) {
+					fout(" %s", "true");
+				}
+				else {
+					fout(" %s", "false");
+				}
 			}
 		}
 
@@ -3933,7 +4029,8 @@ int CFred_mission_save::save_waypoints() {
 	return err;
 }
 
-int CFred_mission_save::save_waypoint_list(waypoint_list* wp_list) {
+int CFred_mission_save::save_waypoint_list(waypoint_list* wp_list)
+{
 	Assert(wp_list != NULL);
 	SCP_vector<waypoint>::iterator ii;
 
@@ -3945,7 +4042,8 @@ int CFred_mission_save::save_waypoint_list(waypoint_list* wp_list) {
 	return 0;
 }
 
-int CFred_mission_save::save_wings() {
+int CFred_mission_save::save_wings()
+{
 	SCP_string sexp_out;
 	int i, j, z, count = 0;
 

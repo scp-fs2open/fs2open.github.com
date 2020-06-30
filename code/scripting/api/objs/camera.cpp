@@ -219,7 +219,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
 }
 
-ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time, number Zoom deceleration Time]",
+ADE_FUNC(setFOV, l_Camera, "[number FOV, number ZoomTime, number ZoomAccelerationTime, number ZoomDecelerationTime]",
 		 "Sets camera FOV"
 			 "<br>FOV is the final field of view, in radians, of the camera."
 			 "<br>Zoom Time is the total time to take zooming in or out."
@@ -243,7 +243,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time, number Deceleration time]",
+ADE_FUNC(setOrientation, l_Camera, "[orientation WorldOrientation, number RotationTime, number AccelerationTime, number DecelerationTime]",
 		 "Sets camera orientation and velocity data."
 			 "<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
 			 "<br>Rotation time (seconds) is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
@@ -276,7 +276,7 @@ ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotat
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, number Acceleration Time, number Deceleration Time]",
+ADE_FUNC(setPosition, l_Camera, "[vector Position, number TranslationTime, number AccelerationTime, number DecelerationTime]",
 		 "Sets camera position and velocity data."
 			 "<br>Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
 			 "<br>Translation time (seconds) is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."

@@ -1,19 +1,31 @@
 ---
 Checks: "-*,\
 modernize-*,\
--modernize-raw-string-literal,\
--modernize-use-using,\
--modernize-make-unique,\
--modernize-use-trailing-return-type,\
 -modernize-avoid-c-arrays,\
+-modernize-make-unique,\
+-modernize-raw-string-literal,\
+-modernize-use-trailing-return-type,\
+-modernize-use-using,\
 performance-*,\
 -performance-type-promotion-in-math-fn,\
 misc-*,\
 -misc-macro-parentheses,\
 -misc-misplaced-widening-cast,\
+-misc-non-private-member-variables-in-classes,\
 -misc-static-assert,\
 -misc-unused-parameters,\
--misc-non-private-member-variables-in-classes,\
+readability-*,\
+-readability-avoid-const-params-in-decls,\
+-readability-else-after-return,\
+-readability-function-size,\
+-readability-identifier-naming,\
+-readability-implicit-bool-conversion,\
+-readability-inconsistent-declaration-parameter-name,\
+-readability-isolate-declaration,\
+-readability-magic-numbers,\
+-readability-named-parameter,\
+-readability-qualified-auto,\
+-readability-uppercase-literal-suffix,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'
@@ -23,5 +35,7 @@ CheckOptions:
     value:        'assert,Assert,Assertion'
   - key:          'modernize-use-emplace.ContainersWithPushBack'
     value:        'std::vector;std::deque;std::list;SCP_vector;SCP_deque;SCP_list'
+  - key:          'readability-braces-around-statements.ShortStatementLines'
+    value:        '4' # Avoid flagging simple if (...) return false; statements
 ...
 

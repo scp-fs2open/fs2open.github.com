@@ -678,7 +678,7 @@ void player_select_button_pressed(int n)
 			//  Only do this when changing modes, keeps bottom text from being empty by accident
 			player_select_set_bottom_text("");
 
-			player_select_set_bottom_text(XSTR( "Single Player Mode", 376));
+			player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
 
 			// reinitialize as single player mode
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);

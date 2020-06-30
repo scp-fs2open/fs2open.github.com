@@ -14,7 +14,7 @@ void initialize();
 class FFmpegException: public std::runtime_error {
  public:
 	explicit FFmpegException(const std::string& msg) : std::runtime_error(msg) {}
-	~FFmpegException() SCP_NOEXCEPT override {}
+	~FFmpegException() noexcept override = default;
 };
 
 }

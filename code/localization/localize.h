@@ -19,13 +19,14 @@
 // LOCALIZE DEFINES/VARS
 //
 
-// language defines
+// language defines (English should always be index 0)
 #define LCL_ENGLISH						0
 #define LCL_GERMAN						1
 #define LCL_FRENCH						2
 #define LCL_POLISH						3
 
-#define FS2_OPEN_DEFAULT_LANGUAGE		0
+#define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
+#define	LCL_DEFAULT						0
 
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
@@ -56,10 +57,13 @@ extern int Lcl_special_chars;
 extern int Lcl_fr;
 extern int Lcl_gr;
 extern int Lcl_pl;
-extern int Lcl_english;
+extern int Lcl_en;
 
 // The currently active language. Index into Lcl_languages.
 extern int Lcl_current_lang;
+
+// special check for misplaced mod data (see Mantis #2942)
+extern bool *Lcl_unexpected_tstring_check;
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -107,11 +111,11 @@ void lcl_fred_replace_stuff(SCP_string &text);
 // valid input to this function includes :
 // "this is some text"
 // XSTR("wheeee", -1)
-// XSTR("whee", 20)
+// XSTR("whee", 2000)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = NULL);
-void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
+void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = nullptr);
+void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = nullptr);
 
 // translate the specified string based upon the current language
 const char *XSTR(const char *str, int index);

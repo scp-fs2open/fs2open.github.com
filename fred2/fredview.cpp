@@ -107,9 +107,7 @@ Marking_box	marking_box;
 object_orient_pos	rotation_backup[MAX_OBJECTS];
 
 // Goober5000 (currently, FS1 retail not implemented)
-int Format_fs2_open = FSO_FORMAT_STANDARD;
-int Format_fs2_retail = 0;
-int Format_fs1_retail = 0;
+int Mission_save_format = FSO_FORMAT_STANDARD;
 
 // used by error checker, but needed in more than just one function.
 char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
@@ -526,9 +524,11 @@ int drag_objects()
 		Dup_drag = 0;
 
 	if (Dup_drag == 1) {
-		dup_object(NULL);  // reset waypoint list
 		cobj = Duped_wing = -1;
 		flag = 0;
+
+		int duping_waypoint_list = -1;
+
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
@@ -542,6 +542,15 @@ int drag_objects()
 
 				} else
 					Duped_wing = -1;
+
+				// make sure we dup as many waypoint lists as we have
+				if (objp->type == OBJ_WAYPOINT) {
+					int this_list = calc_waypoint_list_index(objp->instance);
+					if (duping_waypoint_list != this_list) {
+						dup_object(nullptr);  // reset waypoint list
+						duping_waypoint_list = this_list;
+					}
+				}
 
 				flag = 1;
 				z = dup_object(objp);
@@ -1599,7 +1608,7 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + static_cast<int>(Ship_info.size()) + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + ship_info_size() + 3)) {
 			if (nCode == CN_COMMAND) {
 				cur_model_index = id - SHIP_TYPES;
 				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
@@ -2433,7 +2442,7 @@ int CFREDView::global_error_check()
 			}
 
 			z = Ships[i].ship_info_index;
-			if ((z < 0) || (z >= static_cast<int>(Ship_info.size()))){
+			if ((z < 0) || (z >= ship_info_size())){
 				return internal_error("A ship has an illegal class");
 			}
 
@@ -3649,7 +3658,7 @@ void fred_check_message_personas()
 			continue;
 
 		// now look for the send-message opeator
-		op = get_operator_const( Sexp_nodes[i].text );
+		op = get_operator_const( i );
 		if ( op != OP_SEND_MESSAGE )
 			continue;
 
@@ -4512,9 +4521,7 @@ void CFREDView::OnDumpStats()
 
 void CFREDView::OnFormatFs2Open() 
 {
-	Format_fs2_open = FSO_FORMAT_STANDARD;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_STANDARD;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4522,14 +4529,12 @@ void CFREDView::OnFormatFs2Open()
 
 void CFREDView::OnUpdateFormatFs2Open(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_STANDARD);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_STANDARD);
 }
 
 void CFREDView::OnFormatFs2OpenComp() 
 {
-	Format_fs2_open = FSO_FORMAT_COMPATIBILITY_MODE;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_COMPATIBILITY_MODE;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4537,14 +4542,12 @@ void CFREDView::OnFormatFs2OpenComp()
 
 void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE);
 }
 
 void CFREDView::OnFormatFs2Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 1;
-	Format_fs1_retail = 0;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4552,14 +4555,12 @@ void CFREDView::OnFormatFs2Retail()
 
 void CFREDView::OnUpdateFormatFs2Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnFormatFs1Retail() 
 {
-	Format_fs2_open = FSO_FORMAT_RETAIL;
-	Format_fs2_retail = 0;
-	Format_fs1_retail = 1;
+	Mission_save_format = FSO_FORMAT_RETAIL;
 
 	theApp.write_ini_file();
 	Update_window = 1;
@@ -4567,7 +4568,7 @@ void CFREDView::OnFormatFs1Retail()
 
 void CFREDView::OnUpdateFormatFs1Retail(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs1_retail);
+	pCmdUI->SetCheck(Mission_save_format == FSO_FORMAT_RETAIL);
 }
 
 void CFREDView::OnEditorsSetGlobalShipFlags() 

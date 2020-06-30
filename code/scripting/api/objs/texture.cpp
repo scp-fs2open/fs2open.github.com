@@ -197,7 +197,7 @@ ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handl
 	return ade_set_args(L, "i", num);
 }
 
-ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
+ADE_FUNC(getFrame, l_Texture, "number ElapsedTimeSeconds, [boolean Loop]",
          "Get the frame number from the elapsed time of the animation<br>"
          "The 1st argument is the time that has elapsed since the animation started<br>"
          "If 2nd argument is set to true, the animation is expected to loop when the elapsed time exceeds the duration "

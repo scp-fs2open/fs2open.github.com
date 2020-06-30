@@ -70,14 +70,14 @@ void generate_weaponry_usage_list_wing(int wing_num, int* arr) {
 		swp = &Ships[Wings[wing_num].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
 				arr[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >= 0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->secondary_bank_weapons[j] >= 0 && swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
 				arr[swp->secondary_bank_weapons[j]] += (int) floor(
 					(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f
 						/ Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);

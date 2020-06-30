@@ -125,7 +125,7 @@ void hud_update_weapon_flash();
 void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
-int hud_communications_state(ship *sp);
+int hud_communications_state(ship *sp, bool for_death_scream = false);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();
@@ -148,6 +148,7 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3);
 void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 
 float hud_find_target_distance( object *targetee, object *targeter );
+float hud_find_target_distance( object *targetee, const vec3d *targeter_pos );
 
 extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
 void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
@@ -175,7 +176,7 @@ typedef struct target_display_info {
 
 extern SCP_vector<target_display_info> target_display_list;
 
-void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char *name, int flags);
+void hud_target_add_display_list(object *objp, const vertex *target_point, const vec3d *target_pos, int correction, const color *bracket_clr, const char *name, int flags);
 void hud_target_clear_display_list();
 
 class HudGaugeAutoTarget: public HudGauge

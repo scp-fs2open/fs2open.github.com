@@ -1132,7 +1132,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			}
 		} else if (Operators[op].value == OP_JETTISON_CARGO_NEW) {
 			item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
-		} else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR) {
+		} else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR || Operators[op].value == OP_TECH_REMOVE_INTEL_XSTR) {
 			item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else {
 			item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
@@ -3373,7 +3373,8 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		break;
 
 		// these sexps check the subsystem of the *second entry* on the list, not the first
-	case OP_DISTANCE_SUBSYSTEM:
+	case OP_DISTANCE_CENTER_SUBSYSTEM:
+	case OP_DISTANCE_BBOX_SUBSYSTEM:
 	case OP_SET_CARGO:
 	case OP_IS_CARGO:
 	case OP_CHANGE_AI_CLASS:
@@ -4191,11 +4192,10 @@ sexp_list_item* sexp_tree::get_listing_opf_medal_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_weapon_name() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		head.add_data(Weapon_info[i].name);
+	for (auto &wi : Weapon_info) {
+		head.add_data(wi.name);
 	}
 
 	return head.next;
@@ -4234,12 +4234,11 @@ sexp_list_item* sexp_tree::get_listing_opf_hud_gauge_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_huge_weapon() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge]) {
-			head.add_data(Weapon_info[i].name);
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::Huge]) {
+			head.add_data(wi.name);
 		}
 	}
 
@@ -4437,11 +4436,10 @@ sexp_list_item* sexp_tree::get_listing_opf_damage_type() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_animation_type() {
-	size_t t;
 	sexp_list_item head;
 
-	for (t = 0; t < MAX_TRIGGER_ANIMATION_TYPES; t++) {
-		head.add_data(Animation_type_names[t]);
+	for (const auto &animation_type_name: Animation_type_names) {
+		head.add_data(animation_type_name.second);
 	}
 
 	return head.next;
@@ -4949,6 +4947,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated
@@ -4956,6 +4955,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
@@ -4963,6 +4963,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_X:
 					case OP_SET_OBJECT_SPEED_Y:
 					case OP_SET_OBJECT_SPEED_Z:
+					case OP_DISTANCE:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -5013,6 +5014,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_ADD_SHIP:
 						case OP_TECH_ADD_WEAPON:
 						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
 						// unlike the above operators, these are deprecated
@@ -5020,13 +5022,15 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
 					case OP_TECH_ADD_INTEL:
+					case OP_TECH_REMOVE_INTEL:
 					case OP_HUD_GAUGE_SET_ACTIVE:
 					case OP_HUD_ACTIVATE_GAUGE_TYPE:
 					case OP_JETTISON_CARGO_DELAY:
 					case OP_STRING_CONCATENATE:
 					case OP_SET_OBJECT_SPEED_X:
 					case OP_SET_OBJECT_SPEED_Y:
-					case OP_SET_OBJECT_SPEED_Z:					
+					case OP_SET_OBJECT_SPEED_Z:
+					case OP_DISTANCE:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

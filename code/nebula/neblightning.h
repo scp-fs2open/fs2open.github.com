@@ -106,7 +106,7 @@ void nebl_init();
 void nebl_level_init();
 
 // set the storm (call from mission parse)
-void nebl_set_storm(char *name);
+void nebl_set_storm(const char *name);
 
 // render all lightning bolts
 void nebl_render_all();
@@ -148,9 +148,9 @@ void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev = NUL
 void nebl_jitter(l_bolt *b);
 
 // return the index of a given bolt type by name
-size_t nebl_get_bolt_index(char *name);
+size_t nebl_get_bolt_index(const char *name);
 
 // return the index of a given storm type by name
-size_t nebl_get_storm_index(char *name);
+size_t nebl_get_storm_index(const char *name);
 
 #endif

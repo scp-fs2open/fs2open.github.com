@@ -4,8 +4,6 @@ include(WriteCompilerDetectionHeader)
 set(CMAKE_CXX_STANDARD_REQUIRED 11)
 set(CMAKE_CXX_STANDARD 11)
 
-set(REQUIRED_CXX_FEATURES cxx_rvalue_references cxx_nullptr)
-
 get_property(CMAKE_CXX_KNOWN_FEATURES GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
 
 write_compiler_detection_header(

@@ -277,11 +277,9 @@ void ai_clear_ship_goals( ai_info *aip )
 
 }
 
-void ai_clear_wing_goals( int wingnum )
+void ai_clear_wing_goals( wing *wingp )
 {
 	int i;
-	wing *wingp = &Wings[wingnum];
-	//p_object *objp;
 
 	// clear the goals for all ships in the wing
 	for (i = 0; i < wingp->current_count; i++) {
@@ -292,15 +290,13 @@ void ai_clear_wing_goals( int wingnum )
 
 	}
 
-		// clear out the goals for the wing now
+	// clear out the goals for the wing now
 	for (i = 0; i < MAX_AI_GOALS; i++) {
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
 		wingp->ai_goals[i].flags.reset();
 	}
-
-
 }
 
 // routine which marks a wing goal as being complete.  We get the wingnum and a pointer to the goal
@@ -310,7 +306,7 @@ void ai_clear_wing_goals( int wingnum )
 void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 {
 	int mode, submode, priority, i;
-	char *name;
+	const char *name;
 	ai_goal *aigp;
 	wing *wingp;
 
@@ -388,7 +384,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 {
 	int i, j;
 	ai_goal *purge_goal;
-	char *name;
+	const char *name;
 	int mode, ship_index, wingnum;
 
 	// get locals for easer access
@@ -835,11 +831,10 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 {
 	int node, dummy, op;
-	char *text;
 
 	Assert ( Sexp_nodes[sexp].first != -1 );
 	node = Sexp_nodes[sexp].first;
-	text = CTEXT(node);
+	op = get_operator_const( node );
 
 	aigp->signature = Ai_goal_signature++;
 
@@ -847,8 +842,6 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	aigp->time = Missiontime;
 	aigp->type = type;
 	aigp->flags.reset();
-
-	op = get_operator_const( text );
 
 	switch (op) {
 
@@ -1018,7 +1011,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	}
 
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
-		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, MAX_GOAL_PRIORITY));
+		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", CTEXT(node), aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
@@ -1083,14 +1076,9 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	int goalsubmode = -1;
 
 	/* Sexp node */
-	int node = -1;
+	int node = Sexp_nodes[sexp].first;
 	/* The operator to use */
-	char* op_text = NULL;
-	int op = -1;
-
-	node = Sexp_nodes[ sexp ].first;
-	op_text = CTEXT( node );
-	op = get_operator_const( op_text );
+	int op = get_operator_const( node );
 
 	/* We now need to determine what the mode and submode values are*/
 	switch( op )
@@ -1217,11 +1205,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 }
 
 // code to add ai goals to wings.
-void ai_remove_wing_goal_sexp(int sexp, int wingnum)
+void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
-	wing *wingp = &Wings[wingnum];
 
 	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
@@ -1252,10 +1239,9 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 }
 
 // code to add ai goals to wings.
-void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
+void ai_add_wing_goal_sexp(int sexp, int type, wing *wingp)
 {
 	int i;
-	wing *wingp = &Wings[wingnum];
 
 	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
@@ -1376,7 +1362,7 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 	}
 
 	if (j >= MAX_AI_GOALS) {
-		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity", Ships[aip->shipnum].ship_name));
+		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity\n", Ships[aip->shipnum].ship_name));
 	}
 }
 
@@ -1413,21 +1399,17 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	{
 		ship *shipp = &Ships[objp->instance];
 
-		// always valid if has subspace drive
-		if (!(shipp->flags[Ship::Ship_Flags::No_subspace_drive]))
+		// always valid if has working subspace drive, not disabled, and not limited by subsystem strength
+		if ( ship_can_warp_full_check(shipp) )
 			return AI_GOAL_ACHIEVABLE;
 
-		// if no subspace drive, only valid if our mothership is present
-
-		// check that we have a mothership and that we can depart to it
-		if (shipp->departure_location == DEPART_AT_DOCK_BAY)
-		{
-			int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
-			if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
-				return AI_GOAL_ACHIEVABLE;
+		// if we can't warp, we can only depart if the ship (or its wing) departs to a fighter bay and the mothership is present
+		if (ship_can_bay_depart(shipp)) {
+			return AI_GOAL_ACHIEVABLE;
 		}
-
-		return AI_GOAL_NOT_KNOWN;
+		else {
+			return AI_GOAL_NOT_KNOWN;
+		}
 	}
 
 
@@ -1652,25 +1634,35 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 	else
 	{
+		auto ship_entry = ship_registry_get(aigp->target_name);
+
+		if (!ship_entry)
+		{
+			status = SHIP_STATUS_UNKNOWN;
+		}
 		// goal ship is currently in mission
-		if ( ship_name_lookup( aigp->target_name ) != -1 )
+		else if (ship_entry->status == ShipStatus::PRESENT)
 		{
 			status = SHIP_STATUS_ARRIVED;
 		}
 		// goal ship is still on the arrival list
-		else if ( mission_check_ship_yet_to_arrive(aigp->target_name) )
+		else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
 			status = SHIP_STATUS_NOT_ARRIVED;
 		}
 		// goal ship has left the area
-		else if ( ship_find_exited_ship_by_name(aigp->target_name) != -1 )
+		else if (ship_entry->status == ShipStatus::EXITED)
 		{
 			status = SHIP_STATUS_GONE;
 		}
 		else
 		{
-			mprintf(("Potentially incorrect behaviour in AI goal for ship %s: Ship %s could not be found among currently active, departed, or yet-to-arrive ships.\nPlease check the mission file.\n", Ships[objp->instance].ship_name, aigp->target_name));
 			status = SHIP_STATUS_UNKNOWN;
+		}
+
+		if (status == SHIP_STATUS_UNKNOWN)
+		{
+			mprintf(("Potentially incorrect behaviour in AI goal for ship %s: Ship %s could not be found among currently active, departed, or yet-to-arrive ships.\nPlease check the mission file.\n", Ships[objp->instance].ship_name, aigp->target_name));
 		}
 	}
 

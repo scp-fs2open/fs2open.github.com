@@ -3,13 +3,17 @@
 
 #include "mission.h"
 
+#include "globalincs/linklist.h"
+
 #include "freespace.h"
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "executor/GameStateExecutionContext.h"
+#include "executor/global_executors.h"
 #include "gamesequence/gamesequence.h"
-#include "globalincs/linklist.h"
 #include "hud/hudescort.h"
+#include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -22,6 +26,7 @@
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/background_element.h"
@@ -32,6 +37,7 @@
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
+#include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -215,7 +221,7 @@ ADE_FUNC(__len, l_Mission_EscortShips, NULL, "Current number of escort ships", "
 //****SUBLIBRARY: Mission/Events
 ADE_LIB_DERIV(l_Mission_Events, "Events", NULL, "Events", l_Mission);
 
-ADE_INDEXER(l_Mission_Events, "number Index/string Name", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
+ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "*s", &s))
@@ -247,7 +253,7 @@ ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number",
 //****SUBLIBRARY: Mission/SEXPVariables
 ADE_LIB_DERIV(l_Mission_SEXPVariables, "SEXPVariables", NULL, "SEXP Variables", l_Mission);
 
-ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
+ADE_INDEXER(l_Mission_SEXPVariables, "number/string IndexOrName", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
 	const char* name   = nullptr;
 	const char* newval = nullptr;
@@ -295,7 +301,7 @@ ADE_FUNC(__len, l_Mission_SEXPVariables, NULL, "Current number of SEXP variables
 //****SUBLIBRARY: Mission/Ships
 ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission);
 
-ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
+ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -387,7 +393,7 @@ ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Gets number of waypoints in mission.
 //****SUBLIBRARY: Mission/WaypointLists
 ADE_LIB_DERIV(l_Mission_WaypointLists, "WaypointLists", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
+ADE_INDEXER(l_Mission_WaypointLists, "number/string IndexOrWaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
 {
 	waypointlist_h wpl;
 	const char* name;
@@ -482,7 +488,7 @@ ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note 
 //****SUBLIBRARY: Mission/Wings
 ADE_LIB_DERIV(l_Mission_Wings, "Wings", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
+ADE_INDEXER(l_Mission_Wings, "number/string IndexOrWingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -511,7 +517,7 @@ ADE_FUNC(__len, l_Mission_Wings, NULL, "Number of wings in mission", "number", "
 //****SUBLIBRARY: Mission/Teams
 ADE_LIB_DERIV(l_Mission_Teams, "Teams", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
+ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -540,7 +546,7 @@ ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "
 //****SUBLIBRARY: Mission/Messages
 ADE_LIB_DERIV(l_Mission_Messages, "Messages", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
+ADE_INDEXER(l_Mission_Messages, "number/string IndexOrMessageName", "Messages of the mission", "message", "Message handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -587,7 +593,7 @@ ADE_FUNC(__len, l_Mission_Messages, NULL, "Number of messages in the mission", "
 //****SUBLIBRARY: Mission/BuiltinMessages
 ADE_LIB_DERIV(l_Mission_BuiltinMessages, "BuiltinMessages", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
+ADE_INDEXER(l_Mission_BuiltinMessages, "number/string IndexOrMessageName", "Built-in messages of the mission", "message", "Message handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -632,7 +638,7 @@ ADE_FUNC(__len, l_Mission_BuiltinMessages, NULL, "Number of built-in messages in
 //****SUBLIBRARY: Mission/Personas
 ADE_LIB_DERIV(l_Mission_Personas, "Personas", NULL, NULL, l_Mission);
 
-ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
+ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mission", "persona", "Persona handle or invalid handle on error")
 {
 	int idx = -1;
 
@@ -667,7 +673,7 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 	return ade_set_args(L, "i", Num_personas);
 }
 
-ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
+ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
 	const char* name = nullptr;
 	const char* text = nullptr;
@@ -687,11 +693,16 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "
 	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
 }
 
-ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=0.0[, enumeration priority = MESSAGE_PRIORITY_NORMAL[, boolean fromCommand = false]]]",
-		 "Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the missions command source.<br>"
-			 "If delay is specified the message will be delayed by the specified time in seconds<br>"
-			 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
-		 "boolean", "true if successfull, false otherwise")
+ADE_FUNC(sendMessage,
+	l_Mission,
+	"string sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"fromCommand = false]",
+	"Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the "
+	"missions command source.<br>"
+	"If delay is specified the message will be delayed by the specified time in seconds<br>"
+	"If you pass <i>nil</i> as the sender then the message will not have a sender.",
+	"boolean",
+	"true if successfull, false otherwise")
 {
 	const char* sender = nullptr;
 	int messageIdx = -1;
@@ -764,7 +775,7 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number delay=0.0]",
+ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
 		 "Sends a training message to the player. <i>time</i> is the amount in seconds to display the message, only whole seconds are used!",
 		 "boolean", "true if successfull, false otherwise")
 {
@@ -784,8 +795,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 		return ADE_RETURN_FALSE;
 	}
 
-	if (time < 0)
-	{
+	if (time < 0) {
 		LuaError(L, "Got invalid time of %d seconds!", time);
 		return ADE_RETURN_FALSE;
 	}
@@ -795,12 +805,38 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
+ADE_FUNC(sendPlainMessage,
+	l_Mission,
+	"string message",
+	"Sends a plain text message without it being present in the mission message list",
+	"boolean",
+	"true if successful false otherwise")
+{
+	const char* message = nullptr;
+
+	if (!ade_get_args(L, "s", &message))
+		return ADE_RETURN_FALSE;
+
+	if (message == nullptr)
+		return ADE_RETURN_FALSE;
+
+	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", message);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(createShip,
+	l_Mission,
+	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
+	"null vector by default */]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"ship",
+	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
 	const char* name = nullptr;
-	int sclass = -1;
-	matrix_h *orient = NULL;
-	vec3d pos = vmd_zero_vector;
+	int sclass       = -1;
+	matrix_h* orient = nullptr;
+	vec3d pos        = vmd_zero_vector;
 	ade_get_args(L, "|sooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
 	matrix *real_orient = &vmd_identity_matrix;
@@ -861,11 +897,15 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h()));
 }
 
-ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientation Orientation=null, world vector Position={0,0,0}, object Parent = nil, number Group = -1",
-		 "Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
-			 " for example, quad lasers would only need to act as one light source.",
-		 "weapon",
-		 "Weapon handle, or invalid weapon handle if weapon couldn't be created.")
+ADE_FUNC(createWeapon,
+	l_Mission,
+	"[weaponclass Class /* first weapon in table by default*/, orientation Orientation=identity, vector "
+	"WorldPosition/* null vector by default */, object Parent = "
+	"nil, number Group = -1]",
+	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
+	" for example, quad lasers would only need to act as one light source.",
+	"weapon",
+	"Weapon handle, or invalid weapon handle if weapon couldn't be created.")
 {
 	int wclass = -1;
 	object_h *parent = NULL;
@@ -902,7 +942,12 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 	return ade_set_args(L, "s", temp);
 }
 
-ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing = true]", "Starts the defined mission", "boolean", "True, or false if the function fails")
+ADE_FUNC(startMission,
+	l_Mission,
+	"string|enumeration mission /* Filename or MISSION_* enumeration */, [boolean Briefing = true]",
+	"Starts the defined mission",
+	"boolean",
+	"True, or false if the function fails")
 {
 	bool b = true;
 	char s[MAX_FILENAME_LEN];
@@ -980,7 +1025,7 @@ ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the missio
 }
 
 //WMC - These are in freespace.cpp
-ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
+ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1071,11 +1116,13 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-ADE_FUNC(addBackgroundBitmap, l_Mission,
-         "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0, int div_x = 1.0, int "
-         "div_y = 1.0",
-         "Adds a background bitmap to the mission with the specified parameters.", "background_element",
-         "A handle to the background element, or invalid handle if the function failed.")
+ADE_FUNC(addBackgroundBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1125,9 +1172,12 @@ ADE_FUNC(addBackgroundBitmap, l_Mission,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap, l_Mission, "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0",
-         "Adds a sun bitmap to the mission with the specified parameters.", "background_element",
-         "A handle to the background element, or invalid handle if the function failed.")
+ADE_FUNC(addSunBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1258,11 +1308,67 @@ static int arrivalListIter(lua_State* L)
 	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(next)));
 }
 
-ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ships for this mission", "iterator[parse_object]",
-            "An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+ADE_FUNC(getArrivalList,
+	l_Mission,
+	nullptr,
+	"Get the list of yet to arrive ships for this mission",
+	ade_type_iterator("parse_object"),
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(waitAsync,
+	l_Mission,
+	"number seconds",
+	"Performs an asynchronous wait until the specified amount of mission time has passed.",
+	"promise",
+	"A promise with no return value that resolves when the specified time has passed")
+{
+	float time = -1.0f;
+	if (!ade_get_args(L, "f", &time)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (time <= 0.0f) {
+		LuaError(L, "Invalid wait time %f specified. Must be greater than zero.", time);
+		return ADE_RETURN_NIL;
+	}
+
+	class time_resolve_context : public resolve_context, public std::enable_shared_from_this<time_resolve_context> {
+	  public:
+		time_resolve_context(int timestamp) : m_timestamp(timestamp) {}
+		void setResolver(Resolver resolver) override
+		{
+			// Keep checking the time until the timestamp is elapsed
+			auto self = shared_from_this();
+			auto cb = [this, self, resolver](
+						  executor::IExecutionContext::State contextState) {
+				if (contextState == executor::IExecutionContext::State::Invalid) {
+					resolver(true, luacpp::LuaValueList());
+					return executor::Executor::CallbackResult::Done;
+				}
+
+				if (timestamp_elapsed(m_timestamp)) {
+					resolver(false, luacpp::LuaValueList());
+					return executor::Executor::CallbackResult::Done;
+				}
+
+				return executor::Executor::CallbackResult::Reschedule;
+			};
+
+			// Use an game state execution context here to clean up references to this as soon as possible
+			executor::OnSimulationExecutor->post(
+				executor::runInContext(executor::GameStateExecutionContext::captureContext(), std::move(cb)));
+		}
+
+	  private:
+		int m_timestamp = -1;
+	};
+	return ade_set_args(L,
+		"o",
+		l_Promise.Set(LuaPromise(std::make_shared<time_resolve_context>(timestamp(fl2i(time * 1000.f))))));
 }
 
 //****LIBRARY: Campaign

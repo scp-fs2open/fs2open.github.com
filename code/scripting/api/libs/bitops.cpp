@@ -42,7 +42,7 @@ ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR 
 	return ade_set_args(L, "i", c);
 }
 
-ADE_FUNC(toggleBit, l_BitOps, "number, number (bit)", "Toggles the value of the set bit in the given number for 32 bit integer", "number", "Result of the operation")
+ADE_FUNC(toggleBit, l_BitOps, "number baseNumber, number bit", "Toggles the value of the set bit in the given number for 32 bit integer", "number", "Result of the operation")
 {
 	int a, b, c;
 	if(!ade_get_args(L, "ii", &a,&b))
@@ -56,7 +56,7 @@ ADE_FUNC(toggleBit, l_BitOps, "number, number (bit)", "Toggles the value of the 
 	return ade_set_args(L, "i", c);
 }
 
-ADE_FUNC(checkBit, l_BitOps, "number, number (bit)", "Checks the value of the set bit in the given number for 32 bit integer", "boolean", "Was the bit true of false")
+ADE_FUNC(checkBit, l_BitOps, "number baseNumber, number bit", "Checks the value of the set bit in the given number for 32 bit integer", "boolean", "Was the bit true of false")
 {
 	int a, b;
 	if(!ade_get_args(L, "ii", &a,&b))
@@ -71,7 +71,7 @@ ADE_FUNC(checkBit, l_BitOps, "number, number (bit)", "Checks the value of the se
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(addBit, l_BitOps, "number, number (bit)", "Performs inclusive or (OR) operation on the set bit of the value", "number", "Result of the operation")
+ADE_FUNC(addBit, l_BitOps, "number baseNumber, number bit", "Performs inclusive or (OR) operation on the set bit of the value", "number", "Result of the operation")
 {
 	int a, b, c;
 	if(!ade_get_args(L, "ii", &a,&b))

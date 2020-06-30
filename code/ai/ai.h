@@ -83,7 +83,7 @@ typedef struct ai_goal {
 	fix	time;					// time at which this goal was issued.
 	int	priority;			// how important is this goal -- number 0 - 100
 
-	char	*target_name;		// name of the thing that this goal acts upon
+	const char *target_name;	// name of the thing that this goal acts upon
 	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
 	waypoint_list *wp_list;		// waypoints that this ship might fly.
 	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
@@ -93,18 +93,16 @@ typedef struct ai_goal {
 	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
 	// these are the dockpoints used on the docker and dockee ships, not the ships themselves
 	union {
-		char	*name;
+		const char *name;
 		int	index;
 	} docker;
 	
 	union {
-		char	*name;
+		const char *name;
 		int	index;
 	} dockee;
 
 } ai_goal;
-
-#define	MAX_GOAL_TARGET_NAMES	100
 
 #define	AIM_CHASE				0
 #define	AIM_EVADE				1
@@ -513,8 +511,6 @@ typedef struct {
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
 extern int Mission_all_attack;	//	!0 means all teams attack all teams.
-extern int Total_goal_target_names;
-extern char Goal_target_names[MAX_GOAL_TARGET_NAMES][NAME_LENGTH];
 
 extern void update_ai_info_for_hit(int hitter_obj, int hit_obj);
 extern void ai_frame_all(void);
@@ -556,7 +552,8 @@ void ai_process( object * obj, int ai_index, float frametime );
 int get_wingnum(int objnum);
 
 void set_wingnum(int objnum, int wingnum);
-char *ai_get_goal_target_name(const char *name, int *index);
+const char *ai_get_goal_target_name(const char *name, int *index);
+void ai_clear_goal_target_names();
 
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int ship_info_index = -1);
@@ -633,7 +630,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 
 // function to change rearm status for ai ships (called from sexpression code)
 extern void ai_set_rearm_status( int team, int new_status );
-extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons, char *shipname );
+extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons, const char *shipname );
 
 extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point, bool update_clients = true);
 extern void ai_do_objects_undocked_stuff( object *docker, object *dockee );

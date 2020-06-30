@@ -3,18 +3,21 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+
 #include "graphics/2d.h"
 #include "scripting/ade_args.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
-
-#include <cstdio>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
 
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
+
+namespace scripting {
+struct ScriptingDocumentation;
+}
 
 struct image_desc
 {
@@ -43,71 +46,74 @@ extern bool script_hook_valid(script_hook *hook);
 
 #define MAX_HOOK_CONDITIONS	8
 
-//Conditionals
-#define CHC_NONE			-1
-#define CHC_MISSION			0
-#define CHC_SHIP			1
-#define CHC_SHIPCLASS		2
-#define CHC_SHIPTYPE		3
-#define CHC_STATE			4
-#define CHC_CAMPAIGN		5
-#define CHC_WEAPONCLASS		6
-#define CHC_OBJECTTYPE		7
-#define CHC_KEYPRESS		8
-#define CHC_ACTION			9
-#define CHC_VERSION			10
-#define CHC_APPLICATION		11
+// Conditionals
+enum ConditionalType {
+	CHC_NONE        = -1,
+	CHC_MISSION     = 0,
+	CHC_SHIP        = 1,
+	CHC_SHIPCLASS   = 2,
+	CHC_SHIPTYPE    = 3,
+	CHC_STATE       = 4,
+	CHC_CAMPAIGN    = 5,
+	CHC_WEAPONCLASS = 6,
+	CHC_OBJECTTYPE  = 7,
+	CHC_KEYPRESS    = 8,
+	CHC_ACTION      = 9,
+	CHC_VERSION     = 10,
+	CHC_APPLICATION = 11,
+};
 
 //Actions
-enum ConditionalActions {
-	CHA_NONE            = -1,
-	CHA_WARPOUT         = 0,
-	CHA_WARPIN          = 1,
-	CHA_DEATH           = 2,
-	CHA_ONFRAME         = 3,
-	CHA_COLLIDESHIP     = 4,
-	CHA_COLLIDEWEAPON   = 5,
-	CHA_COLLIDEDEBRIS   = 6,
-	CHA_COLLIDEASTEROID = 7,
-	CHA_HUDDRAW         = 8,
-	CHA_OBJECTRENDER    = 9,
-	CHA_SPLASHSCREEN    = 10,
-	CHA_GAMEINIT        = 11,
-	CHA_MISSIONSTART    = 12,
-	CHA_MISSIONEND      = 13,
-	CHA_MOUSEMOVED      = 14,
-	CHA_MOUSEPRESSED    = 15,
-	CHA_MOUSERELEASED   = 16,
-	CHA_KEYPRESSED      = 17,
-	CHA_KEYRELEASED     = 18,
-	CHA_ONSTATESTART    = 19,
-	CHA_ONSTATEEND      = 20,
-	CHA_ONWEAPONDELETE  = 21,
-	CHA_ONWPEQUIPPED    = 22,
-	CHA_ONWPFIRED       = 23,
-	CHA_ONWPSELECTED    = 24,
-	CHA_ONWPDESELECTED  = 25,
-	CHA_GAMEPLAYSTART   = 26,
-	CHA_ONTURRETFIRED   = 27,
-	CHA_PRIMARYFIRE     = 28,
-	CHA_SECONDARYFIRE   = 29,
-	CHA_ONSHIPARRIVE    = 30,
-	CHA_COLLIDEBEAM     = 31,
-	CHA_ONACTION        = 32,
-	CHA_ONACTIONSTOPPED = 33,
-	CHA_MSGRECEIVED     = 34,
-	CHA_HUDMSGRECEIVED  = 35,
-	CHA_AFTERBURNSTART  = 36,
-	CHA_AFTERBURNEND    = 37,
-	CHA_BEAMFIRE        = 38,
-	CHA_SIMULATION      = 39,
-	CHA_LOADSCREEN      = 40,
-	CHA_CMISSIONACCEPT  = 41,
-	CHA_ONSHIPDEPART    = 42,
-	CHA_ONWEAPONCREATED = 43,
-	CHA_ONWAYPOINTSDONE = 44,
-	CHA_ONSUBSYSDEATH   = 45,
-	CHA_ONGOALSCLEARED  = 46,
+enum ConditionalActions : int32_t {
+	CHA_NONE    = -1,
+	CHA_DEATH,
+	CHA_ONFRAME,
+	CHA_COLLIDESHIP,
+	CHA_COLLIDEWEAPON,
+	CHA_COLLIDEDEBRIS,
+	CHA_COLLIDEASTEROID,
+	CHA_HUDDRAW,
+	CHA_OBJECTRENDER,
+	CHA_SPLASHSCREEN,
+	CHA_GAMEINIT,
+	CHA_MISSIONSTART,
+	CHA_MISSIONEND,
+	CHA_MOUSEMOVED,
+	CHA_MOUSEPRESSED,
+	CHA_MOUSERELEASED,
+	CHA_KEYPRESSED,
+	CHA_KEYRELEASED,
+	CHA_ONSTATESTART,
+	CHA_ONSTATEEND,
+	CHA_ONWEAPONDELETE,
+	CHA_ONWPEQUIPPED,
+	CHA_ONWPFIRED,
+	CHA_ONWPSELECTED,
+	CHA_ONWPDESELECTED,
+	CHA_GAMEPLAYSTART,
+	CHA_ONTURRETFIRED,
+	CHA_PRIMARYFIRE,
+	CHA_SECONDARYFIRE,
+	CHA_ONSHIPARRIVE,
+	CHA_COLLIDEBEAM,
+	CHA_ONACTION,
+	CHA_ONACTIONSTOPPED,
+	CHA_MSGRECEIVED,
+	CHA_HUDMSGRECEIVED,
+	CHA_AFTERBURNSTART,
+	CHA_AFTERBURNEND,
+	CHA_BEAMFIRE,
+	CHA_SIMULATION,
+	CHA_LOADSCREEN,
+	CHA_CMISSIONACCEPT,
+	CHA_ONSHIPDEPART,
+	CHA_ONWEAPONCREATED,
+	CHA_ONWAYPOINTSDONE,
+	CHA_ONSUBSYSDEATH,
+	CHA_ONGOALSCLEARED,
+	CHA_ONBRIEFSTAGE,
+
+	CHA_LAST = CHA_ONBRIEFSTAGE,
 };
 
 // management stuff
@@ -115,32 +121,19 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime);
 
-class script_condition
-{
-public:
-	int condition_type;
-	union
-	{
-		char name[CONDITION_LENGTH];
-	} data;
+int32_t scripting_string_to_action(const char* action);
+ConditionalType scripting_string_to_condition(const char* condition);
 
-	script_condition()
-		: condition_type(CHC_NONE)
-	{
-		memset(data.name, 0, sizeof(data.name));
-	}
+struct script_condition
+{
+	ConditionalType condition_type = CHC_NONE;
+	SCP_string condition_string;
 };
 
-class script_action
+struct script_action
 {
-public:
-	int action_type;
+	int32_t action_type {CHA_NONE};
 	script_hook hook;
-
-	script_action()
-		: action_type(CHA_NONE)
-	{
-	}
 };
 
 class ConditionedHook
@@ -157,58 +150,6 @@ public:
 	bool Run(class script_state* sys, int action);
 };
 
-enum class ElementType {
-	Unknown,
-	Library,
-	Class,
-	Function,
-	Operator,
-	Property,
-};
-
-struct DocumentationElement {
-	ElementType type = ElementType::Unknown;
-
-	SCP_string name;
-	SCP_string shortName;
-
-	SCP_string description;
-
-	SCP_vector<std::unique_ptr<DocumentationElement>> children;
-};
-
-struct DocumentationElementClass : public DocumentationElement {
-	SCP_string superClass;
-};
-
-struct DocumentationElementProperty : public DocumentationElement {
-	scripting::ade_type_info getterType;
-	SCP_string setterType;
-
-	SCP_string returnDocumentation;
-};
-
-struct DocumentationElementFunction : public DocumentationElement {
-	scripting::ade_type_info returnType;
-	SCP_string parameters;
-
-	SCP_string returnDocumentation;
-};
-
-struct DocumentationEnum {
-	SCP_string name;
-	int value;
-};
-
-struct ScriptingDocumentation {
-	SCP_vector<SCP_string> conditions;
-	SCP_vector<SCP_string> actions;
-
-	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
-
-	SCP_vector<DocumentationEnum> enumerations;
-};
-
 //**********Main script_state function
 class script_state
 {
@@ -223,14 +164,15 @@ private:
 	SCP_vector<image_desc> ScriptImages;
 	SCP_vector<ConditionedHook> ConditionalHooks;
 
+	SCP_vector<script_function> GameInitFunctions;
+
 private:
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 
-	void OutputLuaMeta(FILE *fp);
-	void OutputLuaDocumentation(ScriptingDocumentation& doc);
+	void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc);
 
 	//Lua private helper functions
 	bool OpenHookVarTable();
@@ -263,8 +205,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	ScriptingDocumentation OutputDocumentation();
-	int OutputMeta(const char *filename);
+	scripting::ScriptingDocumentation OutputDocumentation();
 
 	//***Moves data
 	//void MoveData(script_state &in);
@@ -282,8 +223,11 @@ public:
 	                          const char* debug_str = nullptr);
 	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
-	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
+	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
+	void AddConditionedHook(ConditionedHook hook);
+
+	void AddGameInitFunction(script_function func);
 
 	//***Hook running functions
 	template <typename T>
@@ -292,6 +236,8 @@ public:
 	bool IsOverride(script_hook &hd);
 	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
+
+	void RunInitFunctions();
 
 	//*****Other functions
 	void EndFrame();
@@ -372,13 +318,13 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
 
 		try {
-			auto ret = function.call();
+			auto ret = function.call(LuaState);
 
 			if (rtn != nullptr && ret.size() >= 1) {
 				auto stack_start = lua_gettop(LuaState);
 
 				auto val = ret.front();
-				val.pushValue();
+				val.pushValue(LuaState);
 
 				scripting::internal::Ade_get_args_skip      = stack_start;
 				scripting::internal::Ade_get_args_lfunction = true;
@@ -410,13 +356,13 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 	GR_DEBUG_SCOPE("Lua code");
 
 	try {
-		auto ret = hd.function.call();
+		auto ret = hd.function.call(LuaState);
 
 		if (data != nullptr && ret.size() >= 1) {
 			auto stack_start = lua_gettop(LuaState);
 
 			auto val = ret.front();
-			val.pushValue();
+			val.pushValue(LuaState);
 
 			char fmt[2]                                 = {format, '\0'};
 			scripting::internal::Ade_get_args_skip      = stack_start;

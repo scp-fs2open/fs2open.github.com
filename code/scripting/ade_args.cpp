@@ -1,12 +1,13 @@
 
 #include "scripting/ade_args.h"
-#include "scripting/ade.h"
 
-#include "scripting/lua/LuaTable.h"
-#include "scripting/lua/LuaFunction.h"
-#include "scripting/lua/LuaConvert.h"
+#include "scripting.h"
 
 #include "mod_table/mod_table.h"
+#include "scripting/ade.h"
+#include "scripting/lua/LuaConvert.h"
+#include "scripting/lua/LuaFunction.h"
+#include "scripting/lua/LuaTable.h"
 
 #include <utf8.h>
 
@@ -109,24 +110,28 @@ void set_single_arg(lua_State* L, char fmt, const char* s)
 	lua_pushstring(L, s);
 }
 
-void set_single_arg(lua_State* L, char fmt, luacpp::LuaTable* table)
+void set_single_arg(lua_State* L, char fmt, const SCP_string& s)
 {
-	set_single_arg(L, fmt, *table);
+	Assertion(fmt == 's', "Invalid format character '%c' for string type!", fmt);
+	// WMC - Isn't working with HookVar for some strange reason
+	lua_pushlstring(L, s.c_str(), s.size());
 }
-void set_single_arg(lua_State*, char fmt, const luacpp::LuaTable& table)
+
+void set_single_arg(lua_State* L, char fmt, luacpp::LuaTable* table) { set_single_arg(L, fmt, *table); }
+void set_single_arg(lua_State* L, char fmt, const luacpp::LuaTable& table)
 {
 	Assertion(fmt == 't', "Invalid format character '%c' for table type!", fmt);
-	table.pushValue();
+	table.pushValue(L);
 }
 
 void set_single_arg(lua_State* L, char fmt, luacpp::LuaFunction* func)
 {
 	set_single_arg(L, fmt, *func);
 }
-void set_single_arg(lua_State*, char fmt, const luacpp::LuaFunction& func)
+void set_single_arg(lua_State* L, char fmt, const luacpp::LuaFunction& func)
 {
 	Assertion(fmt == 'u', "Invalid format character '%c' for function type!", fmt);
-	func.pushValue();
+	func.pushValue(L);
 }
 
 } // namespace internal

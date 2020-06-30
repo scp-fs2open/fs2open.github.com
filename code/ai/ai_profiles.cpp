@@ -7,11 +7,12 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "def_files/def_files.h"
 #include "ai/ai_profiles.h"
+#include "ai/aibig.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -371,9 +372,15 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$navigation subsystem governs warpout capability:", AI::Profile_Flags::Navigation_subsys_governs_warp);
 
+				set_flag(profile, "$check communications for non-player ships:", AI::Profile_Flags::Check_comms_for_non_player_ships);
+
 				set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AI::Profile_Flags::No_min_dock_speed_cap);
 
 				set_flag(profile, "$disable linked fire penalty:", AI::Profile_Flags::Disable_linked_fire_penalty);
+
+				set_flag(profile, "$disable player secondary doublefire:", AI::Profile_Flags::Disable_player_secondary_doublefire);
+
+				set_flag(profile, "$disable ai secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
 
 				set_flag(profile, "$disable weapon damage scaling:", AI::Profile_Flags::Disable_weapon_damage_scaling);
 
@@ -390,6 +397,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$allow event and goal scoring in multiplayer:", AI::Profile_Flags::Allow_multi_event_scoring);
 
 				set_flag(profile, "$fix linked primary weapon decision bug:", AI::Profile_Flags::Fix_linked_primary_bug);
+
+				set_flag(profile, "$fix ramming stationary targets bug:", AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
 
 				set_flag(profile, "$prevent turrets targeting too distant bombs:", AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
 
@@ -463,6 +472,18 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
 
 				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
+
+				if (optional_string("$override radius for subsystem path points:")) {
+					int path_radii;
+					stuff_int(&path_radii);
+					if (path_radii >= Minimum_subsystem_path_pt_dist) {
+						profile->subsystem_path_radii = path_radii;
+					} else {
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
+					}
+				}
+
+				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
 
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
@@ -564,6 +585,7 @@ void ai_profile_t::reset()
     flags.reset();
 
     ai_path_mode = 0;
+	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
 
@@ -624,4 +646,22 @@ void ai_profile_t::reset()
     for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
         detail_distance_mult[i] = 0;
     }
+
+	// via Github #2332, enable bugfixes if we are targeting version 20 and up
+	if (mod_supports_version(20, 0, 0)) {
+		flags.set(AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
+		flags.set(AI::Profile_Flags::Fix_linked_primary_bug);
+		flags.set(AI::Profile_Flags::Prevent_targeting_bombs_beyond_range);
+		flags.set(AI::Profile_Flags::Fix_heat_seeker_stealth_bug);
+		flags.set(AI::Profile_Flags::Allow_vertical_dodge);
+		flags.set(AI::Profile_Flags::Fix_ai_class_bug);
+		flags.set(AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
+		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
+		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
+		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+	}
+	// this flag has been enabled ever since 3.7.2
+	if (mod_supports_version(3, 7, 2)) {
+		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
 }

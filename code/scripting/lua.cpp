@@ -1,6 +1,10 @@
 
 #include "scripting/scripting.h"
 
+#include "scripting_doc.h"
+
+#include "scripting/lua/LuaUtil.h"
+
 /**
  * IMPORTANT!
  *
@@ -34,6 +38,7 @@
 #include "scripting/api/objs/model_path.h"
 #include "scripting/api/objs/physics_info.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/shields.h"
 #include "scripting/api/objs/ship.h"
@@ -55,9 +60,11 @@
 #include "scripting/api/objs/wing.h"
 
 #include "scripting/api/libs/audio.h"
+#include "scripting/api/libs/async.h"
 #include "scripting/api/libs/base.h"
 #include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
+#include "scripting/api/libs/engine.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
 #include "scripting/api/libs/hud.h"
@@ -76,46 +83,6 @@ using namespace scripting;
 using namespace scripting::api;
 
 // *************************Housekeeping*************************
-//WMC - The miraculous lines of code that make Lua debugging worth something.
-lua_Debug Ade_debug_info;
-char debug_stack[4][32];
-
-void ade_debug_ret(lua_State *L, lua_Debug *ar)
-{
-	Assert(L != NULL);
-	Assert(ar != NULL);
-	lua_getstack(L, 1, ar);
-	lua_getinfo(L, "nSlu", ar);
-	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
-
-	int n;
-	for (n = 0; n < 4; n++) {
-		debug_stack[n][0] = '\0';
-	}
-
-	for (n = 0; n < 4; n++) {
-		if (lua_getstack(L,n+1, ar) == 0)
-			break;
-		lua_getinfo(L,"n", ar);
-		if (ar->name == NULL)
-			break;
-		strcpy_s(debug_stack[n],ar->name);
-	}
-}
-
-//WMC - because the behavior of the return keyword
-//was changed, I now have to use this in hooks.
-static int ade_return_hack(lua_State *L)
-{
-	int i = 0;
-	int num = lua_gettop(L);
-	for(i = 0; i < num; i++)
-	{
-		lua_pushvalue(L, i+1);
-	}
-
-	return num;
-}
 
 static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
 	if (nsize == 0)
@@ -147,6 +114,9 @@ int script_state::CreateLuaState()
 	mprintf(("LUA: Initializing base Lua libraries...\n"));
 	luaL_openlibs(L);
 
+	//*****INITIALIZE OUR SUPPORT LIBRARY
+	luacpp::util::initializeLuaSupportLib(L);
+
 	//*****DISABLE DANGEROUS COMMANDS
 	lua_pushstring(L, "os");
 	lua_rawget(L, LUA_GLOBALSINDEX);
@@ -165,11 +135,6 @@ int script_state::CreateLuaState()
 	}
 	lua_pop(L, 1);	//os table
 
-	//*****SET DEBUG HOOKS
-#ifndef NDEBUG
-	lua_sethook(L, ade_debug_ret, LUA_MASKRET, 0);
-#endif
-
 	//*****INITIALIZE ADE
 	uint i;
 	mprintf(("LUA: Beginning ADE initialization\n"));
@@ -179,12 +144,6 @@ int script_state::CreateLuaState()
 		if(ade_manager::getInstance()->getEntry(i).ParentIdx == UINT_MAX)			//WMC - oh hey, we're done with the meaty point in < 10 lines.
 			ade_manager::getInstance()->getEntry(i).SetTable(L, LUA_GLOBALSINDEX, LUA_GLOBALSINDEX);	//Oh the miracles of OOP.
 	}
-
-	//*****INITIALIZE RETURN HACK FUNCTION
-	lua_pushstring(L, "ade_return_hack");
-	lua_pushboolean(L, 0);
-	lua_pushcclosure(L, ade_return_hack, 2);
-	lua_setglobal(L, "ade_return_hack");
 
 	//*****INITIALIZE ENUMERATION CONSTANTS
 	mprintf(("ADE: Initializing enumeration constants...\n"));
@@ -212,37 +171,6 @@ int script_state::CreateLuaState()
 void script_state::EndLuaFrame()
 {
 	scripting::api::graphics_on_frame();
-}
-
-void ade_output_toc(FILE *fp, ade_table_entry *ate)
-{
-	Assert(fp != NULL);
-	Assert(ate != NULL);
-
-	//WMC - sanity checking
-	if(ate->Name == NULL && ate->ShortName == NULL) {
-		Warning(LOCATION, "Found ade_table_entry with no name or shortname");
-		return;
-	}
-
-	fputs("<dd>", fp);
-
-	if(ate->Name == NULL)
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->ShortName, ate->ShortName);
-	}
-	else
-	{
-		fprintf(fp, "<a href=\"#%s\">%s", ate->Name, ate->Name);
-		if(ate->ShortName)
-			fprintf(fp, " (%s)", ate->ShortName);
-	}
-	fputs("</a>", fp);
-
-	if(ate->Description)
-		fprintf(fp, " - %s\n", ate->Description);
-
-	fputs("</dd>\n", fp);
 }
 
 static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
@@ -302,82 +230,4 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 		doc.enumerations.push_back(e);
 	}
-}
-
-void script_state::OutputLuaMeta(FILE *fp)
-{
-	fputs("<dl>\n", fp);
-
-	//***Version info
-	fprintf(fp, "<dd>Version: %s</dd>\n", LUA_RELEASE);
-
-	SCP_vector<ade_table_entry*> table_entries;
-
-	//***TOC: Libraries
-	fputs("<dt><b>Libraries</b></dt>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Objects
-	fputs("<dt><b>Types</b></dt>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
-			table_entries.push_back(ate);
-		}
-	}
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
-	for (auto entry : table_entries) {
-		ade_output_toc(fp, entry);
-	}
-	table_entries.clear();
-
-	//***TOC: Enumerations
-	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
-
-	//***End TOC
-	fputs("</dl><br/><br/>", fp);
-
-	//***Everything
-	fputs("<dl>\n", fp);
-	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
-		auto ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX)
-			table_entries.push_back(ate);
-	}
-
-	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
-	for (auto entry : table_entries) {
-		entry->OutputMeta(fp);
-	}
-	table_entries.clear();
-
-	//***Enumerations
-	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
-	for (uint32_t i = 0; i < Num_enumerations; i++) {
-
-		// Cyborg17 -- Omit the deprecated flag
-		if (!stricmp(Enumerations[i].name,
-		             "VM_EXTERNAL_CAMERA_LOCKED") /* || !stricmp(Enumerations[i], "ADD DEPRECATED ENUM HERE"*/) {
-			continue;
-		}		
-		// WMC - This is in case we ever want to add descriptions to enums.
-		// fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
-  
-		// WMC - For now, print to the file without the description.
-		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);		
-	}
-	fputs("</dl>\n", fp);
-
-	//***End LUA
-	fputs("</dl>\n", fp);
 }

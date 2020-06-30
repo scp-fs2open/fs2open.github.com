@@ -335,27 +335,27 @@ void model_unload(int modelnum, int force)
 	}
 
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
-		if ( pm->id == it->model_num ) {
-			it->model_num = -1;
+	for (auto &si : Ship_info) {
+		if ( pm->id == si.model_num ) {
+			si.model_num = -1;
 		}
 
-		if ( pm->id == it->cockpit_model_num ) {
-			it->cockpit_model_num = -1;
+		if ( pm->id == si.cockpit_model_num ) {
+			si.cockpit_model_num = -1;
 		}
 
-		if ( pm->id == it->model_num_hud ) {
-			it->model_num_hud = -1;
+		if ( pm->id == si.model_num_hud ) {
+			si.model_num_hud = -1;
 		}
 	}
 
 	// need to reset weapon models as well
-	for (int k = 0; k < MAX_WEAPON_TYPES; ++k) {
-		if ( pm->id == Weapon_info[k].model_num ) {
-			Weapon_info[k].model_num = -1;
+	for (auto &wi: Weapon_info) {
+		if ( pm->id == wi.model_num ) {
+			wi.model_num = -1;
 		}
-		if ( pm->id == Weapon_info[k].external_model_num ) {
-			Weapon_info[k].external_model_num = -1;
+		if ( pm->id == wi.external_model_num ) {
+			wi.external_model_num = -1;
 		}
 	}
 
@@ -1292,7 +1292,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
 
 				n = cfread_int(fp);
-				//mprintf(("SOBJ IDed itself as %d", n));
+				//mprintf(("SOBJ IDed itself as %d\n", n));
 
 				Assert(n < pm->n_models );
 
@@ -2273,7 +2273,15 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
+
+					// check for reused path names... not fatal, but maybe problematic
+					for (j = 0; j < i; j++) {
+						if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
+							Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
+						}
+					}
+
 					if ( pm->version >= 2002 ) {
 						// store the sub_model name number of the parent
 						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
@@ -3073,6 +3081,8 @@ void model_set_bay_path_nums(polymodel *pm)
 	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
 	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
 
+	// sanity part 1
+	memset(pm->ship_bay->path_indexes, -1, MAX_SHIP_BAY_PATHS * sizeof(int));
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
 	bool too_many_paths = false;
@@ -3107,6 +3117,16 @@ void model_set_bay_path_nums(polymodel *pm)
 	if(too_many_paths)
 	{
 		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
+	}
+
+	// sanity part 2
+	for (i = 0; i < pm->ship_bay->num_paths; i++)
+	{
+		if (pm->ship_bay->path_indexes[i] < 0)
+		{
+			Warning(LOCATION, "Model '%s' does not have a '$bay%.2d' path specified!  A total of %d bay paths were counted.  Either there is a gap in the path sequence, or a path has a duplicate name.", pm->filename, i + 1, pm->ship_bay->num_paths);
+			pm->ship_bay->path_indexes[i] = 0;	// avoid crashes
+		}
 	}
 }
 
@@ -3340,16 +3360,16 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
  *
  * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
  *
+ * Calculates the focal length of the camera, and uses the law of similar
+ * triangles to project the subsystem's radius to the screen.
+ *
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
 int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	float t,w,h;
+	float w,h,focal_length;
 	vertex pnt;
-
-	float width = radius;
-	float height = radius;
 
 	g3_rotate_vertex(&pnt,pos);
 
@@ -3362,11 +3382,10 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	if (pnt.flags & PF_OVERFLOW)
 		return 2;
 
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
+	focal_length = Canv_h2 * Matrix_scale.xyz.y;
+	h = radius * focal_length / pnt.world.xyz.z;
 
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
+	w = h;
 
 	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
 	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
@@ -3992,7 +4011,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	{
 		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
 		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
-		ss->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+		ss->points_to_target = sqrt((base_delta*base_delta) + (gun_delta*gun_delta));
 	}
 
 	return 1;
@@ -5341,7 +5360,7 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 }
 #endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
+void swap_bsp_data( polymodel * pm, void * model_ptr )
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
@@ -5394,10 +5413,13 @@ void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
 	}
 
 	return;
+#else
+(void)pm;
+(void)model_ptr;
 #endif
 }
 
-void swap_sldc_data(ubyte * /*buffer*/)
+void swap_sldc_data(ubyte * buffer)
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	char *type_p = (char *)(buffer);
@@ -5439,6 +5461,8 @@ void swap_sldc_data(ubyte * /*buffer*/)
 			shld_polys[i] = INTEL_INT(shld_polys[i]);
 		}			
 	}
+#else
+(void)buffer;
 #endif
 }
 

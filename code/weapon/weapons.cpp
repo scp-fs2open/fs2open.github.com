@@ -9,6 +9,8 @@
 
 
 
+#include <algorithm>
+
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
@@ -77,7 +79,7 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 static int Weapon_flyby_sound_timer;	
 
 weapon Weapons[MAX_WEAPONS];
-weapon_info Weapon_info[MAX_WEAPON_TYPES];
+SCP_vector<weapon_info> Weapon_info;
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -113,6 +115,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "child",							Weapon::Info_Flags::Child,								true, false },
     { "bomb",							Weapon::Info_Flags::Bomb,								true, false },
     { "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true, false },
+	{ "no doublefire",					Weapon::Info_Flags::No_doublefire,						true, false },
     { "in tech database",				Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",					Weapon::Info_Flags::Player_allowed,                     true, false },
     { "particle spew",					Weapon::Info_Flags::Particle_spew,						true, false },
@@ -171,8 +174,6 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
 
-int Num_weapon_types = 0;
-
 int Num_weapons = 0;
 int Weapons_inited = 0;
 int Weapon_expl_initted = 0;
@@ -221,6 +222,8 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 #define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
 
 extern int compute_num_homing_objects(object *target_objp);
+
+void weapon_spew_stats(WeaponSpewType type);
 
 
 weapon_explosions::weapon_explosions()
@@ -518,15 +521,23 @@ missile_obj *missile_obj_return_address(int index)
  */
 int weapon_info_lookup(const char *name)
 {
-	// bogus
-	if (name == NULL)
-		return -1;
+	Assertion(name != nullptr, "NULL name passed to weapon_info_lookup");
 
-	for (int i=0; i<Num_weapon_types; i++)
-		if (!stricmp(name, Weapon_info[i].name))
-			return i;
+	for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it)
+		if (!stricmp(name, it->name))
+			return (int)std::distance(Weapon_info.cbegin(), it);
 
 	return -1;
+}
+
+/**
+ * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
+ * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
+ */
+int weapon_info_get_index(weapon_info *wip)
+{
+	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
+	return static_cast<int>(std::distance(Weapon_info.data(), wip));
 }
 
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
@@ -753,24 +764,27 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	}
 }
 
-// function to parse the information for a specific weapon type.	
-// return 0 if successful, otherwise return -1
-#define WEAPONS_MULTITEXT_LENGTH 2048
+static SCP_vector<SCP_string> Removed_weapons;
 
+/**
+ * Parse the information for a specific ship type.
+ * Return weapon index if successful, otherwise return -1
+ */
 int parse_weapon(int subtype, bool replace, const char *filename)
 {
-	char buf[WEAPONS_MULTITEXT_LENGTH];
-	weapon_info *wip = NULL;
+	char buf[NAME_LENGTH];
 	char fname[NAME_LENGTH];
+	weapon_info *wip = nullptr;
 	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
-	bool create_if_not_found  = true;
+	bool create_if_not_found = true;
+	bool remove_weapon = false;
     flagset<Weapon::Info_Flags> wi_flags;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
-	diag_printf ("Weapon name -- %s\n", fname);
+	diag_printf("Weapon name -- %s\n", fname);
 
 	if(optional_string("+nocreate")) {
 		if(!replace) {
@@ -779,49 +793,84 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		create_if_not_found = false;
 	}
 
+	// check first if this is on the remove blacklist
+	auto it = std::find(Removed_weapons.begin(), Removed_weapons.end(), fname);
+	if (it != Removed_weapons.end()) {
+		remove_weapon = true;
+	}
+	
+	// we might have a remove tag
+	if (optional_string("+remove")) {
+		if (!replace) {
+			Warning(LOCATION, "+remove flag used for weapon in non-modular table");
+		}
+		if (!remove_weapon) {
+			Removed_weapons.push_back(fname);
+			remove_weapon = true;
+		}
+	}
+
 	//Remove @ symbol
-	//these used to be used to denote weapons that would
+	//these used to denote weapons that would
 	//only be parsed in demo builds
 	if ( fname[0] == '@' ) {
 		backspace(fname);
 	}
 
+	//Check if weapon exists already
 	int w_id = weapon_info_lookup(fname);
 
-	if(w_id != -1)
+	// maybe remove it
+	if (remove_weapon)
+	{
+		if (w_id >= 0) {
+			mprintf(("Removing previously parsed weapon '%s'\n", fname));
+			Weapon_info.erase(Weapon_info.begin() + w_id);
+		}
+
+		if (!skip_to_start_of_string_either("$Name:", "#End")) {
+			error_display(1, "Missing [#End] or [$Name] after weapon class %s", fname);
+		}
+		return -1;
+	}
+
+	// an entry for this weapon exists
+	if (w_id >= 0)
 	{
 		wip = &Weapon_info[w_id];
-		if(!replace)
+		if (!replace)
 		{
-			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", fname);
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", fname);
 			}
 			return -1;
 		}
 	}
+	// an entry does not exist
 	else
 	{
-		//Don't create weapon if it has +nocreate and is in a modular table.
-		if(!create_if_not_found && replace)
+		// Don't create weapon if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-				Int3();
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after weapon %s", fname);
 			}
 
 			return -1;
 		}
 
-		if(Num_weapon_types >= MAX_WEAPON_TYPES) {
+		// Check if there are too many weapon classes
+		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
 			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
-		wip = &Weapon_info[Num_weapon_types];
-		wip->reset();
+		w_id = weapon_info_size();
+		Weapon_info.push_back(weapon_info());
+		wip = &Weapon_info.back();
 		first_time = true;
-		
+
 		strcpy_s(wip->name, fname);
-		Num_weapon_types++;
 	}
 
 	if(optional_string("$Alt name:"))
@@ -938,8 +987,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$Model file:") ) {
 		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
 
-		if ( VALID_FNAME(wip->pofbitmap_name) )
+		if (VALID_FNAME(wip->pofbitmap_name))
 			wip->render_type = WRT_POF;
+		else
+			wip->render_type = WRT_NONE;
 
 		diag_printf("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
@@ -970,7 +1021,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (wip->render_type == WRT_POF) {
 			mprintf(("WARNING:  Weapon '%s' has both LASER and POF render types!  Will only use POF type!\n", wip->name));
-			generic_anim_init(&wip->laser_bitmap, NULL);
+			generic_anim_init(&wip->laser_bitmap, nullptr);
 		} else {
 			generic_anim_init(&wip->laser_bitmap, fname);
 			wip->render_type = WRT_LASER;
@@ -1088,7 +1139,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->damage_type_idx_sav = damage_type_add(buf);
 		wip->damage_type_idx = wip->damage_type_idx_sav;
 	}
@@ -1524,7 +1575,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		{
 			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
 		}
-
 	}
 
 	parse_wi_flags(wip, wi_flags);
@@ -1988,6 +2038,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
             wip->spawn_info[num_spawn_angs_defined].spawn_angle = dum_float;
             num_spawn_angs_defined++;
         }
+	}
+
+	int num_spawn_min_angs_defined = 0;
+
+	while (optional_string("$Spawn Minimum Angle:"))
+	{
+		stuff_float(&dum_float);
+		
+		if (num_spawn_min_angs_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+		{
+			wip->spawn_info[num_spawn_min_angs_defined].spawn_min_angle = dum_float;
+			num_spawn_min_angs_defined++;
+		}
 	}
 
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
@@ -2642,7 +2705,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if(optional_string("$Armor Type:")) {
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(wip->armor_type_idx == -1)
@@ -2793,7 +2856,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_int(&wip->score);
 	}
 
-	return WEAPON_INFO_INDEX(wip);
+	return w_id;
 }
 
 /**
@@ -2804,7 +2867,7 @@ void translate_spawn_types()
 {
     int	i, j, k;
 
-    for (i = 0; i < Num_weapon_types; i++)
+    for (i = 0; i < weapon_info_size(); i++)
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
@@ -2814,7 +2877,7 @@ void translate_spawn_types()
 
                 Assert( spawn_type < Num_spawn_types );
 
-                for (k = 0; k < Num_weapon_types; k++) 
+                for (k = 0; k < weapon_info_size(); k++)
                 {
                     if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
                     {
@@ -2925,7 +2988,7 @@ void weapon_sort_by_type()
 	int i, weapon_index;
 
 	// get the initial count of each weapon type
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -3003,7 +3066,7 @@ void weapon_sort_by_type()
 	}
 
 	// fill the buckets
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_UNUSED:
@@ -3078,18 +3141,13 @@ void weapon_sort_by_type()
  */
 void weapon_clean_entries()
 {
-	weapon_info *wip;
-	int i;
-
-	for (i = 0; i < Num_weapon_types; i++) {
-		wip = &Weapon_info[i];
-
-		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::Beam]) {
 			// clean up any beam sections which may have been deleted
 			int removed = 0;
 
-			for (int s_idx = 0; s_idx < wip->b_info.beam_num_sections; s_idx++) {
-				beam_weapon_section_info *bsip = &wip->b_info.sections[s_idx];
+			for (int s_idx = 0; s_idx < wi.b_info.beam_num_sections; s_idx++) {
+				beam_weapon_section_info *bsip = &wi.b_info.sections[s_idx];
 
 				// If this is an invisible beam section, we want to keep it.  Originally invisible sections were initialized as they were parsed,
 				// but then they were inadvertently cleaned up in this function.  So let's properly set the filename here while not removing the section.
@@ -3101,7 +3159,7 @@ void weapon_clean_entries()
 					int new_idx = s_idx + 1;
 
 					while (new_idx < MAX_BEAM_SECTIONS) {
-						memcpy( &wip->b_info.sections[new_idx-1], &wip->b_info.sections[new_idx], sizeof(beam_weapon_section_info) );
+						memcpy( &wi.b_info.sections[new_idx-1], &wi.b_info.sections[new_idx], sizeof(beam_weapon_section_info) );
 						new_idx++;
 					}
 
@@ -3110,12 +3168,12 @@ void weapon_clean_entries()
 			}
 
 			if (removed) {
-				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wip->b_info.beam_num_sections, wip->name));
-				wip->b_info.beam_num_sections -= removed;
+				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wi.b_info.beam_num_sections, wi.name));
+				wi.b_info.beam_num_sections -= removed;
 			}
 
-			if (wip->b_info.beam_num_sections == 0) {
-				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wip->name);
+			if (wi.b_info.beam_num_sections == 0) {
+				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wi.name);
 			}
 		}
 	}
@@ -3123,9 +3181,6 @@ void weapon_clean_entries()
 
 void weapon_release_bitmaps()
 {
-	int i, j;
-	weapon_info *wip;
-
 	// not for FRED...
 	if (Fred_running)
 		return;
@@ -3134,8 +3189,8 @@ void weapon_release_bitmaps()
 	if (Cmdline_load_all_weapons)
 		return;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		wip = &Weapon_info[i];
+	for (int i = 0; i < weapon_info_size(); ++i) {
+		weapon_info *wip = &Weapon_info[i];
 
 		// go ahead and clear out models, the model paging code will actually take care of
 		// releasing this stuff if needed, but we have to keep track of current modelnums ourselves
@@ -3173,7 +3228,7 @@ void weapon_release_bitmaps()
 			}
 
 			// section textures
-			for (j = 0; j < wip->b_info.beam_num_sections; j++) {
+			for (int j = 0; j < wip->b_info.beam_num_sections; ++j) {
 				beam_weapon_section_info *bsi = &wip->b_info.sections[j];
 
 				if (bsi->texture.first_frame >= 0) {
@@ -3215,7 +3270,7 @@ void weapon_release_bitmaps()
 
 bool weapon_is_used(int weapon_index)
 {
-	Assert( (weapon_index >= 0) || (weapon_index < Num_weapon_types) );
+	Assert( (weapon_index >= 0) || (weapon_index < weapon_info_size()) );
 	return (used_weapons[weapon_index] > 0);
 }
 
@@ -3227,7 +3282,7 @@ void weapon_load_bitmaps(int weapon_index)
 	if (Fred_running)
 		return;
 
-	if ( (weapon_index < 0) || (weapon_index >= Num_weapon_types) ) {
+	if ( (weapon_index < 0) || (weapon_index >= weapon_info_size()) ) {
 		Int3();
 		return;
 	}
@@ -3359,7 +3414,7 @@ void weapon_load_bitmaps(int weapon_index)
  * Checks all of the weapon infos for substitution patterns and caches the weapon_index of any that it finds. 
  */
 void weapon_generate_indexes_for_substitution() {
-	for (int i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (int i = 0; i < weapon_info_size(); i++) {
 		weapon_info *wip = &(Weapon_info[i]);
 
 		if ( wip->num_substitution_patterns > 0 ) {
@@ -3420,7 +3475,6 @@ void weapon_do_post_parse()
 {
 	weapon_info *wip;
 	int first_cmeasure_index = -1;
-	int i;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
@@ -3429,7 +3483,7 @@ void weapon_do_post_parse()
 	Default_cmeasure_index = -1;
 
 	// run through weapons list and deal with individual issues
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (int i = 0; i < weapon_info_size(); ++i) {
 		wip = &Weapon_info[i];
 
 		// set default counter-measure index from the saved name
@@ -3485,13 +3539,6 @@ void weapon_expl_info_init()
 	LOD_checker.clear();
 }
 
-void weapon_reset_info()
-{
-	for (auto& wi : Weapon_info) {
-		wi.reset();
-	}
-}
-
 /**
  * This will get called once at game startup
  */
@@ -3501,12 +3548,11 @@ void weapon_init()
 		//Init weapon explosion info
 		weapon_expl_info_init();
 
-		// parse weapons.tbl
-		weapon_reset_info();
-
-		Num_weapon_types = 0;
 		Num_spawn_types = 0;
 
+		// parse weapons.tbl
+		Removed_weapons.clear();
+		Weapon_info.clear();
 		parse_weaponstbl("weapons.tbl");
 
 		parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
@@ -3518,6 +3564,9 @@ void weapon_init()
 	}
 
 	weapon_level_init();
+
+	if (Cmdline_spew_weapon_stats != WeaponSpewType::NONE)
+		weapon_spew_stats(Cmdline_spew_weapon_stats);
 }
 
 
@@ -3528,7 +3577,7 @@ void weapon_close()
 {
 	int i;
 
-	for (i = 0; i<MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		if (Weapon_info[i].desc) {
 			vm_free(Weapon_info[i].desc);
 			Weapon_info[i].desc = NULL;
@@ -3572,7 +3621,7 @@ void weapon_level_init()
 		Weapons[i].weapon_info_index = -1;
 	}
 
-	for (i=0; i<MAX_WEAPON_TYPES; i++)	{
+	for (i = 0; i < weapon_info_size(); i++) {
 		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
 		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
 	}
@@ -3587,11 +3636,11 @@ void weapon_level_init()
 	// emp effect
 	emp_level_init();
 
-	if (used_weapons == NULL)
-		used_weapons = new int[Num_weapon_types];
+	if (used_weapons == nullptr)
+		used_weapons = new int[Weapon_info.size()];
 
 	// clear out used_weapons between missions
-	memset(used_weapons, 0, Num_weapon_types * sizeof(int));
+	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
 
 	Weapon_flyby_sound_timer = timestamp(0);
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
@@ -4080,9 +4129,6 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
-	// if we've got this far, this should be valid
-	weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
-
 	if (wip->acceleration_time > 0.0f) {
 		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
 			float t;
@@ -4173,6 +4219,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		break;
 	case OBJ_WEAPON:
 	{
+		weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
+
 		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 			|| hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
@@ -4242,8 +4290,9 @@ void weapon_home(object *obj, int num, float frame_time)
 				float dist;
 
 				dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-				if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure])) {
-					if (dist < hobj_infop->cm_detonation_rad) {
+				if (hobjp->type == OBJ_WEAPON) {
+					weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
+					if (hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure] && dist < hobj_infop->cm_detonation_rad) {
 						//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
 						if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
 							detonate_nearby_missiles(hobjp, obj);
@@ -4837,9 +4886,14 @@ void weapon_process_post(object * obj, float frame_time)
 		
 			//get the position of the target, and estimate its position when it warps out
 			//so we have an idea of where it will be.
-			if (wp->target_num >= 0)
+			auto target_objp = wp->homing_object;
+			if (target_objp == nullptr && wp->target_num != -1) {
+				target_objp = &Objects[wp->target_num];
+			}
+
+			if (target_objp != nullptr)
 			{
-				vm_vec_scale_add(&wp->lssm_target_pos, &Objects[wp->target_num].pos, &Objects[wp->target_num].phys_info.vel, (float)wip->lssm_warpin_delay / 1000.0f);
+				vm_vec_scale_add(&wp->lssm_target_pos, &target_objp->pos, &target_objp->phys_info.vel, (float)wip->lssm_warpin_delay / 1000.0f);
 			}
 			else
 			{
@@ -5095,7 +5149,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	weapon		*wp;
 	weapon_info	*wip;
 
-	Assert(weapon_type >= 0 && weapon_type < Num_weapon_types);
+	Assert(weapon_type >= 0 && weapon_type < weapon_info_size());
 
 	wip = &Weapon_info[weapon_type];
 
@@ -5125,8 +5179,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
-		if (((Weapon_info[weapon_type].subtype == WP_LASER && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) || 
-			 (Weapon_info[weapon_type].subtype == WP_MISSILE && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire])) && 
+		if (((Weapon_info[weapon_type].subtype == WP_LASER && parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) ||
+			 (Weapon_info[weapon_type].subtype == WP_MISSILE && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire])) &&
 			 (curr_pos > 0)) {
 			curr_pos--;
 		}
@@ -5563,11 +5617,11 @@ void spawn_child_weapons(object *objp)
 
 	if (objp->type == OBJ_WEAPON) {
 		wp = &Weapons[objp->instance];
-		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
+		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < weapon_info_size()), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
 		wip = &Weapon_info[wp->weapon_info_index];
 	} else if (objp->type == OBJ_BEAM) {
 		bp = &Beams[objp->instance];
-		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
+		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < weapon_info_size()), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
 		wip = &Weapon_info[bp->weapon_info_index];
 	} else {	// Let's make sure we don't do screwball things in a release build if this gets called with a non-weapon non-beam.
 		return;
@@ -5609,9 +5663,15 @@ void spawn_child_weapons(object *objp)
 			// for multiplayer, use the static randvec functions based on the network signatures to provide
 			// the randomness so that it is the same on all machines.
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				if (wip->spawn_info[i].spawn_min_angle <= 0)
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+				else
+					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
 			} else {
-				vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+				if(wip->spawn_info[i].spawn_min_angle <= 0)
+					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+				else
+					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
 			}
 			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
@@ -6132,8 +6192,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	ship		*shipp;
 	int         objnum;
 
-	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPON_TYPES));
-	if((weapon_type < 0) || (weapon_type >= MAX_WEAPON_TYPES)){
+	Assert((weapon_type >= 0) && (weapon_type < weapon_info_size()));
+	if ((weapon_type < 0) || (weapon_type >= weapon_info_size())) {
 		return;
 	}
 	wp = &Weapons[weapon_obj->instance];
@@ -6368,9 +6428,9 @@ void weapon_mark_as_used(int weapon_type)
 	if ( used_weapons == NULL )
 		return;
 
-	Assert( weapon_type < MAX_WEAPON_TYPES );
+	Assert( weapon_type < weapon_info_size() );
 
-	if (weapon_type < Num_weapon_types) {
+	if (weapon_type < weapon_info_size()) {
 		used_weapons[weapon_type]++;
 		if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
 			for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
@@ -6397,7 +6457,7 @@ void weapons_page_in()
 
 	// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
 	// assigned directly to a ship
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		// we only want entries that already exist
 		if ( !used_weapons[i] )
 			continue;
@@ -6414,7 +6474,7 @@ void weapons_page_in()
 		weapon_release_bitmaps();
 
 	// Page in bitmaps for all used weapons
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		if ( !Cmdline_load_all_weapons ) {
 			if ( !used_weapons[i] ) {
 				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
@@ -6530,7 +6590,7 @@ void weapons_page_in_cheats()
 	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
-	for (i = 0; i < Num_weapon_types; i++) {
+	for (i = 0; i < weapon_info_size(); i++) {
 		// skip over anything that's already loaded
 		if (used_weapons[i])
 			continue;
@@ -6577,7 +6637,7 @@ bool weapon_page_in(int weapon_type)
 {
 	Assert(used_weapons != NULL);
 
-	if (weapon_type < 0 || weapon_type >= Num_weapon_types) {
+	if (weapon_type < 0 || weapon_type >= weapon_info_size()) {
 		return false;
 	}
 
@@ -7534,6 +7594,27 @@ void validate_SSM_entries()
 	}
 }
 
+int weapon_get_random_player_usable_weapon()
+{
+	SCP_vector<int> weapon_list;
+
+	for (int i = 0; i < weapon_info_size(); ++i)
+	{
+		// skip if we aren't supposed to use it
+		if (!Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed])
+			continue;
+
+		weapon_list.push_back(i);
+	}
+
+	if (weapon_list.empty())
+		return -1;
+
+	auto rand_wep = (rand() % weapon_list.size());
+
+	return weapon_list[rand_wep];
+}
+
 weapon_info::weapon_info()
 {
 	this->reset();
@@ -7545,77 +7626,69 @@ void weapon_info::reset()
 	// The order should match the order in the struct!
 	int i, j;
 
-    this->wi_flags.reset();
-
-	this->subtype = WP_UNUSED;
-	this->render_type = WRT_NONE;
-
 	memset(this->name, 0, sizeof(this->name));
 	memset(this->alt_name, 0, sizeof(this->alt_name));
 	memset(this->title, 0, sizeof(this->title));
-	this->desc = NULL;
-
-	memset(this->tech_title, 0, sizeof(this->tech_title));
-	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
-	this->tech_desc = NULL;
-	memset(this->tech_model, 0, sizeof(this->tech_model));
-
-	memset(this->hud_filename, 0, sizeof(this->hud_filename));
-	this->hud_image_index = -1;
+	this->desc = nullptr;
 
 	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
-
 	this->model_num = -1;
+	memset(this->external_model_name, 0, sizeof(this->external_model_name));
+	this->external_model_num = -1;
+
+	this->tech_desc = nullptr;
+	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
+	memset(this->tech_title, 0, sizeof(this->tech_title));
+	memset(this->tech_model, 0, sizeof(this->tech_model));
+
 	this->hud_target_lod = -1;
 	this->num_detail_levels = -1;
 	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; i++)
 	{
 		this->detail_distance[i] = -1;
 	}
+	this->subtype = WP_UNUSED;
+	this->render_type = WRT_NONE;
 
 	vm_vec_zero(&this->closeup_pos);
 	this->closeup_zoom = 1.0f;
 
+	memset(this->hud_filename, 0, sizeof(this->hud_filename));
+	this->hud_image_index = -1;
+
 	generic_anim_init(&this->laser_bitmap);
 	generic_anim_init(&this->laser_glow_bitmap);
 
+	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
-
-	this->laser_length = 10.0f;
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
 
-	memset(this->external_model_name, 0, sizeof(this->external_model_name));
-	this->external_model_num = -1;
-
-	this->weapon_submodel_rotate_accell = 10.0f;
-	this->weapon_submodel_rotate_vel = 0.0f;
-
-	this->mass = 1.0f;
 	this->max_speed = 10.0f;
 	this->acceleration_time = 0.0f;
 	this->vel_inherit_amount = 1.0f;
 	this->free_flight_time = 0.0f;
+	this->mass = 1.0f;
 	this->fire_wait = 1.0f;
 	this->max_delay = 0.0f;
 	this->min_delay = 0.0f;
+
 	this->damage = 0.0f;
 	this->damage_time = -1.0f;
 	this->atten_damage = -1.0f;
 
-	this->damage_type_idx = -1;
-	this->damage_type_idx_sav = -1;
-
-	this->armor_type_idx = -1;
+	shockwave_create_info_init(&this->shockwave);
+	shockwave_create_info_init(&this->dinky_shockwave);
 
 	this->arm_time = 0;
 	this->arm_dist = 0.0f;
 	this->arm_radius = 0.0f;
 	this->det_range = 0.0f;
 	this->det_radius = 0.0f;
-	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
+
 	this->flak_detonation_accuracy = 65.0f;
+	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
 	this->untargeted_flak_range_penalty = 20.0f;
 
 	this->armor_factor = 1.0f;
@@ -7624,23 +7697,41 @@ void weapon_info::reset()
 
 	this->life_min = -1.0f;
 	this->life_max = -1.0f;
+	this->max_lifetime = 1.0f;
 	this->lifetime = 1.0f;
+
 	this->energy_consumed = 0.0f;
 
-	this->cargo_size = 1.0f;
+	this->wi_flags.reset();
 
 	this->turn_time = 1.0f;
-	this->fov = 0;				//should be cos(pi), not pi
+	this->cargo_size = 1.0f;
+	this->rearm_rate = 1.0f;
+	this->reloaded_per_batch = -1;
+	this->weapon_range = 999999999.9f;
+	// *Minimum weapon range, default is 0 -Et1
+	this->WeaponMinRange = 0.0f;
+
+	this->num_spawn_weapons_defined = 0;
+	this->total_children_spawned = 0;
+	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
+	{
+		this->spawn_info[i].spawn_type = -1;
+		this->spawn_info[i].spawn_angle = 180;
+		this->spawn_info[i].spawn_min_angle = 0;
+		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+	}
+
+	this->swarm_count = -1;
+	// *Default is 150  -Et1
+	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->min_lock_time = 0.0f;
 	this->lock_pixels_per_sec = 50;
 	this->catchup_pixels_per_sec = 50;
 	this->catchup_pixel_penalty = 50;
+	this->fov = 0;				//should be cos(pi), not pi
 	this->seeker_strength = 1.0f;
-
-	this->swarm_count = -1;
-	// *Default is 150  -Et1
-	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->pre_launch_snd = gamesnd_id();
 	this->pre_launch_snd_min_interval = 0;
@@ -7650,21 +7741,10 @@ void weapon_info::reset()
 	this->disarmed_impact_snd = gamesnd_id();
 	this->flyby_snd = gamesnd_id();
 
-	this->rearm_rate = 1.0f;
-	this->reloaded_per_batch = -1 ;
-
-	this->weapon_range = 999999999.9f;
-	// *Minimum weapon range, default is 0 -Et1
-	this->WeaponMinRange = 0.0f;
-
-	this->num_spawn_weapons_defined = 0;
-
-	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
-	{
-		this->spawn_info[i].spawn_type = -1;
-		this->spawn_info[i].spawn_angle = 180;
-		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-	}
+	this->hud_tracking_snd = gamesnd_id();
+	this->hud_locked_snd = gamesnd_id();
+	this->hud_in_flight_snd = gamesnd_id();
+	this->in_flight_play_type = ALWAYS;
 
 	// Trails
 	this->tr_info.pt = vmd_zero_vector;
@@ -7678,27 +7758,38 @@ void weapon_info::reset()
 	this->tr_info.n_fade_out_sections = 0;
 
 	memset(this->icon_filename, 0, sizeof(this->icon_filename));
-
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));
+	this->selection_effect = Default_weapon_select_effect;
 
 	this->shield_impact_explosion_radius = 1.0f;
 
 	this->impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
-
 	this->dinky_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
-
 	this->flash_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->piercing_impact_effect           = particle::ParticleEffectHandle::invalid();
+	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 
-	this->muzzle_flash = -1;
+	this->state_effects.clear();
 
 	this->emp_intensity = EMP_DEFAULT_INTENSITY;
 	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+
 	this->recoil_modifier = 1.0f;
+
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	this->tag_time = -1.0f;
+	this->tag_level = -1;
+
+	this->muzzle_flash = -1;
+
+	this->field_of_fire = 0.0f;
+	this->fof_spread_rate = 0.0f;
+	this->fof_reset_rate = 0.0f;
+	this->max_fof_spread = 0.0f;
+	this->shots = 1;
 
 	//customizeable corkscrew stuff
 	this->cs_num_fired = 4;
@@ -7715,18 +7806,13 @@ void weapon_info::reset()
 	this->elec_randomness = 2000;
 	this->elec_use_new_style = 0;
 
+	this->SSM_index = -1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+
 	this->lssm_warpout_delay = 0;			//delay between launch and warpout (ms)
 	this->lssm_warpin_delay = 0;			//delay between warpout and warpin (ms)
 	this->lssm_stage5_vel = 0;		//velocity during final stage
 	this->lssm_warpin_radius = 0;
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
-
-	this->cm_aspect_effectiveness = 1.0f;
-	this->cm_heat_effectiveness = 1.0f;
-	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
-	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
-	this->cm_kill_single = false;
-	this->cmeasure_timer_interval = 0;
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;
@@ -7786,57 +7872,263 @@ void weapon_info::reset()
 		generic_anim_init(&this->particle_spewers[s].particle_spew_anim, NULL);
 	}
 
-	this->tag_level = -1;
-	this->tag_time = -1.0f;
+	this->cm_aspect_effectiveness = 1.0f;
+	this->cm_heat_effectiveness = 1.0f;
+	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
+	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
+	this->cm_kill_single = false;
+	this->cmeasure_timer_interval = 0;
 
-	this->SSM_index = -1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+	this->weapon_submodel_rotate_accell = 10.0f;
+	this->weapon_submodel_rotate_vel = 0.0f;
 
-	this->field_of_fire = 0.0f;
-	this->fof_spread_rate = 0.0f;
-	this->fof_reset_rate = 0.0f;
-	this->max_fof_spread = 0.0f;
+	this->damage_type_idx = -1;
+	this->damage_type_idx_sav = -1;
 
-	this->shots = 1;
+	this->armor_type_idx = -1;
 
 	this->alpha_max = 1.0f;
 	this->alpha_min = 0.0f;
 	this->alpha_cycle = 0.0f;
 
-	shockwave_create_info_init(&this->shockwave);
-	shockwave_create_info_init(&this->dinky_shockwave);
-
 	this->weapon_hitpoints = 0;
 
-	this->burst_delay = 1.0f; // 1 second, just incase its not defined
 	this->burst_shots = 0;
+	this->burst_delay = 1.0f; // 1 second, just incase its not defined
     this->burst_flags.reset();
 
 	generic_anim_init(&this->thruster_flame);
 	generic_anim_init(&this->thruster_glow);
-
 	this->thruster_glow_factor = 1.0f;
+
 	this->target_lead_scaler = 0.0f;
+	this->num_targeting_priorities = 0;
+	for (i = 0; i < 32; ++i)
+		this->targeting_priorities[i] = -1;
 
 	this->failure_rate = 0.0f;
 	this->failure_sub_name.clear();
 	this->failure_sub = -1;
 
-	this->selection_effect = Default_weapon_select_effect;
+	this->num_substitution_patterns = 0;
+	for (i = 0; i < MAX_SUBSTITUTION_PATTERNS; ++i)
+	{
+		this->weapon_substitution_pattern[i] = -1;
+		this->weapon_substitution_pattern_names[i][0] = 0;
+	}
 
-	this->hud_locked_snd = gamesnd_id();
-	this->hud_tracking_snd = gamesnd_id();
-	this->hud_in_flight_snd = gamesnd_id();
+	this->score = 0;
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
 }
-const char* weapon_info::get_display_string() {
+
+const char* weapon_info::get_display_string()
+{
 	if (has_alternate_name()) {
 		return alt_name;
 	} else {
 		return name;
 	}
 }
-bool weapon_info::has_alternate_name() {
+
+bool weapon_info::has_alternate_name()
+{
 	return alt_name[0] != '\0';
+}
+
+void weapon_spew_stats(WeaponSpewType type)
+{
+#ifndef NDEBUG
+	if (type == WeaponSpewType::NONE)
+		return;	// then why did we even call the function?
+	bool all_weapons = (type == WeaponSpewType::ALL);
+
+	// csv weapon stats for comparisons
+	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Area Effect,Shockwave%s\n", all_weapons ? ",Player Allowed" : ""));
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+			continue;
+
+		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
+		{
+			mprintf(("%s,%s,", wi.name, "Primary"));
+			//Beam range is set in the b_info and velocity isn't very relevant to them.
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				mprintf((",%.2f,",wi.b_info.range));
+			else
+				mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float damage;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				damage = wi.damage * wi.b_info.beam_life * (1000.0f / i2fl(BEAM_DAMAGE_TIME));
+			else
+				damage = wi.damage;
+
+			float fire_rate;
+			//To get overall fire rate, divide the number of shots in a firing cycle by the length of that cycle
+			//In random length bursts, average between the longest and shortest firing cycle to get average rof
+			if (wi.burst_shots > 1 && (wi.burst_flags[Weapon::Burst_Flags::Random_length]))
+				fire_rate = (wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1)) + (1 / wi.fire_wait)) / 2;
+			else if (wi.burst_shots > 1)
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1));
+			else
+				fire_rate = 1 / wi.fire_wait;
+
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.armor_factor, multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.shield_factor, multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", multiplier * damage * wi.subsystem_factor, multiplier * damage * wi.subsystem_factor * fire_rate));
+
+			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", wi.fire_wait, fire_rate));
+			mprintf((",,"));	// no reload for primaries
+
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+				mprintf(("Yes,"));
+			else
+				mprintf((","));
+
+			if (wi.shockwave.speed > 0.0f)
+				mprintf(("Yes"));
+
+			if (all_weapons)
+			{
+				mprintf((","));
+				mprintf((wi.wi_flags[Weapon::Info_Flags::Player_allowed] ? "Yes" : ""));
+			}
+
+			mprintf(("\n"));
+		}
+	}
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.subtype != WP_MISSILE)
+			continue;
+
+		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])
+		{
+			mprintf(("%s,%s,", wi.name, "Secondary"));
+			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+
+			mprintf((","));	// no power use for secondaries
+			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", wi.reloaded_per_batch / wi.rearm_rate, wi.rearm_rate / wi.reloaded_per_batch));	// rearm_rate is actually the reciprocal of what is in weapons.tbl
+
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+				mprintf(("Yes,"));
+			else
+				mprintf((","));
+
+			if (wi.shockwave.speed > 0.0f)
+				mprintf(("Yes"));
+
+			if (all_weapons)
+			{
+				mprintf((","));
+				mprintf((wi.wi_flags[Weapon::Info_Flags::Player_allowed] ? "Yes" : ""));
+			}
+
+			mprintf(("\n"));
+		}
+	}
+
+	// mvp-style stats
+	mprintf(("\n"));
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+			continue;
+
+		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
+		{
+			mprintf(("%s\n", wi.name));
+			//Beam range is set in the b_info and velocity isn't very relevant to them.
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				mprintf(("\tVelocity: N/A        Range: %.0f\n", wi.b_info.range));
+			else
+				mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed* wi.lifetime));
+
+			float damage;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam])
+				damage = wi.damage * wi.b_info.beam_life * (1000.0f / i2fl(BEAM_DAMAGE_TIME));
+			else
+				damage = wi.damage;
+
+			float fire_rate;
+			//We need to count the length of a firing cycle and then divide by the number of shots in that cycle
+			//In random length bursts, average between the longest and shortest firing cycle to get average rof
+			if (wi.burst_shots > 1 && (wi.burst_flags[Weapon::Burst_Flags::Random_length]))
+				fire_rate = (wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1)) + (1 / wi.fire_wait)) / 2;
+			else if (wi.burst_shots > 1)
+				fire_rate = wi.burst_shots / (wi.fire_wait + wi.burst_delay * (wi.burst_shots - 1));
+			else
+				fire_rate = 1 / wi.fire_wait;
+
+			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("\tDPS: "));
+			mprintf(("%.0f Hull, ", multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.0f Shield, ", multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.0f Subsystem\n", multiplier * damage * wi.subsystem_factor * fire_rate));
+
+			char watts[NAME_LENGTH];
+			sprintf(watts, "%.1f", wi.energy_consumed * fire_rate);
+			char *p = strstr(watts, ".0");
+			if (p)
+				*p = 0;
+			strcat(watts, "W");
+
+			char rof[NAME_LENGTH];
+			sprintf(rof, "%.1f", fire_rate);
+			p = strstr(rof, ".0");
+			if (p)
+				*p = 0;
+			strcat(rof, "/s");
+
+			mprintf(("\tPower Use: %-10sROF: %s\n\n", watts, rof));
+		}
+	}
+	for (auto &wi : Weapon_info)
+	{
+		if (wi.subtype != WP_MISSILE)
+			continue;
+
+		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])
+		{
+			mprintf(("%s\n", wi.name));
+			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
+
+			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
+			mprintf(("\tDamage: "));
+			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor));
+			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor));
+			mprintf(("%.0f Subsystem\n", multiplier * wi.damage * wi.subsystem_factor));
+
+			char wait[NAME_LENGTH];
+			sprintf(wait, "%.1f", wi.fire_wait);
+			char *p = strstr(wait, ".0");
+			if (p)
+				*p = 0;
+			strcat(wait, "s");
+
+			bool flip = wi.rearm_rate <= 1.0f;
+			char flip_str[NAME_LENGTH];
+			sprintf(flip_str, "%d/", wi.reloaded_per_batch);
+
+			char reload[NAME_LENGTH];
+			sprintf(reload, "%.1f", flip ? wi.reloaded_per_batch / wi.rearm_rate : wi.rearm_rate);
+			p = strstr(reload, ".0");
+			if (p)
+				*p = 0;
+
+			mprintf(("\tFire Wait: %-10sReload: %s%s%ss\n\n", wait, !flip ? flip_str : "", reload, flip ? "/" : ""));
+		}
+	}
+#endif
 }

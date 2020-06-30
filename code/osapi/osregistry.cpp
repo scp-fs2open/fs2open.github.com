@@ -47,7 +47,7 @@ namespace
 		HANDLE hToken = NULL;
 		if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken) == FALSE)
 		{
-			mprintf(("Failed to get process token! Error Code: %d", (int)GetLastError()));
+			mprintf(("Failed to get process token! Error Code: %d\n", (int)GetLastError()));
 
 			return false;
 		}
@@ -64,7 +64,7 @@ namespace
 
 		if (IsValidSid(ptkUser->User.Sid) == FALSE)
 		{
-			mprintf(("Invalid SID structure detected!"));
+			mprintf(("Invalid SID structure detected!\n"));
 
 			delete[] ptkUser;
 			return false;
@@ -73,7 +73,7 @@ namespace
 		LPTSTR sidName = NULL;
 		if (ConvertSidToStringSid(ptkUser->User.Sid, &sidName) == 0)
 		{
-			mprintf(("Failed to convert SID structure to string! Error Code: %d", (int)GetLastError()));
+			mprintf(("Failed to convert SID structure to string! Error Code: %d\n", (int)GetLastError()));
 
 			delete[] ptkUser;
 			return false;
@@ -96,7 +96,7 @@ namespace
 		BOOL bIsWow64 = FALSE;
 		if (!IsWow64Process(GetCurrentProcess(), &bIsWow64))
 		{
-			mprintf(("Failed to determine if we run under Wow64, registry configuration may fail!"));
+			mprintf(("Failed to determine if we run under Wow64, registry configuration may fail!\n"));
 			return false;
 		}
 

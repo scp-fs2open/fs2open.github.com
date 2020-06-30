@@ -492,6 +492,8 @@ public:
 	float ship_max_hull_strength;
 
 	float max_shield_recharge;
+	float max_shield_regen_per_second;		// wookieejedi - make this a ship object variable
+	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
@@ -722,11 +724,13 @@ public:
     //Helper functions
 	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false);
 	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
+	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
 	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	bool has_display_name();
 	const char* get_display_string();
+
+	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
@@ -772,6 +776,39 @@ extern SCP_vector<exited_ship> Ships_exited;
 extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
 extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
+
+// Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
+enum ShipStatus
+{
+	// A ship is on the arrival list as a parse object
+	NOT_YET_PRESENT,
+
+	// A ship is currently in-mission, and its objp and shipp pointers are valid
+	PRESENT,
+
+	// A ship is destroyed, departed, or vanished.  Note however that for destroyed ships,
+	// ship_cleanup is not called until the death roll is complete, which means there is a
+	// period of time where the ship is "exited", but objp and shipp are still valid and
+	// exited_index is not yet assigned.
+	EXITED
+};
+
+struct ship_registry_entry
+{
+	ShipStatus status;
+	const char *name;
+
+	p_object *p_objp;
+	object *objp;
+	ship *shipp;
+	int cleanup_mode;
+	int exited_index;
+};
+
+extern SCP_vector<ship_registry_entry> Ship_registry;
+extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+
+extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1078,8 +1115,11 @@ public:
 	float	sup_shield_repair_rate;
 	float	sup_subsys_repair_rate;
 
-	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
-	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
+	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and techroom)
+	float	closeup_zoom;					// zoom when using ship in closeup view (eg briefing and techroom)
+
+	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
+	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
 
 	int		allowed_weapons[MAX_WEAPON_TYPES];	// array which specifies which weapons can be loaded out by the
 												// player during weapons loadout.
@@ -1216,9 +1256,9 @@ public:
 	~ship_info();
 	void clone(const ship_info& other);
 
-	ship_info(ship_info&& other) SCP_NOEXCEPT;
+	ship_info(ship_info&& other) noexcept;
 
-	ship_info &operator=(ship_info&& other) SCP_NOEXCEPT;
+	ship_info &operator=(ship_info&& other) noexcept;
 
 	void free_strings();
 
@@ -1335,7 +1375,6 @@ extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
-extern int CLOAKMAP;
 
 extern int Num_reinforcements;
 extern SCP_vector<ship_info> Ship_info;
@@ -1398,7 +1437,7 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj, int shipnum);
+extern void ship_destroy_instantly(object *ship_obj);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
@@ -1427,9 +1466,14 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-extern int ship_info_lookup(const char *name = NULL);
+extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);
+
+inline int ship_info_size()
+{
+	return static_cast<int>(Ship_info.size());
+}
 
 extern int wing_lookup(const char *name);
 
@@ -1440,6 +1484,8 @@ extern int wing_has_conflicting_teams(int wing_index);
 // in the wing -- used to tell is the wing exists or not, not whether it exists and has ships currently
 // present.
 extern int wing_name_lookup(const char *name, int ignore_count = 0);
+
+extern bool wing_has_yet_to_arrive(const wing *wingp);
 
 // for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
 extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
@@ -1488,8 +1534,8 @@ extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacke
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
 extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);
-extern float ship_get_subsystem_strength( ship *shipp, int type );
-extern ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name);
+extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
+extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
@@ -1529,6 +1575,8 @@ int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary ban
 
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
 int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power to warp
+bool ship_can_warp_full_check(ship *sp);		// checks both the warp flags and ship_engine_ok_to_warp() and ship_navigation_ok_to_warp() --wookieejedi
+bool ship_can_bay_depart(ship *sp);			// checks to see if a ship has a departure location as a bay and if the mothership is present
 
 int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm);
 int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check=1, float *dot_out=NULL, vec3d *vec_out=NULL);
@@ -1684,8 +1732,8 @@ float ship_class_get_length(const ship_info *sip);
 void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos);
 
 // Goober5000 - used by change-ai-class
-extern void ship_set_new_ai_class(int ship_num, int new_ai_class);
-extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class);
+extern void ship_set_new_ai_class(ship *shipp, int new_ai_class);
+extern void ship_subsystem_set_new_ai_class(ship *shipp, const char *subsystem, int new_ai_class);
 
 // wing squad logos - Goober5000
 extern void wing_load_squad_bitmap(wing *w);

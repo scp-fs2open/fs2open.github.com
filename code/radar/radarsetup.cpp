@@ -157,6 +157,11 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
+	// if we are in the lab, do nothing here
+	if (Game_mode & GM_LAB) {
+		return;
+	}
+
 	// multiplayer clients ingame joining should skip this function
 	if ( MULTIPLAYER_CLIENT && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ){
 		return;

@@ -20,7 +20,10 @@
 #pragma pop_macro("Assert")
 
 #include "graphics/2d.h"
+#include "graphics/generic.h"
 #include "graphics/material.h"
+#include "tracing/categories.h"
+#include "tracing/tracing.h"
 
 using namespace Rocket::Core;
 
@@ -60,6 +63,7 @@ Rocket::Core::TextureHandle RocketRenderingInterface::get_texture_handle(RocketR
 CompiledGeometryHandle RocketRenderingInterface::CompileGeometry(Vertex* vertices, int num_vertices, int* indices,
                                                                  int num_indices, TextureHandle texture)
 {
+	TRACE_SCOPE(tracing::RocketCompileGeometry);
 	GR_DEBUG_SCOPE("libRocket::CompileGeometry");
 
 	auto* geom          = new CompiledGeometry();
@@ -76,13 +80,18 @@ CompiledGeometryHandle RocketRenderingInterface::CompileGeometry(Vertex* vertice
 }
 void RocketRenderingInterface::RenderCompiledGeometry(CompiledGeometryHandle geometry, const Vector2f& translation)
 {
+	TRACE_SCOPE(tracing::RocketRenderCompiledGeometry);
 	GR_DEBUG_SCOPE("libRocket::RenderCompiledGeometry");
 
 	auto geom = reinterpret_cast<CompiledGeometry*>(geometry);
 
 	auto bitmap = -1;
 	if (geom->texture != nullptr) {
-		bitmap = geom->texture->handle + geom->texture->frame_num;
+		if (geom->texture->is_animation) {
+			bitmap = geom->texture->animation.bitmap_id;
+		} else {
+			bitmap = geom->texture->bm_handle;
+		}
 	}
 
 	renderGeometry(geom->vertex_buffer, geom->index_buffer, geom->num_elements, bitmap, translation);
@@ -119,6 +128,7 @@ void RocketRenderingInterface::SetScissorRegion(int x, int y, int width, int hei
 bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector2i& texture_dimensions,
                                            const String& source)
 {
+	TRACE_SCOPE(tracing::RocketLoadTexture);
 	GR_DEBUG_SCOPE("libRocket::LoadTexture");
 	SCP_string filename;
 	int dir_type;
@@ -131,27 +141,43 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 		filename = filename.substr(0, period_pos);
 	}
 
-	auto id = bm_load_either(filename.c_str(), nullptr, nullptr, nullptr, false, dir_type);
-	if (id < 0) {
-		return false;
+	std::unique_ptr<Texture> tex(new Texture());
+	// If there is a file that ends with an animation extension, try to load that
+	if (generic_anim_exists(filename.c_str())) {
+		// Load as animation
+		generic_anim_init(&tex->animation, filename);
+		if (generic_anim_stream(&tex->animation) == 0) {
+			tex->is_animation = true;
+
+			texture_dimensions.x = tex->animation.width;
+			texture_dimensions.y = tex->animation.height;
+		}
 	}
 
-	int w, h;
-	bm_get_info(id, &w, &h);
+	if (!tex->is_animation) {
+		// Try to load as standalone image instead
+		auto id = bm_load_either(filename.c_str(), nullptr, nullptr, nullptr, false, dir_type);
+		if (id < 0) {
+			return false;
+		}
 
-	texture_dimensions.x = w;
-	texture_dimensions.y = h;
+		int w, h;
+		bm_get_info(id, &w, &h);
 
-	auto* tex   = new Texture();
-	tex->handle = id;
+		texture_dimensions.x = w;
+		texture_dimensions.y = h;
 
-	texture_handle = get_texture_handle(tex);
+		tex->bm_handle = id;
+	}
 
+	// We give the pointer to libRocket now so we release it from our unique ptr
+	texture_handle = get_texture_handle(tex.release());
 	return true;
 }
 bool RocketRenderingInterface::GenerateTexture(TextureHandle& texture_handle, const Rocket::Core::byte* source,
                                                const Vector2i& source_dimensions)
 {
+	TRACE_SCOPE(tracing::RocketGenerateTexture);
 	GR_DEBUG_SCOPE("libRocket::GenerateTexture");
 	auto size = (size_t)(source_dimensions.x * source_dimensions.y * 4); // RGBA format
 
@@ -163,9 +189,9 @@ bool RocketRenderingInterface::GenerateTexture(TextureHandle& texture_handle, co
 		return false;
 	}
 
-	auto* tex   = new Texture();
-	tex->handle = id;
-	tex->data   = std::move(buffer);
+	auto* tex      = new Texture();
+	tex->bm_handle = id;
+	tex->data      = std::move(buffer);
 
 	texture_handle = get_texture_handle(tex);
 
@@ -178,12 +204,18 @@ void RocketRenderingInterface::ReleaseTexture(TextureHandle texture)
 
 	auto tex = get_texture(texture);
 
-	bm_release(tex->handle);
+	if (tex->is_animation) {
+		generic_anim_unload(&tex->animation);
+	} else {
+		bm_release(tex->bm_handle);
+	}
 	delete tex;
 }
 void RocketRenderingInterface::RenderGeometry(Vertex* vertices, int num_vertices, int* indices, int num_indices,
                                               TextureHandle texture, const Vector2f& translation)
 {
+	TRACE_SCOPE(tracing::RocketRenderGeometry);
+	GR_DEBUG_SCOPE("libRocket::RenderGeometry");
 	gr_update_buffer_data(vertex_stream_buffer, sizeof(*vertices) * num_vertices, vertices);
 	gr_update_buffer_data(index_stream_buffer, sizeof(*indices) * num_indices, indices);
 
@@ -191,7 +223,11 @@ void RocketRenderingInterface::RenderGeometry(Vertex* vertices, int num_vertices
 	if (texture == 0) {
 		bitmap = -1;
 	} else {
-		bitmap = get_texture(texture)->handle + get_texture(texture)->frame_num;
+		if (get_texture(texture)->is_animation) {
+			bitmap = get_texture(texture)->animation.bitmap_id;
+		} else {
+			bitmap = get_texture(texture)->bm_handle;
+		}
 	}
 
 	renderGeometry(vertex_stream_buffer, index_stream_buffer, num_indices, bitmap, translation);
@@ -235,16 +271,22 @@ int RocketRenderingInterface::getBitmapNum(Rocket::Core::TextureHandle handle)
 	if (handle == 0) {
 		bitmap = -1;
 	} else {
-		bitmap = get_texture(handle)->handle;
+		bitmap = get_texture(handle)->bm_handle;
 	}
 
 	return bitmap;
 }
-void RocketRenderingInterface::setAnimationFrame(Rocket::Core::TextureHandle handle, int frame)
+void RocketRenderingInterface::advanceAnimation(Rocket::Core::TextureHandle handle, float advanceTime)
 {
 	Assertion(handle != 0, "Invalid handle for setAnimationFrame");
+	Assertion(get_texture(handle)->is_animation, "Tried to use advanceAnimation with a non-animation!");
 
-	get_texture(handle)->frame_num = frame;
+	auto tex = get_texture(handle);
+
+	generic_extras extras;
+	extras.draw = false; // We only want to advance the time but not actually render the animation
+
+	generic_anim_render(&tex->animation, advanceTime, -1, -1, false, &extras);
 }
 
 } // namespace scpui

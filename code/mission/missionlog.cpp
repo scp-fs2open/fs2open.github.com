@@ -711,7 +711,7 @@ void message_log_init_scrollback(int pw)
 				break;
 
 			case LOG_SELF_DESTRUCTED:
-				message_log_add_segs(XSTR( "Self Destructed", 1476), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR( "Self destructed", 1476), LOG_COLOR_NORMAL);
 				break;
 
 			case LOG_WING_DESTROYED:

@@ -478,7 +478,7 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 			}
 			else
 			{
-				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)", asip->name, pm->n_detail_levels));
+				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)\n", asip->name, pm->n_detail_levels));
 			}
 		}	
 		// Stuff detail level distances.
@@ -1937,11 +1937,11 @@ static void asteroid_parse_tbl()
 		if (tally != max_asteroids)
 		{
 #ifndef NDEBUG
+			mprintf(("Asteroid.tbl as parsed:\n"));
 			for (SCP_vector<SCP_string>::iterator iter = parsed_asteroids.begin();
 				iter != parsed_asteroids.end(); ++iter)
 			{
-				mprintf(("Asteroid.tbl as parsed:\n"));
-				mprintf(("%s", iter->c_str()));
+				mprintf(("%s\n", iter->c_str()));
 			}
 #endif
 			Error(LOCATION,

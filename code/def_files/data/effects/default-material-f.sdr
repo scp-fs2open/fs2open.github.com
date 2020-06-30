@@ -6,12 +6,23 @@ in vec4 fragColor;
 out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
-uniform int baseMapIndex;
-uniform int alphaTexture;
-uniform int noTexturing;
-uniform int srgb;
-uniform float intensity;
-uniform float alphaThreshold;
+
+layout (std140) uniform genericData {
+	mat4 modelMatrix;
+
+	vec4 color;
+
+	vec4 clipEquation;
+
+	int baseMapIndex;
+	int alphaTexture;
+	int noTexturing;
+	int srgb;
+
+	float intensity;
+	float alphaThreshold;
+	bool clipEnabled;
+};
 
 void main()
 {

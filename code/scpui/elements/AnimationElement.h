@@ -66,8 +66,7 @@ class AnimationElement : public Rocket::Core::Element {
 	Geometry geometry;
 	bool geometry_dirty;
 
-	float animation_start_time  = -1.f;
-	int current_animation_frame = -1;
+	float animation_last_update_time = -1.0f;
 };
 
 } // namespace elements

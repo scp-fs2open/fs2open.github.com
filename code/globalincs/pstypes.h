@@ -45,6 +45,12 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
+#ifndef NDEBUG
+constexpr bool FSO_DEBUG = true;
+#else
+constexpr bool FSO_DEBUG = false;
+#endif
+
 typedef std::int32_t _fs_time_t;  // time_t here is 64-bit and we need 32-bit
 typedef std::int32_t fix;
 
@@ -226,12 +232,17 @@ extern int Global_error_count;
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
-#define mprintf(args) outwnd_printf2 args
-#define nprintf(args) outwnd_printf args
+constexpr bool LoggingEnabled = true;
 #else
-#define mprintf(args)
-#define nprintf(args)
+#ifdef SCP_RELEASE_LOGGING
+constexpr bool LoggingEnabled = true;
+#else
+constexpr bool LoggingEnabled = false;
 #endif
+#endif
+
+#define mprintf(args) do { if (LoggingEnabled) { outwnd_printf2 args; } } while (false)
+#define nprintf(args) do { if (LoggingEnabled) { outwnd_printf args; } } while (false)
 
 #define LOCATION __FILE__,__LINE__
 
@@ -339,7 +350,12 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define FALSE	0
 
 int myrand();
-int rand32(); // returns a random number between 0 and 0x7fffffff
+
+// Returns a random number between 0 and 0x7fffffff
+int rand32();
+
+// Returns a random integer from low to high, inclusive
+int rand32(int low, int high);
 
 
 // lod checker for (modular) table parsing

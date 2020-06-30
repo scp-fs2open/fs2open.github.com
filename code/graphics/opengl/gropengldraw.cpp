@@ -611,24 +611,27 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
 
 	uint32_t array_index = 0;
-	if ( material_info->get_texture_map(TM_BASE_TYPE) >= 0 ) {
+	if (material_info->get_texture_map(TM_BASE_TYPE) >= 0) {
 		float u_scale, v_scale;
 
-		if ( !gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index) ) {
+		if (!gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(),
+								  &u_scale, &v_scale, &array_index)) {
 			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
 		}
 	}
 
-	Current_shader->program->Uniforms.setUniform3f("hitNormal", impact_orient.vec.fvec);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldProjMatrix", impact_projection);
-	Current_shader->program->Uniforms.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
-	Current_shader->program->Uniforms.setUniformi("shieldMap", 0);
-	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
-	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
-	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
+	opengl_set_generic_uniform_data<graphics::generic_data::shield_impact_data>(
+		[&](graphics::generic_data::shield_impact_data* data) {
+			data->hitNormal             = impact_orient.vec.fvec;
+			data->shieldProjMatrix      = impact_projection;
+			data->shieldModelViewMatrix = impact_transform;
+			data->shieldMapIndex        = array_index;
+			data->srgb                  = High_dynamic_range ? 1 : 0;
+			data->color                 = material_info->get_color();
+		});
 
 	gr_matrix_set_uniforms();
-	
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
 

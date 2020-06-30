@@ -66,12 +66,12 @@ namespace io
 	namespace mouse
 	{
 
-		Cursor::Cursor(Cursor&& other) SCP_NOEXCEPT
+		Cursor::Cursor(Cursor&& other) noexcept
 		{
 			*this = std::move(other);
 		}
 		
-		Cursor& Cursor::operator=(Cursor&& other) SCP_NOEXCEPT
+		Cursor& Cursor::operator=(Cursor&& other) noexcept
 		{
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
@@ -168,7 +168,7 @@ namespace io
 
 			if (handle < 0)
 			{
-				mprintf(("Failed to load cursor bitmap %s!", fileName));
+				mprintf(("Failed to load cursor bitmap %s!\n", fileName));
 				return nullptr;
 			}
 

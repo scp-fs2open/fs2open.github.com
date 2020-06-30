@@ -158,14 +158,11 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 {
 	CFILE *img_cfp = NULL;
 	int anim_fps = 0;
-	const int NUM_TYPES = 3;
-	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG};
-	const char *ext_list[NUM_TYPES] = {".eff", ".ani", ".png"};
 	int bpp;
 
 	ga->type = BM_TYPE_NONE;
 
-	auto res = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, false);
+	auto res = cf_find_file_location_ext(ga->filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, CF_TYPE_ANY, false);
 
 	// could not be found, or is invalid for some reason
 	if ( !res.found )
@@ -178,8 +175,8 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		return -1;
 	}
 
-	strcat_s(ga->filename, ext_list[res.extension_index]);
-	ga->type = type_list[res.extension_index];
+	strcat_s(ga->filename, bm_ani_ext_list[res.extension_index]);
+	ga->type = bm_ani_type_list[res.extension_index];
 	//seek to the end
 	cfseek(img_cfp, 0, CF_SEEK_END);
 
@@ -254,7 +251,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
-			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
+			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s\n", ga->filename));
 			return -1;
 		}
 		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {

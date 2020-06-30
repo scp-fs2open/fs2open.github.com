@@ -7,8 +7,9 @@
  *
 */
 
+#include "ship/shipfx.h"
 
-
+#include "globalincs/linklist.h"
 
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
@@ -18,7 +19,6 @@
 #include "fireball/fireballs.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/linklist.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -32,13 +32,12 @@
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
-#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
+#include "scripting/hook_api.h"
 #include "ship/ship.h"
-#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
@@ -51,14 +50,20 @@ extern int Framecount;
 
 extern int Cmdline_tbp;
 
-#define SHIP_CANNON_BITMAP			"argh"
+#define SHIP_CANNON_BITMAP "argh"
 int Ship_cannon_bitmap = -1;
 
 sound_handle Player_engine_wash_loop = sound_handle::invalid();
 
 extern float splode_level;
 
-static void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
+const auto OnWarpOutHook = scripting::OverridableHook::Factory(
+	"On Warp Out", "Called when a ship warps out", {{"Self", "ship", "The object that is warping out."}});
+
+const auto OnWarpInHook = scripting::OverridableHook::Factory(
+	"On Warp In", "Called when a ship warps in", {{"Self", "ship", "The object that is warping in."}});
+
+static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 {
 	Assert(submodel_num != -1);
 
@@ -66,8 +71,8 @@ static void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 	if (shipp->num_hits == 0) {
 		return;
 	}
-	
-	for (int spark_num=0; spark_num<shipp->num_hits; spark_num++) {
+
+	for (int spark_num = 0; spark_num < shipp->num_hits; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num == submodel_num) {
 			shipp->sparks[spark_num].end_time = timestamp(1);
 		}
@@ -101,7 +106,6 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 	// copy angles
 	angles copy_angs = pm->submodel[submodel_num].angs;
-	angles zero_angs = {0.0f, 0.0f, 0.0f};
 
 	// make sure the axis point is set
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
@@ -137,7 +141,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 		// convert to model coord of underlying submodel
 		// set angle to zero
-		pm->submodel[submodel_num].angs = zero_angs;
+		pm->submodel[submodel_num].angs = vmd_zero_angles;
 		world_find_model_instance_point(&start_model_pos, &start_world_pos, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
@@ -542,11 +546,9 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
-	Script_system.SetHookObject("Self", objp);
-	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
+	if(OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
 	{
-		Script_system.RunCondition(CHA_WARPIN, objp);
-		Script_system.RemHookVar("Self");
+		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
 		return;
 	}
 
@@ -560,8 +562,7 @@ void shipfx_warpin_start( object *objp )
 	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
-	Script_system.RunCondition(CHA_WARPIN, objp);
-	Script_system.RemHookVar("Self");
+	OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -663,29 +664,26 @@ void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 // also starts the animating 3d effect playing.
 void shipfx_warpout_start( object *objp )
 {
-	ship *shipp;
+	ship* shipp;
 	shipp = &Ships[objp->instance];
 
-	if ( 	shipp->flags[Ship::Ship_Flags::Depart_warp] )	{
-		mprintf(( "Ship is already departing!\n" ));
+	if (shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+		mprintf(("Ship is already departing!\n"));
 		return;
 	}
 
-	Script_system.SetHookObject("Self", objp);
-	if(Script_system.IsConditionOverride(CHA_WARPOUT, objp))
-	{
-		Script_system.RunCondition(CHA_WARPOUT, objp);
-		Script_system.RemHookVar("Self");
+	if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
+		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
 		return;
 	}
 
 	// if we're dying return
-	if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		return;
 	}
 
-	//return if disabled
-	if ( shipp->flags[Ship::Ship_Flags::Disabled] ){
+	// return if disabled
+	if (shipp->flags[Ship::Ship_Flags::Disabled]) {
 		return;
 	}
 
@@ -695,25 +693,25 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// don't send ship depart packets for player ships
-	if ( (MULTIPLAYER_MASTER) && !(objp->flags[Object::Object_Flags::Player_ship]) ){
-		send_ship_depart_packet( objp );
+	if ((MULTIPLAYER_MASTER) && !(objp->flags[Object::Object_Flags::Player_ship])) {
+		send_ship_depart_packet(objp);
 	}
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
-	if ( shipp->flags[Ship::Ship_Flags::No_departure_warp] ) {
-		// DKA 5/25/99 If he's going to warpout, set it.  
+	if (shipp->flags[Ship::Ship_Flags::No_departure_warp]) {
+		// DKA 5/25/99 If he's going to warpout, set it.
 		// Next line fixes assert in wing cleanup code when no warp effect.
-        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
-	Assertion(shipp->warpout_effect != nullptr, "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
+	Assertion(shipp->warpout_effect != nullptr,
+			  "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
-	Script_system.RunCondition(CHA_WARPOUT, objp);
-	Script_system.RemHookVar("Self");
+	OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )
@@ -792,7 +790,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 	int i;
 	for ( i = 0; i < MAX_DEBRIS_PIECES; i++, db++ )	{
-		if ( !(db->flags & DEBRIS_USED) || !db->is_hull ){
+		if ( !(db->flags[Debris_Flags::Used]) || !db->is_hull ){
 			continue;
 		}
 
@@ -1582,6 +1580,10 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 	if ( Rendering_to_shadow_map ) {
 		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
+	}
+
+	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
 	}
 
 	for (int i = 0; i < pm->num_debris_objects; i++ )	{

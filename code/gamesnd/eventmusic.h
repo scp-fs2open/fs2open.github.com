@@ -97,7 +97,7 @@ extern int Num_soundtracks;
 
 void	event_music_init();
 void	event_music_close();
-void	event_music_level_init(int force_soundtrack = -1);
+void	event_music_level_start(int force_soundtrack = -1);
 void	event_music_level_close();
 void	event_music_do_frame();
 void	event_music_disable();
@@ -118,8 +118,8 @@ void	event_music_start_default();
 void	event_music_get_info(char *outbuf);
 void	event_music_get_soundtrack_name(char *outbuf);
 int	event_music_next_soundtrack(int delta);
-void event_sexp_change_soundtrack(char *name);
-void	event_music_set_soundtrack(char *name);
+void event_sexp_change_soundtrack(const char *name);
+void	event_music_set_soundtrack(const char *name);
 void	event_music_set_score(int score_index, const char *name);
 int event_music_get_soundtrack_index(const char *name);
 int	event_music_get_spooled_music_index(const char *name);
@@ -128,5 +128,11 @@ void	event_music_reset_choices();
 int	event_music_player_respawn();
 int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
+
+/**
+ * @brief Sets the master music volume to the specified value
+ * @param volume The new music volume value. Must be in the range [0, 1].
+ */
+void event_music_set_volume(float volume);
 
 #endif /* __EVENT_MUSIC_H__  */

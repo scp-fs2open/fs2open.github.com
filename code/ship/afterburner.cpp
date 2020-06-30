@@ -80,7 +80,7 @@ void afterburners_start(object *objp)
 	Assert( objp->instance >= 0 && objp->instance < MAX_SHIPS );
 
 	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	// bail if afterburners are locked
@@ -129,7 +129,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, 1);
+	model_anim_start_type(shipp, AnimationTriggerType::Afterburner, ANIMATION_SUBTYPE_ALL, 1);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -177,7 +177,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags[Object::Object_Flags::Player_ship] ) && (Game_mode & GM_DEAD) ) {
@@ -286,7 +286,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size() );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags[Object::Object_Flags::Player_ship]) && key_released ) {
@@ -309,7 +309,7 @@ void afterburners_stop(object *objp, int key_released)
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 
 	//Do anim
-	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);
+	model_anim_start_type(shipp, AnimationTriggerType::Afterburner, ANIMATION_SUBTYPE_ALL, -1);
 
 	if ( objp == Player_obj ) {
 

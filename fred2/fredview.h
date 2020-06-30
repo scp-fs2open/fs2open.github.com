@@ -364,11 +364,7 @@ enum FSO_FORMAT
 	FSO_FORMAT_STANDARD = 1,
 	FSO_FORMAT_COMPATIBILITY_MODE = 2
 };
-
-// Goober5000 (currently, FS1 retail not implemented)
-extern int Format_fs2_open;
-extern int Format_fs2_retail;
-extern int Format_fs1_retail;
+extern int Mission_save_format;
 
 extern CFREDView *Fred_view_wnd;
 

@@ -4,7 +4,11 @@
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2D tex;
-uniform float exposure;
+
+layout (std140) uniform genericData {
+	float exposure;
+};
+
 vec3 Uncharted2Tonemapping(vec3 hdr_color)
 {
 	float A = 0.15;

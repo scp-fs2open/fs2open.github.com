@@ -81,7 +81,7 @@ ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object
 	return ade_set_args(L, "o", l_Vector.Set(poh->getObject()->pos));
 }
 
-ADE_VIRTVAR(Orientation, l_ParseObject, "matrix", "The orientation of the object.", "matrix", "The orientation")
+ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the object.", "orientation", "The orientation")
 {
 	parse_object_h* poh = nullptr;
 	matrix_h* newMat    = nullptr;

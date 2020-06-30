@@ -729,7 +729,7 @@ void wl_render_overhead_view(float frametime)
 	Assert( Wss_slots != NULL );
 
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
-	if (ship_class < 0 || ship_class >= static_cast<int>(Ship_info.size()))
+	if (ship_class < 0 || ship_class >= ship_info_size())
 	{
 		Warning(LOCATION, "Invalid ship class (%d) passed for render_overhead_view", ship_class);
 		return;
@@ -1126,7 +1126,7 @@ void wl_set_disabled_weapons(int ship_class)
 	if ( ship_class == - 1 )
 		return;
 
-	Assert(ship_class >= 0 && ship_class < static_cast<int>(Ship_info.size()));
+	Assert(ship_class >= 0 && ship_class < ship_info_size());
 	Assert( Wl_icons != NULL );
 
 	sip = &Ship_info[ship_class];
@@ -1355,7 +1355,7 @@ void wl_init_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
 		wl_ship->model_num = -1;
@@ -1371,7 +1371,7 @@ void wl_free_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+	for ( i = 0; i < ship_info_size(); i++ ) {
 		wl_ship = &Wl_ships[i];
 
 		if ( wl_ship->overhead_bitmap != -1 ) {
@@ -1535,7 +1535,7 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 	ship_info	*sip;
 	int i;
 
-	Assert(ship_class >= 0 && ship_class < static_cast<int>(Ship_info.size()));
+	Assert(ship_class >= 0 && ship_class < ship_info_size());
 	sip = &Ship_info[ship_class];
 
 	// reset weapons arrays
@@ -1757,7 +1757,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
 						int wep_pool_index, wep_precedence_index, new_wi_index = -1;
-						for ( wep_pool_index = 0; wep_pool_index < MAX_WEAPON_TYPES; wep_pool_index++ ) {
+						for ( wep_pool_index = 0; wep_pool_index < weapon_info_size(); wep_pool_index++ ) {
 
 							if ( Wl_pool[wep_pool_index] <= 0 ) {
 								continue;
@@ -1863,7 +1863,7 @@ void wl_init_icon_lists()
 		Slist[i] = -1;
 	}
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+	for ( i = 0; i < weapon_info_size(); i++ ) {
 		if ( Wl_pool[i] > 0 ) {
 			if ( Weapon_info[i].subtype == WP_MISSILE ) {
 				Slist[Slist_size++] = i;
@@ -2692,7 +2692,7 @@ void weapon_select_do(float frametime)
 			GR_RESIZE_MENU,
 			wip->selection_effect);
 	} else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
-		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
+		Assert(Selected_wl_class >= 0 && Selected_wl_class < weapon_info_size());
 		if ( Weapon_anim_class != Selected_wl_class )
 			start_weapon_animation(Selected_wl_class);
  
@@ -2718,7 +2718,7 @@ void weapon_select_do(float frametime)
 
 	if ( wl_icon_being_carried() ) {
 		int mx, my, sx, sy;
-		Assert(Carried_wl_icon.weapon_class < MAX_WEAPON_TYPES);
+		Assert(Carried_wl_icon.weapon_class < weapon_info_size());
 		Assert( (Wss_slots != NULL) && (Wl_icons != NULL) );
 		mouse_get_pos_unscaled( &mx, &my );
 		sx = mx + Wl_delta_x;
@@ -4097,7 +4097,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		SCP_string full_error_message = "The following errors were encountered:\n";
+		SCP_string full_error_message = XSTR("The following errors were encountered:\n", 1641);
 
 		size_t j;
 		bool is_duplicate;

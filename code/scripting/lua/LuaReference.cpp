@@ -1,44 +1,50 @@
 
 #include "LuaReference.h"
-#include "LuaException.h"
 
+#include "globalincs/pstypes.h"
+
+#include "LuaException.h"
 #include "LuaHeaders.h"
+#include "LuaUtil.h"
 
 namespace luacpp {
-LuaReference UniqueLuaReference::create(lua_State* state, int position) {
+LuaReference UniqueLuaReference::create(lua_State* state, int position)
+{
 	if (state == nullptr) {
 		throw LuaException("Need a valid lua state!");
 	}
 
 	lua_pushvalue(state, position);
 
-	LuaReference ref = std::make_shared<UniqueLuaReference>(state, luaL_ref(state, LUA_REGISTRYINDEX));
+	// Always store the main thread here to ensure that we do not store a possible invalid thread reference
+	LuaReference ref =
+		std::make_shared<UniqueLuaReference>(util::getMainThread(state), luaL_ref(state, LUA_REGISTRYINDEX));
 
 	return ref;
 }
 
 LuaReference UniqueLuaReference::copy(const LuaReference& other) {
-	other->pushValue();
+	other->pushValue(other->_luaState);
 
 	return create(other->_luaState);
 }
 
-UniqueLuaReference::UniqueLuaReference(lua_State* state, int reference) : _luaState(state), _reference(reference) {
+UniqueLuaReference::UniqueLuaReference(lua_State* state, int reference) : _luaState(state), _reference(reference)
+{
 	if (state == nullptr) {
 		throw LuaException("Need a valid lua state!");
 	}
 
-	if (reference < 0) {
+	if (reference < 0 && reference != LUA_REFNIL) {
 		throw LuaException("Reference must be greater than or equal to zero!");
 	}
 }
-UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(LUA_NOREF) {
-}
+UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(LUA_NOREF) {}
 
-UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) SCP_NOEXCEPT : _luaState(nullptr), _reference(LUA_NOREF) {
+UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) noexcept : _luaState(nullptr), _reference(LUA_NOREF) {
 	*this = std::move(other);
 }
-UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) SCP_NOEXCEPT {
+UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) noexcept {
 	std::swap(_luaState, other._luaState);
 	std::swap(_reference, other._reference);
 	return *this;
@@ -74,9 +80,12 @@ bool UniqueLuaReference::isValid() const {
 	return true;
 }
 
-void UniqueLuaReference::pushValue() const {
+void UniqueLuaReference::pushValue(lua_State* thread) const
+{
+	Assertion(thread != nullptr, "Valid thread state must be specified!");
+
 	if (this->isValid()) {
-		lua_rawgeti(_luaState, LUA_REGISTRYINDEX, this->getReference());
+		lua_rawgeti(thread, LUA_REGISTRYINDEX, this->getReference());
 	}
 }
 }

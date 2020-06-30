@@ -20,6 +20,10 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#ifdef SCP_BSD
+#include <sys/socket.h>
+#endif
+
 #include "network/multi.h"
 #include "network/ptrack.h"
 #include "network/valid.h"

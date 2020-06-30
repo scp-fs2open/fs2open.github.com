@@ -99,19 +99,21 @@ add_file_folder("Cutscene"
 	cutscene/VideoPresenter.h
 )
 
-# Cutscene\ffmpeg files
-add_file_folder("Cutscene\\\\ffmpeg"
-	cutscene/ffmpeg/AudioDecoder.cpp
-	cutscene/ffmpeg/AudioDecoder.h
-	cutscene/ffmpeg/FFMPEGDecoder.cpp
-	cutscene/ffmpeg/FFMPEGDecoder.h
-	cutscene/ffmpeg/internal.cpp
-	cutscene/ffmpeg/internal.h
-	cutscene/ffmpeg/SubtitleDecoder.cpp
-	cutscene/ffmpeg/SubtitleDecoder.h
-	cutscene/ffmpeg/VideoDecoder.cpp
-	cutscene/ffmpeg/VideoDecoder.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	# Cutscene\ffmpeg files
+	add_file_folder("Cutscene\\\\ffmpeg"
+		cutscene/ffmpeg/AudioDecoder.cpp
+		cutscene/ffmpeg/AudioDecoder.h
+		cutscene/ffmpeg/FFMPEGDecoder.cpp
+		cutscene/ffmpeg/FFMPEGDecoder.h
+		cutscene/ffmpeg/internal.cpp
+		cutscene/ffmpeg/internal.h
+		cutscene/ffmpeg/SubtitleDecoder.cpp
+		cutscene/ffmpeg/SubtitleDecoder.h
+		cutscene/ffmpeg/VideoDecoder.cpp
+		cutscene/ffmpeg/VideoDecoder.h
+	)
+endif()
 
 # ddsutils files
 add_file_folder("ddsutils"
@@ -173,8 +175,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/deferred-v.sdr
 	def_files/data/effects/effect-distort-f.sdr
 	def_files/data/effects/effect-distort-v.sdr
-	def_files/data/effects/effect-particle-f.sdr
-	def_files/data/effects/effect-screen-g.sdr
+	def_files/data/effects/effect-f.sdr
+	def_files/data/effects/effect-g.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
@@ -195,8 +197,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
-	def_files/data/effects/shadowdebug-f.sdr
-	def_files/data/effects/shadowdebug-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -258,6 +258,18 @@ add_file_folder("Events"
 add_file_folder("ExceptionHandler"
 	exceptionhandler/exceptionhandler.cpp
 	exceptionhandler/exceptionhandler.h
+)
+
+# Executor files
+add_file_folder("Executor"
+	executor/Executor.cpp
+	executor/Executor.h
+	executor/GameStateExecutionContext.cpp
+	executor/GameStateExecutionContext.h
+	executor/global_executors.cpp
+	executor/global_executors.h
+	executor/IExecutionContext.cpp
+	executor/IExecutionContext.h
 )
 
 # ExternalDLL files
@@ -463,6 +475,13 @@ add_file_folder("Graphics\\\\Util"
 	graphics/util/UniformBufferManager.cpp
 )
 
+add_file_folder("Graphics\\\\Vulkan"
+	graphics/vulkan/gr_vulkan.cpp
+	graphics/vulkan/gr_vulkan.h
+	graphics/vulkan/VulkanRenderer.cpp
+	graphics/vulkan/VulkanRenderer.h
+)
+
 # HeadTracking files
 add_file_folder("HeadTracking"
 	headtracking/headtracking_internal.h
@@ -588,13 +607,15 @@ add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.h
 )
 
-add_file_folder("Libs\\\\FFmpeg"
-	libs/ffmpeg/FFmpeg.cpp
-	libs/ffmpeg/FFmpeg.h
-	libs/ffmpeg/FFmpegContext.cpp
-	libs/ffmpeg/FFmpegContext.h
-	libs/ffmpeg/FFmpegHeaders.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	add_file_folder("Libs\\\\FFmpeg"
+		libs/ffmpeg/FFmpeg.cpp
+		libs/ffmpeg/FFmpeg.h
+		libs/ffmpeg/FFmpegContext.cpp
+		libs/ffmpeg/FFmpegContext.h
+		libs/ffmpeg/FFmpegHeaders.h
+	)
+endif()
 
 add_file_folder("Libs\\\\RenderDoc"
 	libs/renderdoc/renderdoc.cpp
@@ -1018,6 +1039,8 @@ add_file_folder("Render"
 )
 
 add_file_folder("ScpUi"
+	scpui/IncludeNodeHandler.cpp
+	scpui/IncludeNodeHandler.h
 	scpui/rocket_ui.cpp
 	scpui/rocket_ui.h
 	scpui/RocketFileInterface.cpp
@@ -1041,17 +1064,34 @@ add_file_folder("Scripting"
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
+	scripting/ade_doc.cpp
+	scripting/ade_doc.h
+	scripting/doc_html.cpp
+	scripting/doc_html.h
+	scripting/doc_json.cpp
+	scripting/doc_json.h
+	scripting/doc_parser.cpp
+	scripting/doc_parser.h
+	scripting/hook_api.cpp
+	scripting/hook_api.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
+	scripting/scripting_doc.h
 )
 
 add_file_folder("Scripting\\\\Api"
+	scripting/api/LuaCoroutineRunner.cpp
+	scripting/api/LuaCoroutineRunner.h
 	scripting/api/LuaEventCallback.cpp
 	scripting/api/LuaEventCallback.h
+	scripting/api/LuaPromise.cpp
+	scripting/api/LuaPromise.h
 )
 
 add_file_folder("Scripting\\\\Api\\\\Libs"
+	scripting/api/libs/async.cpp
+	scripting/api/libs/async.h
 	scripting/api/libs/audio.cpp
 	scripting/api/libs/audio.h
 	scripting/api/libs/base.cpp
@@ -1060,6 +1100,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/bitops.h
 	scripting/api/libs/cfile.cpp
 	scripting/api/libs/cfile.h
+	scripting/api/libs/engine.cpp
+	scripting/api/libs/engine.h
 	scripting/api/libs/graphics.cpp
 	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp
@@ -1093,6 +1135,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/beam.h
 	scripting/api/objs/camera.cpp
 	scripting/api/objs/camera.h
+	scripting/api/objs/cmd_brief.cpp
+	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_info.cpp
@@ -1105,6 +1149,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
 	scripting/api/objs/event.h
+	scripting/api/objs/executor.cpp
+	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
 	scripting/api/objs/file.cpp
@@ -1143,6 +1189,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/physics_info.h
 	scripting/api/objs/player.cpp
 	scripting/api/objs/player.h
+	scripting/api/objs/promise.cpp
+	scripting/api/objs/promise.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
@@ -1171,6 +1219,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/texturemap.h
     scripting/api/objs/time_obj.cpp
     scripting/api/objs/time_obj.h
+	scripting/api/objs/tracing_category.cpp
+	scripting/api/objs/tracing_category.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
 	scripting/api/objs/waypoint.cpp
@@ -1196,6 +1246,9 @@ add_file_folder("Scripting\\\\Lua"
 	scripting/lua/LuaReference.h
 	scripting/lua/LuaTable.cpp
 	scripting/lua/LuaTable.h
+	scripting/lua/LuaThread.cpp
+	scripting/lua/LuaThread.h
+	scripting/lua/LuaTypes.h
 	scripting/lua/LuaUtil.cpp
 	scripting/lua/LuaUtil.h
 	scripting/lua/LuaValue.cpp
@@ -1234,6 +1287,7 @@ add_file_folder("Sound"
 	sound/dscap.h
 	sound/fsspeech.cpp
 	sound/fsspeech.h
+	sound/IAudioFile.h
 	sound/openal.cpp
 	sound/openal.h
 	sound/phrases.xml
@@ -1247,13 +1301,15 @@ add_file_folder("Sound"
 	sound/voicerec.h
 )
 
-# Sound -> ffmpeg files
-add_file_folder("Sound\\\\FFmpeg"
-	sound/ffmpeg/FFmpegAudioReader.cpp
-	sound/ffmpeg/FFmpegAudioReader.h
-	sound/ffmpeg/WaveFile.cpp
-	sound/ffmpeg/WaveFile.h
-)
+if (FSO_BUILD_WITH_FFMPEG)
+	# Sound -> ffmpeg files
+	add_file_folder("Sound\\\\FFmpeg"
+		sound/ffmpeg/FFmpegAudioReader.cpp
+		sound/ffmpeg/FFmpegAudioReader.h
+		sound/ffmpeg/FFmpegWaveFile.cpp
+		sound/ffmpeg/FFmpegWaveFile.h
+	)
+endif()
 
 # Species_Defs files
 add_file_folder("Species_Defs"
@@ -1328,8 +1384,9 @@ add_file_folder("Ui"
 
 add_file_folder("Utils"
 	utils/encoding.cpp
-    utils/encoding.h
-    utils/event.h
+	utils/encoding.h
+	utils/event.h
+	utils/finally.h
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
@@ -1337,8 +1394,9 @@ add_file_folder("Utils"
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/strings.h
-    utils/unicode.cpp
-    utils/unicode.h
+	utils/tuples.h
+	utils/unicode.cpp
+	utils/unicode.h
 )
 
 # Utils files

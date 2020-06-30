@@ -431,7 +431,6 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);
 		if ( (checked_sight && ((!subsys_in_sight) || (dot < min_dot)) ) )  {
 
-			aip->path_goal_dist = 5;
 			subsys_path_num = aip->targeted_subsys->system_info->path_num;
 			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num < pm_t->n_paths ) {
 				// maybe create a new path
@@ -461,8 +460,40 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 			Assert(aip->path_length >= 2);
 			dist = vm_vec_dist_quick(&Path_points[aip->path_start+aip->path_length-2].pos, &Pl_objp->pos);
 
+			// distance setting --wookieejedi
 			if ( aip->path_cur >= (aip->path_start+aip->path_length-1) ) {
+				// register that path is done and reset goal distance to default
+				aip->path_goal_dist = Default_subsystem_path_pt_dist;
 				path_done=1;
+			}
+			// if not done then set path distances based on specified options
+			else {
+				bool found_point = false;
+				// 1. use radii of path points if specified
+				if (aip->ai_profile_flags[AI::Profile_Flags::Use_subsystem_path_point_radii]) {
+					// need a valid path and point in model to use pof specified radius
+					int path_num = aip->targeted_subsys->system_info->path_num;
+					if ((0 <= path_num) && (path_num < pm_t->n_paths)) {
+						// need a valid place in the path
+						if ((0 <= aip->path_cur) && (aip->path_cur < aip->path_length)) {
+							float path_point_radius = pm_t->paths[path_num].verts[aip->path_cur].radius;
+							int goal_dist = fl2i(path_point_radius);
+							// only set if >= Minimum path distance specified in aibig.h
+							if (goal_dist >= Minimum_subsystem_path_pt_dist) {
+								aip->path_goal_dist = goal_dist;
+								found_point = true;
+							}
+						}
+					}
+				}
+				// 2. use radii value in ai_profiles table if specified and no valid point found
+				if (!found_point && The_mission.ai_profile->subsystem_path_radii) {
+					aip->path_goal_dist = The_mission.ai_profile->subsystem_path_radii;
+				}
+				// 3. use default radii value if no valid point or specified radii
+				else {
+					aip->path_goal_dist = Default_subsystem_path_pt_dist;
+				}
 			}
 
 			min_dot = (target_objp->phys_info.fspeed > 5.0f?MIN_DOT_TO_ATTACK_MOVING_SUBSYS:MIN_DOT_TO_ATTACK_SUBSYS);

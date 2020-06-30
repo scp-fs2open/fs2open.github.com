@@ -60,6 +60,7 @@
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -315,6 +316,12 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
+// These are only the flags that are saved to the mission file.  See the MEF_ #defines.
+flag_def_list Mission_event_flags[] = {
+	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
+};
+int Num_mission_event_flags = sizeof(Mission_event_flags) / sizeof(flag_def_list);
+
 const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
@@ -375,11 +382,10 @@ int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
 int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
-int get_anchor(char *name);
+int get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
-int parse_lookup_alt_name(char *name);
 void parse_init(bool basic = false);
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
@@ -400,6 +406,11 @@ void convertFSMtoFS2();
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
+const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
+	"On Departure Started", "Called when a ship starts the departure process.",
+	{ 		
+		{"Ship", "ship", "The ship that has began the depture process."},
+	});
 
 // Goober5000
 void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
@@ -423,11 +434,11 @@ void parse_custom_bitmap(const char *expected_string_640, const char *expected_s
 	// error testing
 	if (Fred_running && (found640) && !(found1024))
 	{
-		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024));
+		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!\n", expected_string_640, expected_string_1024));
 	}
 	if (Fred_running && !(found640) && (found1024))
 	{
-		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640));
+		mprintf(("Mission: found an entry for %s but not a corresponding entry for %s!\n", expected_string_1024, expected_string_640));
 	}
 }
 
@@ -890,13 +901,13 @@ void parse_player_info2(mission *pm)
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
-					for (i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
+					for (i = 0; i < ship_info_size(); i++ ) {
 						if ( Campaign.ships_allowed[i] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assertion( i < static_cast<int>(Ship_info.size()), "Mission: %s: Could not find a valid default ship.\n", pm->name );
+					Assertion( i < ship_info_size(), "Mission: %s: Could not find a valid default ship.\n", pm->name );
 				}
 			}
 		}
@@ -920,7 +931,7 @@ void parse_player_info2(mission *pm)
 				}
 			}
 
-			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
+			if ( (list2[i] >= 0) && (list2[i] < weapon_info_size()) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
 				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {
@@ -1973,7 +1984,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 	//Fixes a bug where the AI class attributes were not copied if the AI class was set in the mission.
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
-		ship_set_new_ai_class(shipnum, p_objp->ai_class);
+		ship_set_new_ai_class(shipp, p_objp->ai_class);
 
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
@@ -2018,29 +2029,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (!p_objp->replacement_textures.empty())
-	{
-		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			shipp->ship_replacement_textures[i] = -1;
-	}
-
-	// now fill them in
-	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
-	{
-		pm = model_get(sip->model_num);
-
-		// look for textures
-		for (j = 0; j < pm->n_textures; j++)
-		{
-			texture_map *tmap = &pm->maps[j];
-
-			int tnum = tmap->FindTexture(tr->old_texture);
-			if(tnum > -1)
-				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
-		}
-	}
+	shipp->apply_replacement_textures(p_objp->replacement_textures);
 
 	// Copy across the alt classes (if any) for FRED
 	if (Fred_running) {
@@ -2177,173 +2166,169 @@ int parse_create_object_sub(p_object *p_objp)
 		sssp = &Subsys_status[p_objp->subsys_index + i];
 		if (!stricmp(sssp->name, NOX("Pilot")))
 		{
+			ptr = nullptr;
 			wp = &shipp->weapons;
-			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+		}
+		else
+		{
+			ptr = ship_get_subsys(shipp, sssp->name);	// find the subsystem in the ship list that corresponds to the parsed subsystem
+			if (!ptr)
 			{
-				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-				{
-					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
-				}
-
-				if (Fred_running)
-					wp->num_primary_banks = sip->num_primary_banks;
-				else
-					wp->num_primary_banks = k;
+				Warning(LOCATION, "Unable to find '%s' in the ship %s (class %s) subsys_list!", sssp->name, shipp->ship_name, sip->name);
+				continue;
 			}
-
-			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-			{
-				for (j = k = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-				{
-					if ((sssp->secondary_banks[j] >= 0) || Fred_running)
-						wp->secondary_bank_weapons[k++] = sssp->secondary_banks[j];
-				}
-
-				if (Fred_running)
-					wp->num_secondary_banks = sip->num_secondary_banks;
-				else
-					wp->num_secondary_banks = k;
-			}
-
-			// primary weapons too - Goober5000
-			for (j = 0; j < wp->num_primary_banks; j++)
-			{
-				if (Fred_running)
-				{
-					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
-				}
-				else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
-				{
-					Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
-							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[wp->primary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j]);
-					wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size);
-				}
-			}
-
-			for (j = 0; j < wp->num_secondary_banks; j++)
-			{
-				if (Fred_running)
-				{
-					wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				}
-				else if (wp->secondary_bank_weapons[j] >= 0)
-				{
-					Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
-							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j]);
-					wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size);
-				}
-			}
-
-			// skip the rest because the Pilot subsystem is special
-			continue;
+			wp = &ptr->weapons;
 		}
 
-		// find the subsystem in the ship list that corresponds to the parsed subsystem
-		ptr = ship_get_subsys(shipp, sssp->name);
-		if (ptr != nullptr)
+		if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
 		{
-			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-			if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
+			for (j = k = 0; j < MAX_SHIP_PRIMARY_BANKS; ++j)
 			{
-				// mark all turrets as beam free
-				if(ptr->system_info->type == SUBSYSTEM_TURRET)
+				// skip over any empty primary banks unless we are in FRED
+				if ((sssp->primary_banks[j] >= 0) || Fred_running)
 				{
-					ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-				}
-			}
-
-			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
-			{
-				// mark all turrets as locked
-				if(ptr->system_info->type == SUBSYSTEM_TURRET)
-				{
-					ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+					wp->primary_bank_weapons[k] = sssp->primary_banks[j];
+					++k;
 				}
 			}
 
 			if (Fred_running)
 			{
-				ptr->current_hits = sssp->percent;
-				ptr->max_hits = 100.0f;
+				// only do this for the Pilot subsystem
+				if (!ptr)
+					wp->num_primary_banks = sip->num_primary_banks;
 			}
 			else
+				wp->num_primary_banks = k;
+		}
+
+		for (j = 0; j < wp->num_primary_banks; ++j)
+		{
+			if (Fred_running)
 			{
-				ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
-
-				float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-				if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
-					shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
+				wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
+			}
+			else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
+					"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+					shipp->ship_name, sssp->name,j,Weapon_info[wp->primary_bank_weapons[j]].name);
+				// Pilot subsystem ammo depends on ship ammo capacity
+				// in contrast non pilot subsystems depend on the bank capacity of the subsystem
+				int ammo_cap;
+				if (!ptr) {
+					ammo_cap = sip->primary_bank_ammo_capacity[j];
+				} else {
+					ammo_cap = wp->primary_bank_capacity[j];
 				}
+				int capacity = (int)std::lround(sssp->primary_ammo[j] / 100.0f * ammo_cap);
+				wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size);
+			}
+		}
 
-				if ((100.0f - sssp->percent) < 0.5)
+		if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+		{
+			for (j = k = 0; j < MAX_SHIP_SECONDARY_BANKS; ++j)
+			{
+				// skip over any empty secondary banks unless we are in FRED
+				if ((sssp->secondary_banks[j] >= 0) || Fred_running)
 				{
-					ptr->current_hits = 0.0f;
-					ptr->submodel_info_1.blown_off = 1;
-				}
-				else
-				{
-					ptr->current_hits = new_hits;
+					wp->secondary_bank_weapons[k] = sssp->secondary_banks[j];
+					++k;
 				}
 			}
 
-			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-				for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-					ptr->weapons.primary_bank_weapons[j] = sssp->primary_banks[j];
-
-			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-				for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++)
-					ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
-
-			// Goober5000
-			for (j = 0; j < ptr->weapons.num_primary_banks; j++)
+			if (Fred_running)
 			{
-				if (Fred_running) {
-					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-				} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
-					Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
-							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j]);
-					ptr->weapons.primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size);
-				}
+				// only do this for the Pilot subsystem
+				if (!ptr)
+					wp->num_secondary_banks = sip->num_secondary_banks;
 			}
+			else
+				wp->num_secondary_banks = k;
+		}
 
-			for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
+		for (j = 0; j < wp->num_secondary_banks; ++j)
+		{
+			if (Fred_running)
 			{
-				if (Fred_running) {
-					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				} else if (ptr->weapons.secondary_bank_weapons[j] >= 0) {
-					Assertion(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f,
-							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
-
-					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j]);
-					ptr->weapons.secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size);
-				}
+				wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
 			}
+			else if (wp->secondary_bank_weapons[j] >= 0)
+			{
+				Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
+					"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+					shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
+				// Pilot subsystem ammo depends on ship ammo capacity
+				// in contrast non pilot subsystems depend on the bank capacity of the subsystem
+				int ammo_cap;
+				if (!ptr) {
+					ammo_cap = sip->secondary_bank_ammo_capacity[j];
+				} else {
+					ammo_cap = wp->secondary_bank_capacity[j];
+				}
+				int capacity = (int)std::lround(sssp->secondary_ammo[j] / 100.0f * ammo_cap);
+				wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size);
+			}
+		}
 
-			ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+		// if we are parsing a Pilot subsystem, skip the rest
+		if (!ptr)
+			continue;
 
-			if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
-				ptr->weapons.ai_class = sssp->ai_class;
+		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
+		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
+		{
+			// mark all turrets as beam free
+			if(ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
+				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+		}
 
-			ptr->turret_best_weapon = -1;
-			ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
-			ptr->turret_animation_done_time = 0;
+		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
+		{
+			// mark all turrets as locked
+			if(ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+			}
+		}
+
+		if (Fred_running)
+		{
+			ptr->current_hits = sssp->percent;
+			ptr->max_hits = 100.0f;
 		}
 		else
 		{
-			Warning(LOCATION, "Unable to find '%s' in ship subsys_list!", sssp->name);
+			ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
+
+			float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+			if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
+				shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
+			}
+
+			if ((100.0f - sssp->percent) < 0.5)
+			{
+				ptr->current_hits = 0.0f;
+				ptr->submodel_info_1.blown_off = 1;
+			}
+			else
+			{
+				ptr->current_hits = new_hits;
+			}
 		}
+
+		ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+
+		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
+			ptr->weapons.ai_class = sssp->ai_class;
+
+		ptr->turret_best_weapon = -1;
+		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
+		ptr->turret_animation_done_time = 0;
 	}
 	
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
@@ -3030,16 +3015,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
-	if (!Fred_running && (p_objp->arrival_cue >= 0))
-	{
-		// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
-		Assert (p_objp->arrival_delay <= 0);
-
-		// don't eval arrival_cues when just looking for player information.
-		// evaluate to determine if sexp is always false.
-		if (eval_sexp(p_objp->arrival_cue))
-			p_objp->arrival_delay = timestamp(-p_objp->arrival_delay * 1000);
-	}
 
 	p_objp->departure_anchor = -1;
 	p_objp->departure_path_mask = -1;	// -1 only until resolved
@@ -3203,7 +3178,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		}
 
 		if (period_detected) {
-			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format\n"));
 		}
 	}
 
@@ -3558,12 +3533,13 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 					debris *db;
 
 					db = &Debris[i];
-					if (!(db->flags & DEBRIS_USED))				// not used, move onto the next one.
+					if (!(db->flags[Debris_Flags::Used]))		// not used, move onto the next one.
 						continue;
 					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
-
-					debris_clear_expired_flag(db);				// mark as don't expire
+					
+					debris_remove_from_hull_list(db);
+					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
 					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
 					// now move the debris along its path for N seconds
@@ -4490,11 +4466,6 @@ void parse_wing(mission *pm)
 
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
-	if ( !Fred_running && (wingp->arrival_cue >= 0) ) {
-		if ( eval_sexp(wingp->arrival_cue) )			// evaluate to determine if sexp is always false.
-			wingp->arrival_delay = timestamp( -wingp->arrival_delay * 1000 );
-	}
-
 	
 	wingp->departure_anchor = -1;
 	wingp->departure_path_mask = -1;	// -1 only until resolved
@@ -4645,7 +4616,7 @@ void parse_wing(mission *pm)
 		// this will assign the goals to the wings as well as to any ships in the wing that have been
 		// already created.
 		for ( sexp = CDR(wing_goals); sexp != -1; sexp = CDR(sexp) )
-			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingnum);  // used by Fred
+			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingp);  // used by Fred
 
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
@@ -4798,12 +4769,34 @@ void post_process_ships_wings()
 	// both ships and wings have been parsed.
 	mission_parse_set_up_initial_docks();
 
+	// Goober5000 - now add all the parse objects to the ship registry.  This must be done before
+	// any ships are created from the parse objects.
+	for (auto &p_obj : Parse_objects)
+	{
+		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, p_obj.name, &p_obj, nullptr, nullptr, 0, -1 };
+		Ship_registry.push_back(entry);
+		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
+	}
+
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
 	// but can't be done until the dock references are resolved.  This was originally done
 	// in parse_object().
-	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
+	for (auto &p_obj : Parse_objects)
 	{
-		mission_parse_maybe_create_parse_object(&(*ii));
+		// evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
+		// (because SEXPs now require a complete ship registry) but must be done before the arrival list check inside
+		// mission_parse_maybe_create_parse_object.  That check is, in fact, the only reason this is needed.  We don't need to
+		// pre-emptively set up the delay for wings because there is no equivalent wing arrival list check.  In any case, the
+		// arrival_delay is always validated in mission_did_ship_arrive (for ships) and parse_wing_create_ships (for wings).
+		if (!Fred_running && (p_obj.arrival_cue >= 0))
+		{
+			// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
+			if (eval_sexp(p_obj.arrival_cue))
+				p_obj.arrival_delay = timestamp(-p_obj.arrival_delay * 1000);
+		}
+
+		// create as usual
+		mission_parse_maybe_create_parse_object(&p_obj);
 	}
 
 
@@ -4860,7 +4853,6 @@ void parse_event(mission * /*pm*/)
 	mission_event *event;
 
 	event = &Mission_events[Num_mission_events];
-	event->chain_delay = -1;
 
 	required_string( "$Formula:" );
 	event->formula = get_sexp_main();
@@ -4913,6 +4905,7 @@ void parse_event(mission * /*pm*/)
 		stuff_int(&event->score);
 	}
 
+	event->chain_delay = -1;
 	if ( optional_string("+Chained:") ){
 		stuff_int(&event->chain_delay);
 	}
@@ -4945,6 +4938,10 @@ void parse_event(mission * /*pm*/)
 		}
 	}
 
+	if (optional_string("+Event Flags:")) {
+		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
+	}
+
 	if( optional_string("+Event Log Flags:") ) {
 		SCP_vector<SCP_string> buffer;
 		
@@ -4961,8 +4958,6 @@ void parse_event(mission * /*pm*/)
 			}
 		}
 	}
-
-	event->timestamp = timestamp(-1);
 }
 
 void parse_events(mission *pm)
@@ -5673,7 +5668,7 @@ bool parse_mission(mission *pm, int flags)
 	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
 		// if running on standalone server, just print to the log
 		if (Game_mode & GM_STANDALONE_SERVER) {
-			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
+			mprintf(("Warning!  Could not load %d ship classes!\n", Num_unknown_ship_classes));
 			return false;
 		}
 		// don't do this in FRED; we will display a separate popup
@@ -5845,7 +5840,7 @@ bool post_process_mission()
 		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
 			int result, bad_node, op;
 
-			op = get_operator_index(CTEXT(i));
+			op = get_operator_index(i);
 			Assert(op != -1);  // need to make sure it is an operator before we treat it like one..
 			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bad_node);
 
@@ -6025,15 +6020,18 @@ void parse_init(bool basic)
 {
 	reset_parse();
 
-	for (int i = 0; i < MAX_CARGO; i++)
-		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
+	// if we just want basic info then we don't need some of this initialization
+	if (!basic)
+	{
+		for (int i = 0; i < MAX_CARGO; i++)
+			Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
-	Total_goal_target_names = 0;
+		ai_clear_goal_target_names();
 
-	// if we are just wanting basic info then we shouldn't need sexps
-	// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
-	if ( !basic )
+		// if we are just wanting basic info then we shouldn't need sexps
+		// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
 		init_sexp();
+	}
 }
 
 // main parse routine for parsing a mission.  The default parameter flags tells us which information
@@ -6657,7 +6655,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
-			Int3();			// get MWA or AL -- not sure what to do here when we cannot acquire a path
+			// get MWA or AL -- not sure what to do here when we cannot acquire a path
+			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[shipnum].ship_name));
 			return -1;
 		}
 		Objects[objnum].pos = pos;
@@ -7129,21 +7128,6 @@ void mission_eval_arrivals()
 	Mission_arrival_timestamp = timestamp(ARRIVAL_TIMESTAMP);
 }
 
-/**
- * Checks the warp drive; we might be able to depart some other way (e.g. by entering a docking bay)
- */
-int ship_can_use_warp_drive(ship *shipp)
-{
-	// must *have* a subspace drive
-	if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
-		return 0;
-
-	// navigation must work
-	if (!ship_navigation_ok_to_warp(shipp))
-		return 0;
-
-	return 1;
-}
 
 /**
  * Called to make object objp depart.  Rewritten and expanded by Goober5000.
@@ -7156,6 +7140,11 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
+
+	// add scripting hook for 'On Depature Started' --wookieejedi
+	// hook is placed at the begining of this function to allow the scripter to
+	// actually have access to the ship's departure decisions before they are all executed
+	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp)));
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior
@@ -7171,7 +7160,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
 		// since our goal is to warp, then if we can warp, jump directly to the warping part
-		else if (ship_can_use_warp_drive(shipp))
+		else if (ship_can_warp_full_check(shipp))
 		{
 			mprintf(("Our current goal is to warp!  Trying to warp...\n"));
 			goto try_to_warp;
@@ -7241,7 +7230,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 try_to_warp:
 
 	// make sure we can actually warp
-	if (ship_can_use_warp_drive(shipp))
+	if (ship_can_warp_full_check(shipp))
 	{
 		mprintf(("Setting mode to warpout\n"));
 
@@ -7294,7 +7283,8 @@ void mission_eval_departures()
 			// don't process a ship that is already departing or dying or disabled
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
-			if ( shipp->is_dying_or_departing() || (shipp->cannot_warp() && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			// wookieejedi - fixed so it accounts for break and never warp too
+			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
@@ -7547,7 +7537,7 @@ continue_outer_loop:
 /**
  * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
-int get_special_anchor(char *name)
+int get_special_anchor(const char *name)
 {
 	char tmp[NAME_LENGTH + 15];
 	const char *iff_name;
@@ -7574,7 +7564,7 @@ int get_special_anchor(char *name)
 		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG);
 }
 
-int get_anchor(char *name)
+int get_anchor(const char *name)
 {
 	int special_anchor = get_special_anchor(name);
 

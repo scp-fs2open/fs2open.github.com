@@ -475,12 +475,12 @@ flag_def_list Enumerations[] = {
 		LE_MESSAGE_PRIORITY_HIGH,
 		0
 	},
-    {
+	{
 		"OPTION_TYPE_SELECTION",
 		LE_OPTION_TYPE_SELECTION,
 		0
 	},
-    {
+	{
 		"OPTION_TYPE_RANGE",
 		LE_OPTION_TYPE_RANGE,
 		0

@@ -185,17 +185,17 @@ void pilotfile::csg_write_info()
 	startSection(Section::Info);
 
 	// ship list
-	cfwrite_int(static_cast<int>(Ship_info.size()), cfp);
+	cfwrite_int(ship_info_size(), cfp);
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		cfwrite_string_len(it->name, cfp);
+	for (auto &si : Ship_info) {
+		cfwrite_string_len(si.name, cfp);
 	}
 
 	// weapon list
-	cfwrite_int(Num_weapon_types, cfp);
+	cfwrite_int(weapon_info_size(), cfp);
 
-	for (idx = 0; idx < Num_weapon_types; idx++) {
-		cfwrite_string_len(Weapon_info[idx].name, cfp);
+	for (auto &wi : Weapon_info) {
+		cfwrite_string_len(wi.name, cfp);
 	}
 
 	// intel list
@@ -227,12 +227,12 @@ void pilotfile::csg_write_info()
 	cfwrite_int(Campaign.num_missions_completed, cfp);
 
 	// allowed ships
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_ubyte(Campaign.ships_allowed[idx], cfp);
 	}
 
 	// allowed weapons
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (idx = 0; idx < weapon_info_size(); idx++) {
 		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
 	}
 
@@ -403,7 +403,7 @@ void pilotfile::csg_write_missions()
 			cfwrite_uint(missionp->stats.s_bonehead_hits, cfp);
 
 			// ship kills (scoring)
-			for (j = 0; j < static_cast<int>(Ship_info.size()); j++) {
+			for (j = 0; j < ship_info_size(); j++) {
 				cfwrite_int(missionp->stats.kills[j], cfp);
 			}
 
@@ -486,8 +486,8 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// visible ships
-    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-        if ((it->flags[Ship::Info_Flags::In_tech_database]) && !(it->flags[Ship::Info_Flags::Default_in_tech_database])) {
+    for (auto &si : Ship_info) {
+        if ((si.flags[Ship::Info_Flags::In_tech_database]) && !(si.flags[Ship::Info_Flags::Default_in_tech_database])) {
             visible = 1;
         }
         else {
@@ -498,9 +498,9 @@ void pilotfile::csg_write_techroom()
     }
 
 	// visible weapons
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (auto &wi : Weapon_info) {
 		// only visible if not in techroom by default
-		if ( (Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]) && !(Weapon_info[idx].wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
+		if ((wi.wi_flags[Weapon::Info_Flags::In_tech_database]) && !(wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
 			visible = 1;
 		} else {
 			visible = 0;
@@ -648,12 +648,12 @@ void pilotfile::csg_write_loadout()
 	cfwrite_string_len(Player_loadout.last_modified, cfp);
 
 	// ship pool
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_int(Player_loadout.ship_pool[idx], cfp);
 	}
 
 	// weapon pool
-	for (idx = 0; idx < Num_weapon_types; idx++) {
+	for (idx = 0; idx < weapon_info_size(); idx++) {
 		cfwrite_int(Player_loadout.weapon_pool[idx], cfp);
 	}
 
@@ -765,7 +765,7 @@ void pilotfile::csg_write_stats()
 	cfwrite_int((int)p->stats.last_backup, cfp);
 
 	// ship kills (scoring)
-	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
+	for (idx = 0; idx < ship_info_size(); idx++) {
 		cfwrite_int(p->stats.kills[idx], cfp);
 	}
 
@@ -1093,29 +1093,39 @@ void pilotfile::csg_write_variables()
 void pilotfile::csg_read_settings()
 {
 	// sound/voice/music
-	Master_sound_volume = cfread_float(cfp);
-	Master_event_music_volume = cfread_float(cfp);
-	Master_voice_volume = cfread_float(cfp);
+	if (!Using_in_game_options) {
+		snd_set_effects_volume(cfread_float(cfp));
+		event_music_set_volume(cfread_float(cfp));
+		snd_set_voice_volume(cfread_float(cfp));
 
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-	audiostream_set_volume_all(Master_event_music_volume, ASF_EVENTMUSIC);
-
-	if (Master_event_music_volume > 0.0f) {
-		Event_music_enabled = 1;
+		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
-		Event_music_enabled = 0;
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
+		// correct offset
+		cfread_float(cfp);
+		cfread_float(cfp);
+		cfread_float(cfp);
+
+		cfread_int(cfp);
 	}
 
-	Briefing_voice_enabled = cfread_int(cfp);
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
 
 	// input options
-	Use_mouse_to_fly = cfread_int(cfp);
-	Mouse_sensitivity = cfread_int(cfp);
-	Joy_sensitivity = cfread_int(cfp);
-	Joy_dead_zone_size = cfread_int(cfp);
+	if (!Using_in_game_options) {
+		Use_mouse_to_fly   = cfread_int(cfp) != 0;
+		Mouse_sensitivity  = cfread_int(cfp);
+		Joy_sensitivity    = cfread_int(cfp);
+		Joy_dead_zone_size = cfread_int(cfp);
+	} else {
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+	}
 
 	if (csg_ver < 3) {
 		// detail
@@ -1143,7 +1153,7 @@ void pilotfile::csg_write_settings()
 	cfwrite_float(Master_event_music_volume, cfp);
 	cfwrite_float(Master_voice_volume, cfp);
 
-	cfwrite_int(Briefing_voice_enabled, cfp);
+	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
 	cfwrite_int(Game_skill_level, cfp);

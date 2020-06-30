@@ -517,21 +517,25 @@ void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 		// reformat specific gauges differently
 		switch(gauge_id){	
 		//	weapons
-		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:			
-			int wep_index;
-			wep_index = (int)frand_range(0.0f, (float)(MAX_WEAPON_TYPES - 1));
-			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].get_display_string());
-			break;		
+		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:
+		{
+			int wep_index = weapon_get_random_player_usable_weapon();
+			if (wep_index >= 0) {
+				strcpy_s(wt->str, Weapon_info[wep_index].get_display_string());
+			}
+			break;
+		}
 
 		// escort list
 		case EG_ESCORT1: case EG_ESCORT2: case EG_ESCORT3:
+		{
 			// choose a random ship
-			int shipnum;
-			shipnum = ship_get_random_targetable_ship();
-			if(shipnum >= 0){
-				strcpy_s(wt->str, Ships[shipnum].ship_name);
+			int shipnum = ship_get_random_targetable_ship();
+			if (shipnum >= 0) {
+				strcpy_s(wt->str, Ships[shipnum].get_display_string());
 			}
 			break;
+		}
 
 		// directives title
 		case EG_OBJ_TITLE:

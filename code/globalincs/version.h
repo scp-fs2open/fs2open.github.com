@@ -53,9 +53,9 @@ struct version {
 	int build = 0;
 	int revision = 0;
 
-	version() {}
+	version() = default;
 
-	version(int major, int minor, int build, int revision);
+	version(int major, int minor = 0, int build = 0, int revision = 0);
 
 	bool isValid() const;
 

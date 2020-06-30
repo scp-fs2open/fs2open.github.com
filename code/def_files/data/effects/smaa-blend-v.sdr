@@ -1,5 +1,7 @@
 
-uniform vec2 smaa_rt_metrics;
+layout (std140) uniform genericData {
+	vec2 smaa_rt_metrics;
+};
 
 #define SMAA_RT_METRICS vec4(1.0 / smaa_rt_metrics, smaa_rt_metrics)
 

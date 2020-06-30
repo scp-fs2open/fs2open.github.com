@@ -52,7 +52,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
 }
 
-ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
+ADE_INDEXER(l_ShipTextures, "number/string IndexOrTextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
 {
 	object_h *oh;
 	const char* s;
@@ -137,7 +137,7 @@ ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "bool
 //**********HANDLE: Ship
 ADE_OBJ_DERIV(l_Ship, object_h, "ship", "Ship handle", l_Object);
 
-ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
+ADE_INDEXER(l_Ship, "string/number NameOrIndex", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
 {
 	object_h *objh;
 	const char* s      = nullptr;
@@ -183,7 +183,7 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 {
 	object_h *objh;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -192,10 +192,12 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->shield_armor_type_idx = atindex;
+	} else {
+		atindex = shipp->shield_armor_type_idx;
 	}
 
 	if (atindex != -1)
@@ -210,7 +212,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 {
 	object_h *objh;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -219,10 +221,12 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 		return ade_set_error(L, "s", "");
 
 	ship *shipp = &Ships[objh->objp->instance];
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		shipp->armor_type_idx = atindex;
+	} else {
+		atindex = shipp->armor_type_idx;
 	}
 
 	if (atindex != -1)
@@ -406,6 +410,42 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 		shipp->ship_max_hull_strength = newhits;
 
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
+}
+
+ADE_VIRTVAR(ShieldRegenRate, l_Ship, "number", "Maximum percentage/100 of shield energy regenerated per second. For example, 0.02 = 2% recharge per second.", "number", "Ship maximum shield regeneration rate, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_shield_regen = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_shield_regen))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && new_shield_regen > -1)
+		shipp->max_shield_regen_per_second = new_shield_regen;
+
+	return ade_set_args(L, "f", shipp->max_shield_regen_per_second);
+}
+
+ADE_VIRTVAR(WeaponRegenRate, l_Ship, "number", "Maximum percentage/100 of weapon energy regenerated per second. For example, 0.02 = 2% recharge per second.", "number", "Ship maximum weapon regeneration rate, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_weapon_regen = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_weapon_regen))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && new_weapon_regen > -1)
+		shipp->max_weapon_regen_per_second = new_weapon_regen;
+
+	return ade_set_args(L, "f", shipp->max_weapon_regen_per_second);
 }
 
 ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves", "number", "Ship current weapon energy reserve level, or 0 if invalid")
@@ -617,7 +657,7 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 			else
 			{
 				aip->target_objnum = -1;
-				aip->target_signature = 0;
+				aip->target_signature = -1;
 				aip->target_time = 0.0f;
 			}
 
@@ -664,7 +704,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 		else
 		{
 			aip->target_objnum = -1;
-			aip->target_signature = 0;
+			aip->target_signature = -1;
 			aip->target_time = 0.0f;
 
 			set_targeted_subsys(aip, NULL, -1);
@@ -942,7 +982,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
+ADE_FUNC(addShipEffect, l_Ship, "string name, number durationMillis", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
 	object_h *shiph;
 	const char* effect = nullptr;
 	int duration;
@@ -1043,8 +1083,8 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 	if(!objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	int type = model_anim_match_type(s);
-	if(type < 0)
+	auto type = model_anim_match_type(s);
+	if(type == AnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
 	int time_ms = model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype);
@@ -1336,7 +1376,13 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Apply-all Rotation, number Vertical, number Sideways, number Forward, boolean Apply-all Movement, number Maneuver Bitfield", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+ADE_FUNC(doManeuver,
+	l_Ship,
+	"number Duration, number Heading, number Pitch, number Bank, boolean ApplyAllRotation, number Vertical, number "
+	"Sideways, number Forward, boolean ApplyAllMovement, number ManeuverBitfield",
+	"Sets ship maneuver over the defined time period",
+	"boolean",
+	"True if maneuver order was given, otherwise false or nil")
 {
 	object_h *objh;
 	float heading, pitch, bank, up, sideways, forward;
@@ -1429,8 +1475,8 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
-	int type = model_anim_match_type(s);
-	if(type < 0)
+	auto type = model_anim_match_type(s);
+	if(type == AnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
 	int dir = 1;
@@ -1470,7 +1516,7 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace drive and is allowed to use it", "boolean", "True if successful, or nil if ship handle is invalid")
+ADE_FUNC(canWarp, l_Ship, nullptr, "Checks whether ship has a working subspace drive, is allowed to use it, and is not disabled or limited by subsystem strength.", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;
 	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
@@ -1480,11 +1526,28 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
-		return ADE_RETURN_FALSE;
+	if( ship_can_warp_full_check(shipp) ){
+		return ADE_RETURN_TRUE;
 	}
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(canBayDepart, l_Ship, nullptr, "Checks whether ship has a bay departure location and if its mother ship is present.", "boolean", "True if successful, or nil if ship handle is invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if( ship_can_bay_depart(shipp) ){
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
 }
 
 // Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
@@ -1625,7 +1688,7 @@ ADE_FUNC(getMaximumSpeed, l_Ship, "[number energy = 0.333]", "Gets the maximum s
 	}
 }
 
-ADE_FUNC(EtsSetIndexes, l_Ship, "number Engine Index, number Shield Index, number Weapon Index",
+ADE_FUNC(EtsSetIndexes, l_Ship, "number EngineIndex, number ShieldIndex, number WeaponIndex",
 		 "Sets ships ETS systems to specified values",
 		 "boolean",
 		 "True if successful, false if target ships ETS was missing, or only has one system")

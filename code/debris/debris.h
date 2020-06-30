@@ -13,6 +13,8 @@
 #define _DEBRIS_H
 
 #include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
+
 
 class object;
 struct CFILE;
@@ -20,9 +22,17 @@ class model_draw_list;
 
 #define MAX_DEBRIS_ARCS 8		// Must be less than MAX_ARC_EFFECTS in model.h
 
+FLAG_LIST(Debris_Flags) {
+	Used,
+	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
+
+	NUM_VALUES
+};
+
+
 typedef struct debris {
-	debris	*next, *prev;		// used for a linked list of the hull debris chunks
-	int		flags;					// See DEBRIS_??? defines
+	debris	*next, *prev;		 // used for a linked list of the hull debris chunks
+	flagset<Debris_Flags> flags; // See DEBRIS_??? defines
 	int		source_objnum;		// What object this came from
 	int		damage_type_idx;	// Damage type of this debris
 	int		ship_info_index;	// Ship info index of the ship type debris came from
@@ -48,11 +58,6 @@ typedef struct debris {
 	
 } debris;
 
-
-// flags for debris pieces
-#define	DEBRIS_USED				(1<<0)
-#define	DEBRIS_EXPIRE			(1<<1)	// debris can expire (ie hull chunks from small ships)
-
 #define	MAX_DEBRIS_PIECES	64
 
 extern	debris Debris[MAX_DEBRIS_PIECES];
@@ -69,6 +74,6 @@ object *debris_create( object * source_obj, int model_num, int submodel_num, vec
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
 void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
 int debris_get_team(object *objp);
-void debris_clear_expired_flag(debris *db);
+void debris_remove_from_hull_list(debris *db);
 
 #endif // _DEBRIS_H

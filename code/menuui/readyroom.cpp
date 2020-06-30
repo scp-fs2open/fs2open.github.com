@@ -450,6 +450,7 @@ int build_standalone_mission_list_do_frame()
 	int font_height = gr_get_font_height();
 	char filename[MAX_FILENAME_LEN];
 	char str[256];
+	bool lcl_weirdness = false;
 	
 	// When no standalone missions in data directory
 	if (Num_standalone_missions == 0) {
@@ -473,8 +474,16 @@ int build_standalone_mission_list_do_frame()
 			// tack on an extension
 			strcat_s(filename, FS_MISSION_FILE_EXT);
 
-			// check if we can list the mission and if loading basic info didn't return an error code
-			if (!mission_is_ignored(filename) && !get_mission_info(filename)) {
+			// activate tstrings check
+			Lcl_unexpected_tstring_check = &lcl_weirdness;
+
+			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an unexpected XSTR mismatch
+			bool condition = !mission_is_ignored(filename) && !get_mission_info(filename) && !lcl_weirdness;
+
+			// deactivate tstrings check
+			Lcl_unexpected_tstring_check = nullptr;
+
+			if (condition) {
 				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
@@ -1099,7 +1108,17 @@ void sim_room_init()
 	memset(wild_card, 0, 256);
 	strcpy_s(wild_card, NOX("*"));
 	strcat_s(wild_card, FS_MISSION_FILE_EXT);
+
+#ifndef NDEBUG
+	// Activate the check while we fill the mission list so that we don't potentially end up with dozens of string length warnings.
+	// We don't actually remove mismatched missions from the list here; that will happen in build_standalone_mission_list_do_frame().
+	bool dummy_buffer;
+	Lcl_unexpected_tstring_check = &dummy_buffer;
+#endif
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
+#ifndef NDEBUG
+	Lcl_unexpected_tstring_check = nullptr;
+#endif
 
 	// set up slider with 0 items to start
 	Sim_room_slider.create(&Ui_window, Sim_room_slider_coords[gr_screen.res][X_COORD], Sim_room_slider_coords[gr_screen.res][Y_COORD], Sim_room_slider_coords[gr_screen.res][W_COORD], Sim_room_slider_coords[gr_screen.res][H_COORD], 0, Sim_room_slider_filename[gr_screen.res], &sim_room_scroll_screen_up, &sim_room_scroll_screen_down, &sim_room_scroll_capture);
@@ -1518,24 +1537,26 @@ void campaign_room_scroll_info_down()
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
+void campaign_reset(const SCP_string& campaign_file) {
+	auto filename = campaign_file + FS_CAMPAIGN_FILE_EXT;
+
+	mission_campaign_savefile_delete(filename.c_str());
+	mission_campaign_load(filename.c_str(), nullptr, 1 , false); // retail doesn't reset stats when resetting the campaign
+	mission_campaign_next_mission();
+
+	// Goober5000 - reinitialize tech database if needed
+	if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
+		// reset tech database to what's in the tables
+		tech_reset_to_default();
+	}
+}
+
 // returns: 0 = success, !0 = aborted or failed
 int campaign_room_reset_campaign(int n)
 {
-	char *filename;
-	int z;
-
-	// z = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_CANCEL, POPUP_OK, XSTR( "Warning\nThis will cause all progress in your\ncurrent campaign to be lost", 110), Campaign_names[n]);
-	z = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_CANCEL, POPUP_OK, XSTR( "Warning\nThis will cause all progress in your\ncurrent campaign to be lost", 110));
+	int z = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_CANCEL, POPUP_OK, XSTR( "Warning\nThis will cause all progress in your\ncurrent campaign to be lost", 110));
 	if (z == 1) {
-		filename = (char *) vm_malloc(strlen(Campaign_file_names[n]) + 5);
-		strcpy(filename, Campaign_file_names[n]);
-		strcat(filename, FS_CAMPAIGN_FILE_EXT);
-
-		mission_campaign_savefile_delete(filename);
-		mission_campaign_load(filename, NULL, 1 , false); // retail doesn't reset stats when resetting the campaign
-		mission_campaign_next_mission();
-
-		vm_free(filename);
+		campaign_reset(Campaign_file_names[n]);
 
 		return 0;
 	}
@@ -1550,27 +1571,7 @@ void campaign_room_commit()
 		return;
 	}
 
-	// new campaign selected?
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename) != 0)
-	{
-		strcpy_s(Player->current_campaign, Campaign_file_names[Selected_campaign_index]);  // track new campaign for player
-
-		// attempt to load the campaign
-		int load_status = mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
-
-		// see if we successfully loaded this campaign and it's at the beginning
-		if (load_status == 0 && Campaign.prev_mission < 0)
-		{
-			// Goober5000 - reinitialize tech database if needed
-			if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2"))
-			{
-				// reset tech database to what's in the tables
-				tech_reset_to_default();
-			}
-		}
-
-		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the campaign in the ready room
-	}
+	campaign_select_campaign(Campaign_file_names[Selected_campaign_index]);
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1617,16 +1618,7 @@ int campaign_room_button_pressed(int n)
 			else if (campaign_room_reset_campaign(Active_campaign_index))
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			else
-			{
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-
-				// Goober5000 - reinitialize tech database if needed
-				if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
-				{
-					// reset tech database to what's in the tables
-					tech_reset_to_default();
-				}
-			}
 
 			break;
 	}
@@ -1634,9 +1626,49 @@ int campaign_room_button_pressed(int n)
 	return 0;
 }
 
+bool campaign_build_campaign_list() {
+	const auto load_failed = mission_load_up_campaign();
+	if (!load_failed) {
+		mission_campaign_next_mission();
+	} else {
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+
+		mission_campaign_load_failure_popup();
+	}
+
+	// we need descriptions too, so "true" it
+	mission_campaign_build_list(true);
+
+	// convert to proper bool
+	return load_failed != 0;
+}
+
+void campaign_select_campaign(const SCP_string& campaign_file)
+{
+	// new campaign selected?
+	if (stricmp(campaign_file.c_str(), Campaign.filename) != 0) {
+		strcpy_s(Player->current_campaign, campaign_file.c_str()); // track new campaign for player
+
+		// attempt to load the campaign
+		int load_status = mission_campaign_load(campaign_file.c_str());
+
+		// see if we successfully loaded this campaign and it's at the beginning
+		if (load_status == 0 && Campaign.prev_mission < 0) {
+			// Goober5000 - reinitialize tech database if needed
+			if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
+				// reset tech database to what's in the tables
+				tech_reset_to_default();
+			}
+		}
+		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
+		// campaign in the ready room
+	}
+}
+
 void campaign_room_init()
 {
-	int i, load_failed;
+	int i;
 	ui_button_info *b;
 
 	list_h = Mission_list_coords[gr_screen.res][3];
@@ -1691,18 +1723,7 @@ void campaign_room_init()
 	Desc_scroll_offset = Scroll_offset = 0;
 
 	// this stuff needs to happen before the mission_campaign_build_list() call
-	load_failed = mission_load_up_campaign();
-	if (!load_failed) {
-		mission_campaign_next_mission();
-	} else {
-		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
-
-		mission_campaign_load_failure_popup();
-	}
-
-	// we need descriptions too, so "true" it
-	mission_campaign_build_list(true);
+	const auto load_failed = campaign_build_campaign_list();
 
 	campaign_room_build_listing();
 
@@ -1721,7 +1742,7 @@ void campaign_room_init()
 
 void campaign_room_close()
 {
-	if (Background_bitmap >= 0)
+	if (bm_is_valid(Background_bitmap))
 		bm_release(Background_bitmap);
 
 	// Reset info text pointers and size since they may contain pointers into the campaign description which will be
@@ -1734,7 +1755,7 @@ void campaign_room_close()
 
 	Ui_window.destroy();
 
-	if (Campaign_background_bitmap_mask >= 0) {
+	if (bm_is_valid(Campaign_background_bitmap_mask)) {
 		bm_release(Campaign_background_bitmap_mask);
 	}
 

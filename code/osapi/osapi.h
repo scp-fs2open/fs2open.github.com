@@ -193,8 +193,10 @@ namespace os
 	 */
 	struct ViewPortProperties
 	{
-		bool enable_opengl; //!< Set to true if the viewport should support OpenGL rendering
+		bool enable_opengl = false; //!< Set to true if the viewport should support OpenGL rendering
 		OpenGLContextAttributes gl_attributes;
+
+		bool enable_vulkan = false; //!< Set to true if the viewport should support Vulkan rendering
 
 		ViewportPixelFormat pixel_format;
 

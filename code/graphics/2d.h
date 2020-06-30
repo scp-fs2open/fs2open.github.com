@@ -1,21 +1,20 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
-
-
+ */
 
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#include "bmpman/bmpman.h"
-#include "cfile/cfile.h"
 #include "globalincs/flagset.h"
 #include "globalincs/pstypes.h"
+
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
 #include "graphics/grinternal.h"
 #include "graphics/tmapper.h"
 #include "io/cursor.h"
@@ -27,7 +26,10 @@ namespace graphics {
 namespace util {
 class UniformBuffer;
 class GPUMemoryHeap;
-}
+} // namespace util
+} // namespace graphics
+namespace scripting {
+class OverridableHook;
 }
 
 extern const float Default_min_draw_distance;
@@ -46,16 +48,16 @@ FLAG_LIST(FramebufferEffects){Thrusters = 0, Shockwaves, NUM_VALUES};
 extern flagset<FramebufferEffects> Gr_framebuffer_effects;
 
 enum class AntiAliasMode {
-	None,
+	None = 0,
 
-	FXAA_Low,
-	FXAA_Medium,
-	FXAA_High,
+	FXAA_Low = 1,
+	FXAA_Medium = 2,
+	FXAA_High = 3,
 
-	SMAA_Low,
-	SMAA_Medium,
-	SMAA_High,
-	SMAA_Ultra,
+	SMAA_Low = 4,
+	SMAA_Medium = 5,
+	SMAA_High = 6,
+	SMAA_Ultra = 7,
 };
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
@@ -69,6 +71,10 @@ extern bool Gr_enable_vsync;
 
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
+
+extern os::ViewportState Gr_configured_window_state;
+
+extern const std::shared_ptr<scripting::OverridableHook> OnFrameHook;
 
 class material;
 class model_material;
@@ -241,6 +247,7 @@ enum class uniform_block_type {
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
 	Matrices = 6,
+	GenericData = 7,
 
 	NUM_BLOCK_TYPES
 };
@@ -724,9 +731,6 @@ typedef struct screen {
 	// Frees up a saved screen.
 	void (*gf_free_screen)(int id);
 
-	// Sets the gamma
-	void (*gf_set_gamma)(float gamma);
-
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
@@ -849,7 +853,8 @@ typedef struct screen {
 // # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
 #define GR_DEFAULT				(-1)		// set to use default settings
 #define GR_STUB					(100)
-#define GR_OPENGL				(104)		// Use OpenGl hardware renderer
+#define GR_OPENGL (104) // Use OpenGl hardware renderer
+#define GR_VULKAN (105) // Use Vulkan hardware renderer
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
 #define GR_NUM_RESOLUTIONS			2
@@ -953,8 +958,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)
 #define gr_free_screen		GR_CALL(gr_screen.gf_free_screen)
-
-#define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
@@ -1217,9 +1220,12 @@ enum AnimatedShader {
  * @brief Retreives a uniform buffer for storing uniform block data
  * @param type The type of uniform data that will be stored in the buffer
  * @param num_elements The number of elements that will be used in the buffer
+ * @param element_size_override Override what the size of the element should be instead of relying on the preconfigured
+ * size for that block type
  * @return A structure which gives access to a memory buffer where the uniform data can be stored
  */
-graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements);
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements,
+                                                    size_t element_size_override = 0);
 
 struct VideoModeData {
 	uint32_t width = 0;
@@ -1264,6 +1270,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
  * @param data_offset The offset at which the data is stored.
  */
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
+
+
+void gr_set_gamma(float gamma);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

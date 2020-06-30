@@ -97,6 +97,9 @@ public:
 
 	int ai_path_mode;
 
+	// radii to use for the radius for subsystem path points and default value --wookieejedi
+	int subsystem_path_radii;
+
 	// Ships flying bay paths will gradually accelerate/decelerate instead of
 	// flying the whole path at max speed
 	float bay_arrive_speed_mult;

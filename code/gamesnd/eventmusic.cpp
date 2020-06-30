@@ -1,17 +1,15 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "gamesnd/eventmusic.h"
 
 #include "cmdline/cmdline.h"
-#include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -19,11 +17,11 @@
 #include "mission/missiongoals.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "sound/sound.h"
-
 
 #ifdef _MSC_VER
 #pragma optimize("", off)
@@ -37,6 +35,23 @@
 int Event_Music_battle_started = 0;
 float Default_music_volume = 0.5f;							// range is 0->1
 float Master_event_music_volume = Default_music_volume;
+
+static bool music_volume_change_listener(float new_val, bool /*initial*/)
+{
+	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+
+	event_music_set_volume(new_val);
+
+	return true;
+}
+
+static auto MusicVolumeOption = options::OptionBuilder<float>("Audio.Music", "Music", "Volume used for playing music")
+                                    .category("Audio")
+                                    .default_val(Default_music_volume)
+                                    .range(0.0f, 1.0f)
+                                    .change_listener(music_volume_change_listener)
+                                    .importance(1)
+                                    .finish();
 
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
@@ -517,7 +532,7 @@ void event_music_do_frame()
 }
 
 // -------------------------------------------------------------------------------------------------
-// event_music_level_init() 
+// event_music_level_start() 
 //
 // Called at the start of a mission (level).  Sets up the pattern data, and kicks off the
 // first track to play().
@@ -525,7 +540,7 @@ void event_music_do_frame()
 // input:	force_soundtrack	=>		OPTIONAL parameter (default value -1)
 //												forces the soundtrack to ignore the music.tbl assignment
 //
-void event_music_level_init(int force_soundtrack)
+void event_music_level_start(int force_soundtrack)
 {
 	int					i;
 	SOUNDTRACK_INFO	*strack;
@@ -543,8 +558,7 @@ void event_music_level_init(int force_soundtrack)
 
 	if (Event_music_inited == FALSE)
 		return;
-
-
+	
 	if (force_soundtrack != -1)
 		Current_soundtrack_num = force_soundtrack;
 
@@ -629,7 +643,7 @@ void event_music_first_pattern()
 	}
 
 	if ( Event_music_level_inited == FALSE ) {
-		event_music_level_init();
+		event_music_level_start();
 	}
 
 	if ( Event_music_level_inited == FALSE ) { //-V581
@@ -690,6 +704,7 @@ void event_music_level_close()
 		audiostream_close_all(0);
 	}
 
+	Current_soundtrack_num = -1;
 	Current_pattern = -1;
 	Event_music_level_inited = FALSE;
 	Event_Music_battle_started = FALSE;
@@ -1455,7 +1470,7 @@ void event_music_enable()
 	Event_music_enabled = TRUE;
 
 	if ( Event_music_level_inited == FALSE ) {
-		event_music_level_init();
+		event_music_level_start();
 		// start the first pattern to play (delayed)
 		if ( Game_mode & GM_IN_MISSION ) {
 			event_music_first_pattern();
@@ -1594,13 +1609,13 @@ int event_music_next_soundtrack(int delta)
 		new_soundtrack = 0;
 
 	event_music_level_close();
-	event_music_level_init(new_soundtrack);
+	event_music_level_start(new_soundtrack);
 
 	return Current_soundtrack_num;
 }
 
 // Goober5000 - along the same lines; this is for the sexp
-void event_sexp_change_soundtrack(char *name)
+void event_sexp_change_soundtrack(const char *name)
 {
 	Assert(name);
 
@@ -1619,7 +1634,7 @@ void event_sexp_change_soundtrack(char *name)
 
 	event_music_level_close();
 	Current_soundtrack_num = -1; 
-	event_music_level_init(new_soundtrack);
+	event_music_level_start(new_soundtrack);
 }
 
 // ----------------------------------------------------------------
@@ -1638,7 +1653,7 @@ void event_music_get_soundtrack_name(char *outbuf)
 }
 
 // set the current soundtrack based on name
-void event_music_set_soundtrack(char *name)
+void event_music_set_soundtrack(const char *name)
 {
 	Current_soundtrack_num = event_music_get_soundtrack_index(name);
 
@@ -1704,6 +1719,20 @@ void event_music_reset_choices()
 void event_music_hostile_ship_destroyed()
 {
 	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+}
+
+void event_music_set_volume(float volume)
+{
+	Assertion(volume >= 0.0f && volume <= 1.0f, "Invalid event music volume %f!", volume);
+
+	Master_event_music_volume = volume;
+	event_music_set_volume_all(Master_event_music_volume);
+
+	if (Master_event_music_volume > 0.0f) {
+		event_music_enable();
+	} else {
+		event_music_disable();
+	}
 }
 
 #ifdef _MSC_VER

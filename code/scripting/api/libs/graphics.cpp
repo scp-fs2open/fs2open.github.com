@@ -59,7 +59,7 @@ static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
-ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
+ADE_INDEXER(l_Graphics_Cameras, "number/string IndexOrName", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
 	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
@@ -93,7 +93,7 @@ ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Num
 	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
 }
 
-ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
+ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
 {
 	if (lua_isnumber(L, 2))
 	{
@@ -278,7 +278,7 @@ ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, numbe
 }
 
 ADE_FUNC(createCamera, l_Graphics,
-		 "string Name, [wvector Position, orientation Orientation]",
+		 "string Name, [vector Position, orientation Orientation]",
 		 "Creates a new camera using the specified position and orientation (World)",
 		 "camera",
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
@@ -451,7 +451,7 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	}
 }
 
-ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
+ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
 	if(!ade_get_args(L, "|o", l_Camera.Get(&cid)))
@@ -468,7 +468,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [integer Alpha]",
+ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number Alpha]",
          "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
 {
 	if(!Gr_inited)
@@ -606,7 +606,13 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=nil, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
+ADE_FUNC(drawPolygon,
+	l_Graphics,
+	"texture Texture, [vector Position /* Default is null vector */, orientation Orientation=nil, number Width=1.0, "
+	"number Height=1.0]",
+	"Draws a polygon. May not work properly in hooks other than On Object Render.",
+	nullptr,
+	nullptr)
 {
 	texture_h* tdx = nullptr;
 	vec3d pos = vmd_zero_vector;
@@ -715,7 +721,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
+ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
          "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
          "properly in all scripting hooks.",
          "number", "Zero if successful, otherwise an integer error code")
@@ -784,7 +790,7 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation",
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [number Flags]",
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Orientation, [number Flags]",
          "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
          "operate properly only in On Object Render hooks.",
          "number", "Zero if successful, otherwise an integer error code")
@@ -824,7 +830,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orienta
 }
 
 // Aardwolf's targeting brackets function
-ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
+ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
@@ -1027,27 +1033,36 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		if (default_hud_gauges[j]->getObjectType() == HUD_OBJECT_OFFSCREEN) {
 			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j].get());
 
-			offscreengauge->preprocess();
-			offscreengauge->onFrame(flFrametime);
-
-			if ( !offscreengauge->canRender() ) {
-				break;
-			}
-
-			offscreengauge->resetClip();
-			offscreengauge->setFont();
 			int dir;
 			float tri_separation;
 
 			offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation);
 
 			if (draw) {
-				float distance = hud_find_target_distance(targetp, Player_obj);
+				// needs to be turned on so it can pass the canRender() condition
+				// but first make sure to record the original status to use to restore later
+				bool original_status = offscreengauge->canRender();
+				offscreengauge->updateActive(true);
 
-				if (!setcolor)
-					hud_set_iff_color(targetp, 1);
+				// only draw if it can be rendered
+				if ( offscreengauge->canRender() ) {
 
-				offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
+					offscreengauge->preprocess();
+					offscreengauge->onFrame(flFrametime);
+
+					offscreengauge->resetClip();
+					offscreengauge->setFont();
+
+					float distance = hud_find_target_distance(targetp, Player_obj);
+
+					if (!setcolor)
+						hud_set_iff_color(targetp, 1);
+
+					offscreengauge->renderOffscreenIndicator(&outpoint, dir, distance, tri_separation, true);
+				}
+
+				// now that the gauge is rendered restore the original status
+				offscreengauge->updateActive(original_status);
 			}
 
 			offscreengauge->resize(&outpoint.x, &outpoint.y);
@@ -1276,12 +1291,15 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
-ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
-		 "Draws an image or texture. Any image extension passed will be ignored."
-			 "The UV variables specify the UV value for each corner of the image. "
-			 "In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
-		 "boolean",
-		 "Whether image was drawn")
+ADE_FUNC(drawImage,
+	l_Graphics,
+	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
+	"Draws an image file or texture. Any image extension passed will be ignored."
+	"The UV variables specify the UV value for each corner of the image. "
+	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
+	"boolean",
+	"Whether image was drawn")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
@@ -1342,7 +1360,12 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]", "Draws a monochrome image using the current color", "boolean", "Whether image was drawn")
+ADE_FUNC(drawMonochromeImage,
+	l_Graphics,
+	"string|texture fileNameOrTexture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]",
+	"Draws a monochrome image from a texture or file using the current color",
+	"boolean",
+	"Whether image was drawn")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
@@ -1422,7 +1445,7 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(getImageHeight, l_Graphics, "Image name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
+ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1569,7 +1592,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "x, y, width, height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
 
@@ -1613,15 +1636,17 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
 }
 
-ADE_FUNC(createPersistentParticle, l_Graphics,
-         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
-         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-         "Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
-         "function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
-         "the returned handle is not required. Use PARTICLE_* enumerations for type."
-         "Reverse reverse animation, if one is specified"
-         "Attached object specifies object that Position will be (and always be) relative to.",
-         "particle", "Handle to the created particle")
+ADE_FUNC(createPersistentParticle,
+	l_Graphics,
+	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
+	"Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
+	"function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
+	"the returned handle is not required. Use PARTICLE_* enumerations for type."
+	"Reverse reverse animation, if one is specified"
+	"Attached object specifies object that Position will be (and always be) relative to.",
+	"particle",
+	"Handle to the created particle")
 {
 	particle::particle_info pi;
 	pi.type            = particle::PARTICLE_DEBUG;
@@ -1683,13 +1708,15 @@ ADE_FUNC(createPersistentParticle, l_Graphics,
 		return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createParticle, l_Graphics,
-         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
-         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-         "Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
-         "Reverse reverse animation, if one is specified"
-         "Attached object specifies object that Position will be (and always be) relative to.",
-         "boolean", "true if particle was created, false otherwise")
+ADE_FUNC(createParticle,
+	l_Graphics,
+	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
+	"Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
+	"Reverse reverse animation, if one is specified"
+	"Attached object specifies object that Position will be (and always be) relative to.",
+	"boolean",
+	"true if particle was created, false otherwise")
 {
 	particle::particle_info pi;
 	pi.type            = particle::PARTICLE_DEBUG;

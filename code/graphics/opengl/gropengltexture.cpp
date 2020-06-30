@@ -45,9 +45,7 @@ GLint GL_max_renderbuffer_size = 0;
 
 extern int GLOWMAP;
 extern int SPECMAP;
-extern int CLOAKMAP;
 extern int ENVMAP;
-extern int Interp_multitex_cloakmap;
 
 static SCP_vector<float> anisotropic_value_enumerator()
 {

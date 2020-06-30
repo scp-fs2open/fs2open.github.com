@@ -38,6 +38,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
@@ -71,6 +72,12 @@ vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
 static bool global_damage = false;
+
+const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factory(
+	"On Pain Flash", "Called when a pain flash is displayed.",
+	{ 		
+		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
+	});
 
 //WMC - Camera rough draft stuff
 /*
@@ -1698,6 +1705,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 		}
 	}
 
+	// Goober5000 - since we added a mission log entry above, immediately set the status.  For destruction, ship_cleanup isn't called until a little bit later
+	auto entry = &Ship_registry[Ship_registry_map[sp->ship_name]];
+	entry->status = ShipStatus::EXITED;
+
 	ship_generic_kill_stuff( ship_objp, percent_killed );
 
 	// mwa -- removed 2/25/98 -- why is this here?  ship_objp->flags &= ~(OF_PLAYER_SHIP);
@@ -2072,7 +2083,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		// now the actual checks
 		if (other_obj->type == OBJ_BEAM)
 		{
-			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
+			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < weapon_info_size()));
 			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);
@@ -2080,7 +2091,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		}
 		if (other_obj_is_weapon)
 		{
-			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
+			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < weapon_info_size()));
 			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);
@@ -2391,24 +2402,24 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 }
 
 // Goober5000
-void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
+void ship_apply_tag(ship *shipp, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
 {
 	// set time first tagged
-	if (Ships[ship_num].time_first_tagged == 0)
-		Ships[ship_num].time_first_tagged = Missiontime;
+	if (shipp->time_first_tagged == 0)
+		shipp->time_first_tagged = Missiontime;
 
 	// do tag effect
 	if (tag_level == 1)
 	{
-//		mprintf(("TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
-		Ships[ship_num].tag_left = tag_time;
-		Ships[ship_num].tag_total = tag_time;
+//		mprintf(("TAGGED %s for %f seconds\n", shipp->ship_name, tag_time));
+		shipp->tag_left = tag_time;
+		shipp->tag_total = tag_time;
 	}
 	else if (tag_level == 2)
 	{
-//		mprintf(("Level 2 TAGGED %s for %f seconds\n", Ships[ship_num].ship_name, tag_time));
-		Ships[ship_num].level2_tag_left = tag_time;
-		Ships[ship_num].level2_tag_total = tag_time;
+//		mprintf(("Level 2 TAGGED %s for %f seconds\n", shipp->ship_name, tag_time));
+		shipp->level2_tag_left = tag_time;
+		shipp->level2_tag_total = tag_time;
 	}
 	else if (tag_level == 3)
 	{
@@ -2477,7 +2488,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 			vec3d *start = hitpos;
 			int ssm_index = wip->SSM_index;
 
-			ship_apply_tag(ship_objp->instance, wip->tag_level, wip->tag_time, ship_objp, start, ssm_index, wp->team);
+			ship_apply_tag(ship_p, wip->tag_level, wip->tag_time, ship_objp, start, ssm_index, wp->team);
 		}
 	}
 
@@ -2637,6 +2648,7 @@ void ship_hit_pain(float damage, int quadrant)
 
     if (!(Player_obj->flags[Object::Object_Flags::Invulnerable]))
     {
+		int pain_type;
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
 		{
 			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / shield_get_max_strength(Player_obj);
@@ -2645,9 +2657,15 @@ void ship_hit_pain(float damage, int quadrant)
 				effect -= Shield_pain_flash_factor;
 			
 			game_flash((sip->shield_color[0] * effect) / 255.0f, (sip->shield_color[1] * effect) / 255.0f, (sip->shield_color[2] * effect) / 255.0f);
+			pain_type = 0;
 		}
 		else
+		{
 			game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
+			pain_type = 1;
+		}
+		// add scripting hook for 'On Pain Flash' --wookieejedi
+		OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
     }
 
 	// kill any active popups when you get hit.

@@ -36,9 +36,9 @@ env:
     # These declarations set INDIEGAMES_USER and INDIEGAMES_PASSWORD for uploading nightly builds to the indiegames server
     - secure: "lUuRu8XIi8MKNf1ebOfyC4iVEpPyASojJIDWXRo2bNqEF4ILAljXdkVeXeN6H5yKCHD52cxCNTtyePIG/o3p3QEuGSVud9bDS3D7LaQicLETGGrsw3l07U49gF2OKHXGopg0MzBbZUU9QmhoFTAe8t6PV9NDuEayYCheqvTqjZg="
     - secure: "E/DHLYcPK/hBUqxBYYlUqp5sjgvIqY5A0qRHyQ4bmjsB+WB/Xx71bGCSiF7hk6lTxar1ZI1i5RAXXh9AIvNVaYAIdEOlCP+q3gvwCYuc5naZEKmkxlUCf0oEL4O9Fye93A/3VkFHuBdC1TGPYYf69m4W5r4367wWO9dPRIdWpJA="
-    # These declarations set FS2DOWNLOADS_USER and FS2DOWNLOADS_PASSWORD
-    - secure: "h6GbMX2jLsW1bS9fCM9fthOSJ1nfQQIRWi6EUH2p8u4NFLD5Bfi/C8JhQPKHUzyo3wvKkSHl+PsW7bgr1oXLusRwAur/dtv2N3imqvtbfIz305b00hZlsvbcYmQmUzQFSAdOGShK57JJ5aKQKccaUBP25KqB7Q+JaqBRdaMBS54="
-    - secure: "fUDAPAUUaaYZy8I4zU3SJ0JcK7aw4eb6eTdaEr7LyNyTMSfPgwY6P1MrbSQC0lJNQIUQ5ffjdxE5g7D7OYpoJF9L14ni4UY8t2QASt7kmpgcYihmjeuYy8FQXgmFG8CTxiWBPKTybZJ7voQcvIvRaNG7b2wM9PMfc5lRIondB6c="
+    # These declarations set DATACORDER_USER and DATACORDER_PASSWORD
+    - secure: "dpBH/dDN3bmU/NFlh+2v9isNx9wX0ocoRy+W+kBXRH32sosUGp26REhMqgVRpBNP5oxPBU8ic5bEogxAYWCB+0xUygBbkxAwyMPgoA34s0OXdTCY/ofw14ni8qqV2Ffy7fQJbP/jkMURyiMHx3kBTxNv3YjxKJqLnOuOMlQLpT8="
+    - secure: "tLMRBD1Ufp5iKNwlqPDVbbuczgusaXNoBJyAnPATpJq2YwlkW4j3PqP9rW5vd85+52xam2EOP20w9PoBR5J6FLdiXRu4Lf7yCEhSHFAgowVqQj8QcJpPlyXr90bM4emFGrGqpdxVwxyQ5AFhKwLuEZKsI14GYLN+UMEwpNCMing="
 deploy:
   - provider: releases
     api_key:
@@ -87,19 +87,6 @@ matrix:
             - g++-9
             - *global_deps
     - os: linux
-      env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCLANG_USE_LIBCXX=ON"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
-            - sourceline: 'ppa:beineri/opt-qt571-xenial'
-          packages:
-            - *global_deps
-            - clang-4.0
-            - libc++-dev
-            - libc++abi-dev
-    - os: linux
       env: CONFIGURATION="Debug" CC=clang-9 CXX=clang++-9 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
       addons:
         apt:
@@ -140,19 +127,6 @@ matrix:
           packages:
             - g++-9
             - *global_deps
-    - os: linux
-      env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCLANG_USE_LIBCXX=ON"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
-            - sourceline: 'ppa:beineri/opt-qt571-xenial'
-          packages:
-            - *global_deps
-            - clang-4.0
-            - libc++-dev
-            - libc++abi-dev
     - os: linux
       env: CONFIGURATION="Release" CC=clang-9 CXX=clang++-9 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
       addons:

@@ -14,12 +14,14 @@
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "sound/audiostr.h"
-#include "sound/ffmpeg/WaveFile.h"
 #include "sound/ds.h"
+#include "sound/IAudioFile.h"
 #include "sound/sound.h"
+#include "sound/openal.h"
 
-#include "libs/ffmpeg/FFmpegContext.h"
-
+#ifdef WITH_FFMPEG
+#include "sound/ffmpeg/FFmpegWaveFile.h"
+#endif
 
 #define MAX_STREAM_BUFFERS 4
 
@@ -44,14 +46,29 @@ ubyte *Compressed_service_buffer = NULL;	// Used to read in compressed data duri
 const char *audio_ext_list[] = { ".ogg", ".wav" };
 const int NUM_AUDIO_EXT = sizeof(audio_ext_list) / sizeof(char*);
 
+static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName, bool keep_ext) {
+#ifdef WITH_FFMPEG
+	{
+		std::unique_ptr<sound::IAudioFile> audio_file(new sound::ffmpeg::FFmpegWaveFile());
+
+		// Open given file
+		if (audio_file->Open(fileName, keep_ext)) {
+			return audio_file;
+		}
+	}
+#endif
+
+	return nullptr;
+}
+
 
 int Audiostream_inited = 0;
 
 class Timer
 {
 public:
-    void constructor(void);
-    void destructor(void);
+    void constructor();
+    void destructor();
     bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
     static uint TimeProc(uint interval, void *param);
@@ -65,43 +82,44 @@ protected:
 class AudioStream
 {
 public:
-	AudioStream (void);
-	~AudioStream (void);
+	AudioStream ();
+	~AudioStream ();
 	bool Create (char *pszFilename);
-	bool Destroy (void);
+	bool Destroy ();
 	void Play (float volume, int looping);
 	bool Is_Playing(){ return m_fPlaying; }
 	bool Is_Paused(){ return m_bIsPaused; }
 	bool Is_Past_Limit() { return m_bPastLimit; }
 	void Stop (int paused = 0);
-	void Stop_and_Rewind (void);
-	void Fade_and_Destroy (void);
-	void Fade_and_Stop(void);
+	void Stop_and_Rewind ();
+	void Fade_and_Destroy ();
+	void Fade_and_Stop();
 	void	Set_Volume(float vol);
 	float	Get_Volume();
 	void	Init_Data();
 	void	Set_Sample_Cutoff(uint sample_cutoff);
 	void	Set_Default_Volume(float vol) { m_lDefaultVolume = vol; }
 	float	Get_Default_Volume() { return m_lDefaultVolume; }
-	uint	Get_Samples_Committed(void);
+	uint	Get_Samples_Committed();
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
 	bool paused_via_sexp_or_script;
 
 protected:
-	void Cue (void);
+	void Cue ();
 	bool WriteWaveData (uint cbSize, uint *num_bytes_written, int service = 1);
-	uint GetMaxWriteSize (void);
-	bool ServiceBuffer (void);
+	uint GetMaxWriteSize ();
+	bool ServiceBuffer ();
 	static bool TimerCallback (ptr_u dwUser);
-	bool PlaybackDone(void);
+	bool PlaybackDone();
 
 	ALuint m_source_id;	// name of openAL source
 	ALuint m_buffer_ids[MAX_STREAM_BUFFERS];	// names of buffers
 
 	Timer m_timer;			// ptr to Timer object
-	std::unique_ptr<ffmpeg::WaveFile> m_pwavefile;	// ptr to WaveFile object
+	std::unique_ptr<sound::IAudioFile> m_pwavefile;	// ptr to WaveFile object
+	sound::AudioFileProperties m_fileProps;
 	bool m_fCued;			// semaphore (stream cued)
 	bool m_fPlaying;		// semaphore (stream playing)
 	uint m_cbBufOffset;		// last write position
@@ -226,7 +244,7 @@ void AudioStream::Init_Data ()
 	m_bIsPaused = false;
 	m_bReadingDone = false;
 
-	m_pwavefile = NULL;
+	m_pwavefile = nullptr;
 	m_fPlaying = m_fCued = false;
 	m_cbBufOffset = 0;
 	m_cbBufSize = 0;
@@ -254,52 +272,44 @@ bool AudioStream::Create (char *pszFilename)
 		if ( !strlen(pszFilename) )
 			return false;
 
-		// Create a new WaveFile object
-		m_pwavefile.reset(new ffmpeg::WaveFile());
-		Assert(m_pwavefile);
-
+		// Create a new WaveFile object and open it
+		m_pwavefile = openAudioFile(pszFilename, (type == ASF_EVENTMUSIC));
 		if (m_pwavefile) {
-			// Open given file
-			if ( m_pwavefile->Open(pszFilename, (type == ASF_EVENTMUSIC)) ) {
-				m_cbBufSize = (m_pwavefile->getSampleRate() * m_pwavefile->getSampleByteSize()) >> 2;
-				// make sure that we are a multiple of the frame size
-				m_cbBufSize -= (m_cbBufSize % m_pwavefile->getSampleByteSize());
-				m_cbBufSize += (m_cbBufSize % 12) << 1;
-				// if the requested buffer size is too big then cap it
-				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+			m_fileProps = m_pwavefile->getFileProperties();
+
+			m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
+			// make sure that we are a multiple of the frame size
+			m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
+			m_cbBufSize += (m_cbBufSize % 12) << 1;
+			// if the requested buffer size is too big then cap it
+			m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
 
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
-				OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
+			OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
 
-				OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
+			OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
 
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
-				OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
+			OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
 
-				OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
-				OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
+			OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
+			OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
 
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
+			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
+			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
 
-				// maybe set EFX
-				if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
-					extern ALuint AL_EFX_aux_id;
-					OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
-				}
-
-				Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
+			// maybe set EFX
+			if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
+				extern ALuint AL_EFX_aux_id;
+				OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
 			}
-			else {
-				// Error opening file
-				nprintf(("SOUND", "SOUND => Failed to open wave file: %s\n\r", pszFilename));
-				fRtn = false;
-			}
+
+			Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
 		}
 		else {
 			// Error, unable to create WaveFile object
-			nprintf(("Sound", "SOUND => Failed to create WaveFile object %s\n\r", pszFilename));
+			nprintf(("Sound", "SOUND => Failed to open wave file %s\n\r", pszFilename));
 			fRtn = false;
 		}
 	}
@@ -387,6 +397,8 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 	int num_bytes_read = 0;
 
+	const auto alFormat = openal_get_format(m_fileProps.bytes_per_sample * 8, m_fileProps.num_channels);
+
 	if ( !service ) {
 		for (int ib = 0; ib < MAX_STREAM_BUFFERS; ib++) {
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
@@ -402,7 +414,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 				m_bReadingDone = 1;
 				break;
 			} else if (num_bytes_read > 0) {
-				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], m_pwavefile->getALFormat(), uncompressed_wave_data, num_bytes_read, m_pwavefile->getSampleRate()), { fRtn = false; goto ErrorExit; } );
+				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate), { fRtn = false; goto ErrorExit; } );
 				OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[ib]), { fRtn = false; goto ErrorExit; } );
 
 				*num_bytes_written += num_bytes_read;
@@ -428,7 +440,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 			if (num_bytes_read < 0) {
 				m_bReadingDone = 1;
 			} else if (num_bytes_read > 0) {
-				OpenAL_ErrorPrint( alBufferData(buffer_id, m_pwavefile->getALFormat(), uncompressed_wave_data, num_bytes_read, m_pwavefile->getSampleRate()) );
+				OpenAL_ErrorPrint( alBufferData(buffer_id, alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate) );
 				OpenAL_ErrorPrint( alSourceQueueBuffers(m_source_id, 1, &buffer_id) );
 
 				*num_bytes_written += num_bytes_read;
@@ -671,7 +683,7 @@ void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
 	if ( m_pwavefile == NULL )
 		return;
 
-	m_max_uncompressed_bytes_to_read = (sample_cutoff * (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
+	m_max_uncompressed_bytes_to_read = (sample_cutoff * m_fileProps.bytes_per_sample);
 }
 
 uint AudioStream::Get_Samples_Committed(void)
@@ -679,7 +691,7 @@ uint AudioStream::Get_Samples_Committed(void)
 	if ( m_pwavefile == NULL )
 		return 0;
 
-	return (uint) (m_total_uncompressed_bytes_read / (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
+	return (uint) (m_total_uncompressed_bytes_read / m_fileProps.bytes_per_sample);
 }
 
 

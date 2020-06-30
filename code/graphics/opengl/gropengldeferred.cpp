@@ -1,28 +1,32 @@
 
 
-#include "graphics/2d.h"
-#include "gropenglstate.h"
-#include "gropengldraw.h"
 #include "gropengldeferred.h"
+
+#include "ShaderProgram.h"
+#include "gropengldraw.h"
+#include "gropenglstate.h"
 #include "gropengltnl.h"
+
+#include "graphics/2d.h"
 #include "graphics/matrix.h"
 #include "graphics/util/UniformAligner.h"
-#include "graphics/util/uniform_structs.h"
 #include "graphics/util/UniformBuffer.h"
-#include "tracing/tracing.h"
+#include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
-#include "render/3d.h"
-#include "ShaderProgram.h"
-#include "nebula/neb.h"
-#include "mission/missionparse.h"
 #include "mission/mission_flags.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
-void gr_opengl_deferred_init() {
+#include <math/bitarray.h>
+
+void gr_opengl_deferred_init()
+{
 	gr_opengl_deferred_light_cylinder_init(16);
 	gr_opengl_deferred_light_sphere_init(16, 16);
 }
-void gr_opengl_deferred_shutdown() {
-}
+void gr_opengl_deferred_shutdown() {}
 
 void opengl_clear_deferred_buffers()
 {
@@ -321,13 +325,18 @@ void gr_opengl_deferred_lighting_finish()
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		Current_shader->program->Uniforms.setUniformi("tex", 0);
-		Current_shader->program->Uniforms.setUniformi("depth_tex", 1);
-		Current_shader->program->Uniforms.setUniformf("fog_start", fog_near);
-		Current_shader->program->Uniforms.setUniformf("fog_scale", 1.0f / (fog_far - fog_near));
-		Current_shader->program->Uniforms.setUniform3f("fog_color", r / 255.f, g / 255.f, b / 255.f);
-		Current_shader->program->Uniforms.setUniformf("zNear", Min_draw_distance);
-		Current_shader->program->Uniforms.setUniformf("zFar", Max_draw_distance);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
+
+		opengl_set_generic_uniform_data<graphics::generic_data::fog_data>([&](graphics::generic_data::fog_data* data) {
+			data->fog_start       = fog_near;
+			data->fog_scale       = 1.0f / (fog_far - fog_near);
+			data->fog_color.xyz.x = r / 255.f;
+			data->fog_color.xyz.y = g / 255.f;
+			data->fog_color.xyz.z = b / 255.f;
+			data->zNear           = Min_draw_distance;
+			data->zFar            = Max_draw_distance;
+		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	} else {

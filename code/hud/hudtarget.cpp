@@ -1948,7 +1948,7 @@ void hud_target_auto_target_next()
 // how far are they?   This uses the point closest to the targeter
 // object on the targetee's bounding box.  So if targeter is inside
 // targtee's bounding box, the distance is 0.
-float hud_find_target_distance( object *targetee, object *targeter )
+float hud_find_target_distance( object *targetee, const vec3d *targeter_pos )
 {
 	vec3d tmp_pnt;
 
@@ -1980,15 +1980,20 @@ float hud_find_target_distance( object *targetee, object *targeter )
 
 	// New way, that uses bounding box.
 	if ( model_num > -1 )	{
-		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, &targeter->pos );
+		dist = model_find_closest_point( &tmp_pnt, model_num, -1, &targetee->orient, &targetee->pos, targeter_pos );
 	}  else {
 		// Old way, that uses radius.
-		dist = vm_vec_dist_quick(&targetee->pos, &targeter->pos) - targetee->radius;
+		dist = vm_vec_dist_quick(&targetee->pos, targeter_pos) - targetee->radius;
 		if ( dist < 0.0f )	{
 			dist = 0.0f;
 		}
 	}
 	return dist;
+}
+
+float hud_find_target_distance( object *targetee, object *targeter )
+{
+	return hud_find_target_distance(targetee, &targeter->pos);
 }
 
 //
@@ -3691,7 +3696,7 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+		Assert(swp->primary_bank_weapons[bank_to_fire] < weapon_info_size());
 
 		if (swp->primary_bank_weapons[bank_to_fire] < 0)
 			continue;
@@ -3975,12 +3980,14 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	}
 
 	frame_offset = pickFrame(prange, srange, dist_to_target);
-	if ( frame_offset < 0 ) {
+	if ( frame_offset < 0 && srange != -1.0f ) {
 		return;
 	}
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(frame_offset, targetp, &lead_target_pos);
+	if (frame_offset >= 0) {
+		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		renderIndicator(frame_offset, targetp, &lead_target_pos);
+	}
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
@@ -4556,7 +4563,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	}
 }
 
-int hud_communications_state(ship *sp)
+int hud_communications_state(ship *sp, bool for_death_scream)
 {
 	float str;
 
@@ -4570,17 +4577,17 @@ int hud_communications_state(ship *sp)
 	if ((sp == Player_ship) && (sp->flags[Ship::Ship_Flags::Dying]))
 		return COMM_OK;
 
-	// Goober5000 - check for scrambled communications
-	if ( emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages] )
-		return COMM_SCRAMBLED;
-
-	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
+	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION, for_death_scream );
 
 	if ( (str <= 0.01) || ship_subsys_disrupted(sp, SUBSYSTEM_COMMUNICATION) ) {
 		return COMM_DESTROYED;
 	} else if ( str < MIN_COMM_STR_TO_MESSAGE ) {
 		return COMM_DAMAGED;
 	}
+
+	// Goober5000 - check for scrambled communications
+	if (emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages])
+		return COMM_SCRAMBLED;
 
 	return COMM_OK;
 }
@@ -5207,13 +5214,11 @@ void hudtarget_page_in()
 	}
 	bm_page_in_aabitmap( New_weapon.first_frame, New_weapon.num_frames );
 
-	weapon_info* wip;
-	for(i = 0; i < Num_weapon_types; i++)
+	for (auto &wi : Weapon_info)
 	{
-		wip = &Weapon_info[i];
-		if(strlen(wip->hud_filename))
+		if (strlen(wi.hud_filename))
 		{
-			wip->hud_image_index = bm_load(wip->hud_filename);
+			wi.hud_image_index = bm_load(wi.hud_filename);
 		}
 	}
 }
@@ -6076,7 +6081,10 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 			}
 
@@ -6168,7 +6176,7 @@ void HudGaugeWeapons::maybeFlashWeapon(int index)
 	}
 }
 
-void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char* name, int flags)
+void hud_target_add_display_list(object *objp, const vertex *target_point, const vec3d *target_pos, int correction, const color *bracket_clr, const char* name, int flags)
 {
 	target_display_info element;
 
@@ -6994,7 +7002,10 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
+			// don't draw the link indicator if the fire can't be fired link.
+			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
+					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
 				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 			}
 

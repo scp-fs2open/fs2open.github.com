@@ -1,25 +1,27 @@
 ---
 Language:        Cpp
+Standard: Cpp11
 # BasedOnStyle:  LLVM
 AccessModifierOffset: -2
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: false
-AlignEscapedNewlinesLeft: false
+AlignEscapedNewlines: Left
 AlignOperands:   true
 AlignTrailingComments: true
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortBlocksOnASingleLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: All
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: true
-BinPackArguments: true
-BinPackParameters: true
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
 BraceWrapping:   
   AfterClass:      false
   AfterControlStatement: false
@@ -50,15 +52,17 @@ ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:           '^(<.*\.(h|hh|hpp)>)$' # Includes of external libraries
-    Priority:        4
-  - Regex:           '^(<.*>)$' # standard library includes (won't match deprecated C headers)
     Priority:        5
-  - Regex:           '^"[^/]*\.(h)"$' # Local includes
+  - Regex:           '^(<.*>)$' # standard library includes (won't match deprecated C headers)
+    Priority:        6
+  - Regex:           '^"globalincs\/.*\.h"$' # globalincs always come first
     Priority:        1
-  - Regex:           '^".*\.(h)"$' # standard engine includes
+  - Regex:           '^"[^/]*\.(h)"$' # Local includes
     Priority:        2
-  - Regex:           '.*' # Catch all in case something is unhandled above
+  - Regex:           '^".*\.(h)"$' # standard engine includes
     Priority:        3
+  - Regex:           '.*' # Catch all in case something is unhandled above
+    Priority:        4
 IncludeIsMainRegex: '$'
 IndentCaseLabels: false
 IndentWidth:     4
@@ -93,8 +97,7 @@ SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-Standard:        Cpp11
 TabWidth:        4
-UseTab:          ForIndentation
+UseTab:          ForContinuationAndIndentation
 ...
 

@@ -5,8 +5,10 @@
 #define FS2_OPEN_ADE_API_H_H
 
 #include "globalincs/version.h"
+
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
+#include "scripting/ade_doc.h"
 
 namespace scripting {
 
@@ -228,7 +230,7 @@ class ade_lib : public ade_lib_handle {
  */
 class ade_func : public ade_lib_handle {
   public:
-	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, ade_overload_list args, const char* desc,
 	         ade_type_info ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
 	         const char* deprecation_message);
 };
@@ -335,7 +337,7 @@ class ade_virtvar : public ade_lib_handle {
  */
 class ade_indexer : public ade_lib_handle {
   public:
-	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
+	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_overload_list overloads = ade_overload_list(),
 	            const char* desc = nullptr, ade_type_info ret_type = ade_type_info(), const char* ret_desc = nullptr);
 };
 

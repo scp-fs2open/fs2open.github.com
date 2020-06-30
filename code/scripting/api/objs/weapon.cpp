@@ -315,7 +315,7 @@ ADE_VIRTVAR(OverrideHoming, l_Weapon, "boolean",
 	return ade_set_args(L, "b", wp->weapon_flags[Weapon::Weapon_Flags::Overridden_homing]);
 }
 
-ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is armed.", "boolean", "boolean value of the weapon arming status")
+ADE_FUNC(isArmed, l_Weapon, "[boolean HitTarget]", "Checks if the weapon is armed.", "boolean", "boolean value of the weapon arming status")
 {
 	object_h *oh = NULL;
 	bool hit_target = false;

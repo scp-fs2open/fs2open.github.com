@@ -309,7 +309,7 @@ class waypoint_list;
 #define	OP_HITS_LEFT_SUBSYSTEM				(0x0002 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// deprecated
 #define	OP_SIM_HITS_LEFT					(0x0003 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_DISTANCE							(0x0004 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_DISTANCE_SUBSYSTEM				(0x0005 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define	OP_DISTANCE_CENTER_SUBSYSTEM		(0x0005 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define	OP_LAST_ORDER_TIME					(0x0006 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_NUM_PLAYERS						(0x0007 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_SKILL_LEVEL_AT_LEAST				(0x0008 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -393,6 +393,9 @@ class waypoint_list;
 #define OP_IS_DOCKED						(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_IN_TURRET_FOV					(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_HOTKEY						(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // wookieejedi
+#define OP_DISTANCE_CENTER					(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -746,6 +749,8 @@ class waypoint_list;
 #define OP_MODIFY_VARIABLE_XSTR				(0X0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// m!m
 #define OP_RESET_POST_EFFECTS				(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ADD_REMOVE_HOTKEY				(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // wookieejedi
+#define OP_TECH_REMOVE_INTEL_XSTR			(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // wookieejedi
+#define OP_TECH_REMOVE_INTEL				(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)   // wookieejedi
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -852,7 +857,7 @@ class waypoint_list;
 #define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
 #define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
-char *CTEXT(int n);
+const char *CTEXT(int n);
 
 // added by Goober5000
 #define CDDR(n)		CDR(CDR(n))
@@ -1061,6 +1066,29 @@ typedef struct sexp_oper {
 	int type;
 } sexp_oper;
 
+// Goober5000
+struct sexp_cached_data
+{
+	int sexp_node_data_type = OPF_NONE;		// an OPF_ #define
+	int numeric_literal = 0;				// i.e. a number
+	int ship_registry_index = -1;			// because ship status is pretty common
+	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+
+	sexp_cached_data() = default;
+
+	sexp_cached_data(int _sexp_node_data_type)
+		: sexp_node_data_type(_sexp_node_data_type)
+	{}
+
+	sexp_cached_data(int _sexp_node_data_type, void *_pointer)
+		: sexp_node_data_type(_sexp_node_data_type), pointer(_pointer)
+	{}
+
+	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
+		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
+	{}
+};
+
 typedef struct sexp_node {
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
@@ -1070,41 +1098,25 @@ typedef struct sexp_node {
 	int	rest;						// index into Sexp_nodes of rest of parameters
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
+
+	sexp_cached_data *cache;	// Goober5000
+	int cached_variable_index;	// Goober5000
 } sexp_node;
 
 // Goober5000
-#define SNF_ARGUMENT_VALID		(1<<0)
-#define SNF_ARGUMENT_SELECT		(1<<1)
-#define SNF_DEFAULT_VALUE		SNF_ARGUMENT_VALID
+#define SNF_ARGUMENT_VALID			(1<<0)
+#define SNF_ARGUMENT_SELECT			(1<<1)
+#define SNF_SPECIAL_ARG_IN_NODE		(1<<2)
+#define SNF_SPECIAL_ARG_IN_TREE		(1<<3)
+#define SNF_SPECIAL_ARG_NOT_IN_TREE	(1<<4)
+#define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
+#define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
 	int		type;
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
-
-
-#define ARG_ITEM_F_DUP	(1<<0)
-
-// Goober5000 - adapted from sexp_list_item in Sexp_tree.h
-class arg_item
-{
-	public:
-		char *text;
-		arg_item *next;
-		int flags;
-		int nesting_level;
-
-		arg_item() : text(NULL), next(NULL), flags(0), nesting_level(0) {}
-		void add_data(char *str);
-		void add_data_dup(char *str);
-		void add_data_set_dup(char *str);
-		void expunge();
-		int is_empty();
-		arg_item *get_next();
-		void clear_nesting_level(); 
-};
-
 
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
@@ -1163,7 +1175,9 @@ extern int is_sexp_top_level( int node );
 
 // Goober5000 - renamed these to be more clear, to prevent bugs :p
 extern int get_operator_index(const char *token);
+extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
+extern int get_operator_const(int node);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
@@ -1177,18 +1191,26 @@ extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
-extern int verify_vector(char *text);
-extern void skip_white(char **str);
-extern int validate_float(char **str);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
+struct ship_registry_entry;
+struct wing;
+
+// Goober5000 - stuff with caching
+// (included in the header file because Lua uses the first three)
+extern const ship_registry_entry *eval_ship(int node);
+extern wing *eval_wing(int node);
+extern int sexp_get_variable_index(int node);
+extern int sexp_atoi(int node);
+extern bool sexp_can_construe_as_integer(int node);
+
 // Goober5000
 void do_action_for_each_special_argument(int cur_node);
-int special_argument_appears_in_sexp_tree(int node);
-int special_argument_appears_in_sexp_list(int node);
+bool special_argument_appears_in_sexp_tree(int node);
+bool special_argument_appears_in_sexp_list(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
@@ -1200,7 +1222,6 @@ void flush_sexp_tree(int node);
 
 // sexp_variable
 void sexp_modify_variable(const char *text, int index, bool sexp_callback = true);
-int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *text);
 int get_index_sexp_variable_name(SCP_string &text);	// Goober5000
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000

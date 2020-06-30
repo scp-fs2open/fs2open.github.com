@@ -554,7 +554,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x10) {  // data is a ship class
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				if (!stricmp(goalp[item].target_name, Ship_info[i].name)) {
 					m_data[item] = i | TYPE_SHIP_CLASS;
 					break;
@@ -653,7 +653,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 	// for goals that deal with ship classes
 	switch (mode) {
 		case AI_GOAL_CHASE_SHIP_CLASS:
-			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+			for (i = 0; i < ship_info_size(); i++) {
 				z = m_object_box[item] -> AddString(Ship_info[i].name);
 				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_CLASS);
 				if (init && (m_data[item] == (i | TYPE_SHIP_CLASS)))
@@ -1195,8 +1195,7 @@ void ShipGoalsDlg::OnSelchangeObject10()
 
 void ShipGoalsDlg::set_object(int item)
 {
-	char *str;
-	int i = 0, z, num, not_used;
+	int i = 0, z, num;
 	ship_subsys *subsys;
 
 	if (m_behavior[item] > 0) {
@@ -1213,8 +1212,7 @@ void ShipGoalsDlg::set_object(int item)
 			for (i=0; i<num; i++) {
 				Assert(Docking_bay_list[i]);
 				z = m_dock2_box[item] -> AddString(Docking_bay_list[i]);
-				str = ai_get_goal_target_name(Docking_bay_list[i], &not_used);
-				m_dock2_box[item] -> SetItemDataPtr(z, str);
+				m_dock2_box[item] -> SetItemDataPtr(z, Docking_bay_list[i]);
 			}
 
 		} else if ((mode == AI_GOAL_DESTROY_SUBSYSTEM) && (m_data[item] >= 0)) {

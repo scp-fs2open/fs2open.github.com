@@ -46,7 +46,15 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createOrientation, l_Base, "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, r3c1, r3c2, r3c3]", "Given 0, 3, or 9 arguments, creates an orientation object with that orientation.", "orientation", "New orientation object, or null orientation on failure")
+ADE_FUNC(createOrientation,
+	l_Base,
+	ade_overload_list({nullptr,
+		"number p, number b, number h",
+		"number r1c1, number r1c2, number r1c3, number r2c1, number r2c2, number r2c3, number r3c1, number r3c2, "
+		"number r3c3"}),
+	"Given 0, 3, or 9 arguments, creates an orientation object with that orientation.",
+	"orientation",
+	"New orientation object, or null orientation on failure")
 {
 	matrix m;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
@@ -67,7 +75,7 @@ ADE_FUNC(createOrientation, l_Base, "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, 
 	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 }
 
-ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector", "Vector object")
+ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
 {
 	vec3d v3 = vmd_zero_vector;
 	ade_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
@@ -80,7 +88,7 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
+ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);
@@ -88,7 +96,7 @@ ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]",
 	return ade_set_args(L, "f", b ? flRealframetime : flFrametime);
 }
 
-ADE_FUNC(getCurrentGameState, l_Base, "[Depth (number)]", "Gets current FreeSpace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.", "gamestate", "Current game state at specified depth, or invalid handle if no game state is active yet")
+ADE_FUNC(getCurrentGameState, l_Base, "[number depth]", "Gets current FreeSpace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.", "gamestate", "Current game state at specified depth, or invalid handle if no game state is active yet")
 {
 	int depth = 0;
 	ade_get_args(L, "|i", &depth);
@@ -99,7 +107,7 @@ ADE_FUNC(getCurrentGameState, l_Base, "[Depth (number)]", "Gets current FreeSpac
 	return ade_set_args(L, "o", l_GameState.Set(gamestate_h(gameseq_get_state(depth))));
 }
 
-ADE_FUNC(getCurrentMPStatus, l_Base, "NIL", "Gets this computers current MP status", "string", "Current MP status" )
+ADE_FUNC(getCurrentMPStatus, l_Base, nullptr, "Gets this computers current MP status", "string", "Current MP status" )
 {
 	if ( MULTIPLAYER_MASTER )
 		return ade_set_args(L, "s", "MULTIPLAYER_MASTER");
@@ -151,7 +159,12 @@ ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boole
 	return ade_set_args(L, "b", loader.save_player(plh->get()));
 }
 
-ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+ADE_FUNC(setControlMode,
+	l_Base,
+	"nil|enumeration mode /* LE_*_CONTROL */",
+	"Sets the current control mode for the game.",
+	"string",
+	"Current control mode")
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
@@ -187,7 +200,12 @@ ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the cu
 	}
 }
 
-ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+ADE_FUNC(setButtonControlMode,
+	l_Base,
+	"nil|enumeration mode /* LE_*_BUTTON_CONTROL */",
+	"Sets the current control mode for the game.",
+	"string",
+	"Current control mode")
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
@@ -228,7 +246,7 @@ ADE_FUNC(getControlInfo, l_Base, nullptr, "Gets the control info handle.", "cont
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
-ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the day the next time the current pilot enters the mainhall.", NULL, NULL)
+ADE_FUNC(setTips, l_Base, "boolean", "Sets whether to display tips of the day the next time the current pilot enters the mainhall.", nullptr, nullptr)
 {
 	if (Player == NULL)
 		return ADE_RETURN_NIL;
@@ -299,7 +317,7 @@ ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is r
 
 ADE_FUNC(isEngineVersionAtLeast,
 		 l_Base,
-		 "number major, number minor, number build[, number revision = 0]",
+		 "number major, number minor, number build, [number revision = 0]",
 		 "Checks if the current version of the engine is at least the specified version. This can be used to check if a feature introduced in a later version of the engine is available.",
 		 "boolean",
 		 "true if the version is at least the specified version. false otherwise.") {
@@ -323,7 +341,8 @@ ADE_FUNC(getCurrentLanguage,
 		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
 		 "string",
 		 "The current game language") {
-	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_name);
+	auto lang_name = (Lcl_current_lang == LCL_UNTRANSLATED) ? "UNTRANSLATED" : Lcl_languages[Lcl_current_lang].lang_name;
+	return ade_set_args(L, "s", lang_name);
 }
 
 ADE_FUNC(getCurrentLanguageExtension,
@@ -334,7 +353,8 @@ ADE_FUNC(getCurrentLanguageExtension,
 			 "This will return an empty string for the default language.",
 		 "string",
 		 "The current game language") {
-	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
+	int lang = (Lcl_current_lang == LCL_UNTRANSLATED) ? LCL_DEFAULT : Lcl_current_lang;
+	return ade_set_args(L, "s", Lcl_languages[lang].lang_ext);
 }
 
 ADE_FUNC(getVersionString, l_Base, nullptr,
@@ -378,7 +398,7 @@ ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is curre
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 
-ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
+ADE_INDEXER(l_Base_Events, "number/string IndexOrName", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))
@@ -408,7 +428,7 @@ ADE_FUNC(__len, l_Base_Events, NULL, "Number of events", "number", "Number of ev
 //**********SUBLIBRARY: Base/States
 ADE_LIB_DERIV(l_Base_States, "GameStates", NULL, "Freespace 2 states", l_Base);
 
-ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
+ADE_INDEXER(l_Base_States, "number/string IndexOrName", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
 	const char* name;
 	if(!ade_get_args(L, "*s", &name))

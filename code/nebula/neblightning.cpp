@@ -307,7 +307,7 @@ void nebl_level_init()
 }
 
 // set the storm (call from mission parse)
-void nebl_set_storm(char *name)
+void nebl_set_storm(const char *name)
 {
 	// sanity
 	Storm = NULL;
@@ -1088,7 +1088,7 @@ void nebl_jitter(l_bolt *b)
 }
 
 // return the index of a given bolt type by name
-size_t nebl_get_bolt_index(char *name)
+size_t nebl_get_bolt_index(const char *name)
 {
 	for(size_t idx=0; idx<Bolt_types.size(); idx++){
 		if(!strcmp(name, Bolt_types[idx].name)){
@@ -1100,7 +1100,7 @@ size_t nebl_get_bolt_index(char *name)
 }
 
 // return the index of a given storm type by name
-size_t nebl_get_storm_index(char *name)
+size_t nebl_get_storm_index(const char *name)
 {
 	if (name == NULL)
 		return (size_t)-1;

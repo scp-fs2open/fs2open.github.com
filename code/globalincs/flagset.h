@@ -132,7 +132,7 @@ class flagset {
 namespace std {
 template <typename T, size_t N>
 struct hash<::flagset<T, N>> {
-	size_t operator()(const ::flagset<T, N>& val) { return val.hash(); }
+	size_t operator()(const ::flagset<T, N>& val) const { return val.hash(); }
 };
 } // namespace std
 

@@ -2261,9 +2261,9 @@ BOOL std_create_standalone_window()
 	std_reset_standalone_gui();
 
 	// initialize the debug outwindow
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 
 	Standalone_minimized = FALSE;
 
@@ -2383,20 +2383,11 @@ DWORD standalone_process(LPVOID /*lparam*/)
 	return 0;
 }
 
-void std_init_os()
-{
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name);
-}
-
-
 // called when freespace initialized
 void std_init_standalone()
 {
 	// start the main thread
 	Standalone_thread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)standalone_process, NULL, 0, &Standalone_thread_id );
-	
-	// set the close functions
-	atexit(std_deinit_standalone);
 }
 
 // called when freespace closes

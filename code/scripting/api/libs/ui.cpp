@@ -1,13 +1,18 @@
 //
 //
 #include "ui.h"
+
 #include "cmdline/cmdline.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
+#include "menuui/readyroom.h"
+#include "mission/missioncampaign.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -73,7 +78,7 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 }
 
 ADE_FUNC(playElementSound, l_UserInterface,
-         "Rocket::Element element, string event, string state = "
+         "Rocket::Element element, string event, string state = \"\""
          "",
          "Plays an element specific sound with an optional state for differentiating different UI states.", "boolean",
          "true if a sound was played, false otherwise")
@@ -186,7 +191,7 @@ ADE_FUNC(deletePilot, l_UserInterface_PilotSelect, "string callsign",
 }
 
 ADE_FUNC(
-    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi[, string copy_from]",
+    createPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi, [string copy_from]",
     "Creates a new pilot in either single or multiplayer mode and optionally copies settings from an existing pilot.",
     "boolean", "true on success, false otherwise")
 {
@@ -264,6 +269,125 @@ ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the 
 
 	barracks_accept_pilot(plh->get());
 	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/OptionsMenu
+// This needs a slightly different name since there is already a type called "Options"
+ADE_LIB_DERIV(l_UserInterface_Options,
+	"OptionsMenu",
+	nullptr,
+	"API for accessing values specific to the options screen.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(playVoiceClip,
+	l_UserInterface_Options,
+	nullptr,
+	"Plays the example voice clip used for checking the voice volume",
+	"boolean",
+	"true on sucess, false otherwise")
+{
+	options_play_voice_clip();
+	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/CampaignMenu
+// This needs a slightly different name since there is already a type called "Options"
+ADE_LIB_DERIV(l_UserInterface_Campaign,
+	"CampaignMenu",
+	nullptr,
+	"API for accessing data related to the campaign UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(loadCampaignList,
+	l_UserInterface_Campaign,
+	nullptr,
+	"Loads the list of available campaigns",
+	"boolean",
+	// ade_type_info({ade_type_array("string"), ade_type_array("string")}),
+	"false if something failed while loading the list, true otherwise")
+{
+	return ade_set_args(L, "b", !campaign_build_campaign_list());
+}
+
+ADE_FUNC(getCampaignList,
+	l_UserInterface_Campaign,
+	nullptr,
+	"Get the campaign name and description lists",
+	ade_type_info({ade_type_array("string"), ade_type_array("string"), ade_type_array("string")}),
+	"Three tables with the names, file names, and descriptions of the campaigns")
+{
+	luacpp::LuaTable nameTable        = luacpp::LuaTable::create(L);
+	luacpp::LuaTable fileNameTable    = luacpp::LuaTable::create(L);
+	luacpp::LuaTable descriptionTable = luacpp::LuaTable::create(L);
+
+	for (int i = 0; i < Num_campaigns; ++i) {
+		nameTable.addValue(i + 1, Campaign_names[i]);
+		fileNameTable.addValue(i + 1, Campaign_file_names[i]);
+
+		auto description = Campaign_descs[i];
+		descriptionTable.addValue(i + 1, description ? description : "");
+	}
+
+	// We actually do not need this anymore now so free it immediately
+	mission_campaign_free_list();
+
+	return ade_set_args(L, "ttt", nameTable, fileNameTable, descriptionTable);
+}
+
+ADE_FUNC(selectCampaign,
+	l_UserInterface_Campaign,
+	"string campaign_file",
+	"Selects the specified campaign file name",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const char* filename = nullptr;
+	if (!ade_get_args(L, "s", &filename)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	campaign_select_campaign(filename);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(resetCampaign,
+	l_UserInterface_Campaign,
+	"string campaign_file",
+	"Resets the campaign with the specified file name",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const char* filename = nullptr;
+	if (!ade_get_args(L, "s", &filename)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	campaign_reset(filename);
+
+	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/CommandBriefing
+// This needs a slightly different name since there is already a type called "Options"
+ADE_LIB_DERIV(l_UserInterface_CmdBrief,
+	"CommandBriefing",
+	nullptr,
+	"API for accessing data related to the command briefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getBriefing,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Get the command briefing.",
+	"cmd_briefing",
+	"The briefing data")
+{
+	// The cmd briefing code has support for specifying the team but only sets the index to 0
+	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
 }
 
 } // namespace api

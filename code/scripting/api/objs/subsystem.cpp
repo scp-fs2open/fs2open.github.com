@@ -43,7 +43,7 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 {
 	ship_subsys_h *sso;
 	const char* s    = nullptr;
-	const char *name = NULL;
+	const char *name = nullptr;
 
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
@@ -53,10 +53,12 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 
 	ship_subsys *ssys = sso->ss;
 
-	int atindex = -1;
-	if (ADE_SETTING_VAR && s != NULL) {
+	int atindex;
+	if (ADE_SETTING_VAR && s != nullptr) {
 		atindex = armor_type_get_idx(s);
 		ssys->armor_type_idx = atindex;
+	} else {
+		atindex = ssys->armor_type_idx;
 	}
 
 	if (atindex != -1)
@@ -580,7 +582,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", "Fires weapon on turret", NULL, NULL)
+ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
@@ -610,7 +612,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
+ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
 	ship_subsys_h *sso;
 	vec3d pos = vmd_zero_vector;

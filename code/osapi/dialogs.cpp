@@ -89,8 +89,6 @@ namespace
 int Global_warning_count = 0;
 int Global_error_count = 0;
 
-extern lua_Debug Ade_debug_info;
-
 namespace os
 {
 	namespace dialogs
@@ -162,17 +160,6 @@ namespace os
 
 				msgStream << formatText;
 			}
-
-			msgStream << "\n";
-			msgStream << "\n";
-
-			msgStream << Separator;
-			msgStream << "ADE Debug:";
-			msgStream << "\n";
-
-			msgStream << Separator;
-			LuaDebugPrint(msgStream, Ade_debug_info);
-			msgStream << Separator;
 
 			msgStream << "\n";
 			msgStream << "\n";
@@ -403,7 +390,7 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				abort();
+				buttonId = 1; // No action
 			}
 
 			switch (buttonId)

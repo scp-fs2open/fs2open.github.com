@@ -44,7 +44,13 @@ ADE_FUNC(getMouseY, l_Mouse, NULL, "Gets Mouse Y pos", "number", "Mouse y positi
 	return ade_set_args(L, "i", y);
 }
 
-ADE_FUNC(isMouseButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]", "Returns whether the specified mouse buttons are up or down", "boolean", "Whether specified mouse buttons are down, or false if mouse is not initialized yet")
+ADE_FUNC(isMouseButtonDown,
+	l_Mouse,
+	"enumeration buttonCheck1 /* MOUSE_*_BUTTON */, [ enumeration buttonCheck2 /* MOUSE_*_BUTTON */, enumeration "
+	"buttonCheck3 /* MOUSE_*_BUTTON */ ]",
+	"Returns whether the specified mouse buttons are up or down",
+	"boolean",
+	"Whether specified mouse buttons are down, or false if mouse is not initialized yet")
 {
 	if(!mouse_inited)
 		return ade_set_error(L, "b", false);
@@ -74,7 +80,7 @@ ADE_FUNC(isMouseButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]",
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
 
@@ -101,7 +107,7 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, an
 	return ade_set_args(L, "b", true);
 }
 
-ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide[, boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
+ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide, [boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
 	"the mouse will be restricted to the window. Set this to true when hiding the cursor while in game. By default grab will be true when we are in the game play state, false otherwise.", NULL, NULL)
 {
 	if(!mouse_inited)
@@ -116,7 +122,7 @@ ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide[, boolean grab]", "Hides the cu
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function to force mouse position", "boolean", "if the operation succeeded or not")
+ADE_FUNC(forceMousePosition, l_Mouse, "number x, number y", "function to force mouse position", "boolean", "if the operation succeeded or not")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_FALSE;
@@ -152,11 +158,11 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 	{
 		if (newVal)
 		{
-			Use_mouse_to_fly = 1;
+			Use_mouse_to_fly = true;
 		}
 		else
 		{
-			Use_mouse_to_fly = 0;
+			Use_mouse_to_fly = false;
 		}
 	}
 

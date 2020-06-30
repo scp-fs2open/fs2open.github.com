@@ -42,4 +42,6 @@ void options_menu_do_frame(float frametime);
 // kill the options menu
 void options_cancel_exit();
 
+void options_play_voice_clip();
+
 #endif

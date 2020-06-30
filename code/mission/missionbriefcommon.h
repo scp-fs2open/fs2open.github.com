@@ -277,7 +277,7 @@ extern debriefing		*Debriefing;
 extern float			Brief_text_wipe_time_elapsed;
 
 extern int Cur_brief_id;
-extern int Briefing_voice_enabled;
+extern bool Briefing_voice_enabled;
 
 extern int Num_brief_text_lines[MAX_TEXT_STREAMS];
 extern int Top_brief_text_line;

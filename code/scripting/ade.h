@@ -7,6 +7,9 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 
+#include "object/object.h"
+#include "scripting/ade_doc.h"
+
 extern "C" {
 #include <lauxlib.h>
 #include <lualib.h>
@@ -22,10 +25,11 @@ extern "C" {
  * These functions enable the code to communicate with external scripts and expose an API for them to use
  */
 
-// Forward definition
-struct DocumentationElement;
 
 namespace scripting {
+
+// Forward definition
+struct DocumentationElement;
 
 /**
  *
@@ -94,56 +98,6 @@ struct ade_odata_setter {
 //
 //u - oh wait...
 
-enum class ade_type_info_type {
-	Empty,
-	Simple,
-	Tuple,
-	Array
-};
-
-class ade_type_array;
-
-/**
- * @brief A definition of a type used in the ADE system
- */
-class ade_type_info {
-	ade_type_info_type _type = ade_type_info_type::Empty;
-
-	const char* _simple_name = nullptr;
-
-	SCP_vector<ade_type_info> _elements;
-
-  public:
-	ade_type_info() = default;
-	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
-	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
-	/*implicit*/ ade_type_info(const ade_type_array& listType);
-
-	ade_type_info_type getType() const;
-
-	bool isEmpty() const;
-
-	bool isSimple() const;
-
-	bool isTuple() const;
-
-	bool isArray() const;
-
-	const char* getSimpleName() const;
-
-	const ade_type_info& arrayType() const;
-
-	const SCP_vector<ade_type_info>& elements() const;
-};
-
-class ade_type_array {
-	ade_type_info _element_type;
-  public:
-	explicit ade_type_array(ade_type_info elementType);
-
-	const ade_type_info& getElementType() const;
-};
-
 /**
  * @ingroup ade_api
  */
@@ -173,7 +127,7 @@ class ade_table_entry {
 	size_t Size = 0;
 
 	//Metadata
-	const char* Arguments = nullptr;
+	ade_overload_list Arguments;
 	const char* Description = nullptr;
 	ade_type_info ReturnType;
 	const char* ReturnDescription = nullptr;
@@ -200,7 +154,6 @@ class ade_table_entry {
 	//*****Functions
 	size_t AddSubentry(ade_table_entry& n_ate);
 	int SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx);
-	void OutputMeta(FILE* fp);
 	std::unique_ptr<DocumentationElement> ToDocumentationElement();
 
 	//*****Get
@@ -213,7 +166,9 @@ class ade_table_entry {
 class ade_manager {
 	SCP_vector<ade_table_entry> _table_entries;
 
-	ade_manager() {}
+	SCP_vector<SCP_string> _type_names;
+
+	ade_manager();
  public:
 	static ade_manager* getInstance();
 
@@ -231,6 +186,8 @@ class ade_manager {
 	const ade_table_entry& getEntry(size_t idx) const;
 
 	size_t getNumEntries() const { return _table_entries.size(); }
+
+	const SCP_vector<SCP_string>& getTypeNames() const;
 };
 
 /**
@@ -241,12 +198,29 @@ void ade_stackdump(lua_State *L, char *stackdump);
 /**
  * @ingroup ade_api
  */
-int ade_friendly_error(lua_State *L);
+int ade_friendly_error(lua_State* L);
 
 /**
  * @ingroup ade_api
  */
-const char *ade_get_type_string(lua_State *L, int argnum);
+const char* ade_get_type_string(lua_State* L, int argnum);
+
+/**
+ * @ingroup ade_api
+ */
+bool ade_is_internal_type(const char* typeName);
+
+/**
+ * @brief Converts an object index to something that can be used with ade_set_args.
+ *
+ * This respects the actual type of the object so all appropriate functions are available in Lua.
+ *
+ * @warning This is only used internally and should not be used by API code. Use ade_set_object_with_breed instead.
+ *
+ * @param obj_idx The object index
+ * @return The ade odata
+ */
+ade_odata_setter<object_h> ade_object_to_odata(int obj_idx);
 
 /**
  * @brief Sets an object parameter with the right type
@@ -261,7 +235,7 @@ const char *ade_get_type_string(lua_State *L, int argnum);
  * @author WMC
  * @ingroup ade_api
  */
-int ade_set_object_with_breed(lua_State *L, int obj_idx);
+int ade_set_object_with_breed(lua_State* L, int obj_idx);
 
 /**
  * @brief Loads and executes a default lua script
@@ -276,10 +250,18 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx);
  */
 void load_default_script(lua_State* L, const char* name);
 
+//Struct for converting one string for another. whee!
+struct string_conv {
+	const char *src;
+	const char *dest;
+};
+
+const string_conv* ade_get_operator(const char *funcname);
+
 namespace internal {
 
 ade_table_entry& getTableEntry(size_t idx);
 }
-}
+} // namespace scripting
 
-#endif //FS2_OPEN_ADE_H
+#endif // FS2_OPEN_ADE_H

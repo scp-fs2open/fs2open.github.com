@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/timer.h"
 #include "ship/ship.h"
+#include "ship/ship_flags.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "hud/hud.h"
@@ -59,6 +60,7 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 #include "object/objectshield.h"
+#include "sound/audiostr.h"
 
 /**
 * Natural number factor lookup class.
@@ -499,7 +501,7 @@ void debug_cycle_player_ship(int delta)
 	ship_info	*sip;
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index >= static_cast<int>(Ship_info.size()) ){
+		if ( si_index >= ship_info_size() ){
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
@@ -512,7 +514,7 @@ void debug_cycle_player_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity >= static_cast<int>(Ship_info.size()) ){
+		if ( sanity >= ship_info_size() ){
 			break;
 		}
 	}
@@ -547,7 +549,7 @@ void debug_cycle_targeted_ship(int delta)
 
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index >= static_cast<int>(Ship_info.size()) )
+		if ( si_index >= ship_info_size() )
 			si_index = 0;
 		if ( si_index < 0 )
 			si_index = static_cast<int>(Ship_info.size() - 1);
@@ -566,7 +568,7 @@ void debug_cycle_targeted_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity >= static_cast<int>(Ship_info.size()) )
+		if ( sanity >= ship_info_size() )
 			break;
 	}
 
@@ -576,36 +578,43 @@ void debug_cycle_targeted_ship(int delta)
 
 void debug_max_secondary_weapons(object *objp)
 {
-	int index;
+	Assert(objp);
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon *swp = &shipp->weapons;
 
-	for ( index = 0; index < MAX_SHIP_SECONDARY_BANKS; index++ )
+	for (int index = 0; index < MAX_SHIP_SECONDARY_BANKS; ++index)
 	{
-		swp->secondary_bank_ammo[index] = sip->secondary_bank_ammo_capacity[index];
+		if (swp->secondary_bank_weapons[index] >= 0)
+		{
+			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
+			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
+			float size = (float)wip->cargo_size;
+			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
+			swp->secondary_bank_ammo[index] = (int)std::lround(capacity / size);
+		}
 	}
 }
 
 void debug_max_primary_weapons(object *objp)	// Goober5000
 {
-	Assert(objp);	// Goober5000
-
-	int index;
+	Assert(objp);
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon *swp = &shipp->weapons;
-	weapon_info *wip;
 
-	for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
+	for (int index = 0; index < MAX_SHIP_PRIMARY_BANKS; ++index)
 	{
-		wip = &Weapon_info[swp->primary_bank_weapons[index]];
-		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+		if (swp->primary_bank_weapons[index] >= 0)
 		{
-			float capacity, size;
-			capacity = (float) sip->primary_bank_ammo_capacity[index];
-			size = (float) wip->cargo_size;
-			swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
+			weapon_info *wip = &Weapon_info[swp->primary_bank_weapons[index]];
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				float capacity = (float)sip->primary_bank_ammo_capacity[index];
+				float size = (float)wip->cargo_size;
+				Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
+				swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
+			}
 		}
 	}
 }
@@ -633,12 +642,13 @@ extern int Show_cpu;
 int get_prev_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
+	int size = weapon_info_size();
 
-	for (i = 1; i < Num_weapon_types; i++)
+	for (i = 1; i < size; i++)
 	{
-		new_index = (Num_weapon_types + current_weapon - i) % Num_weapon_types;
+		new_index = (size + current_weapon - i) % size;
 
-		if(Weapon_info[new_index].subtype == subtype)
+		if (Weapon_info[new_index].subtype == subtype)
 		{
 			return new_index;
 		}
@@ -650,12 +660,13 @@ int get_prev_weapon_looped(int current_weapon, int subtype)
 int get_next_weapon_looped(int current_weapon, int subtype)
 {
 	int i, new_index;
+	int size = weapon_info_size();
 
-	for (i = 1; i < Num_weapon_types; i++)
+	for (i = 1; i < size; i++)
 	{
-		new_index = (current_weapon + i) % Num_weapon_types;
+		new_index = (current_weapon + i) % size;
 
-		if(Weapon_info[new_index].subtype == subtype)
+		if (Weapon_info[new_index].subtype == subtype)
 		{
 			return new_index;
 		}
@@ -886,7 +897,7 @@ void process_debug_keys(int k)
 				vm_vec_scale_add(&pos, &Player_obj->pos, &randvec, Player_obj->radius);
 			ship_apply_local_damage(Player_obj, Player_obj, &pos, 25.0f, MISS_SHIELDS, CREATE_SPARKS);
 			hud_get_target_strength(Player_obj, &shield, &integrity);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You knocked yourself down to %7.3f percent hull.\n", 9), 100.0f * integrity);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You whacked yourself down to %7.3f percent hull.\n", 9), 100.0f * integrity);
 			break;
 			}
 			
@@ -1080,6 +1091,57 @@ void process_debug_keys(int k)
 			else
 			{
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].get_display_string());
+			}
+
+			break;
+		}
+
+		// Goober5000
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_R:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_R:
+		{
+			// toggle support for this mission
+			if (The_mission.support_ships.max_support_ships == 0)
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Setting maximum number of support ships to infinite.", 1643));
+				The_mission.support_ships.max_support_ships = -1;
+			}
+			else
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Setting maximum number of support ships to zero.", 1644));
+				The_mission.support_ships.max_support_ships = 0;
+			}
+
+			break;
+		}
+
+		// Goober5000
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_U:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_U:
+		{
+			// toggle the current target between scanned and unscanned
+			if (Player_ai->target_objnum >= 0)
+			{
+				object *objp = &Objects[Player_ai->target_objnum];
+				if (objp->type == OBJ_SHIP)
+				{
+					ship *targeted_shipp = &Ships[objp->instance];
+
+					if (Player_ai->targeted_subsys == nullptr)
+					{
+						if (targeted_shipp->flags[Ship::Ship_Flags::Cargo_revealed])
+							ship_do_cargo_hidden(targeted_shipp);
+						else
+							ship_do_cargo_revealed(targeted_shipp);
+					}
+					else
+					{
+						if (Player_ai->targeted_subsys->flags[Ship::Subsystem_Flags::Cargo_revealed])
+							ship_do_cap_subsys_cargo_hidden(targeted_shipp, Player_ai->targeted_subsys);
+						else
+							ship_do_cap_subsys_cargo_revealed(targeted_shipp, Player_ai->targeted_subsys);
+					}
+				}
 			}
 
 			break;

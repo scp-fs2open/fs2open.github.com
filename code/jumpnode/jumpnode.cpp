@@ -32,7 +32,7 @@ CJumpNode::CJumpNode()
 /**
  * Constructor for CJumpNode class, with world position argument
  */
-CJumpNode::CJumpNode(vec3d* position)
+CJumpNode::CJumpNode(const vec3d* position)
 {	
 	Assert(position != NULL);
 	
@@ -66,7 +66,7 @@ CJumpNode::CJumpNode(vec3d* position)
     m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, default_flags);
 }
 
-CJumpNode::CJumpNode(CJumpNode&& other) SCP_NOEXCEPT
+CJumpNode::CJumpNode(CJumpNode&& other) noexcept
 	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_polymodel_instance_num(other.m_polymodel_instance_num), m_flags(other.m_flags)
 {
 	other.m_radius = 0.0f;
@@ -81,7 +81,7 @@ CJumpNode::CJumpNode(CJumpNode&& other) SCP_NOEXCEPT
 	strcpy_s(m_name, other.m_name);
 }
 
-CJumpNode& CJumpNode::operator=(CJumpNode&& other) SCP_NOEXCEPT
+CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
 {
 	if (this != &other)
 	{
@@ -127,7 +127,7 @@ CJumpNode::~CJumpNode()
 /**
  * @return Name of jump node
  */
-char *CJumpNode::GetName()
+const char *CJumpNode::GetName()
 {
 	return m_name;
 }
@@ -208,7 +208,7 @@ void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
  * @param model_name Name of model file to load
  * @param show_polys Whether to render wireframe or not
  */
-void CJumpNode::SetModel(char *model_name, bool show_polys)
+void CJumpNode::SetModel(const char *model_name, bool show_polys)
 {
 	Assert(model_name != NULL);
 	
@@ -436,7 +436,7 @@ CJumpNode *jumpnode_get_by_objnum(int objnum)
  * @param objp Object
  * @return Jump node object or NULL if not in one
  */
-CJumpNode *jumpnode_get_which_in(object *objp)
+CJumpNode *jumpnode_get_which_in(const object *objp)
 {
 	Assert(objp != NULL);
 	SCP_list<CJumpNode>::iterator jnp;

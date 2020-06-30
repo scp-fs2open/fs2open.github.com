@@ -314,7 +314,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 			}
 		}
 		// double check the used pool is empty
-		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (j = 0; j < weapon_info_size(); j++) {
 			if (used_pool[j] != 0) {
 				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name, i + 1);
 

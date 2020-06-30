@@ -28,8 +28,8 @@ bool LuaTable::setMetatable(const LuaTable& table) {
 		throw LuaException("Meta table reference is not valid!");
 	}
 
-	this->pushValue();
-	table.pushValue();
+	this->pushValue(_luaState);
+	table.pushValue(_luaState);
 
 	lua_setmetatable(_luaState, -2);
 
@@ -39,9 +39,9 @@ bool LuaTable::setMetatable(const LuaTable& table) {
 }
 
 void LuaTable::setReference(const LuaReference& ref) {
-	ref->pushValue();
-
 	lua_State* L = ref->getState();
+
+	ref->pushValue(L);
 
 	if (lua_type(L, -1) != LUA_TTABLE) {
 		lua_pop(L, 1);
@@ -53,7 +53,7 @@ void LuaTable::setReference(const LuaReference& ref) {
 }
 
 size_t LuaTable::getLength() {
-	this->pushValue();
+	this->pushValue(_luaState);
 
 	size_t length = lua_objlen(_luaState, -1);
 
@@ -64,6 +64,9 @@ size_t LuaTable::getLength() {
 
 LuaTable::iterator::iterator(const LuaTable& parent) {
 	_iter.reset(new LuaTableIterator(parent));
+
+	// Ensure that this value is correct if we try to iterate over an empty table
+	_atEnd = !_iter->hasElement();
 }
 LuaTable::iterator::iterator() : _iter(nullptr), _atEnd(true) {
 }
@@ -100,7 +103,7 @@ LuaTable::iterator LuaTable::end() {
 LuaTableIterator::LuaTableIterator(const LuaTable& t) : _luaState(t.getLuaState()) {
 	_stackTop = lua_gettop(_luaState);
 
-	t.pushValue();
+	t.pushValue(_luaState);
 	lua_pushnil(_luaState);
 
 	toNextElement();

@@ -16,6 +16,7 @@
 #include "osapi/osapi.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketRenderingInterface.h"
+#include "scpui/IncludeNodeHandler.h"
 #include "scpui/RocketSystemInterface.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/elements/AnimationElement.h"
@@ -178,7 +179,7 @@ bool mouse_button_handler(const SDL_Event& evt)
 		break;
 	default:
 		// Unknown SDL button value
-		mprintf(("Unknown SDL button value %d in libRocket mouse handler!", evt.button.button));
+		mprintf(("Unknown SDL button value %d in libRocket mouse handler!\n", evt.button.button));
 		return false;
 	}
 
@@ -526,6 +527,8 @@ void initialize()
 
 	Rocket::Core::Factory::RegisterElementInstancer("ani", new ElementInstancerGeneric<elements::AnimationElement>())
 	    ->RemoveReference();
+
+	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
 
 	// Setup the plugin a style sheet properties for the sound support
 	Rocket::Core::RegisterPlugin(new SoundPlugin());

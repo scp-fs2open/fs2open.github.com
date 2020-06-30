@@ -14,11 +14,10 @@ namespace args {
 class ArgumentException: public LuaException {
  public:
 
-	ArgumentException(const std::string& message = "Argument Error!") SCP_NOEXCEPT : LuaException(message) {
+	ArgumentException(const std::string& message = "Argument Error!") noexcept : LuaException(message) {
 	}
 
-	~ArgumentException() SCP_NOEXCEPT override {
-	}
+	~ArgumentException() noexcept override = default;
 };
 
 class opt {};

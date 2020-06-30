@@ -42,6 +42,7 @@ float Shield_pain_flash_factor;
 gameversion::version Targetted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
+bool Use_tabled_strings_for_default_language;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
@@ -97,6 +98,12 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game settings table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Use tabled strings for the default language:")) {
+			stuff_boolean(&Use_tabled_strings_for_default_language);
+
+			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
@@ -225,10 +232,11 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Enable External Shaders:")) {
 			stuff_boolean(&Enable_external_shaders);
-			if (Enable_external_shaders)
+			if (Enable_external_shaders) {
 				mprintf(("Game Settings Table: External shaders are enabled\n"));
-			else
+			} else {
 				mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+			}
 		}
 
 		if (optional_string("$Default Detail Level:")) {
@@ -534,11 +542,14 @@ void mod_table_init()
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
 }
-bool mod_supports_version(int major, int minor, int build) {
+
+bool mod_supports_version(int major, int minor, int build)
+{
 	return Targetted_version >= gameversion::version(major, minor, build, 0);
 }
-void mod_table_reset() {
 
+void mod_table_reset()
+{
 	Directive_wait_time = 3000;
 	True_loop_argument_sexps = false;
 	Fixed_turret_collisions = false;
@@ -564,6 +575,7 @@ void mod_table_reset() {
 	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
 	Unicode_text_mode = false;
+	Use_tabled_strings_for_default_language = false;
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";

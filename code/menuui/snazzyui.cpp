@@ -108,17 +108,18 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 			break;
 
 		default:
-			if ( k )
-				for (i=0; i<num_regions; i++) {
-					if ( !regions[i].key )
+			if (k && k >= 0 && static_cast<size_t>(k) < SIZE_OF_ASCII_TABLE) {
+				for (i = 0; i < num_regions; i++) {
+					if (!regions[i].key)
 						continue;
 					if (ascii_table[k] == regions[i].key || shifted_ascii_table[k] == regions[i].key) {
 						choice = regions[i].mask;
-						if ( regions[i].click_sound.isValid() ) {
-							snd_play( gamesnd_get_interface_sound(regions[i].click_sound), 0.0f );
+						if (regions[i].click_sound.isValid()) {
+							snd_play(gamesnd_get_interface_sound(regions[i].click_sound), 0.0f);
 						}
 					}
-			}	// end for
+				} // end for
+			}
 
 			break;
 

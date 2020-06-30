@@ -38,12 +38,14 @@ add_file_folder("Pilotfile"
 
 add_file_folder("Scripting"
     scripting/ade_args.cpp
+    scripting/doc_parser.cpp
     scripting/require.cpp
     scripting/ScriptingTestFixture.h
     scripting/ScriptingTestFixture.cpp
 )
 
 add_file_folder("Scripting\\\\API"
+    scripting/api/async.cpp
     scripting/api/base.cpp
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
@@ -56,6 +58,7 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Reference.cpp
     scripting/lua/Table.cpp
     scripting/lua/TestUtil.h
+    scripting/lua/Thread.cpp
     scripting/lua/Util.cpp
     scripting/lua/Value.cpp
 )

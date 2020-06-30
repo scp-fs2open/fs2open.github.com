@@ -1,20 +1,20 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
+#include "globalincs/systemvars.h"
 
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
 #include "nebula/neb.h"
-
+#include "options/Option.h"
 
 fix Missiontime;
 fix Skybox_timestamp;
@@ -134,6 +134,20 @@ int rand32()
 	else {
 		return rand();
 	}
+}
+
+int rand32(int low, int high)
+{
+	int diff;
+
+	// get diff - don't allow negative or zero
+	diff = high - low;
+	if (diff < 0)
+		diff = 0;
+
+	// To get a range of values between min and max, inclusive:
+	// random value = min + random number % (max - min + 1)
+	return (low + rand32() % (diff + 1));
 }
 
 // Variables for the loading callback hooks
@@ -287,9 +301,60 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	},
 };
 
-
 // Global used to access detail levels in game and libs
-detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS-1];
+detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
+
+const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
+                                                                  { 1, "Low" },
+                                                                  { 2, "Medium" },
+                                                                  { 3, "High" },
+                                                                  { 4, "Ultra" }, };
+
+const auto ModelDetailOption =
+	options::OptionBuilder<int>("Graphics.Detail", "Model Detail", "Detail level of models").importance(8).category(
+		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
+		Detail.detail_distance = val;
+		return true;
+	}).finish();
+
+const auto TexturesOption = options::OptionBuilder<int>("Graphics.Texture",
+                                                        "3D Hardware Textures",
+                                                        "Level of detail of textures").importance(6).category("Graphics").values(
+	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
+	Detail.hardware_textures = val;
+	return true;
+}).finish();
+
+const auto ParticlesOption = options::OptionBuilder<int>("Graphics.Particles",
+                                                         "Particles",
+                                                         "Level of detail for particles").importance(5).category(
+	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
+	Detail.num_particles = val;
+	return true;
+}).finish();
+
+const auto SmallDebrisOption =
+	options::OptionBuilder<int>("Graphics.SmallDebris", "Impact Effects", "Level of detail of impact effects").category(
+		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(4).change_listener([](int val,
+	                                                                                                         bool) {
+		Detail.num_small_debris = val;
+		return true;
+	}).finish();
+
+const auto ShieldEffectsOption = options::OptionBuilder<int>("Graphics.ShieldEffects",
+                                                             "Shield Hit Effects",
+                                                             "Level of detail of shield impacts").importance(3).category(
+	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
+	Detail.shield_effects = val;
+	return true;
+}).finish();
+
+const auto StarsOption =
+	options::OptionBuilder<int>("Graphics.Stars", "Stars", "Number of stars in the mission").importance(2).category(
+		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
+		Detail.num_stars = val;
+		return true;
+	}).finish();
 
 // Call this with:
 // 0 - lowest

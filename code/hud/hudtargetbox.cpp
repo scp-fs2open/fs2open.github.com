@@ -549,7 +549,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		vm_vec_sub(&orient_vec, &target_objp->pos, &Player_obj->pos);
 		vm_vec_normalize(&orient_vec);
 
-		factor = -target_sip->closeup_pos.xyz.z;
+		factor = -target_sip->closeup_pos_targetbox.xyz.z;
 
 		// use the player's up vector, and construct the viewers orientation matrix
 		if (Player_obj->type == OBJ_SHIP) {
@@ -567,7 +567,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 		// RT, changed scaling here
-		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
+		renderTargetSetup(&camera_eye, &camera_orient, target_sip->closeup_zoom_targetbox);
 
 		// IMPORTANT NOTE! Code handling the case 'missile_view == TRUE' in rendering section of renderTargetWeapon()
 		//                 is largely copied over from renderTargetShip(). To keep the codes similar please update
@@ -814,7 +814,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
-	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
 
@@ -866,11 +865,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_normalize(&projection_vec);
 		}
 
-		if ( missile_view == FALSE )
-			factor = 2*target_objp->radius;
-		else
-			factor = vm_vec_dist_quick(&viewer_obj->pos, &viewed_obj->pos);
-
 		// use the viewer's up vector, and construct the viewers orientation matrix
 		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
 			vec3d tempv;
@@ -889,6 +883,11 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
 		// the objects position
 		if (missile_view == FALSE) {
+			float factor = 2*target_objp->radius;
+			// small radius missiles need a bigger factor otherwise they are rendered larger than the targetbox
+			if (factor < 8.0f) {
+				factor = 8.0f;
+			}
 			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 		} else {
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
@@ -1248,7 +1247,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		end_string_at_first_hash_symbol(outstr);
 		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 
-		dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
+		dist = Player_ai->current_target_distance;
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
 			dist = dist * Hud_unit_multiplier;
 		}

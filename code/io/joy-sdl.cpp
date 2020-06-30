@@ -181,6 +181,8 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick", "Joyst
                           .enumerator(joystick_enumerator)
                           .level(options::ExpertLevel::Beginner)
                           .default_val(nullptr)
+                          .flags({options::OptionFlags::ForceMultiValueSelection})
+                          .importance(3)
                           .finish();
 
 HatPosition convertSDLHat(int val)
@@ -393,7 +395,7 @@ namespace joystick
 		fillValues();
 	}
 
-	Joystick::Joystick(Joystick &&other) SCP_NOEXCEPT :
+	Joystick::Joystick(Joystick &&other) noexcept :
 			_joystick(nullptr)
 	{
 		*this = std::move(other);
@@ -408,7 +410,7 @@ namespace joystick
 		}
 	}
 
-	Joystick &Joystick::operator=(Joystick &&other) SCP_NOEXCEPT
+	Joystick &Joystick::operator=(Joystick &&other) noexcept
 	{
 		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);
@@ -592,7 +594,7 @@ namespace joystick
 			coord2d coord;
 			if (SDL_JoystickGetBall(_joystick, i, &coord.x, &coord.y))
 			{
-				mprintf(("Failed to get ball %d value for joystick %s: %s", i, _name.c_str(), SDL_GetError()));
+				mprintf(("Failed to get ball %d value for joystick %s: %s\n", i, _name.c_str(), SDL_GetError()));
 			}
 		}
 

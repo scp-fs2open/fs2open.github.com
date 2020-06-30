@@ -27,6 +27,7 @@
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
+#include "sound/audiostr.h"
 
 
 

@@ -27,9 +27,16 @@
  #include <sys/stat.h>
 #endif
 
+#include "globalincs/alphacolors.h"
+#include "globalincs/crashdump.h"
+#include "globalincs/mspdb_callstack.h"
+#include "globalincs/version.h"
+
+#include "SDLGraphicsOperations.h"
 #include "freespace.h"
 #include "freespaceresource.h"
 #include "levelpaging.h"
+
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
@@ -39,6 +46,7 @@
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
+#include "executor/global_executors.h"
 #include "cutscene/player.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -51,10 +59,6 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/alphacolors.h"
-#include "globalincs/crashdump.h"
-#include "globalincs/mspdb_callstack.h"
-#include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -135,6 +139,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
@@ -156,6 +161,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
@@ -181,14 +187,11 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
-#include "SDLGraphicsOperations.h"
-
-#include <cinttypes>
-
-#include <stdexcept>
 #include <SDL.h>
 #include <SDL_main.h>
 
+#include <cinttypes>
+#include <stdexcept>
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -235,6 +238,22 @@ struct big_expl_flash {
 
 #define DEFAULT_SKILL_LEVEL	1
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
+
+static SCP_string skill_level_display(int value)
+{
+	return SCP_string(Skill_level_names(value, true));
+}
+
+static auto GameSkillOption =
+    options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
+        .category("Game")
+        .range(0, 4)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(DEFAULT_SKILL_LEVEL)
+        .bind_to(&Game_skill_level)
+        .display(skill_level_display)
+        .importance(1)
+        .finish();
 
 #define EXE_FNAME			("fs2.exe")
 
@@ -1207,7 +1226,7 @@ void freespace_mission_load_stuff()
 		mprintf(( "=================== STARTING LEVEL DATA LOAD ==================\n" ));
 
 		game_busy( NOX("** setting up event music **") );
-		event_music_level_init(-1);	// preloads the first 2 seconds for each event music track
+		event_music_level_start(-1);	// preloads the first 2 seconds for each event music track
 
 		game_busy( NOX("** unloading interface sounds **") );
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
@@ -1551,37 +1570,6 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-float FreeSpace_gamma = 1.0f;
-
-DCF(gamma,"Sets and saves Gamma Factor")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: gamma <float>\n" );
-		dc_printf( "Sets gamma in range 1-3, no argument resets to default 1.2\n" );
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf( "Gamma = %.2f\n", FreeSpace_gamma );
-		return;
-	}
-
-	if (!dc_maybe_stuff_float(&FreeSpace_gamma)) {
-		dc_printf( "Gamma reset to 1.0f\n" );
-		FreeSpace_gamma = 1.0f;
-	}
-	if ( FreeSpace_gamma < 0.1f )	{
-		FreeSpace_gamma = 0.1f;
-	} else if ( FreeSpace_gamma > 5.0f )	{
-		FreeSpace_gamma = 5.0f;
-	}
-	gr_set_gamma(FreeSpace_gamma);
-
-	char tmp_gamma_string[32];
-	sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
-	os_config_write_string( nullptr, NOX("Gamma"), tmp_gamma_string );
-}
-
 #ifdef FS2_VOICER
 // This is really awful but thank the guys of X11 for naming something "Window"
 #	include "SDL_syswm.h" // For SDL_SysWMinfo
@@ -1615,18 +1603,13 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
-	
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
 
 	// init os stuff next
-	if ( !Is_standalone ) {
-		os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
-	}
-	else {
-		std_init_os();
-	}
+	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 #ifndef NDEBUG
 	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
@@ -1720,17 +1703,15 @@ void game_init()
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if ( gr_init(std::move(sdlGraphicsOperations)) == false ) {
+	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
 	}
 
-#ifndef NDEBUG
-	if (Cmdline_debug_window) {
+	if (LoggingEnabled && Cmdline_debug_window) {
 		outwnd_debug_window_init();
 	}
-#endif
 
 	// This needs to happen after graphics initialization
 	tracing::init();
@@ -1758,11 +1739,6 @@ void game_init()
 	}
 
 #endif
-
-	// D3D's gamma system now works differently. 1.0 is the default value
-	ptr = os_config_read_string(nullptr, NOX("GammaD3D"), NOX("1.0"));
-	FreeSpace_gamma = (float)atof(ptr);
-
 	script_init();			//WMC
 
 	font::init();					// loads up all fonts
@@ -1770,8 +1746,7 @@ void game_init()
 	// add title screen
 	if(!Is_standalone){
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
-		// cannot make gr_* calls in standalone mode because all gr_ calls are null pointers
-		gr_set_gamma(FreeSpace_gamma);
+		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
 		game_title_screen_display();
 	}
 	
@@ -1928,14 +1903,17 @@ void game_init()
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
+	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
-	
+
+#ifdef WITH_FFMPEG
 	libs::ffmpeg::initialize();
+#endif
 
 	libs::discord::init();
 
@@ -2585,7 +2563,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	// bogus
-	if((objp == nullptr) || (shipp == nullptr) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= static_cast<int>(Ship_info.size()))){
+	if((objp == nullptr) || (shipp == nullptr) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= ship_info_size())){
 		return;
 	}
 	sip = &Ship_info[shipp->ship_info_index];
@@ -3462,7 +3440,7 @@ void game_simulation_frame()
 		ship_info *sip;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != nullptr)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= static_cast<int>(Ship_info.size()))){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= ship_info_size())){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
@@ -3470,7 +3448,7 @@ void game_simulation_frame()
 			sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
-			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
+			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) && (Objects[moveup->objnum].net_signature != STANDALONE_SHIP_SIG) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
@@ -3619,6 +3597,8 @@ void game_simulation_frame()
 #endif
 	}
 
+	// Kick off externally injected operations after the simulation step has finished
+	executor::OnSimulationExecutor->process();
 	Script_system.RunCondition(CHA_SIMULATION);
 }
 
@@ -5925,26 +5905,26 @@ void game_do_state(int state)
 {
 	// always lets the do_state_common() function determine if the state should be skipped
 	Game_do_state_should_skip = 0;
-	
-	// legal to set the should skip state anywhere in this function
-	game_do_state_common(state);	// do stuff that may need to be done regardless of state
 
-	if(Game_do_state_should_skip){
+	// legal to set the should skip state anywhere in this function
+	game_do_state_common(state); // do stuff that may need to be done regardless of state
+
+	if (Game_do_state_should_skip) {
 		return;
 	}
 
-	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+	if (OnFrameHook->isOverride()) {
 		game_set_frametime(state);
 
 		game_check_key();
 
 		gr_clear();
-		gr_flip();	//Does state hook automagically
+		gr_flip(); // Does state hook automagically
 		return;
 	}
-	
+
 	switch (state) {
-		case GS_STATE_MAIN_MENU:
+	case GS_STATE_MAIN_MENU:
 			game_set_frametime(GS_STATE_MAIN_MENU);
 			main_hall_do(flFrametime);
 			break;
@@ -6206,12 +6186,10 @@ void game_do_state(int state)
 
    } // end switch(gs_current_state)
 
-#ifndef NDEBUG
-	if (Cmdline_debug_window) {
+	if (LoggingEnabled && Cmdline_debug_window) {
 		// Do a frame for the debug window here since this code is always executed
 		outwnd_debug_window_do_frame(flFrametime);
 	}
-#endif
 }
 
 
@@ -6564,11 +6542,15 @@ void game_shutdown(void)
 
 	tracing::shutdown();
 
-#ifndef NDEBUG
-	outwnd_debug_window_deinit();
-#endif
+	if (LoggingEnabled) {
+		outwnd_debug_window_deinit();
+	}
 
 	gr_close();
+
+	if (Is_standalone) {
+		std_deinit_standalone();
+	}
 
 	os_cleanup();
 
@@ -7450,6 +7432,7 @@ void game_unpause()
 	}
 }
 
+#define DONT_CATCH_MAIN_EXCEPTIONS
 int main(int argc, char *argv[])
 {
 	int result = -1;

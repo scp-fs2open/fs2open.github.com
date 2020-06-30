@@ -33,6 +33,7 @@ enum class packet_data_type {
     SHORT				= 9,
     USHORT				= 10,
     OBJECT				= 11,
+	WING				= 12,
 };
 
 #if SCP_COMPILER_IS_GNU
@@ -121,9 +122,13 @@ public:
     * Adds a ship's net sig to the SEXP packet.
     */
     void send_ship(ship *shipp);
-    void send_ship(int shipnum);
     
-    /**
+	/**
+	* Adds a wing's net sig to the SEXP packet.
+	*/
+	void send_wing(wing *wingp);
+
+	/**
     * Add the net sig of an object to the SEXP packet.
     */
     void send_object(object *objp);
@@ -149,7 +154,17 @@ public:
     */
     void send_float(float value);
 
-    /**
+	/**
+	 * Add three floats in a row.
+	 */
+	void send_vec3d(vec3d *value);
+
+	/**
+	 * Add nine floats in a row.
+	 */
+	void send_matrix(matrix *value);
+
+	/**
     * Add a short to the SEXP packet.
     */
     void send_short(short value);
@@ -188,19 +203,25 @@ public:
     */   
     bool get_int(int &value);
 
-    /**
-    * Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value
-    * parameter. Returns false if unable to do so.
-    */
-    bool get_ship(int &value);
+	/**
+	* Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value
+	* parameter. Returns false if unable to do so.
+	*/
+	bool get_ship(int &value);
 
-    /**
+	/**
     * Attempts to get a ship pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
     * Returns false if unable to do so.
     */
     bool get_ship(ship*& shipp);
     
-    /**
+	/**
+	* Attempts to get a wing pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
+	* Returns false if unable to do so.
+	*/
+	bool get_wing(wing*& wingp);
+
+	/**
     * Attempts to get an object pointer based on the net sig it removes from the SEXP packet. Returns it as the value parameter.
     * Returns false if unable to do so.
     */
@@ -228,7 +249,17 @@ public:
     */
     bool get_float(float &value);
 
-    /**
+	/**
+	* Attempts to remove a vec3d from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
+	*/
+	bool get_vec3d(vec3d *value);
+
+	/**
+	* Attempts to remove a matrix from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
+	*/
+	bool get_matrix(matrix *value);
+
+	/**
     * Attempts to remove a short from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
     */
     bool get_short(short &value);

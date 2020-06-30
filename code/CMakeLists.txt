@@ -5,7 +5,7 @@ INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
-target_compile_features(code PUBLIC ${REQUIRED_CXX_FEATURES})
+target_compile_features(code PUBLIC cxx_std_11)
 
 INCLUDE(default_files.cmake)
 
@@ -28,7 +28,9 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
 
 TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
 
-TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+if (FSO_BUILD_WITH_FFMPEG)
+	TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+endif()
 
 TARGET_LINK_LIBRARIES(code PUBLIC utfcpp)
 
@@ -42,6 +44,10 @@ target_link_libraries(code PUBLIC discord-rpc)
 target_link_libraries(code PUBLIC libRocket)
 
 target_link_libraries(code PUBLIC pcp)
+
+target_link_libraries(code PUBLIC vulkan-hpp)
+
+target_link_libraries(code PUBLIC parsers)
 
 enable_clang_tidy(code)
 
@@ -77,6 +83,14 @@ else()
 	ELSE()
 		MESSAGE("Unknown compiler for global includes. This will probably break the build.")
 	ENDIF()
+endif()
+
+if (FSO_RELEASE_LOGGING)
+	target_compile_definitions(code PUBLIC SCP_RELEASE_LOGGING)
+endif()
+
+if (FSO_BUILD_WITH_FFMPEG)
+	target_compile_definitions(code PUBLIC WITH_FFMPEG)
 endif()
 
 include(util)

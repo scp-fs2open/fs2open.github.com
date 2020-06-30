@@ -333,13 +333,13 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	// Load game_settings.tbl
 	mod_table_init();
 
-	// initialize localization module. Make sure this is done AFTER initialzing OS.
-	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
+	// initialize localization module. Make sure this is done AFTER initializing OS.
+	// NOTE: Fred should ALWAYS run without localization. Otherwise it might swap in another language
 	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
 	// trust me on this :)
-	lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
+	lcl_init(LCL_UNTRANSLATED);
 
-	// Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
+	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
 	extern int Xstr_inited;
 	Xstr_inited = 1;
 
@@ -466,6 +466,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Id_select_type_waypoint = (int)(Ship_info.size());
 	Fred_main_wnd -> init_tools();
 
+	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	return true;
@@ -906,7 +907,7 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
-		for ( j = 0; j < static_cast<int>(Ship_info.size()); j++ ) {
+		for ( j = 0; j < ship_info_size(); j++ ) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
@@ -918,9 +919,9 @@ void clear_mission()
 		Team_data[i].num_ship_choices = count;
 
 		count = 0;
-		for (j=0; j<MAX_WEAPON_TYPES; j++){
-			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]){
-				if(Weapon_info[j].subtype == WP_LASER){
+		for ( j = 0; j < weapon_info_size(); j++ ) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+				if (Weapon_info[j].subtype == WP_LASER) {
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
 					Team_data[i].weaponry_count[count] = 500;
@@ -2409,14 +2410,14 @@ void generate_weaponry_usage_list(int *arr, int wing)
 		swp = &Ships[Wings[wing].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
 				arr[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
 				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
 			}
 		}
@@ -2454,7 +2455,6 @@ CJumpNode *jumpnode_get_by_name(const CString& name)
 // building up ship lists for arrival/departure targets
 void management_add_ships_to_combo( CComboBox *box, int flags )
 {
-	int get_special_anchor(char *name);
 	object *objp;
 	int id, i, restrict_to_players;
 

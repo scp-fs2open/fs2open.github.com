@@ -298,9 +298,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 
 	count = Ssm_info[ssm_index].count;
 	if (Ssm_info[ssm_index].max_count != -1) {
-		// To get a range of values between min and max, inclusive:
-		// random value = min + randon number % (max - min + 1)
-		count += rand32() % (Ssm_info[ssm_index].max_count - count + 1);
+		count += rand32(count, Ssm_info[ssm_index].max_count);
 	}
 
 	// override in multiplayer

@@ -225,7 +225,7 @@ int free_object_slots(int num_used)
 	}
 
 	for (i=0; i<num_to_free; i++)
-		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (Debris[Objects[obj_list[i]].instance].flags & DEBRIS_EXPIRE) ) {
+		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (!Debris[Objects[obj_list[i]].instance].flags[Debris_Flags::DoNotExpire]) ) {
 			num_to_free--;
 			nprintf(("allender", "Freeing   DEBRIS object %3i\n", obj_list[i]));
 			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);

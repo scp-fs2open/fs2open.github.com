@@ -2,23 +2,23 @@
 //
 #include "LuaSEXP.h"
 
-#include "parse/parselo.h"
-#include "parse/sexp/sexp_lookup.h"
-
-#include "object/waypoint.h"
 #include "iff_defs/iff_defs.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
 #include "mission/missionmessage.h"
-
+#include "object/waypoint.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/message.h"
 #include "scripting/api/objs/sexpvar.h"
-#include "scripting/api/objs/team.h"
-#include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/team.h"
+#include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wing.h"
-#include "scripting/api/objs/message.h"
+#include "scripting/scripting.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 using namespace luacpp;
 
@@ -136,10 +136,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 	}
 	case OPF_VARIABLE_NAME: {
 		// Variable names work by getting the variable index from the text node
-		auto sexp_variable_index = atoi(Sexp_nodes[node].text);
-
-		// verify variable set
-		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+		auto sexp_variable_index = sexp_get_variable_index(node);
 
 		// Add the variable to the parameter list as a SEXPVariable object handle
 		return LuaValue::createValue(_action.getLuaState(), l_SEXPVariable.Set(sexpvar_h(sexp_variable_index)));
@@ -156,14 +153,14 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 	}
 		// The following argument types are all strings
 	case OPF_SHIP: {
-		auto ship_id = ship_name_lookup(CTEXT(node));
+		auto ship_entry = eval_ship(node);
 
-		if (ship_id < 0) {
+		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
 
-		auto objp = &Objects[Ships[ship_id].objnum];
+		auto objp = ship_entry->objp;
 
 		// The other SEXP code does not validate the object type so this should be safe
 		Assertion(objp->type == OBJ_SHIP,
@@ -188,9 +185,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), l_Message.Set(idx));
 	}
 	case OPF_WING: {
-		auto name = CTEXT(node);
+		auto wingp = eval_wing(node);
+		int wingnum = static_cast<int>(wingp - Wings);
 
-		return LuaValue::createValue(_action.getLuaState(), l_Wing.Set(wing_name_lookup(name)));
+		return LuaValue::createValue(_action.getLuaState(), l_Wing.Set(wingnum));
 	}
 	case OPF_SHIP_CLASS_NAME: {
 		auto name = CTEXT(node);
@@ -289,7 +287,7 @@ int LuaSEXP::execute(int node) {
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
-		auto retVals = _action.call(luaParameters);
+		auto retVals = _action.call(Script_system.GetLuaSession(), luaParameters);
 
 		return getSexpReturnValue(retVals);
 	} catch(const LuaException&) {

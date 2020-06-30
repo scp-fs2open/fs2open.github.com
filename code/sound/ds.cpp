@@ -246,7 +246,7 @@ int ds_get_sid()
 	return (int)(sound_buffers.size() - 1);
 }
 
-int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
+int ds_load_buffer(int *sid, int  /*flags*/, sound::IAudioFile* file)
 {
 	Assert(sid != NULL);
 	Assert(file != NULL);
@@ -261,14 +261,16 @@ int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
 	ALuint pi;
 	OpenAL_ErrorCheck(alGenBuffers(1, &pi), return -1);
 
+	const auto fileProps = file->getFileProperties();
+
 	ALenum format;
-	ALsizei size = file->getTotalSamples() * file->getSampleByteSize();
-	ALint n_channels = file->getNumChannels();
+	ALsizei size = fileProps.total_samples * fileProps.bytes_per_sample * fileProps.num_channels;
+	ALint n_channels = fileProps.num_channels;
 	ALsizei frequency;
 		
 	// format is now in pcm
-	frequency = file->getSampleRate();
-	format = file->getALFormat();
+	frequency = fileProps.sample_rate;
+	format = openal_get_format(fileProps.bytes_per_sample * 8, fileProps.num_channels);
 
 	if (format == AL_INVALID_VALUE) {
 		return -1;
@@ -277,7 +279,7 @@ int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
 	SCP_vector<uint8_t> audio_buffer;
 	audio_buffer.reserve(size);
 
-	SCP_vector<uint8_t> buffer(file->getSampleRate() * file->getSampleByteSize());
+	SCP_vector<uint8_t> buffer(fileProps.sample_rate * fileProps.bytes_per_sample * fileProps.num_channels);
 	int read;
 	while((read = file->Read(&buffer[0], buffer.size())) >= 0) {
 		if (read == 0) {
@@ -295,9 +297,9 @@ int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
 	sound_buffers[*sid].buf_id = pi;
 	sound_buffers[*sid].channel_id = -1;
 	sound_buffers[*sid].frequency = frequency;
-	sound_buffers[*sid].bits_per_sample = (file->getSampleByteSize() / file->getNumChannels()) * 8;
+	sound_buffers[*sid].bits_per_sample = fileProps.bytes_per_sample * 8;
 	sound_buffers[*sid].nchannels = n_channels;
-	sound_buffers[*sid].nseconds = fl2i(file->getDuration());
+	sound_buffers[*sid].nseconds = fl2i(fileProps.duration);
 	sound_buffers[*sid].nbytes = (int)audio_buffer.size();
 
 	return 0;
@@ -338,7 +340,7 @@ bool ds_check_for_openal_soft()
 	const ALchar * renderer = alGetString(AL_RENDERER);
 	if (renderer == NULL)
 	{
-		mprintf(("ds_check_for_openal_soft: renderer is null!"));
+		mprintf(("ds_check_for_openal_soft: renderer is null!\n"));
 		return false;
 	}
 	else if (!stricmp((const char *)renderer, "OpenAL Soft"))

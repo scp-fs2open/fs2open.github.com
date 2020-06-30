@@ -184,7 +184,7 @@ function(detect_simd_instructions _out_var)
 endfunction()
 
 function (check_linker_flag _flag _out_var)
-	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
+	SET(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
 	CHECK_C_COMPILER_FLAG("" ${_out_var})
 endfunction(check_linker_flag)
 
@@ -197,6 +197,22 @@ function(suppress_warnings _target)
 		target_compile_options(${_target} PRIVATE "-w")
     endif()
 endfunction(suppress_warnings)
+
+# Suppresses warnings for the specified files
+function(suppress_file_warnings)
+	if (MSVC)
+		set_source_files_properties(
+				${ARGN}
+			PROPERTIES
+				COMPILE_FLAGS "/W0")
+	else()
+		# Assume everything else uses GCC style options
+		set_source_files_properties(
+				${ARGN}
+			PROPERTIES
+				COMPILE_FLAGS "-w")
+	endif()
+endfunction(suppress_file_warnings)
 
 
 function(list_target_dependencies _target _out_var)
