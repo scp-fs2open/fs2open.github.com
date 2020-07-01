@@ -32,6 +32,17 @@ public:
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
 	int CurrentClass = -1;
+
+	bool isSafeForShips() {
+		return CurrentMode == LabMode::Ship && CurrentObject != -1;
+	}
+
+	bool isSafeForWeapons() {
+		return CurrentMode == LabMode::Weapon && CurrentObject != -1;
+	}
+
+	int FirePrimaries = 0;
+	int FireSecondaries = 0;
 private:
 	SCP_vector<LabDialog*> Dialogs = {};
 

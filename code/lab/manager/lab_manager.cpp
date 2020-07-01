@@ -3,6 +3,9 @@
 #include "lab/renderer/lab_renderer.h"
 #include "lab/dialogs/ship_classes.h"
 #include "lab/dialogs/weapon_classes.h"
+#include "lab/dialogs/render_options.h"
+#include "lab/dialogs/material_overrides.h"
+#include "lab/dialogs/backgrounds.h"
 #include "io/key.h"
 
 LabManager::LabManager() {
@@ -13,6 +16,9 @@ LabManager::LabManager() {
 
 	Dialogs.push_back(new ShipClasses());
 	Dialogs.push_back(new WeaponClasses());
+	Dialogs.push_back(new Backgrounds());
+	Dialogs.push_back(new RenderOptions());
+	Dialogs.push_back(new MaterialOverrides());
 
 	int x = 0;
 	for (auto dialog : Dialogs) {

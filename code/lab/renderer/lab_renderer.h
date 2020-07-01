@@ -63,7 +63,7 @@ public:
 
 	void onFrame(float frametime);
 
-	void useBackground(SCP_string* mission_name);
+	void useBackground(SCP_string mission_name);
 
 	void setAAMode(AntiAliasMode mode) {}
 

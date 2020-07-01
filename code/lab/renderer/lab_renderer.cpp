@@ -12,4 +12,4 @@ void LabRenderer::onFrame(float frametime) {
 
 }
 
-void LabRenderer::useBackground(SCP_string* mission_name) {}
+void LabRenderer::useBackground(SCP_string mission_name) {}
