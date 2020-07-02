@@ -1084,6 +1084,8 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			// Goober5000 - set_data_dup is required if we're passing a variable
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+		} else if (Operators[op].value == OP_CHANGE_BACKGROUND) {
+			item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP) {
 			int temp = 0;
 			char sexp_str_token[TOKEN_LENGTH];

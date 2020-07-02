@@ -652,6 +652,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "change-background",				OP_CHANGE_BACKGROUND,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-background-bitmap",		OP_REMOVE_BACKGROUND_BITMAP,			1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -3671,6 +3672,11 @@ int get_sexp()
 				// weapon to change to is arg #3
 				n = CDDDR(start);
 				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
+				break;
+
+			case OP_CHANGE_BACKGROUND:
+				n = CDR(start);
+				do_preload_for_arguments(stars_preload_background, n, arg_handler);
 				break;
 
 			case OP_ADD_SUN_BITMAP:
@@ -13471,6 +13477,23 @@ void sexp_mission_set_subspace(int n)
 
 	stars_set_dynamic_environment(Game_subspace_effect != 0);
 	The_mission.flags.set(Mission::Mission_Flags::Subspace, Game_subspace_effect != 0);
+}
+
+void sexp_change_background(int node)
+{
+	bool is_nan, is_nan_forever;
+	int background_idx = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	// human/computer offset
+	background_idx--;
+
+	// range check
+	if (background_idx < 0 || background_idx >= Backgrounds.size())
+		return;
+
+	stars_load_background(background_idx);
 }
 
 void sexp_add_background_bitmap(int n, bool is_sun)
@@ -23875,6 +23898,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CHANGE_BACKGROUND:
+				sexp_change_background(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_ADD_SUN_BITMAP:
 			case OP_ADD_BACKGROUND_BITMAP:
 				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP);
@@ -25959,6 +25987,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_MISSION_SET_NEBULA:
+		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
@@ -28175,6 +28204,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 				return OPF_JUMP_NODE_NAME;
 
+		case OP_CHANGE_BACKGROUND:
+			return OPF_POSITIVE;
+
 		case OP_ADD_BACKGROUND_BITMAP:
 			if (argnum == 0)
 				return OPF_BACKGROUND_BITMAP;
@@ -29919,6 +29951,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SKYBOX_ORIENT:
 		case OP_MISSION_SET_NEBULA:
 		case OP_MISSION_SET_SUBSPACE:
+		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
@@ -33740,6 +33773,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tPitch\r\n"
 		"\t2:\tBank\r\n"
 		"\t3:\tHeading\r\n"
+	},
+
+	// Goober5000
+	{ OP_CHANGE_BACKGROUND, "change-background\r\n"
+		"\tSets the displayed suns and bitmaps to one of the stored mission backgrounds.  Takes 1 argument...\r\n"
+		"\t1:\tBackground number (starting from 1)\r\n"
 	},
 
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"

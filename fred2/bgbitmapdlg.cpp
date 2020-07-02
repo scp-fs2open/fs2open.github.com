@@ -176,6 +176,8 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SUN1_H, OnKillfocusSun1H)
 	ON_EN_KILLFOCUS(IDC_SUN1_B, OnKillfocusSun1B)
 	ON_EN_KILLFOCUS(IDC_SUN1_SCALE, OnKillfocusSun1Scale)
+	ON_BN_CLICKED(IDC_ADD_BACKGROUND, OnAddBackground)
+	ON_BN_CLICKED(IDC_REMOVE_BACKGROUND, OnRemoveBackground)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
 	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
 	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
@@ -297,7 +299,7 @@ void bg_bitmap_dlg::create()
 	((CButton*)GetDlgItem(IDC_NEB_TOGGLE_TRAILS))->SetCheck(m_toggle_trails);
 
 	// setup background numbering
-	for (i = 0; i < MAX_BACKGROUNDS; i++) 
+	for (i = 0; i < (int)Backgrounds.size(); i++) 
 	{
 		char temp[NAME_LENGTH];
 		sprintf(temp, "Background %d", i + 1);
@@ -307,6 +309,9 @@ void bg_bitmap_dlg::create()
 	}
 	((CComboBox*) GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(0);
 	((CComboBox*) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(0);
+
+	// we can't remove the only remaining background
+	GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(Backgrounds.size() > 1);
 
 	// setup sun and sunglow controls
 	sun_data_init();	
@@ -464,7 +469,7 @@ void bg_bitmap_dlg::OnClose()
 	// reset the background
 	stars_pack_backgrounds();
 	stars_load_first_valid_background();
-	
+
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
@@ -1251,8 +1256,11 @@ void bg_bitmap_dlg::OnImportBackground()
 	char *saved_mp;
 
 	//warn on pressing the button
-	if (MessageBox("This action will erase any nebulae and suns already placed.  Continue?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
-		return;
+	if (!stars_background_empty(Backgrounds[get_active_background()]))
+	{
+		if (MessageBox("This action will erase any stars and bitmaps already placed.  Continue?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
+			return;
+	}
 
 	//check if cancel was pressed
 	if (cfd.DoModal() == IDCANCEL)
@@ -1335,7 +1343,7 @@ int bg_bitmap_dlg::get_active_background()
 {
 	// find out which background we're editing
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_NUM))->GetCurSel();
-	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
 
 	return idx;
@@ -1345,7 +1353,7 @@ int bg_bitmap_dlg::get_swap_background()
 {
 	// find out which background we're swapping
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->GetCurSel();
-	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
 
 	return idx;
@@ -1353,6 +1361,65 @@ int bg_bitmap_dlg::get_swap_background()
 
 void bg_bitmap_dlg::OnBackgroundDropdownChange()
 {
+	reinitialize_lists();
+}
+
+void bg_bitmap_dlg::OnAddBackground()
+{
+	int new_index = (int)Backgrounds.size();
+
+	// add new combo box entry
+	char temp[NAME_LENGTH];
+	sprintf(temp, "Background %d", new_index + 1);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->AddString(temp);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
+
+	// add the background slot
+	Backgrounds.emplace_back();
+
+	// select the new entry
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(new_index);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(new_index);
+
+	// can remove all but one background
+	if (Backgrounds.size() > 1)
+		GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(TRUE);
+
+	// refresh dialog
+	reinitialize_lists();
+}
+
+void bg_bitmap_dlg::OnRemoveBackground()
+{
+	int old_index = get_active_background();
+
+	//warn on pressing the button
+	if (!stars_background_empty(Backgrounds[old_index]))
+	{
+		if (MessageBox("Are you sure you want to remove the current background and all of its stars and bitmaps?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
+			return;
+	}
+
+	// remove the last combo box entry (not the current one, because they are numbered in order)
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->DeleteString((int)Backgrounds.size() - 1);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->DeleteString((int)Backgrounds.size() - 1);
+
+	// remove the background slot
+	Backgrounds.erase(Backgrounds.begin() + old_index);
+
+	// if the index is no longer valid, adjust it
+	if (old_index >= (int)Backgrounds.size())
+		old_index--;
+
+	// select the old entry
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(old_index);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(old_index);
+
+	// can remove all but one background
+	if (Backgrounds.size() <= 1)
+		GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(FALSE);
+
+	// refresh dialog
 	reinitialize_lists();
 }
 

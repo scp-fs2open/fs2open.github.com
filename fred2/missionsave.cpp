@@ -833,8 +833,8 @@ int CFred_mission_save::save_bitmaps()
 	fso_comment_pop();
 
 	// Goober5000 - save all but the lowest priority using the special comment tag
-	for (i = 0; i < Num_backgrounds; i++) {
-		bool tag = (i < Num_backgrounds - 1);
+	for (i = 0; i < (int)Backgrounds.size(); i++) {
+		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t *background = &Backgrounds[i];
 
 		fso_comment_push(";;FSO 3.6.9;;");
