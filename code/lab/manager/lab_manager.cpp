@@ -132,6 +132,7 @@ void LabManager::onFrame(float frametime) {
 			// bail...
 		case KEY_ESC:
 			close();
+			lab_close();
 			break;
 
 		default: 

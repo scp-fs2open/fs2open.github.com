@@ -23,6 +23,13 @@ public:
 	void close() {
 		if (CurrentObject != -1)
 			obj_delete(CurrentObject);
+
+		Renderer->close();
+
+		delete Screen;
+		Screen = nullptr;
+
+		Game_mode &= ~GM_LAB;
 	}
 
 	GUIScreen* Screen;

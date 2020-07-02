@@ -1,6 +1,7 @@
 #include "lab/labv2.h"
 #include "lab/labv2_internal.h"
 #include "lab/manager/lab_manager.h"
+#include "gamesequence/gamesequence.h"
 
 LabManager* LMGR;
 
@@ -14,7 +15,8 @@ void lab_init() {
 
 void lab_close() {
 	delete LMGR;
-	LMGR = nullptr;
+	LMGR = nullptr; 
+	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
 void lab_do_frame(float frametime) {
