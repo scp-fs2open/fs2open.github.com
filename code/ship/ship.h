@@ -795,14 +795,19 @@ enum ShipStatus
 
 struct ship_registry_entry
 {
-	ShipStatus status;
-	const char *name;
+	ShipStatus status = ShipStatus::NOT_YET_PRESENT;
+	char name[NAME_LENGTH];
 
-	p_object *p_objp;
-	object *objp;
-	ship *shipp;
-	int cleanup_mode;
-	int exited_index;
+	p_object *p_objp = nullptr;
+	object *objp = nullptr;
+	ship *shipp = nullptr;
+	int cleanup_mode = 0;
+	int exited_index = -1;
+
+	ship_registry_entry(const char *_name)
+	{
+		strcpy_s(name, _name);
+	}
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;

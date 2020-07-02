@@ -4170,7 +4170,19 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
+		{
 			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+
+			// subsequent waves of ships will not be in the ship registry, so add them
+			if (!ship_registry_get(p_objp->name))
+			{
+				ship_registry_entry entry(p_objp->name);
+				entry.p_objp = p_objp;
+
+				Ship_registry.push_back(entry);
+				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
+			}
+		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
@@ -4773,7 +4785,9 @@ void post_process_ships_wings()
 	// any ships are created from the parse objects.
 	for (auto &p_obj : Parse_objects)
 	{
-		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, p_obj.name, &p_obj, nullptr, nullptr, 0, -1 };
+		ship_registry_entry entry(p_obj.name);
+		entry.p_objp = &p_obj;
+
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
 	}
