@@ -28649,7 +28649,7 @@ const char *sexp_error_message(int num)
 			return "Invalid AI class name";
 
 		case SEXP_CHECK_INVALID_POINT:
-			return "Invalid point";
+			return "Invalid waypoint";
 
 		case SEXP_CHECK_NEGATIVE_NUM:
 			return "Negative number not allowed";
@@ -28712,10 +28712,16 @@ const char *sexp_error_message(int num)
 			return "Invalid ship class name";
 
 		case SEXP_CHECK_INVALID_GAUGE_NAME:
-			return "Invalid HUD gauges name";
+			return "Invalid builtin HUD gauge";
+
+		case SEXP_CHECK_INVALID_SKYBOX_NAME:
+			return "Invalid skybox name";
+
+		case SEXP_CHECK_INVALID_SKYBOX_FLAG:
+			return "Invalid skybox flag";
 
 		case SEXP_CHECK_INVALID_JUMP_NODE:
-			return "Invalid Jump Node name";
+			return "Invalid jump node";
 
 		case SEXP_CHECK_UNKNOWN_ERROR:
 			return "Unknown error";
@@ -28724,7 +28730,7 @@ const char *sexp_error_message(int num)
 			return "Invalid support ship class";
 
 		case SEXP_CHECK_INVALID_SHIP_WITH_BAY:
-			return "Ship does not have a fighter bay";
+			return "Ship does not have a hangar bay";
 
 		case SEXP_CHECK_INVALID_ARRIVAL_LOCATION:
 			return "Invalid arrival location";
@@ -28751,7 +28757,7 @@ const char *sexp_error_message(int num)
 			return "Invalid font";
 
 		case SEXP_CHECK_INVALID_HUD_ELEMENT:
-			return "Invalid hud element magic name";
+			return "Invalid HUD element magic name";
 
 		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
 			return "Invalid sound environment";
@@ -28778,7 +28784,7 @@ const char *sexp_error_message(int num)
 			return "Invalid damage type";
 
 		case SEXP_CHECK_INVALID_HUD_GAUGE:
-			return "Invalid hud gauge";
+			return "Invalid HUD gauge";
 
 		case SEXP_CHECK_INVALID_TARGET_PRIORITIES:
 			return "Invalid target priorities";
