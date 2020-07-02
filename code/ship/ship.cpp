@@ -9605,7 +9605,11 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	auto ship_it = Ship_registry_map.find(shipp->ship_name);
 	if (ship_it == Ship_registry_map.end())
 	{
-		ship_registry_entry entry = { ShipStatus::PRESENT, shipp->ship_name, nullptr, &Objects[objnum], shipp, 0, -1 };
+		ship_registry_entry entry(shipp->ship_name);
+		entry.status = ShipStatus::PRESENT;
+		entry.objp = &Objects[objnum];
+		entry.shipp = shipp;
+
 		Ship_registry.push_back(entry);
 		Ship_registry_map[shipp->ship_name] = static_cast<int>(Ship_registry.size() - 1);
 	}
