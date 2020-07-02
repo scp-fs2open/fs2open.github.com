@@ -12,7 +12,8 @@ LabManager::LabManager() {
 	Screen = GUI_system.PushScreen(new GUIScreen("Lab"));
 	Toolbar = (Window*)Screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y,
 		-1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
-	Renderer = new LabRenderer();
+
+	Renderer = new LabRenderer(new OrbitCamera());
 
 	Dialogs.push_back(new ShipClasses());
 	Dialogs.push_back(new WeaponClasses());
@@ -37,24 +38,28 @@ void LabManager::onFrame(float frametime) {
 		int key = GUI_system.GetKeyPressed();
 		int status = GUI_system.GetStatus();
 
-		// set trackball modes
-		if (status & GST_MOUSE_LEFT_BUTTON) {
-			Trackball_active = 1;
-			Trackball_mode = 1; // rotate viewed object
+		//// set trackball modes
+		//if (status & GST_MOUSE_LEFT_BUTTON) {
+		//	Trackball_active = 1;
+		//	Trackball_mode = 1; // rotate viewed object
+		//
+		//	if (key_get_shift_status() & KEY_SHIFTED) {
+		//		Trackball_mode = 2; // zoom
+		//	}
+		//}
+		//else if (status & GST_MOUSE_RIGHT_BUTTON) {
+		//	Trackball_active = 1;
+		//	Trackball_mode = 3; // rotate camera
+		//}
+		//else if (!mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON)) {
+		//	// reset trackball modes
+		//	Trackball_active = 0;
+		//	Trackball_mode = 0;
+		//}
 
-			if (key_get_shift_status() & KEY_SHIFTED) {
-				Trackball_mode = 2; // zoom
-			}
-		}
-		else if (status & GST_MOUSE_RIGHT_BUTTON) {
-			Trackball_active = 1;
-			Trackball_mode = 3; // rotate camera
-		}
-		else if (!mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON)) {
-			// reset trackball modes
-			Trackball_active = 0;
-			Trackball_mode = 0;
-		}
+		int dx, dy;
+		mouse_get_delta(&dx, &dy);
+		Renderer->getCurrentCamera()->handleMouseInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON), mouse_down(MOUSE_RIGHT_BUTTON), key_get_shift_status());
 
 		// handle any key presses
 		switch (key) {

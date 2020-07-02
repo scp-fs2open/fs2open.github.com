@@ -39,6 +39,7 @@ public:
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
 	int CurrentClass = -1;
+	SCP_string ModelFilename = "";
 
 	bool isSafeForShips() {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1;
