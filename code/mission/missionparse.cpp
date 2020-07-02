@@ -6452,7 +6452,7 @@ void mission_parse_set_up_initial_docks()
 		// display an error if necessary
 		if (dfi.maintained_variables.int_value == 0)
 		{
-			Warning(LOCATION, "No dock leaders found in the docking group containing %s.  The group will not appear in-mission!\n", pobjp->name);
+			Warning(LOCATION, "In the docking group containing %s, every ship has an arrival cue set to false.  The group will not appear in-mission!\n", pobjp->name);
 
 			// for FRED, we must arbitrarily choose a dock leader, otherwise the entire docked group will not be loaded
 			if (Fred_running)
@@ -6460,7 +6460,7 @@ void mission_parse_set_up_initial_docks()
 		}
 		else if (dfi.maintained_variables.int_value > 1)
 		{
-			Warning(LOCATION, "There are multiple dock leaders in the docking group containing the leader %s!  Setting %s as the sole leader...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
+			Warning(LOCATION, "In the docking group containing %s, there is more than one ship with a non-false arrival cue!  There can only be one such ship.  Setting all arrival cues except %s to false...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
 		}
 
 		// clear dfi stuff
