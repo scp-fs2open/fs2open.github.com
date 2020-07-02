@@ -124,9 +124,11 @@ static SCP_vector<starfield_bitmap> Sun_bitmaps;
 static SCP_vector<starfield_bitmap_instance> Suns;
 
 // Goober5000
-int Num_backgrounds = 0;
 int Cur_background = -1;
-background_t Backgrounds[MAX_BACKGROUNDS];
+SCP_vector<background_t> Backgrounds;
+
+SCP_vector<int> Preload_background_indexes;
+void stars_preload_background(int background_idx);
 
 int last_stars_filled = 0;
 color star_colors[8];
@@ -739,15 +741,9 @@ void stars_pre_level_init(bool clear_backgrounds)
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
 
+	// we used to clear all the array entries, but now we can just wipe the vector
 	if (clear_backgrounds)
-	{
-		// Goober5000 - clear entire array, including backgrounds that will be unused
-		for (i = 0; i < MAX_BACKGROUNDS; i++)
-		{
-			Backgrounds[i].suns.clear();
-			Backgrounds[i].bitmaps.clear();
-		}
-	}
+		Backgrounds.clear();
 
 	stars_clear_instances();
 
@@ -797,6 +793,9 @@ void stars_pre_level_init(bool clear_backgrounds)
 		}
 	}
 
+	// also clear the preload indexes
+	Preload_background_indexes.clear();
+
 	Dynamic_environment = false;
 	Motion_debris_override = false;
 
@@ -844,6 +843,19 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
+	// in FRED, make sure we always have at least one background
+	if (Fred_running)
+	{
+		if (Backgrounds.empty())
+			Backgrounds.emplace_back();
+	}
+	// in FSO, see if we have any backgrounds to preload
+	// (since the backgrounds aren't parsed at the time we parse the sexps)
+	else
+	{
+		for (int idx : Preload_background_indexes)
+			stars_preload_background(idx);
+	}
 
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 	stars_set_background_orientation(&The_mission.skybox_orientation);
@@ -1828,6 +1840,37 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	Rendering_to_env = 0;
 }
 
+void stars_preload_background(const char *token)
+{
+	if (!token)
+		return;
+
+	// we can only preload raw numbers, but that's probably sufficient
+	if (!can_construe_as_integer(token))
+		return;
+
+	int background_idx = atoi(token);
+
+	// human/computer offset
+	background_idx--;
+
+	// store it for now
+	Preload_background_indexes.push_back(background_idx);
+}
+
+void stars_preload_background(int background_idx)
+{
+	// range check
+	if (background_idx < 0 || background_idx >= (int)Backgrounds.size())
+		return;
+
+	// preload all the stuff for this background
+	for (auto &sun : Backgrounds[background_idx].suns)
+		stars_preload_sun_bitmap(sun.filename);
+	for (auto &bitmap : Backgrounds[background_idx].bitmaps)
+		stars_preload_background_bitmap(bitmap.filename);
+}
+
 void stars_preload_sun_bitmap(const char *fname)
 {
 	int idx;
@@ -2606,11 +2649,11 @@ int stars_get_first_valid_background()
 {
 	uint i, j;
 
-	if (Num_backgrounds == 0)
+	if (Backgrounds.empty())
 		return -1;
 
 	// scan every background except the last and return the first one that has all its suns and bitmaps present
-	for (i = 0; i < (uint)Num_backgrounds - 1; i++)
+	for (i = 0; i < Backgrounds.size() - 1; i++)
 	{
 		bool valid = true;
 		background_t *background = &Backgrounds[i];
@@ -2645,7 +2688,7 @@ int stars_get_first_valid_background()
 	}
 
 	// didn't find a valid background yet, so return the last one
-	return Num_backgrounds - 1;
+	return (int)Backgrounds.size() - 1;
 }
 
 // Goober5000
@@ -2703,36 +2746,18 @@ void stars_swap_backgrounds(int idx1, int idx2)
 }
 
 // Goober5000
-bool stars_background_empty(int idx)
+bool stars_background_empty(const background_t &bg)
 {
-	return (Backgrounds[idx].suns.empty() && Backgrounds[idx].bitmaps.empty());
+	return (bg.suns.empty() && bg.bitmaps.empty());
 }
 
 // Goober5000
 void stars_pack_backgrounds()
 {
-	int i, j;
-
-	// move all empty entries to the end, and recount
-	Num_backgrounds = 0;
-	for (i = 0; i < MAX_BACKGROUNDS; i++)
-	{
-		if (!stars_background_empty(i))
-		{
-			Num_backgrounds++;
-			continue;
-		}
-
-		for (j = i + 1; j < MAX_BACKGROUNDS; j++)
-		{
-			if (!stars_background_empty(j))
-			{
-				stars_swap_backgrounds(i, j);
-				Num_backgrounds++;
-				break;
-			}
-		}
-	}
+	// remove all empty backgrounds
+	Backgrounds.erase(
+		std::remove_if(Backgrounds.begin(), Backgrounds.end(), stars_background_empty),
+		Backgrounds.end());
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)

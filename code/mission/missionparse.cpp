@@ -5410,18 +5410,10 @@ void parse_bitmaps(mission *pm)
 	}	
 
 	// Goober5000
-	Num_backgrounds = 0;
 	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
 	{
-		// don't allow overflow; just make sure the last background is the last read
-		if (Num_backgrounds >= MAX_BACKGROUNDS)
-		{
-			Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
-			Num_backgrounds = MAX_BACKGROUNDS - 1;
-		}
-
-		parse_one_background(&Backgrounds[Num_backgrounds]);
-		Num_backgrounds++;
+		Backgrounds.emplace_back();
+		parse_one_background(&Backgrounds.back());
 	}
 
 	// Goober5000

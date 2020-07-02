@@ -144,6 +144,8 @@ protected:
 	afx_msg void OnKillfocusSun1H();
 	afx_msg void OnKillfocusSun1B();
 	afx_msg void OnKillfocusSun1Scale();
+	afx_msg void OnAddBackground();
+	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
 	afx_msg void OnBackgroundDropdownChange();

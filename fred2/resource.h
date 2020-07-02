@@ -964,6 +964,7 @@
 #define IDC_NAV_NEEDSLINK               1488
 #define IDC_OBJ_TEAM                    1489
 #define IDC_SCRAMBLE_MESSAGES           1489
+#define IDC_ADD_BACKGROUND              1490
 #define IDC_CAMPAIGN_TYPE               1491
 #define IDC_SUPPORT_ALLOWED             1492
 #define IDC_SUBSPACE                    1493
@@ -983,6 +984,7 @@
 #define IDC_NO_TRAITOR                  1499
 #define IDC_ADD_VARIABLE_NAME           1500
 #define IDC_SWAP_BACKGROUND             1500
+#define IDC_REMOVE_BACKGROUND           1501
 #define IDC_MODIFY_DEFAULT_VALUE        1502
 #define IDC_NEB_INTENSITY               1503
 #define IDC_NEB2_INTENSITY              1503
