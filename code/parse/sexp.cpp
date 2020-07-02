@@ -13490,7 +13490,7 @@ void sexp_change_background(int node)
 	background_idx--;
 
 	// range check
-	if (background_idx < 0 || background_idx >= Backgrounds.size())
+	if (background_idx < 0 || background_idx >= (int)Backgrounds.size())
 		return;
 
 	stars_load_background(background_idx);

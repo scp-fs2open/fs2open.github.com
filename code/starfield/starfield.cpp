@@ -1861,7 +1861,7 @@ void stars_preload_background(const char *token)
 void stars_preload_background(int background_idx)
 {
 	// range check
-	if (background_idx < 0 || background_idx >= Backgrounds.size())
+	if (background_idx < 0 || background_idx >= (int)Backgrounds.size())
 		return;
 
 	// preload all the stuff for this background
