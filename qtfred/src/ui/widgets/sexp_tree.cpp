@@ -5594,8 +5594,8 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 		}    // Goober5000 - avoids crashing
 
 		// use the text of the operator we found
-		item->setText(0, QString::fromStdString(op));
-		str = op;
+		str = QString::fromStdString(op);
+		item->setText(0, str);
 
 		setCurrentItemIndex(node);
 		int op_num = get_operator_index(op.c_str());
