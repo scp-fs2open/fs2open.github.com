@@ -313,6 +313,12 @@ public:
     * attempts to remove all remaining data for the current operator.
     */
     void discard_remaining_callback_data();
+
+    /**
+     * @brief Determines if there is more data for the current SEXP
+     * @return true if more values can be extracted
+     */
+    bool hasMore() const;
 };
 
 extern sexp_network_packet Current_sexp_network_packet;

@@ -647,7 +647,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
-	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
@@ -22593,11 +22592,6 @@ int sexp_player_is_cheating_bastard()
 	return SEXP_FALSE;
 }
 
-void sexp_set_motion_debris(int node)
-{
-	Motion_debris_override = is_sexp_true(node);
-}
-
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
@@ -24452,11 +24446,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
-			case OP_SET_MOTION_DEBRIS:
-				sexp_val = SEXP_TRUE;
-				sexp_set_motion_debris(node);
-				break;
-
 			case OP_WEAPON_RECHARGE_PCT:
 			case OP_SHIELD_RECHARGE_PCT:
 			case OP_ENGINE_RECHARGE_PCT:
@@ -25391,17 +25380,30 @@ void multi_sexp_eval()
 				multi_sexp_destroy_subsys_instantly();
 				break;
 
-			// bad sexp in the packet
-			default: 
-				// probably just a version error where the host supports a SEXP but a client does not
-				if (Current_sexp_network_packet.sexp_discard_operator()) {
-					Warning(LOCATION, "Received invalid SEXP operator number from host. Operator number %d is not supported by this version.", op_num); 
+			// bad sexp in the packet?
+			default: {
+				// Check if we have a dynamic SEXP with this operator and if there is, execute that
+				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
+				if (dynamicSEXP != nullptr) {
+					dynamicSEXP->executeMulti();
+				} else {
+					// probably just a version error where the host supports a SEXP but a client does not
+					if (Current_sexp_network_packet.sexp_discard_operator()) {
+						Warning(LOCATION,
+							"Received invalid SEXP operator number from host. Operator number %d is not supported by "
+							"this version.",
+							op_num);
+					}
+					// a more major problem
+					else {
+						Warning(LOCATION,
+							"Received invalid SEXP packet from host. Function involving operator %d lacks termination. "
+							"Entire packet may be corrupt. Discarding remaining packet",
+							op_num);
+						return;
+					}
 				}
-				// a more major problem
-				else {
-					Warning(LOCATION, "Received invalid SEXP packet from host. Function involving operator %d lacks termination. Entire packet may be corrupt. Discarding remaining packet", op_num); 
-					return; 
-				}			
+			}
 		}
 
 		Current_sexp_network_packet.finished_callback();
@@ -26054,7 +26056,6 @@ int query_operator_return_type(int op)
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
-		case OP_SET_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 			return OPR_NULL;
@@ -28351,9 +28352,6 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
-		case OP_SET_MOTION_DEBRIS:
-			return OPF_BOOL;
-
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -29950,7 +29948,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
 		case OP_SUPERNOVA_STOP:
-		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -34008,13 +34005,6 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
 		"\tReturns true if the player is or has been cheating in this mission.\r\n"
-	},
-
-	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
-		"\tControls whether or not motion debris should be active.\r\n"
-		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
-		"Takes 1 argument...\r\n"
-		"\t1:\tBoolean: True will disable motion debris, False reenable it.\r\n"
 	},
 
 	{ OP_MODIFY_VARIABLE_XSTR, "modify-variable-xstr\r\n"

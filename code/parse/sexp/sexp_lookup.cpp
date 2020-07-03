@@ -173,6 +173,14 @@ void dynamic_sexp_init()
 	auto& global = globals();
 	global.initialized = true;
 
+	// These sexps were added in a non determinate order (across different platforms and compilers). To ensure a
+	// consistent order for the same build across different platforms, we make the order consistent by sorting. This
+	// should make it possible to use dynamic SEXP in multi contexts.
+	std::sort(global.pending_sexps.begin(),
+		global.pending_sexps.end(),
+		[](const std::unique_ptr<DynamicSEXP>& left, const std::unique_ptr<DynamicSEXP>& right) {
+			return left->getName() < right->getName();
+		});
 	// Add pending sexps now when it is safe to do so
 	for (auto&& pending : global.pending_sexps) {
 		add_dynamic_sexp(std::move(pending));

@@ -4,6 +4,9 @@
 
 #include "parse/sexp.h"
 
+#include <network/multi.h>
+#include <network/multi_sexp.h>
+
 namespace sexp {
 namespace {
 
@@ -71,7 +74,7 @@ EngineSEXPFactory& EngineSEXPFactory::category(int cat)
 }
 EngineSEXPFactory& EngineSEXPFactory::subcategory(int cat)
 {
-	_category = cat;
+	_subcategory = cat;
 	return *this;
 }
 EngineSEXPFactory& EngineSEXPFactory::subcategory(const SCP_string& subcat)
@@ -174,6 +177,11 @@ EngineSEXPFactory& EngineSEXPFactory::action(EngineSexpAction act)
 	_action = std::move(act);
 	return *this;
 }
+EngineSEXPFactory& EngineSEXPFactory::disableMulti()
+{
+	m_sexp->setEnableMulti(false);
+	return *this;
+}
 EngineSEXP::EngineSEXP(const SCP_string& name) : DynamicSEXP(name) {}
 
 EngineSEXPFactory EngineSEXP::create(const SCP_string& name)
@@ -214,8 +222,31 @@ int EngineSEXP::getArgumentType(int argnum) const
 }
 int EngineSEXP::execute(int node)
 {
-	SEXPParameterExtractor extractor(node);
-	return _action(&extractor);
+	auto extractor = SEXPParameterExtractor::fromSexpNode(node, _enableMulti);
+
+	const auto ret = _action(&extractor);
+
+	// This is the multi magic. The extractor has recorded the values that were evaluated for the parameters. We are now
+	// going to add them to the multi packet
+	if (_enableMulti && MULTIPLAYER_MASTER) {
+		Current_sexp_network_packet.start_callback();
+
+		// Send recorded multi values
+		extractor.sendMultiValues();
+
+		Current_sexp_network_packet.end_callback();
+	}
+
+	return ret;
+}
+void EngineSEXP::executeMulti()
+{
+	Assertion(_enableMulti, "Engine sexp %s invoked even though it was marked as multi disabled.", getName().c_str());
+
+	auto extractor = SEXPParameterExtractor::fromMultiPacket();
+
+	// The extractor will return the same values as on the master so the function should result in a consistent state
+	_action(&extractor);
 }
 int EngineSEXP::getReturnType() { return _returnType; }
 int EngineSEXP::getSubcategory() { return _subcategory; }
@@ -235,5 +266,6 @@ void EngineSEXP::initArguments(int minArgs, int maxArgs, SCP_vector<int> argType
 	_variableArgumentsTypes = std::move(varargsTypes);
 }
 void EngineSEXP::setAction(EngineSexpAction action) { _action = std::move(action); }
+void EngineSEXP::setEnableMulti(bool enableMulti) { _enableMulti = enableMulti; }
 
 } // namespace sexp

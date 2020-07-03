@@ -140,6 +140,16 @@ class EngineSEXPFactory {
 	EngineSEXPFactory& action(EngineSexpAction act);
 
 	/**
+	 * @brief Disables the support for using this SEXP from multi
+	 *
+	 * @warning This should only be used if the effects of the SEXP are either handled via alternate means or not
+	 * applicable to multi environments. The SEXP will still be run on the multiplayer master.
+	 *
+	 * @return The factory
+	 */
+	EngineSEXPFactory& disableMulti();
+
+	/**
 	 * @brief Finishes the construction of the SEXP
 	 * @return A dummy value to allow SEXPs to be added statically at application start
 	 */
@@ -155,6 +165,7 @@ class EngineSEXP : public DynamicSEXP {
 	int getMaximumArguments() override;
 	int getArgumentType(int argnum) const override;
 	int execute(int node) override;
+	void executeMulti() override;
 	int getReturnType() override;
 	int getSubcategory() override;
 	int getCategory() override;
@@ -177,6 +188,7 @@ class EngineSEXP : public DynamicSEXP {
 	void setReturnType(int returnType);
 	void initArguments(int minArgs, int maxArgs, SCP_vector<int> argTypes, SCP_vector<int> varargsTypes);
 	void setAction(EngineSexpAction action);
+	void setEnableMulti(bool enableMulti);
 
 	int _category = -1;
 
@@ -191,6 +203,8 @@ class EngineSEXP : public DynamicSEXP {
 	SCP_vector<int> _variableArgumentsTypes;
 
 	EngineSexpAction _action;
+
+	bool _enableMulti = true;
 
 	friend EngineSEXPFactory;
 };
