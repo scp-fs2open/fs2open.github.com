@@ -3,7 +3,9 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
+#include "camera/camera.h"
 #include "cmdline/cmdline.h"
+#include "lab/renderer/lab_cameras.h"
 
 FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
@@ -26,6 +28,7 @@ FLAG_LIST(LabRenderFlag) {
 	ShowThrusters,
 	ShowWeapons,
 	ShowEmissiveLighting,
+	ShowAfterburners,
 	TimeStopped,
 
 	NUM_VALUES
@@ -58,39 +61,6 @@ enum class TextureOverride {
 	Specular
 };
 
-class LabCamera {
-public:
-	LabCamera(camid cam) {
-		FS_camera = cam;
-	}
-
-	~LabCamera() {
-		cam_delete(FS_camera);
-	}
-
-	camid FS_camera;
-
-	virtual SCP_string getUsageInfo() = 0;
-	virtual SCP_string getOnFrameInfo() = 0;
-
-	virtual void handleMouseInput(int dx, int dy, bool lmbDown, bool rmbDown, int modifierKeys) = 0;
-};
-
-class OrbitCamera : public LabCamera {
-public:
-	OrbitCamera() : LabCamera(cam_create("Lab orbit camera")) {}
-
-	SCP_string getUsageInfo() override {
-		return "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out.";
-	}
-
-	SCP_string getOnFrameInfo() override {
-		return "";
-	}
-
-	void handleMouseInput(int dx, int dy, bool lmbDown, bool rmbDown, int modifierKeys) override;
-};
-
 class LabRenderer {
 public:
 	LabRenderer(LabCamera* cam) {
@@ -100,6 +70,7 @@ public:
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
 		currentTeamColor = "<none>";
+		currentMissionBackground = "<none>";
 
 		labCamera = cam;
 	}
@@ -110,7 +81,9 @@ public:
 
 	void useBackground(SCP_string mission_name);
 
-	void setAAMode(AntiAliasMode mode) {}
+	void setAAMode(AntiAliasMode mode) {
+		Gr_aa_mode = mode;
+	}
 
 	void useNextTeamColorPreset() {}
 
@@ -144,6 +117,7 @@ private:
 	int bloomLevel;
 	TextureQuality textureQuality;
 	SCP_string currentTeamColor;
+	SCP_string currentMissionBackground;
 
 	LabCamera* labCamera;
 

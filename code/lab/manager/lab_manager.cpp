@@ -7,6 +7,7 @@
 #include "lab/dialogs/material_overrides.h"
 #include "lab/dialogs/backgrounds.h"
 #include "io/key.h"
+#include "missionui/missionscreencommon.h"
 
 LabManager::LabManager() {
 	Screen = GUI_system.PushScreen(new GUIScreen("Lab"));
@@ -28,6 +29,39 @@ LabManager::LabManager() {
 	}
 }
 
+SCP_string get_rot_mode_string(LabRotationMode rotmode)
+{
+	switch (rotmode) {
+	case LabRotationMode::Both:
+		return "Manual rotation mode: Pitch and Yaw";
+	case LabRotationMode::Pitch:
+		return "Manual rotation mode: Pitch";
+	case LabRotationMode::Yaw:
+		return "Manual rotation mode: Yaw";
+	case LabRotationMode::Roll:
+		return "Manual rotation mode: Roll";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
+	}
+}
+
+SCP_string get_rot_speed_string(float speed_divisor)
+{
+	auto exp = std::lroundf(log10f(speed_divisor));
+
+	switch (exp) {
+	case 2:
+		return "Fast";
+	case 3:
+		return "Slow";
+	case 4:
+		return "Slowest";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
+	}
+}
+
+
 void LabManager::onFrame(float frametime) {
 	
 	Renderer->onFrame(frametime);
@@ -38,28 +72,44 @@ void LabManager::onFrame(float frametime) {
 		int key = GUI_system.GetKeyPressed();
 		int status = GUI_system.GetStatus();
 
-		//// set trackball modes
-		//if (status & GST_MOUSE_LEFT_BUTTON) {
-		//	Trackball_active = 1;
-		//	Trackball_mode = 1; // rotate viewed object
-		//
-		//	if (key_get_shift_status() & KEY_SHIFTED) {
-		//		Trackball_mode = 2; // zoom
-		//	}
-		//}
-		//else if (status & GST_MOUSE_RIGHT_BUTTON) {
-		//	Trackball_active = 1;
-		//	Trackball_mode = 3; // rotate camera
-		//}
-		//else if (!mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON)) {
-		//	// reset trackball modes
-		//	Trackball_active = 0;
-		//	Trackball_mode = 0;
-		//}
-
 		int dx, dy;
 		mouse_get_delta(&dx, &dy);
-		Renderer->getCurrentCamera()->handleMouseInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON), mouse_down(MOUSE_RIGHT_BUTTON), key_get_shift_status());
+		Renderer->getCurrentCamera()->handleInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON), mouse_down(MOUSE_RIGHT_BUTTON), key_get_shift_status());
+
+		if (!Renderer->getCurrentCamera()->handlesObjectPlacement()) {
+			if (mouse_down(MOUSE_LEFT_BUTTON)) {
+				angles rot_angle;
+				vm_extract_angles_matrix_alternate(&rot_angle, &CurrentOrientation);
+
+				if (RotationMode == LabRotationMode::Yaw) {
+					rot_angle.h += dx / RotationSpeedDivisor;
+				}
+				if (RotationMode == LabRotationMode::Pitch) {
+					rot_angle.p += dy / RotationSpeedDivisor;
+				}
+				if (RotationMode == LabRotationMode::Both) {
+					rot_angle.h += dx / RotationSpeedDivisor;
+					rot_angle.p += dy / RotationSpeedDivisor;
+				}
+				if (RotationMode == LabRotationMode::Roll) {
+					rot_angle.b += dx / RotationSpeedDivisor;
+				}
+
+				if (rot_angle.h < -PI)
+					rot_angle.h = PI - 0.001f;
+				if (rot_angle.h > PI)
+					rot_angle.h = -PI + 0.001f;
+
+				CLAMP(rot_angle.p, -PI_2, PI_2);
+
+				if (rot_angle.b < -PI)
+					rot_angle.b = PI - 0.001f;
+				if (rot_angle.b > PI)
+					rot_angle.b = -PI + 0.001f;
+
+				vm_angles_2_matrix(&CurrentOrientation, &rot_angle);
+			}
+		}
 
 		// handle any key presses
 		switch (key) {
@@ -156,6 +206,54 @@ void LabManager::onFrame(float frametime) {
 			break;
 		}
 	}
+
+	angles rot_angles;
+	float rev_rate;
+	ship_info* sip = nullptr;
+
+	if (CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_SHIP)) {
+		sip = &Ship_info[Ships[Objects[CurrentObject].instance].ship_info_index];
+	
+		auto obj = &Objects[CurrentObject];
+		bool weapons_firing = false;
+		for (auto i = 0; i < Ships[obj->instance].weapons.num_primary_banks; ++i) {
+			if (FirePrimaries & (1 << i)) {
+				weapons_firing = true;
+				Ships[obj->instance].weapons.current_primary_bank = i;
+
+				ship_fire_primary(obj, 0);
+			}
+		}
+
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Trigger_down, weapons_firing);
+
+		for (auto i = 0; i < Ships[obj->instance].weapons.num_secondary_banks; ++i) {
+			if (FireSecondaries & (1 << i)) {
+				Ships[obj->instance].weapons.current_secondary_bank = i;
+
+				ship_fire_secondary(obj);
+			}
+		}
+	}
+
+	// get correct revolution rate
+	rev_rate = REVOLUTION_RATE;
+
+	if (sip != nullptr) {
+		if (sip->is_big_ship()) {
+			rev_rate *= 1.7f;
+		}
+		else if (sip->is_huge_ship()) {
+			rev_rate *= 3.0f;
+		}
+	}
+
+	// Rotation mode
+	SCP_string text = get_rot_mode_string(RotationMode);
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
+		"%s Rotation speed: %s", get_rot_mode_string(RotationMode).c_str(),
+		get_rot_speed_string(RotationSpeedDivisor).c_str());
 
 	gr_flip();
 }

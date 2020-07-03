@@ -628,6 +628,8 @@ add_file_folder("Lab\\\\Manager"
 add_file_folder("Lab\\\\Renderer"
 	lab/renderer/lab_renderer.h
 	lab/renderer/lab_renderer.cpp
+	lab/renderer/lab_cameras.h
+	lab/renderer/lab_cameras.cpp
 )
 
 add_file_folder("Libs"

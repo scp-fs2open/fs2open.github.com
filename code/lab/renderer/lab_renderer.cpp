@@ -2,39 +2,12 @@
 #include "lab/labv2_internal.h"
 #include "lab/wmcgui.h"
 #include "graphics/2d.h"
-
-
-SCP_string get_rot_mode_string(Lab_rotation_modes rotmode)
-{
-	switch (rotmode) {
-	case Lab_rotation_modes::Both:
-		return "Manual rotation mode: Pitch and Yaw";
-	case Lab_rotation_modes::Pitch:
-		return "Manual rotation mode: Pitch";
-	case Lab_rotation_modes::Yaw:
-		return "Manual rotation mode: Yaw";
-	case Lab_rotation_modes::Roll:
-		return "Manual rotation mode: Roll";
-	default:
-		return "HOW DID THIS HAPPEN? Ask a coder!";
-	}
-}
-
-SCP_string get_rot_speed_string(float speed_divisor)
-{
-	auto exp = std::lroundf(log10f(speed_divisor));
-
-	switch (exp) {
-	case 2:
-		return "Fast";
-	case 3:
-		return "Slow";
-	case 4:
-		return "Slowest";
-	default:
-		return "HOW DID THIS HAPPEN? Ask a coder!";
-	}
-}
+#include "graphics/light.h"
+#include "starfield/starfield.h"
+#include "starfield/nebula.h"
+#include "nebula/neb.h"
+#include "freespace.h"
+#include "tracing/tracing.h"
 
 void LabRenderer::onFrame(float frametime) {
 	GR_DEBUG_SCOPE("Lab Frame");
@@ -44,17 +17,10 @@ void LabRenderer::onFrame(float frametime) {
 
 	if (!renderFlags[LabRenderFlag::TimeStopped])
 		Missiontime += Frametime;
-
-	renderHud(frametime);
-}
-
-void LabRenderer::renderHud(float frametime) {
-	GR_DEBUG_SCOPE("Lab Render");
-
-	int w, h;
-
+	
 	// render our particular thing
 	if (LMGR->CurrentObject >= 0) {
+		int w, h;
 		renderModel(frametime);
 
 		// print out the current pof filename, to help with... something
@@ -65,6 +31,102 @@ void LabRenderer::renderHud(float frametime) {
 				gr_screen.center_offset_y + gr_screen.center_h - h, LMGR->ModelFilename.c_str(), GR_RESIZE_NONE);
 		}
 	}
+
+	renderHud(frametime);
+}
+
+void LabRenderer::renderModel(float frametime) {
+	GR_DEBUG_SCOPE("Lab Render Model");
+
+	auto lab_debris_override_save = Motion_debris_enabled;
+	auto lab_envmap_override_save = Envmap_override;
+	auto lab_emissive_light_save = Cmdline_emissive;
+
+	if (currentMissionBackground == "<none>") {
+		renderFlags.set(LabRenderFlag::NoLighting);
+		Motion_debris_enabled = true;
+	}
+
+	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
+
+	object* obj = &Objects[LMGR->CurrentObject];
+
+	obj->pos = LMGR->CurrentPosition;
+	obj->orient = LMGR->CurrentOrientation;
+
+	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
+
+	if (obj->type == OBJ_SHIP) {
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::RotateSubsystems]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, renderFlags[LabRenderFlag::NoMiscMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
+
+		ship_model_update_instance(obj);
+
+		Ships[obj->instance].team_name = currentTeamColor;
+
+		if (renderFlags[LabRenderFlag::ShowDamageLightning]) {
+			obj->hull_strength = 1.0f;
+		}
+		else {
+			obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
+		}
+	}
+
+	if (renderFlags[LabRenderFlag::ShowWireframe])
+		model_render_set_wireframe_color(&Color_white);
+
+	if (renderFlags[LabRenderFlag::ShowThrusters]) {
+		obj->phys_info.forward_thrust = 1.0f;
+		if (obj->type == OBJ_SHIP) {
+			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
+		}
+		if (renderFlags[LabRenderFlag::ShowAfterburners])
+			obj->phys_info.flags |= PF_AFTERBURNER_ON;
+		else
+			obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
+	}
+	else {
+		obj->phys_info.forward_thrust = 0.0f;
+
+		if (obj->type == OBJ_SHIP)
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
+	}
+
+	obj_move_all(frametime);
+	process_subobjects(LMGR->CurrentObject);
+	particle::move_all(frametime);
+	particle::ParticleManager::get()->doFrame(frametime);
+	shockwave_move_all(frametime);
+
+	Trail_render_override = true;
+	game_render_frame(labCamera->FS_camera);
+	Trail_render_override = false;
+
+	Motion_debris_enabled = lab_debris_override_save;
+	Envmap_override = lab_envmap_override_save;
+	Cmdline_emissive = lab_emissive_light_save;
+
+	gr_reset_clip();
+	gr_set_color_fast(&HUD_color_debug);
+	if (Cmdline_frame_profile) {
+		tracing::frame_profile_process_frame();
+		gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + gr_get_font_height() + 1,
+			tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+	}
+}
+
+
+void LabRenderer::renderHud(float frametime) {
+	GR_DEBUG_SCOPE("Lab Render HUD");
 
 	// print FPS at bottom left, might be helpful
 	extern void game_get_framerate();
@@ -131,13 +193,208 @@ void LabRenderer::renderHud(float frametime) {
 		"Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
 		"zoom in or out. Use number keys to switch between AA presets. R to cycle model rotation "
 		"modes, S to cycle model rotation speeds, V to reset view.");
-
-	// Rotation mode
-	SCP_string text = get_rot_mode_string(Lab_rotation_mode);
-	gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-		"%s Rotation speed: %s", get_rot_mode_string(Lab_rotation_mode).c_str(),
-		get_rot_speed_string(Lab_manual_rotation_speed_divisor).c_str());
 }
 
-void LabRenderer::useBackground(SCP_string mission_name) {}
+void LabRenderer::useBackground(SCP_string mission_name) {
+	matrix skybox_orientation;
+	char skybox_model[MAX_FILENAME_LEN];
+	int skybox_flags;
+
+	int ambient_light_level;
+	extern const char* Neb2_filenames[];
+
+	char envmap_name[MAX_FILENAME_LEN];
+
+	stars_pre_level_init(true);
+	vm_set_identity(&skybox_orientation);
+
+	// (DahBlount) - Remember to load the debris anims
+	stars_load_debris(false);
+
+	if (mission_name != "None") {
+		read_file_text((mission_name + ".fs2").c_str(), CF_TYPE_MISSIONS);
+		reset_parse();
+
+		flagset<Mission::Mission_Flags> flags;
+		skip_to_start_of_string("+Flags");
+		if (optional_string("+Flags:"))
+			stuff_flagset(&flags);
+
+		// Are we using a skybox?
+		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
+
+		strcpy_s(skybox_model, "");
+		if (optional_string("$Skybox Model:")) {
+			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
+
+			if (optional_string("+Skybox Orientation:")) {
+				stuff_matrix(&skybox_orientation);
+			}
+
+			if (optional_string("+Skybox Flags:")) {
+				skybox_flags = 0;
+				stuff_int(&skybox_flags);
+			}
+			else {
+				skybox_flags = DEFAULT_NMODEL_FLAGS;
+			}
+
+			stars_set_background_model(skybox_model, nullptr, skybox_flags);
+			stars_set_background_orientation(&skybox_orientation);
+
+			skip_to_start_of_string("#Background bitmaps");
+		}
+
+		if (optional_string("#Background bitmaps")) {
+			required_string("$Num stars:");
+			stuff_int(&Num_stars);
+			if (Num_stars >= MAX_STARS)
+				Num_stars = MAX_STARS;
+
+			required_string("$Ambient light level:");
+			stuff_int(&ambient_light_level);
+
+			if (ambient_light_level == 0) {
+				ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
+			}
+
+			gr_set_ambient_light(ambient_light_level & 0xff, (ambient_light_level >> 8) & 0xff,
+				(ambient_light_level >> 16) & 0xff);
+
+			strcpy_s(Neb2_texture_name, "Eraseme3");
+			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			if (optional_string("+Neb2:")) {
+				stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
+
+				required_string("+Neb2Flags:");
+				stuff_int(&Neb2_poof_flags);
+
+				if (flags[Mission::Mission_Flags::Fullneb]) {
+					neb2_post_level_init();
+				}
+			}
+
+			if (flags[Mission::Mission_Flags::Fullneb]) {
+				// no regular nebula stuff
+				nebula_close();
+			}
+			else {
+				Nebula_index = -1;
+				if (optional_string("+Nebula:")) {
+					char str[MAX_FILENAME_LEN];
+					int z;
+					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+
+					// parse the proper nebula type (full or not)
+					for (z = 0; z < NUM_NEBULAS; z++) {
+						if (flags[Mission::Mission_Flags::Fullneb]) {
+							if (!stricmp(str, Neb2_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+						else {
+							if (!stricmp(str, Nebula_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULAS)
+						WarningEx(LOCATION, "Unknown nebula %s!", str);
+
+					if (optional_string("+Color:")) {
+						stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+						for (z = 0; z < NUM_NEBULA_COLORS; z++) {
+							if (!stricmp(str, Nebula_colors[z])) {
+								Mission_palette = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULA_COLORS)
+						WarningEx(LOCATION, "Unknown nebula color %s!", str);
+
+					if (optional_string("+Pitch:")) {
+						stuff_int(&Nebula_pitch);
+					}
+					else {
+						Nebula_pitch = 0;
+					}
+
+					if (optional_string("+Bank:")) {
+						stuff_int(&Nebula_bank);
+					}
+					else {
+						Nebula_bank = 0;
+					}
+
+					if (optional_string("+Heading:")) {
+						stuff_int(&Nebula_heading);
+					}
+					else {
+						Nebula_heading = 0;
+					}
+				}
+
+				if (Nebula_index >= 0) {
+					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
+				}
+				else {
+					nebula_close();
+				}
+			}
+
+			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
+
+			Num_backgrounds = 0;
+			extern void parse_one_background(background_t * background);
+			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:")) {
+				// don't allow overflow; just make sure the last background is the last read
+				if (Num_backgrounds >= MAX_BACKGROUNDS) {
+					Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
+					Num_backgrounds = MAX_BACKGROUNDS - 1;
+				}
+
+				parse_one_background(&Backgrounds[Num_backgrounds]);
+				Num_backgrounds++;
+			}
+
+			stars_load_first_valid_background();
+
+			if (optional_string("$Environment Map:")) {
+				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
+			}
+
+			const int size = 512;
+			int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
+
+			if (!Cmdline_env) {
+				return;
+			}
+
+			if (gr_screen.envmap_render_target >= 0) {
+				if (!bm_release(gr_screen.envmap_render_target, 1)) {
+					Warning(LOCATION, "Unable to release environment map render target.");
+				}
+
+				gr_screen.envmap_render_target = -1;
+			}
+
+			if (strlen(envmap_name)) {
+				// Load the mission map so we can use it later
+				ENVMAP = bm_load(The_mission.envmap_name);
+				return;
+			}
+
+			gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
+		}
+	}
+	else {
+		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
+		Motion_debris_override = true;
+		Num_stars = 0;
+	}
+}

@@ -39,6 +39,8 @@ public:
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
 	int CurrentClass = -1;
+	vec3d CurrentPosition = vmd_zero_vector;
+	matrix CurrentOrientation = vmd_identity_matrix;
 	SCP_string ModelFilename = "";
 
 	bool isSafeForShips() {
@@ -54,8 +56,6 @@ public:
 private:
 	SCP_vector<LabDialog*> Dialogs = {};
 
-	int Trackball_active;
-	int Trackball_mode;
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
 	float Lab_thrust_len = 0.0f;
