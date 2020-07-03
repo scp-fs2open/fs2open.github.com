@@ -18235,11 +18235,11 @@ void sexp_weapon_set_damage_type(int node)
 void sexp_ship_set_damage_type(int node)
 {
 	int damage;
-	bool debris, rset;
+	bool set_collision, rset;
 	size_t t;
 
 	// collision or debris
-	debris = is_sexp_true(node);
+	set_collision = is_sexp_true(node);
 
 	// get damage type
 	node = CDR(node);
@@ -18272,7 +18272,7 @@ void sexp_ship_set_damage_type(int node)
 			auto shipp = ship_entry->shipp;
 
 			// set the damage type
-			if (debris)
+			if (set_collision)
 			{
 				if (!rset)
 					shipp->collision_damage_type_idx = Ship_info[shipp->ship_info_index].collision_damage_type_idx;
