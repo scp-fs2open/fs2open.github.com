@@ -427,7 +427,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	fhash_init();
 	fhash_activate();
 
-	create_new_mission();
 	neb2_init();						// fullneb stuff
 	stars_init();
 	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
@@ -437,9 +436,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
-	mission_campaign_clear();
 
-	stars_post_level_init();
+	mission_campaign_clear();
+	create_new_mission();
 
 	// neb lightning
 	nebl_init();
@@ -805,7 +804,9 @@ void create_new_mission()
 void reset_mission()
 {
 	clear_mission();
+
 	player_start1 = create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	stars_post_level_init();
 }
 
 void clear_mission()
