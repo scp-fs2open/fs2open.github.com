@@ -88,6 +88,9 @@ namespace sexp {
 
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
+void LuaSEXP::initialize() {
+	// Nothing to do for this type
+}
 int LuaSEXP::getMinimumArguments() {
 	return _min_args;
 }
@@ -326,7 +329,7 @@ void LuaSEXP::parseTable() {
 	_category = get_category(category);
 	if (_category < 0) {
 		error_display(0, "Invalid category '%s' found. New main categories can't be added!", category.c_str());
-		_category = OP_CATEGORY_CHANGE; // Default to change2 so we have a valid value later on
+		_category = OP_CATEGORY_CHANGE2; // Default to change2 so we have a valid value later on
 	}
 
 	required_string("$Subcategory:");

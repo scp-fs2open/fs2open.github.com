@@ -920,10 +920,14 @@ add_file_folder("Parse"
 add_file_folder("Parse\\\\SEXP"
 	parse/sexp/DynamicSEXP.cpp
 	parse/sexp/DynamicSEXP.h
+	parse/sexp/EngineSEXP.cpp
+	parse/sexp/EngineSEXP.h
 	parse/sexp/LuaSEXP.cpp
 	parse/sexp/LuaSEXP.h
 	parse/sexp/sexp_lookup.cpp
 	parse/sexp/sexp_lookup.h
+	parse/sexp/SEXPParameterExtractor.cpp
+	parse/sexp/SEXPParameterExtractor.h
 )
 
 # Particle files

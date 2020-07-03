@@ -27,6 +27,8 @@ class LuaSEXP : public DynamicSEXP {
  public:
 	explicit LuaSEXP(const SCP_string& name);
 
+	void initialize() override;
+
 	int getMinimumArguments() override;
 
 	int getMaximumArguments() override;
