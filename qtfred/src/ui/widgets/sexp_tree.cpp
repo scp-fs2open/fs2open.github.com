@@ -5588,7 +5588,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		auto op = match_closest_operator(str, node);
+		auto op = match_closest_operator(str.toStdString(), node);
 		if (op.empty()) {
 			return;
 		}    // Goober5000 - avoids crashing
