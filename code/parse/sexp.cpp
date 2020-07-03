@@ -27,6 +27,7 @@
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
+#include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"		// for explosion stuff
 #include "freespace.h"
@@ -683,7 +684,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "warp-effect",					OP_WARP_EFFECT,							12, 14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "clear-weapons",					OP_CLEAR_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "clear-debris",					OP_CLEAR_DEBRIS,						0,	1,			SEXP_ACTION_OPERATOR, },	// Goober5000
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
@@ -3554,6 +3556,8 @@ int get_sexp()
 				strcpy_s(token, "set-variable-by-index");
 			else if (!stricmp(token, "distance-ship-subsystem"))
 				strcpy_s(token, "distance-center-to-subsystem");
+			else if (!stricmp(token, "remove-weapons"))
+				strcpy_s(token, "clear-weapons");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -19835,49 +19839,65 @@ void sexp_add_remove_hotkey(int node)
 	}
 }
 
-// helper function for the remove-weapons SEXP
-void actually_remove_weapons(int weapon_info_index)
+// helper function for the clear-weapons and clear-debris SEXPs
+void actually_clear_weapons_or_debris(int op_num, int class_index)
 {
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
 	{
-		if (objp->type != OBJ_WEAPON)
+		if (op_num == OP_CLEAR_WEAPONS && objp->type != OBJ_WEAPON)
+			continue;
+		if (op_num == OP_CLEAR_DEBRIS && objp->type != OBJ_DEBRIS)
 			continue;
 
-		// weapon doesn't match the optional weapon
-		if ((weapon_info_index >= 0) && (Weapons[objp->instance].weapon_info_index != weapon_info_index))
-			continue;
+		if (class_index >= 0)
+		{
+			// weapon doesn't match the class
+			if (op_num == OP_CLEAR_WEAPONS && (Weapons[objp->instance].weapon_info_index != class_index))
+				continue;
+
+			// debris doesn't match the class
+			if (op_num == OP_CLEAR_DEBRIS && (Debris[objp->instance].ship_info_index != class_index))
+				continue;
+		}
 
 		objp->flags.set(Object::Object_Flags::Should_be_dead);
 	}
 }
 
-void sexp_remove_weapons(int node)
+void sexp_clear_weapons_or_debris(int node, int op_num)
 { 
-	int weapon_info_index = -1;
+	int class_index = -1;
 
 	// if we have the optional argument, read it in
 	if (node >= 0) {
-		weapon_info_index = weapon_info_lookup(CTEXT(node));
-		if (weapon_info_index == -1) {
-			Warning(LOCATION, "Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission\n", CTEXT(node));
+		if (op_num == OP_CLEAR_WEAPONS) {
+			class_index = weapon_info_lookup(CTEXT(node));
+			if (class_index == -1) {
+				Warning(LOCATION, "Clear-weapons attempted to remove %s. Weapon class not found. Clear-weapons will remove all weapons currently in the mission\n", CTEXT(node));
+			}
+		} else if (op_num == OP_CLEAR_DEBRIS) {
+			class_index = ship_info_lookup(CTEXT(node));
+			if (class_index == -1) {
+				Warning(LOCATION, "Clear-debris attempted to remove %s. Ship class not found. Clear-debris will remove all debris currently in the mission\n", CTEXT(node));
+			}
 		}
 	}
 
-	actually_remove_weapons(weapon_info_index); 
+	actually_clear_weapons_or_debris(op_num, class_index);
 	
 	// send the information to clients
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(weapon_info_index); 
+	Current_sexp_network_packet.send_int(class_index); 
 	Current_sexp_network_packet.end_callback();
 }
 
-void multi_sexp_remove_weapons()
+void multi_sexp_clear_weapons_or_debris(int op_num)
 {
-	int weapon_info_index = -1; 
+	int class_index = -1; 
 
-	Current_sexp_network_packet.get_int(weapon_info_index);
+	Current_sexp_network_packet.get_int(class_index);
 	
-	actually_remove_weapons(weapon_info_index); 
+	actually_clear_weapons_or_debris(op_num, class_index);
 }
 
 int sexp_return_player_data(int node, int type)
@@ -24312,8 +24332,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_REMOVE_WEAPONS:
-				sexp_remove_weapons(node);
+			case OP_CLEAR_WEAPONS:
+			case OP_CLEAR_DEBRIS:
+				sexp_clear_weapons_or_debris(node, op_num);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25141,8 +25162,9 @@ void multi_sexp_eval()
 				multi_sexp_set_respawns();
 				break;
 
-			case OP_REMOVE_WEAPONS:
-				multi_sexp_remove_weapons();
+			case OP_CLEAR_WEAPONS:
+			case OP_CLEAR_DEBRIS:
+				multi_sexp_clear_weapons_or_debris(op_num);
 				break;
 
 			case OP_CHANGE_SHIP_CLASS:
@@ -26024,7 +26046,8 @@ int query_operator_return_type(int op)
 		case OP_SET_POST_EFFECT:
 		case OP_RESET_POST_EFFECTS:
 		case OP_CHANGE_IFF_COLOR:
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
+		case OP_CLEAR_DEBRIS:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_FORCE_GLIDE:
@@ -26377,8 +26400,11 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
 			return OPF_WEAPON_NAME;
+
+		case OP_CLEAR_DEBRIS:
+			return OPF_SHIP_CLASS_NAME;
 
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 			if (argnum == 0)
@@ -29986,7 +30012,8 @@ int get_subcategory(int sexp_id)
 		case OP_SET_EXPLOSION_OPTION:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
+		case OP_CLEAR_DEBRIS:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CALL_SSM_STRIKE:
@@ -32622,9 +32649,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThe ship specified in the first field should be the player start.\r\n"
 		"\tOnly really useful for multiplayer."},
 
-	{ OP_REMOVE_WEAPONS, "remove-weapons\r\n"
-		"\tRemoves all live weapons currently in the game"
-		"\t1: (Optional) Remove only this specific weapon\r\n"},
+	{ OP_CLEAR_WEAPONS, "clear-weapons\r\n"
+		"\tRemoves all live weapons currently in the mission"
+		"\t1: (Optional) Remove only this specific class of weapon\r\n"},
+
+	{ OP_CLEAR_DEBRIS, "clear-debris\r\n"
+		"\tRemoves all ship debris currently in the mission"
+		"\t1: (Optional) Remove only debris from this specific class of ship\r\n"},
 
 	{ OP_SET_RESPAWNS, "set-respawns\r\n"
 		"\tSet the # respawns a player (or AI that could have been a player) has used.\r\n"
