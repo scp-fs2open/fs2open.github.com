@@ -1689,22 +1689,32 @@ int CFred_mission_save::save_events()
 		}
 
 		// save flags, if any
-		// (the transient flags are not used in FRED, so if the flags field is nonzero they will all be meaningful flags from the flag list)
-		if (save_format != MissionFormat::RETAIL && Mission_events[i].flags != 0) {
-			fso_comment_push(";;FSO 20.0.0;;");
-			if (optional_string_fred("+Event Flags: (", "$Formula:")) {
-				parse_comments();
-			} else {
-				fout_version("\n+Event Flags: (");
-			}
-			fso_comment_pop();
+		if (save_format != MissionFormat::RETAIL) {
+			// we need to lazily-write the tag because we should only write it if there are also flags to write
+			// (some of the flags are transient, internal flags)
+			bool wrote_tag = false;
 
 			for (j = 0; j < Num_mission_event_flags; ++j) {
 				if (Mission_events[i].flags & Mission_event_flags[j].def) {
+					if (!wrote_tag) {
+						wrote_tag = true;
+
+						fso_comment_push(";;FSO 20.0.0;;");
+						if (optional_string_fred("+Event Flags: (", "$Formula:")) {
+							parse_comments();
+						}
+						else {
+							fout_version("\n+Event Flags: (");
+						}
+						fso_comment_pop();
+					}
+
 					fout(" \"%s\"", Mission_event_flags[j].name);
 				}
 			}
-			fout(" )");
+
+			if (wrote_tag)
+				fout(" )");
 		}
 
 		if (save_format != MissionFormat::RETAIL && Mission_events[i].mission_log_flags != 0) {
