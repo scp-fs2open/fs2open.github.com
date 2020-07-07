@@ -3558,34 +3558,34 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	}
 }
 
-void parse_common_object_data(p_object	*objp)
+void parse_common_object_data(p_object *p_objp)
 {
 	int i;
 
 	// Genghis: used later for subsystem checking
-	ship_info* sip = &Ship_info[objp->ship_class];
+	auto sip = &Ship_info[p_objp->ship_class];
 
 	// set some defaults..
-	objp->initial_velocity = 0;
-	objp->initial_hull = 100;
-	objp->initial_shields = 100;
+	p_objp->initial_velocity = 0;
+	p_objp->initial_hull = 100;
+	p_objp->initial_shields = 100;
 
 	// now change defaults if present
 	if (optional_string("+Initial Velocity:")) {
-		stuff_int(&objp->initial_velocity);
+		stuff_int(&p_objp->initial_velocity);
 	}
 
 	if (optional_string("+Initial Hull:"))
-		stuff_int(&objp->initial_hull);
+		stuff_int(&p_objp->initial_hull);
 	if (optional_string("+Initial Shields:"))
-		stuff_int(&objp->initial_shields);
+		stuff_int(&p_objp->initial_shields);
 
-	objp->subsys_index = Subsys_index;
-	objp->subsys_count = 0;
+	p_objp->subsys_index = Subsys_index;
+	p_objp->subsys_count = 0;
 	while (optional_string("+Subsystem:")) {
 		i = allocate_subsys_status();
 
-		objp->subsys_count++;
+		p_objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
 		// Genghis: check that the subsystem name makes sense for this ship type
@@ -3621,7 +3621,15 @@ void parse_common_object_data(p_object	*objp)
 		}
 
 		if (optional_string("+AI Class:"))
+		{
 			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+
+			if (Subsys_status[i].ai_class < 0)
+			{
+				Warning(LOCATION, "AI Class for ship %s and subsystem %s does not exist in ai.tbl. Setting to first available class.\n", p_objp->name, Subsys_status[i].name);
+				Subsys_status[i].ai_class = 0;
+			}
+		}
 
 		if (optional_string("+Primary Banks:"))
 			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
