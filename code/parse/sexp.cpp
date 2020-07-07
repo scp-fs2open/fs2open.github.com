@@ -8699,7 +8699,7 @@ void sexp_special_warpout_name( int node )
 	if (!ship_entry || !ship_entry->shipp)
 		return;
 
-	auto knossos_entry = eval_ship(node);
+	auto knossos_entry = eval_ship(CDR(node));
 	if (!knossos_entry || !knossos_entry->shipp)
 		return;
 
