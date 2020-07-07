@@ -388,7 +388,7 @@ extern void game_busy(const char *filename = NULL);
 
 #define NOX(s) s
 
-const char *XSTR(const char *str, int index);
+const char *XSTR(const char *str, int index, bool force_lookup = false);
 
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )
