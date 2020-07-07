@@ -340,7 +340,6 @@ public:
 	//or higher, an index into the turret weapons is considered to be an index into the secondary weapons
 	//for much of the code. See turret_next_weap_fire_stamp.
 
-	int		turret_best_weapon;				// best weapon for current target; index into prim/secondary banks
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire

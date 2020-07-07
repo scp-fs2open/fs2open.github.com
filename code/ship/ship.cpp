@@ -6772,7 +6772,6 @@ void ship_subsys::clear()
 	subsys_guardian_threshold = 0;
 	armor_type_idx = -1;
 
-	turret_best_weapon = -1;
 	turret_last_fire_direction = vmd_zero_vector;
 	turret_next_enemy_check_stamp = timestamp(0);
 	turret_next_fire_stamp = timestamp(0);

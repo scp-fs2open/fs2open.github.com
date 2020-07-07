@@ -2198,7 +2198,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	ship_weapon *swp = &ss->weapons;
 	vec3d	predicted_enemy_pos = vmd_zero_vector;
 	object	*objp;
-	//ai_info	*aip;
 
 	// Reset the points to target value
 	ss->points_to_target = -1.0f;
@@ -2570,9 +2569,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Ok, the turret is lined up... now line up a particular gun.
 	bool ok_to_fire = false;
-	bool something_was_ok_to_fire=false;
+	bool something_was_ok_to_fire = false;
 
-	if (in_fov ) {
+	if (in_fov) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
@@ -2588,24 +2587,28 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		for (int i = 0; i < number_of_firings; ++i)
 		{
+			int valid_index;
+			if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
+				valid_index = 0;
+			else
+				valid_index = i;
+			auto wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[valid_index]);
+
+			// Forces the firing turret to retain the firingpoints of their weapons:
+			// if the turret has multiple banks, the first bank will only fire from the first firepoint,
+			// the second bank only from the second firepoint, and so on.
 			if (tp->flags[Model::Subsystem_Flags::Turret_fixed_fp])
 			{
-				int ffp_pos = 0;
-				int ffp_bank;
-				
-				ffp_bank = valid_weapons[i];
+				int ffp_bank = valid_weapons[valid_index];
 
 				if (ffp_bank < MAX_SHIP_PRIMARY_BANKS)
-				{
-					ffp_pos = ffp_bank;
-				}
+					ss->turret_next_fire_pos = ffp_bank;
 				else
-				{
-					ffp_pos = ffp_bank - MAX_SHIP_PRIMARY_BANKS + ss->weapons.num_primary_banks;
-				}
-
-				ss->turret_next_fire_pos = ffp_pos;
+					ss->turret_next_fire_pos = ffp_bank - MAX_SHIP_PRIMARY_BANKS + ss->weapons.num_primary_banks;
 			}
+
+			// make sure to reset this for current weapon
+			ok_to_fire = false;
 
 			// We're ready to fire... now get down to specifics, like where is the
 			// actual gun point and normal, not just the one for whole turret.
@@ -2615,15 +2618,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
 			dist_to_enemy = vm_vec_normalize(&v2e);
 			float dot = vm_vec_dot(&v2e, &gvec);
-
-			weapon_info *wip;
-			if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
-				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[0]);
-			else
-				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
-	
-			// make sure to reset this for current weapon
-			ok_to_fire = false;
 
 			// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
 			// to make a cool visual effect and make them less lethal
@@ -2635,7 +2629,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//		dumbfire and nearly pointing at target.
 			//		heat seeking and target in a fairly wide cone.
 			//		aspect seeking and target is locked.
-			//turret_weapon_class = tp->turret_weapon_type;
 			bool in_sight = false;
 			
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_only_single_fov_for_turrets]) {
@@ -2653,6 +2646,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				}
 			}
 
+			// if dumbfire (lasers and non-homing missiles)
 			if ( !(wip->is_homing()) )
 			{
 				if ((dist_to_enemy < 75.0f) || in_sight)
@@ -2661,16 +2655,18 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ok_to_fire = true;
 				}
 			}
+			// if heat seekers
 			else if ( wip->wi_flags[Weapon::Info_Flags::Homing_heat] )
-			{	// if heat seekers
+			{
 				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
 				}
 			}
+			// if aspect seeker
 			else if ( wip->wi_flags[Weapon::Info_Flags::Homing_aspect] )
-			{	// if aspect seeker
+			{
 				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
@@ -2680,8 +2676,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ok_to_fire = true;
 				}
 			}
+			// if javelin heat seeker
 			else if ( wip->wi_flags[Weapon::Info_Flags::Homing_javelin] )
-			{	// if javelin heat seeker
+			{
 				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
@@ -2695,6 +2692,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				}
 			}
 
+			// maybe check that the gun vector doesn't intersect with the hull
 			if ( ok_to_fire && (tp->flags[Model::Subsystem_Flags::Turret_hull_check]) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
 				vec3d end;
@@ -2734,37 +2732,37 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 			if ( ok_to_fire )
 			{
+				// finally!
 				something_was_ok_to_fire = true;
 				Num_turrets_fired++;
 
-				vec3d* shoot_vector = &v2e;
+				vec3d *shoot_vector = &v2e;
 				if (tp->flags[Model::Subsystem_Flags::Fire_on_normal])
 					shoot_vector = &gvec;
 
-				//Pass along which gun we are using
-				int wep_to_fire = i;
-				if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
-					wep_to_fire = 0;
+				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, shoot_vector, &predicted_enemy_pos);
+			}
+			else
+			{
+				turret_update_enemy_in_range(ss, -4*wip->fire_wait);
+				if (tp->flags[Model::Subsystem_Flags::Use_multiple_guns])
+					set_turret_weapon_next_fire_stamp(swp, valid_weapons[valid_index], 500);
+				else
+					ss->turret_next_fire_stamp = timestamp(500);
 
-				turret_fire_weapon(valid_weapons[wep_to_fire], ss, parent_objnum, &gpos, shoot_vector, &predicted_enemy_pos);
-			} else {
 				// make sure salvo fire mode does not turn into autofire
 				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
 					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
-					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
+					turret_set_next_fire_timestamp(valid_weapons[valid_index], wip, ss, parent_aip);
 				}
 			}
+
+			// we are done firing, so fire the next weapon from the next firing point
 			ss->turret_next_fire_pos++;
 		}
 
-		if(!something_was_ok_to_fire)
+		if (!something_was_ok_to_fire)
 		{
-			if (ss->turret_best_weapon >= 0) {
-				//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
-				turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
-			}
-			ss->turret_next_fire_stamp = timestamp(500);
-
 			// If nothing is OK to fire (lost track of the target?) 
 			// reset the target (so we don't continue to track what we can't hit)
 			if (tp->flags[Model::Subsystem_Flags::Turret_only_target_if_can_fire])
@@ -2775,37 +2773,31 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		}
 		else
 		{
-			ss->turret_next_fire_stamp = INT_MAX;
-			//something did fire, get the lowest valid timestamp 
-			for (i = 0; i < MAX_SHIP_WEAPONS; i++)
+			//something did fire, get the lowest valid timestamp
+			// don't do this if we already set a turret timestamp previously in the function
+			if (timestamp_until(ss->turret_next_fire_stamp) <= 0)
 			{
-				if (i < MAX_SHIP_PRIMARY_BANKS)
+				int minimum_stamp = -1;
+
+				for (int i = 0; i < MAX_SHIP_WEAPONS; ++i)
 				{
-					//timestamp range is 2 to INT_MAX/2
-					if (swp->next_primary_fire_stamp[i] < 2) continue;
-					
-					if (swp->next_primary_fire_stamp[i] < ss->turret_next_fire_stamp)
-					{
-						ss->turret_next_fire_stamp = swp->next_primary_fire_stamp[i];
-					}
+					int stamp = (i < MAX_SHIP_PRIMARY_BANKS) ? swp->next_primary_fire_stamp[i] : swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS];
+
+					// valid timestamps start at 2; stamp must be in the future
+					if (stamp < 2 || timestamp_until(stamp) <= 0)
+						continue;
+
+					// find minimum
+					if (minimum_stamp < 0 || timestamp_until(stamp) < timestamp_until(minimum_stamp))
+						minimum_stamp = stamp;
 				}
+
+				// set turret timestamp, or 100ms for sanity's sake
+				if (minimum_stamp >= 0)
+					ss->turret_next_fire_stamp = minimum_stamp;
 				else
-				{
-					//timestamp range is 2 to INT_MAX/2
-					if (swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS] < 2) continue;
-
-					if (swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS] < ss->turret_next_fire_stamp)
-					{
-						ss->turret_next_fire_stamp = swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS];
-					}
-
-				}
-
+					ss->turret_next_fire_stamp = timestamp(100);
 			}
-			// Wanderer -- sanity check
-			// if timestamp is still at int_max reset the wait to 100 ms instead of locking the turret for the rest of the game
-			if (ss->turret_next_fire_stamp == INT_MAX)
-				ss->turret_next_fire_stamp = timestamp(100);
 		}
 	}
 	else
