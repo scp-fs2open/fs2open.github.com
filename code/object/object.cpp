@@ -794,6 +794,16 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		}
 	}
 
+	if ( MULTIPLAYER_CLIENT && objp == Player_obj ) {
+		if (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].trigger_lock) {
+			if (ci.fire_secondary_count) {
+				ship_start_secondary_fire(objp);
+			} else {
+				ship_stop_secondary_fire(objp);
+			}
+		}	
+	}
+
 	// everyone does the following for their own ships.
 	if ( ci.afterburner_start ){
 		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE)){

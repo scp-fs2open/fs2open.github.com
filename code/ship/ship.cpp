@@ -11987,14 +11987,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 	}
 
-	if ( !allow_swarm && obj == Player_obj ) {
+	if ( !allow_swarm && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
 		ship_queue_missile_locks(shipp);
 	}
 
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
-		if (wip->multi_lock && obj == Player_obj) {
+		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
 			shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
 		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
@@ -12010,7 +12010,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		if (wip->multi_lock && obj == Player_obj) {
+		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
 			shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
@@ -12060,7 +12060,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		ship_subsys *target_subsys;
 		int locked;
 
-		if ( obj == Player_obj ) {
+		if ( (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] )) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
 				lock_info lock_data = shipp->missile_locks_firing.back();
