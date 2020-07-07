@@ -29,7 +29,8 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object *objp, dock_function_info *infop);
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
-
+void dock_calc_inv_total_moi_helper(object* objp, dock_function_info* infop);
+void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop);
 
 // management prototypes
 
@@ -186,7 +187,7 @@ void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp)
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_mins_maxs_helper);
 }
 
-void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
+float dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 {
 	Assert(dest != NULL);
 	Assert(objp != NULL);
@@ -199,7 +200,9 @@ void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_of_mass_helper);
 
 	// overall center of mass = weighted sum of centers of mass divided by total mass
-	vm_vec_scale(dest, (1.0f / dfi.maintained_variables.float_value));
+	float total_mass = dfi.maintained_variables.float_value;
+	vm_vec_scale(dest, (1.0f / total_mass));
+	return total_mass;
 }
 
 float dock_calc_total_docked_mass(object *objp)
@@ -337,6 +340,65 @@ float dock_calc_docked_speed(object *objp)
 	return dfi.maintained_variables.float_value;
 }
 
+void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
+{
+	Assert(dest != NULL);
+	Assert(objp != NULL);
+
+	matrix accum, local_moi;
+	vm_mat_zero(&accum);
+
+	dock_function_info dfi;
+	dfi.parameter_variables.vecp_value = center;
+	dfi.maintained_variables.matrix_value = dest;
+
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_inv_total_moi_helper);
+}
+
+void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* objp)
+{
+	//	Detect null vector.
+	if (whack_below_limit(force))
+		return;
+
+	vec3d world_center_of_mass;
+
+	// calc world hit pos of the hit ship
+	vm_vec_add2(world_hit_pos, &objp->pos);
+
+	// calc overall world center-of-mass of all ships
+	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
+
+	// the new hitpos is the vector from world center-of-mass to world hitpos
+	vm_vec_sub2(world_hit_pos, &world_center_of_mass);
+
+	matrix moi, local_moi, inv_moi;
+
+	// calculate the effective inverse MOI for the docked composite object about its center of mass
+	dock_calc_total_moi(&moi, objp, &world_center_of_mass);
+
+	vm_inverse_matrix(&inv_moi, &moi);
+
+	vec3d torque;
+	vm_vec_cross(&torque, world_hit_pos, force);
+
+	vec3d delta_rotvel;
+	vm_vec_rotate(&delta_rotvel, &torque, &inv_moi);
+
+	vec3d delta_vel = *force * (1.0f / total_mass);
+	// up to this point is all we would need for a single object but since its a composite object
+	// the individual objects will need to take this data and calculate how it would affect 
+	// them given their orientations and offsets
+
+	dock_function_info dfi;
+	dfi.parameter_variables.float_value = vm_vec_mag(force);
+	dfi.parameter_variables.vecp_value = &delta_rotvel;
+	dfi.parameter_variables.vecp_value2 = &delta_vel;
+	dfi.maintained_variables.vecp_value = &world_center_of_mass;
+
+	//pass on the data to the docked objects so they can whack themselves accordingly
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_whack_all_docked_objects_helper);
+}
 
 // functions to deal with all docked ships anywhere
 // ---------------------------------------------------------------------------------------------------------------
@@ -733,6 +795,50 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 }
 
+void dock_calc_inv_total_moi_helper(object* objp, dock_function_info* infop)
+{
+	matrix local_moi, unorient, world_moi;
+	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
+	vm_copy_transpose(&unorient, &objp->orient);
+	vm_matrix_x_matrix(&world_moi, &local_moi, &unorient);
+	float mass = objp->phys_info.mass;
+	vec3d pos = objp->pos;
+	pos -= *infop->parameter_variables.vecp_value;
+	// moment of inertia for a point mass: I_xx = m(y^2+z^2), I_xy = -mxy, etc
+	world_moi.a2d[0][0] += mass * (pos.xyz.y * pos.xyz.y + pos.xyz.z * pos.xyz.z);
+	world_moi.a2d[1][1] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.z * pos.xyz.z);
+	world_moi.a2d[2][2] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.y * pos.xyz.y);
+	world_moi.a2d[0][1] -= mass * pos.xyz.x * pos.xyz.y;
+	world_moi.a2d[1][0] -= mass * pos.xyz.x * pos.xyz.y;
+	world_moi.a2d[0][2] -= mass * pos.xyz.x * pos.xyz.z;
+	world_moi.a2d[2][0] -= mass * pos.xyz.x * pos.xyz.z;
+	world_moi.a2d[1][2] -= mass * pos.xyz.y * pos.xyz.z;
+	world_moi.a2d[2][1] -= mass * pos.xyz.y * pos.xyz.z;
+
+	*infop->maintained_variables.matrix_value += world_moi;
+}
+
+void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop)
+{
+	float orig_impulse = infop->parameter_variables.float_value;
+	vec3d* world_delta_rotvel = infop->parameter_variables.vecp_value;
+	vec3d* main_delta_vel = infop->parameter_variables.vecp_value2;
+	vec3d* world_center_of_mass = infop->maintained_variables.vecp_value;
+	vec3d delta_rotvel;
+
+	// compute your rotvel
+	vm_vec_rotate(&delta_rotvel, world_delta_rotvel, &objp->orient);
+	
+	// compute your linear vel based on the composite rotvel + offset and composite linear vel
+	vec3d delta_vel;
+	vec3d rel_pos;
+	vm_vec_sub(&rel_pos, &objp->pos, world_center_of_mass);
+	vm_vec_cross(&delta_vel, &rel_pos, world_delta_rotvel);
+	vm_vec_add2(&delta_vel, main_delta_vel);
+	
+	// whack it
+	physics_apply_whack_direct(orig_impulse, &objp->phys_info, &delta_rotvel, &delta_vel, &objp->orient);
+}
 // ---------------------------------------------------------------------------------------------------------------
 // end of über code block ----------------------------------------------------------------------------------------
 

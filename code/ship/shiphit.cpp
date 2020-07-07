@@ -1790,39 +1790,18 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
+	
+	vec3d world_hit_pos;
+	vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
 
+	// If docked, every ship has to be whacked in the correct directions and magnitudes so they all agree
 	if (object_is_docked(objp))
 	{
-		float overall_mass = dock_calc_total_docked_mass(objp);
-
-		// Goober5000 - this code attempts to account properly for whacking a docked object as one mass.
-		// It isn't perfect, because physics doesn't completely account for it (particularly because it
-		// still uses the moment of inertia for the whacked object, not for all objects).  Commenting
-		// out the contents of the block restores the Volition behavior, but it doesn't calculate the
-		// correct torque.
-		// Addendum: this block is now not executed for docked fighters or bombers because the whack
-		// looks like the fighter is doing evasive maneuvers
-		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].is_fighter_bomber()))
-		{
-			vec3d world_hit_pos, world_center_of_mass;
-
-			// calc world hit pos of the hit ship
-			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
-			vm_vec_add2(&world_hit_pos, &objp->pos);
-
-			// calc overall world center-of-mass of all ships
-			dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
-
-			// the new hitpos is the vector from world center-of-mass to world hitpos
-			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_of_mass);
-		}
-
-		// whack it
-		physics_apply_whack(force, hit_pos, &objp->phys_info, &objp->orient, overall_mass);
+		dock_whack_all_docked_objects(force, &world_hit_pos, objp);
 	}
 	else
 	{
-		physics_apply_whack(force, hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass);
+		physics_apply_whack(force, &world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
 	}					
 }
 

@@ -7840,7 +7840,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_rand_vec_quick(&pos);
 		vm_vec_scale(&pos, docked_objp->radius);
 		// apply whack to docked object
-		physics_apply_whack(&impulse_vec, &pos, &docked_objp->phys_info, &docked_objp->orient, docked_objp->phys_info.mass);
+		ship_apply_whack(&impulse_vec, &pos, docked_objp);
 		// enhance rotation of the docked object
 		vm_vec_scale(&docked_objp->phys_info.rotvel, 2.0f);
 
@@ -7848,7 +7848,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_negate(&impulse_vec);
 		vm_vec_rand_vec_quick(&pos);
 		vm_vec_scale(&pos, dying_objp->radius);
-		physics_apply_whack(&impulse_vec, &pos, &dying_objp->phys_info, &dying_objp->orient, dying_objp->phys_info.mass);
+		ship_apply_whack(&impulse_vec, &pos, dying_objp);
 
 		// unlink the two objects, since dying_objp has blown up
 		dock_dead_undock_objects(dying_objp, docked_objp);
@@ -16960,7 +16960,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	}
 
 	// whack the ship
-	physics_apply_whack(&impulse, &pos, &cargo_objp->phys_info, &cargo_objp->orient, cargo_objp->phys_info.mass);
+	ship_apply_whack(&impulse, &pos, cargo_objp);
 }
 
 float ship_get_exp_damage(object* objp)
