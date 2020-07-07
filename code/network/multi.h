@@ -64,9 +64,10 @@ class player;
 // version 49 - 7/26/2020 Addition of multilock
 // version 50 - 7/27/2020 IPv6
 // version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
+// version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							51
+#define MULTI_FS_SERVER_VERSION							52
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 

@@ -1023,7 +1023,7 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
 static SCP_vector<int> sort_list_y;
 static SCP_vector<int> sort_list_z;
 
-void obj_sort_and_collide()
+void obj_sort_and_collide(SCP_vector<int> Collision_list)
 {
 	if (Cmdline_dis_collisions)
 		return;
@@ -1034,9 +1034,9 @@ void obj_sort_and_collide()
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
-		obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
+		obj_quicksort_colliders(&Collision_list, 0, (int)(Collision_list.size() - 1), 0);
 	}
-	obj_find_overlap_colliders(sort_list_y, Collision_sort_list, 0, false);
+	obj_find_overlap_colliders(sort_list_y, Collision_list, 0, false);
 
 	sort_list_z.clear();
 	{
