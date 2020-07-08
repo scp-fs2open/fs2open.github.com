@@ -189,8 +189,8 @@ void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp)
 
 float dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 {
-	Assert(dest != NULL);
-	Assert(objp != NULL);
+	Assertion(dest != nullptr, "dock_calc_docked_center_of_mass, invalid dest");
+	Assertion(objp != nullptr, "dock_calc_docked_center_of_mass, invalid objp");
 
 	vm_vec_zero(dest);
 
@@ -207,8 +207,6 @@ float dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 
 float dock_calc_total_docked_mass(object *objp)
 {
-	Assert(objp != NULL);
-
 	dock_function_info dfi;
 	
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_docked_mass_helper);
@@ -342,8 +340,8 @@ float dock_calc_docked_speed(object *objp)
 
 void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
-	Assert(dest != nullptr);
-	Assert(objp != nullptr);
+	Assertion(dest != nullptr, "dock_calc_total_moi invalid dest");
+	Assertion(objp != nullptr, "dock_calc_total_moi invalid objp");
 
 	matrix accum;
 	vm_mat_zero(&accum);
@@ -357,6 +355,9 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 
 void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* objp)
 {
+	Assertion((objp != nullptr) && (force != nullptr) && (world_hit_pos != nullptr),
+		"dock_whack_all_docked_objects invalid argument(s)");
+
 	//	Detect null vector.
 	if (whack_below_limit(force))
 		return;
@@ -409,7 +410,8 @@ void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* o
 // evaluate a certain function for all docked objects
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *))
 {
-	Assert((objp != NULL) && (infop != NULL) && (function != NULL));
+	Assertion((objp != nullptr) && (infop != nullptr) && (function != nullptr),
+		"dock_evaluate_all_docked_objects, invalid argument(s)");
 
 	// not docked?
 	if (!object_is_docked(objp))
@@ -820,6 +822,9 @@ void dock_calc_inv_total_moi_helper(object* objp, dock_function_info* infop)
 
 void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop)
 {
+	Assertion((objp != nullptr) && (infop != nullptr),
+		"dock_whack_all_docked_objects_helper invalid argument(s)");
+
 	float orig_impulse = infop->parameter_variables.float_value;
 	vec3d* world_delta_rotvel = infop->parameter_variables.vecp_value;
 	vec3d* main_delta_vel = infop->parameter_variables.vecp_value2;

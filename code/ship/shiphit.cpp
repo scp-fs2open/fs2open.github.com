@@ -1783,6 +1783,8 @@ extern int Homing_hits, Homing_misses;
 // Goober5000 - note... hit_pos is in *local* coordinates
 void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 {
+	Assertion((objp != nullptr) && (force != nullptr) && (hit_pos != nullptr), "ship_apply_whack invalid argument(s)");
+
 	if (objp == Player_obj) {
 		nprintf(("Sandeep", "Playing stupid joystick effect\n"));
 		vec3d test;

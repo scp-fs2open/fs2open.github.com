@@ -777,6 +777,9 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 // and doesn't set this function up using physics_apply_whack
 void physics_apply_whack_direct(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
 {
+	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
+		"physics_apply_whack_direct invalid argument(s)");
+
 	vm_vec_scale(delta_rotvel, (float)ROTVEL_WHACK_CONST);
 	vm_vec_add2(&pi->rotvel, delta_rotvel);
 
