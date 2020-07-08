@@ -2779,7 +2779,7 @@ bool vm_inverse_matrix4(matrix4* dest, const matrix4* m)
 	float det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
 
 	if (det == 0) {
-		*dest = ZERO_MATRIX;
+		*dest = ZERO_MATRIX4;
 		return false;
 	}
 
