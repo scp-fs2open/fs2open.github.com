@@ -342,8 +342,8 @@ float dock_calc_docked_speed(object *objp)
 
 void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
-	Assert(dest != NULL);
-	Assert(objp != NULL);
+	Assert(dest != nullptr);
+	Assert(objp != nullptr);
 
 	matrix accum;
 	vm_mat_zero(&accum);
