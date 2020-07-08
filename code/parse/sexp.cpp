@@ -1250,7 +1250,7 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].cached_variable_index = -1;
 
 	// special-arg?
-	if (type == SEXP_ATOM && subtype == SEXP_ATOM_STRING && !strcmp(text, SEXP_ARGUMENT_STRING))
+	if (type == SEXP_ATOM && !strcmp(text, SEXP_ARGUMENT_STRING))
 		Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_NODE;
 
 	return node;
@@ -3944,9 +3944,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		if (mode == SEXP_ERROR_CHECK_MODE)
 		{
 			if (Fred_running)
-				sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			else
-				sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "@%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
 		}
 		else
 		{
@@ -3988,7 +3988,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 			{
 				// if (for whatever reason) we have an empty string or an invalid number, print 0
-				if (*ctext_string == '\0' || !can_construe_as_integer(ctext_string))
+				// do not do this trick in error mode, because we want to know what the text actually is
+				if ((mode != SEXP_ERROR_CHECK_MODE) &&
+					(*ctext_string == '\0' || !can_construe_as_integer(ctext_string)))
 				{
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
 					ctext_string = "0";
