@@ -27,6 +27,8 @@ vec3d vmd_scale_identity_vector = SCALE_IDENTITY_VECTOR;
 vec3d vmd_x_vector = { { { 1.0f, 0.0f, 0.0f } } };
 vec3d vmd_y_vector = { { { 0.0f, 1.0f, 0.0f } } };
 vec3d vmd_z_vector = { { { 0.0f, 0.0f, 1.0f } } };
+matrix vmd_zero_matrix = ZERO_MATRIX;
+matrix4 vmd_zero_matrix4 = ZERO_MATRIX4;
 matrix vmd_identity_matrix = IDENTITY_MATRIX;
 angles vmd_zero_angles = { 0.0f, 0.0f, 0.0f };
 
@@ -2571,19 +2573,95 @@ void vm_vec_boxscale(vec2d *vec, float  /*scale*/)
 	vec->y *= ratio;
 }
 
+// adds two matrices, fills in dest, returns ptr to dest
+// ok for dest to equal either source, but should use vm_matrix_add2() if so
+// dest = src0 + src1
+void vm_matrix_add(matrix* dest, const matrix* src0, const matrix* src1)
+{
+	dest->vec.fvec = src0->vec.fvec + src1->vec.fvec;
+	dest->vec.rvec = src0->vec.rvec + src1->vec.rvec;
+	dest->vec.uvec = src0->vec.uvec + src1->vec.uvec;
+}
+
+// subs two matrices, fills in dest, returns ptr to dest
+// ok for dest to equal either source, but should use vm_matrix_sub2() if so
+// dest = src0 - src1
+void vm_matrix_sub(matrix* dest, const matrix* src0, const matrix* src1)
+{
+	dest->vec.fvec = src0->vec.fvec - src1->vec.fvec;
+	dest->vec.rvec = src0->vec.rvec - src1->vec.rvec;
+	dest->vec.uvec = src0->vec.uvec - src1->vec.uvec;
+}
+
+// adds one matrix to another.
+// dest can equal source
+// dest += src
+void vm_matrix_add2(matrix* dest, const matrix* src)
+{
+	dest->vec.fvec += src->vec.fvec;
+	dest->vec.rvec += src->vec.rvec;
+	dest->vec.uvec += src->vec.uvec;
+}
+
+// subs one matrix from another, returns ptr to dest
+// dest can equal source
+// dest -= src
+void vm_matrix_sub2(matrix* dest, const matrix* src)
+{
+	dest->vec.fvec -= src->vec.fvec;
+	dest->vec.rvec -= src->vec.rvec;
+	dest->vec.uvec -= src->vec.uvec;
+}
+
 // TODO Remove this function if we ever move to a math library like glm
 /**
-* @brief							Attempts to invert a 4x4 matrix
-* @param[in]			m			Pointer to the matrix we want to invert
-* @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
+* @brief							Attempts to invert a 3x3 matrix
+* @param[inout]		dest     		The inverted matrix, or 0 if inversion is impossible
+* @param[in]		m   			Pointer to the matrix we want to invert
 *
 * @returns							Whether or not the matrix is invertible
 */
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
+bool vm_inverse_matrix(matrix* dest, const matrix* m)
+{
+	matrix inv;	// create a temp matrix so we can avoid getting a determinant that is 0
+
+	// Use a2d so it's easier for people to read
+	inv.a2d[0][0] = -m->a2d[1][2] * m->a2d[2][1] + m->a2d[1][1] * m->a2d[2][2];
+	inv.a2d[0][1] = m->a2d[0][2] * m->a2d[2][1] - m->a2d[0][1] * m->a2d[2][2];
+	inv.a2d[0][2] = -m->a2d[0][2] * m->a2d[1][1] + m->a2d[0][1] * m->a2d[1][2];
+	inv.a2d[1][0] = m->a2d[1][2] * m->a2d[2][0] - m->a2d[1][0] * m->a2d[2][2];
+	inv.a2d[1][1] = -m->a2d[0][2] * m->a2d[2][0] + m->a2d[0][0] * m->a2d[2][2];
+	inv.a2d[1][2] = m->a2d[0][2] * m->a2d[1][0] - m->a2d[0][0] * m->a2d[1][2];
+	inv.a2d[2][0] = -m->a2d[1][1] * m->a2d[2][0] + m->a2d[1][0] * m->a2d[2][1];
+	inv.a2d[2][1] = m->a2d[0][1] * m->a2d[2][0] - m->a2d[0][0] * m->a2d[2][1];
+	inv.a2d[2][2] = -m->a2d[0][1] * m->a2d[1][0] + m->a2d[0][0] * m->a2d[1][1];
+
+	float det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0];
+	if (det == 0) {
+		*dest = ZERO_MATRIX;
+		return false;
+	}
+
+	det = 1.0f / det;
+
+	for (int i = 0; i < 9; i++) {
+		dest->a1d[i] = inv.a1d[i] * det;
+	}
+
+	return true;
+}
+
+// TODO Remove this function if we ever move to a math library like glm
+/**
+* @brief							Attempts to invert a 4x4 matrix
+* @param[inout]		dest		The inverted matrix, or 0 if inversion is impossible
+* @param[in]			m			Pointer to the matrix we want to invert
+*
+* @returns							Whether or not the matrix is invertible
+*/
+bool vm_inverse_matrix4(matrix4* dest, const matrix4* m)
 {
 	matrix4 inv;	// create a temp matrix so we can avoid getting a determinant that is 0
-	float det;
-	int i, j;
 
 	// Use a2d so it's easier for people to read
 	inv.a2d[0][0] = m->a2d[1][1] * m->a2d[2][2] * m->a2d[3][3] -
@@ -2698,19 +2776,17 @@ bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
 					m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][2] -
 					m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][1];
 
-	det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
+	float det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
 
 	if (det == 0) {
-		invOut = nullptr;
+		*dest = ZERO_MATRIX;
 		return false;
 	}
 
 	det = 1.0f / det;
 
-	for (i = 0; i < 4; i++) {
-		for (j = 0; j < 4; j++) {
-			invOut->a2d[i][j] = inv.a2d[i][j] * det;
-		}
+	for (int i = 0; i < 16; i++) {
+		dest->a1d[i] = inv.a1d[i] * det;
 	}
 
 	return true;

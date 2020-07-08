@@ -157,7 +157,7 @@ void gr_opengl_deferred_lighting_finish()
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&gr_view_matrix, &header->inv_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
