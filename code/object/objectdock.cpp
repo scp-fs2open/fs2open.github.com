@@ -345,7 +345,7 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 	Assert(dest != NULL);
 	Assert(objp != NULL);
 
-	matrix accum, local_moi;
+	matrix accum;
 	vm_mat_zero(&accum);
 
 	dock_function_info dfi;
@@ -372,7 +372,7 @@ void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* o
 	// the new hitpos is the vector from world center-of-mass to world hitpos
 	vm_vec_sub2(world_hit_pos, &world_center_of_mass);
 
-	matrix moi, local_moi, inv_moi;
+	matrix moi, inv_moi;
 
 	// calculate the effective inverse MOI for the docked composite object about its center of mass
 	dock_calc_total_moi(&moi, objp, &world_center_of_mass);
