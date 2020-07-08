@@ -29,7 +29,7 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object *objp, dock_function_info *infop);
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
-void dock_calc_inv_total_moi_helper(object* objp, dock_function_info* infop);
+void dock_calc_total_moi_helper(object* objp, dock_function_info* infop);
 void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop);
 
 // management prototypes
@@ -343,14 +343,13 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 	Assertion(dest != nullptr, "dock_calc_total_moi invalid dest");
 	Assertion(objp != nullptr, "dock_calc_total_moi invalid objp");
 
-	matrix accum;
-	vm_mat_zero(&accum);
+	matrix accum = ZERO_MATRIX;
 
 	dock_function_info dfi;
 	dfi.parameter_variables.vecp_value = center;
 	dfi.maintained_variables.matrix_value = dest;
 
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_inv_total_moi_helper);
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_moi_helper);
 }
 
 void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* objp)
@@ -797,7 +796,7 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 }
 
-void dock_calc_inv_total_moi_helper(object* objp, dock_function_info* infop)
+void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 {
 	matrix local_moi, unorient, world_moi;
 	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);

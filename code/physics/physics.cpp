@@ -732,8 +732,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 // Returns true if this impulse is below the limit and should be ignored.
 bool whack_below_limit(vec3d* impulse)
 {
-	return (fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) &&
-		   (fl_abs(impulse->xyz.z) <= WHACK_LIMIT);
+	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
+		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
 }
 
 // ----------------------------------------------------------------------------
