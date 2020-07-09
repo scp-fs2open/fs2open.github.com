@@ -1785,8 +1785,9 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 			break;
 		} else if (!no_skip) {
 			Campaign.missions[i].flags |= CMISSION_FLAG_SKIPPED;
-			Campaign.num_missions_completed = i;
-		}	
+			Campaign.missions[i].completed = 1;
+			Campaign.num_missions_completed = i + 1;
+		}
 	}
 
 	if (mission_num < 0) {
