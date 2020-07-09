@@ -558,6 +558,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-debriefing-persona",			OP_SET_DEBRIEFING_PERSONA,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
@@ -13718,6 +13719,16 @@ void sexp_set_debriefing_toggled(int node)
 	The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node));
 }
 
+// Goober5000
+void sexp_set_debriefing_persona(int node)
+{
+	bool is_nan, is_nan_forever;
+	int persona = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || persona < 0)
+		return;
+	The_mission.debriefing_persona = persona;
+}
+
 /**
  * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
  *
@@ -23964,6 +23975,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Goober5000
+			case OP_SET_DEBRIEFING_PERSONA:
+				sexp_set_debriefing_persona(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
 				sexp_val = SEXP_TRUE;
@@ -25804,6 +25821,7 @@ int query_operator_return_type(int op)
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
+		case OP_SET_DEBRIEFING_PERSONA:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
@@ -26993,6 +27011,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
 			return OPF_BOOL;
+
+		case OP_SET_DEBRIEFING_PERSONA:
+			return OPF_POSITIVE;
 
 		case OP_SET_PLAYER_ORDERS:
 			if (argnum==0)
@@ -29889,6 +29910,7 @@ int get_subcategory(int sexp_id)
 		case OP_FORCE_JUMP:
 		case OP_END_CAMPAIGN:
 		case OP_SET_DEBRIEFING_TOGGLED:
+		case OP_SET_DEBRIEFING_PERSONA:
 		case OP_ALLOW_TREASON:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
@@ -32433,6 +32455,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SET_DEBRIEFING_TOGGLED, "set-debriefing-toggled\r\n"
 		"\tSets or clears the \"toggle debriefing\" mission flag.  If set, the mission will have its debriefing turned off, unless it is a multiplayer dogfight mission, in which case its debriefing will be turned on.  Takes 1 argument.\r\n"
+	},
+
+	// Goober5000
+	{ OP_SET_DEBRIEFING_PERSONA, "set-debriefing-persona\r\n"
+		"\tSets the numeric prefix to be used for debriefing voice files in automatic debriefing stages (promotions, ace badges, traitor).  This is usually specified in the campaign editor, but it can be overridden mid-mission with this sexp.  Takes 1 argument.\r\n"
 	},
 
 	// Goober5000
