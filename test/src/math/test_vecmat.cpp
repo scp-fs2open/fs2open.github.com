@@ -653,7 +653,7 @@ TEST_F(VecmatTest, test_vm_vec_dist_quick)
 		auto distance = vm_vec_dist_quick(&v1, &v2);
 		auto real_distance = vm_vec_dist(&v1, &v2);
 
-		ASSERT_NEAR(distance, real_distance, 0.12f);
+		ASSERT_NEAR(distance, real_distance, 0.13f);
 	}
 }
 
