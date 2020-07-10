@@ -645,7 +645,7 @@ TEST_F(VecmatTest, test_vm_vec_mag_quick) {
 TEST_F(VecmatTest, test_vm_vec_dist_quick)
 {
 	for (size_t loop = 0; loop < 1000; ++loop) {
-		vec3d v1, v2, t;
+		vec3d v1, v2;
 
 		static_randvec_unnormalized(rand32(), &v1);
 		static_randvec_unnormalized(rand32(), &v2);
