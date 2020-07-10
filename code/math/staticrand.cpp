@@ -107,6 +107,20 @@ void static_randvec(int num, vec3d *vp)
 }
 
 /**
+ *
+ * Create a random, unnormalized vector
+ *
+ * @param num Seed input vector
+ * @param vp Vector
+ */
+void static_randvec_unnormalized(int num, vec3d* vp)
+{
+	vp->xyz.x = static_randf(num) - 0.5f;
+	vp->xyz.y = static_randf(num + 1) - 0.5f;
+	vp->xyz.z = static_randf(num + 2) - 0.5f;
+}
+
+/**
  * @brief Randomly perturb a vector around a given (normalized vector) or optional orientation matrix.
  *
  * @param num
