@@ -1809,6 +1809,7 @@ void game_init()
 	control_config_common_init();				// sets up localization stuff in the control config
 
 	parse_rank_tbl();
+	parse_traitor_tbl();
 	parse_medal_tbl();
 
 	cutscene_init();
@@ -6512,6 +6513,8 @@ void game_shutdown(void)
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
+
+	scoring_close();
 
 	// Free SEXP resources
 	sexp_shutdown();

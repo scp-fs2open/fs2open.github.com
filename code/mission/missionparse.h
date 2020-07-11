@@ -134,6 +134,7 @@ typedef struct mission {
 	// Goober5000
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
+	int debriefing_persona;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];
@@ -176,6 +177,7 @@ typedef struct mission {
 		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
+		debriefing_persona = -1;
 		event_music_name[ 0 ] = '\0';
 		briefing_music_name[ 0 ] = '\0';
 		substitute_event_music_name[ 0 ] = '\0';

@@ -588,6 +588,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (basic)
 		return;
 
+	// this is part of mission info but derived from the campaign file rather than parsed
+	extern int debrief_find_persona_index();
+	pm->debriefing_persona = debrief_find_persona_index();
 
 	// set up support ships
 	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
