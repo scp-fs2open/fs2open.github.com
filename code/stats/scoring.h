@@ -72,8 +72,8 @@ struct rank_stuff {
 
 struct traitor_stuff {
 	SCP_map<int, SCP_string> debriefing_text;
-	SCP_map<int, SCP_string> recommendation_text;
 	char		traitor_voice_base[MAX_FILENAME_LEN];
+	SCP_string recommendation_text;
 };
 
 #define STATS_FLAG_INVALID			(1<<0)

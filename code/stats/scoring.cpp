@@ -154,17 +154,11 @@ void parse_traitor_tbl()
 
 		while (check_for_string("$multi text"))
 		{
-			SCP_string text, recommendation;
+			SCP_string text;
 			int persona = -1;
 
 			required_string("$multi text");
 			stuff_string(text, F_MULTITEXT);
-
-			if (optional_string("$Voice:"))
-				stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
-
-			required_string("$Recommendation text:");
-			stuff_string(recommendation, F_MULTITEXT);
 
 			if (optional_string("+Persona:"))
 			{
@@ -176,15 +170,19 @@ void parse_traitor_tbl()
 				}
 			}
 			Traitor.debriefing_text[persona] = text;
-			Traitor.recommendation_text[persona] = recommendation;
 		}
 
 		if (Traitor.debriefing_text.find(-1) == Traitor.debriefing_text.end())
 		{
 			Warning(LOCATION, "Traitor is missing default debriefing information.\n");
 			Traitor.debriefing_text[-1] = "";
-			Traitor.recommendation_text[-1] = "";
 		}
+
+		if (optional_string("$Voice:"))
+			stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
+
+		required_string("$Recommendation text:");
+		stuff_string(Traitor.recommendation_text, F_MULTITEXT);
 	}
 	catch (const parse::ParseException& e)
 	{
