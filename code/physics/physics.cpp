@@ -773,7 +773,7 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 
 
 // This function applies the calculated delta rotational and linear velocities usually called by ^^^^ apply_whack, 
-// but also called directly by dock_whack_all_docked_objects in objectdock.cpp which has to do some extra legwork
+// but also called directly by dock_whack_docked_object in objectdock.cpp which has to do some extra legwork
 // and doesn't set this function up using physics_apply_whack
 void physics_apply_whack_direct(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
 {
