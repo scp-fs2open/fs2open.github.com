@@ -1796,10 +1796,10 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 	vec3d world_hit_pos;
 	vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
 
-	// If docked, every ship has to be whacked in the correct directions and magnitudes so they all agree
+
 	if (object_is_docked(objp))
 	{
-		dock_whack_all_docked_objects(force, &world_hit_pos, objp);
+		dock_whack_docked_object(force, &world_hit_pos, objp);
 	}
 	else
 	{

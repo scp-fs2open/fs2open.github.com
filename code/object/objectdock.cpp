@@ -30,7 +30,7 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop);
-void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop);
+void dock_whack_docked_object_helper(object* objp, dock_function_info* infop);
 
 // management prototypes
 
@@ -207,6 +207,8 @@ float dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 
 float dock_calc_total_docked_mass(object *objp)
 {
+	Assertion(objp != nullptr, "dock_calc_total_docked_mass, invalid argument");
+
 	dock_function_info dfi;
 	
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_docked_mass_helper);
@@ -343,7 +345,7 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 	Assertion(dest != nullptr, "dock_calc_total_moi invalid dest");
 	Assertion(objp != nullptr, "dock_calc_total_moi invalid objp");
 
-	matrix accum = ZERO_MATRIX;
+	*dest = vmd_zero_matrix;
 
 	dock_function_info dfi;
 	dfi.parameter_variables.vecp_value = center;
@@ -352,10 +354,33 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_moi_helper);
 }
 
-void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* objp)
+// This ship is the only ship NOT moved by docking AI to keep everyone together
+// All the other ships in the tree will update based on this one
+// Since this is based on current speed don't expect it to remain consistent between frames
+object* dock_find_dock_root(object *objp)
+{
+	Assertion(objp != nullptr, "dock_find_dock_root invalid argument");
+
+	dock_function_info dfi;
+	object* fastest_objp;
+
+	dfi.maintained_variables.objp_value = nullptr;
+
+	// find the object with the highest speed
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
+	fastest_objp = dfi.maintained_variables.objp_value;
+
+	// if we have no max speed, just use the given one
+	if (fastest_objp == nullptr)
+		fastest_objp = objp;
+
+	return fastest_objp;
+}
+
+void dock_whack_docked_object(vec3d* force, vec3d* world_hit_pos, object* objp)
 {
 	Assertion((objp != nullptr) && (force != nullptr) && (world_hit_pos != nullptr),
-		"dock_whack_all_docked_objects invalid argument(s)");
+		"dock_whack_docked_object invalid argument(s)");
 
 	//	Detect null vector.
 	if (whack_below_limit(force))
@@ -379,26 +404,42 @@ void dock_whack_all_docked_objects(vec3d* force, vec3d* world_hit_pos, object* o
 
 	vm_inverse_matrix(&inv_moi, &moi);
 
+	// calculate the torque about the center of mass in world coords
 	vec3d torque;
 	vm_vec_cross(&torque, world_hit_pos, force);
 
+	// calculate the change in rotvel caused by the whack in world coords
 	vec3d delta_rotvel;
 	vm_vec_rotate(&delta_rotvel, &torque, &inv_moi);
 
-	vec3d delta_vel = *force * (1.0f / total_mass);
-	// up to this point is all we would need for a single object but since its a composite object
-	// the individual objects will need to take this data and calculate how it would affect 
-	// them given their orientations and offsets
+	// get the total change in vel for the entire docked assembly
+	vec3d center_mass_delta_vel = *force * (1.0f / total_mass);
 
-	dock_function_info dfi;
-	dfi.parameter_variables.float_value = vm_vec_mag(force);
-	dfi.parameter_variables.vecp_value = &delta_rotvel;
-	dfi.parameter_variables.vecp_value2 = &delta_vel;
-	dfi.maintained_variables.vecp_value = &world_center_of_mass;
+	// get the root of the dock tree, so that updating this velocity will update the rest of the tree
+	object* root_objp;
+	root_objp = dock_find_dock_root(objp);
 
-	//pass on the data to the docked objects so they can whack themselves accordingly
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_whack_all_docked_objects_helper);
+	vec3d local_delta_rotvel;
+
+	// translate the rotvel change into the root's frame
+	vm_vec_rotate(&local_delta_rotvel, &delta_rotvel, &root_objp->orient);
+
+	// compute the root's linear vel as vel = center mass vel + world frame rotvel x relative pos
+	vec3d root_delta_vel;
+	vec3d rel_pos;
+	vm_vec_sub(&rel_pos, &root_objp->pos, &world_center_of_mass);
+	vm_vec_cross(&root_delta_vel, &delta_rotvel, &rel_pos);
+	vm_vec_add2(&root_delta_vel, &center_mass_delta_vel);
+
+	// whack it
+	physics_apply_whack_direct(vm_vec_mag(force),
+		&root_objp->phys_info,
+		&local_delta_rotvel,
+		&root_delta_vel,
+		&root_objp->orient);
+
 }
+
 
 // functions to deal with all docked ships anywhere
 // ---------------------------------------------------------------------------------------------------------------
@@ -520,15 +561,9 @@ void dock_move_docked_objects(object *objp)
 	}
 	else
 	{
-		// find the object with the highest max speed
-		dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
-		fastest_objp = dfi.maintained_variables.objp_value;
-
-		// if we have no max speed, just use the first one
-		if (fastest_objp == NULL)
-			fastest_objp = objp;
+		fastest_objp = dock_find_dock_root(objp);;
 	}
-	
+
 	// start a tree with that object as the parent... do NOT use the überfunction for this,
 	// because we must use a tree for the parent ancestry to work correctly
 
@@ -798,10 +833,11 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 {
-	matrix local_moi, unorient, world_moi;
+	matrix local_moi, unorient, temp, world_moi;
 	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
 	vm_copy_transpose(&unorient, &objp->orient);
-	vm_matrix_x_matrix(&world_moi, &local_moi, &unorient);
+	vm_matrix_x_matrix(&temp, &objp->orient , &local_moi);
+	vm_matrix_x_matrix(&world_moi, &temp, &unorient);
 	float mass = objp->phys_info.mass;
 	vec3d pos = objp->pos;
 	pos -= *infop->parameter_variables.vecp_value;
@@ -819,30 +855,6 @@ void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 	*infop->maintained_variables.matrix_value += world_moi;
 }
 
-void dock_whack_all_docked_objects_helper(object* objp, dock_function_info* infop)
-{
-	Assertion((objp != nullptr) && (infop != nullptr),
-		"dock_whack_all_docked_objects_helper invalid argument(s)");
-
-	float orig_impulse = infop->parameter_variables.float_value;
-	vec3d* world_delta_rotvel = infop->parameter_variables.vecp_value;
-	vec3d* main_delta_vel = infop->parameter_variables.vecp_value2;
-	vec3d* world_center_of_mass = infop->maintained_variables.vecp_value;
-	vec3d delta_rotvel;
-
-	// compute your rotvel
-	vm_vec_rotate(&delta_rotvel, world_delta_rotvel, &objp->orient);
-	
-	// compute your linear vel based on the composite rotvel + offset and composite linear vel
-	vec3d delta_vel;
-	vec3d rel_pos;
-	vm_vec_sub(&rel_pos, &objp->pos, world_center_of_mass);
-	vm_vec_cross(&delta_vel, &rel_pos, world_delta_rotvel);
-	vm_vec_add2(&delta_vel, main_delta_vel);
-	
-	// whack it
-	physics_apply_whack_direct(orig_impulse, &objp->phys_info, &delta_rotvel, &delta_vel, &objp->orient);
-}
 // ---------------------------------------------------------------------------------------------------------------
 // end of über code block ----------------------------------------------------------------------------------------
 

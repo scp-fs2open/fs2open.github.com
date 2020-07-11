@@ -134,7 +134,7 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 void dock_undock_objects(object *objp1, object *objp2);
 
 // apply force to a docked assembly of ships
-void dock_whack_all_docked_objects(vec3d* force, vec3d* hit_pos, object* objp);
+void dock_whack_docked_object(vec3d* force, vec3d* hit_pos, object* objp);
 
 	/**
  * @brief Undocks everything from the given object
