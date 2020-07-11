@@ -92,7 +92,7 @@ float static_randf_range(int num, float min, float max)
 }
 
 /**
- * @brief [To be described]
+ * @brief Create a random, normalized vector in unit sphere
  *
  * @param num Seed input number
  * @param vp Vector
@@ -108,7 +108,7 @@ void static_randvec(int num, vec3d *vp)
 
 /**
  *
- * Create a random, unnormalized vector
+ * @brief Create a random, unnormalized vector in the (half) unit cube
  *
  * @param num Seed input vector
  * @param vp Vector

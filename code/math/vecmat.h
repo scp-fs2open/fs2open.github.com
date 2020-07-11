@@ -36,6 +36,11 @@
 //Note: NO RETURN VALUE
 #define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=0.0f
 
+//macro to set a vector to zero.  we could do this with an in-line assembly
+//macro, but it's probably better to let the compiler optimize it.
+//Note: NO RETURN VALUE
+#define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
+
 /*
 //macro set set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\

@@ -14,8 +14,12 @@ const matrix input1 = {{{{{{4509.0f, 8600.0f, 5523.0f}}}, {{{5276.0f, 668.0f, 46
 const matrix input2 = {{{{{{0.7703f, 0.8180f, 0.8535f}}}, {{{0.6409f, 0.0125f, 0.1777f}}}, {{{0.3785f, 0.0090f, 0.3851f}}}}}};
 const matrix input3 = {{{{{{0.5118f, 27.86f, 1.0f}}}, {{{0.0f, 777.2f, 0.0596f}}}, {{{2.5f, 67.95f, 0.0058f}}}}}};
 
-#define MATRIX(a,b,c,d,e,f,g,h,i) {{{{{{a, b, c}}}, {{{d, e, f}}}, {{{g, h, i}}}}}}
 #define EXPECT_MATRIX_NEAR(out,matrix) EXPECT_NEAR(error(&out,matrix), 0.0f, 0.001f);
+
+matrix make_matrix(float a, float b, float c, float d, float e, float f, float g, float h, float i) {
+	matrix out = { {{{{{a, b, c}}}, {{{d, e, f}}}, {{{g, h, i}}}}} };
+	return out;
+}
 
 float error(matrix* val, matrix target) {
 	float totalError = 0;
@@ -39,147 +43,125 @@ TEST_F(VecmatTest, matrixInvert) {
 
 	matrix out;
 	matrix out2;
-	matrix correct;
 
 	// make sure inverts work, of course
 	EXPECT_TRUE(vm_inverse_matrix(&out, &input2));
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		-0.0223985f, 2.1415f, -0.938528f,
 		1.25112f, 0.184007f, -2.85778f,
-		-0.00722484f, -2.1091f, 3.58596f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		-0.00722484f, -2.1091f, 3.58596f));
 
 	//make sure multiplying by the original gives you the identity
 	vm_matrix_x_matrix(&out2, &out, &input2);
-	correct = IDENTITY_MATRIX;
-	EXPECT_MATRIX_NEAR(out2, correct);
+	EXPECT_MATRIX_NEAR(out2, vmd_identity_matrix);
 
 	// make sure order doesn't matter
 	vm_matrix_x_matrix(&out2, &input2, &out);
-	correct = IDENTITY_MATRIX;
-	EXPECT_MATRIX_NEAR(out2, correct);
+	EXPECT_MATRIX_NEAR(out2, vmd_identity_matrix);
 
 	//make sure inverting twice gets you back where you started
 	EXPECT_TRUE(vm_inverse_matrix(&out2, &out));
-	correct = input2;
-	EXPECT_MATRIX_NEAR(out2, correct);
+	EXPECT_MATRIX_NEAR(out2, input2);
 
 	//make sure uninvertable matrices give you false and a zero matrix
 	EXPECT_FALSE(vm_inverse_matrix(&out, &uninvertable));
-	correct = ZERO_MATRIX;
-	EXPECT_MATRIX_NEAR(out, correct);
+	EXPECT_MATRIX_NEAR(out, vmd_zero_matrix);
 }
 
 TEST_F(VecmatTest, matrixAdd) {
 
 	matrix out;
-	matrix correct;
 
 	vm_matrix_add(&out, &input1, &input2);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4509.77f, 8600.82f, 5523.85f,
 		5276.64f, 668.013f, 462.178f,
-		145.379f, 8490.01f, 5111.39f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		145.379f, 8490.01f, 5111.39f));
 
 	vm_matrix_add(&out, &out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4510.28f, 8628.68f, 5524.85f,
 		5276.64f, 1445.21f, 462.237f,
-		147.879f, 8557.96f, 5111.39f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		147.879f, 8557.96f, 5111.39f));
 
 	vm_matrix_add(&out, &input2, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		1.2821f, 28.678f, 1.8535f,
 		0.6409f, 777.213f, 0.2373f,
-		2.8785f, 67.959f, 0.3909f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		2.8785f, 67.959f, 0.3909f));
 }
 
 TEST_F(VecmatTest, matrixSub) {
 
 	matrix out;
-	matrix correct;
 
 	vm_matrix_sub(&out, &input1, &input2);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4508.23f, 8599.18f, 5522.15f,
 		5275.36f, 667.988f, 461.822f,
-		144.622f, 8489.99f, 5110.61f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		144.622f, 8489.99f, 5110.61f));
 
 	vm_matrix_sub(&out, &out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4507.72f, 8571.32f, 5521.15f,
 		5275.36f, -109.213f, 461.763f,
-		142.122f, 8422.04f, 5110.61f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		142.122f, 8422.04f, 5110.61f));
 
 	vm_matrix_sub(&out, &input2, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		0.2585f, -27.042f, -0.1465f,
 		0.6409f, -777.188f, 0.1181f,
-		-2.1215f, -67.941f, 0.3793f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		-2.1215f, -67.941f, 0.3793f));
 }
 
 TEST_F(VecmatTest, matrixAdd2) {
 
 	matrix out;
-	matrix correct;
 
 	out = input1;
 	vm_matrix_add2(&out, &input2);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4509.77f, 8600.82f, 5523.85f,
 		5276.64f, 668.013f, 462.178f,
-		145.379f, 8490.01f, 5111.39f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		145.379f, 8490.01f, 5111.39f));
 
 	vm_matrix_add2(&out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4510.28f, 8628.68f, 5524.85f,
 		5276.64f, 1445.21f, 462.237f,
-		147.879f, 8557.96f, 5111.39f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		147.879f, 8557.96f, 5111.39f));
 
 	out = input2;
 	vm_matrix_add2(&out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		1.2821f, 28.678f, 1.8535f,
 		0.6409f, 777.213f, 0.2373f,
-		2.8785f, 67.959f, 0.3909f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		2.8785f, 67.959f, 0.3909f));
 }
 
 TEST_F(VecmatTest, matrixSub2) {
 
 	matrix out;
-	matrix correct;
 
 	out = input1;
 	vm_matrix_sub2(&out, &input2);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4508.23f, 8599.18f, 5522.15f,
 		5275.36f, 667.988f, 461.822f,
-		144.622f, 8489.99f, 5110.61f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		144.622f, 8489.99f, 5110.61f));
 
 	vm_matrix_sub2(&out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		4507.72f, 8571.32f, 5521.15f,
 		5275.36f, -109.213f, 461.763f,
-		142.122f, 8422.04f, 5110.61f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		142.122f, 8422.04f, 5110.61f));
 
 	out = input2;
 	vm_matrix_sub2(&out, &input3);
-	correct = MATRIX(
+	EXPECT_MATRIX_NEAR(out, make_matrix(
 		0.2585f, -27.042f, -0.1465f,
 		0.6409f, -777.188f, 0.1181f,
-		-2.1215f, -67.941f, 0.3793f);
-	EXPECT_MATRIX_NEAR(out, correct);
+		-2.1215f, -67.941f, 0.3793f));
 }
 
 TEST_F(VecmatTest, test_vm_vec_add)
