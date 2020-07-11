@@ -1061,13 +1061,11 @@ void debrief_traitor_init()
 			stagep->text = Traitor.debriefing_text[persona_index];
 		else
 			stagep->text = Traitor.debriefing_text[-1];
-		if (Traitor.recommendation_text.find(persona_index) != Traitor.recommendation_text.end())
-			stagep->recommendation_text = Traitor.recommendation_text[persona_index];
-		else
-			stagep->recommendation_text = Traitor.recommendation_text[-1];
 
 		// choose appropriate traitor voice for this mission
 		debrief_choose_voice(stagep->voice, Traitor.traitor_voice_base, persona_index, 1);
+
+		stagep->recommendation_text = Traitor.recommendation_text;
 	}
 
 	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
