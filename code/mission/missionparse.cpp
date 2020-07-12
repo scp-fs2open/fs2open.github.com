@@ -4808,12 +4808,15 @@ void post_process_ships_wings()
 	// in parse_object().
 	for (auto &p_obj : Parse_objects)
 	{
-		// evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
+		// Evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
 		// (because SEXPs now require a complete ship registry) but must be done before the arrival list check inside
 		// mission_parse_maybe_create_parse_object.  That check is, in fact, the only reason this is needed.  We don't need to
 		// pre-emptively set up the delay for wings because there is no equivalent wing arrival list check.  In any case, the
 		// arrival_delay is always validated in mission_did_ship_arrive (for ships) and parse_wing_create_ships (for wings).
-		if (!Fred_running && (p_obj.arrival_cue >= 0))
+		// Addendum: Don't mess with any arrival delays which are strictly positive, meaning they have already been set.
+		// (This is the case for ships destroyed before mission.  In the retail codebase, the destroy-before-mission chunk was
+		// parsed after the arrival cue and delay were parsed and checked, so it overwrote them.)
+		if (!Fred_running && (p_obj.arrival_cue >= 0) && (p_obj.arrival_delay <= 0))
 		{
 			// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
 			if (eval_sexp(p_obj.arrival_cue))
