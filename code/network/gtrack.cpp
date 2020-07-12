@@ -44,7 +44,7 @@ static SOCKADDR_IN	gtrackaddr;
 static game_list GameBuffer[MAX_GAME_BUFFERS];
 static int GameType;//d3 or fs
 
-static unsigned int LastTrackerUpdate;
+static time_t LastTrackerUpdate;
 static unsigned int LastSentToTracker;
 static unsigned int TrackerAckdUs;
 static unsigned int TrackerGameIsRunning;
@@ -311,13 +311,13 @@ void IdleGameTracker()
 
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
-	if((TrackerGameIsRunning) && ((timer_get_seconds()-LastTrackerUpdate)>TRACKER_UPDATE_INTERVAL) && !SendingGameOver)
+	if((TrackerGameIsRunning) && ((time(nullptr)-LastTrackerUpdate)>TRACKER_UPDATE_INTERVAL) && !SendingGameOver)
 	{
 		//Time to update the tracker again
 		packet_length = SerializeGamePacket(&TrackerGameData, packet_data);
 		SENDTO(Unreliable_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<SOCKADDR *>(&gtrackaddr), sizeof(SOCKADDR_IN), PSNET_TYPE_GAME_TRACKER);
 		TrackerAckdUs = 0;
-		LastTrackerUpdate = timer_get_seconds();
+		LastTrackerUpdate = time(nullptr);
 	}
 	else if((TrackerGameIsRunning)&&(!TrackerAckdUs)&&((timer_get_milliseconds()-LastSentToTracker)>TRACKER_RESEND_TIME))
 	{
@@ -325,7 +325,7 @@ void IdleGameTracker()
 		packet_length = SerializeGamePacket(&TrackerGameData, packet_data);
 		SENDTO(Unreliable_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<SOCKADDR *>(&gtrackaddr), sizeof(SOCKADDR_IN), PSNET_TYPE_GAME_TRACKER);
 		TrackerAckdUs = 0;
-		LastTrackerUpdate = timer_get_seconds();
+		LastTrackerUpdate = time(nullptr);
 		LastSentToTracker = timer_get_milliseconds();
 	}
 
@@ -444,6 +444,9 @@ void UpdateGameData(void *buffer)
 		Int3();
 		break;
 	}
+
+	// forces update
+	LastTrackerUpdate = 0;
 }
 
 game_list * GetGameList()

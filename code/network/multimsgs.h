@@ -269,7 +269,7 @@ void send_countermeasure_fired_packet( object *objp, int cmeasure_count, int ran
 
 // send_game_update_packet sends an updated Netgame structure to all players currently connected.  The update
 // is used to change the current mission, current state, etc.
-void send_netgame_update_packet(net_player *pl = NULL);
+void send_netgame_update_packet(net_player *pl = nullptr, const bool interval = false);
 
 // sends information about netplayers in the game. if called on the server, broadcasts information about _all_ players
 void send_netplayer_update_packet( net_player *pl = NULL );
