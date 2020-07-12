@@ -35,7 +35,11 @@ public:
 	VecmatTest() : test::FSTestFixture() { pushModDir("vecmat"); }
 
 protected:
-	void SetUp() override { test::FSTestFixture::SetUp(); srand(1); }
+	void SetUp() override 
+	{ 
+		test::FSTestFixture::SetUp(); 
+		srand(1); 
+	}
 	void TearDown() override { test::FSTestFixture::TearDown(); }
 };
 
