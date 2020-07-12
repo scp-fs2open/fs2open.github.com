@@ -146,6 +146,7 @@ extern void physics_apply_whack_direct(float orig_impulse, physics_info* pi, vec
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
 extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
 int check_rotvel_limit( physics_info *pi );
+extern void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos);
 
 
 // If physics_set_viewer is called with the viewer's physics_info, then

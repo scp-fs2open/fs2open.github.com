@@ -730,7 +730,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 //	-----------------------------------------------------------------------------------------------------------
 // Returns true if this impulse is below the limit and should be ignored.
-bool whack_below_limit(vec3d* impulse)
+bool whack_below_limit(const vec3d* impulse)
 {
 	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
 		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
@@ -1123,6 +1123,23 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 		pi->reduced_damp_decay = timestamp( reduced_damp_decay_time );
 	}
 
+}
+
+void physics_add_point_mass_moi(matrix *moi, float mass, vec3d pos)
+{
+	// moment of inertia for a point mass: 
+	// I_xx = m(y^2+z^2) | I_yx = -mxy       | I_zx = -mxz
+	// I_xy = -mxy       | I_yy = m(x^2+z^2) | I_zy = -myz 
+	// I_xz = -mxz		 | I_yz = -myz	     | I_zz = m(x^2+y^2)
+	moi->a2d[0][0] += mass * (pos.xyz.y * pos.xyz.y + pos.xyz.z * pos.xyz.z);
+	moi->a2d[0][1] -= mass * pos.xyz.x * pos.xyz.y;
+	moi->a2d[0][2] -= mass * pos.xyz.x * pos.xyz.z;
+	moi->a2d[1][0] -= mass * pos.xyz.x * pos.xyz.y;
+	moi->a2d[1][1] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.z * pos.xyz.z);
+	moi->a2d[1][2] -= mass * pos.xyz.y * pos.xyz.z;
+	moi->a2d[2][0] -= mass * pos.xyz.x * pos.xyz.z;
+	moi->a2d[2][1] -= mass * pos.xyz.y * pos.xyz.z;
+	moi->a2d[2][2] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.y * pos.xyz.y);
 }
 
 //*************************CLASS: avd_movement*************************

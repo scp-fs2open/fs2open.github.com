@@ -1793,17 +1793,18 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
 	
-	vec3d world_hit_pos;
-	vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
+	// get the world coords hit position relative to the ship
+	vec3d rel_world_hit_pos;
+	vm_vec_unrotate(&rel_world_hit_pos, hit_pos, &objp->orient);
 
 
 	if (object_is_docked(objp))
 	{
-		dock_whack_docked_object(force, &world_hit_pos, objp);
+		dock_whack_docked_object(force, &rel_world_hit_pos, objp);
 	}
 	else
 	{
-		physics_apply_whack(force, &world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
+		physics_apply_whack(force, &rel_world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
 	}					
 }
 

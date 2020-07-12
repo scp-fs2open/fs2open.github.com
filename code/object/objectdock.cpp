@@ -30,7 +30,6 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop);
-void dock_whack_docked_object_helper(object* objp, dock_function_info* infop);
 
 // management prototypes
 
@@ -377,9 +376,9 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_whack_docked_object(vec3d* force, vec3d* world_hit_pos, object* objp)
+void dock_whack_docked_object(vec3d* force, const vec3d* rel_world_hit_pos, object* objp)
 {
-	Assertion((objp != nullptr) && (force != nullptr) && (world_hit_pos != nullptr),
+	Assertion((objp != nullptr) && (force != nullptr) && (rel_world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
 
 	//	Detect null vector.
@@ -387,15 +386,16 @@ void dock_whack_docked_object(vec3d* force, vec3d* world_hit_pos, object* objp)
 		return;
 
 	vec3d world_center_of_mass;
+	vec3d world_hit_pos;
 
 	// calc world hit pos of the hit ship
-	vm_vec_add2(world_hit_pos, &objp->pos);
+	vm_vec_add(&world_hit_pos, rel_world_hit_pos, &objp->pos);
 
 	// calc overall world center-of-mass of all ships
 	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
 	// the new hitpos is the vector from world center-of-mass to world hitpos
-	vm_vec_sub2(world_hit_pos, &world_center_of_mass);
+	vm_vec_sub2(&world_hit_pos, &world_center_of_mass);
 
 	matrix moi, inv_moi;
 
@@ -406,7 +406,7 @@ void dock_whack_docked_object(vec3d* force, vec3d* world_hit_pos, object* objp)
 
 	// calculate the torque about the center of mass in world coords
 	vec3d torque;
-	vm_vec_cross(&torque, world_hit_pos, force);
+	vm_vec_cross(&torque, &world_hit_pos, force);
 
 	// calculate the change in rotvel caused by the whack in world coords
 	vec3d delta_rotvel;
@@ -834,24 +834,32 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 {
 	matrix local_moi, unorient, temp, world_moi;
-	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
-	vm_copy_transpose(&unorient, &objp->orient);
-	vm_matrix_x_matrix(&temp, &objp->orient , &local_moi);
-	vm_matrix_x_matrix(&world_moi, &temp, &unorient);
-	float mass = objp->phys_info.mass;
-	vec3d pos = objp->pos;
-	pos -= *infop->parameter_variables.vecp_value;
-	// moment of inertia for a point mass: I_xx = m(y^2+z^2), I_xy = -mxy, etc
-	world_moi.a2d[0][0] += mass * (pos.xyz.y * pos.xyz.y + pos.xyz.z * pos.xyz.z);
-	world_moi.a2d[1][1] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.z * pos.xyz.z);
-	world_moi.a2d[2][2] += mass * (pos.xyz.x * pos.xyz.x + pos.xyz.y * pos.xyz.y);
-	world_moi.a2d[0][1] -= mass * pos.xyz.x * pos.xyz.y;
-	world_moi.a2d[1][0] -= mass * pos.xyz.x * pos.xyz.y;
-	world_moi.a2d[0][2] -= mass * pos.xyz.x * pos.xyz.z;
-	world_moi.a2d[2][0] -= mass * pos.xyz.x * pos.xyz.z;
-	world_moi.a2d[1][2] -= mass * pos.xyz.y * pos.xyz.z;
-	world_moi.a2d[2][1] -= mass * pos.xyz.y * pos.xyz.z;
+	// The MOI for a compound object is simply the sum of the MOI's of the parts, but
+	// they all have to be with respect to the same point (the center of mass, in this case).
+	// So for each part:
 
+	// We invert the inverse MOI to get an MOI in the local frame
+	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
+
+	// We calculate the inverse of the orientation matrix (which is also the transpose)
+	vm_copy_transpose(&unorient, &objp->orient);
+
+	// We calculate the world space MOI using (world MOI) = O^-1 * (local MOI) * O
+	// where O is the orientation matrix (which translates between local space and world space).
+	// Note that this is reverse of the usual convention because FS stores orientation matrices
+	// transposed relative to the linear algebra convention.
+	vm_matrix_x_matrix(&temp, &objp->orient, &local_moi);
+	vm_matrix_x_matrix(&world_moi, &temp, &unorient);
+
+	// The world space MOI just calculated is about the center of mass of the part,
+	// so we need to translate it to the center of mass of the whole assembly.
+	// To do this we add a term corresponding to the MOI of a point mass whose position
+	// is the position of the part relative to the center of mass
+	vec3d* center = infop->parameter_variables.vecp_value;
+	vec3d pos = objp->pos - *center;
+	physics_add_point_mass_moi(&world_moi, objp->phys_info.mass, &pos);
+
+	// Finally we add the translated world space MOI for the part to the accumulated sum
 	*infop->maintained_variables.matrix_value += world_moi;
 }
 
