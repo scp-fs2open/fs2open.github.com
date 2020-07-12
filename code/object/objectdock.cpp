@@ -376,7 +376,7 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_whack_docked_object(vec3d* force, const vec3d* rel_world_hit_pos, object* objp)
+void dock_whack_docked_object(vec3d* force, vec3d* const rel_world_hit_pos, object* objp)
 {
 	Assertion((objp != nullptr) && (force != nullptr) && (rel_world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
