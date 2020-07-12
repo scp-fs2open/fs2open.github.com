@@ -1722,7 +1722,7 @@ active_game *multi_update_active_games(active_game *ag)
 	}
 	
 	// update the last time we heard from him
-	if((Multi_options_g.protocol == NET_TCP) && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST)){
+	if ( !MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST)){
 		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT_LOCAL);
 	} else {
 		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT);

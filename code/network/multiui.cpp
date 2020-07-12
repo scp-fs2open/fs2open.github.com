@@ -1512,7 +1512,7 @@ void multi_join_do_netstuff()
 	if (Multi_join_glr_stamp == -1) {
 		broadcast_game_query();
 
-		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
@@ -1522,7 +1522,7 @@ void multi_join_do_netstuff()
 	else if ( timestamp_elapsed(Multi_join_glr_stamp) ) {			
 		broadcast_game_query();
 
-		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
