@@ -8,6 +8,10 @@
 #include "lab/dialogs/backgrounds.h"
 #include "io/key.h"
 #include "missionui/missionscreencommon.h"
+#include "debris/debris.h"
+#include "ship/shipfx.h"
+#include "weapon/muzzleflash.h"
+#include "weapon/beam.h"
 
 LabManager::LabManager() {
 	Screen = GUI_system.PushScreen(new GUIScreen("Lab"));
@@ -18,7 +22,7 @@ LabManager::LabManager() {
 
 	Dialogs.push_back(new ShipClasses());
 	Dialogs.push_back(new WeaponClasses());
-	Dialogs.push_back(new Backgrounds());
+	Dialogs.push_back(new BackgroundDialog());
 	Dialogs.push_back(new RenderOptions());
 	Dialogs.push_back(new MaterialOverrides());
 
@@ -27,40 +31,24 @@ LabManager::LabManager() {
 		auto cbp = Toolbar->AddChild(new DialogOpener(dialog, x, 0));
 		x += cbp->GetWidth() + 10;
 	}
+
+	if (The_mission.ai_profile == nullptr)
+		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+
+	obj_init();
+
+	fireball_init();
+	debris_init();
+	extern void debris_page_in();
+	debris_page_in();
+	shockwave_level_init();
+	shipfx_flash_init();
+	mflash_page_in(true);
+	beam_level_init();
+	particle::init();
+
+	ai_paused = 1;
 }
-
-SCP_string get_rot_mode_string(LabRotationMode rotmode)
-{
-	switch (rotmode) {
-	case LabRotationMode::Both:
-		return "Manual rotation mode: Pitch and Yaw";
-	case LabRotationMode::Pitch:
-		return "Manual rotation mode: Pitch";
-	case LabRotationMode::Yaw:
-		return "Manual rotation mode: Yaw";
-	case LabRotationMode::Roll:
-		return "Manual rotation mode: Roll";
-	default:
-		return "HOW DID THIS HAPPEN? Ask a coder!";
-	}
-}
-
-SCP_string get_rot_speed_string(float speed_divisor)
-{
-	auto exp = std::lroundf(log10f(speed_divisor));
-
-	switch (exp) {
-	case 2:
-		return "Fast";
-	case 3:
-		return "Slow";
-	case 4:
-		return "Slowest";
-	default:
-		return "HOW DID THIS HAPPEN? Ask a coder!";
-	}
-}
-
 
 void LabManager::onFrame(float frametime) {
 	
@@ -248,13 +236,6 @@ void LabManager::onFrame(float frametime) {
 		}
 	}
 
-	// Rotation mode
-	SCP_string text = get_rot_mode_string(RotationMode);
-	gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-		"%s Rotation speed: %s", get_rot_mode_string(RotationMode).c_str(),
-		get_rot_speed_string(RotationSpeedDivisor).c_str());
-
 	gr_flip();
 }
 
@@ -265,7 +246,17 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	CurrentMode = mode;
 	CurrentClass = info_index;
 
-	// TODO: Actually do things
+	if (CurrentObject != -1)
+		obj_delete(CurrentObject);
+
+	switch (CurrentMode) {
+	case LabMode::Ship:
+		CurrentObject = ship_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
+		break;
+	case LabMode::Weapon:
+		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
+		break;
+	}
 	
 	for (auto const& dialog : Dialogs) {
 		dialog->update(CurrentMode, CurrentClass);

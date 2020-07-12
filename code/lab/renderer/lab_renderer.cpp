@@ -33,6 +33,9 @@ void LabRenderer::onFrame(float frametime) {
 	}
 
 	renderHud(frametime);
+
+	// Normally, we would call gr_flip here, but because wmcgui conflates rendering and input gathering, this is done at the end of 
+	// the LabManager::onFrame method
 }
 
 void LabRenderer::renderModel(float frametime) {
@@ -41,6 +44,8 @@ void LabRenderer::renderModel(float frametime) {
 	auto lab_debris_override_save = Motion_debris_enabled;
 	auto lab_envmap_override_save = Envmap_override;
 	auto lab_emissive_light_save = Cmdline_emissive;
+
+	light_reset();
 
 	if (currentMissionBackground == "<none>") {
 		renderFlags.set(LabRenderFlag::NoLighting);
@@ -124,6 +129,37 @@ void LabRenderer::renderModel(float frametime) {
 	}
 }
 
+SCP_string get_rot_mode_string(LabRotationMode rotmode)
+{
+	switch (rotmode) {
+	case LabRotationMode::Both:
+		return "Manual rotation mode: Pitch and Yaw";
+	case LabRotationMode::Pitch:
+		return "Manual rotation mode: Pitch";
+	case LabRotationMode::Yaw:
+		return "Manual rotation mode: Yaw";
+	case LabRotationMode::Roll:
+		return "Manual rotation mode: Roll";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
+	}
+}
+
+SCP_string get_rot_speed_string(float speed_divisor)
+{
+	auto exp = std::lroundf(log10f(speed_divisor));
+
+	switch (exp) {
+	case 2:
+		return "Fast";
+	case 3:
+		return "Slow";
+	case 4:
+		return "Slowest";
+	default:
+		return "HOW DID THIS HAPPEN? Ask a coder!";
+	}
+}
 
 void LabRenderer::renderHud(float frametime) {
 	GR_DEBUG_SCOPE("Lab Render HUD");
@@ -193,6 +229,13 @@ void LabRenderer::renderHud(float frametime) {
 		"Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
 		"zoom in or out. Use number keys to switch between AA presets. R to cycle model rotation "
 		"modes, S to cycle model rotation speeds, V to reset view.");
+
+	// Rotation mode
+	SCP_string text = get_rot_mode_string(LMGR->RotationMode);
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
+		"%s Rotation speed: %s", get_rot_mode_string(LMGR->RotationMode).c_str(),
+		get_rot_speed_string(LMGR->RotationSpeedDivisor).c_str());
 }
 
 void LabRenderer::useBackground(SCP_string mission_name) {
@@ -397,4 +440,13 @@ void LabRenderer::useBackground(SCP_string mission_name) {
 		Motion_debris_override = true;
 		Num_stars = 0;
 	}
+}
+
+LabCamera* LabRenderer::getCurrentCamera() {
+	return labCamera;
+}
+
+void LabRenderer::setCurrentCamera(LabCamera* newcam) {
+	delete newcam;
+	labCamera = newcam;
 }

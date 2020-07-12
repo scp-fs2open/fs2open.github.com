@@ -3,7 +3,7 @@
 #include "lab/dialogs/lab_dialog.h"
 
 
-class Backgrounds : public LabDialog {
+class BackgroundDialog : public LabDialog {
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 

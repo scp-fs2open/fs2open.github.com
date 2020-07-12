@@ -8,9 +8,7 @@ public:
 		FS_camera = cam;
 	}
 
-	~LabCamera() {
-		cam_delete(FS_camera);
-	}
+	virtual ~LabCamera() = 0;
 
 	camid FS_camera;
 

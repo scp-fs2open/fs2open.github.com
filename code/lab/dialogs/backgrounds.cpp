@@ -31,7 +31,7 @@ void labviewer_change_background(Tree* caller) {
 	LMGR->Renderer->useBackground(caller->GetSelectedItem()->Name);
 }
 
-void Backgrounds::open(Button* /*caller*/) {
+void BackgroundDialog::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 

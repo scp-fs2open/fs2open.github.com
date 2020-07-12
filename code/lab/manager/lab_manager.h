@@ -30,6 +30,8 @@ public:
 		Screen = nullptr;
 
 		Game_mode &= ~GM_LAB;
+
+		ai_paused = 0;
 	}
 
 	GUIScreen* Screen;
@@ -53,11 +55,12 @@ public:
 
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;
-private:
-	SCP_vector<LabDialog*> Dialogs = {};
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
+private:
+	SCP_vector<LabDialog*> Dialogs = {};
+
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 };

@@ -6,6 +6,8 @@
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
 #include "lab/renderer/lab_cameras.h"
+#include "globalincs/systemvars.h"
+#include "starfield/starfield.h"
 
 FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
@@ -73,16 +75,27 @@ public:
 		currentMissionBackground = "<none>";
 
 		labCamera = cam;
+
+		Viewer_mode |= VM_FREECAMERA;
+
+		Motion_debris_override = true;
+		Num_stars = 0;
+
+		gr_set_clear_color(0, 0, 0);
 	}
 
 	void onFrame(float frametime);
 
-	void close() {}
+	void close() {
+		Viewer_mode &= ~VM_FREECAMERA;
+	}
 
 	void useBackground(SCP_string mission_name);
 
 	void setAAMode(AntiAliasMode mode) {
 		Gr_aa_mode = mode;
+
+		Motion_debris_override = false;
 	}
 
 	void useNextTeamColorPreset() {}
