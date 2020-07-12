@@ -34,61 +34,61 @@ void set_post_proc_flag(Checkbox* caller) {
 void set_diffuse_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, !value);
 }
 
 void set_glow_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !value);
 }
 
 void set_spec_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
 }
 
 void set_env_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !value);
 }
 
 void set_norm_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !value);
 }
 
 void set_height_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !value);
 }
 
 void set_misc_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, !value);
 }
 
 void set_ao_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, !value);
 }
 
 void set_glowpoint_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, !value);
 }
 
 void set_wireframe_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, !value);
 }
 
 void set_renderlight_flag(Checkbox* caller) {

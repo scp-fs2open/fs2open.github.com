@@ -60,6 +60,7 @@ void LabRenderer::renderModel(float frametime) {
 	obj->orient = LMGR->CurrentOrientation;
 
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
+	Glowpoint_override = renderFlags[LabRenderFlag::NoGlowpoints];
 
 	if (obj->type == OBJ_SHIP) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
