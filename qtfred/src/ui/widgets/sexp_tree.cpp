@@ -1973,15 +1973,15 @@ int sexp_tree::get_modify_variable_type(int parent) {
 
 void sexp_tree::verify_and_fix_arguments(int node) {
 	int op_index, arg_num, type, tmp;
+	static int here_count = 0;
 	sexp_list_item* list, * ptr;
 	bool is_variable_arg = false;
 
-	static bool was_here = false;
-	if (was_here) {
+	if (here_count) {
 		return;
 	}
 
-	was_here = true;
+	here_count++;
 	op_index = get_operator_index(tree_nodes[node].text);
 	if (op_index < 0) {
 		return;
@@ -2004,7 +2004,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 			if (!list && (arg_num >= Operators[op_index].min)) {
 				free_node(item_index, 1);
 				setCurrentItemIndex(tmp);
-				flag--;
+				here_count--;
 				return;
 			}
 
@@ -2123,7 +2123,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 	}
 
 	setCurrentItemIndex(tmp);
-	flag--;
+	here_count--;
 }
 
 void sexp_tree::replace_data(const char* new_data, int type) {
