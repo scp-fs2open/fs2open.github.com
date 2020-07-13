@@ -14901,8 +14901,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	if (hit_objp->type == OBJ_SHIP) {
 		//	If the object that this ship collided with is a big ship
 		if (Ship_info[Ships[hit_objp->instance].ship_info_index].is_big_or_huge()) {
-			//	And the current object is _not_ a big ship
-			if (!Ship_info[Ships[objp_ship->instance].ship_info_index].is_big_or_huge()) {
+			//	And the current object is a small ship
+			if (Ship_info[Ships[objp_ship->instance].ship_info_index].is_small_ship()) {
 				//	Recover from hitting a big ship.  Note, if two big ships collide, they just pound away at each other.  Oh well.  Recovery looks dumb and it's very late.
 				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);
 			}
