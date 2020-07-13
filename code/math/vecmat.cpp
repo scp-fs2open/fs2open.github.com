@@ -388,54 +388,6 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
-
-
-//computes an approximation of the magnitude of the vector
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_mag_quick(const vec3d *v)
-{
-	float a,b,c,bc, t;
-
-	a = fl_abs(v->xyz.x);
-	b = fl_abs(v->xyz.y);
-	c = fl_abs(v->xyz.z);
-
-	if (a < b) {
-		t = a;
-		a = b;
-		b = t;
-	}
-
-	if (b < c) {
-		t = b;
-		b = c;
-		c = t;
-
-		if (a < b) {
-			t = a;
-			a = b;
-			b = t;
-		}
-	}
-
-	bc = (b * 0.25f) + (c * 0.125f);
-
-	t = a + bc + (bc * 0.5f);
-
-	return t;
-}
-
-//computes an approximation of the distance between two points.
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1)
-{
-	vec3d t;
-
-	vm_vec_sub(&t,v0,v1);
-
-	return vm_vec_mag_quick(&t);
-}
-
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -500,79 +452,6 @@ float vm_vec_normalize_safe(vec3d *v)
 
 }
 
-
-//returns approximation of 1/magnitude of a vector
-static float vm_vec_inv_mag_quick(const vec3d *v)
-{
-#if _M_IX86_FP < 1
-	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
-#else
-	float x = (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z);
-	__m128  xx = _mm_load_ss( & x );
-	xx = _mm_rsqrt_ss( xx );
-	_mm_store_ss( & x, xx );
-
-	return x;
-#endif
-}
-
-//normalize a vector. returns 1/mag of source vec. uses approx 1/mag
-float vm_vec_copy_normalize_quick(vec3d *dest,const vec3d *src)
-{
-//	return vm_vec_copy_normalize(dest, src);
-	float im;
-
-	im = vm_vec_inv_mag_quick(src);
-
-	Assert(im > 0.0f);
-
-	dest->xyz.x = src->xyz.x*im;
-	dest->xyz.y = src->xyz.y*im;
-	dest->xyz.z = src->xyz.z*im;
-
-	return 1.0f/im;
-}
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_normalize_quick(vec3d *src)
-{
-//	return vm_vec_normalize(src);
-
-	float im;
-
-	im = vm_vec_inv_mag_quick(src);
-
-	Assert(im > 0.0f);
-
-	src->xyz.x = src->xyz.x*im;
-	src->xyz.y = src->xyz.y*im;
-	src->xyz.z = src->xyz.z*im;
-
-	return 1.0f/im;
-
-}
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src)
-{
-//	return vm_vec_copy_normalize(dest, src);
-
-	float m;
-
-	m = vm_vec_mag_quick(src);
-
-	Assert(m > 0.0f);
-
-	float im = 1.0f / m;
-
-	dest->xyz.x = src->xyz.x * im;
-	dest->xyz.y = src->xyz.y * im;
-	dest->xyz.z = src->xyz.z * im;
-
-	return m;
-
-}
-
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
@@ -584,16 +463,6 @@ float vm_vec_normalized_dir(vec3d *dest, const vec3d *end, const vec3d *start)
 	// VECMAT-ERROR: NULL VEC3D (end == start)
 	t = vm_vec_normalize_safe(dest);
 	return t;
-}
-
-//return the normalized direction vector between two points
-//dest = normalized(end - start).  Returns mag of direction vector
-//NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start)
-{
-	vm_vec_sub(dest,end,start);
-
-	return vm_vec_normalize_quick(dest);
 }
 
 //computes surface normal from three points. result is normalized
@@ -1401,8 +1270,8 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 }
 
 
-//	Generate a fairly random vector that's fairly near normalized.
-void vm_vec_rand_vec_quick(vec3d *rvec)
+//	Generate a fairly random vector that's normalized.
+void vm_vec_rand_vec(vec3d *rvec)
 {
 	rvec->xyz.x = (frand() - 0.5f) * 2;
 	rvec->xyz.y = (frand() - 0.5f) * 2;
@@ -1411,7 +1280,7 @@ void vm_vec_rand_vec_quick(vec3d *rvec)
 	if (IS_VEC_NULL_SQ_SAFE(rvec))
 		rvec->xyz.x = 1.0f;
 
-	vm_vec_normalize_quick(rvec);
+	vm_vec_normalize(rvec);
 }
 
 // Given an point "in" rotate it by "angle" around an
