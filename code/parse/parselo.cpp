@@ -2280,12 +2280,12 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	if (isLatin1)
 	{
 		size_t newlen = len;
-		auto newstr = new char[newlen];
+		std::unique_ptr<char[]> newstr(new char[newlen]);
 
 		do {
 			auto in_str = str;
 			auto in_size = len;
-			auto out_str = newstr;
+			auto out_str = newstr.get();
 			auto out_size = newlen;
 
 			auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
@@ -2297,35 +2297,28 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 			if (err < (size_t)-100)
 			{
 				// successful re-encoding
-				buffer.assign(newstr, newlen - out_size);
+				buffer.assign(newstr.get(), newlen - out_size);
 				mprintf(("Re-encoding non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str()));
-				break;
+				return;
 			}
 			else if (err == SDL_ICONV_E2BIG)
 			{
 				// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
 				// increment since the additional size required is probably pretty small
-				delete[] newstr;
 				newlen += 10;
-				newstr = new char[newlen];
+				newstr.reset(new char[newlen]);
 			}
 			else
 			{
 				// re-encoding failed, so use truncation
-				isLatin1 = false;
 				break;
 			}
 		} while (true);
-
-		delete[] newstr;
 	}
 
 	// unknown encoding, so just truncate
-	if (!isLatin1)
-	{
-		buffer.assign(str, invalid - str);
-		Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
-	}
+	buffer.assign(str, invalid - str);
+	Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
 }
 
 // Goober5000

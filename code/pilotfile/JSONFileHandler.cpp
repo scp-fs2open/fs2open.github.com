@@ -4,11 +4,6 @@
 #include "libs/jansson.h"
 #include "parse/parselo.h"
 
-// it's kinda tricky to #include "utf.h" here, so we forward-declare this, but note that it's a C function
-extern "C" {
-	extern int utf8_check_string(const char *string, size_t length);
-}
-
 namespace {
 const SCP_vector<std::pair<Section, const char*>> SectionMapping {
 	std::pair<Section, const char*>(Section::Unnamed, nullptr),
@@ -109,15 +104,18 @@ void pilot::JSONFileHandler::writeFloat(const char* name, float value) {
 }
 void pilot::JSONFileHandler::writeString(const char* name, const char* str) {
 	ensureNotExists(name);
-	json_t *jstr;
+	json_t *jstr = nullptr;
 
-	// if this string isn't proper UTF-8, try to convert it
-	if (str && !utf8_check_string(str, strlen(str))) {
-		SCP_string buffer;
-		coerce_to_utf8(buffer, str);
-		jstr = json_string(buffer.c_str());
-	} else {
-		jstr = json_string(str);
+	if (str) {
+		// if this string isn't proper UTF-8, try to convert it
+		auto len = strlen(str);
+		if (utf8::find_invalid(str, str + len) != str + len) {
+			SCP_string buffer;
+			coerce_to_utf8(buffer, str);
+			jstr = json_string(buffer.c_str());
+		} else {
+			jstr = json_string(str);
+		}
 	}
 
 	json_object_set_new(_currentEl, name, jstr);
