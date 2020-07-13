@@ -2233,7 +2233,9 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 					auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
 					SDL_iconv_close(iconv);
 
-					if (err == 0) {
+					// SDL returns the number of processed character on success;
+					// error codes are (size_t)-1 through -4
+					if (err < (size_t)-100) {
 						break;
 					} else if (err == SDL_ICONV_E2BIG) {
 						// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
@@ -2256,6 +2258,74 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	}
 
 	cfclose(mf);
+}
+
+// Goober5000, based partly on above iconv usage
+void coerce_to_utf8(SCP_string &buffer, const char *str)
+{
+	auto len = strlen(str);
+
+	// Validate the UTF-8 encoding
+	auto invalid = utf8::find_invalid(str, str + len);
+	if (invalid == str + len)
+	{
+		// turns out this is valid UTF-8
+		buffer.assign(str);
+		return;
+	}
+
+	bool isLatin1 = util::guessLatin1Encoding(str, len);
+
+	// we can convert it
+	if (isLatin1)
+	{
+		size_t newlen = len;
+		auto newstr = new char[newlen];
+
+		do {
+			auto in_str = str;
+			auto in_size = len;
+			auto out_str = newstr;
+			auto out_size = newlen;
+
+			auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
+			auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
+			SDL_iconv_close(iconv);
+
+			// SDL returns the number of processed character on success;
+			// error codes are (size_t)-1 through -4
+			if (err < (size_t)-100)
+			{
+				// successful re-encoding
+				buffer.assign(newstr, newlen - out_size);
+				mprintf(("Re-encoding non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str()));
+				break;
+			}
+			else if (err == SDL_ICONV_E2BIG)
+			{
+				// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
+				// increment since the additional size required is probably pretty small
+				delete[] newstr;
+				newlen += 10;
+				newstr = new char[newlen];
+			}
+			else
+			{
+				// re-encoding failed, so use truncation
+				isLatin1 = false;
+				break;
+			}
+		} while (true);
+
+		delete[] newstr;
+	}
+
+	// unknown encoding, so just truncate
+	if (!isLatin1)
+	{
+		buffer.assign(str, invalid - str);
+		Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
+	}
 }
 
 // Goober5000
