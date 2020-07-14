@@ -638,39 +638,6 @@ TEST_F(VecmatTest, test_vm_vec_dist_squared)
 	}
 }
 
-TEST_F(VecmatTest, test_vm_vec_mag_quick) {
-	for (size_t loop = 0; loop < 1000; ++loop) {
-		vec3d v;
-
-		static_randvec_unnormalized(rand32(), &v);
-
-		auto magnitude = vm_vec_mag(&v);
-
-		// maximum relative error here calculated to be 0.90211 <= (approx/real) <= 1.08433
-		const double tolerated_error = fmax(fabs(magnitude), 1e-6) * 0.1f;
-
-		ASSERT_NEAR(magnitude, vm_vec_mag_quick(&v), tolerated_error);
-	}
-}
-
-TEST_F(VecmatTest, test_vm_vec_dist_quick)
-{
-	for (size_t loop = 0; loop < 1000; ++loop) {
-		vec3d v1, v2;
-
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
-
-		auto distance = vm_vec_dist_quick(&v1, &v2);
-		auto real_distance = vm_vec_dist(&v1, &v2);
-
-		// maximum relative error here calculated to be 0.90211 <= (approx/real) <= 1.08433
-		const double tolerated_error = fmax(fabs(real_distance), 1e-6) * 0.1f;
-		
-		ASSERT_NEAR(distance, real_distance, tolerated_error);
-	}
-}
-
 TEST_F(VecmatTest, test_vm_vec_normalize)
 {
 	for (size_t loop = 0; loop < 1000; ++loop) {
