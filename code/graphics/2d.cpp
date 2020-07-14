@@ -1659,7 +1659,7 @@ void gr_activate(int active)
 	}
 	gr_activated = active;
 
-	if ( !Gr_inited ) { 
+	if ( !Gr_inited || os::getMainViewport() == nullptr) { 
 		return;
 	}
 
