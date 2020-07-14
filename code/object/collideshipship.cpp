@@ -51,7 +51,7 @@ static sound_handle Player_collide_shield_sound, AI_collide_shield_sound;
 /**
  * Return true if two ships are docking or if one of the two is indirectly docking to the other.
  */
-static bool ships_are_docking(object *objp1, object *objp2)
+static bool check_for_docking_collision(object *objp1, object *objp2)
 {
 	ai_info	*aip1, *aip2;
 	ship		*shipp1, *shipp2;
@@ -135,7 +135,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Don't do collision detection for docking ships, since they will always collide while trying to dock
-	if ( ships_are_docking(heavy_obj, light_obj) ) {
+	if (check_for_docking_collision(heavy_obj, light_obj) ) {
 		return 0;
 	}
 
