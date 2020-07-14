@@ -793,29 +793,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 }
 
 /**
- * Is target beam valid?
- *
- * @return 0 only if objnum is beam protected and turret is beam turret
- */
-int is_target_beam_valid(ship_weapon *swp, object *objp)
-{
-	// check if turret has beam weapon
-	if (all_turret_weapons_have_flags(swp, Weapon::Info_Flags::Beam)) {
-		if (objp->flags[Object::Object_Flags::Beam_protected]) {
-			return 0;
-		}
-
-		if (all_turret_weapons_have_flags(swp, Weapon::Info_Flags::Huge)) {
-			if (objp->type == OBJ_SHIP && !(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) ) {
-				return 0;
-			}
-		}
-	}
-
-	return 1;
-}
-
-/**
  * Given an object and an enemy team, return the index of the nearest enemy object.
  *
  * @param turret_parent_objnum	Parent objnum for the turret
@@ -1090,8 +1067,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 						evaluate_obj_as_target(objp, &eeo);
 					}
 
-					Assert(eeo.nearest_attacker_objnum < 0 || is_target_beam_valid(swp, &Objects[eeo.nearest_attacker_objnum]));
-						// next highest priority is attacking ship
+					// next highest priority is attacking ship
 					if ( eeo.nearest_attacker_objnum != -1 ) {			// next highest priority is an attacking ship
 						return eeo.nearest_attacker_objnum;
 					}
@@ -2496,9 +2472,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override ) {
 		Num_find_turret_enemy++;
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum);
-		//Assert(objnum < 0 || is_target_beam_valid(tp, objnum));
 
-		if (objnum >= 0 && is_target_beam_valid(&ss->weapons, &Objects[objnum])) {
+		if (objnum >= 0) {
 			if (ss->turret_enemy_objnum == -1) {
 				ss->turret_enemy_objnum = objnum;
 				ss->targeted_subsys = NULL;		// Turret has retargeted; reset subsystem - Valathil for Mantis #2652
