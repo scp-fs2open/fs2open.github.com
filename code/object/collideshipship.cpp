@@ -62,7 +62,7 @@ static int ships_are_docking(object *objp1, object *objp2)
 	aip1 = &Ai_info[shipp1->ai_index];
 	aip2 = &Ai_info[shipp2->ai_index];
 
-	if (dock_check_find_direct_docked_object(objp1, objp2)) {
+	if (dock_check_find_docked_object(objp1, objp2)) {
 		return 1;
 	}
 
