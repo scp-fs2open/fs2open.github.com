@@ -6349,9 +6349,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	{
 		if(sci->speed > 0.0f) {
 			if (!sci->rot_defined) {
-				sci->rot_angles.p = frand_range(0.0f, 1.99f * PI);
-				sci->rot_angles.b = frand_range(0.0f, 1.99f * PI);
-				sci->rot_angles.h = frand_range(0.0f, 1.99f * PI);
+				sci->rot_angles.p = frand_range(0.0f, PI2);
+				sci->rot_angles.b = frand_range(0.0f, PI2);
+				sci->rot_angles.h = frand_range(0.0f, PI2);
 			}
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
