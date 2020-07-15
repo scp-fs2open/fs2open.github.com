@@ -2388,10 +2388,11 @@ void vm_estimate_next_orientation(const matrix *last_orient, const matrix *curre
 	vm_matrix_x_matrix(next_orient, current_orient, &Rot_matrix);
 }
 
-//	Return true if all elements of *vec are legal, that is, not a NAN.
+//	Return true if all elements of *vec are legal, that is, not NaN or infinity.
 int is_valid_vec(const vec3d *vec)
 {
-	return !std::isnan(vec->xyz.x) && !std::isnan(vec->xyz.y) && !std::isnan(vec->xyz.z);
+	return !std::isnan(vec->xyz.x) && !std::isnan(vec->xyz.y) && !std::isnan(vec->xyz.z)
+		&& !std::isinf(vec->xyz.x) && !std::isinf(vec->xyz.y) && !std::isinf(vec->xyz.z);
 }
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
