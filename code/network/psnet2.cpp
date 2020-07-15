@@ -546,6 +546,10 @@ bool psnet_init_my_addr()
 		return false;
 	}
 
+	// make sure we are in dual-stack mode (not the default on Windows)
+	int i_opt = 0;
+	setsockopt(tsock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+
 	for (const auto &host : remote_hosts) {
 		if ( !psnet_get_addr(host.c_str(), 53, &remote_addr) ) {
 			continue;
