@@ -5623,9 +5623,15 @@ void physics_ship_init(object *objp)
 	// use mass and I_body_inv from POF read into polymodel
 	physics_init(pi);
 
-	pi->mass = pm->mass * sinfo->density;
-	if (pi->mass==0.0f)
+	if (sinfo->density == 0) {
+		sinfo->density = 1;
+		nprintf(("Physics", "pi->density==0.0f. setting to 1\n"));
+		Warning(LOCATION, "%s has 0 density! setting to 1", sinfo->name);
+	}
+
+	if (pm->mass==0.0f)
 	{
+		// make a guess for the ship's mass
 		vec3d size;
 		vm_vec_sub(&size,&pm->maxs,&pm->mins);
 		float vmass=size.xyz.x*size.xyz.y*size.xyz.z;
@@ -5634,29 +5640,31 @@ void physics_ship_init(object *objp)
 		nprintf(("Physics", "pi->mass==0.0f. setting to %f\n",amass));
 		Warning(LOCATION, "%s (%s) has no mass! setting to %f", sinfo->name, sinfo->pof_file, amass);
 		pm->mass=amass;
-		pi->mass=amass*sinfo->density;
+		pi->mass=amass * sinfo->density;
 	}
+	else 
+		pi->mass = pm->mass * sinfo->density;
 
-	// ack!
-	// if pm's MOI is invalid, compensate
-	if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+	// it was print-worthy back in modelread.cpp, but now that its being used for an actual ship the user should be warned.
+	if (IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
-		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
-	{
-		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!\n", pm->filename));
+		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec))
 		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
 
+	// if invalid they were already warned about this in modelread.cpp, so now we just need to try and sweep it under the rug
+	if (!is_valid_matrix(&pm->moment_of_inertia))
+	{
 		// TODO: generate MOI properly
-		pi->I_body_inv = pm->moment_of_inertia;
+		vm_mat_zero(&pi->I_body_inv);
 	}
 	// it's valid, so we can use it
 	else
 		pi->I_body_inv = pm->moment_of_inertia;
 
-	// scale pm->I_body_inv value by density
-	vm_vec_scale( &pi->I_body_inv.vec.rvec, sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.uvec, sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.fvec, sinfo->density );
+	// scale inverse moment of inertia value by inverse density
+	vm_vec_scale( &pi->I_body_inv.vec.rvec, 1/sinfo->density );
+	vm_vec_scale( &pi->I_body_inv.vec.uvec, 1/sinfo->density );
+	vm_vec_scale( &pi->I_body_inv.vec.fvec, 1/sinfo->density );
 
 	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
