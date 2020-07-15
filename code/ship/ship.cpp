@@ -128,8 +128,8 @@ int		*Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
 
 wing	Wings[MAX_WINGS];
-int	ships_inited = 0;
-int armor_inited = 0;
+bool	Ships_inited = false;
+bool	Armor_inited = false;
 
 int	Starting_wings[MAX_STARTING_WINGS];  // wings player starts a mission with (-1 = none)
 
@@ -5333,7 +5333,7 @@ static void ship_parse_post_cleanup()
  */
 void ship_init()
 {
-	if ( !ships_inited )
+	if ( !Ships_inited )
 	{
 		//Initialize Ignore_List for targeting
 		set_default_ignore_list();
@@ -5391,7 +5391,7 @@ void ship_init()
 
 			ship_parse_post_cleanup();
 
-			ships_inited = 1;
+			Ships_inited = true;
 		}
 
 		// We shouldn't already have any subsystem pointers at this point.
@@ -18413,12 +18413,12 @@ void armor_parse_table(const char *filename)
 
 void armor_init()
 {
-	if (!armor_inited) {
+	if (!Armor_inited) {
 		armor_parse_table("armor.tbl");
 
 		parse_modular_table(NOX("*-amr.tbm"), armor_parse_table);
 
-		armor_inited = 1;
+		Armor_inited = true;
 	}
 }
 

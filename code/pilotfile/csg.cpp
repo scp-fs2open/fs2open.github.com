@@ -24,6 +24,13 @@
 #include <sstream>
 #include <limits>
 
+// this is kinda tricky
+enum class TechroomState : ubyte
+{
+	DEFAULT = 0,
+	ADDED = 1,
+	REMOVED
+};
 
 void pilotfile::csg_read_flags()
 {
@@ -420,7 +427,7 @@ void pilotfile::csg_write_missions()
 void pilotfile::csg_read_techroom()
 {
 	int idx, list_size = 0;
-	ubyte visible;
+	TechroomState state;
 
 	if ( !m_have_info ) {
 		throw "Techroom before Info!";
@@ -429,11 +436,17 @@ void pilotfile::csg_read_techroom()
 	// visible ships
 	list_size = (int)ship_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (ship_list[idx].index >= 0) {
-				Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
+				if (state == TechroomState::ADDED) {
+					Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
+				} else if (state == TechroomState::REMOVED) {
+					Ship_info[ship_list[idx].index].flags.remove(Ship::Info_Flags::In_tech_database);
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid ship \"%s\" in campaign save file. "
 				         "Skipping...\n",
@@ -445,11 +458,17 @@ void pilotfile::csg_read_techroom()
 	// visible weapons
 	list_size = (int)weapon_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (weapon_list[idx].index >= 0) {
-                Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
+				if (state == TechroomState::ADDED) {
+	                Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
+				} else if (state == TechroomState::REMOVED) {
+					Weapon_info[weapon_list[idx].index].wi_flags.remove(Weapon::Info_Flags::In_tech_database);
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid weapon \"%s\" in campaign save file. Skipping...\n",
 				         weapon_list[idx].name.c_str()));
@@ -460,11 +479,17 @@ void pilotfile::csg_read_techroom()
 	// visible intel entries
 	list_size = (int)intel_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (intel_list[idx].index >= 0) {
-				Intel_info[intel_list[idx].index].flags |= IIF_IN_TECH_DATABASE;
+				if (state == TechroomState::ADDED) {
+					Intel_info[intel_list[idx].index].flags |= IIF_IN_TECH_DATABASE;
+				} else if (state == TechroomState::REMOVED) {
+					Intel_info[intel_list[idx].index].flags &= ~IIF_IN_TECH_DATABASE;
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid intel entry \"%s\" in campaign save file. Skipping...\n",
 				         intel_list[idx].name.c_str()));
@@ -481,44 +506,47 @@ void pilotfile::csg_read_techroom()
 void pilotfile::csg_write_techroom()
 {
 	int idx;
-	ubyte visible;
+	TechroomState state;
 
 	startSection(Section::Techroom);
 
-	// visible ships
+	// write whether it differs from the default for ships
     for (auto &si : Ship_info) {
-        if ((si.flags[Ship::Info_Flags::In_tech_database]) && !(si.flags[Ship::Info_Flags::Default_in_tech_database])) {
-            visible = 1;
-        }
-        else {
-            visible = 0;
+        if (si.flags[Ship::Info_Flags::In_tech_database] == si.flags[Ship::Info_Flags::Default_in_tech_database]) {
+			state = TechroomState::DEFAULT;
+        } else if (si.flags[Ship::Info_Flags::In_tech_database]) {
+			state = TechroomState::ADDED;
+		} else {
+			state = TechroomState::REMOVED;
         }
 
-        cfwrite_ubyte(visible, cfp);
+        cfwrite_ubyte((ubyte) state, cfp);
     }
 
-	// visible weapons
+	// and for weapons
 	for (auto &wi : Weapon_info) {
-		// only visible if not in techroom by default
-		if ((wi.wi_flags[Weapon::Info_Flags::In_tech_database]) && !(wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
-			visible = 1;
+		if (wi.wi_flags[Weapon::Info_Flags::In_tech_database] == wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) {
+			state = TechroomState::DEFAULT;
+        } else if (wi.wi_flags[Weapon::Info_Flags::In_tech_database]) {
+			state = TechroomState::ADDED;
 		} else {
-			visible = 0;
-		}
+			state = TechroomState::REMOVED;
+        }
 
-		cfwrite_ubyte(visible, cfp);
+		cfwrite_ubyte((ubyte) state, cfp);
 	}
 
-	// visible intel entries
+	// and for intel entries
 	for (idx = 0; idx < Intel_info_size; idx++) {
-		// only visible if not in techroom by default
-		if ( (Intel_info[idx].flags & IIF_IN_TECH_DATABASE) && !(Intel_info[idx].flags & IIF_DEFAULT_IN_TECH_DATABASE) ) {
-			visible = 1;
+		if (((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) == ((Intel_info[idx].flags & IIF_DEFAULT_IN_TECH_DATABASE) != 0)) {
+			state = TechroomState::DEFAULT;
+        } else if ((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) {
+			state = TechroomState::ADDED;
 		} else {
-			visible = 0;
+			state = TechroomState::REMOVED;
 		}
 
-		cfwrite_ubyte(visible, cfp);
+		cfwrite_ubyte((ubyte) state, cfp);
 	}
 
 	endSection();

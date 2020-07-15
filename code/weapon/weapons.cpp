@@ -175,8 +175,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
 
 int Num_weapons = 0;
-int Weapons_inited = 0;
-int Weapon_expl_initted = 0;
+bool Weapons_inited = false;
 
 int laser_model_inner = -1;
 int laser_model_outer = -1;
@@ -3560,7 +3559,7 @@ void weapon_init()
 		// do post-parse cleanup
 		weapon_do_post_parse();
 
-		Weapons_inited = 1;
+		Weapons_inited = true;
 	}
 
 	weapon_level_init();

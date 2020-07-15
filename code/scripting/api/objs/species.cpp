@@ -25,8 +25,10 @@ ADE_VIRTVAR(Name, l_Species, "string", "Species name", "string", "Species name, 
 	if(idx < 0 || idx >= (int)Species_info.size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Species_info[idx].species_name, s, sizeof(Species_info[idx].species_name)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Species_info[idx].species_name);
+		strncpy(Species_info[idx].species_name, s, len);
+		Species_info[idx].species_name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Species_info[idx].species_name);

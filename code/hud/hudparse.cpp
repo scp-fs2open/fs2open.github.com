@@ -37,7 +37,7 @@
 #include "ship/ship.h" //for ship struct
 
 //Global stuffs
-extern int ships_inited; //Need this
+extern bool Ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
@@ -290,7 +290,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
-				if (!ships_inited) {
+				if (!Ships_inited) {
 					// just in case ship info has not been initialized.
 					skip_to_start_of_string("#Gauge Config");
 					continue;
@@ -507,7 +507,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 void hud_positions_init()
 {
-	if(!ships_inited)
+	if(!Ships_inited)
 	{
 		Error(LOCATION, "Could not initialize hudparse.cpp as ships were not inited first.");
 		return;

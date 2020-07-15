@@ -249,7 +249,7 @@ static UI_SLIDER2 Tech_slider;
 // Intelligence master data structs (these get inited @ game startup from species.tbl)
 intel_data Intel_info[MAX_INTEL_ENTRIES];
 int Intel_info_size = 0;
-static bool intel_info_init_done = false;
+bool Intel_inited = false;
 
 // some prototypes to make you happy
 int techroom_load_ani(anim **animpp, char *name);
@@ -901,7 +901,7 @@ void techroom_change_tab(int num)
 				Intel_list_size = 0;
 
 				for (int i=0; i<Intel_info_size; i++) {
-					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE) || (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)) {
+					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE)) {
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
@@ -1060,7 +1060,7 @@ void techroom_intel_init()
 {
 	int  temp;
 
-	if (intel_info_init_done)
+	if (Intel_inited)
 		return;
 		
 	try
@@ -1098,7 +1098,7 @@ void techroom_intel_init()
 			Intel_info_size++;
 		}
 
-		intel_info_init_done = true;
+		Intel_inited = true;
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -1111,7 +1111,7 @@ void techroom_intel_reset()
 {
 	Intel_info_size = 0;
 	memset(Intel_info, 0, sizeof(Intel_info));
-	intel_info_init_done = false;
+	Intel_inited = false;
 }
 
 void techroom_init()
@@ -1450,7 +1450,7 @@ void techroom_do_frame(float frametime)
 }
 
 // note: the name has to be pre-translated before being passed into this function
-int intel_info_lookup(char *name)
+int intel_info_lookup(const char *name)
 {
 	int	i;
 
