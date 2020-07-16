@@ -951,12 +951,10 @@ void multi_fs_tracker_process_game_item(game_list *gl)
 {
 	active_game ag;	
 	int idx;
-	in_addr addr;
-	in6_addr addr6;
 
 	for(idx=0;idx<MAX_GAME_LISTS_PER_PACKET;idx++){
 		// skip null server addresses
-		if(gl->game_server[idx] == 0){
+		if (IN6_IS_ADDR_UNSPECIFIED(&gl->game_server[idx])) {
 			continue;
 		}
 
@@ -964,10 +962,7 @@ void multi_fs_tracker_process_game_item(game_list *gl)
 		memset(&ag,0,sizeof(active_game));
 		SDL_strlcpy(ag.name, gl->game_name[idx], SDL_arraysize(ag.name));
 
-		addr.s_addr = gl->game_server[idx];
-		psnet_map4to6(&addr, &addr6);
-		memcpy(&ag.server_addr.addr, &addr6, sizeof(ag.server_addr.addr));
-
+		memcpy(&ag.server_addr.addr, &gl->game_server[idx], sizeof(ag.server_addr.addr));
 		ag.server_addr.port = ntohs(gl->port[idx]); //DEFAULT_GAME_PORT;
 
 		// add to the active game list

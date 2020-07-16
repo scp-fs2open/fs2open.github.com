@@ -40,6 +40,7 @@
 #define	GNT_GAMELIST_DATA		6
 #define	GNT_GAME_COUNT_REQ	7
 #define	GNT_GAME_COUNT_DATA	8
+#define	GNT_GAMELIST_DATA_NEW	9
 
 #define	GT_FREESPACE			1
 #define	GT_DESCENT3				2
@@ -83,7 +84,17 @@ typedef struct {
 	char pad[3];	// ..needs 3-byte padding here for alignment..
 	unsigned int	game_server[MAX_GAME_LISTS_PER_PACKET];
 	unsigned short port[MAX_GAME_LISTS_PER_PACKET];
-} game_list;
+} game_list_ip4;
+
+typedef struct {
+	unsigned char game_type;
+	char game_name[MAX_GAME_LISTS_PER_PACKET][MAX_GENERIC_GAME_NAME_LEN];
+	char pad[3];			// ..needs 3-byte padding here for alignment..
+	in6_addr game_server[MAX_GAME_LISTS_PER_PACKET];
+	unsigned short port[MAX_GAME_LISTS_PER_PACKET];
+} game_list_ip6;
+
+#define game_list game_list_ip6
 
 typedef struct {
 	int	rank;								// Try to find opponents with a rank similar to this

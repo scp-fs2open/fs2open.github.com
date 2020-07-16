@@ -31,7 +31,9 @@
 // check structs for size compatibility
 SDL_COMPILE_TIME_ASSERT(game_packet_header, sizeof(game_packet_header) == 529);
 SDL_COMPILE_TIME_ASSERT(freespace2_net_game_data, sizeof(freespace2_net_game_data) == 120);
-SDL_COMPILE_TIME_ASSERT(game_list, sizeof(game_list) == 384);
+SDL_COMPILE_TIME_ASSERT(game_list_ip4, sizeof(game_list_ip4) == 384);
+SDL_COMPILE_TIME_ASSERT(game_list_ip6, sizeof(game_list_ip6) == 504);
+SDL_COMPILE_TIME_ASSERT(in6_addr, sizeof(in6_addr) == 16);
 SDL_COMPILE_TIME_ASSERT(filter_game_list_struct, sizeof(filter_game_list_struct) == 40);
 
 
@@ -181,7 +183,7 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 			break;
 
 		case GNT_GAMELIST_DATA: {
-			auto games = reinterpret_cast<game_list *>(&gph->data);
+			auto games = reinterpret_cast<game_list_ip4 *>(&gph->data);
 
 			PXO_GET_DATA(games->game_type);
 
@@ -193,6 +195,28 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 
 			for (i = 0; i < MAX_GAME_LISTS_PER_PACKET; i++) {
 				PXO_GET_UINT(games->game_server[i]);
+			}
+
+			for (i = 0; i < MAX_GAME_LISTS_PER_PACKET; i++) {
+				PXO_GET_USHORT(games->port[i]);
+			}
+
+			break;
+		}
+
+		case GNT_GAMELIST_DATA_NEW: {
+			auto games = reinterpret_cast<game_list_ip6 *>(&gph->data);
+
+			PXO_GET_DATA(games->game_type);
+
+			for (i = 0; i < MAX_GAME_LISTS_PER_PACKET; i++) {
+				PXO_GET_DATA(games->game_name[i]);
+			}
+
+			PXO_GET_DATA(games->pad);	// padded bytes for alignment
+
+			for (i = 0; i < MAX_GAME_LISTS_PER_PACKET; i++) {
+				PXO_GET_DATA(games->game_server[i]);
 			}
 
 			for (i = 0; i < MAX_GAME_LISTS_PER_PACKET; i++) {
@@ -258,6 +282,8 @@ int InitGameTrackerClient(int gametype)
 
 	// This would be a good place to resolve the IP based on a domain name
 	psnet_get_addr(Multi_options_g.game_tracker_ip, GAMEPORT, &gtrackaddr);
+
+	SDL_zero(GameBuffer);
 
 	//Start New 7-9-98
 	SendingGameOver = 0;
@@ -364,13 +390,36 @@ void IdleGameTracker()
 				SendingGameOver = 0;							
 				break;
 			case GNT_GAMELIST_DATA:
+			case GNT_GAMELIST_DATA_NEW:
 				int i;
 				//Woohoo! Game data! put it in the buffer (if one's free)
 				for(i=0;i<MAX_GAME_BUFFERS;i++)
 				{
 					if(GameBuffer[i].game_type==GT_UNUSED)
 					{
-						memcpy(&GameBuffer[i],&inpacket.data,sizeof(game_list));
+						if (inpacket.type == GNT_GAMELIST_DATA)
+						{
+							// convert to ip6 struct
+							auto gl4 = reinterpret_cast<game_list_ip4 *>(&inpacket.data);
+							game_list_ip6 gl6;
+							in_addr addr;
+
+							gl6.game_type = gl4->game_type;
+							memcpy(&gl6.game_name, &gl4->game_name, sizeof(gl6.game_name));
+							memcpy(&gl6.port, &gl4->port, sizeof(gl6.port));
+
+							for (int j = 0; j < MAX_GAME_LISTS_PER_PACKET; j++)
+							{
+								addr.s_addr = gl4->game_server[j];
+								psnet_map4to6(&addr, &gl6.game_server[j]);
+							}
+
+							memcpy(&GameBuffer[i], &gl6, sizeof(game_list));
+						}
+						else
+						{
+							memcpy(&GameBuffer[i], &inpacket.data, sizeof(game_list));
+						}
 						i=MAX_GAME_BUFFERS+1;
 					}
 				}
