@@ -5645,13 +5645,13 @@ void physics_ship_init(object *objp)
 	else 
 		pi->mass = pm->mass * sinfo->density;
 
-	// it was print-worthy back in modelread.cpp, but now that its being used for an actual ship the user should be warned.
+	// it was print-worthy back in read_model_file() in modelread.cpp, but now that its being used for an actual ship the user should be warned.
 	if (IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec))
 		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
 
-	// if invalid they were already warned about this in modelread.cpp, so now we just need to try and sweep it under the rug
+	// if invalid they were already warned about this in read_model_file() in modelread.cpp, so now we just need to try and sweep it under the rug
 	if (!is_valid_matrix(&pm->moment_of_inertia))
 	{
 		// TODO: generate MOI properly
