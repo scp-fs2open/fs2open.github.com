@@ -373,6 +373,19 @@ void UI_INPUTBOX::process(int focus)
 
 			default:
 				if (!locked) {
+					// allow pasting from system clipboard
+					if (key == (KEY_CTRLED | KEY_V)) {
+						if ( SDL_HasClipboardText() ) {
+							char *cliptext = SDL_GetClipboardText();
+
+							if (cliptext) {
+								append_text(cliptext);
+								SDL_free(cliptext);
+							}
+						}
+						// fall through and let key be dealt with below
+					}
+
 					// MWA -- determine if alt or ctrl held down on this key and don't process if it is.  We
 					// need to be able to pass these keys back to the top level.  (And anyway -- ctrl-a shouldn't
 					// print out an A in the input window
@@ -476,4 +489,34 @@ void UI_INPUTBOX::set_text(const char *in)
 	}
 
 	position = in_length;  // fixes the zero-length-I-don't-think-so bug
+}
+
+void UI_INPUTBOX::append_text(const char *in)
+{
+	if (in == nullptr) {
+		return;
+	}
+
+	// current size
+	size_t textlen = strlen(text);
+
+	if (textlen == static_cast<size_t>(length)) {
+		return;
+	}
+
+	// strcat_s() will zero the string if it's too long, which isn't what we want
+	// SDL_strlcat() is safe while still preserving the dest string on error
+	SDL_strlcat(text, in, length+1);
+
+	// new size
+	textlen = strlen(text);
+
+	if (flags & UI_INPUTBOX_FLAG_PASSWD) {
+		memset(passwd_text, INPUTBOX_PASSWD_CHAR, textlen);
+		passwd_text[textlen] = 0;
+	}
+
+	position = static_cast<int>(textlen);
+
+	changed_flag = 1;
 }
