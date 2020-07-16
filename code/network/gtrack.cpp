@@ -453,7 +453,7 @@ game_list * GetGameList()
 {
 	static game_list gl;
 
-	for (auto game : GameBuffer) {
+	for (auto &game : GameBuffer) {
 		if (game.game_type != GT_UNUSED) {
 			memcpy(&gl, &game, sizeof(game_list));
 			game.game_type = GT_UNUSED;
