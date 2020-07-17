@@ -21512,7 +21512,8 @@ void sexp_show_subtitle(int node)
 	int x_pos, y_pos, width = 0;
 	const char *text, *imageanim = nullptr;
 	float display_time, fade_time = 0.0f;
-	int r = 255, g = 255, b = 255, n = node;
+	int n = node;
+	std::array<int, 3> rgb = { 255, 255, 255 };
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
 
 	eval_nums(n, is_nan, is_nan_forever, x_pos, y_pos);
@@ -21554,7 +21555,10 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_nums(n, is_nan, is_nan_forever, width, r, g, b);
+					eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+						CLAMP(num, 0, 255);
+						return num;
+					}, 255);
 					if (is_nan || is_nan_forever)
 						return;
 
@@ -21567,13 +21571,9 @@ void sexp_show_subtitle(int node)
 		}
 	}
 
-	CLAMP(r, 0, 255);
-	CLAMP(g, 0, 255);
-	CLAMP(b, 0, 255);
-
 	//FINALLY !!
 	color new_color;
-	gr_init_alphacolor(&new_color, r, g, b, 255);
+	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
