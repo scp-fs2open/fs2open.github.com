@@ -5114,7 +5114,15 @@ void game_leave_state( int old_state, int new_state )
 				snd_aav_init();
 
 				freespace_stop_mission();
-				
+
+				// when going straight from the mission into the pxo state, make sure to clear the mission.
+				if (new_state == GS_STATE_PXO) {
+					gr_clear();
+					gr_flip();
+					gr_clear();
+					gr_flip();
+				}
+
 				if (Cmdline_benchmark_mode) {
 					gameseq_post_event( GS_EVENT_QUIT_GAME );
 				}

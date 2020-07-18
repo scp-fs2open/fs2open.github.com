@@ -292,7 +292,7 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 				psnet_rel_close_socket(&Net_player->reliable_socket);
 				Net_player->reliable_socket = INVALID_SOCKET;
 
-				// remove our do-notworking flag
+				// remove our do-networking flag
 				Net_player->flags &= ~(NETINFO_FLAG_DO_NETWORKING);
 				
 				Multi_quit_game = 0;
