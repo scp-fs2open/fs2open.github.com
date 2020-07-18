@@ -983,6 +983,14 @@ void multi_join_clear_game_list()
 
 void multi_join_game_do_frame()
 {
+
+	// Because we can get to here through the options screen, we may have PXO games enabled when we're not connected.
+	// So we should go back and connect if that's true.
+	if ((Multi_options_g.pxo == 1) && !multi_fs_tracker_inited()) {
+		gameseq_post_event(GS_EVENT_PXO);
+		return;
+	}
+
 	// check the status of our reliable socket.  If not valid, popup error and return to main menu
 	// I put this code here to avoid nasty gameseq issues with states.  Also, we will have nice
 	// background for the popup
