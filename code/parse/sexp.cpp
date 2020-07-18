@@ -27,6 +27,7 @@
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
+#include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"		// for explosion stuff
 #include "freespace.h"
@@ -557,6 +558,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-debriefing-persona",			OP_SET_DEBRIEFING_PERSONA,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
@@ -682,7 +684,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "warp-effect",					OP_WARP_EFFECT,							12, 14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "clear-weapons",					OP_CLEAR_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "clear-debris",					OP_CLEAR_DEBRIS,						0,	1,			SEXP_ACTION_OPERATOR, },	// Goober5000
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
@@ -1247,7 +1250,7 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].cached_variable_index = -1;
 
 	// special-arg?
-	if (type == SEXP_ATOM && subtype == SEXP_ATOM_STRING && !strcmp(text, SEXP_ARGUMENT_STRING))
+	if (type == SEXP_ATOM && !strcmp(text, SEXP_ARGUMENT_STRING))
 		Sexp_nodes[node].flags |= SNF_SPECIAL_ARG_IN_NODE;
 
 	return node;
@@ -3553,6 +3556,8 @@ int get_sexp()
 				strcpy_s(token, "set-variable-by-index");
 			else if (!stricmp(token, "distance-ship-subsystem"))
 				strcpy_s(token, "distance-center-to-subsystem");
+			else if (!stricmp(token, "remove-weapons"))
+				strcpy_s(token, "clear-weapons");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -3939,9 +3944,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		if (mode == SEXP_ERROR_CHECK_MODE)
 		{
 			if (Fred_running)
-				sprintf(dest, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
 			else
-				sprintf(dest, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+				sprintf(dest, "@%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
 		}
 		else
 		{
@@ -3983,7 +3988,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 			{
 				// if (for whatever reason) we have an empty string or an invalid number, print 0
-				if (*ctext_string == '\0' || !can_construe_as_integer(ctext_string))
+				// do not do this trick in error mode, because we want to know what the text actually is
+				if ((mode != SEXP_ERROR_CHECK_MODE) &&
+					(*ctext_string == '\0' || !can_construe_as_integer(ctext_string)))
 				{
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
 					ctext_string = "0";
@@ -8466,7 +8473,7 @@ int sexp_get_damage_caused(int node)
 		// this ship may have exited already.
 		if (attacker->exited_index >= 0) {
 			attacker_sig = Ships_exited[attacker->exited_index].obj_signature;
-		} else if (ship_entry->shipp) {
+		} else if (attacker->shipp) {
 			attacker_sig = attacker->objp->signature;
 		} else {
 			// it probably vanished
@@ -8698,7 +8705,7 @@ void sexp_special_warpout_name( int node )
 	if (!ship_entry || !ship_entry->shipp)
 		return;
 
-	auto knossos_entry = eval_ship(node);
+	auto knossos_entry = eval_ship(CDR(node));
 	if (!knossos_entry || !knossos_entry->shipp)
 		return;
 
@@ -13711,6 +13718,16 @@ void sexp_set_debriefing_toggled(int node)
 	The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node));
 }
 
+// Goober5000
+void sexp_set_debriefing_persona(int node)
+{
+	bool is_nan, is_nan_forever;
+	int persona = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || persona < 0)
+		return;
+	The_mission.debriefing_persona = persona;
+}
+
 /**
  * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
  *
@@ -18230,11 +18247,11 @@ void sexp_weapon_set_damage_type(int node)
 void sexp_ship_set_damage_type(int node)
 {
 	int damage;
-	bool debris, rset;
+	bool set_collision, rset;
 	size_t t;
 
 	// collision or debris
-	debris = is_sexp_true(node);
+	set_collision = is_sexp_true(node);
 
 	// get damage type
 	node = CDR(node);
@@ -18267,7 +18284,7 @@ void sexp_ship_set_damage_type(int node)
 			auto shipp = ship_entry->shipp;
 
 			// set the damage type
-			if (debris)
+			if (set_collision)
 			{
 				if (!rset)
 					shipp->collision_damage_type_idx = Ship_info[shipp->ship_info_index].collision_damage_type_idx;
@@ -19834,49 +19851,65 @@ void sexp_add_remove_hotkey(int node)
 	}
 }
 
-// helper function for the remove-weapons SEXP
-void actually_remove_weapons(int weapon_info_index)
+// helper function for the clear-weapons and clear-debris SEXPs
+void actually_clear_weapons_or_debris(int op_num, int class_index)
 {
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
 	{
-		if (objp->type != OBJ_WEAPON)
+		if (op_num == OP_CLEAR_WEAPONS && objp->type != OBJ_WEAPON)
+			continue;
+		if (op_num == OP_CLEAR_DEBRIS && objp->type != OBJ_DEBRIS)
 			continue;
 
-		// weapon doesn't match the optional weapon
-		if ((weapon_info_index >= 0) && (Weapons[objp->instance].weapon_info_index != weapon_info_index))
-			continue;
+		if (class_index >= 0)
+		{
+			// weapon doesn't match the class
+			if (op_num == OP_CLEAR_WEAPONS && (Weapons[objp->instance].weapon_info_index != class_index))
+				continue;
+
+			// debris doesn't match the class
+			if (op_num == OP_CLEAR_DEBRIS && (Debris[objp->instance].ship_info_index != class_index))
+				continue;
+		}
 
 		objp->flags.set(Object::Object_Flags::Should_be_dead);
 	}
 }
 
-void sexp_remove_weapons(int node)
+void sexp_clear_weapons_or_debris(int node, int op_num)
 { 
-	int weapon_info_index = -1;
+	int class_index = -1;
 
 	// if we have the optional argument, read it in
 	if (node >= 0) {
-		weapon_info_index = weapon_info_lookup(CTEXT(node));
-		if (weapon_info_index == -1) {
-			Warning(LOCATION, "Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission\n", CTEXT(node));
+		if (op_num == OP_CLEAR_WEAPONS) {
+			class_index = weapon_info_lookup(CTEXT(node));
+			if (class_index == -1) {
+				Warning(LOCATION, "Clear-weapons attempted to remove %s. Weapon class not found. Clear-weapons will remove all weapons currently in the mission\n", CTEXT(node));
+			}
+		} else if (op_num == OP_CLEAR_DEBRIS) {
+			class_index = ship_info_lookup(CTEXT(node));
+			if (class_index == -1) {
+				Warning(LOCATION, "Clear-debris attempted to remove %s. Ship class not found. Clear-debris will remove all debris currently in the mission\n", CTEXT(node));
+			}
 		}
 	}
 
-	actually_remove_weapons(weapon_info_index); 
+	actually_clear_weapons_or_debris(op_num, class_index);
 	
 	// send the information to clients
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(weapon_info_index); 
+	Current_sexp_network_packet.send_int(class_index); 
 	Current_sexp_network_packet.end_callback();
 }
 
-void multi_sexp_remove_weapons()
+void multi_sexp_clear_weapons_or_debris(int op_num)
 {
-	int weapon_info_index = -1; 
+	int class_index = -1; 
 
-	Current_sexp_network_packet.get_int(weapon_info_index);
+	Current_sexp_network_packet.get_int(class_index);
 	
-	actually_remove_weapons(weapon_info_index); 
+	actually_clear_weapons_or_debris(op_num, class_index);
 }
 
 int sexp_return_player_data(int node, int type)
@@ -21478,7 +21511,8 @@ void sexp_show_subtitle(int node)
 	int x_pos, y_pos, width = 0;
 	const char *text, *imageanim = nullptr;
 	float display_time, fade_time = 0.0f;
-	int r = 255, g = 255, b = 255, n = node;
+	int n = node;
+	std::array<int, 3> rgb = { 255, 255, 255 };
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
 
 	eval_nums(n, is_nan, is_nan_forever, x_pos, y_pos);
@@ -21520,7 +21554,10 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_nums(n, is_nan, is_nan_forever, width, r, g, b);
+					eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+						CLAMP(num, 0, 255);
+						return num;
+					}, 255);
 					if (is_nan || is_nan_forever)
 						return;
 
@@ -21533,13 +21570,9 @@ void sexp_show_subtitle(int node)
 		}
 	}
 
-	CLAMP(r, 0, 255);
-	CLAMP(g, 0, 255);
-	CLAMP(b, 0, 255);
-
 	//FINALLY !!
 	color new_color;
-	gr_init_alphacolor(&new_color, r, g, b, 255);
+	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
@@ -23936,6 +23969,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Goober5000
+			case OP_SET_DEBRIEFING_PERSONA:
+				sexp_set_debriefing_persona(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
 				sexp_val = SEXP_TRUE;
@@ -24306,8 +24345,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_REMOVE_WEAPONS:
-				sexp_remove_weapons(node);
+			case OP_CLEAR_WEAPONS:
+			case OP_CLEAR_DEBRIS:
+				sexp_clear_weapons_or_debris(node, op_num);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25130,8 +25170,9 @@ void multi_sexp_eval()
 				multi_sexp_set_respawns();
 				break;
 
-			case OP_REMOVE_WEAPONS:
-				multi_sexp_remove_weapons();
+			case OP_CLEAR_WEAPONS:
+			case OP_CLEAR_DEBRIS:
+				multi_sexp_clear_weapons_or_debris(op_num);
 				break;
 
 			case OP_CHANGE_SHIP_CLASS:
@@ -25782,6 +25823,7 @@ int query_operator_return_type(int op)
 		case OP_SET_TRAINING_CONTEXT_SPEED:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
+		case OP_SET_DEBRIEFING_PERSONA:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
@@ -26026,7 +26068,8 @@ int query_operator_return_type(int op)
 		case OP_SET_POST_EFFECT:
 		case OP_RESET_POST_EFFECTS:
 		case OP_CHANGE_IFF_COLOR:
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
+		case OP_CLEAR_DEBRIS:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_FORCE_GLIDE:
@@ -26378,8 +26421,11 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
 			return OPF_WEAPON_NAME;
+
+		case OP_CLEAR_DEBRIS:
+			return OPF_SHIP_CLASS_NAME;
 
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 			if (argnum == 0)
@@ -26966,6 +27012,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
 			return OPF_BOOL;
+
+		case OP_SET_DEBRIEFING_PERSONA:
+			return OPF_POSITIVE;
 
 		case OP_SET_PLAYER_ORDERS:
 			if (argnum==0)
@@ -29859,6 +29908,7 @@ int get_subcategory(int sexp_id)
 		case OP_FORCE_JUMP:
 		case OP_END_CAMPAIGN:
 		case OP_SET_DEBRIEFING_TOGGLED:
+		case OP_SET_DEBRIEFING_PERSONA:
 		case OP_ALLOW_TREASON:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
@@ -29983,7 +30033,8 @@ int get_subcategory(int sexp_id)
 		case OP_SET_EXPLOSION_OPTION:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_REMOVE_WEAPONS:
+		case OP_CLEAR_WEAPONS:
+		case OP_CLEAR_DEBRIS:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CALL_SSM_STRIKE:
@@ -32404,6 +32455,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	// Goober5000
+	{ OP_SET_DEBRIEFING_PERSONA, "set-debriefing-persona\r\n"
+		"\tSets the numeric prefix to be used for debriefing voice files in automatic debriefing stages (promotions, ace badges, traitor).  This is usually specified in the campaign editor, but it can be overridden mid-mission with this sexp.  Takes 1 argument.\r\n"
+	},
+
+	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
 		"\tForces activation of the player's subspace drive, thus ending the mission.  Takes no arguments."
 	},
@@ -32619,9 +32675,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThe ship specified in the first field should be the player start.\r\n"
 		"\tOnly really useful for multiplayer."},
 
-	{ OP_REMOVE_WEAPONS, "remove-weapons\r\n"
-		"\tRemoves all live weapons currently in the game"
-		"\t1: (Optional) Remove only this specific weapon\r\n"},
+	{ OP_CLEAR_WEAPONS, "clear-weapons\r\n"
+		"\tRemoves all live weapons currently in the mission"
+		"\t1: (Optional) Remove only this specific class of weapon\r\n"},
+
+	{ OP_CLEAR_DEBRIS, "clear-debris\r\n"
+		"\tRemoves all ship debris currently in the mission"
+		"\t1: (Optional) Remove only debris from this specific class of ship\r\n"},
 
 	{ OP_SET_RESPAWNS, "set-respawns\r\n"
 		"\tSet the # respawns a player (or AI that could have been a player) has used.\r\n"

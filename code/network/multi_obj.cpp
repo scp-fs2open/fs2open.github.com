@@ -165,7 +165,6 @@ bool multi_oo_sort_func(const short &index1, const short &index2)
 	float dist1, dist2;
 	float dot1, dot2;
 	vec3d v1, v2;
-	vec3d vn1, vn2;
 
 	// if the indices are bogus, or the objnums are bogus, return ">"
 	if((index1 < 0) || (index2 < 0) || (Ships[index1].objnum < 0) || (Ships[index2].objnum < 0)){
@@ -178,11 +177,11 @@ bool multi_oo_sort_func(const short &index1, const short &index2)
 
 	// get the distance and dot product to the player obj for both
 	vm_vec_sub(&v1, &OO_player_obj->pos, &obj1->pos);
-	dist1 = vm_vec_copy_normalize(&vn1, &v1);
+	dist1 = vm_vec_normalize_safe(&v1);
 	vm_vec_sub(&v2, &OO_player_obj->pos, &obj2->pos);
-	dist2 = vm_vec_copy_normalize(&vn2, &v2);
-	dot1 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &vn1);
-	dot2 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &vn2);
+	dist2 = vm_vec_normalize_safe(&v2);
+	dot1 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &v1);
+	dot2 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &v2);
 
 	// objects in front take precedence
 	if((dot1 < 0.0f) && (dot2 >= 0.0f)){

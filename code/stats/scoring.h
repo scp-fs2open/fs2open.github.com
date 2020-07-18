@@ -62,13 +62,19 @@ extern int Num_medals;
 */
 
 
-typedef struct rank_stuff {
+struct rank_stuff {
 	char		name[NAME_LENGTH];		// name of this rank
 	SCP_map<int, SCP_string>	promotion_text;		// text to display when promoted to this rank
 	int		points;						// points needed to reach this rank
 	char		bitmap[MAX_FILENAME_LEN];		// bitmap of this rank medal
 	char		promotion_voice_base[MAX_FILENAME_LEN];
-} rank_stuff;
+};
+
+struct traitor_stuff {
+	SCP_map<int, SCP_string> debriefing_text;
+	char		traitor_voice_base[MAX_FILENAME_LEN];
+	SCP_string recommendation_text;
+};
 
 #define STATS_FLAG_INVALID			(1<<0)
 #define STATS_FLAG_CAMPAIGN		(1<<1)
@@ -137,15 +143,16 @@ public:
 };
 
 extern rank_stuff Ranks[NUM_RANKS];
+extern traitor_stuff Traitor;
 
 void parse_rank_tbl();
+void parse_traitor_tbl();
+void scoring_close();
+
 void scoring_level_init( scoring_struct *score );
 void scoring_level_close(int accepted = 1);
 void scoring_backout_accept( scoring_struct *score );
 void scoring_do_accept( scoring_struct *score );
-
-// function to give a medal to a player if he earned it
-void scoring_check_medal(scoring_struct *sc);
 
 void scoring_add_damage(object *ship_obj,object *other_obj,float damage);
 int scoring_eval_kill(object *ship_obj);

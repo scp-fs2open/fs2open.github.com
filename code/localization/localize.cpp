@@ -69,7 +69,6 @@ typedef struct {
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
 
-//char *Xstr_table[XSTR_SIZE];
 lcl_xstr Xstr_table[XSTR_SIZE];
 int Xstr_inited = 0;
 
@@ -901,7 +900,7 @@ void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id)
 }
 
 // translate the specified string based upon the current language
-const char *XSTR(const char *str, int index)
+const char *XSTR(const char *str, int index, bool force_lookup)
 {
 	if(!Xstr_inited)
 	{
@@ -909,7 +908,9 @@ const char *XSTR(const char *str, int index)
 		return str;
 	}
 
-	if (Lcl_current_lang != LCL_UNTRANSLATED)
+	// for some internal strings, such as the ones we loaded using $Has XStr:,
+	// we want to force a lookup even if we're normally untranslated
+	if (Lcl_current_lang != LCL_UNTRANSLATED || force_lookup)
 	{
 		// perform a lookup
 		if (index >= 0 && index < XSTR_SIZE)

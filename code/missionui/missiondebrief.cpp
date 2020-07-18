@@ -994,7 +994,7 @@ void debrief_award_init()
 		Rank_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific promotion text if it exists; otherwise, use default
 		if (Ranks[Promoted].promotion_text.find(persona_index) != Ranks[Promoted].promotion_text.end()) {
@@ -1017,7 +1017,7 @@ void debrief_award_init()
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific badge text if it exists; otherwise, use default
 		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
@@ -1044,71 +1044,37 @@ void debrief_award_init()
 // mission a traitor.  The same debriefing always gets played
 void debrief_traitor_init()
 {
-	static int inited = 0;
-
-	if ( !inited ) {
-		debriefing		*debrief;
-		debrief_stage	*stagep;
-		int stage_num;
-		
-		try
-		{
-			read_file_text("traitor.tbl", CF_TYPE_TABLES);
-			reset_parse();
-
-			// simplied form of the debriefing stuff.
-			debrief = &Traitor_debriefing;
-			required_string("#Debriefing_info");
-
-			required_string("$Num stages:");
-			stuff_int(&debrief->num_stages);
-			Assert(debrief->num_stages == 1);
-
-			stage_num = 0;
-			stagep = &debrief->stages[stage_num++];
-			required_string("$Formula:");
-			stagep->formula = get_sexp_main();
-			required_string("$multi text");
-			stuff_string(stagep->text, F_MULTITEXT, NULL);
-			required_string("$Voice:");
-			char traitor_voice_file[MAX_FILENAME_LEN];
-			stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
-
-			// DKA 9/13/99	Only 1 traitor msg for FS2
-			//		if ( Player->main_hall ) {
-			//			strcpy_s(stagep->voice, NOX("3_"));
-			//		} else {
-			//			strcpy_s(stagep->voice, NOX("1_"));
-			//		}
-
-			// Goober5000
-			debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
-
-			required_string("$Recommendation text:");
-			stuff_string(stagep->recommendation_text, F_MULTITEXT, NULL);
-
-			inited = 1;
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
-			return;
-		}
-	}
-
-	// disable the accept button if in single player and I am a traitor
 	Debrief_accepted = 0;
 	Turned_traitor = Must_replay_mission = 0;
-	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
-		if (Player_ship->team == Iff_traitor){
-			Turned_traitor = 1;
-		}
 
+	if (Player_ship->team == Iff_traitor) {
+		Turned_traitor = 1;
+
+		// if traitor, set up persona-specific traitor debriefing
+		auto stagep = &Traitor_debriefing.stages[0];
+
+		// see if we have a persona
+		int persona_index = The_mission.debriefing_persona;
+
+		// use persona-specific traitor text if it exists; otherwise, use default
+		if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
+			stagep->text = Traitor.debriefing_text[persona_index];
+		else
+			stagep->text = Traitor.debriefing_text[-1];
+
+		// choose appropriate traitor voice for this mission
+		debrief_choose_voice(stagep->voice, Traitor.traitor_voice_base, persona_index, 1);
+
+		stagep->recommendation_text = Traitor.recommendation_text;
+	}
+
+	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
 		if (Campaign.next_mission == Campaign.current_mission){
 			Must_replay_mission = 1;
 		}
 	}
 
+	// disable the accept button if in single player and I am a traitor
 	if (Turned_traitor || Must_replay_mission) {
 		Buttons[gr_screen.res][ACCEPT_BUTTON].button.hide();
 
@@ -1894,7 +1860,7 @@ static void debrief_init_music()
 
 	Debrief_music_timeout = 0;
 
-	if ( (Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission) ) {
+	if ( Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) ) {
 		// you failed the mission, so you get the fail music
 		score = SCORE_DEBRIEF_FAIL;
 	} else if ( mission_goals_met() ) {

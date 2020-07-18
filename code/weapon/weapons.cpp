@@ -751,6 +751,8 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		sci->rot_angles.p = angs[0];
 		sci->rot_angles.b = angs[1];
 		sci->rot_angles.h = angs[2];
+
+		sci->rot_defined = true;
 	}
 
 	sprintf(buf, "%sShockwave Model:", pre_char);
@@ -6346,6 +6348,11 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	if (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
 	{
 		if(sci->speed > 0.0f) {
+			if (!sci->rot_defined) {
+				sci->rot_angles.p = frand_range(0.0f, PI2);
+				sci->rot_angles.b = frand_range(0.0f, PI2);
+				sci->rot_angles.h = frand_range(0.0f, PI2);
+			}
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {

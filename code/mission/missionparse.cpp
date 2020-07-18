@@ -588,6 +588,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (basic)
 		return;
 
+	// this is part of mission info but derived from the campaign file rather than parsed
+	extern int debrief_find_persona_index();
+	pm->debriefing_persona = debrief_find_persona_index();
 
 	// set up support ships
 	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
@@ -3558,34 +3561,34 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	}
 }
 
-void parse_common_object_data(p_object	*objp)
+void parse_common_object_data(p_object *p_objp)
 {
 	int i;
 
 	// Genghis: used later for subsystem checking
-	ship_info* sip = &Ship_info[objp->ship_class];
+	auto sip = &Ship_info[p_objp->ship_class];
 
 	// set some defaults..
-	objp->initial_velocity = 0;
-	objp->initial_hull = 100;
-	objp->initial_shields = 100;
+	p_objp->initial_velocity = 0;
+	p_objp->initial_hull = 100;
+	p_objp->initial_shields = 100;
 
 	// now change defaults if present
 	if (optional_string("+Initial Velocity:")) {
-		stuff_int(&objp->initial_velocity);
+		stuff_int(&p_objp->initial_velocity);
 	}
 
 	if (optional_string("+Initial Hull:"))
-		stuff_int(&objp->initial_hull);
+		stuff_int(&p_objp->initial_hull);
 	if (optional_string("+Initial Shields:"))
-		stuff_int(&objp->initial_shields);
+		stuff_int(&p_objp->initial_shields);
 
-	objp->subsys_index = Subsys_index;
-	objp->subsys_count = 0;
+	p_objp->subsys_index = Subsys_index;
+	p_objp->subsys_count = 0;
 	while (optional_string("+Subsystem:")) {
 		i = allocate_subsys_status();
 
-		objp->subsys_count++;
+		p_objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
 		// Genghis: check that the subsystem name makes sense for this ship type
@@ -3621,7 +3624,15 @@ void parse_common_object_data(p_object	*objp)
 		}
 
 		if (optional_string("+AI Class:"))
+		{
 			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+
+			if (Subsys_status[i].ai_class < 0)
+			{
+				Warning(LOCATION, "AI Class for ship %s and subsystem %s does not exist in ai.tbl. Setting to first available class.\n", p_objp->name, Subsys_status[i].name);
+				Subsys_status[i].ai_class = 0;
+			}
+		}
 
 		if (optional_string("+Primary Banks:"))
 			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
@@ -4797,12 +4808,15 @@ void post_process_ships_wings()
 	// in parse_object().
 	for (auto &p_obj : Parse_objects)
 	{
-		// evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
+		// Evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
 		// (because SEXPs now require a complete ship registry) but must be done before the arrival list check inside
 		// mission_parse_maybe_create_parse_object.  That check is, in fact, the only reason this is needed.  We don't need to
 		// pre-emptively set up the delay for wings because there is no equivalent wing arrival list check.  In any case, the
 		// arrival_delay is always validated in mission_did_ship_arrive (for ships) and parse_wing_create_ships (for wings).
-		if (!Fred_running && (p_obj.arrival_cue >= 0))
+		// Addendum: Don't mess with any arrival delays which are strictly positive, meaning they have already been set.
+		// (This is the case for ships destroyed before mission.  In the retail codebase, the destroy-before-mission chunk was
+		// parsed after the arrival cue and delay were parsed and checked, so it overwrote them.)
+		if (!Fred_running && (p_obj.arrival_cue >= 0) && (p_obj.arrival_delay <= 0))
 		{
 			// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
 			if (eval_sexp(p_obj.arrival_cue))

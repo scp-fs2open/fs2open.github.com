@@ -2006,7 +2006,7 @@ struct fs2_game_update
 
 // send_game_update_packet sends an updated Netgame structure to all players currently connected.  The update
 // is used to change the current mission, current state, etc.
-void send_netgame_update_packet(net_player *pl)
+void send_netgame_update_packet(net_player *pl, const bool interval)
 {
 	int packet_size;
 	int idx;
@@ -2058,6 +2058,12 @@ void send_netgame_update_packet(net_player *pl)
 	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
 		multi_options_update_netgame();
 	}
+
+	// update tracker as well
+	if ( (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) && !interval ) {
+		multi_fs_tracker_update_game(&Netgame);
+	}
+
 }
 
 // process information about the netgame sent from the server/host

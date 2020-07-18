@@ -27,6 +27,8 @@ vec3d vmd_scale_identity_vector = SCALE_IDENTITY_VECTOR;
 vec3d vmd_x_vector = { { { 1.0f, 0.0f, 0.0f } } };
 vec3d vmd_y_vector = { { { 0.0f, 1.0f, 0.0f } } };
 vec3d vmd_z_vector = { { { 0.0f, 0.0f, 1.0f } } };
+matrix vmd_zero_matrix = ZERO_MATRIX;
+matrix4 vmd_zero_matrix4 = ZERO_MATRIX4;
 matrix vmd_identity_matrix = IDENTITY_MATRIX;
 angles vmd_zero_angles = { 0.0f, 0.0f, 0.0f };
 
@@ -386,54 +388,6 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
-
-
-//computes an approximation of the magnitude of the vector
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_mag_quick(const vec3d *v)
-{
-	float a,b,c,bc, t;
-
-	a = fl_abs(v->xyz.x);
-	b = fl_abs(v->xyz.y);
-	c = fl_abs(v->xyz.z);
-
-	if (a < b) {
-		t = a;
-		a = b;
-		b = t;
-	}
-
-	if (b < c) {
-		t = b;
-		b = c;
-		c = t;
-
-		if (a < b) {
-			t = a;
-			a = b;
-			b = t;
-		}
-	}
-
-	bc = (b * 0.25f) + (c * 0.125f);
-
-	t = a + bc + (bc * 0.5f);
-
-	return t;
-}
-
-//computes an approximation of the distance between two points.
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1)
-{
-	vec3d t;
-
-	vm_vec_sub(&t,v0,v1);
-
-	return vm_vec_mag_quick(&t);
-}
-
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -498,79 +452,6 @@ float vm_vec_normalize_safe(vec3d *v)
 
 }
 
-
-//returns approximation of 1/magnitude of a vector
-static float vm_vec_inv_mag_quick(const vec3d *v)
-{
-#if _M_IX86_FP < 1
-	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
-#else
-	float x = (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z);
-	__m128  xx = _mm_load_ss( & x );
-	xx = _mm_rsqrt_ss( xx );
-	_mm_store_ss( & x, xx );
-
-	return x;
-#endif
-}
-
-//normalize a vector. returns 1/mag of source vec. uses approx 1/mag
-float vm_vec_copy_normalize_quick(vec3d *dest,const vec3d *src)
-{
-//	return vm_vec_copy_normalize(dest, src);
-	float im;
-
-	im = vm_vec_inv_mag_quick(src);
-
-	Assert(im > 0.0f);
-
-	dest->xyz.x = src->xyz.x*im;
-	dest->xyz.y = src->xyz.y*im;
-	dest->xyz.z = src->xyz.z*im;
-
-	return 1.0f/im;
-}
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_normalize_quick(vec3d *src)
-{
-//	return vm_vec_normalize(src);
-
-	float im;
-
-	im = vm_vec_inv_mag_quick(src);
-
-	Assert(im > 0.0f);
-
-	src->xyz.x = src->xyz.x*im;
-	src->xyz.y = src->xyz.y*im;
-	src->xyz.z = src->xyz.z*im;
-
-	return 1.0f/im;
-
-}
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src)
-{
-//	return vm_vec_copy_normalize(dest, src);
-
-	float m;
-
-	m = vm_vec_mag_quick(src);
-
-	Assert(m > 0.0f);
-
-	float im = 1.0f / m;
-
-	dest->xyz.x = src->xyz.x * im;
-	dest->xyz.y = src->xyz.y * im;
-	dest->xyz.z = src->xyz.z * im;
-
-	return m;
-
-}
-
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
@@ -582,16 +463,6 @@ float vm_vec_normalized_dir(vec3d *dest, const vec3d *end, const vec3d *start)
 	// VECMAT-ERROR: NULL VEC3D (end == start)
 	t = vm_vec_normalize_safe(dest);
 	return t;
-}
-
-//return the normalized direction vector between two points
-//dest = normalized(end - start).  Returns mag of direction vector
-//NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start)
-{
-	vm_vec_sub(dest,end,start);
-
-	return vm_vec_normalize_quick(dest);
 }
 
 //computes surface normal from three points. result is normalized
@@ -1399,8 +1270,8 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 }
 
 
-//	Generate a fairly random vector that's fairly near normalized.
-void vm_vec_rand_vec_quick(vec3d *rvec)
+//	Generate a fairly random vector that's normalized.
+void vm_vec_rand_vec(vec3d *rvec)
 {
 	rvec->xyz.x = (frand() - 0.5f) * 2;
 	rvec->xyz.y = (frand() - 0.5f) * 2;
@@ -1409,7 +1280,7 @@ void vm_vec_rand_vec_quick(vec3d *rvec)
 	if (IS_VEC_NULL_SQ_SAFE(rvec))
 		rvec->xyz.x = 1.0f;
 
-	vm_vec_normalize_quick(rvec);
+	vm_vec_normalize(rvec);
 }
 
 // Given an point "in" rotate it by "angle" around an
@@ -2386,10 +2257,11 @@ void vm_estimate_next_orientation(const matrix *last_orient, const matrix *curre
 	vm_matrix_x_matrix(next_orient, current_orient, &Rot_matrix);
 }
 
-//	Return true if all elements of *vec are legal, that is, not a NAN.
+//	Return true if all elements of *vec are legal, that is, not NaN or infinity.
 int is_valid_vec(const vec3d *vec)
 {
-	return !std::isnan(vec->xyz.x) && !std::isnan(vec->xyz.y) && !std::isnan(vec->xyz.z);
+	return !std::isnan(vec->xyz.x) && !std::isnan(vec->xyz.y) && !std::isnan(vec->xyz.z)
+		&& !std::isinf(vec->xyz.x) && !std::isinf(vec->xyz.y) && !std::isinf(vec->xyz.z);
 }
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
@@ -2571,19 +2443,95 @@ void vm_vec_boxscale(vec2d *vec, float  /*scale*/)
 	vec->y *= ratio;
 }
 
+// adds two matrices, fills in dest, returns ptr to dest
+// ok for dest to equal either source, but should use vm_matrix_add2() if so
+// dest = src0 + src1
+void vm_matrix_add(matrix* dest, const matrix* src0, const matrix* src1)
+{
+	dest->vec.fvec = src0->vec.fvec + src1->vec.fvec;
+	dest->vec.rvec = src0->vec.rvec + src1->vec.rvec;
+	dest->vec.uvec = src0->vec.uvec + src1->vec.uvec;
+}
+
+// subs two matrices, fills in dest, returns ptr to dest
+// ok for dest to equal either source, but should use vm_matrix_sub2() if so
+// dest = src0 - src1
+void vm_matrix_sub(matrix* dest, const matrix* src0, const matrix* src1)
+{
+	dest->vec.fvec = src0->vec.fvec - src1->vec.fvec;
+	dest->vec.rvec = src0->vec.rvec - src1->vec.rvec;
+	dest->vec.uvec = src0->vec.uvec - src1->vec.uvec;
+}
+
+// adds one matrix to another.
+// dest can equal source
+// dest += src
+void vm_matrix_add2(matrix* dest, const matrix* src)
+{
+	dest->vec.fvec += src->vec.fvec;
+	dest->vec.rvec += src->vec.rvec;
+	dest->vec.uvec += src->vec.uvec;
+}
+
+// subs one matrix from another, returns ptr to dest
+// dest can equal source
+// dest -= src
+void vm_matrix_sub2(matrix* dest, const matrix* src)
+{
+	dest->vec.fvec -= src->vec.fvec;
+	dest->vec.rvec -= src->vec.rvec;
+	dest->vec.uvec -= src->vec.uvec;
+}
+
 // TODO Remove this function if we ever move to a math library like glm
 /**
-* @brief							Attempts to invert a 4x4 matrix
-* @param[in]			m			Pointer to the matrix we want to invert
-* @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
+* @brief							Attempts to invert a 3x3 matrix
+* @param[inout]		dest     		The inverted matrix, or 0 if inversion is impossible
+* @param[in]		m   			Pointer to the matrix we want to invert
 *
 * @returns							Whether or not the matrix is invertible
 */
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
+bool vm_inverse_matrix(matrix* dest, const matrix* m)
+{
+	matrix inv;	// create a temp matrix so we can avoid getting a determinant that is 0
+
+	// Use a2d so it's easier for people to read
+	inv.a2d[0][0] = -m->a2d[1][2] * m->a2d[2][1] + m->a2d[1][1] * m->a2d[2][2];
+	inv.a2d[0][1] = m->a2d[0][2] * m->a2d[2][1] - m->a2d[0][1] * m->a2d[2][2];
+	inv.a2d[0][2] = -m->a2d[0][2] * m->a2d[1][1] + m->a2d[0][1] * m->a2d[1][2];
+	inv.a2d[1][0] = m->a2d[1][2] * m->a2d[2][0] - m->a2d[1][0] * m->a2d[2][2];
+	inv.a2d[1][1] = -m->a2d[0][2] * m->a2d[2][0] + m->a2d[0][0] * m->a2d[2][2];
+	inv.a2d[1][2] = m->a2d[0][2] * m->a2d[1][0] - m->a2d[0][0] * m->a2d[1][2];
+	inv.a2d[2][0] = -m->a2d[1][1] * m->a2d[2][0] + m->a2d[1][0] * m->a2d[2][1];
+	inv.a2d[2][1] = m->a2d[0][1] * m->a2d[2][0] - m->a2d[0][0] * m->a2d[2][1];
+	inv.a2d[2][2] = -m->a2d[0][1] * m->a2d[1][0] + m->a2d[0][0] * m->a2d[1][1];
+
+	float det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0];
+	if (det == 0) {
+		*dest = vmd_zero_matrix;
+		return false;
+	}
+
+	det = 1.0f / det;
+
+	for (int i = 0; i < 9; i++) {
+		dest->a1d[i] = inv.a1d[i] * det;
+	}
+
+	return true;
+}
+
+// TODO Remove this function if we ever move to a math library like glm
+/**
+* @brief							Attempts to invert a 4x4 matrix
+* @param[inout]		dest		The inverted matrix, or 0 if inversion is impossible
+* @param[in]			m			Pointer to the matrix we want to invert
+*
+* @returns							Whether or not the matrix is invertible
+*/
+bool vm_inverse_matrix4(matrix4* dest, const matrix4* m)
 {
 	matrix4 inv;	// create a temp matrix so we can avoid getting a determinant that is 0
-	float det;
-	int i, j;
 
 	// Use a2d so it's easier for people to read
 	inv.a2d[0][0] = m->a2d[1][1] * m->a2d[2][2] * m->a2d[3][3] -
@@ -2698,19 +2646,17 @@ bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
 					m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][2] -
 					m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][1];
 
-	det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
+	float det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
 
 	if (det == 0) {
-		invOut = nullptr;
+		*dest = vmd_zero_matrix4;
 		return false;
 	}
 
 	det = 1.0f / det;
 
-	for (i = 0; i < 4; i++) {
-		for (j = 0; j < 4; j++) {
-			invOut->a2d[i][j] = inv.a2d[i][j] * det;
-		}
+	for (int i = 0; i < 16; i++) {
+		dest->a1d[i] = inv.a1d[i] * det;
 	}
 
 	return true;

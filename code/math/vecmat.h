@@ -36,6 +36,11 @@
 //Note: NO RETURN VALUE
 #define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=0.0f
 
+//macro to set a vector to zero.  we could do this with an in-line assembly
+//macro, but it's probably better to let the compiler optimize it.
+//Note: NO RETURN VALUE
+#define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
+
 /*
 //macro set set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\
@@ -54,7 +59,9 @@ extern vec3d vmd_scale_identity_vector;
 extern vec3d vmd_x_vector;
 extern vec3d vmd_y_vector;
 extern vec3d vmd_z_vector;
+extern matrix vmd_zero_matrix;
 extern matrix vmd_identity_matrix;
+extern matrix4 vmd_zero_matrix4;
 extern angles vmd_zero_angles;
 
 //Here's a handy constant
@@ -65,6 +72,9 @@ extern angles vmd_zero_angles;
 // first set of inside braces is for union, second set is for inside union, then for a2d[3][3] (some compiler warning messages just suck)
 //#define IDENTITY_MATRIX { { { {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} } } }
 #define IDENTITY_MATRIX { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, 1.0f } } } } } }
+#define ZERO_MATRIX { { { ZERO_VECTOR, ZERO_VECTOR, ZERO_VECTOR } } }
+#define ZERO_VECTOR4 { { { 0.0f, 0.0f, 0.0f, 0.0f } } }
+#define ZERO_MATRIX4 { { { ZERO_VECTOR4, ZERO_VECTOR4, ZERO_VECTOR4, ZERO_VECTOR4 } } }
 
 //fills in fields of an angle vector
 #define vm_angvec_make(v,_p,_b,_h) (((v)->p=(_p), (v)->b=(_b), (v)->h=(_h)), (v))
@@ -165,14 +175,14 @@ float vm_vec_dist_squared(const vec3d *v0, const vec3d *v1);
 //computes the distance between two points. (does sub and mag)
 float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 
-//computes an approximation of the magnitude of the vector
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_mag_quick(const vec3d *v);
-
-//computes an approximation of the distance between two points.
-//uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1);
-
+// these are now deprecated because experimental testing on Discord has found
+// that they are actually *slower* than their counterparts
+#define vm_vec_mag_quick				vm_vec_mag
+#define vm_vec_dist_quick				vm_vec_dist
+#define vm_vec_copy_normalize_quick		vm_vec_copy_normalize
+#define vm_vec_normalize_quick			vm_vec_normalize
+#define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
+#define vm_vec_rand_vec_quick			vm_vec_rand_vec
 
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
@@ -182,19 +192,11 @@ float vm_vec_normalize(vec3d *v);
 //	If it is detected, it generates a Warning() and returns the vector 1, 0, 0.
 float vm_vec_normalize_safe(vec3d *v);
 
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_quick(vec3d *v);
-
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src);
-
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
+// Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
 float vm_vec_normalized_dir(vec3d *dest,const vec3d *end, const vec3d *start);
-// Returns mag of direction vector
-float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
 ////returns dot product of two vectors
 float vm_vec_dot(const vec3d *v0, const vec3d *v1);
@@ -375,9 +377,8 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p);
 //						plane_point		=>		plane point
 void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec3d *plane_normal, const vec3d *plane_point);
 
-
-//	Returns fairly random vector, "quick" normalized
-void vm_vec_rand_vec_quick(vec3d *rvec);
+//	Returns fairly random vector, normalized
+void vm_vec_rand_vec(vec3d *rvec);
 
 // Given an point "in" rotate it by "angle" around an
 // arbritary line defined by a point on the line "line_point" 
@@ -477,7 +478,17 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 //SUSHI: 2D vector "box" scaling
 void vm_vec_boxscale(vec2d *vec, float scale);
 
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut);
+void vm_matrix_add(matrix* dest, const matrix* src0, const matrix* src1);
+
+void vm_matrix_sub(matrix* dest, const matrix* src0, const matrix* src1);
+
+void vm_matrix_add2(matrix* dest, const matrix* src);
+
+void vm_matrix_sub2(matrix* dest, const matrix* src);
+
+bool vm_inverse_matrix(matrix* dest, const matrix* m);
+
+bool vm_inverse_matrix4(matrix4* dest, const matrix4* m);
 
 void vm_matrix4_set_orthographic(matrix4* out, vec3d *max, vec3d *min);
 
@@ -562,6 +573,32 @@ inline vec3d operator/(vec3d& left, float right)
 inline vec3d& operator/=(vec3d& left, float right)
 {
 	vm_vec_scale(&left, 1.0f / right);
+	return left;
+}
+
+inline matrix operator+(const matrix& left, const matrix& right)
+{
+	matrix res;
+	vm_matrix_add(&res, &left, &right);
+	return res;
+}
+
+inline matrix& operator+=(matrix& left, const matrix& right)
+{
+	vm_matrix_add2(&left, &right);
+	return left;
+}
+
+inline matrix operator-(const matrix& left, const matrix& right)
+{
+	matrix res;
+	vm_matrix_sub(&res, &left, &right);
+	return res;
+}
+
+inline matrix& operator-=(matrix& left, const matrix& right)
+{
+	vm_matrix_sub2(&left, &right);
 	return left;
 }
 

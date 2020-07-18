@@ -1172,7 +1172,7 @@ void multi_do_frame()
 	if ( (Net_player->flags & NETINFO_FLAG_CONNECTED) && !(Game_mode & GM_IN_MISSION)){	
 		if ( Net_player->flags & NETINFO_FLAG_AM_MASTER ) {			
 			if ( (Netgame_send_time < 0) || ((time(NULL) - Netgame_send_time) > NETGAME_SEND_TIME) ) {
-				send_netgame_update_packet();				
+				send_netgame_update_packet(nullptr, true);
 				
 				Netgame_send_time = (int) time(NULL);
 			}		

@@ -456,11 +456,6 @@ void multi_options_update_netgame()
 	// send the packet
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		multi_io_send_to_all_reliable(data, packet_size);
-
-		// update tracker as well
-		if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
-			multi_fs_tracker_update_game(&Netgame);
-		}
 	} else {
 		multi_io_send_reliable(Net_player, data, packet_size);
 	}

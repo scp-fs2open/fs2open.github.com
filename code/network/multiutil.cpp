@@ -1722,7 +1722,7 @@ active_game *multi_update_active_games(active_game *ag)
 	}
 	
 	// update the last time we heard from him
-	if((Multi_options_g.protocol == NET_TCP) && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST)){
+	if ( !MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST)){
 		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT_LOCAL);
 	} else {
 		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT);
@@ -1843,7 +1843,6 @@ int multi_num_connections()
 int multi_can_message(net_player *p)
 {
 	int max_rank;
-	ship *sp;
 
 	// if the player is an observer of any kind, he cannot message
 	if(p->flags & NETINFO_FLAG_OBSERVER){
@@ -1861,19 +1860,23 @@ int multi_can_message(net_player *p)
 
 	// only wing/team leaders can message
 	case MSO_SQUAD_LEADER:
+	{
 		// if the player has an invalid object #
 		if(p->m_player->objnum < 0){
 			return 0;
 		}
 
 		// check to see if he's a wingleader
-		sp = &Ships[Objects[p->m_player->objnum].instance];
-		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
+		const ship_registry_entry* ship_regp = ship_registry_get(Ships[Objects[p->m_player->objnum].instance].ship_name);
+
+		// verify that it's valid.
+		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
+		if (ship_regp->p_objp->pos_in_wing != 0) 
 		{
 			return 0;
 		}	
 		break;
-
+	}
 	// anyone can end message
 	case MSO_SQUAD_ANY:
 		break;
@@ -1892,7 +1895,6 @@ int multi_can_message(net_player *p)
 int multi_can_end_mission(net_player *p)
 {
 	int max_rank;
-	ship *sp;	
 
 	// the host can _always_ unpause a game
 	if(p->flags & NETINFO_FLAG_GAME_HOST){
@@ -1910,19 +1912,23 @@ int multi_can_end_mission(net_player *p)
 
 	// only wing/team leaders can end the mission
 	case MSO_END_LEADER:
+	{
 		// if the player has an invalid object #
 		if(p->m_player->objnum < 0){
 			return 0;
 		}
 
 		// check to see if he's a wingleader
-		sp = &Ships[Objects[p->m_player->objnum].instance];
-		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
+		const ship_registry_entry* ship_regp = ship_registry_get(Ships[Objects[p->m_player->objnum].instance].ship_name);
+
+		// double check that the entry is valid.
+		Assertion(ship_regp != nullptr, "Ship register entry is a nullptr for the player's ship.");
+		if (ship_regp->p_objp->pos_in_wing != 0) 
 		{
 			return 0;
 		}	
 		break;
-
+	}
 	// anyone can end the mission
 	case MSO_END_ANY:
 		break;
