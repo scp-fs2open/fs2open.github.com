@@ -74,7 +74,7 @@ void multi_ts_commit_pressed();
 int multi_ts_get_team(char *ship_name);
 
 // function to get the team and slot of a particular ship
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch = false);
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
 
 // function to return the shipname of the ship belonging in slot N
 void multi_ts_get_shipname( char *ship_name, int team, int slot_index );
