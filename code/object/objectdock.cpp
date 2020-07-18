@@ -376,7 +376,7 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_whack_docked_object(vec3d* force, vec3d* const rel_world_hit_pos, object* objp)
+void dock_calculate_whack_docked_object(vec3d* force, const vec3d* rel_world_hit_pos, object* objp)
 {
 	Assertion((objp != nullptr) && (force != nullptr) && (rel_world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
@@ -432,7 +432,7 @@ void dock_whack_docked_object(vec3d* force, vec3d* const rel_world_hit_pos, obje
 	vm_vec_add2(&root_delta_vel, &center_mass_delta_vel);
 
 	// whack it
-	physics_apply_whack_direct(vm_vec_mag(force),
+	physics_apply_whack(vm_vec_mag(force),
 		&root_objp->phys_info,
 		&local_delta_rotvel,
 		&root_delta_vel,

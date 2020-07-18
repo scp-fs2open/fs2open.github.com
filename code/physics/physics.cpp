@@ -730,7 +730,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 //	-----------------------------------------------------------------------------------------------------------
 // Returns true if this impulse is below the limit and should be ignored.
-bool whack_below_limit(vec3d* const impulse)
+bool whack_below_limit(const vec3d* impulse)
 {
 	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
 		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
@@ -747,7 +747,7 @@ bool whack_below_limit(vec3d* const impulse)
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
 //				mass			=>		mass of the object (may be different from pi.mass if docked)
 //
-void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
+void physics_calculate_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
 {
 	vec3d	local_torque, torque;
 
@@ -768,14 +768,14 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	// Goober5000 - pi->mass should probably be just mass, as specified in the header
 	vec3d delta_vel = *impulse * (1.0f / mass);
 
-	physics_apply_whack_direct(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
+	physics_apply_whack(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
 }
 
 
 // This function applies the calculated delta rotational and linear velocities usually called by ^^^^ apply_whack, 
-// but also called directly by dock_whack_docked_object in objectdock.cpp which has to do some extra legwork
-// and doesn't set this function up using physics_apply_whack
-void physics_apply_whack_direct(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
+// but also called directly by dock_calculate_whack_docked_object in objectdock.cpp which has to do some extra legwork
+// and doesn't set this function up using physics_calculate_whack
+void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
 {
 	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
 		"physics_apply_whack_direct invalid argument(s)");
