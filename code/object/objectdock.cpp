@@ -339,10 +339,13 @@ float dock_calc_docked_speed(object *objp)
 	return dfi.maintained_variables.float_value;
 }
 
+// Calculates the total moi (NOT INVERTED) of a docked assembly
+//		dest		=>		output matrix
+//		objp		=>		one of the objects in the assembly
+//		center 		=>		center of mass of the assembly in world coords ( use dock_calc_docked_center_of_mass to find it )
 void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
-	Assertion(dest != nullptr, "dock_calc_total_moi invalid dest");
-	Assertion(objp != nullptr, "dock_calc_total_moi invalid objp");
+	Assertion((dest != nullptr) && (objp != nullptr) && (center != nullptr), "dock_calc_total_moi invalid argument(s)");
 
 	*dest = vmd_zero_matrix;
 
@@ -376,20 +379,20 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_calculate_whack_docked_object(vec3d* force, const vec3d* rel_world_hit_pos, object* objp)
+void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* hit_pos, object* objp)
 {
-	Assertion((objp != nullptr) && (force != nullptr) && (rel_world_hit_pos != nullptr),
+	Assertion((objp != nullptr) && (impulse != nullptr) && (hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
 
 	//	Detect null vector.
-	if (whack_below_limit(force))
+	if (whack_below_limit(impulse))
 		return;
 
 	vec3d world_center_of_mass;
 	vec3d world_hit_pos;
 
 	// calc world hit pos of the hit ship
-	vm_vec_add(&world_hit_pos, rel_world_hit_pos, &objp->pos);
+	vm_vec_add(&world_hit_pos, hit_pos, &objp->pos);
 
 	// calc overall world center-of-mass of all ships
 	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
@@ -398,22 +401,20 @@ void dock_calculate_whack_docked_object(vec3d* force, const vec3d* rel_world_hit
 	vm_vec_sub2(&world_hit_pos, &world_center_of_mass);
 
 	matrix moi, inv_moi;
-
 	// calculate the effective inverse MOI for the docked composite object about its center of mass
 	dock_calc_total_moi(&moi, objp, &world_center_of_mass);
-
 	vm_inverse_matrix(&inv_moi, &moi);
 
 	// calculate the torque about the center of mass in world coords
-	vec3d torque;
-	vm_vec_cross(&torque, &world_hit_pos, force);
+	vec3d angular_impulse;
+	vm_vec_cross(&angular_impulse, &world_hit_pos, impulse);
 
 	// calculate the change in rotvel caused by the whack in world coords
 	vec3d delta_rotvel;
-	vm_vec_rotate(&delta_rotvel, &torque, &inv_moi);
+	vm_vec_rotate(&delta_rotvel, &angular_impulse, &inv_moi);
 
 	// get the total change in vel for the entire docked assembly
-	vec3d center_mass_delta_vel = *force * (1.0f / total_mass);
+	vec3d center_mass_delta_vel = *impulse * (1.0f / total_mass);
 
 	// get the root of the dock tree, so that updating this velocity will update the rest of the tree
 	object* root_objp;
@@ -432,7 +433,7 @@ void dock_calculate_whack_docked_object(vec3d* force, const vec3d* rel_world_hit
 	vm_vec_add2(&root_delta_vel, &center_mass_delta_vel);
 
 	// whack it
-	physics_apply_whack(vm_vec_mag(force),
+	physics_apply_whack(vm_vec_mag(impulse),
 		&root_objp->phys_info,
 		&local_delta_rotvel,
 		&root_delta_vel,
@@ -846,8 +847,7 @@ void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 
 	// We calculate the world space MOI using (world MOI) = O^-1 * (local MOI) * O
 	// where O is the orientation matrix (which translates between local space and world space).
-	// Note that this is reverse of the usual convention because FS stores orientation matrices
-	// transposed relative to the linear algebra convention.
+	// Note that because FS stores orientation matrices transposed, objp->orient is O^-1 in this formula.
 	vm_matrix_x_matrix(&temp, &objp->orient, &local_moi);
 	vm_matrix_x_matrix(&world_moi, &temp, &unorient);
 

@@ -742,28 +742,28 @@ bool whack_below_limit(const vec3d* impulse)
 // being applied.
 //
 //	input:	impulse		=>		impulse vector ( force*time = impulse = change in momentum (mv) )
-//				pos			=>		vector from center of mass to location of where the force acts (in world coords)
+//				pos			=>		vector from center of mass to location (in world coords) of where the force acts 
 //				pi				=>		pointer to phys_info struct of object getting whacked
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
 //				mass			=>		mass of the object (may be different from pi.mass if docked)
 //
-void physics_calculate_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
+void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
 {
-	vec3d	local_torque, torque;
+	vec3d	local_angular_impulse, angular_impulse;
 
 	//	Detect null vector.
 	if (whack_below_limit(impulse))
 		return;
 
 	// first do the rotational velocity
-	// calculate the torque on the body based on the point on the
+	// calculate the angular impulse on the body based on the point on the
 	// object that was hit and the momentum being applied to the object
 
-	vm_vec_cross(&torque, pos, impulse);
-	vm_vec_rotate ( &local_torque, &torque, orient );
+	vm_vec_cross(&angular_impulse, pos, impulse);
+	vm_vec_rotate ( &local_angular_impulse, &angular_impulse, orient );
 
 	vec3d delta_rotvel;
-	vm_vec_rotate(&delta_rotvel, &local_torque, inv_moi);
+	vm_vec_rotate(&delta_rotvel, &local_angular_impulse, inv_moi);
 
 	// Goober5000 - pi->mass should probably be just mass, as specified in the header
 	vec3d delta_vel = *impulse * (1.0f / mass);
@@ -772,9 +772,8 @@ void physics_calculate_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matri
 }
 
 
-// This function applies the calculated delta rotational and linear velocities usually called by ^^^^ apply_whack, 
-// but also called directly by dock_calculate_whack_docked_object in objectdock.cpp which has to do some extra legwork
-// and doesn't set this function up using physics_calculate_whack
+// This function applies the calculated delta rotational and linear velocities calculated by physics_calculate_and_apply_whack
+// or dock_calculate_and_apply_whack_docked_object in objectdock.cpp if it was a docked object
 void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
 {
 	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
@@ -803,8 +802,10 @@ void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotv
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
-	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );		// set so velocity will ramp starting from current speed
-																// ramped velocity is now affected by collision
+
+	// set so velocity will ramp starting from current speed
+	// ramped velocity is now affected by collision
+	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );												
 }
 
 // function generates a velocity ramp with a given time constant independent of frame rate

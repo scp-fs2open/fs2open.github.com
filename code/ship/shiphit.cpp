@@ -1800,11 +1800,11 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 
 	if (object_is_docked(objp))
 	{
-		dock_calculate_whack_docked_object(force, &rel_world_hit_pos, objp);
+		dock_calculate_and_apply_whack_docked_object(force, &rel_world_hit_pos, objp);
 	}
 	else
 	{
-		physics_calculate_whack(force, &rel_world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
+		physics_calculate_and_apply_whack(force, &rel_world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
 	}					
 }
 
