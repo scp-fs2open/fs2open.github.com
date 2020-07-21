@@ -1260,9 +1260,7 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 // what to do when the accept button is hit
 void debrief_accept(int ok_to_post_start_game_event)
 {
-	extern int Weapon_energy_cheat;
 	int go_loop = 0;
-	Weapon_energy_cheat=0;
 
 	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
 		const char *str;
