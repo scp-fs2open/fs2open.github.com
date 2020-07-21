@@ -29,7 +29,7 @@ enum class TechroomState : ubyte
 {
 	DEFAULT = 0,
 	ADDED = 1,
-	REMOVED
+	REMOVED = 2
 };
 
 void pilotfile::csg_read_flags()
@@ -152,8 +152,7 @@ void pilotfile::csg_read_info()
 			if (ship_list[idx].index >= 0) {
 				Campaign.ships_allowed[ship_list[idx].index] = 1;
 			} else {
-				mprintf(
-				    ("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
+				mprintf(("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
 			}
 		}
 	}
@@ -463,7 +462,7 @@ void pilotfile::csg_read_techroom()
 		if (state != TechroomState::DEFAULT) {
 			if (weapon_list[idx].index >= 0) {
 				if (state == TechroomState::ADDED) {
-	                Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
+					Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 				} else if (state == TechroomState::REMOVED) {
 					Weapon_info[weapon_list[idx].index].wi_flags.remove(Weapon::Info_Flags::In_tech_database);
 				} else {
@@ -511,27 +510,27 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// write whether it differs from the default for ships
-    for (auto &si : Ship_info) {
-        if (si.flags[Ship::Info_Flags::In_tech_database] == si.flags[Ship::Info_Flags::Default_in_tech_database]) {
+	for (auto &si : Ship_info) {
+		if (si.flags[Ship::Info_Flags::In_tech_database] == si.flags[Ship::Info_Flags::Default_in_tech_database]) {
 			state = TechroomState::DEFAULT;
-        } else if (si.flags[Ship::Info_Flags::In_tech_database]) {
+		} else if (si.flags[Ship::Info_Flags::In_tech_database]) {
 			state = TechroomState::ADDED;
 		} else {
 			state = TechroomState::REMOVED;
-        }
+		}
 
-        cfwrite_ubyte((ubyte) state, cfp);
-    }
+		cfwrite_ubyte((ubyte) state, cfp);
+	}
 
 	// and for weapons
 	for (auto &wi : Weapon_info) {
 		if (wi.wi_flags[Weapon::Info_Flags::In_tech_database] == wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) {
 			state = TechroomState::DEFAULT;
-        } else if (wi.wi_flags[Weapon::Info_Flags::In_tech_database]) {
+		} else if (wi.wi_flags[Weapon::Info_Flags::In_tech_database]) {
 			state = TechroomState::ADDED;
 		} else {
 			state = TechroomState::REMOVED;
-        }
+		}
 
 		cfwrite_ubyte((ubyte) state, cfp);
 	}
@@ -540,7 +539,7 @@ void pilotfile::csg_write_techroom()
 	for (idx = 0; idx < Intel_info_size; idx++) {
 		if (((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) == ((Intel_info[idx].flags & IIF_DEFAULT_IN_TECH_DATABASE) != 0)) {
 			state = TechroomState::DEFAULT;
-        } else if ((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) {
+		} else if ((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) {
 			state = TechroomState::ADDED;
 		} else {
 			state = TechroomState::REMOVED;
