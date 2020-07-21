@@ -11252,7 +11252,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 					
 					// deplete ammo
-					if ( Weapon_energy_cheat == 0 )
+					if ( !Weapon_energy_cheat )
 					{
 						swp->primary_bank_ammo[bank_to_fire] -= points*numtimes;
 
@@ -12168,7 +12168,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
 
 				// subtract the number of missiles fired
-				if ( Weapon_energy_cheat == 0 ){
+				if ( !Weapon_energy_cheat ){
 					swp->secondary_bank_ammo[bank]--;
 				}
 			}

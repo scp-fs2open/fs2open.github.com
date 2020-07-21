@@ -39,7 +39,7 @@ class object;
 const int num_retail_ets_gauges = 3;
 
 extern float Energy_levels[];
-extern int Weapon_energy_cheat;
+extern bool Weapon_energy_cheat;
 
 enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 
