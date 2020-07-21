@@ -57,6 +57,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
+bool Swarmers_lead_targets;
 
 void parse_mod_table(const char *filename)
 {
@@ -518,6 +519,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
+		if (optional_string("$Swarmers Lead Targets:")) {
+			stuff_boolean(&Swarmers_lead_targets);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -590,4 +595,5 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
+	Swarmers_lead_targets = false;
 }
