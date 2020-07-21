@@ -75,6 +75,25 @@ ADE_FUNC(createOrientation,
 	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 }
 
+ADE_FUNC(createOrientationFromVectors, l_Base, "[vector fvec, vector uvec, vector rvec]",
+	"Given 0 to 3 arguments, creates an orientation object from vectors.",
+	"orientation",
+	"New orientation object, or null orientation on failure")
+{
+	vec3d *fvec = nullptr, *uvec = nullptr, *rvec = nullptr;
+	int numargs = ade_get_args(L, "|ooo", l_Vector.GetPtr(&fvec), l_Vector.GetPtr(&uvec), l_Vector.GetPtr(&rvec));
+	if (!numargs)
+	{
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+	}
+	else
+	{
+		matrix m;
+		vm_vector_2_matrix(&m, fvec, uvec, rvec);
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+	}
+}
+
 ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
 {
 	vec3d v3 = vmd_zero_vector;
