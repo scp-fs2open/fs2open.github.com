@@ -395,7 +395,7 @@ int SendFSPilotData(vmt_stats_struct *fs_pilot)
 		fs_pilot_write.type = UNT_PILOT_DATA_WRITE_NEW;
 		fs_pilot_write.code = CMD_GAME_FS2OPEN;
 		fs_pilot_write.xcode = static_cast<unsigned short>(Multi_fs_tracker_game_id);
-		fs_pilot_write.len = PACKED_HEADER_ONLY_SIZE+sizeof(vmt_stats_struct)-size_offset;
+		fs_pilot_write.len = PACKED_HEADER_ONLY_SIZE+STATS_BLOCK_SIZE-size_offset;
 		memcpy(&fs_pilot_write.data,fs_pilot,sizeof(vmt_stats_struct));
 
 		return 0;	
