@@ -42,7 +42,7 @@
 #define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
 
 /*
-//macro set set a matrix to the identity. Note: NO RETURN VALUE
+//macro to set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\
 										m->rvec.y = m->rvec.z = \
 										m->uvec.x = m->uvec.z = \
