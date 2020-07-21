@@ -80,6 +80,54 @@ ADE_FUNC(isMouseButtonDown,
 	return ade_set_args(L, "b", rtn);
 }
 
+static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
+{
+	Assertion(joy_axis == JOY_X_AXIS || joy_axis == JOY_Y_AXIS || joy_axis == JOY_Z_AXIS, "Only the X, Y, and Z axes are supported for now.");
+
+	bool b;
+	if (!ade_get_args(L, "*|b", &b))
+		return ade_set_error(L, "b", false);
+
+	int axis = -1;
+	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; ++i)
+	{
+		if (Axis_map_to[i] == joy_axis)
+		{
+			axis = i;
+			break;
+		}
+	}
+
+	if (axis < 0)
+	{
+		LuaError(L, "Control axis %d not found!", static_cast<int>(joy_axis));
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR)
+		Invert_axis[axis] = b ? 1 : 0;
+
+	if (Invert_axis[axis] != 0)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the X-axis is inverted", "boolean", "True/false")
+{
+	return AxisInverted_sub(JOY_X_AXIS, L);
+}
+
+ADE_VIRTVAR(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Y-axis is inverted", "boolean", "True/false")
+{
+	return AxisInverted_sub(JOY_Y_AXIS, L);
+}
+
+ADE_VIRTVAR(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Z-axis is inverted", "boolean", "True/false")
+{
+	return AxisInverted_sub(JOY_Z_AXIS, L);
+}
+
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
