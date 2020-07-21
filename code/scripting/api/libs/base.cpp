@@ -52,9 +52,9 @@ ADE_FUNC(createOrientation,
 		"number p, number b, number h",
 		"number r1c1, number r1c2, number r1c3, number r2c1, number r2c2, number r2c3, number r3c1, number r3c2, "
 		"number r3c3"}),
-	"Given 0, 3, or 9 arguments, creates an orientation object with that orientation.",
+	"Given 0 arguments, creates an identity orientation; 3 arguments, creates an orientation from pitch/bank/heading (in radians); 9 arguments, creates an orientation from a 3x3 row-major order matrix.",
 	"orientation",
-	"New orientation object, or null orientation on failure")
+	"New orientation object, or the identity orientation on failure")
 {
 	matrix m;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
@@ -73,6 +73,29 @@ ADE_FUNC(createOrientation,
 	}
 
 	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+}
+
+ADE_FUNC(createOrientationFromVectors, l_Base, "[vector fvec, vector uvec, vector rvec]",
+	"Given 0 to 3 arguments, creates an orientation object from 0 to 3 vectors.  (This is essentially a wrapper for the vm_vector_2_matrix function.)  If supplied 0 arguments, this will return the identity orientation.  The first vector, if supplied, must be non-null.",
+	"orientation",
+	"New orientation object, or the identity orientation on failure")
+{
+	vec3d *fvec = nullptr, *uvec = nullptr, *rvec = nullptr;
+	int numargs = ade_get_args(L, "|ooo", l_Vector.GetPtr(&fvec), l_Vector.GetPtr(&uvec), l_Vector.GetPtr(&rvec));
+	if (!numargs)
+	{
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+	}
+	else
+	{
+		// if we have any vectors, the first one should be non-null
+		if (fvec == nullptr)
+			return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
+		matrix m;
+		vm_vector_2_matrix(&m, fvec, uvec, rvec);
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+	}
 }
 
 ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
