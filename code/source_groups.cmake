@@ -475,12 +475,14 @@ add_file_folder("Graphics\\\\Util"
 	graphics/util/UniformBufferManager.cpp
 )
 
-add_file_folder("Graphics\\\\Vulkan"
-	graphics/vulkan/gr_vulkan.cpp
-	graphics/vulkan/gr_vulkan.h
-	graphics/vulkan/VulkanRenderer.cpp
-	graphics/vulkan/VulkanRenderer.h
-)
+if (FSO_BUILD_WITH_VULKAN)
+	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/gr_vulkan.cpp
+		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/VulkanRenderer.cpp
+		graphics/vulkan/VulkanRenderer.h
+	)
+endif()
 
 # HeadTracking files
 add_file_folder("HeadTracking"

@@ -30,7 +30,6 @@
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
-#include "graphics/vulkan/gr_vulkan.h"
 #include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -42,6 +41,10 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+
+#ifdef WITH_VULKAN
+#include "graphics/vulkan/gr_vulkan.h"
+#endif
 
 #include <SDL_surface.h>
 
@@ -1327,7 +1330,12 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		rc = gr_opengl_init(std::move(graphicsOps));
 		break;
 	case GR_VULKAN:
+#ifdef WITH_VULKAN
 		rc = graphics::vulkan::initialize(std::move(graphicsOps));
+#else
+		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
+		rc = false;
+#endif
 		break;
 	case GR_STUB:
 		rc = gr_stub_init();
@@ -1336,11 +1344,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		Int3(); // Invalid graphics mode
 	}
 
-	if ( !rc ) {
-		return false;
-	}
-
-	return true;
+	return rc != 0;
 }
 
 static void init_window_icon() {

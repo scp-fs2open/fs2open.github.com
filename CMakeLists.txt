@@ -121,6 +121,8 @@ option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
 
+OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -131,6 +133,7 @@ mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
 mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 
 # Include cotire file from https://github.com/sakra/cotire/
 include(cotire)
@@ -207,3 +210,4 @@ message(STATUS "Building qtFRED: ${FSO_BUILD_QTFRED}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")
 message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
+message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
