@@ -23,7 +23,9 @@ ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
 	mission_event *mep = &Mission_events[idx];
 
 	if (ADE_SETTING_VAR) {
-		strncpy(mep->name, s, sizeof(mep->name) - sizeof(char));
+		auto len = sizeof(mep->name);
+		strncpy(mep->name, s, len);
+		mep->name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", mep->name);

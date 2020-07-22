@@ -13866,7 +13866,12 @@ void sexp_tech_add_ship(int node)
 		auto name = CTEXT(node);
 		int i = ship_info_lookup(name);
 		if (i >= 0)
-			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
+		{
+			if (Player && (Player->flags & PLAYER_FLAGS_IS_MULTI))
+				Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
+			else
+				Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
+		}
 		else
 			Warning(LOCATION, "In tech-add-ship, ship class \"%s\" invalid", name);
 

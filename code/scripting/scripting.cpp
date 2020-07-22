@@ -813,7 +813,9 @@ void script_state::Clear()
 
 script_state::script_state(const char *name)
 {
-	strncpy(StateName, name, sizeof(StateName)-1);
+	auto len = sizeof(StateName);
+	strncpy(StateName, name, len);
+	StateName[len - 1] = 0;
 
 	Langs = 0;
 

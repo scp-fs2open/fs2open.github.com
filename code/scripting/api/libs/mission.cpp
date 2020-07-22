@@ -56,7 +56,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
-extern int ships_inited;
+extern bool Ships_inited;
 
 namespace scripting {
 namespace api {
@@ -344,7 +344,7 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		 "number",
 		 "Number of ships in the mission, or 0 if ships haven't been initialized yet")
 {
-	if(ships_inited)
+	if(Ships_inited)
 		return ade_set_args(L, "i", ship_get_num_ships());
 	else
 		return ade_set_args(L, "i", 0);
@@ -966,7 +966,7 @@ ADE_FUNC(startMission,
 
 		if (e->index == LE_MISSION_REPEAT) {
 			if (Num_recent_missions > 0)  {
-				strncpy( s, Recent_missions[0], MAX_FILENAME_LEN );
+				strcpy_s( s, Recent_missions[0] );
 			} else {
 				return ade_set_args(L, "b", false);
 			}
