@@ -7783,7 +7783,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
 				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 				vm_vec_scale( &force, blast );
-				ship_apply_whack( &force, &vec_ship_to_impact, objp );
+				vec3d local_blast_vec;
+				vm_vec_rotate(&local_blast_vec, &vec_ship_to_impact, &objp->orient);
+				ship_apply_whack( &force, &local_blast_vec, objp );
 				break;
 			case OBJ_ASTEROID:
 				asteroid_hit(objp, NULL, NULL, damage);
