@@ -89,6 +89,8 @@ class player;
 #define MAX_GAMENAME_LEN					32				// maximum length in characters of a game name
 #define DESCRIPT_LENGTH						512			// maximum length of a mission description (as specified by Fred)
 #define MAX_PASSWD_LEN						16				// maximum length of the password for a netgame
+#define MAX_PACKET_DESC_LEN		MAX_PACKET_SIZE - 12	// the maximum description length that can be sent in a packet
+#define MAX_TOTAL_DESC_LEN		2*(MAX_PACKET_DESC_LEN) // the maximum that the desciption packet will be able to send period. 
 
 // low level networking defines
 #define IP_ADDRESS_LENGTH					4				// length of the address field for an IP address
@@ -366,21 +368,6 @@ class player;
 
 #define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
-// campaign and mission description packet post-header type info
-#define DESCRIPT_MESSAGE_REQUEST	(1 << 0)
-#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1	(1 << 1)
-#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_2	(1 << 2)
-#define DESCRIPT_PACKET_MISSION_MESSAGE_1	(1 << 3)
-#define DESCRIPT_PACKET_MISSION_MESSAGE_2	(1 << 4)
-#define DESCRIPT_PACKET_NO_ADDENDUM			(1 << 5)
-#define DESCRIPT_PACKET_FINAL_MESSAGE		(1 << 6)
-
-#define MULTI_MAX_DESC_LEN			2*(MAX_PACKET_SIZE - 10)
-
-const char PRE_CAMPAIGN_DESC[23] =	"Campaign Description:\n";
-const char PRE_MISSION_DESC[28]  =	"First Mission:\n";
-const char DOUBLE_NEW_LINE[3]    =  "\n\n";
-
 // ----------------------------------------------------------------------------------------
 
 
@@ -497,8 +484,8 @@ typedef struct netgame_info {
 	char		title[NAME_LENGTH+1];			// title of the mission (as appears in the mission file)
 	char		campaign_name[NAME_LENGTH+1];	// current campaign name	
 	char		passwd[MAX_PASSWD_LEN+1];		// password for the game
-	char		mission_desc[MULTI_MAX_DESC_LEN];      // Cyborg17 - Description of the current mission.
-	char		campaign_desc[MULTI_MAX_DESC_LEN];     // Cyborg17 - Description of the current campaign.
+	char		mission_desc[MAX_TOTAL_DESC_LEN];      // Cyborg17 - Description of the current mission.
+	char		campaign_desc[MAX_TOTAL_DESC_LEN];     // Cyborg17 - Description of the current campaign.
 	int		version_info;						// version info for this game.
 	int		type_flags;							// see NG_TYPE_* defines
 	int		mode;									// see NG_MODE_* defines

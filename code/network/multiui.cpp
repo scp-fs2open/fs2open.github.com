@@ -105,6 +105,11 @@ const int MULTI_PING_MIN_ONE_SECOND = 1000;
 #define MULTI_COMMON_TEXT_MAX_LINES				20
 #define MULTI_COMMON_MAX_TEXT						(MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
 
+// Pre written mission/campaign description labels when both are on the screen.
+extern const char* PRE_CAMPAIGN_DESC;
+extern const char* PRE_MISSION_DESC;
+extern const char* DOUBLE_NEW_LINE;
+
 char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
 char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_LENGTH];
 char Multi_received_mission_description1[MAX_PACKET_SIZE];
@@ -220,19 +225,15 @@ void multi_mission_desciption_set(const char* str_in, int code, int index)
 
 	// now set whatever we've received.
 	if (code & DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1) {
-		memset(Multi_received_mission_description1, 0, MAX_PACKET_SIZE);
 		strcpy_s(Multi_received_mission_description1, str_in);
 	}
 	else if (code & DESCRIPT_PACKET_CAMPAIGN_MESSAGE_2) {
-		memset(Multi_received_mission_description2, 0, MAX_PACKET_SIZE);
 		strcpy_s(Multi_received_mission_description2, str_in);
 	}
 	else if (code & DESCRIPT_PACKET_MISSION_MESSAGE_1) {
-		memset(Multi_received_mission_description3, 0, MAX_PACKET_SIZE);
 		strcpy_s(Multi_received_mission_description3, str_in);
 	}
 	else if (code & DESCRIPT_PACKET_MISSION_MESSAGE_2) {
-		memset(Multi_received_mission_description4, 0, MAX_PACKET_SIZE);
 		strcpy_s(Multi_received_mission_description4, str_in);
 	}
 
@@ -4844,8 +4845,8 @@ void multi_create_list_select_item(int n)
 		}
 
 		// out with the old, before we start with the new
-		memset(ng->campaign_desc, 0, MULTI_MAX_DESC_LEN);
-		memset(ng->mission_desc, 0, MULTI_MAX_DESC_LEN);
+		memset(ng->campaign_desc, 0, MAX_TOTAL_DESC_LEN);
+		memset(ng->mission_desc, 0, MAX_TOTAL_DESC_LEN);
 
 		switch(Multi_create_list_mode){
 		case MULTI_CREATE_SHOW_MISSIONS:		
@@ -4903,20 +4904,19 @@ void multi_create_list_select_item(int n)
 				//	Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
 				//  But that means we have a lot of concatenation...
 				char full_text[MULTI_COMMON_MAX_TEXT];				
-				memset(full_text, 0, MULTI_COMMON_MAX_TEXT);
 
 				// We can let the player know that the descption is empty by keeping it empty.
-				strcpy(full_text, PRE_CAMPAIGN_DESC);
+				strcpy_s(full_text, PRE_CAMPAIGN_DESC);
 				if (campaign_desc != nullptr) {
-					strcpy(ng->campaign_desc, campaign_desc);
+					SDL_strlcpy(ng->campaign_desc, campaign_desc, MAX_TOTAL_DESC_LEN);
 					strcat_s(full_text, campaign_desc);
 				}	
 
 				// if we successfully got the mission description.
 				if (!get_mission_info(first_mission, mp, true)) {
 					 if (strlen(mp->mission_desc) > 0) {
-						strcat(full_text, DOUBLE_NEW_LINE);
-						strcat(full_text, PRE_MISSION_DESC);
+						strcat_s(full_text, DOUBLE_NEW_LINE);
+						strcat_s(full_text, PRE_MISSION_DESC);
 						strcat_s(full_text, mp->mission_desc);	
 						strcpy_s(ng->mission_desc, mp->mission_desc);
 						}

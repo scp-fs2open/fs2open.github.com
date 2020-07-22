@@ -73,6 +73,11 @@
 #include "network/multi_sexp.h"
 #include "parse/parselo.h"
 
+// Labels for Mission description
+const char* PRE_CAMPAIGN_DESC =	"Campaign Description:\n";
+const char* PRE_MISSION_DESC  =	"First Mission:\n";
+const char* DOUBLE_NEW_LINE   =  "\n\n";
+
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
 #ifdef _MULTI_SUPER_WACKY_COMPRESSION
@@ -2191,7 +2196,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 		
 		if (campaign) {
 			// bitwise assignment to save bandwidth
-			memcpy(temp, Netgame.campaign_desc, 2 * MAX_PACKET_DESC_LEN);
+			strcpy_s(temp, Netgame.campaign_desc);
 
 			// check to see if the string is too long for one packet
 			desc_len = (int)strlen(temp);
@@ -2202,23 +2207,23 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				strcat_s(message, "No campaign description.");
 				packet_type |= DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1;
 			}			// subtract because of the text that marks this as a campaign description.
-			else if (!addendum && desc_len > (MAX_PACKET_DESC_LEN - 24)) {
+			else if (!addendum && desc_len > (MAX_PACKET_DESC_LEN - strlen(PRE_CAMPAIGN_DESC))) {
 				// if we are going to need to recurse....
 				second_packet_needed = true;
 				desc_len = MAX_PACKET_DESC_LEN;
 				strcpy_s(message, PRE_CAMPAIGN_DESC);
-				strncat(message, temp, MAX_PACKET_DESC_LEN - 23);
+				strcat_s(message, temp);
 				packet_type |= DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1;
 
 			} else if (addendum) {
 				// if we now recursing
-				backspace(temp, MAX_PACKET_DESC_LEN - 24); // Subtract because we had the campaign desc intro text.
-				desc_len -= (MAX_PACKET_DESC_LEN - 24);
+				backspace(temp, MAX_PACKET_DESC_LEN - (int)strlen(PRE_CAMPAIGN_DESC)); // Subtract because we had the campaign desc intro text.
+				desc_len -= (MAX_PACKET_DESC_LEN - (int)strlen(PRE_CAMPAIGN_DESC));
 
 				// descriptions don't have this many characters, but we should add
 				// this in case the limit is ever raised.
 				if (desc_len > MAX_PACKET_DESC_LEN - 2) {
-					memcpy(message, temp, MAX_PACKET_DESC_LEN - 2);
+					strcpy_s(message, temp);
 					desc_len = MAX_PACKET_DESC_LEN;
 				} else {
 					strcat_s(message, temp);
@@ -2235,12 +2240,11 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				strcat_s(message, temp);
 				strcat_s(message, DOUBLE_NEW_LINE);
 				packet_type |= DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1;
-				packet_type |= DESCRIPT_PACKET_NO_ADDENDUM;
 			}
 
 		} else {
 
-			memcpy(temp, Netgame.mission_desc, 2 * MAX_PACKET_DESC_LEN);
+			strcpy_s(temp, Netgame.mission_desc);
 
 			// check to see if the description is too long
 			desc_len = (int)strlen(temp);
@@ -2250,7 +2254,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				strcat_s(message, "No mission description.");
 				packet_type |= DESCRIPT_PACKET_MISSION_MESSAGE_1;
 			} // Not already an additonal portion, but too long for one packet.
-			else if (!addendum && desc_len > MAX_PACKET_DESC_LEN - 27) {
+			else if (!addendum && desc_len > MAX_PACKET_DESC_LEN - strlen(PRE_MISSION_DESC)) {
 
 				// if we are going to need to recurse....
 				second_packet_needed = true;
@@ -2259,9 +2263,9 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				// check if we need to have a mission description marker
 				if (message_count > 0) {
 					strcpy_s(message, PRE_MISSION_DESC);
-					strncat(message, temp, MAX_PACKET_DESC_LEN - 28);
+					strcat_s(message, temp);
 				} else {
-					memcpy(message, temp, MAX_PACKET_DESC_LEN);
+					strcpy_s(message, temp);
 				}
 				packet_type |= DESCRIPT_PACKET_MISSION_MESSAGE_1;
 
@@ -2269,8 +2273,8 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 
 				// if we are now recursing, see if we did a campaign packet before.
 				if (message_count > 1) {
-					backspace(temp, MAX_PACKET_DESC_LEN - 27);
-					desc_len -= (MAX_PACKET_DESC_LEN - 27);
+					backspace(temp, MAX_PACKET_DESC_LEN - (int)strlen(PRE_MISSION_DESC));
+					desc_len -= (MAX_PACKET_DESC_LEN - (int)strlen(PRE_MISSION_DESC));
 				} else {
 					backspace(temp, MAX_PACKET_DESC_LEN);
 					desc_len -= (MAX_PACKET_DESC_LEN);
@@ -2279,7 +2283,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				// descriptions don't have > 1004 characters, but we should add
 				// this in case the limit is ever raised.
 				if (desc_len > MAX_PACKET_DESC_LEN) {
-					memcpy(message, temp, MAX_PACKET_DESC_LEN);
+					strcpy_s(message, temp);
 				} else {
 				// and just concatenate if we are safe.
 					strcat_s(message, temp);
@@ -2294,7 +2298,6 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 					strcpy_s(message, temp);
 				}
 				packet_type |= DESCRIPT_PACKET_MISSION_MESSAGE_1;
-				packet_type |= DESCRIPT_PACKET_NO_ADDENDUM;
 			}
 		}
 
@@ -2303,7 +2306,6 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 
 		ADD_DATA(Multi_sent_descript_packet_current_index);
 		// place it into the packet and send
-		mprintf(("packet_type: %d message: %s\n", packet_type, message));
 		ADD_STRING(message);
 		psnet_send(addr, data, packet_size);
 
@@ -2351,7 +2353,6 @@ void process_netgame_descript_packet( ubyte *data, header *hinfo )
 			PACKET_SET_SIZE();
 			return;
 		}		
-		mprintf(("I'm about to send a message.\n"));
 		// send an update to this guy
 		send_netgame_descript_packet(&addr, 1, Netgame.campaign_mode);
 	} else {	

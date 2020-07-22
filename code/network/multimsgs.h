@@ -63,6 +63,17 @@ struct log_entry;
 #define MULTI_PRIMARY_CHANGED		1
 #define MULTI_SECONDARY_CHANGED	2
 
+// campaign and mission description packet post-header type info
+#define DESCRIPT_MESSAGE_REQUEST			(1 << 0)
+#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1	(1 << 1)
+#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_2	(1 << 2)
+#define DESCRIPT_PACKET_MISSION_MESSAGE_1	(1 << 3)
+#define DESCRIPT_PACKET_MISSION_MESSAGE_2	(1 << 4)
+
+extern const char* PRE_CAMPAIGN_DESC;
+extern const char* PRE_MISSION_DESC;
+extern const char* DOUBLE_NEW_LINE;
+
 // data sending wrappers
 
 // send the specified data packet to all players
