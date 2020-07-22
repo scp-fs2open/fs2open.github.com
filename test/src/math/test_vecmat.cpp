@@ -43,7 +43,7 @@ protected:
 	void TearDown() override { test::FSTestFixture::TearDown(); }
 };
 
-TEST_F(VecmatTest, matrixInvert) {
+/*TEST_F(VecmatTest, matrixInvert) {
 
 	matrix out;
 	matrix out2;
@@ -685,5 +685,241 @@ TEST_F(VecmatTest, test_vm_vec_copy_normalize)
 		ASSERT_FLOAT_EQ(v2.xyz.y, vBackup.xyz.y);
 		ASSERT_FLOAT_EQ(v2.xyz.z, vBackup.xyz.z);
 	}
+}*/
+
+
+TEST_F(VecmatTest, basic_math)
+{
+	/*vec3d goal_f;
+	vm_vec_make(&goal_f, -0.809975f, 0.494356f, 0.315519f);
+	matrix orient = make_matrix(0.740481138f, 
+		0.217397153f,
+		0.635945082f,
+		0.217397153f,
+		0.817887902f,
+		-0.532726824f,
+		-0.635945082f,
+		0.532726824f,
+		0.558369040f);
+	vm_orthogonalize_matrix(&orient);
+	float delta_bank = 0.0f;
+
+	vec3d rot_axis;
+	vm_vec_cross(&rot_axis, &orient.vec.fvec, &goal_f);
+	float dot = vm_vec_dot(&orient.vec.fvec, &goal_f);
+	float mag = fmin(vm_vec_mag(&rot_axis), 1.0f);
+	vec3d theta_goal;
+	vm_vec_make(&theta_goal, 0, 0, delta_bank);
+	vec3d local_rot_axis;
+	vm_vec_rotate(&local_rot_axis, &rot_axis, &orient);
+	vm_vec_copy_scale(&theta_goal, &local_rot_axis, (dot > 0 ? asinf(mag) : PI - asinf(mag)) / mag);
+
+	theta_goal.xyz.z = delta_bank;
+	rot_axis = theta_goal;
+
+	//	normalize rotation axis and determine total rotation angle
+	float theta = vm_vec_mag(&rot_axis);
+	vm_vec_scale(&rot_axis, 1 / theta);
+
+	matrix Mtemp1;
+	vm_quaternion_rotate(&Mtemp1, theta, &rot_axis);
+	matrix next_orient;
+	vm_matrix_x_matrix(&next_orient, &orient, &Mtemp1);
+	vec3d error = next_orient.vec.fvec - goal_f;
+	EXPECT_LE(vm_vec_mag(&error), 1e-5);*/
 }
+
+
+TEST_F(VecmatTest, turn_towards_matrix)
+{
+	matrix goal_mat = make_matrix(frand()-0.5f,
+		frand() - 0.5f,
+		frand() - 0.5f,
+		frand() - 0.5f,
+		frand() - 0.5f,
+		-frand() - 0.5f,
+		-frand() - 0.5f,
+		frand() - 0.5f,
+		frand() - 0.5f);
+	vm_orthogonalize_matrix(&goal_mat);
+
+	matrix orient;// = IDENTITY_MATRIX;
+	static_randvec(rand32(), &orient.vec.fvec);
+	static_randvec(rand32(), &orient.vec.uvec);
+	static_randvec(rand32(), &orient.vec.rvec);
+	vm_orthogonalize_matrix(&orient);
+	vec3d w_in;
+	static_randvec(rand32(), &w_in);
+	vm_vec_make(&w_in, 0, 0, 0);// -0.220586f, -0.441793f, -0.170271f);
+	float delta_t = 0.2f;
+	float delta_bank = 0.0f;
+	matrix new_orient;
+	vec3d w_out;
+	vm_vec_make(&w_out, 0, 0, 0);
+	vec3d vel_limit;
+	vm_vec_make(&vel_limit, 0.5f, 0.5f, 0.5f);
+	vec3d acc_limit;
+	vm_vec_make(&acc_limit, 0.5f, 0.5f, 0.5f);
+	int finished = 0;
+
+	printf("goal_mat %f %f %f\n", goal_mat.vec.rvec.xyz.x, goal_mat.vec.rvec.xyz.y, goal_mat.vec.rvec.xyz.z);
+	printf("goal_mat %f %f %f\n", goal_mat.vec.uvec.xyz.x, goal_mat.vec.uvec.xyz.y, goal_mat.vec.uvec.xyz.z);
+	printf("goal_mat %f %f %f\n", goal_mat.vec.fvec.xyz.x, goal_mat.vec.fvec.xyz.y, goal_mat.vec.fvec.xyz.z);
+	printf("orig_w %f %f %f\n", w_in.xyz.x, w_in.xyz.y, w_in.xyz.z);
+	for (int i = 0; i < 100; i++) {
+		if (i == 1) {
+			printf("");
+		}
+		delta_t = frand();
+		delta_t = delta_t * delta_t + 0.01f;
+		vm_better_matrix_interpolate(&goal_mat, &orient, &w_in, delta_t, &new_orient, &w_out, &vel_limit, &acc_limit);
+		printf("%i : %f\n", i, delta_t);
+		printf("w_out %f %f %f\n", w_out.xyz.x, w_out.xyz.y, w_out.xyz.z);
+		printf("new_orient %f %f %f\n", new_orient.vec.rvec.xyz.x, new_orient.vec.rvec.xyz.y, new_orient.vec.rvec.xyz.z);
+		printf("new_orient %f %f %f\n", new_orient.vec.uvec.xyz.x, new_orient.vec.uvec.xyz.y, new_orient.vec.uvec.xyz.z);
+		printf("new_orient %f %f %f\n", new_orient.vec.fvec.xyz.x, new_orient.vec.fvec.xyz.y, new_orient.vec.fvec.xyz.z);
+		if (vm_vec_mag(&w_out) <= 0.001 && vm_vec_mag(&(new_orient.vec.fvec - goal_mat.vec.fvec)) <= 1e-5 &&
+			    vm_vec_mag(&(new_orient.vec.uvec - goal_mat.vec.uvec)) <= 1e-5 &&
+			    vm_vec_mag(&(new_orient.vec.rvec - goal_mat.vec.rvec)) <= 1e-5) {
+			finished++;
+			if (finished > 5)
+				break;
+		}
+		orient = new_orient;
+		w_in = w_out;
+	}
+
+}
+
+TEST_F(VecmatTest, turn_towards_vector)
+{	vec3d goal_vec;
+	static_randvec(rand32(), &goal_vec);
+	//vm_vec_make(&goal_vec, -0.0f, 0.0f, -1.0f);
+	vm_vec_normalize(&goal_vec);
+
+	matrix orient;// = IDENTITY_MATRIX;
+	static_randvec(rand32(), &orient.vec.fvec);
+	static_randvec(rand32(), &orient.vec.uvec);
+	static_randvec(rand32(), &orient.vec.rvec);
+	vm_orthogonalize_matrix(&orient);
+	vec3d w_in;
+	static_randvec(rand32(), &w_in);
+	//vm_vec_make(&w_in, 0, 0, 0);// -0.220586f, -0.441793f, -0.170271f);
+	float delta_t = 0.2f;
+	float delta_bank = 0.0f;
+	matrix new_orient;
+	vec3d w_out;
+	vm_vec_make(&w_out, 0, 0, 0);
+	vec3d vel_limit;
+	vm_vec_make(&vel_limit, 0.5f, 0.5f, 0.5f);
+	vec3d acc_limit;
+	vm_vec_make(&acc_limit, 0.5f, 0.5f, 0.5f);
+	int finished = 0;
+
+	printf("goal_vec %f %f %f\n", goal_vec.xyz.x, goal_vec.xyz.y, goal_vec.xyz.z);
+	printf("orig_w %f %f %f\n", w_in.xyz.x, w_in.xyz.y, w_in.xyz.z);
+	for (int i = 0; i < 100; i++) {
+		if (i == 1) {
+			printf("");
+		}
+		delta_t = frand();
+		delta_t = delta_t * delta_t + 0.01f;
+		vm_better_forward_interpolate(&goal_vec, &orient, &w_in, delta_t, delta_bank , &new_orient, &w_out, &vel_limit, &acc_limit);
+		printf("%i : %f\n", i, delta_t);
+		printf("w_out %f %f %f\n", w_out.xyz.x, w_out.xyz.y, w_out.xyz.z);
+		printf("dist %f\n", vm_vec_mag(&(new_orient.vec.fvec - goal_vec)));
+		printf("new_orient %f %f %f\n", new_orient.vec.rvec.xyz.x, new_orient.vec.rvec.xyz.y, new_orient.vec.rvec.xyz.z);
+		printf("new_orient %f %f %f\n", new_orient.vec.uvec.xyz.x, new_orient.vec.uvec.xyz.y, new_orient.vec.uvec.xyz.z);
+		printf("new_orient %f %f %f\n", new_orient.vec.fvec.xyz.x, new_orient.vec.fvec.xyz.y, new_orient.vec.fvec.xyz.z);
+		if (vm_vec_mag(&w_out) <= 0.001 && vm_vec_mag(&(new_orient.vec.fvec - goal_vec)) <= 1e-5) {
+			finished++;
+			if (finished > 5)
+				break;
+		}
+		orient = new_orient;
+		w_in = w_out;
+	}
+
+}
+
+//
+//TEST_F(VecmatTest, turn_towards_vector)
+//{
+//	vec3d goal_vec;
+//	//static_randvec(rand32(), &goal_vec);
+//	vm_vec_make(&goal_vec, 0, 0, -1);
+//	matrix orient;// = MATRIX_MAKE(0.646844f, 0.593360f, 0.479079f, 0.062571f, 0.584789f, -0.808769f, -0.760051f, 0.553124f, 0.341140f);
+//	orient = IDENTITY_MATRIX;
+//	/*
+//	static_randvec(rand32(), &orient.vec.fvec);
+//	static_randvec(rand32(), &orient.vec.uvec);
+//	static_randvec(rand32(), &orient.vec.rvec);
+//	vm_orthogonalize_matrix(&orient);
+//	*/
+//	vec3d w_in;
+//	//static_randvec(rand32(), &w_in);
+//	vm_vec_make(&w_in, -0.102979, 0.943805, 0.314051);
+//	float delta_t = 1.0f;
+//	float delta_bank = 0.0f;
+//	matrix new_orient;
+//	vec3d w_out;
+//	vm_vec_make(&w_out, 0.0f, 0.0f, 0.0f);
+//	vec3d vel_limit;
+//	vm_vec_make(&vel_limit, 0.2f, 0.2f, 0.2f);
+//	vec3d acc_limit;
+//	vm_vec_make(&acc_limit, 0.5f, 0.5f, 0.5f);
+//	float finished = 0;
+//
+//	printf("goal_vec %f %f %f\n", goal_vec.xyz.x, goal_vec.xyz.y, goal_vec.xyz.z);
+//	printf("orig_w %f %f %f\n", w_in.xyz.x, w_in.xyz.y, w_in.xyz.z);
+//	for (int i = 0; i < 300; i++) {
+//		delta_t = frand()+0.01f;
+//		vm_forward_interpolate(&goal_vec, &orient, &w_in, delta_t, delta_bank, &new_orient, &w_out, &vel_limit, &acc_limit, 1);
+//		printf("%i\n",i);
+//		printf("w_out %f %f %f\n", w_out.xyz.x, w_out.xyz.y, w_out.xyz.z);
+//		printf("new_orient %f %f %f\n", new_orient.vec.rvec.xyz.x, new_orient.vec.rvec.xyz.y, new_orient.vec.rvec.xyz.z);
+//		printf("new_orient %f %f %f\n", new_orient.vec.uvec.xyz.x, new_orient.vec.uvec.xyz.y, new_orient.vec.uvec.xyz.z);
+//		printf("new_orient %f %f %f\n", new_orient.vec.fvec.xyz.x, new_orient.vec.fvec.xyz.y, new_orient.vec.fvec.xyz.z);
+//		if (vm_vec_equal(w_out, vmd_zero_vector) &&
+//			vm_vec_equal(new_orient.vec.fvec, goal_vec)) {
+//			finished++;
+//			if (finished > 3)
+//				break;
+//
+//		}
+//		orient = new_orient;
+//		w_in = w_out;
+//	}
+//
+//}
+
+/*
+goal_vec -0.809975 0.494356 0.315519
+delta t 0.915117919
+
+w_out 0.057321 -0.075787 0.000093
+new_orient 0.646844 0.593360 0.479079
+new_orient 0.062571 0.584789 -0.808769
+new_orient -0.760051 0.553124 0.341140
+
+TEST_F(VecmatTest, scalar_itnerp)
+{
+	float goal = 1.0f;
+	float w_in = 0.6f;
+	float delta_t = 0.1f;
+	float vel_limit = 0.5f;
+	float acc_limit = 0.5f;
+
+	printf("goal %f\n", goal);
+	printf("orig_w %f\n", w_in);
+	float pos = 0;
+	for (int i = 0; i < 100; i++) {
+		pos += vm_scalar_interpolate(goal - pos, delta_t, &w_in, vel_limit, acc_limit);
+		printf("%i w_out %f new_pos %f\n", i, w_in, pos);
+		if (w_in == 0 && pos == goal)
+			break;
+	}
+
+}
+*/
 
