@@ -3894,11 +3894,6 @@ void find_homing_object(object *weapon_objp, int num)
 
 				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
-				// Asteroth - homing lasers shouldn't home on targets out of their range
-				if (wp->missile_list_index == -1 && dist > wp->lifeleft * wip->max_speed) {
-						continue;
-				}
-
 				if (objp->type == OBJ_WEAPON && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])) {
 					dist *= 0.5f;
 				}
@@ -5101,24 +5096,9 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 				//	Make a heat seeking missile try to home.  If the target is outside the view cone, it will
 				//	immediately drop it and try to find one in its view cone.
 				if ((target_objnum != -1) && !(wip->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])) {
-					//	Asteroth - don't let homing primaries home on targets out of range
-					if (wp->missile_list_index == -1) {
-						float dist = vm_vec_dist(&Objects[target_objnum].pos, &parent_objp->pos);
-						if (dist > wip->lifetime * wip->max_speed) {
-							wp->homing_object = &obj_used_list;
-							wp->homing_subsys = nullptr;
-						}
-						else {
-							wp->homing_object = &Objects[target_objnum];
-							wp->homing_subsys = target_subsys;
-							weapon_maybe_play_warning(wp);
-						}
-					}
-					else {
-						wp->homing_object = &Objects[target_objnum];
-						wp->homing_subsys = target_subsys;
-						weapon_maybe_play_warning(wp);
-					}
+					wp->homing_object = &Objects[target_objnum];
+					wp->homing_subsys = target_subsys;
+					weapon_maybe_play_warning(wp);
 				} else {
 					wp->homing_object = &obj_used_list;
 					wp->homing_subsys = NULL;
