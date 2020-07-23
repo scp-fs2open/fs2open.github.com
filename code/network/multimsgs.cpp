@@ -2171,7 +2171,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 // Cyborg17 - Now recursive for longer descriptions! Original call needs to check if this is a campaign first. 
 // Message order is Campaign desc 1, Opt. Campaign addendum, Mission desc 1, then Opt. mission desc addendum
 // Single missions will skip straight to Mission desc 1.
-void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool addendum, ubyte message_count)
+void send_netgame_descript_packet(net_addr *addr, int code, int campaign, bool addendum, ubyte message_count)
 {
 	// Get this out of the way, because we don't want to waste our time if the addr is bad.
 	Assert(addr != nullptr);
@@ -2194,7 +2194,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 		memset(message, 0, MAX_PACKET_DESC_LEN);
 		memset(temp, 0, 2 * MAX_PACKET_DESC_LEN);
 		
-		if (campaign) {
+		if (campaign == 1) {
 			// bitwise assignment to save bandwidth
 			strcpy_s(temp, Netgame.campaign_desc);
 
@@ -2310,14 +2310,15 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 		psnet_send(addr, data, packet_size);
 
 		// now that we've sent one of them, recurse if needed
-		if (campaign) {
+		if (campaign == 1) {
 			if (second_packet_needed) {
 				// we would either need to send the second campaign packet
 				addendum = true;
 				send_netgame_descript_packet(addr, code, campaign, addendum, ++message_count);
 			} else {
 				// or the first *mission* packet
-				campaign = addendum = false;
+				addendum = false;
+				campaign = 0;
 				send_netgame_descript_packet(addr, code, campaign, addendum, ++message_count);
 			}
 		} else if (second_packet_needed) {

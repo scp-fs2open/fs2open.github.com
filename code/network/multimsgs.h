@@ -290,7 +290,7 @@ void send_player_order_packet(int type, int index, int command);
 
 // send a request or a reply for mission description, if code == 0, request, if code == 1, reply
 // campaign is true when there is a campaign, and addendum is true when we send a second desc packet
-void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool addendum = false, ubyte message_count = 0);
+void send_netgame_descript_packet(net_addr *addr, int code, int campaign, bool addendum = false, ubyte message_count = 0);
 
 // send object update packet sends object updates for all objects in the game.  This function will be smart
 // about sending only certain objects to certain players based on the players distance from an object, whether

@@ -1694,7 +1694,7 @@ void multi_join_process_select()
 			Assert(Multi_join_selected_item != NULL);
 
 			// send a mission description request to this guy
-			send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0, false);
+			send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0, 0);
 			multi_common_set_text("");			
 		}		
 	}
