@@ -37,6 +37,8 @@ include(libRocket.cmake)
 
 add_subdirectory(libpcp)
 
-add_subdirectory(vulkan-hpp)
+if (FSO_BUILD_WITH_VULKAN)
+	add_subdirectory(vulkan-hpp)
+endif()
 
 include(antlr4.cmake)
