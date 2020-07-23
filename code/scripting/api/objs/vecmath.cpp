@@ -179,9 +179,9 @@ ADE_FUNC(getInterpolated,
 
 	matrix* A = oriA->GetMatrix();
 	matrix* B = oriB->GetMatrix();
-	matrix final = vmd_identity_matrix;
+	matrix final;
 
-//matrix subtraction & scaling
+	//matrix subtraction & scaling
 	for (int i = 0; i < 9; i++) {
 		final.a1d[i] = A->a1d[i] + (B->a1d[i] - A->a1d[i]) * factor;
 	}
@@ -445,6 +445,29 @@ ADE_FUNC(__tostring,
 	return ade_set_args(L, "s", buf);
 }
 
+ADE_FUNC(getInterpolated,
+	l_Vector,
+	"vector Final, number Factor",
+	"Returns vector that has been interpolated to Final by Factor (0.0-1.0)",
+	"vector",
+	"Interpolated vector, or null vector on failure") {
+	vec3d *A = nullptr;
+	vec3d *B = nullptr;
+	float factor = 0.0f;
+	if (!ade_get_args(L, "oof", l_Vector.GetPtr(&A), l_Vector.GetPtr(&B), &factor)) {
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	}
+
+	vec3d final;
+
+	//vector subtraction & scaling
+	for (int i = 0; i < 3; i++) {
+		final.a1d[i] = A->a1d[i] + (B->a1d[i] - A->a1d[i]) * factor;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(final));
+}
+
 ADE_FUNC(getOrientation,
 		 l_Vector,
 		 NULL,
@@ -558,6 +581,39 @@ ADE_FUNC(getNormalized,
 
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
+
+ADE_FUNC(projectOntoPlane,
+	l_Vector,
+	"vector surfaceNormal",
+	"Returns a projection of the vector onto a plane defined by a surface normal.  The surface normal MUST be normalized.",
+	"vector",
+	"The projected vector, or NIL if a handle is invalid")
+{
+	vec3d *src, *normal;
+	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&normal)))
+		return ADE_RETURN_NIL;
+
+	vec3d dest;
+	vm_vec_projection_onto_plane(&dest, src, normal);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
+ADE_FUNC(findNearestPointOnLine,
+	l_Vector,
+	"vector point1, vector point2",
+	"Finds the point on the line defined by point1 and point2 that is closest to this point.  (The line is assumed to extend infinitely in both directions; the closest point will not necessarily be between the two points.)",
+	ade_type_info({ "vector", "number" }),
+	"Returns two arguments.  The first is the nearest point, and the second is a value indicating where on the line the point lies.  From the code: '0.0 means nearest_point is p1; 1.0 means it's p2; 2.0 means it's beyond p2 by 2x; -1.0 means it's \"before\" p1 by 1x'.")
+{
+	vec3d *point, *p0, *p1;
+	if (!ade_get_args(L, "ooo", l_Vector.GetPtr(&point), l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p1)))
+		return ADE_RETURN_NIL;
+
+	vec3d dest;
+	float f = find_nearest_point_on_line(&dest, p0, p1, point);
+	return ade_set_args(L, "of", l_Vector.Set(dest), f);
+}
+
 
 }
 }

@@ -106,6 +106,75 @@ ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vect
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(createSurfaceNormal,
+	l_Base,
+	"vector point1, vector point2, vector point3",
+	"Determines the surface normal of the plane defined by three points.  Returns a normalized vector.",
+	"vector",
+	"The surface normal, or NIL if a handle is invalid")
+{
+	vec3d *p0 = nullptr, *p1 = nullptr, *p2 = nullptr;
+	if (!ade_get_args(L, "ooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p2)))
+		return ADE_RETURN_NIL;
+
+	vec3d dest;
+	vm_vec_normal(&dest, p0, p1, p2);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
+ADE_FUNC(findIntersection,
+	l_Base,
+	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
+	ade_type_info({ "vector", "number" }),
+	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
+{
+	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;
+	if (!ade_get_args(L, "oooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p0_end), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p1_end)))
+		return ADE_RETURN_NIL;
+
+	// note: we must translate from this API's two-points method to the code's API of a reference point and a direction vector
+	vec3d v0, v1;
+	vm_vec_sub(&v0, p0_end, p0);
+	vm_vec_sub(&v1, p1_end, p1);
+
+	float scalar;
+	int retval = find_intersection(&scalar, p0, p1, &v0, &v1);
+
+	if (retval == 0)
+	{
+		// per comments:
+		// If you want the coords of the intersection, scale v0 by s, then add p0.
+		vm_vec_scale(&v0, scalar);
+		vm_vec_add2(&v0, p0);
+
+		return ade_set_args(L, "oi", l_Vector.Set(v0), retval);
+	}
+	else
+		return ade_set_args(L, "*i", retval);
+}
+
+ADE_FUNC(findPointOnLineNearestSkewLine,
+	l_Base,
+	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"Determines the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space).  (The lines are assumed to extend infinitely in both directions; the point will not necessarily be between the other points.)",
+	"vector",
+	"The closest point, or NIL if a handle is invalid")
+{
+	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;
+	if (!ade_get_args(L, "oooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p0_end), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p1_end)))
+		return ADE_RETURN_NIL;
+
+	// note: we must translate from this API's two-points method to the code's API of a reference point and a direction vector
+	vec3d v0, v1;
+	vm_vec_sub(&v0, p0_end, p0);
+	vm_vec_sub(&v1, p1_end, p1);
+
+	vec3d dest;
+	find_point_on_line_nearest_skew_line(&dest, p0, &v0, p1, &v1);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
 ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
 {
 	return ade_set_args(L, "x", game_get_overall_frametime());

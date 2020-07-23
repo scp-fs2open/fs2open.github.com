@@ -366,7 +366,7 @@ ADE_FUNC(__len, l_Eyepoints, NULL, "Gets the number of eyepoints on this model",
 	return ade_set_args(L, "i", pm->n_view_positions);
 }
 
-ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets en eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
+ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
 {
 	eyepoints_h *eph = NULL;
 	int index = -1;
