@@ -2056,7 +2056,6 @@ void psnet_set_socket_options()
 bool psnet_init_socket()
 {
 	SOCKADDR_STORAGE sockaddr;
-	char ip_string[INET6_ADDRSTRLEN];
 
 	Psnet_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -2067,15 +2066,11 @@ bool psnet_init_socket()
 		return false;
 	}
 
-	memset(ip_string, 0, sizeof(ip_string));
-
-	inet_ntop(AF_INET6, &Psnet_my_ip, ip_string, sizeof(ip_string));
-
 	// set socket options
 	psnet_set_socket_options();
 
 	// bind the socket
-	psnet_get_addr(IN6_IS_ADDR_UNSPECIFIED(&Psnet_my_ip) ? nullptr : ip_string, Psnet_default_port, &sockaddr);
+	psnet_get_addr(nullptr, Psnet_default_port, &sockaddr);
 
 	if ( bind(Psnet_socket, reinterpret_cast<LPSOCKADDR>(&sockaddr), sizeof(sockaddr)) == SOCKET_ERROR) {
 		Psnet_failure_code = WSAGetLastError();
