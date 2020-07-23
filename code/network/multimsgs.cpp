@@ -2207,7 +2207,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				strcat_s(message, "No campaign description.");
 				packet_type |= DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1;
 			}			// subtract because of the text that marks this as a campaign description.
-			else if (!addendum && desc_len > (MAX_PACKET_DESC_LEN - strlen(PRE_CAMPAIGN_DESC))) {
+			else if (!addendum && desc_len > (int)(MAX_PACKET_DESC_LEN - strlen(PRE_CAMPAIGN_DESC))) {
 				// if we are going to need to recurse....
 				second_packet_needed = true;
 				desc_len = MAX_PACKET_DESC_LEN;
@@ -2254,7 +2254,7 @@ void send_netgame_descript_packet(net_addr *addr, int code, bool campaign, bool 
 				strcat_s(message, "No mission description.");
 				packet_type |= DESCRIPT_PACKET_MISSION_MESSAGE_1;
 			} // Not already an additonal portion, but too long for one packet.
-			else if (!addendum && desc_len > MAX_PACKET_DESC_LEN - strlen(PRE_MISSION_DESC)) {
+			else if (!addendum && desc_len > (int)(MAX_PACKET_DESC_LEN - strlen(PRE_MISSION_DESC))) {
 
 				// if we are going to need to recurse....
 				second_packet_needed = true;
