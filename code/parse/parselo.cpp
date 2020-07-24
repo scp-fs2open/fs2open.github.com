@@ -232,9 +232,10 @@ char *next_tokens()
 //	an error reporting function takes?
 int get_line_num()
 {
-	int	count = 1;
-	int	incomment = 0;
-	int	multiline = 0;
+	int		count = 1;
+	bool	inquote = false;
+	int		incomment = false;
+	int		multiline = false;
 	char	*stoploc;
 	char	*p;
 
@@ -243,28 +244,33 @@ int get_line_num()
 
 	while (p < stoploc)
 	{
-		if (*p == '\0')
-			Warning(LOCATION, "Unexpected end-of-file while looking for error line!");
+		if (*p == '\0') {
+			Warning(LOCATION, "Unexpected end-of-file while looking for line number!");
+			break;
+		}
 
-		if ( !incomment && (*p == COMMENT_CHAR) )
-			incomment = 1;
+		if ( !incomment && (*p == '\"') )
+			inquote = !inquote;
+
+		if ( !incomment && !inquote && (*p == COMMENT_CHAR) )
+			incomment = true;
 
 		if ( !incomment && (*p == '/') && (*(p+1) == '*') ) {
-			multiline = 1;
-			incomment = 1;
+			multiline = true;
+			incomment = true;
 		}
 
 		if ( incomment )
 			stoploc++;
 
 		if ( multiline && (*(p-1) == '*') && (*p == '/') ) {
-			multiline = 0;
-			incomment = 0;
+			multiline = false;
+			incomment = false;
 		}
 
 		if (*p++ == EOLN) {
 			if ( !multiline && incomment )
-				incomment = 0;
+				incomment = false;
 			count++;
 		}
 	}
