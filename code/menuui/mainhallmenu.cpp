@@ -361,6 +361,9 @@ void main_hall_do_multi_ready()
 		return;
 	}
 
+	// Switch to multi here once we're sure that a multi state will be set
+	Game_mode = GM_MULTIPLAYER;
+
 	// go to parallax online
 	if (Multi_options_g.pxo == 1) {
 		Assertion(Multi_options_g.protocol == NET_TCP, "Protocol should always be TCP with PXO!");
@@ -882,12 +885,9 @@ void main_hall_do(float frametime)
 				case MULTIPLAYER_REGION:
 					// Make sure we are in multi mode.
 					Player->flags |= PLAYER_FLAGS_IS_MULTI;
-					Game_mode = GM_MULTIPLAYER;
 					
+					// This function will post the correct state (or no state on error)
 					main_hall_do_multi_ready();
-					
-					// NOTE : this isn't a great thing to be calling this anymore. But we'll leave it for now
-					gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 					break;
 
 				// load mission key was pressed
