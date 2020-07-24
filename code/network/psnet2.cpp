@@ -1406,8 +1406,8 @@ void psnet_rel_work()
 					rsocket->status = RNF_LIMBO;
 					rsocket->last_packet_received = psnet_get_time();
 
-					inet_ntop(AF_INET6, &addr6->sin6_addr, addr_string, sizeof(addr_string));
-					ml_printf("Connect from [%s]:%d", addr_string, htons(addr6->sin6_port));
+					const char *ip_string = inet_ntop(AF_INET6, psnet_mask_addr(&addr6->sin6_addr), addr_string, sizeof(addr_string));
+					ml_printf("Connect from [%s]:%d", ip_string ? ip_string : "unknown", ntohs(addr6->sin6_port));
 
 					break;
 				}
@@ -1433,9 +1433,9 @@ void psnet_rel_work()
 		}
 
 		if (rsocket == nullptr) {
-			inet_ntop(AF_INET6, &addr6->sin6_addr, addr_string, sizeof(addr_string));
+			const char *ip_string = inet_ntop(AF_INET6, psnet_mask_addr(&addr6->sin6_addr), addr_string, sizeof(addr_string));
 			ml_string("Received reliable data from unconnected client.");
-			ml_printf("Received from %s:%d\n", addr_string, addr6->sin6_port);
+			ml_printf("Received from [%s]:%d\n", ip_string ? ip_string : "unknown", ntohs(addr6->sin6_port));
 
 			continue;
 		}
