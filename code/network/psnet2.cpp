@@ -43,7 +43,7 @@
 //
 
 net_addr Psnet_my_addr;
-in6_addr Psnet_my_ip = IN6ADDR_ANY_INIT;
+static SCP_vector<in6_addr> Psnet_my_ip;
 
 static bool Psnet_active = false;
 static bool Can_broadcast = false;
@@ -519,87 +519,131 @@ bool psnet_is_active()
 bool psnet_init_my_addr()
 {
 	SOCKADDR_STORAGE remote_addr;
-	SOCKADDR_STORAGE local_addr;
+	SOCKADDR_IN6 local_addr_ipv4, local_addr_ipv6;
 	char ip_string[INET6_ADDRSTRLEN];
 	socklen_t addrlen;
 	SOCKET tsock;
 	int rval;
+	const char *local_ip;
 
 	// zero out my address
+	Psnet_my_ip.clear();
 	memset(&Psnet_my_addr, 0, sizeof(Psnet_my_addr));
 	Psnet_my_addr.port = Psnet_default_port;	// set this just in case we bail
 
-	local_addr.ss_family = AF_UNSPEC;
+	local_addr_ipv4.sin6_family = AF_UNSPEC;
+	local_addr_ipv4.sin6_addr = IN6ADDR_ANY_INIT;
+	local_addr_ipv6.sin6_family = AF_UNSPEC;
+	local_addr_ipv6.sin6_addr = IN6ADDR_ANY_INIT;
 
 	//
 	// run through some public DNS servers to try and populate the routing table
 	// which should load the socket with our local interface IP address
 	//
+	// IPv6 and IPv4 checks are separate so we can get both addresses
+	// it's safe for either one to fail
+	//
 
-	// IPv4 & IPv6 -> Cloudflare, Google Public DNS, Quad9
-	const SCP_vector<SCP_string> remote_hosts = { "1.1.1.1", "2606:4700:4700::1111", "8.8.8.8", "2001:4860:4860::8888", "9.9.9.9", "2620:fe::fe" };
+	// IPv6 & IPv4 -> Cloudflare, Google Public DNS, Quad9
+	const SCP_vector<SCP_string> remote_hosts_ipv6 = { "2606:4700:4700::1111", "2001:4860:4860::8888", "2620:fe::fe" };
+	const SCP_vector<SCP_string> remote_hosts_ipv4 = { "1.1.1.1", "8.8.8.8", "9.9.9.9" };
 
+	// IPv6 check (should be done first!!)
 	tsock = socket(AF_INET6, SOCK_DGRAM, 0);
 
 	if (tsock == INVALID_SOCKET) {
-		ml_string("Error creating socket, unable to determine local IP");
-		return false;
+		ml_string("Error creating IPv6 socket, unable to determine local IP");
+	} else {
+		for (const auto &host : remote_hosts_ipv6) {
+			if ( !psnet_get_addr(host.c_str(), 53, &remote_addr) ) {
+				continue;
+			}
+
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+
+			if (rval) {
+				continue;
+			}
+
+			// we've connected, so the socket should have a routable IP now
+			addrlen = sizeof(local_addr_ipv6);
+			rval = getsockname(tsock, reinterpret_cast<LPSOCKADDR>(&local_addr_ipv6), &addrlen);
+
+			if ( !rval ) {
+				break;
+			}
+		}
+
+		if ( !IN6_IS_ADDR_UNSPECIFIED(&local_addr_ipv6.sin6_addr) ) {
+			// add to ip list
+			Psnet_my_ip.push_back(local_addr_ipv6.sin6_addr);
+		}
+
+		shutdown(tsock, 1);
+		closesocket(tsock);
 	}
 
-	// make sure we are in dual-stack mode (not the default on Windows)
-	int i_opt = 0;
-	setsockopt(tsock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+	// IPv4 check
+	tsock = socket(AF_INET6, SOCK_DGRAM, 0);
 
-	for (const auto &host : remote_hosts) {
-		if ( !psnet_get_addr(host.c_str(), 53, &remote_addr) ) {
-			continue;
+	if (tsock == INVALID_SOCKET) {
+		ml_string("Error creating IPv4 socket, unable to determine local IP");
+	} else {
+		// make sure we are in dual-stack mode (not the default on Windows)
+		int i_opt = 0;
+		setsockopt(tsock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+
+		for (const auto &host : remote_hosts_ipv4) {
+			if ( !psnet_get_addr(host.c_str(), 53, &remote_addr) ) {
+				continue;
+			}
+
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+
+			if (rval) {
+				continue;
+			}
+
+			// we've connected, so the socket should have a routable IP now
+			addrlen = sizeof(local_addr_ipv4);
+			rval = getsockname(tsock, reinterpret_cast<LPSOCKADDR>(&local_addr_ipv4), &addrlen);
+
+			if ( !rval ) {
+				break;
+			}
 		}
 
-		rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
-
-		if (rval) {
-		//	ml_printf("Error connecting to test host '%s' ...", host.c_str());
-			continue;
+		if ( !IN6_IS_ADDR_UNSPECIFIED(&local_addr_ipv4.sin6_addr) ) {
+			// add to ip list
+			Psnet_my_ip.push_back(local_addr_ipv4.sin6_addr);
 		}
 
-		// we've connected, so the socket should have a routable IP now
-		addrlen = sizeof(local_addr);
-		rval = getsockname(tsock, reinterpret_cast<LPSOCKADDR>(&local_addr), &addrlen);
-
-		if ( !rval ) {
-			break;
-		}
+		shutdown(tsock, 1);
+		closesocket(tsock);
 	}
-
-	// done with test
-	closesocket(tsock);
 
 	//
 	// rest of this just normalizes and populates the internal structures
 	//
 
-	// map to IPv6 if needed
-	if (local_addr.ss_family == AF_INET) {
-		auto *sa4 = reinterpret_cast<SOCKADDR_IN *>(&local_addr);
-
-		psnet_map4to6(&sa4->sin_addr, &Psnet_my_ip);
-	} else if (local_addr.ss_family == AF_INET6) {
-		auto *sa6 = reinterpret_cast<SOCKADDR_IN6 *>(&local_addr);
-
-		Psnet_my_ip = sa6->sin6_addr;
+	// ?? oops
+	if ( Psnet_my_ip.empty() ) {
+		ml_string("Local interface IP address => <undetermined>");
+		return false;
 	}
 
-	memcpy(&Psnet_my_addr.addr, &Psnet_my_ip, sizeof(Psnet_my_addr.addr));
+	// prefer IPv4 address if avaiable (last entry), for maximum compatibility
+	// TODO: something more robust probably needs to happen with this
+	memcpy(&Psnet_my_addr.addr, &Psnet_my_ip.back(), sizeof(in6_addr));
 	Psnet_my_addr.port = Psnet_default_port;
 
-	// log result to multi.log
-	const char *local_ip = inet_ntop(AF_INET6, &Psnet_my_ip, ip_string, sizeof(ip_string));
+	// log results to multi.log
+	for (auto &in6 : Psnet_my_ip) {
+		local_ip = inet_ntop(AF_INET6, psnet_mask_addr(&in6), ip_string, sizeof(ip_string));
 
-	if (local_ip) {
-		ml_printf("Local interface IP address => %s", local_ip);
-	} else {
-		Int3();
-		ml_string("Local interface IP address => <undetermined>");
+		if (local_ip) {
+			ml_printf("Local interface address => %s", local_ip);
+		}
 	}
 
 	return true;
@@ -2172,8 +2216,12 @@ bool psnet_init_multicast()
 	const SCP_string port_str = std::to_string(DEFAULT_GAME_PORT + 10000);
 	SOCKADDR_STORAGE listenAddr, groupAddr;
 
+	if ( Psnet_my_ip.empty() ) {
+		return false;
+	}
+
 	// drop to IPv4 multicast if we are mapped
-	if ( IN6_IS_ADDR_V4MAPPED(&Psnet_my_ip) ) {
+	if ( IN6_IS_ADDR_V4MAPPED(&Psnet_my_ip[0]) ) {
 		family = AF_INET;
 	}
 

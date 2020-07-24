@@ -80,7 +80,6 @@ typedef uint PSNET_SOCKET_RELIABLE;
 #define PSNET_TYPE_VALIDATION				4
 
 extern net_addr Psnet_my_addr;							// address information of this machine
-extern in6_addr Psnet_my_ip;
 
 extern int Psnet_failure_code;
 
