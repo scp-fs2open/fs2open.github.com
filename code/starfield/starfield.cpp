@@ -1865,8 +1865,8 @@ void stars_preload_background(int background_idx)
 		return;
 
 	// preload all the stuff for this background
-	for (auto &sun : Backgrounds[background_idx].suns)
-		stars_preload_sun_bitmap(sun.filename);
+	for (auto &bgsun : Backgrounds[background_idx].suns)
+		stars_preload_sun_bitmap(bgsun.filename);
 	for (auto &bitmap : Backgrounds[background_idx].bitmaps)
 		stars_preload_background_bitmap(bitmap.filename);
 }
