@@ -131,8 +131,8 @@ void multi_port_forward_do()
 				memset(&int_ip, 0, sizeof(int_ip));
 				memset(&ext_ip, 0, sizeof(ext_ip));
 
-				inet_ntop(AF_INET6, &info->int_ip, int_ip, sizeof(int_ip));
-				inet_ntop(AF_INET6, &info->ext_ip, ext_ip, sizeof(ext_ip));
+				inet_ntop(AF_INET6, psnet_mask_addr(&info->int_ip), int_ip, sizeof(int_ip));
+				inet_ntop(AF_INET6, psnet_mask_addr(&info->ext_ip), ext_ip, sizeof(ext_ip));
 
 				ml_printf("Port forward => Mapping successful  [%s]:%u <-> [%s]:%u",
 						  int_ip, ntohs(info->int_port),
@@ -176,7 +176,7 @@ void multi_port_forward_close()
 #ifndef NDEBUG
 static void PF_logger_fn(pcp_loglvl_e /* lvl */, const char *msg)
 {
-	ml_printf("Port forward => %s", msg);
+	nprintf(("portfwd", "Port forward => %s", msg));
 }
 #endif
 

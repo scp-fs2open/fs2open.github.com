@@ -841,6 +841,31 @@ void psnet_map4to6(const in_addr *in4, in6_addr *in6)
 }
 
 /**
+ * Helper to anonymize IP address for logging purposes
+ */
+const in6_addr *psnet_mask_addr(const in6_addr *inaddr)
+{
+	static in6_addr addr;
+	size_t nbytes = 0;
+
+	memcpy(&addr, inaddr, sizeof(in6_addr));
+
+	if ( IN6_IS_ADDR_V4MAPPED(&addr) ) {
+		// zero last octet of IPv4 address
+		// (last byte)
+		nbytes = 1;
+	} else {
+		// zero last 80 bits of IPv6 address
+		// (last 10 bytes)
+		nbytes = 10;
+	}
+
+	memset(addr.s6_addr+(sizeof(addr)-nbytes), 0, nbytes);
+
+	return &addr;
+}
+
+/**
  * Helper to quickly test if ip string is in standard notation
  */
 static bool psnet_is_ip_notation(int af, const char *ip_string)
