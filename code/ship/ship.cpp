@@ -317,7 +317,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
     { "ship copy",					Info_Flags::Ship_copy,				true, false },
     { "in tech database",			Info_Flags::In_tech_database,		true, false },
     { "in tech database multi",		Info_Flags::In_tech_database_m,		true, false },
-    { "dont collide invisible",		Info_Flags::Ship_class_dont_collide_invis, true, false },
+    { "don't collide invisible",	Info_Flags::Ship_class_dont_collide_invis, true, false },
     { "big damage",					Info_Flags::Big_damage,				true, false },
     { "corvette",					Info_Flags::Corvette,				true, false },
     { "gas miner",					Info_Flags::Gas_miner,				true, false },
@@ -340,6 +340,9 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
     { "auto spread shields",		Info_Flags::Auto_spread_shields,	true, false },
     { "model point shields",		Info_Flags::Model_point_shields,	true, false },
     { "repair disabled subsystems", Info_Flags::Subsys_repair_when_disabled, true, false},
+	{ "don't bank when turning",	Info_Flags::Dont_bank_when_turning,		true, false },
+	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
+	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -3477,6 +3480,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			if (!stricmp(ship_strings[i], "no-collide") || !stricmp(ship_strings[i], "no_collide")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::No_collide);
+			}
+			if (!stricmp(ship_strings[i], "dont collide invisible")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::Ship_class_dont_collide_invis);
+			}
+			if (!stricmp(ship_strings[i], "dont bank when turning")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::Dont_bank_when_turning);
+			}
+			if (!stricmp(ship_strings[i], "dont clamp max velocity")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::Dont_clamp_max_velocity);
 			}
 
 			if ( !flag_found && (ship_type_index < 0) )

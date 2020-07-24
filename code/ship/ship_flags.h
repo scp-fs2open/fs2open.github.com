@@ -188,6 +188,9 @@ namespace Ship {
 		Draw_weapon_models,				// the ship draws weapon models of any sort (used to be a boolean)
 		Model_point_shields,			// zookeeper - uses model-defined shield points instead of quadrants
         Subsys_repair_when_disabled,    // MageKing17 - Subsystems auto-repair themselves even when disabled.
+		Dont_bank_when_turning,			// Goober5000
+		Dont_clamp_max_velocity,		// Goober5000
+		Instantaneous_acceleration,		// Goober5000
 
 		NUM_VALUES
 	};
