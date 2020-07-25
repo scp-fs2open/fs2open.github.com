@@ -41,6 +41,8 @@
 #define RENDERDOC_CC
 #elif defined(__APPLE__)
 #define RENDERDOC_CC
+#elif defined(SCP_SOLARIS)
+#define RENDERDOC_CC
 #else
 #error "Unknown platform"
 #endif
