@@ -3664,7 +3664,7 @@ void weapon_close()
 void weapon_level_init()
 {
 	int i;
-	extern int ships_inited;
+	extern bool Ships_inited;
 
 	// Reset everything between levels
 	Num_weapons = 0;
@@ -3677,7 +3677,7 @@ void weapon_level_init()
 		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
 		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
 
-		if ( ships_inited ) {
+		if ( Ships_inited ) {
 			// populate ship type lock restrictions
 			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
 				int idx = ship_type_name_lookup((char*)Weapon_info[i].ship_type_restrict_temp[j].c_str());
