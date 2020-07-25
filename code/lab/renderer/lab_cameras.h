@@ -72,4 +72,6 @@ private:
 	float distance = 100.0f;
 	float phi = 1.24f;
 	float theta = 2.25f;
+
+	void updateCamera();
 };

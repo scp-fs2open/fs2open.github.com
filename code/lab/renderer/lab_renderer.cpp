@@ -445,6 +445,6 @@ LabCamera* LabRenderer::getCurrentCamera() {
 }
 
 void LabRenderer::setCurrentCamera(LabCamera* newcam) {
-	delete newcam;
+	delete labCamera;
 	labCamera = newcam;
 }

@@ -26,6 +26,18 @@ void OrbitCamera::handleInput(int dx, int dy, bool lmbDown, bool rmbDown, int mo
 		}
 	}
 
+	updateCamera();
+}
+
+void OrbitCamera::displayedObjectChanged() {
+	if (LMGR->CurrentObject != -1) {
+		distance = Objects[LMGR->CurrentObject].radius * 1.6f;
+	}
+
+	updateCamera();
+}
+
+void OrbitCamera::updateCamera() {
 	auto cam = FS_camera.getCamera();
 	vec3d new_position;
 	new_position.xyz.x = sinf(phi) * cosf(theta);
@@ -36,10 +48,4 @@ void OrbitCamera::handleInput(int dx, int dy, bool lmbDown, bool rmbDown, int mo
 
 	cam->set_position(&new_position);
 	cam->set_rotation_facing(&LMGR->CurrentPosition);
-}
-
-void OrbitCamera::displayedObjectChanged() {
-	if (LMGR->CurrentObject != -1) {
-		distance = Objects[LMGR->CurrentObject].radius * 1.6f;
-	}
 }
