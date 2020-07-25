@@ -20,6 +20,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
+#ifdef SCP_SOLARIS
+#include <sys/filio.h>
+#endif
 
 #define WSAGetLastError()  (errno)
 #endif
