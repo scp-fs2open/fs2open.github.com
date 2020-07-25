@@ -1271,8 +1271,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
  */
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
 
-
 void gr_set_gamma(float gamma);
+
+void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

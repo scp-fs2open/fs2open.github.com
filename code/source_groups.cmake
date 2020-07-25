@@ -367,6 +367,7 @@ add_file_folder("Graphics"
 	graphics/decal_draw_list.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
+	graphics/grinternal.cpp
 	graphics/grinternal.h
 	graphics/light.cpp
 	graphics/light.h
@@ -376,6 +377,8 @@ add_file_folder("Graphics"
 	graphics/material.h
 	graphics/matrix.cpp
 	graphics/matrix.h
+	graphics/post_processing.cpp
+	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
 	graphics/shadows.cpp
@@ -385,43 +388,45 @@ add_file_folder("Graphics"
 	graphics/uniforms.h
 )
 
-# Graphics -> OpenGLGr files
-add_file_folder("Graphics\\\\OpenGLGr"
-)
+if (FSO_BUILD_WITH_OPENGL)
+	# Graphics -> OpenGLGr files
+	add_file_folder("Graphics\\\\OpenGLGr"
+	)
 
-# Graphics -> OpenGLGr -> OpenGL CPPs files
-add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
-	graphics/opengl/gropengl.cpp
-	graphics/opengl/gropenglbmpman.cpp
-	graphics/opengl/gropengldeferred.cpp
-	graphics/opengl/gropengldraw.cpp
-	graphics/opengl/gropenglpostprocessing.cpp
-	graphics/opengl/gropenglquery.cpp
-	graphics/opengl/gropenglshader.cpp
-	graphics/opengl/gropenglstate.cpp
-	graphics/opengl/gropenglsync.cpp
-	graphics/opengl/gropengltexture.cpp
-	graphics/opengl/gropengltnl.cpp
-	graphics/opengl/ShaderProgram.cpp
-)
+	# Graphics -> OpenGLGr -> OpenGL CPPs files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
+		graphics/opengl/gropengl.cpp
+		graphics/opengl/gropenglbmpman.cpp
+		graphics/opengl/gropengldeferred.cpp
+		graphics/opengl/gropengldraw.cpp
+		graphics/opengl/gropenglpostprocessing.cpp
+		graphics/opengl/gropenglquery.cpp
+		graphics/opengl/gropenglshader.cpp
+		graphics/opengl/gropenglstate.cpp
+		graphics/opengl/gropenglsync.cpp
+		graphics/opengl/gropengltexture.cpp
+		graphics/opengl/gropengltnl.cpp
+		graphics/opengl/ShaderProgram.cpp
+	)
 
-# Graphics -> OpenGLGr -> OpenGL Headers files
-add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
-	graphics/opengl/gropengl.h
-	graphics/opengl/gropenglbmpman.h
-	graphics/opengl/gropengldeferred.h
-	graphics/opengl/gropengldraw.h
-	graphics/opengl/gropenglpostprocessing.h
-	graphics/opengl/gropenglquery.h
-	graphics/opengl/gropenglshader.h
-	graphics/opengl/gropenglstate.h
-	graphics/opengl/gropenglsync.h
-	graphics/opengl/gropengltexture.h
-	graphics/opengl/gropengltnl.h
-	graphics/opengl/ShaderProgram.h
-	graphics/opengl/SmaaAreaTex.h
-	graphics/opengl/SmaaSearchTex.h
-)
+	# Graphics -> OpenGLGr -> OpenGL Headers files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
+		graphics/opengl/gropengl.h
+		graphics/opengl/gropenglbmpman.h
+		graphics/opengl/gropengldeferred.h
+		graphics/opengl/gropengldraw.h
+		graphics/opengl/gropenglpostprocessing.h
+		graphics/opengl/gropenglquery.h
+		graphics/opengl/gropenglshader.h
+		graphics/opengl/gropenglstate.h
+		graphics/opengl/gropenglsync.h
+		graphics/opengl/gropengltexture.h
+		graphics/opengl/gropengltnl.h
+		graphics/opengl/ShaderProgram.h
+		graphics/opengl/SmaaAreaTex.h
+		graphics/opengl/SmaaSearchTex.h
+	)
+endif()
 
 # Graphics -> Paths
 add_file_folder("Graphics\\\\Paths"

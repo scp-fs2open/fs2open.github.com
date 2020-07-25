@@ -23,7 +23,6 @@
 #include <graphics/2d.h>
 #include <graphics/material.h>
 #include <graphics/matrix.h>
-#include <graphics/opengl/gropenglpostprocessing.h>
 #include <hud/hudbrackets.h>
 #include <hud/hudtarget.h>
 #include <jumpnode/jumpnode.h>
@@ -151,7 +150,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 		return ade_set_error(L, "s", "");
 
 	SCP_vector<SCP_string> names;
-	get_post_process_effect_names(names);
+	gr_get_post_process_effect_names(names);
 	names.push_back(SCP_string("lightshafts"));
 
 	if (index >= (int) names.size())
@@ -163,7 +162,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")
 {
 	SCP_vector<SCP_string> names;
-	get_post_process_effect_names(names);
+	gr_get_post_process_effect_names(names);
 
 	// Add one for lightshafts
 	return ade_set_args(L, "i", ((int) names.size()) + 1);

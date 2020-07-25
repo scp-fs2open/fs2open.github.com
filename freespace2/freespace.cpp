@@ -625,8 +625,6 @@ DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
 
 float Supernova_last_glare = 0.0f;
 bool stars_sun_has_glare(int index);
-extern bool ls_on;
-extern bool ls_force_off;
 void game_sunspot_process(float frametime)
 {
 	TRACE_SCOPE(tracing::SunspotProcess);
@@ -702,7 +700,7 @@ void game_sunspot_process(float frametime)
 			for(idx=0; idx<n_lights; idx++)	{
 				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
 
-				if ( (ls_on && !ls_force_off) || !in_shadow )	{
+				if (gr_lightshafts_enabled() || !in_shadow) {
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
@@ -799,7 +797,7 @@ static void game_flash_diminish(float frametime)
 		g = fl2i( Game_flash_green*128.0f );   
 		b = fl2i( Game_flash_blue*128.0f );  
 
-		if ( Sun_spot > 0.0f && (!ls_on || ls_force_off))	{
+		if ( Sun_spot > 0.0f && !gr_lightshafts_enabled()) {
 			r += fl2i(Sun_spot*128.0f);
 			g += fl2i(Sun_spot*128.0f);
 			b += fl2i(Sun_spot*128.0f);

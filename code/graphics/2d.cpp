@@ -25,8 +25,8 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
-#include "graphics/opengl/gropengl.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/post_processing.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
@@ -42,6 +42,9 @@
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 
+#ifdef WITH_OPENGL
+#include "graphics/opengl/gropengl.h"
+#endif
 #ifdef WITH_VULKAN
 #include "graphics/vulkan/gr_vulkan.h"
 #endif
@@ -1020,7 +1023,9 @@ void gr_close()
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
+#ifdef WITH_OPENGL
 			gr_opengl_cleanup(true);
+#endif
 			break;
 	
 		case GR_STUB:
@@ -1327,7 +1332,12 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 
 	switch (mode) {
 	case GR_OPENGL:
+#ifdef WITH_OPENGL
 		rc = gr_opengl_init(std::move(graphicsOps));
+#else
+		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
+		rc = false;
+#endif
 		break;
 	case GR_VULKAN:
 #ifdef WITH_VULKAN
@@ -1338,6 +1348,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 #endif
 		break;
 	case GR_STUB:
+		SCP_UNUSED(graphicsOps);
 		rc = gr_stub_init();
 		break;
 	default:
@@ -1390,7 +1401,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
+#ifdef WITH_OPENGL
 				gr_opengl_cleanup(false);
+#endif
 				break;
 			
 			case GR_STUB:
@@ -2929,5 +2942,18 @@ void gr_set_gamma(float gamma)
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
 
 		vm_free(gamma_ramp);
+	}
+}
+
+void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)
+{
+	if (graphics::Post_processing_manager == nullptr) {
+		names.clear();
+		return;
+	}
+
+	const auto& effects = graphics::Post_processing_manager->getPostEffects();
+	for (const auto& eff : effects) {
+		names.push_back(eff.name);
 	}
 }
