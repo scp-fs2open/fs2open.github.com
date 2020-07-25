@@ -97,6 +97,7 @@ private:
 };
 
 class Actions : public LabDialog {
+public:
 	Actions() {
 		subDialogs.push_back(new DestroySubsystems());
 		subDialogs.push_back(new ChangeLoadout());

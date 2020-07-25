@@ -47,11 +47,6 @@ void LabRenderer::renderModel(float frametime) {
 
 	light_reset();
 
-	if (currentMissionBackground == "<none>") {
-		renderFlags.set(LabRenderFlag::NoLighting);
-		Motion_debris_enabled = true;
-	}
-
 	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
 
 	object* obj = &Objects[LMGR->CurrentObject];
@@ -61,12 +56,13 @@ void LabRenderer::renderModel(float frametime) {
 
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
 	Glowpoint_override = renderFlags[LabRenderFlag::NoGlowpoints];
+	PostProcessing_override = renderFlags[LabRenderFlag::HidePostProcessing];
 
 	if (obj->type == OBJ_SHIP) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::NoLighting]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == "None");
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
@@ -177,7 +173,7 @@ void LabRenderer::renderHud(float frametime) {
 	if (frametotal != 0.0f) {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
 			gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(),
-			"FPS: %3i Camera Distance: %4f", (int)std::lround(Framerate), cameraDistance);
+			"FPS: %3i %s", (int)std::lround(Framerate), labCamera->getOnFrameInfo().c_str());
 	}
 	else {
 		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(),
@@ -227,9 +223,8 @@ void LabRenderer::renderHud(float frametime) {
 	// Camera usage info
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
-		"Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
-		"zoom in or out. Use number keys to switch between AA presets. R to cycle model rotation "
-		"modes, S to cycle model rotation speeds, V to reset view.");
+		"%s Use number keys to switch between AA presets. R to cycle model rotation "
+		"modes, S to cycle model rotation speeds, V to reset view.", labCamera->getUsageInfo().c_str());
 
 	// Rotation mode
 	SCP_string text = get_rot_mode_string(LMGR->RotationMode);
@@ -248,6 +243,8 @@ void LabRenderer::useBackground(SCP_string mission_name) {
 	extern const char* Neb2_filenames[];
 
 	char envmap_name[MAX_FILENAME_LEN];
+
+	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
 	vm_set_identity(&skybox_orientation);

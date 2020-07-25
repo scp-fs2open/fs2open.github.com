@@ -9,6 +9,12 @@
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
 
+FLAG_LIST(ManagerFlags) {
+	ModelRotationEnabled,
+
+	NUM_VALUES
+};
+
 class LabManager {
 public:
 	LabManager();
@@ -58,6 +64,8 @@ public:
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
+
+	flagset<ManagerFlags> Flags;
 private:
 	SCP_vector<LabDialog*> Dialogs = {};
 

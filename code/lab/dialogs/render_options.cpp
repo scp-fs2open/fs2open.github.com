@@ -16,7 +16,7 @@ void set_show_insignia_flag(Checkbox* caller) {
 void set_show_damage_lightning_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, !value);
 }
 
 void set_rotate_subsys_flag(Checkbox* caller) {
@@ -94,31 +94,31 @@ void set_wireframe_flag(Checkbox* caller) {
 void set_renderlight_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoLighting, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoLighting, !value);
 }
 
 void set_fulldetail_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, !value);
 }
 
 void set_thrusters_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, !value);
 }
 
 void set_weapons_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, !value);
 }
 
 void set_emissive_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, !value);
 }
 
 void set_ambient_factor(Slider* caller) {

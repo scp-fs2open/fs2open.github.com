@@ -56,8 +56,9 @@ public:
 
 	SCP_string getOnFrameInfo() override {
 		SCP_stringstream ss;
+		ss.setf(std::ios::fixed);
 
-		ss << "Phi: " << phi << " Theta: " << theta << " Distance" << distance;
+		ss << "Phi: " << phi << " Theta: " << theta << " Distance: " << distance;
 
 		return ss.str();
 	}

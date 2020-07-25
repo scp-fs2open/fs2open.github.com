@@ -6,6 +6,7 @@
 #include "lab/dialogs/render_options.h"
 #include "lab/dialogs/material_overrides.h"
 #include "lab/dialogs/backgrounds.h"
+#include "lab/dialogs/actions.h"
 #include "io/key.h"
 #include "missionui/missionscreencommon.h"
 #include "debris/debris.h"
@@ -23,6 +24,7 @@ LabManager::LabManager() {
 	Dialogs.push_back(new ShipClasses());
 	Dialogs.push_back(new WeaponClasses());
 	Dialogs.push_back(new BackgroundDialog());
+	Dialogs.push_back(new Actions());
 	Dialogs.push_back(new RenderOptions());
 	Dialogs.push_back(new MaterialOverrides());
 
@@ -58,7 +60,7 @@ void LabManager::onFrame(float frametime) {
 
 	if (keyPressed) {
 		int key = GUI_system.GetKeyPressed();
-		int status = GUI_system.GetStatus();
+		//int status = GUI_system.GetStatus();
 
 		int dx, dy;
 		mouse_get_delta(&dx, &dy);
@@ -195,7 +197,6 @@ void LabManager::onFrame(float frametime) {
 		}
 	}
 
-	angles rot_angles;
 	float rev_rate;
 	ship_info* sip = nullptr;
 
@@ -235,6 +236,15 @@ void LabManager::onFrame(float frametime) {
 			rev_rate *= 3.0f;
 		}
 	}
+	
+	if (Flags[ManagerFlags::ModelRotationEnabled]) {
+		angles rot_angles;
+
+		rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = PI2 * frametime / rev_rate;
+		vm_rotate_matrix_by_angles(&CurrentOrientation, &rot_angles);
+	}
 
 	gr_flip();
 }
@@ -261,4 +271,6 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	for (auto const& dialog : Dialogs) {
 		dialog->update(CurrentMode, CurrentClass);
 	}
+
+	Renderer->getCurrentCamera()->displayedObjectChanged();
 }

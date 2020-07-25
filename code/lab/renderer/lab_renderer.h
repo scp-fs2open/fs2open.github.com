@@ -72,7 +72,7 @@ public:
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
 		currentTeamColor = "<none>";
-		currentMissionBackground = "<none>";
+		useBackground("None");
 
 		labCamera = cam;
 
@@ -106,11 +106,23 @@ public:
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
-	int setAmbientFactor(int factor) { ambientFactor = factor; return factor; }
+	int setAmbientFactor(int factor) { 
+		ambientFactor = factor; 
+		gr_calculate_ambient_factor(ambientFactor);
+		return factor; 
+	}
 
-	float setDirectionalFactor(float factor) { directionalFactor = factor; return factor; }
+	float setDirectionalFactor(float factor) { 
+		directionalFactor = factor; 
+		static_light_factor = factor;
+		return factor; 
+	}
 
-	int setBloomLevel(int level) { bloomLevel = level; return level; }
+	int setBloomLevel(int level) { 
+		bloomLevel = level; 
+		Cmdline_bloom_intensity = level;
+		return level; 
+	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
 
