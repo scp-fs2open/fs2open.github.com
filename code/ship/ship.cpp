@@ -7348,6 +7348,10 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	Assert ( wingp->current_count >= 0 );
 	wingp->ship_index[wingp->current_count] = -1;
 
+	// adjust the special ship if necessary
+	if (wingp->special_ship > 0 && wingp->special_ship >= index)
+		wingp->special_ship--;
+
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
 	{
