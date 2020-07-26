@@ -253,6 +253,8 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear().  This is sometimes called between setClip and resetClip", nullptr, nullptr)
 {
 	gr_clear();
+
+	(void)(L);	// avoid unused parameter warning
 	return ADE_RETURN_NIL;
 }
 
