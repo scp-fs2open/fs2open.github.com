@@ -2282,7 +2282,7 @@ void process_game_query(ubyte*  /*data*/, header* hinfo)
 
 	// check to be sure that we don't capture our own broadcast message
 	fill_net_addr(&addr, hinfo->addr, hinfo->port);
-	if ( psnet_same( &addr, &Psnet_my_addr) ){
+	if ( psnet_is_local_addr(&addr) ) {
 		return;
 	}
 

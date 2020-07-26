@@ -737,6 +737,41 @@ int psnet_same(net_addr *a1, net_addr *a2)
 }
 
 /**
+ * Compare against possible address of this machine
+ */
+
+bool psnet_is_local_addr(const net_addr *addr)
+{
+	// if port is different then skip the rest of the tests
+	if (addr->port != Psnet_default_port) {
+		return false;
+	}
+
+	auto *sin6_addr = reinterpret_cast<const in6_addr *>(&addr->addr);
+
+	// IPv6 loopback
+	if (IN6_IS_ADDR_LOOPBACK(sin6_addr)) {
+		return true;
+	}
+
+	// IPv4 loopback
+	if (IN6_IS_ADDR_V4MAPPED(sin6_addr)) {
+		if (reinterpret_cast<const uint32_t *>(sin6_addr)[3] == INADDR_LOOPBACK) {
+			return true;
+		}
+	}
+
+	// identified local interfaces
+	for (auto &in6 : Psnet_my_ip) {
+		if (IN6_ARE_ADDR_EQUAL(sin6_addr, &in6)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Send data unreliably
  */
 int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLINT(misc-unused-parameters)
@@ -764,7 +799,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
 		return 0;
 	}
 
-	if ( psnet_same(who_to_addr, &Psnet_my_addr) ) {
+	if ( psnet_is_local_addr(who_to_addr) ) {
 		return 0;
 	}
 

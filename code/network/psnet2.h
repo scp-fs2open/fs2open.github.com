@@ -148,6 +148,9 @@ bool psnet_string_to_addr(const char *text, net_addr *address);
 int psnet_same(SOCKADDR_IN6 *a1, SOCKADDR_IN6 *a2);
 int psnet_same(net_addr *a1, net_addr *a2);
 
+// check if address is local machine instance
+bool psnet_is_local_addr(const net_addr *addr);
+
 // send data unreliably
 int psnet_send(net_addr *who_to, void *data, int len, int np_index = -1);
 
