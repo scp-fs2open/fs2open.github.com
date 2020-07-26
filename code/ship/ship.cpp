@@ -942,6 +942,7 @@ void ship_info::clone(const ship_info& other)
 	weapon_model_draw_distance = other.weapon_model_draw_distance;
 
 	max_hull_strength = other.max_hull_strength;
+	ship_recoil_modifier = other.ship_recoil_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1228,6 +1229,7 @@ void ship_info::move(ship_info&& other)
 	weapon_model_draw_distance = other.weapon_model_draw_distance;
 
 	max_hull_strength = other.max_hull_strength;
+	ship_recoil_modifier = other.ship_recoil_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
