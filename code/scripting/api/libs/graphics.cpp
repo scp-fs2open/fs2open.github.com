@@ -250,6 +250,12 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
+ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear().  This is sometimes called between setClip and resetClip", nullptr, nullptr)
+{
+	gr_clear();
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
          "Clears the screen to black, or the color specified.", nullptr, nullptr)
 {
@@ -1198,8 +1204,8 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache]",
-		 "Plays a streaming animation, returning its handle. The optional booleans (except cache) can also be set via the handles virtvars<br>"
+ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache, boolean grayscale]",
+		 "Plays a streaming animation, returning its handle. The optional booleans (except cache and grayscale) can also be set via the handle's virtvars<br>"
 			 "cache is best set to false when loading animations that are only intended to play once, e.g. headz<br>"
 			 "Remember to call the unload() function when you're finished using the animation to free up memory.",
 		 "streaminganim",
@@ -1207,20 +1213,23 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 {
 	const char* s;
 	int rc = -1;
-	bool loop = false, reverse = false, pause = false, cache = true;
+	bool loop = false, reverse = false, pause = false, cache = true, grayscale = false;
 
-	if(!ade_get_args(L, "s|bbbb", &s, &loop, &reverse, &pause, &cache))
+	if(!ade_get_args(L, "s|bbbbb", &s, &loop, &reverse, &pause, &cache, &grayscale))
 		return ADE_RETURN_NIL;
 
 	streaminganim_h sah(s);
-	if (loop == false) {
+	if (!loop) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 	}
-	if (reverse == true) {
+	if (reverse) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_BACKWARDS;
 	}
-	if (pause == true) {
+	if (pause) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+	}
+	if (grayscale) {
+		sah.ga.use_hud_color = true;
 	}
 	rc = generic_anim_stream(&sah.ga, cache);
 
@@ -1266,7 +1275,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
 			 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
 			 "<br><strong>IMPORTANT:</strong> Textures will not be unload themselves unless you explicitly tell them to do so."
-			 "When you are done with a texture, call the Unload() function to free up memory.",
+			 "When you are done with a texture, call the unload() function to free up memory.",
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
@@ -1278,7 +1287,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if(b == true) {
+	if(b) {
 		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
 	}
 	if(idx < 0) {

@@ -46,6 +46,45 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(rand32,
+	l_Base,
+	"[number a, number b]",
+	"Calls FSO's rand32() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff).  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
+	"number",
+	"A random integer")
+{
+	int a, b;
+	int numargs = ade_get_args(L, "|ii", &a, &b);
+
+	int result;
+	if (numargs == 2)
+		result = rand32(a, b);
+	else if (numargs == 1)
+		result = rand32() % a;
+	else
+		result = rand32();
+
+	return ade_set_error(L, "i", result);
+}
+
+ADE_FUNC(rand32f,
+	l_Base,
+	"[number max]",
+	"Calls FSO's rand32() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
+	"number",
+	"A random float")
+{
+	float _max;
+	int numargs = ade_get_args(L, "|f", &_max);
+
+	float result = static_cast<float>(rand32()) / static_cast<float>(0x7fffffff);
+
+	if (numargs > 0)
+		result *= _max;
+
+	return ade_set_error(L, "f", _max);
+}
+
 ADE_FUNC(createOrientation,
 	l_Base,
 	ade_overload_list({nullptr,
