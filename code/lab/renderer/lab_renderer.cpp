@@ -86,13 +86,16 @@ void LabRenderer::renderModel(float frametime) {
 	if (renderFlags[LabRenderFlag::ShowWireframe])
 		model_render_set_wireframe_color(&Color_white);
 
-	if (renderFlags[LabRenderFlag::ShowThrusters]) {
+	if (renderFlags[LabRenderFlag::ShowThrusters] || renderFlags[LabRenderFlag::ShowAfterburners]) {
 		obj->phys_info.forward_thrust = 1.0f;
 		if (obj->type == OBJ_SHIP) {
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
 		}
-		if (renderFlags[LabRenderFlag::ShowAfterburners])
+		if (renderFlags[LabRenderFlag::ShowAfterburners]) {
 			obj->phys_info.flags |= PF_AFTERBURNER_ON;
+			// Keep the AB topped off
+			Ships[obj->instance].afterburner_fuel = Ship_info[Ships[obj->instance].ship_info_index].afterburner_fuel_capacity;
+		}
 		else
 			obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
 	}

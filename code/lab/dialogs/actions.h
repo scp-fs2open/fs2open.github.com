@@ -125,8 +125,5 @@ public:
 
 private:
 	DialogWindow* dialogWindow = nullptr;
-	bool weaponsLoaded = false;
 	SCP_vector<LabDialog*> subDialogs;
-
-	void loadWeapons();
 };

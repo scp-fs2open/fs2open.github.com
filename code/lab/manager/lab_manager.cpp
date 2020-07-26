@@ -50,6 +50,32 @@ LabManager::LabManager() {
 	particle::init();
 
 	ai_paused = 1;
+
+	// do some other setup
+	// External weapon displays require a call to weapons_page_in, which in turn requires team data to be set
+	Num_teams = 1;
+
+	team_data* teamp = &Team_data[0];
+
+	// In the lab, all ships are valid
+	for (size_t i = 0; i < Ship_info.size(); ++i) {
+		teamp->ship_list[i] = static_cast<int>(i);
+		strcpy_s(teamp->ship_list_variables[i], "");
+		teamp->ship_count[i] = 1;
+		teamp->loadout_total += 1;
+		strcpy_s(teamp->ship_count_variables[i], "");
+	}
+	teamp->default_ship = 0;
+	teamp->num_ship_choices = static_cast<int>(Ship_info.size());
+
+	// you want guns? you get guns.
+	for (size_t i = 0; i < Weapon_info.size(); ++i) {
+		teamp->weaponry_pool[i] = static_cast<int>(i);
+		teamp->weaponry_count[i] = 640; // should be enough for everyone
+		strcpy_s(teamp->weaponry_amount_variable[i], "");
+		strcpy_s(teamp->weaponry_pool_variable[i], "");
+	}
+	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
 }
 
 void LabManager::onFrame(float frametime) {
@@ -211,6 +237,8 @@ void LabManager::onFrame(float frametime) {
 				Ships[obj->instance].weapons.current_primary_bank = i;
 
 				ship_fire_primary(obj, 0);
+
+				Ships[obj->instance].weapon_energy = sip->max_weapon_reserve;
 			}
 		}
 
@@ -257,11 +285,12 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	CurrentClass = info_index;
 
 	if (CurrentObject != -1)
-		obj_delete(CurrentObject);
+		obj_delete_all();
 
 	switch (CurrentMode) {
 	case LabMode::Ship:
 		CurrentObject = ship_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
+		changeShipInternal();
 		break;
 	case LabMode::Weapon:
 		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
@@ -273,4 +302,34 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	}
 
 	Renderer->getCurrentCamera()->displayedObjectChanged();
+}
+
+void LabManager::changeShipInternal() {
+	auto ship_objp = &Ships[Objects[CurrentObject].instance];
+	auto ship_infop = &Ship_info[ship_objp->ship_info_index];
+
+	// This is normally set during mission parse
+	ship_objp->special_exp_damage = -1;
+
+	// If the ship class defines replacement textures, load them and apply them to the ship
+	// load the texture
+	auto replacements = SCP_vector<texture_replace>();
+	for (auto tr : ship_infop->replacement_textures) {
+		if (!stricmp(tr.new_texture, "invisible"))
+		{
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		}
+		else
+		{
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+		replacements.push_back(tr);
+	}
+
+	ship_objp->apply_replacement_textures(replacements);
+	ship_page_in_textures(ship_objp->ship_info_index);
+
+	Renderer->setTeamColor(ship_infop->default_team_name);
 }

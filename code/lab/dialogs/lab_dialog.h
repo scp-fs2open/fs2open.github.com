@@ -8,7 +8,7 @@ public:
 	// Called when this dialog is opened via the top toolbar
 	virtual void open(Button* caller) = 0;
 
-	// Called when the dialog is closed
+	// Called when the dialog's window is closed
 	virtual void close() = 0;
 
 	// Called when the global state changes (e.g. other ship/weapon being selected)
@@ -21,6 +21,8 @@ public:
 	virtual bool safeToOpen(LabMode labMode) = 0;
 };
 
+// This is a base class for Windows opened by the various dialogs. Since dialogs exist even when their Windows are closed,
+// this introduces the concept of an "Owner", who gets notified when the DialogWindow is closed.
 class DialogWindow : public Window {
 public:
 	void SetOwner(LabDialog* owner) { Owner = owner; }

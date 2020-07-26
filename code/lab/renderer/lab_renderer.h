@@ -9,6 +9,7 @@
 #include "globalincs/systemvars.h"
 #include "starfield/starfield.h"
 #include "graphics/light.h"
+#include "globalincs/alphacolors.h"
 
 FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
@@ -99,9 +100,31 @@ public:
 		Motion_debris_override = false;
 	}
 
-	void useNextTeamColorPreset() {}
+	void useNextTeamColorPreset() {
+		auto color_itr = Team_Colors.find(currentTeamColor);
 
-	void usePreviousTeamColorPreset() {}
+		if (color_itr == Team_Colors.begin()) {
+			color_itr = --Team_Colors.end();
+			currentTeamColor = color_itr->first;
+		}
+		else {
+			--color_itr;
+			currentTeamColor = color_itr->first;
+		}
+	}
+
+	void usePreviousTeamColorPreset() {
+		auto color_itr = Team_Colors.find(currentTeamColor);
+
+		++color_itr;
+		if (color_itr == Team_Colors.end())
+			color_itr = Team_Colors.begin();
+		currentTeamColor = color_itr->first;
+	}
+
+	void setTeamColor(SCP_string color) {
+		currentTeamColor = color;
+	}
 
 	void resetView() {}
 

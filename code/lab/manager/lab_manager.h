@@ -59,6 +59,15 @@ public:
 		return CurrentMode == LabMode::Weapon && CurrentObject != -1;
 	}
 
+	void loadWeapons() {
+		if (!Weapons_loaded) {
+			extern void weapons_page_in();
+			weapons_page_in();
+
+			Weapons_loaded = true;
+		}
+	}
+
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;
 
@@ -71,4 +80,7 @@ private:
 
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
+	bool Weapons_loaded = false;
+
+	void changeShipInternal();
 };

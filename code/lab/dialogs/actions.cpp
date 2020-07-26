@@ -169,8 +169,7 @@ void Actions::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 	
-	if (!weaponsLoaded)
-		loadWeapons();
+	LMGR->loadWeapons();
 
 	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
@@ -194,13 +193,6 @@ void Actions::update(LabMode newLabMode, int classIndex) {
 	for (auto dialog : subDialogs) {
 		dialog->update(newLabMode, classIndex);
 	}
-}
-
-void Actions::loadWeapons() {
-	extern void weapons_page_in();
-	weapons_page_in();
-
-	weaponsLoaded = true;
 }
 
 void DestroySubsystems::open(Button* /*caller*/) {
