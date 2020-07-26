@@ -27,6 +27,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multiteamselect.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "object/deadobjectdock.h"
@@ -233,12 +234,10 @@ void red_alert_button_pressed(int n)
 		mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
 		if(Game_mode & GM_MULTIPLAYER){	
-			// process the initial orders now (moved from post_process_mission()in missionparse) 
-			mission_parse_fixup_players();
-			ai_post_process_mission();
+			multi_ts_commit_pressed();
+		} else {
+			gameseq_post_event(GS_EVENT_ENTER_GAME);
 		}
-
-		gameseq_post_event(GS_EVENT_ENTER_GAME);
 		break;
 
 	case RA_REPLAY_MISSION:
@@ -350,6 +349,10 @@ void red_alert_init()
 	// we have to reset/setup the shipselect and weaponselect pointers before moving on
 	ship_select_common_init();
 	weapon_select_common_init();
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_ts_common_init();
+	}
 
 	Text_delay = timestamp(200);
 
@@ -1091,15 +1094,25 @@ void red_alert_maybe_move_to_next_mission()
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
 		red_alert_store_wingman_status();
 		mission_goal_fail_incomplete();
-		mission_campaign_store_goals_and_events_and_variables();
-		scoring_level_close();
-		mission_campaign_eval_next_mission();
-		mission_campaign_mission_over();
 
-		// CD CHECK
-		gameseq_post_event(GS_EVENT_START_GAME);
+		if (Game_mode & GM_MULTIPLAYER) {
+			// this should handle close-out and moving to next mission
+			gameseq_post_event(GS_EVENT_DEBRIEF);
+		} else {
+			mission_campaign_store_goals_and_events_and_variables();
+			scoring_level_close();
+			mission_campaign_eval_next_mission();
+			mission_campaign_mission_over();
+
+			// CD CHECK
+			gameseq_post_event(GS_EVENT_START_GAME);
+		}
 	} else {
-		gameseq_post_event(GS_EVENT_END_GAME);
+		if (Game_mode & GM_MULTIPLAYER) {
+			gameseq_post_event(GS_EVENT_DEBRIEF);
+		} else {
+			gameseq_post_event(GS_EVENT_END_GAME);
+		}
 	}
 }
 
