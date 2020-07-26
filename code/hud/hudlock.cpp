@@ -1594,7 +1594,7 @@ void hud_do_lock_indicators(float frametime)
 			num_active_seekers++;
 		}
 
-		if ( current_lock_status == false && lock_slot->locked == true ) {
+		if ( !current_lock_status && lock_slot->locked ) {
 			if ( Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop) ) {
 				snd_stop(Missile_lock_loop);
 			}
@@ -1602,7 +1602,7 @@ void hud_do_lock_indicators(float frametime)
 			Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_TRACKING)));
 
 			lock_slot->locked_timestamp = timestamp();
-		} else if ( lock_slot->locked == false ) {
+		} else if ( !lock_slot->locked ) {
 			Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
 		}
 

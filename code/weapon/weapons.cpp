@@ -8239,6 +8239,6 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
 {
 	// Determine if there are any restrictions, treating an empty list as true
-	return (wip->ship_type_restrict.size() == 0) || 
+	return (wip->ship_type_restrict.empty()) || 
 			std::any_of(wip->ship_type_restrict.begin(), wip->ship_type_restrict.end(), [ship_type](int type) { return type == ship_type; });
 }
