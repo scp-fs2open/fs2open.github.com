@@ -117,6 +117,14 @@ void load_fonts()
 		// The file extension gets removed by CFile
 		FontDatabase::LoadFontFace((name + ".ttf").c_str());
 	}
+
+	files.clear();
+	cf_get_file_list(files, CF_TYPE_FONT, "*.otf");
+
+	for (auto& name : files) {
+		// The file extension gets removed by CFile
+		FontDatabase::LoadFontFace((name + ".otf").c_str());
+	}
 }
 
 bool mouse_motion_handler(const SDL_Event& evt)
