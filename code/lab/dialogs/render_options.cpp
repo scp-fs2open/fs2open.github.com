@@ -4,13 +4,13 @@
 void set_model_rotation_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ModelRotationEnabled, value);
+	LMGR->Flags.set(ManagerFlags::ModelRotationEnabled, !value);
 }
 
 void set_show_insignia_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, !value);
 }
 
 void set_show_damage_lightning_flag(Checkbox* caller) {
@@ -22,13 +22,13 @@ void set_show_damage_lightning_flag(Checkbox* caller) {
 void set_rotate_subsys_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::RotateSubsystems, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::RotateSubsystems, !value);
 }
 
 void set_post_proc_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, value);
+	LMGR->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, !value);
 }
 
 void set_diffuse_flag(Checkbox* caller) {
@@ -130,13 +130,13 @@ void set_ambient_factor(Slider* caller) {
 void set_static_light_factor(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	LMGR->Renderer->setAmbientFactor(fl2i(value));
+	LMGR->Renderer->setDirectionalFactor(fl2i(value));
 }
 
 void set_bloom(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	LMGR->Renderer->setAmbientFactor(fl2i(value));
+	LMGR->Renderer->setBloomLevel(fl2i(value));
 }
 
 void change_detail_texture(Tree* caller) {

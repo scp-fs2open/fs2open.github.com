@@ -8,6 +8,7 @@
 #include "lab/renderer/lab_cameras.h"
 #include "globalincs/systemvars.h"
 #include "starfield/starfield.h"
+#include "graphics/light.h"
 
 FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
@@ -108,7 +109,7 @@ public:
 
 	int setAmbientFactor(int factor) { 
 		ambientFactor = factor; 
-		gr_calculate_ambient_factor(ambientFactor);
+		Cmdline_ambient_factor = factor;
 		return factor; 
 	}
 
