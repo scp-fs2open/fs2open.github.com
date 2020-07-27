@@ -25,6 +25,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
@@ -671,6 +672,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
+
+	Script_system.SetHookObject("Debris", obj);
+	Script_system.SetHookObject("Source", source_obj);
+	Script_system.RunCondition(CHA_ONDEBRISCREATED);
+	Script_system.RemHookVars(2, "Debris", "Source");
 
 	return obj;
 }
