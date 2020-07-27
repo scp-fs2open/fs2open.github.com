@@ -1780,7 +1780,7 @@ extern int Homing_hits, Homing_misses;
 
 // Call this instead of physics_apply_whack directly to 
 // deal with two docked ships properly.
-// Goober5000 - note... hit_pos is in *local* coordinates
+// Goober5000 - note... hit_pos is in *world* coordinates
 void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 {
 	Assertion((objp != nullptr) && (force != nullptr) && (hit_pos != nullptr), "ship_apply_whack invalid argument(s)");
@@ -1792,19 +1792,18 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
-	
-	// get the world coords hit position relative to the ship
-	vec3d rel_world_hit_pos;
-	vm_vec_unrotate(&rel_world_hit_pos, hit_pos, &objp->orient);
 
 
 	if (object_is_docked(objp))
 	{
-		dock_calculate_and_apply_whack_docked_object(force, &rel_world_hit_pos, objp);
+		dock_calculate_and_apply_whack_docked_object(force, hit_pos, objp);
 	}
 	else
 	{
-		physics_calculate_and_apply_whack(force, &rel_world_hit_pos, &objp->phys_info, &objp->orient, objp->phys_info.mass, &objp->phys_info.I_body_inv);
+		// this one needs local position but since it doesn't have the objp its easier to just do this now
+		vec3d rel_hit_pos;
+		vm_vec_sub(&rel_hit_pos, hit_pos, &objp->pos);
+		physics_calculate_and_apply_whack(force, &rel_hit_pos, &objp->phys_info, &objp->orient, &objp->phys_info.I_body_inv);
 	}					
 }
 

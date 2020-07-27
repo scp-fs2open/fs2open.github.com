@@ -1,6 +1,7 @@
 
 #include "physics_info.h"
 #include "vecmath.h"
+#include "math/vecmat.h"
 #include "ship/shiphit.h"
 
 namespace scripting {
@@ -458,7 +459,7 @@ ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if 
 		return ade_set_args(L, "b",  false);
 }
 
-ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object at a position (a local vector) based on impulse supplied (a world vector). If no position is supplied, an empty vector is used.", "boolean", "true if it succeeded, false otherwise")
+ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object at a position relative to the ship, in world orientation based on an impulse vector, indicating the direction and strength of the whack. If no position is supplied, an empty vector is used.", "boolean", "true if it succeeded, false otherwise")
 {
 	object_h objh;
 	physics_info_h *pih;
@@ -469,6 +470,28 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 		return ADE_RETURN_NIL;
 
 	objh = pih->objh;
+	vm_vec_add2(offset, &objh.objp->pos);
+
+	ship_apply_whack(impulse, offset, objh.objp);
+
+	return ADE_RETURN_TRUE;
+
+}
+
+ADE_FUNC(applyWhackWorld, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object at a world position based on an impulse vector, indicating the direction and strength of whack. If no position is supplied, the ship's position will be used.", "boolean", "true if it succeeded, false otherwise")
+{
+	object_h objh;
+	physics_info_h* pih;
+	vec3d* impulse;
+	vec3d* offset = &vmd_zero_vector;
+
+	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
+		return ADE_RETURN_NIL;
+
+	objh = pih->objh;
+	if (!IS_VEC_NULL(offset)) {
+		offset = &objh.objp->pos;
+	}
 
 	ship_apply_whack(impulse, offset, objh.objp);
 

@@ -7800,11 +7800,12 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 			switch ( objp->type ) {
 			case OBJ_SHIP:
 				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage );
-				vec3d force, vec_ship_to_impact;
+				vec3d force, vec_ship_to_impact, world_hit_pos;
 				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
 				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 				vm_vec_scale( &force, blast );
-				ship_apply_whack( &force, &vec_ship_to_impact, objp );
+				vm_vec_add(&world_hit_pos, &vec_ship_to_impact, &objp->pos);
+				ship_apply_whack( &force, &world_hit_pos, objp );
 				break;
 			case OBJ_ASTEROID:
 				asteroid_hit(objp, NULL, NULL, damage);
@@ -7868,6 +7869,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_copy_scale(&impulse_vec, &impulse_norm, impulse_mag);
 		vm_vec_rand_vec_quick(&pos);
 		vm_vec_scale(&pos, docked_objp->radius);
+		vm_vec_add2(&pos, &docked_objp->pos);
 		// apply whack to docked object
 		ship_apply_whack(&impulse_vec, &pos, docked_objp);
 		// enhance rotation of the docked object
@@ -7877,6 +7879,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_negate(&impulse_vec);
 		vm_vec_rand_vec_quick(&pos);
 		vm_vec_scale(&pos, dying_objp->radius);
+		vm_vec_add2(&pos, &dying_objp->pos);
 		ship_apply_whack(&impulse_vec, &pos, dying_objp);
 
 		// unlink the two objects, since dying_objp has blown up
@@ -16977,6 +16980,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 
 		// set for relative separation speed (see also do_dying_undock_physics)
 		pos = docker_p0_norm;
+		vm_vec_add2(&pos, &cargo_objp->pos);
 		vm_vec_copy_scale(&impulse, &docker_p0_norm, jettison_speed * cargo_objp->phys_info.mass);
 	}
 	else
@@ -16986,6 +16990,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 		impulse = pos;
 		vm_vec_scale(&impulse, 100.0f);
 		vm_vec_normalize(&pos);
+		vm_vec_add2(&pos, &cargo_objp->pos);
 	}
 
 	// whack the ship

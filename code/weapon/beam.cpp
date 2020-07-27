@@ -3300,9 +3300,7 @@ void beam_handle_collisions(beam *b)
 				// if this is the first hit on the player ship. whack him
 				if(apply_beam_physics)
 				{
-					// Goober5000 - AGH!  BAD BAD BAD BAD BAD BAD BAD BAD bug!  The whack's hit point is in *local*
-					// coordinates, NOT world coordinates!
-					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point);
+					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
 			}		
