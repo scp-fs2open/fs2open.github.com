@@ -11929,33 +11929,34 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if ( aip->current_target_is_locked <= 0 ) {
-			if ( obj == Player_obj ) {			
-				if ( !Weapon_energy_cheat ) {
+		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty()) {
+			if (obj == Player_obj) {
+				if (!Weapon_energy_cheat) {
 					float max_dist;
 
 					max_dist = wip->lifetime * wip->max_speed;
-					if (wip->wi_flags[Weapon::Info_Flags::Local_ssm]){
-						max_dist= wip->lssm_lock_range;
+					if (wip->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+						max_dist = wip->lssm_lock_range;
 					}
 
-					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too far from target to acquire lock", 487));
+					if ((aip->target_objnum != -1) &&
+						(vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
 						strcpy_s(missile_name, wip->get_display_string());
 						end_string_at_first_hash_symbol(missile_name);
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot fire %s without a lock", 488), missile_name);
 					}
 
-					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
-					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
+					snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)));
+					swp->next_secondary_fire_stamp[bank] = timestamp(800); // to avoid repeating messages
 					return 0;
 				}
 			} else {
 				// multiplayer clients should always fire the weapon here, so return only if not
 				// a multiplayer client.
-				if ( !MULTIPLAYER_CLIENT ) {
+				if (!MULTIPLAYER_CLIENT) {
 					return 0;
 				}
 			}
@@ -11986,16 +11987,21 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 	}
 
-
+	if ( !allow_swarm && obj == Player_obj ) {
+		ship_queue_missile_locks(shipp);
+	}
 
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
-		if(wip->swarm_count <= 0){
+		if (wip->multi_lock && obj == Player_obj) {
+			shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
+		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
 			shipp->num_swarm_missiles_to_fire = wip->swarm_count;
 		}
+
 		shipp->swarm_missile_bank = bank;
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}
@@ -12004,7 +12010,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
+		if (wip->multi_lock && obj == Player_obj) {
+			shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
+		} else {
+			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
+		}
 		shipp->corkscrew_missile_bank = bank;
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}	
@@ -12018,7 +12028,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
 	}
-	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
+	swp->next_secondary_fire_stamp[bank] = timestamp((int)(t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
 
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
@@ -12044,6 +12054,33 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		if ( bank > pm->n_missiles ) {
 			nprintf(("WARNING","WARNING ==> Tried to fire bank %d, but ship has only %d banks\n", bank+1, pm->n_missiles));
 			return 0;		// we can make a quick out here!!!
+		}
+
+		int target_objnum;
+		ship_subsys *target_subsys;
+		int locked;
+
+		if ( obj == Player_obj ) {
+			// use missile lock slots
+			if ( !shipp->missile_locks_firing.empty() ) {
+				lock_info lock_data = shipp->missile_locks_firing.back();
+
+				if ( wip->multi_lock ) {
+					shipp->missile_locks_firing.pop_back();
+				}
+
+				target_objnum = OBJ_INDEX(lock_data.obj);
+				target_subsys = lock_data.subsys;
+				locked = 1;
+			} else {
+				target_objnum = -1;
+				target_subsys = nullptr;
+				locked = 0;
+			}
+		} else {
+			target_objnum = aip->target_objnum;
+			target_subsys = aip->targeted_subsys;
+			locked = aip->current_target_is_locked;
 		}
 
 		num_slots = pm->missile_banks[bank].num_slots;
@@ -12156,7 +12193,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
@@ -12168,7 +12205,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
-				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), target_objnum, locked, target_subsys);
 				has_fired = true;
 
 				// create the muzzle flash effect
@@ -19316,5 +19353,136 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single)
 
 	// should never reach here
 	Assertion(false, "ship::is_arriving didn't handle all possible states; get a coder!");
+	return false;
+}
+
+void ship_clear_lock(lock_info *slot) {
+	vec3d zero_vec = ZERO_VECTOR;
+
+	slot->accumulated_x_pixels = 0;
+	slot->accumulated_y_pixels = 0;
+
+	slot->catch_up_distance = 0.0f;
+
+	slot->catching_up = 0;
+
+	slot->current_target_sx = -1;
+	slot->current_target_sy = -1;
+
+	slot->dist_to_lock = 0.0f;
+
+	slot->indicator_start_x = -1;
+	slot->indicator_start_y = -1;
+
+	slot->indicator_visible = false;
+
+	slot->indicator_x = -1;
+	slot->indicator_y = -1;
+
+	slot->last_dist_to_target = 0.0f;
+
+	slot->locked_timestamp = 0;
+
+	slot->maintain_lock_count = 0;
+
+	slot->need_new_start_pos = false;
+
+	slot->target_in_lock_cone = false;
+
+	slot->world_pos = zero_vec;
+
+	slot->locked = false;
+
+	slot->obj = nullptr;
+	slot->subsys = nullptr;
+
+
+	slot->time_to_lock = -1.0f;
+}
+
+void ship_queue_missile_locks(ship *shipp)
+{
+	shipp->missile_locks_firing.clear();
+
+	// queue up valid missile locks
+	std::copy_if(shipp->missile_locks.begin(), shipp->missile_locks.end(), std::back_inserter(shipp->missile_locks_firing), [](lock_info lock) { return lock.locked; });
+}
+
+bool ship_lock_present(ship *shipp)
+{
+	return std::any_of(shipp->missile_locks.begin(), shipp->missile_locks.end(), [](lock_info lock) { return lock.locked; });
+}
+
+bool ship_start_secondary_fire(object* objp)
+{
+	Assert( objp != nullptr);
+
+	if ( objp->type != OBJ_SHIP ) {
+		return false;
+	}
+
+	int n = objp->instance;
+
+	Assert( n >= 0 && n < MAX_SHIPS );
+	Assert( Ships[n].objnum == OBJ_INDEX(objp) );
+
+	ship *shipp = &Ships[n];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon* swp = &shipp->weapons;
+
+	int bank = swp->current_secondary_bank;
+
+	if ( bank < 0 || bank >= sip->num_secondary_banks ) {
+		return false;
+	}
+
+	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+
+	if ( wip->trigger_lock ) {
+		swp->flags.set(Ship::Weapon_Flags::Trigger_Lock);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool ship_stop_secondary_fire(object* objp)
+{
+	Assert( objp != nullptr);
+
+	if ( objp->type != OBJ_SHIP ) {
+		return false;
+	}
+
+	int n = objp->instance;
+
+	if ( n < 0 || n >= MAX_SHIPS ) {
+		return false;
+	}
+	Assert( Ships[n].objnum == OBJ_INDEX(objp) );
+
+	ship *shipp = &Ships[n];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	ship_weapon *swp = &shipp->weapons;
+
+	int bank = swp->current_secondary_bank;
+
+	if ( bank < 0 || bank >= sip->num_secondary_banks ) {
+		return false;
+	}
+
+	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+
+	if ( wip->trigger_lock && swp->flags[Ship::Weapon_Flags::Trigger_Lock]) {
+		swp->flags.remove(Ship::Weapon_Flags::Trigger_Lock);
+
+		return true;
+	}
+	
 	return false;
 }

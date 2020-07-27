@@ -61,9 +61,10 @@ class player;
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // version 48 - 8/15/2016 Multiple changes to the packet format for multi sexps
+// version 49 - 7/26/2020 Addition of multilock
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							148
+#define MULTI_FS_SERVER_VERSION							49
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
