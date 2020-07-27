@@ -1034,6 +1034,48 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 	return ade_set_args(L, "i", 0);
 }
 
+ADE_FUNC(isDepartingWarp, l_Ship, nullptr, "Checks if the ship is departing via warp", "boolean", "True if the Depart_warp flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Depart_warp]);
+}
+
+ADE_FUNC(isDepartingDockbay, l_Ship, nullptr, "Checks if the ship is departing via warp", "boolean", "True if the Depart_dockbay flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Depart_dockbay]);
+}
+
+ADE_FUNC(isDying, l_Ship, nullptr, "Checks if the ship is dying (doing its death roll)", "boolean", "True if the Dying flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Dying]);
+}
+
 ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the ship", "boolean", "Whether countermeasure was launched or not")
 {
 	object_h *objh;
