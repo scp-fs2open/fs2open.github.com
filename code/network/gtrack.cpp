@@ -281,7 +281,7 @@ int InitGameTrackerClient(int gametype)
 	GameOverPacket.type = GNT_GAMEOVER;
 
 	// This would be a good place to resolve the IP based on a domain name
-	psnet_get_addr(Multi_options_g.game_tracker_ip, GAMEPORT, &gtrackaddr);
+	psnet_get_addr(Multi_options_g.game_tracker_ip, GAMEPORT, &gtrackaddr, ADDR_FLAG_PREFER_IPV4);
 
 	SDL_zero(GameBuffer);
 

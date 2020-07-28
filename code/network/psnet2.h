@@ -173,6 +173,9 @@ void psnet_mark_received(PSNET_SOCKET_RELIABLE socketid);
 bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, int flags = 0);
 bool psnet_get_addr(const char *host, uint16_t port, SOCKADDR_STORAGE *addr, int flags = 0);
 
+#define ADDR_FLAG_NUMERIC_SERVICE	(1<<0)
+#define ADDR_FLAG_PREFER_IPV4		(1<<1)
+
 // map an IPv4 address to IPv6
 void psnet_map4to6(const in_addr *in4, in6_addr *in6);
 

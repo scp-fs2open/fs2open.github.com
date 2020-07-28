@@ -45,6 +45,13 @@
 net_addr Psnet_my_addr;
 static SCP_vector<in6_addr> Psnet_my_ip;
 
+#define PSNET_IP_MODE_UNKNOWN	0
+#define PSNET_IP_MODE_V4		1
+#define PSNET_IP_MODE_V6		2
+#define PSNET_IP_MODE_DUAL		3
+
+static int Psnet_ip_mode = PSNET_IP_MODE_UNKNOWN;
+
 static bool Psnet_active = false;
 static bool Can_broadcast = false;
 
@@ -632,6 +639,14 @@ bool psnet_init_my_addr()
 		return false;
 	}
 
+	if (Psnet_my_ip.size() > 1) {
+		Psnet_ip_mode = PSNET_IP_MODE_DUAL;
+	} else if ( IN6_IS_ADDR_V4MAPPED(&Psnet_my_ip[0]) ) {
+		Psnet_ip_mode = PSNET_IP_MODE_V4;
+	} else {
+		Psnet_ip_mode = PSNET_IP_MODE_V6;
+	}
+
 	// prefer IPv4 address if avaiable (last entry), for maximum compatibility
 	// TODO: something more robust probably needs to happen with this
 	memcpy(&Psnet_my_addr.addr, &Psnet_my_ip.back(), sizeof(in6_addr));
@@ -1103,7 +1118,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = 0;
-	hints.ai_flags = AI_V4MAPPED | flags;
+	hints.ai_flags = AI_V4MAPPED;
+
+	if (flags & ADDR_FLAG_NUMERIC_SERVICE) {
+		hints.ai_flags |= AI_NUMERICSERV;
+	}
 
 	if (host == nullptr) {
 		hints.ai_flags |= AI_PASSIVE;
@@ -1111,6 +1130,14 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 		// avoid dns lookups if we can
 		if ( psnet_is_ip_notation(AF_UNSPEC, host) ) {
 			hints.ai_flags |= AI_NUMERICHOST;
+		}
+		// skip AAAA lookups if we can't use them
+		else if (Psnet_ip_mode == PSNET_IP_MODE_V4) {
+			hints.ai_family = AF_INET;
+		}
+		// skip A lookups if we can't use them
+		else if (Psnet_ip_mode == PSNET_IP_MODE_V6) {
+			hints.ai_family = AF_INET6;
 		}
 	}
 
@@ -1123,6 +1150,8 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 
 		return false;
 	}
+
+	const bool prefer_v4 = ((flags & ADDR_FLAG_PREFER_IPV4) && (Psnet_ip_mode == PSNET_IP_MODE_DUAL));
 
 	for (auto *srv = srvinfo; srv != nullptr; srv = srv->ai_next) {
 		if ( (srv->ai_family == AF_INET) || (srv->ai_family == AF_INET6) ) {
@@ -1137,12 +1166,17 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 					psnet_map4to6(&si4->sin_addr, &si4to6.sin6_addr);
 
 					memcpy(addr, &si4to6, sizeof(si4to6));
-				} else {
+				} else if (success == false) {
 					memcpy(addr, srv->ai_addr, srv->ai_addrlen);
 				}
 			}
 
 			success = true;
+
+			// if we would prefer an IPv4 address then maybe keep looking
+			if ( prefer_v4 && addr && (srv->ai_family == AF_INET6) ) {
+				continue;
+			}
 
 			break;
 		}
@@ -1157,7 +1191,7 @@ bool psnet_get_addr(const char *host, const uint16_t port, SOCKADDR_STORAGE *add
 {
 	SCP_string port_str = std::to_string(port);
 
-	return psnet_get_addr(host, port_str.c_str(), addr, flags | AI_NUMERICSERV);
+	return psnet_get_addr(host, port_str.c_str(), addr, flags | ADDR_FLAG_NUMERIC_SERVICE);
 }
 
 // -------------------------------------------------------------------------------------------------------
@@ -2251,12 +2285,12 @@ bool psnet_init_multicast()
 	const SCP_string port_str = std::to_string(DEFAULT_GAME_PORT + 10000);
 	SOCKADDR_STORAGE listenAddr, groupAddr;
 
-	if ( Psnet_my_ip.empty() ) {
+	if (Psnet_ip_mode == PSNET_IP_MODE_UNKNOWN) {
 		return false;
 	}
 
 	// drop to IPv4 multicast if we are mapped
-	if ( IN6_IS_ADDR_V4MAPPED(&Psnet_my_ip[0]) ) {
+	if (Psnet_ip_mode == PSNET_IP_MODE_V4) {
 		family = AF_INET;
 	}
 
