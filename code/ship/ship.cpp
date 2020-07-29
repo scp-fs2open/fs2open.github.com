@@ -8858,12 +8858,12 @@ static void lethality_decay(ai_info *aip)
 
 void ship_process_pre(object *obj, float frametime)
 {
-	if ( (obj == NULL) || !frametime )
+	// If Ai_before_physics is false everything following is evaluated in ship_process_post()
+	if ( (obj == NULL) || !frametime || !Ai_before_physics)
 		return;
 
 	int	num;
 	ship* shipp;
-	ship_info* sip;
 
 	if (obj->type != OBJ_SHIP) {
 		nprintf(("Network", "Ignoring non-ship object in ship_process_pre()\n"));
@@ -9125,7 +9125,51 @@ void ship_process_post(object * obj, float frametime)
 		// maybe fire a corkscrew missile (just like swarmers)
 		cscrew_maybe_fire_missile(num);
 
-	}			
+	}
+
+	// If Ai_before_physics is true everything following is evaluated in ship_process_pre()
+	if (!Ai_before_physics) {
+		//rotate player subobjects since its processed by the ai functions
+		// AL 2-19-98: Fire turret for player if it exists
+		//WMC - changed this to call process_subobjects
+		if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
+		{
+			ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
+			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
+			{
+				if (aip->support_ship_objnum >= 0)
+				{
+					if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+						return;
+				}
+			}
+			if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
+				process_subobjects(OBJ_INDEX(obj));
+		}
+
+		if (obj == Player_obj) {
+			ship_check_player_distance();
+		}
+
+		// update ship lethality
+		if (Ships[num].ai_index >= 0) {
+			if (!physics_paused && !ai_paused) {
+				lethality_decay(&Ai_info[Ships[num].ai_index]);
+			}
+		}
+
+		// if the ship is an observer ship don't need to do AI
+		if (obj->type == OBJ_OBSERVER) {
+			return;
+		}
+
+		// Goober5000 - player may want to use AI
+		if ((Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai)) {
+			if (!physics_paused && !ai_paused) {
+				ai_process(obj, Ships[num].ai_index, frametime);
+			}
+		}
+	}
 }
 
 

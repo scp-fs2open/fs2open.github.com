@@ -57,6 +57,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
+bool Ai_before_physics;
 
 void parse_mod_table(const char *filename)
 {
@@ -104,6 +105,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
 			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Process AI before physics:")) {
+			stuff_boolean(&Ai_before_physics);
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
