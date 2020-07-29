@@ -24,15 +24,17 @@ struct net_player;
 
 
 // client button info flags
-#define OOC_FIRE_SECONDARY			(1<<0)
-#define OOC_TARGET_LOCKED			(1<<1)
-#define OOC_TARGET_SEEK_LOCK		(1<<2)
-#define OOC_LOCKING_ON_CENTER		(1<<3)
-#define OOC_TRIGGER_DOWN			(1<<4)
-#define OOC_PRIMARY_BANK			(1<<5)
-#define OOC_PRIMARY_LINKED			(1<<6)
-#define OOC_AFTERBURNER_ON			(1<<7)
-// NOTE: no additional flags here unless it's sent in an extra data byte
+#define OOC_FIRE_CONTROL_PRESSED	(1<<0)
+#define OOC_TARGET_SEEK_LOCK		(1<<1)
+#define OOC_TRIGGER_DOWN			(1<<2)
+#define OOC_PRIMARY_BANK			(1<<3)
+#define OOC_PRIMARY_LINKED			(1<<4)
+#define OOC_AFTERBURNER_ON			(1<<5)
+// two spots now left for more OOC flags
+
+// and two special values to help with multilock
+#define OOC_INDEX_NULLPTR_SUBSYSEM 255
+#define OOC_MAX_LOCKS			   128  // Probably *could* be up to 140, but this is safer
 
 // update info
 typedef struct np_update {	

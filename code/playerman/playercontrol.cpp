@@ -854,7 +854,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 			// if we're a multiplayer client, set our accum bits now
 			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
-				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
+				Net_player->s_info.accum_buttons |= OOC_FIRE_CONTROL_PRESSED;
 			}
 		}
 
