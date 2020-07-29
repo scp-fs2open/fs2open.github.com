@@ -273,13 +273,8 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	char t_subsys, l_subsys;
 	int packet_size = 0;
 
-	// get our firing stuff. Cyborg17 - This line is only for secondary fire, not other controls, and we are not going 
-	// to send firing dumbfire missiles here.  Better to send via non homing weapons packet through ship_fire_secondary()
-	if ( Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing() ) {
-		out_flags = Net_player->s_info.accum_buttons;	
-	} else {
-		out_flags = 0;
-	}
+	// get our firing stuff. Cyborg17 - This line is only for secondary fire, not other controls.
+	out_flags = Net_player->s_info.accum_buttons;	
 	
 	// zero these values for now
 	Net_player->s_info.accum_buttons = 0;
