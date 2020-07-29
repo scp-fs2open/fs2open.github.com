@@ -4368,7 +4368,7 @@ int multi_pxo_pinfo_cond()
 
 			if (ret_string != NULL) {
 				// user not-online/not found
-				if ( (int)ret_string[0] == -1) {
+				if (reinterpret_cast<ptr_s>(ret_string) == -1) {
 					return 1;
 				} 
 
