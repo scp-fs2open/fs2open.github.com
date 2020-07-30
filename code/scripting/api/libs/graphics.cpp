@@ -250,7 +250,7 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear().  This is sometimes called between setClip and resetClip", nullptr, nullptr)
+ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)
 {
 	gr_clear();
 
