@@ -1062,7 +1062,7 @@ ADE_FUNC(isDepartingDockbay, l_Ship, nullptr, "Checks if the ship is departing v
 	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Depart_dockbay]);
 }
 
-ADE_FUNC(isDying, l_Ship, nullptr, "Checks if the ship is dying (doing its death roll)", "boolean", "True if the Dying flag is set, false otherwise")
+ADE_FUNC(isDying, l_Ship, nullptr, "Checks if the ship is dying (doing its death roll or exploding)", "boolean", "True if the Dying flag is set, false otherwise")
 {
 	object_h *shiph;
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
@@ -1631,27 +1631,47 @@ ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting o
 	return ade_set_args(L, "f", shipp->emp_intensity);
 }
 
-ADE_FUNC(getTimeUntilExplosion, l_Ship, NULL, "Returns the time in seconds until the ship explodes", "number", "Time until explosion or -1, if invalid handle or ship isn't exploding")
+ADE_FUNC(getTimeUntilExplosion, l_Ship, nullptr, "Returns the time in seconds until the ship explodes (the ship's final_death_time timestamp)", "number", "Time until explosion or -1, if invalid handle or ship isn't exploding")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 
-	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "f", -1.0f);
-	}
-
 	if(!objh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if (!timestamp_valid(shipp->final_death_time))
-	{
 		return ade_set_args(L, "f", -1.0f);
-	}
 
 	int time_until = timestamp_until(shipp->final_death_time);
 
 	return ade_set_args(L, "f", (i2fl(time_until) / 1000.0f));
+}
+
+ADE_FUNC(setTimeUntilExplosion, l_Ship, "number Time", "Sets the time in seconds until the ship explodes (the ship's final_death_time timestamp).  This function will only work if the ship is in its death roll but hasn't exploded yet, which can be checked via isDying() or getTimeUntilExplosion().", "boolean", "True if successful, false if the ship is invalid or not currently exploding")
+{
+	object_h *objh = nullptr;
+	float delta_s;
+
+	if (!ade_get_args(L, "of", l_Ship.GetPtr(&objh), &delta_s))
+		return ade_set_error(L, "b", false);
+	if (!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (!timestamp_valid(shipp->final_death_time))
+		return ade_set_args(L, "b", false);
+
+	int delta_ms = fl2i(delta_s * 1000.0f);
+	if (delta_ms < 2)
+		delta_ms = 2;
+
+	shipp->final_death_time = timestamp(delta_ms);
+
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the current mission", "string", "The callsign or an empty string if the ship doesn't have a callsign or an error occurs")

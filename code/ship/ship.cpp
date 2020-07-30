@@ -8027,7 +8027,10 @@ static void ship_dying_frame(object *objp, int ship_num)
 		// Wait until just before death and set off some explosions
 		// If it is less than 1/2 second until large explosion, but there is
 		// at least 1/10th of a second left, then create 5 small explosions
-		if ( (time_until_minor_explosions < 500) && (time_until_minor_explosions > 100) && (!shipp->pre_death_explosion_happened) ) {
+		if ( ((time_until_minor_explosions < 500) && (time_until_minor_explosions > 100) && (!shipp->pre_death_explosion_happened))
+			// If we're already exploding and missed our chance, then do it anyway; better late than never
+			|| ((time_until_minor_explosions <= 0) && (!shipp->pre_death_explosion_happened)) )
+		{
 			shipp->next_fireball = timestamp(-1);	// never time out again
 			shipp->pre_death_explosion_happened=1;		// Mark this event as having occurred
 
