@@ -1,3 +1,9 @@
+include(CheckStructHasMember)
+
+check_struct_has_member("struct sockaddr" sa_len
+        "sys/types.h sys/socket.h"
+        HAVE_SOCKADDR_SA_LEN)
+
 set(LIBPCP_INCLUDE_DIRECTORIES
     include
     src
@@ -52,6 +58,7 @@ endif(WIN32)
 
 
 add_library(pcp STATIC ${LIBPCP_SOURCES})
+
 
 if(WIN32)
     if(MINGW)

@@ -53,6 +53,7 @@
 #ifdef WIN32
 #undef USE_NETLINK
 #undef USE_SOCKET_ROUTE
+#undef USE_SYSCTL_NET_ROUTE
 #define USE_WIN32_CODE
 
 #include <winsock2.h>
@@ -65,7 +66,17 @@
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #include <net/if_dl.h>          //struct sockaddr_dl
+#define USE_SYSCTL_NET_ROUTE
+#endif
+
+#if defined(BSD) || defined(__FreeBSD_kernel__)
 #define USE_SOCKET_ROUTE
+#undef USE_WIN32_CODE
+#endif
+
+#if (defined(sun) && defined(__SVR4))
+#define USE_SOCKET_ROUTE
+#undef USE_WIN32_CODE
 #endif
 
 #ifndef WIN32
@@ -79,15 +90,7 @@
 #include <netinet/in.h>         //IPPROTO_GRE sturct sockaddr_in INADDR_ANY
 #endif
 
-#if defined(BSD) || defined(__FreeBSD_kernel__)
-#define USE_SOCKET_ROUTE
-#undef USE_WIN32_CODE
-#endif
 
-#if (defined(sun) && defined(__SVR4))
-#define USE_SOCKET_ROUTE
-#undef USE_WIN32_CODE
-#endif
 
 #include "gateway.h"
 #include "pcp_logger.h"
@@ -374,6 +377,165 @@ end:
 #endif /* #ifdef USE_WIN32_CODE */
 
 #ifdef USE_SOCKET_ROUTE
+
+/* Adapted from Richard Stevens, UNIX Network Programming  */
+
+#ifdef HAVE_SOCKADDR_SA_LEN
+/*
+ * Round up 'a' to next multiple of 'size', which must be a power of 2
+ */
+#define ROUNDUP(a, size) (((a) & ((size)-1)) ? (1 + ((a) | ((size)-1))) : (a))
+#else
+#define ROUNDUP(a, size) (a)
+#endif
+
+/*
+ * Step to next socket address structure;
+ * if sa_len is 0, assume it is sizeof(u_long). Using u_long only works on 32-bit
+ machines. In 64-bit machines it needs to be u_int32_t !!
+ */
+#define NEXT_SA(ap)    ap = (struct sockaddr *) \
+    ((caddr_t) ap + (SA_LEN(ap) ? ROUNDUP(SA_LEN(ap), sizeof(uint32_t)) : sizeof(uint32_t)))
+
+
+#define NEXTADDR_CT(w, u) \
+    if (msg.msghdr.rtm_addrs & (w)) {\
+        len = SA_LEN(&(u)); memmove(cp, &(u), len); cp += len;\
+    }
+
+/* thanks Stevens for this very handy function */
+static void get_rtaddrs(int addrs, struct sockaddr *sa,
+        struct sockaddr **rti_info)
+{
+    int i;
+
+    for (i=0; i < RTAX_MAX; i++) {
+        if (addrs & (1 << i)) {
+            rti_info[i]=sa;
+            NEXT_SA(sa);
+        } else
+            rti_info[i]=NULL;
+    }
+}
+
+int getgateways(struct sockaddr_in6 **gws)
+{
+    static int seq=0;
+    int err=0;
+    ssize_t len=0;
+    char *cp;
+    pid_t pid;
+    int rtcount=0;
+    struct sockaddr so_dst, so_mask;
+
+    struct {
+        struct rt_msghdr msghdr;
+        char buf[512];
+    } msg;
+
+    if (!gws) {
+        return PCP_ERR_UNKNOWN;
+    }
+
+    memset(&msg, 0, sizeof(msg));
+    memset(&so_dst, 0, sizeof(so_dst));
+    memset(&so_mask, 0 ,sizeof(so_mask));
+
+    cp=msg.buf;
+    pid=getpid();
+
+    msg.msghdr.rtm_type=RTM_GET;
+    msg.msghdr.rtm_version=RTM_VERSION;
+    msg.msghdr.rtm_pid=pid;
+    msg.msghdr.rtm_addrs=RTA_DST | RTA_NETMASK;
+    msg.msghdr.rtm_seq=++seq;
+    msg.msghdr.rtm_flags=RTF_UP | RTF_GATEWAY;
+
+    so_dst.sa_family = AF_INET;
+    so_mask.sa_family = AF_INET;
+
+    NEXTADDR_CT(RTA_DST, so_dst);
+    NEXTADDR_CT(RTA_NETMASK, so_mask);
+
+    msg.msghdr.rtm_msglen=len=cp - (char *)&msg;
+
+    int sock=socket(PF_ROUTE, SOCK_RAW, 0);
+    if (sock == -1) {
+        return PCP_ERR_UNKNOWN;
+    }
+
+    if (write(sock, (char *)&msg, len) < 0) {
+        close(sock);
+        return PCP_ERR_UNKNOWN;
+    }
+
+
+    do {
+        len=read(sock, (char *)&msg, sizeof(msg));
+    } while (len > 0
+            && (msg.msghdr.rtm_seq != seq || msg.msghdr.rtm_pid != pid));
+
+    close(sock);
+
+    if (len < 0) {
+        return PCP_ERR_UNKNOWN;
+    } else {
+        struct sockaddr *sa;
+        struct sockaddr *rti_info[RTAX_MAX];
+
+        if (msg.msghdr.rtm_version != RTM_VERSION) {
+            return PCP_ERR_UNKNOWN;
+        }
+
+        if (msg.msghdr.rtm_errno) {
+            return PCP_ERR_UNKNOWN;
+        }
+
+        cp=msg.buf;
+        if (msg.msghdr.rtm_addrs) {
+            sa=(struct sockaddr *)cp;
+            get_rtaddrs(msg.msghdr.rtm_addrs, sa, rti_info);
+
+            if ((sa=rti_info[RTAX_GATEWAY]) != NULL) {
+                if ((msg.msghdr.rtm_addrs & (RTA_DST | RTA_GATEWAY))
+                        == (RTA_DST | RTA_GATEWAY)) {
+                    struct sockaddr_in6 *in6=*gws;
+
+                    *gws=(struct sockaddr_in6 *)realloc(*gws,
+                            sizeof(struct sockaddr_in6) * (rtcount + 1));
+
+                    if (!*gws) {
+                        if (in6)
+                            free(in6);
+                        return PCP_ERR_NO_MEM;
+                    }
+
+                    in6=(*gws) + rtcount;
+                    memset(in6, 0, sizeof(struct sockaddr_in6));
+
+                    if (sa->sa_family == AF_INET) {
+                        /* IPv4 gateways as returned as IPv4 mapped IPv6 addresses */
+                        in6->sin6_family = AF_INET6;
+                        S6_ADDR32(&in6->sin6_addr)[0]=
+                                ((struct sockaddr_in *)(rti_info[RTAX_GATEWAY]))->sin_addr.s_addr;
+                        TO_IPV6MAPPED(&in6->sin6_addr);
+                    } else if (sa->sa_family == AF_INET6) {
+                        memcpy(in6,
+                                (struct sockaddr_in6 *)rti_info[RTAX_GATEWAY],
+                                sizeof(struct sockaddr_in6));
+                    }
+                    rtcount++;
+                }
+            }
+        }
+    }
+
+    return rtcount;
+}
+
+#endif /* #ifdef USE_SOCKET_ROUTE */
+
+#ifdef USE_SYSCTL_NET_ROUTE
 
 struct sockaddr;
 struct in6_addr;
