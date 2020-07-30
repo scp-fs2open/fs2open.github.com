@@ -12060,13 +12060,12 @@ void sexp_explosion_effect(int n)
 				{
 					case OBJ_SHIP:
 						ship_apply_global_damage( objp, nullptr, &origin, t_damage );
-						vec3d force, vec_ship_to_impact, world_hit_pos;
+						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
 							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 							vm_vec_scale( &force, (float)max_blast );
-							vm_vec_add(&world_hit_pos, &vec_ship_to_impact, &objp->pos);
-							ship_apply_whack( &force, &world_hit_pos, objp );
+							ship_apply_whack( &force, &origin, objp );
 						}
 						break;
 

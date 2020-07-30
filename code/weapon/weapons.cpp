@@ -6006,7 +6006,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  */
 void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
-	vec3d		force, vec_blast_to_ship, vec_ship_to_impact, world_hit_pos;
+	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
 
 	// don't waste time here if there is no blast force
@@ -6019,7 +6019,6 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 	vm_vec_copy_scale(&force, &vec_blast_to_ship, blast );
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_objp->pos);
-	vm_vec_add(&world_hit_pos, &vec_ship_to_impact, &ship_objp->pos);
 
 	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
 	Assert ( pm != NULL );
@@ -6030,7 +6029,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, &world_hit_pos, ship_objp);
+		ship_apply_whack( &force, blast_pos, ship_objp);
 	}
 }
 

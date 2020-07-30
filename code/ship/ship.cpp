@@ -7800,12 +7800,11 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 			switch ( objp->type ) {
 			case OBJ_SHIP:
 				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage );
-				vec3d force, vec_ship_to_impact, world_hit_pos;
+				vec3d force, vec_ship_to_impact;
 				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
 				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 				vm_vec_scale( &force, blast );
-				vm_vec_add(&world_hit_pos, &vec_ship_to_impact, &objp->pos);
-				ship_apply_whack( &force, &world_hit_pos, objp );
+				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
 				asteroid_hit(objp, NULL, NULL, damage);
@@ -16969,18 +16968,18 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	if (jettison_new)
 	{
 		// new method uses dockpoint normals and user-specified force
-		extern void find_adjusted_dockpoint_normal(vec3d *global_p0_norm, object *objp, polymodel *pm, int submodel, int dock_index);
+		extern void find_adjusted_dockpoint_info(vec3d* global_p0, vec3d* global_p1, vec3d* global_p0_norm, object* objp, polymodel* pm, int modelnum, int submodel, int dock_index);
 		extern int find_parent_rotating_submodel(polymodel *pm, int dock_index);
 
-		polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+		int model_num = Ship_info[shipp->ship_info_index].model_num;
+		polymodel *pm = model_get(model_num);
 		int docker_rotating_submodel = find_parent_rotating_submodel(pm, docker_index);
-		vec3d docker_p0_norm;
+		vec3d docker_p0_norm, docker_p0, docker_p1;
 
-		find_adjusted_dockpoint_normal(&docker_p0_norm, objp, pm, docker_rotating_submodel, docker_index);
+		find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, objp, pm, model_num, docker_rotating_submodel, docker_index);
+		vm_vec_avg(&pos, &docker_p0, &docker_p1);
 
 		// set for relative separation speed (see also do_dying_undock_physics)
-		pos = docker_p0_norm;
-		vm_vec_add2(&pos, &cargo_objp->pos);
 		vm_vec_copy_scale(&impulse, &docker_p0_norm, jettison_speed * cargo_objp->phys_info.mass);
 	}
 	else
