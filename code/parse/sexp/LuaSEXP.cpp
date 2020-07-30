@@ -107,6 +107,12 @@ int LuaSEXP::getArgumentType(int argnum) const {
 		return _argument_types[argnum];
 	}
 
+	// sanity check in case of bad table data
+	if (_varargs_type_pattern.empty()) {
+		Warning(LOCATION, "Not enough parameters specified for Lua SEXP %s!", getName().c_str());
+		return OPF_NONE;
+	}
+
 	// We are in the variable argument types region
 	// First, adjust the argnum base index so that our variable index starts at 0
 	auto varargs_index = argnum - _argument_types.size();
