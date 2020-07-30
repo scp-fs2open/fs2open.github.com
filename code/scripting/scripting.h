@@ -113,6 +113,11 @@ enum ConditionalActions : int32_t {
 	CHA_ONGOALSCLEARED,
 	CHA_ONBRIEFSTAGE,
 
+	// DO NOT ADD NEW HOOKS HERE
+	// There is a new Lua Hook API, see hook_api.h
+	// There you use either scripting::Hook for non-overridable or scripting::OverridableHook for overridable hooks
+	// while also having the option to document when the hook is called and what hook variables are set for it.
+
 	CHA_LAST = CHA_ONBRIEFSTAGE,
 };
 
