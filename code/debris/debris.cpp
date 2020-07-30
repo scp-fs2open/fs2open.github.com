@@ -25,6 +25,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
@@ -53,6 +54,14 @@ int Debris_num_submodels = 0;
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris)
+
+const auto OnDebrisCreatedHook = scripting::Hook::Factory(
+	"On Debris Created",
+	"Invoked when a piece of debris is created.",
+	{
+		{"Debris", "debris", "The newly created debris object"},
+		{"Source", "object", "The object (probably a ship) from which this debris piece was spawned."},
+	});
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -673,10 +682,9 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
 
-	Script_system.SetHookObject("Debris", obj);
-	Script_system.SetHookObject("Source", source_obj);
-	Script_system.RunCondition(CHA_ONDEBRISCREATED);
-	Script_system.RemHookVars(2, "Debris", "Source");
+	OnDebrisCreatedHook->run(scripting::hook_param_list(
+		scripting::hook_param("Debris", 'o', obj),
+		scripting::hook_param("Source", 'o', source_obj)));
 
 	return obj;
 }
