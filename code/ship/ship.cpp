@@ -8859,7 +8859,7 @@ static void lethality_decay(ai_info *aip)
 void ship_process_pre(object *obj, float frametime)
 {
 	// If Ai_before_physics is false everything following is evaluated in ship_process_post()
-	if ( (obj == NULL) || !frametime || !Ai_before_physics)
+	if ( (obj == nullptr) || !frametime || !Ai_before_physics)
 		return;
 
 	int	num;
