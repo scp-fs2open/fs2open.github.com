@@ -5,7 +5,11 @@
 #include "object.h"
 #include "shipclass.h"
 #include "debris/debris.h"
+#include "globalincs/linklist.h"
 #include "ship/ship.h"
+
+extern int Num_hull_pieces;
+extern debris Hull_debris_list;
 
 namespace scripting {
 namespace api {
@@ -51,7 +55,66 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 			db->ship_info_index = shipIdx;
 	}
 
-	return ade_set_error(L, "o", l_Shipclass.Set(db->ship_info_index));
+	return ade_set_args(L, "o", l_Shipclass.Set(db->ship_info_index));
+}
+
+ADE_VIRTVAR(DoNotExpire, l_Debris, "boolean", "Whether the debris should expire.  Normally, debris does not expire if it is from ships destroyed before mission or from ships that are more than 50 meters in radius.", "boolean", "True if flag is set, false if flag is not set and nil on error")
+{
+	object_h *objh = nullptr;
+	bool set = false;
+
+	if (!ade_get_args(L, "o|b", l_Debris.GetPtr(&objh), &set))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	debris *db = &Debris[objh->objp->instance];
+
+	if (ADE_SETTING_VAR)
+	{
+		db->flags.set(Debris_Flags::DoNotExpire, set);
+
+		// we need to be careful to manage the hull list here
+		// per comments in debris.cpp: "pieces that ... have the DoNotExpire flag should not be on it"
+		if (db->is_hull)
+		{
+			if (set && db->next)
+			{
+				list_remove(&Hull_debris_list, db);
+				Num_hull_pieces--;
+			}
+			else if (!set && !db->next)
+			{
+				list_append(&Hull_debris_list, db);
+				Num_hull_pieces++;
+			}
+		}
+	}
+
+	if (db->flags[Debris_Flags::DoNotExpire])
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(LifeLeft, l_Debris, "number", "The time this debris piece will last.  When this is 0 (and DoNotExpire is false) the debris will explode.", "number", "The amount of time, in seconds, the debris will last")
+{
+	object_h *objh = nullptr;
+	float lifeleft = 0.0f;
+
+	if (!ade_get_args(L, "o|f", l_Debris.GetPtr(&objh), &lifeleft))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	debris *db = &Debris[objh->objp->instance];
+
+	if (ADE_SETTING_VAR)
+		db->lifeleft = lifeleft;
+
+	return ade_set_args(L, "f", lifeleft);
 }
 
 ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "number", "The radius of this debris piece or -1 if invalid")
