@@ -29,33 +29,42 @@
 #include "default_config.h"
 #endif
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
+
 #ifndef WIN32
 #include <sys/socket.h>         // place it before <net/if.h> struct sockaddr
+#include <sys/ioctl.h>          // ioctl()
+#include <arpa/inet.h>          // inet_addr()
+#include <net/route.h>          // struct rt_msghdr
+#include <net/if.h>
+#include <net/route.h>
+#include <netinet/in.h>         //IPPROTO_GRE sturct sockaddr_in INADDR_ANY
 #endif //WIN32
-#ifdef __linux__
+
+#if defined(__linux__)
 #define USE_NETLINK
+#elif defined(WIN32)
+#define USE_WIN32_CODE
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+#define USE_SYSCTL_NET_ROUTE
+#elif defined(BSD) || defined(__FreeBSD_kernel__)
+#define USE_SYSCTL_NET_ROUTE
+#elif (defined(sun) && defined(__SVR4))
+#define USE_SOCKET_ROUTE
+#endif
+
+#ifdef USE_NETLINK
 #include <linux/types.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#ifndef WIN32
-#include <sys/ioctl.h>          // ioctl()
-#include <net/if.h>             //struct ifreq
-#endif //WIN32
-#ifdef WIN32
-#undef USE_NETLINK
-#undef USE_SOCKET_ROUTE
-#undef USE_SYSCTL_NET_ROUTE
-#define USE_WIN32_CODE
-
+#ifdef USE_WIN32_CODE
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
@@ -63,52 +72,27 @@
 #include "pcp_win_defines.h"
 #endif
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#ifdef USE_SYSCTL_NET_ROUTE
 #include <sys/sysctl.h>
 #include <net/if_dl.h>          //struct sockaddr_dl
-#define USE_SYSCTL_NET_ROUTE
 #endif
 
-#if defined(BSD) || defined(__FreeBSD_kernel__)
-#define USE_SOCKET_ROUTE
-#undef USE_WIN32_CODE
-#endif
-
-#if (defined(sun) && defined(__SVR4))
-#define USE_SOCKET_ROUTE
-#undef USE_WIN32_CODE
-#endif
-
-#ifndef WIN32
-#include <arpa/inet.h>          // inet_addr()
-#include <net/route.h>          // struct rt_msghdr
 #ifdef USE_SOCKET_ROUTE
 #include <ifaddrs.h>            //getifaddrs() freeifaddrs()
 #endif
-#include <net/if.h>
-#include <net/route.h>
-#include <netinet/in.h>         //IPPROTO_GRE sturct sockaddr_in INADDR_ANY
-#endif
-
-
 
 #include "gateway.h"
 #include "pcp_logger.h"
 #include "unp.h"
 #include "pcp_utils.h"
 
-#ifndef WIN32
-#define SUCCESS (0)
-#define FAILED  (-1)
-#define USE_WIN32_CODE
-#endif
 
 #define TO_IPV6MAPPED(x)        S6_ADDR32(x)[3] = S6_ADDR32(x)[0];\
                                 S6_ADDR32(x)[0] = 0;\
                                 S6_ADDR32(x)[1] = 0;\
                                 S6_ADDR32(x)[2] = htonl(0xFFFF);
 
-#ifdef USE_NETLINK
+#if defined(USE_NETLINK)
 
 #define BUFSIZE 8192
 
@@ -271,9 +255,7 @@ end:
     return ret;
 }
 
-#endif /* #ifdef USE_NETLINK */
-
-#if defined (USE_WIN32_CODE) && defined(WIN32)
+#elif defined(USE_WIN32_CODE)
 
 #if 0 // WINVER>=NTDDI_VISTA
 int getgateways(struct in6_addr **gws)
@@ -374,9 +356,7 @@ end:
 }
 #endif
 
-#endif /* #ifdef USE_WIN32_CODE */
-
-#ifdef USE_SOCKET_ROUTE
+#elif defined(USE_SOCKET_ROUTE)
 
 /* Adapted from Richard Stevens, UNIX Network Programming  */
 
@@ -533,9 +513,7 @@ int getgateways(struct sockaddr_in6 **gws)
     return rtcount;
 }
 
-#endif /* #ifdef USE_SOCKET_ROUTE */
-
-#ifdef USE_SYSCTL_NET_ROUTE
+#elif defined(USE_SYSCTL_NET_ROUTE)
 
 struct sockaddr;
 struct in6_addr;
