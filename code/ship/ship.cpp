@@ -16939,7 +16939,7 @@ int ship_get_random_targetable_ship()
 void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_speed, bool jettison_new)
 {
 	// make sure we are docked
-	Assert((objp != NULL) && (cargo_objp != NULL));
+	Assert((objp != nullptr) && (cargo_objp != nullptr));
 	Assert(dock_check_find_direct_docked_object(objp, cargo_objp));
 
 	vec3d impulse, pos;
