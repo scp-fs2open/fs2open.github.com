@@ -98,6 +98,8 @@ void sexp_network_packet::reduce_counts(int amount)
     }
 }
 
+bool sexp_network_packet::hasMore() const { return sexp_bytes_left && current_argument_count; }
+
 bool sexp_network_packet::argument_count_is_valid()
 {
     if (current_argument_count != 0) {
@@ -446,7 +448,7 @@ void sexp_network_packet::send_ushort(ushort value)
 
 bool sexp_network_packet::get_int(int & value)
 {
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -461,7 +463,7 @@ bool sexp_network_packet::get_ship(int & value)
     ushort netsig;
     object *objp;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -497,7 +499,7 @@ bool sexp_network_packet::get_wing(wing *& wingp)
 	int i;
     ushort netsig;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -521,7 +523,7 @@ bool sexp_network_packet::get_object(object *& value)
 {
     ushort netsig;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -543,7 +545,7 @@ bool sexp_network_packet::get_parse_object(p_object *& pobjp)
 {
     ushort netsig;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -564,7 +566,7 @@ bool sexp_network_packet::get_string(char * buffer)
 {
     int starting_offset = offset;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -579,7 +581,7 @@ bool sexp_network_packet::get_string(SCP_string & buffer)
     char tempstring[TOKEN_LENGTH];
     int starting_offset = offset;
 
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -592,7 +594,7 @@ bool sexp_network_packet::get_string(SCP_string & buffer)
 
 bool sexp_network_packet::get_bool(bool & value)
 {
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -604,7 +606,7 @@ bool sexp_network_packet::get_bool(bool & value)
 
 bool sexp_network_packet::get_float(float & value)
 {
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -636,7 +638,7 @@ bool sexp_network_packet::get_matrix(matrix *value)
 
 bool sexp_network_packet::get_short(short & value)
 {
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 
@@ -648,7 +650,7 @@ bool sexp_network_packet::get_short(short & value)
 
 bool sexp_network_packet::get_ushort(ushort & value)
 {
-    if (!sexp_bytes_left || !current_argument_count) {
+    if (!hasMore()) {
         return false;
     }
 

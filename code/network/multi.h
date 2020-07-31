@@ -12,12 +12,14 @@
 #ifndef _MULTI_H
 #define _MULTI_H
 
-#include "globalincs/pstypes.h"
-#include "network/psnet2.h"					// for PSNET_SOCKET		
-#include "network/multi_ping.h"
-#include "network/multi_options.h"
-#include "io/keycontrol.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+
+#include "io/keycontrol.h"
+#include "network/multi_options.h"
+#include "network/multi_ping.h"
+#include "network/psnet2.h" // for PSNET_SOCKET
 
 class p_object;
 struct CFILE;
@@ -129,6 +131,7 @@ class player;
 #define MY_NET_PLAYER_NUM		(NET_PLAYER_INDEX(Net_player))
 
 // determine what the status of this machine is
+#define MULTIPLAYER_GAME			( (Game_mode & GM_MULTIPLAYER) )
 #define MULTIPLAYER_MASTER			( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) )
 #define MULTIPLAYER_HOST			( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_GAME_HOST) )
 #define MULTIPLAYER_CLIENT			( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) )

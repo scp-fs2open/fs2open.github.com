@@ -37,6 +37,8 @@ class LuaSEXP : public DynamicSEXP {
 
 	int execute(int node) override;
 
+	void executeMulti() override;
+
 	int getReturnType() override;
 
 	int getSubcategory() override;

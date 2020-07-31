@@ -7,11 +7,10 @@
  *
 */
 
-
-
-#include <climits>
+#include "starfield/starfield.h"
 
 #include "freespace.h"
+
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "graphics/matrix.h"
@@ -26,11 +25,13 @@
 #include "nebula/neb.h"
 #include "options/Option.h"
 #include "parse/parselo.h"
+#include "parse/sexp/EngineSEXP.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
-#include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
+
+#include <climits>
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -180,6 +181,25 @@ int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
 bool Motion_debris_override = false;
+
+static int setMotionDebris(sexp::SEXPParameterExtractor* extractor) {
+	Motion_debris_override = extractor->getArg<bool>();
+	return SEXP_TRUE;
+}
+
+const auto __UNUSED SetMotionDebrisSexp =
+	sexp::EngineSEXP::create("set-motion-debris-override")
+		.helpText("Controls whether or not motion debris should be active.\r\n"
+				  "\tThis overrides any choice made by the user through the -nomotiondebris commandline flag.")
+		.category(OP_CATEGORY_CHANGE2)
+		.subcategory(CHANGE_SUBCATEGORY_CUTSCENES)
+		.returnType(OPR_NULL)
+		.beginArgList()
+		.arg(OPF_BOOL,
+			"Sets the new state of the motion debris (true to force no debris, false to restore user setting)")
+		.finishArguments()
+		.action(setMotionDebris)
+		.finish();
 
 bool Motion_debris_enabled = true;
 

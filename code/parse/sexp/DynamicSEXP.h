@@ -62,6 +62,11 @@ class DynamicSEXP {
 	virtual int execute(int node) = 0;
 
 	/**
+	 * @brief Executes the SEXP from a multi packet
+	 */
+	virtual void executeMulti() = 0;
+
+	/**
 	 * @brief Gets the return type of the SEXP
 	 *
 	 * See the OPR_* defines for what values this function may return.

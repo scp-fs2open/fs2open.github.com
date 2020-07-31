@@ -313,6 +313,11 @@ int LuaSEXP::execute(int node) {
 		}
 	}
 }
+
+void LuaSEXP::executeMulti() {
+	// Not implemented yet. Need to figure out how to send that parameter data over...
+}
+
 int LuaSEXP::getReturnType() {
 	return _return_type;
 }
