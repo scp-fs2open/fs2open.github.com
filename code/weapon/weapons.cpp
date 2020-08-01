@@ -4470,6 +4470,42 @@ void weapon_home(object *obj, int num, float frame_time)
 	}
 }
 
+
+// moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
+void weapon_update_missiles(object* obj, float  frame_time) {
+
+	weapon* wp = &Weapons[obj->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+	// a single player or multiplayer server function -- it affects actual weapon movement.
+	if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+		weapon_home(obj, obj->instance, frame_time);
+
+		// If this is a swarm type missile,  
+		if (wp->swarm_index >= 0) {
+			swarm_update_direction(obj);
+		}
+
+		if (wp->cscrew_index >= 0) {
+			cscrew_process_post(obj);
+		}
+	}
+	else if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+		}
+		else {
+			obj->phys_info.speed = wip->max_speed;
+			obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
+		}
+
+		vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+	}
+}
+
 // as Mike K did with ships -- break weapon into process_pre and process_post for code to execute
 // before and after physics movement
 
@@ -4514,35 +4550,9 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
-	// If this flag is false this is evaluated in weapon_process_post()
+	// If this flag is false missile turning is evaluated in weapon_process_post()
 	if (Ai_before_physics) {
-		// a single player or multiplayer server function -- it affects actual weapon movement.
-		if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
-			weapon_home(obj, obj->instance, frame_time);
-
-			// If this is a swarm type missile,  
-			if (wp->swarm_index >= 0) {
-				swarm_update_direction(obj);
-			}
-
-			if (wp->cscrew_index >= 0) {
-				cscrew_process_post(obj);
-			}
-		}
-		else if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-				float t;
-
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
-			}
-			else {
-				obj->phys_info.speed = wip->max_speed;
-				obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
-			}
-
-			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-		}
+		weapon_update_missiles(obj, frame_time);
 	}
 }
 
@@ -4845,33 +4855,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// If this flag is true this is evaluated in weapon_process_pre()
 	if (!Ai_before_physics) {
-		// a single player or multiplayer server function -- it affects actual weapon movement.
-		if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
-			weapon_home(obj, num, frame_time);
-
-			// If this is a swarm type missile,  
-			if (wp->swarm_index >= 0) {
-				swarm_update_direction(obj);
-			}
-
-			if (wp->cscrew_index >= 0) {
-				cscrew_process_post(obj);
-			}
-		}
-		else if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-				float t;
-
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
-			}
-			else {
-				obj->phys_info.speed = wip->max_speed;
-				obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
-			}
-
-			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-		}
+		weapon_update_missiles(obj, frame_time);
 	}
 
 	//local ssm stuff
