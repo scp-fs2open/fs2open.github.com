@@ -21,8 +21,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define PREC	0.01f
-#define PREC2	0.1f
+const float input_threshold = 0.1f;		// smallest increment of input box
 
 /////////////////////////////////////////////////////////////////////////////
 // orient_editor dialog
@@ -179,14 +178,8 @@ BOOL orient_editor::OnInitDialog()
 
 bool orient_editor::close(float val, const CString &str)
 {
-	float dif = val - convert(str);
-	return (dif < PREC) && (dif > -PREC);
-}
-
-bool orient_editor::close2(float val, const CString &str)
-{
-	float dif = val - convert(str);
-	return (dif < PREC2) && (dif > -PREC2);
+	float diff = val - convert(str);
+	return diff > -input_threshold && diff < input_threshold;
 }
 
 bool orient_editor::query_modified()
@@ -201,11 +194,11 @@ bool orient_editor::query_modified()
 	angles ang;
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
 
-	if (!close2(to_degrees(ang.p), m_orientation_p))
+	if (!close(to_degrees(ang.p), m_orientation_p))
 		return true;
-	if (!close2(to_degrees(ang.b), m_orientation_b))
+	if (!close(to_degrees(ang.b), m_orientation_b))
 		return true;
-	if (!close2(to_degrees(ang.h), m_orientation_h))
+	if (!close(to_degrees(ang.h), m_orientation_h))
 		return true;
 
 	if (((CButton *) GetDlgItem(IDC_POINT_TO_CHECKBOX))->GetCheck() == 1)
@@ -239,7 +232,7 @@ void orient_editor::OnOK()
 
 	// there's enough difference in our orientation that we're changing it
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	if (!close2(to_degrees(ang.p), m_orientation_p) || !close2(to_degrees(ang.b), m_orientation_b) || !close2(to_degrees(ang.h), m_orientation_h))
+	if (!close(to_degrees(ang.p), m_orientation_p) || !close(to_degrees(ang.b), m_orientation_b) || !close(to_degrees(ang.h), m_orientation_h))
 	{
 		ang.p = fl_radians(convert(m_orientation_p));
 		ang.b = fl_radians(convert(m_orientation_b));

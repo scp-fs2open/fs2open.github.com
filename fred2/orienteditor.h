@@ -68,7 +68,6 @@ protected:
 private:
 	float convert(const CString &str);
 	bool close(float val, const CString &str);
-	bool close2(float val, const CString &str);
 	float to_degrees(float radians);
 	int total;
 	int index[MAX_OBJECTS];
