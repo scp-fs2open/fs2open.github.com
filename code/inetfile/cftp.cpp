@@ -462,7 +462,7 @@ int CFtpGet::SendFTPCommand(const char *command, SCP_string *response)
 
 int CFtpGet::ReadFTPServerReply(SCP_string *str_reply)
 {
-	ssize_t rval;
+	SSIZE_T rval;
 	SCP_string code_str;
 	const size_t RECV_BUF_SIZE = 1024;
 	char recv_buffer[RECV_BUF_SIZE];
@@ -534,7 +534,7 @@ uint CFtpGet::ReadDataChannel()
 {
 	const size_t BUF_SIZE = 4096;
 	char sDataBuffer[BUF_SIZE];
-	ssize_t nBytesRecv;
+	SSIZE_T nBytesRecv;
 
 	m_State = FTP_STATE_RECEIVING;
 

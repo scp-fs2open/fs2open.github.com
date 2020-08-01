@@ -91,7 +91,7 @@ static SOCKADDR_STORAGE Psnet_mcast_addr;
 typedef struct network_packet_buffer
 {
 	int		sequence_number;
-	ssize_t		len;
+	SSIZE_T		len;
 	SOCKADDR_IN6	from_addr;
 	ubyte		data[MAX_TOP_LAYER_PACKET_SIZE];
 } network_packet_buffer;
@@ -226,10 +226,10 @@ void psnet_rel_close();
 void psnet_buffer_init(network_packet_buffer_list *l);
 
 // buffer a packet (maintain order!)
-void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, ssize_t length, SOCKADDR_IN6 *from);
+void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, SSIZE_T length, SOCKADDR_IN6 *from);
 
 // get the index of the next packet in order!
-int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, ssize_t *length, SOCKADDR_IN6 *from);
+int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, SSIZE_T *length, SOCKADDR_IN6 *from);
 
 // ip string parsing helpers
 static bool psnet_is_ip_notation(int af, const char *ip_string);
@@ -251,7 +251,7 @@ int RECVFROM(SOCKET  /*s*/, char *buf, int  /*len*/, int  /*flags*/, SOCKADDR *f
 	network_packet_buffer_list *l;
 	SOCKADDR_IN6 addr;
 	int ret;
-	ssize_t ret_len;
+	SSIZE_T ret_len;
 
 	// bad type
 	Assert( (psnet_type >= 0) && (psnet_type < PSNET_NUM_TYPES) );
@@ -347,7 +347,7 @@ void PSNET_TOP_LAYER_PROCESS()
 	// read socket stuff
 	fd_set rfds;
 	timeval timeout;
-	ssize_t read_len;
+	SSIZE_T read_len;
 	socklen_t from_len;
 	SOCKADDR_IN6 from_addr;
 	uint8_t packet_data[MAX_TOP_LAYER_PACKET_SIZE];
@@ -853,7 +853,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
  */
 int psnet_get(void *data, net_addr *addr)
 {
-	ssize_t buffer_size;
+	SSIZE_T buffer_size;
 	SOCKADDR_IN6 from_addr;
 
 	// try and get a free buffer and return its size
@@ -2068,7 +2068,7 @@ void psnet_buffer_init(network_packet_buffer_list *l)
 /**
  * Buffer a packet (maintain order!)
  */
-void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, ssize_t length, SOCKADDR_IN6 *from)
+void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, SSIZE_T length, SOCKADDR_IN6 *from)
 {
 	int idx;
 	bool found_buf = false;
@@ -2106,7 +2106,7 @@ void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, ssize_t len
 /**
  * Get the index of the next packet in order!
  */
-int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, ssize_t *length, SOCKADDR_IN6 *from)
+int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, SSIZE_T *length, SOCKADDR_IN6 *from)
 {	
 	int idx;
 	int found_buf = 0;
@@ -2390,7 +2390,7 @@ void psnet_multicast_process()
 	SOCKADDR_STORAGE from_addr;
 	SOCKADDR_IN6 from_addr6;
 	socklen_t from_len;
-	ssize_t read_len;
+	SSIZE_T read_len;
 	uint8_t packet_data[MAX_TOP_LAYER_PACKET_SIZE];
 
 	if ( !Can_broadcast ) {

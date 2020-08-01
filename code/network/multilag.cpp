@@ -53,7 +53,7 @@ int Multi_current_streak = -1;			// what lag the current streak has
 // struct for buffering stuff on receives
 typedef struct lag_buf {
 	SOCKADDR_STORAGE ip_addr;						// ip address
-	ssize_t data_len;								// length of the data
+	SSIZE_T data_len;								// length of the data
 	ubyte data[700];							// the data from the packet
 	SOCKET socket;								// this can be either a PSNET_SOCKET or a PSNET_SOCKET_RELIABLE
 	int stamp;									// when this expires, make this packet available	
@@ -172,7 +172,7 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 	char t_buf[T_BUF_SIZE];
 	socklen_t t_from_len;
 	SOCKADDR_STORAGE ip_addr;
-	ssize_t ret_val;
+	SSIZE_T ret_val;
 	lag_buf *moveup, *item;
 	SOCKET sckt = 0;
 
