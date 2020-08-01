@@ -8981,7 +8981,7 @@ void ship_process_post(object * obj, float frametime)
 	ship_info *sip;
 
 	if(obj->type != OBJ_SHIP){
-		nprintf(("Network","Ignoring non-ship object in ship_process_post()\n"));
+		nprintf(("General","Ignoring non-ship object in ship_process_post()\n"));
 		return;
 	}
 

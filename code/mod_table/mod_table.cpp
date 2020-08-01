@@ -595,4 +595,5 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
+	Ai_before_physics = false;
 }
