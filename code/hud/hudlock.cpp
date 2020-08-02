@@ -1597,9 +1597,17 @@ void hud_do_lock_indicators(float frametime)
 		if ( !current_lock_status && lock_slot->locked ) {
 			if ( Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop) ) {
 				snd_stop(Missile_lock_loop);
+				Missile_track_loop = sound_handle::invalid();
 			}
 
-			Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_TRACKING)));
+			if (wip->hud_locked_snd.isValid())
+			{
+				Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
+			}
+			else
+			{
+				Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
+			}
 
 			lock_slot->locked_timestamp = timestamp();
 		} else if ( !lock_slot->locked ) {
@@ -1617,7 +1625,7 @@ void hud_do_lock_indicators(float frametime)
 			Missile_track_loop = snd_play_looping(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_TRACKING)), 0.0f, -1, -1);
 		}
 	} else {
-		if ( Missile_track_loop.value() > -1 )	{
+		if ( Missile_track_loop.isValid() )	{
 			snd_stop(Missile_track_loop);
 			Missile_track_loop = sound_handle::invalid();
 		}
