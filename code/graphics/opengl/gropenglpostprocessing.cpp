@@ -1026,6 +1026,9 @@ bool opengl_post_init_shaders()
 	int idx;
 	int flags = 0;
 
+	// Make sure this is set properly before we actually try to render anything with the post pipeline
+	Gr_aa_mode_last_frame = Gr_aa_mode;
+
 	// figure out which flags we need for the main post process shader
 	for (idx = 0; idx < (int)Post_effects.size(); idx++) {
 		if (Post_effects[idx].always_on) {
