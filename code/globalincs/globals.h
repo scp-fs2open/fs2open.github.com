@@ -70,7 +70,7 @@
 // from weapon.h
 #define MAX_WEAPONS	2000
 
-#define MAX_WEAPON_TYPES				300
+#define MAX_WEAPON_TYPES				500
 
 
 // from model.h
