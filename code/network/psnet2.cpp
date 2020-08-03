@@ -709,7 +709,7 @@ bool psnet_string_to_addr(const char *text, net_addr *address)
 {
 	SCP_string host, port;
 	SOCKADDR_STORAGE sockaddr;
-	SOCKADDR_IN6 *addr6 = reinterpret_cast<SOCKADDR_IN6 *>(&sockaddr);
+	auto *addr6 = reinterpret_cast<SOCKADDR_IN6 *>(&sockaddr);
 
 	memset(address, 0, sizeof(*address));
 
@@ -937,7 +937,7 @@ void psnet_map4to6(const in_addr *in4, in6_addr *in6)
 /**
  * Helper to anonymize IP address for logging purposes
  */
-const in6_addr *psnet_mask_addr(const in6_addr *inaddr)
+in6_addr *psnet_mask_addr(const in6_addr *inaddr)
 {
 	static in6_addr addr;
 	size_t nbytes = 0;
@@ -1166,7 +1166,7 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 					psnet_map4to6(&si4->sin_addr, &si4to6.sin6_addr);
 
 					memcpy(addr, &si4to6, sizeof(si4to6));
-				} else if (success == false) {
+				} else if ( !success ) {
 					memcpy(addr, srv->ai_addr, srv->ai_addrlen);
 				}
 			}
@@ -2021,9 +2021,8 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 void psnet_init_rel_tcp()
 {
 	// clear reliable sockets
-	for (auto j = 0; j < MAXRELIABLESOCKETS; j++) {
-		auto *rsocket = &Reliable_sockets[j];
-		memset(rsocket, 0, sizeof(reliable_socket));
+	for (auto &rsocket : Reliable_sockets) {
+		memset(&rsocket, 0, sizeof(reliable_socket));
 	}
 }
 

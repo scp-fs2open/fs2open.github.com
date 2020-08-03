@@ -10,6 +10,12 @@
 #ifndef _gtrack_header
 #define _gtrack_header
 
+#ifdef _WIN32
+#include <in6addr.h>
+#else
+#include <netinet/in.h>
+#endif
+
 //Game Tracker client code header
 
 #define GAMEPORT	9202

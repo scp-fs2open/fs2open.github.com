@@ -143,7 +143,7 @@ void multi_data_do()
 void multi_data_handle_incoming(int handle)
 {	
 	int player_index = -1;
-	PSNET_SOCKET_RELIABLE sock = PSNET_INVALID_SOCKET;
+	PSNET_SOCKET_RELIABLE sock;
 	char *fname;		
 
 	// get the player who is sending us this file	

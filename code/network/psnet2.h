@@ -180,7 +180,7 @@ bool psnet_get_addr(const char *host, uint16_t port, SOCKADDR_STORAGE *addr, int
 void psnet_map4to6(const in_addr *in4, in6_addr *in6);
 
 // anonymize address for logging
-const in6_addr *psnet_mask_addr(const in6_addr *inaddr);
+in6_addr *psnet_mask_addr(const in6_addr *inaddr);
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 RELIABLE SOCKET FUNCTIONS

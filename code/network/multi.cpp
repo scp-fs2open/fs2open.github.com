@@ -329,7 +329,7 @@ void multi_check_listen()
 {
 	int i;
 	net_addr addr;
-	PSNET_SOCKET_RELIABLE sock = PSNET_INVALID_SOCKET;
+	PSNET_SOCKET_RELIABLE sock;
 
 	// call psnet routine which calls select to see if we need to check for a connect from a client
 	// by passing addr, we are telling check_for_listen to do the accept and return who it was from in
