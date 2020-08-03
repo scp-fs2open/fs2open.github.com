@@ -12663,6 +12663,13 @@ int ship_select_next_secondary(object *objp)
 			}
 			ship_secondary_changed(shipp);
 
+			// Clear missile locks when banks are switched
+			for (auto& missile_lock : shipp->missile_locks) {
+				ship_clear_lock(&missile_lock);
+			}
+
+			shipp->missile_locks_firing.clear();
+
 			objp = &Objects[shipp->objnum];
 			object* target;
 			if (Ai_info[shipp->ai_index].target_objnum != -1)
