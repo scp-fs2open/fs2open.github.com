@@ -595,7 +595,7 @@ void ai_profile_t::reset()
 	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
-	second_order_lead_prediction = 0;
+	second_order_lead_predict_factor = 0;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
