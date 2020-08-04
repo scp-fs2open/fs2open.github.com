@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/redalert.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -1252,6 +1253,16 @@ ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
 	} else {
 		return ADE_RETURN_FALSE;
 	}
+}
+
+ADE_FUNC(isRedAlertMission,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission is a red alert mission",
+	"boolean",
+	"true if red alert mission, false otherwise.")
+{
+	return ade_set_args(L, "b", red_alert_mission() != 0);
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
