@@ -3739,9 +3739,16 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 
 	vm_vec_zero(last_delta_vec);
 
+	
+	vec3d enemy_vel = targetp->phys_info.vel;
+	vec3d enemy_acc;
+	if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
+		vec3d world_rotvel;
+		vm_vec_unrotate(&world_rotvel, &targetp->phys_info.rotvel, &targetp->orient);
+		vm_vec_cross(&enemy_acc, &world_rotvel, &enemy_vel);
+	}
 	// additive velocity stuff
 	// not just the player's main target
-	vec3d enemy_vel = targetp->phys_info.vel;
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
 		vm_vec_scale_sub2( &enemy_vel, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 	}
@@ -3750,6 +3757,9 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
+		if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
+			vm_vec_scale_add(predicted_enemy_pos, predicted_enemy_pos, &enemy_acc, (time_to_enemy * time_to_enemy / 2) * The_mission.ai_profile->second_order_lead_predict_factor);
+		}
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
 	}
