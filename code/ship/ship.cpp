@@ -8860,8 +8860,9 @@ static void lethality_decay(ai_info *aip)
 void ship_evaluate_ai(object* obj, float frametime) {
 
 	int num = obj->instance;
-	Assert(num >= 0 && num < MAX_SHIPS);
-	Assert(Ships[num].objnum == OBJ_INDEX(obj));
+	Assertion(obj->type == OBJ_SHIP, "Non-ship object passed to ship_evaluate_ai");
+	Assertion(num >= 0 && num < MAX_SHIPS, "Invalid ship instance num in ship_evaluate_ai");
+	Assertion(Ships[num].objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
 
 	ship* shipp = &Ships[num];
 
@@ -8910,15 +8911,15 @@ void ship_process_pre(object *obj, float frametime)
 	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Ai_before_physics)
 		return;
 
-	int num = obj->instance;
-	Assert(num >= 0 && num < MAX_SHIPS);
-	Assert(Ships[num].objnum == OBJ_INDEX(obj));
-	ship* shipp = &Ships[num];
-
 	if (obj->type != OBJ_SHIP) {
 		nprintf(("AI", "Ignoring non-ship object in ship_process_pre()\n"));
 		return;
 	}
+
+	int num = obj->instance;
+	Assert(num >= 0 && num < MAX_SHIPS);
+	Assert(Ships[num].objnum == OBJ_INDEX(obj));
+	ship* shipp = &Ships[num];
 
 	if ((!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])))
@@ -8989,6 +8990,7 @@ void ship_process_post(object * obj, float frametime)
 
 	num = obj->instance;
 	Assert( num >= 0 && num < MAX_SHIPS);
+	Assert( obj->type == OBJ_SHIP );
 	Assert( Ships[num].objnum == OBJ_INDEX(obj));	
 
 	shipp = &Ships[num];

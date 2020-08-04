@@ -4474,6 +4474,8 @@ void weapon_home(object *obj, int num, float frame_time)
 // moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
 void weapon_update_missiles(object* obj, float  frame_time) {
 
+	Assertion(obj->type == OBJ_WEAPON, "weapon_update_missiles called on a non-weapon object");
+
 	weapon* wp = &Weapons[obj->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
