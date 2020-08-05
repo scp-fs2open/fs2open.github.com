@@ -251,7 +251,9 @@ void swarm_update_direction(object *objp)
 				   f2fl(Missiontime - wp->creation_time) > 0.5f &&
 				   f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) 
 		{
-			if (Swarmers_lead_targets) { // This is a copy of the relevant bits near the end of weapon_home() to make missiles lead their targets
+			// This is a copy of the relevant bits near the end of weapon_home() to make missiles lead their targets
+			// note that if the swarm missile has a target_lead_scaler of 0 this is equivalent to retail behavior (no leading)
+			if (Swarmers_lead_targets) { 
 				vec3d target_pos = wp->homing_pos;
 				vec3d vec_to_goal;
 				float dist_to_target = vm_vec_normalized_dir(&vec_to_goal, &target_pos, &objp->pos);
