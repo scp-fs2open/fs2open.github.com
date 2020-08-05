@@ -4409,7 +4409,7 @@ void weapon_home(object *obj, int num, float frame_time)
             (wp->lifeleft > 0.01f) &&
             (wp->homing_object != &obj_used_list) &&
             (wp->homing_object->type == OBJ_SHIP) && 
-            (wp->missile_list_index != -1))				// Asteroth - that is, homing primaries don't do this
+            (wip->subtype != WP_LASER))				
         {
             wp->lifeleft = 0.01f;
         }
@@ -4444,7 +4444,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	Control speed based on dot product to goal.  If close to straight ahead, move
 		//	at max speed, else move slower based on how far from ahead.
 		//	Asteroth - but not for homing primaries
-		if (old_dot < 0.90f && wp->missile_list_index != -1) {
+		if (old_dot < 0.90f && wip->subtype != WP_LASER) {
 			obj->phys_info.speed = MAX(0.2f, old_dot* (float) fabs(old_dot));
 			if (obj->phys_info.speed < max_speed*0.75f)
 				obj->phys_info.speed = max_speed*0.75f;
