@@ -1247,10 +1247,10 @@ objp->orient = objp_orient_copy; //-V587
 		matrix	out_orient, goal_orient;
 
 		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
-		vm_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, &out_orient, &vel_out, &vel_limit, &acc_limit);
+		vm_better_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, &out_orient, &vel_out, &vel_limit, &acc_limit);
 		objp->orient = out_orient;
 	} else {
-		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
+		vm_better_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
 	}
 
 	#ifndef NDEBUG

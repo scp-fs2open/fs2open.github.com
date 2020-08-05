@@ -1930,38 +1930,69 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 	}
 }
 
-void vm_scalar_interpolate_inner(float goal, float* vel, float delta_t,
+// physically models within the frame the physical behavior to get to a goal position
+// given an arbitrary initial velocity
+void vm_scalar_interpolate_calc(float goal, float* vel, float delta_t,
 	float* dist, float vel_limit, float acc_limit)
 {
-	float t1 = (vel_limit - *vel) / acc_limit;
-	float apex_t = -*vel / acc_limit;
-	float apex = *vel * apex_t / 2;
-	float half_dist = (goal - *dist - apex) / 2;
-	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);
-	float t_up = fmin(delta_t, fmin(t1, t2));
+	// Illustration of approach from initial negative velocity (t1 <= t2 means there is a straight segment)
+	// 
+	//                    _..--- goal
+	//  now            .''
+	//   |           .' |
+	//   v         .'   |
+	//   .       .'    t2
+	//    ''-.-''|
+	//     apex  t1
+	//     
+
+	float t1 = (vel_limit - *vel) / acc_limit;  // time to accelerate from the current velocity (possibly negative) to +vel_limit
+	float apex_t = -*vel / acc_limit;           // the time when we had / will have velocity zero, assuming acceleration at +acc_limit
+	float apex = *vel * apex_t / 2;             // the position we had / will have at the apex
+	float half_dist = (goal - *dist - apex) / 2;             // half the distance from apex to goal (where we hit peak velocity)
+	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);  // The time at which we reach half_dist, assuming we never hit vel_limit
+	float t_up = fmin(delta_t, fmin(t1, t2));                // We exit the initial upward curve when we either hit max_limit (t1)
+	                                                         // or we start the approach to the goal (t2), so t_up is the min
+
+	// add distance and vel for t_up
 	*dist += *vel * t_up + acc_limit * t_up * t_up / 2;
 	*vel += acc_limit * t_up;
+	// If we have run out of time in the frame, break, else advance by t_up
 	if (delta_t <= t_up) return;
 	delta_t -= t_up;
+
+	// If t1 <= t2 then we have a straight segment (cruising at +vel_limit)
 	if (t1 <= t2) {
+		// time it takes to reach the approach
 		float t_straight = fmin(delta_t, (goal - 0.5f * vel_limit * vel_limit / acc_limit - *dist) / vel_limit);
+		// add distance and vel
 		*dist += vel_limit * t_straight;
+		// If we have run out of time in the frame, break, else advance by t_straight
 		if (delta_t <= t_straight) return;
 		delta_t -= t_straight;
 	}
+
+	// On approach to the goal, with acceleration -acc_limit
+	// Our current velocity is either vel_limit if we had a straight segment, or the peak velocity at half_dist
+	// t_down is the time to slow to a stop
 	float t_down = fmin(delta_t, *vel / acc_limit);
+	// add distance and vel for t_down
 	*dist += *vel * t_down - acc_limit * t_down * t_down / 2;
 	*vel -= acc_limit * t_down;
+	// If we have run out of time in the frame, break, else advance by t_down (morally)
 	if (delta_t <= t_down) return;
+	
+	// We've arrived
 	*dist = goal;
 	*vel = 0;
 }
 
+// Does some set up for the real work
 float vm_scalar_interpolate(float goal, float delta_t, float* vel, float vel_limit, float acc_limit, float slowdown_factor)
 {
-	float effective_vel_limit = slowdown_factor * vel_limit;
-	float effective_acc_limit = slowdown_factor * acc_limit;
-	if (acc_limit <= 0) return *vel * delta_t;		// Can't move? No point in continuing!
+	float effective_vel_limit = slowdown_factor == 0 ? 0 : slowdown_factor * vel_limit;
+	float effective_acc_limit = slowdown_factor == 0 ? 0 : slowdown_factor * acc_limit;
+	if (acc_limit <= 0) return *vel * delta_t;		// Can't accelerate? No point in continuing!
 	float dist = 0;
 	float t_slow = fmin(delta_t, (fabs(*vel) - effective_vel_limit) / acc_limit);	// Time until we get down to our max speed
 	if (t_slow > 0) {																// If that's zero (were at max) or negative (below max)
@@ -1971,57 +2002,75 @@ float vm_scalar_interpolate(float goal, float delta_t, float* vel, float vel_lim
 		if (delta_t <= t_slow) return dist;
 		delta_t -= t_slow;
 	}
-	if (effective_vel_limit <= 0 || effective_acc_limit <= 0) return *vel * delta_t;		// Can't move? No point in continuing!
+	if (effective_vel_limit <= 0 || effective_acc_limit <= 0) return dist + *vel * delta_t;		// Can't move (from slowdown factor or otherwise)? Also no point in continuing!
 
+	// This makes sure that the initial acceleration is always positive
+	// If the goal is above, or if it's below but our vel will put it above us before we can slow down enough, we're good
 	if (*vel < (goal >= 0 ? fl_sqrt(2.0f * effective_acc_limit * goal) : -fl_sqrt(2.0f * effective_acc_limit * -goal)))
-		vm_scalar_interpolate_inner(goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
-	else {
+		vm_scalar_interpolate_calc(goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+	else { // else flip it so our goal is above and again we get initial positive accel
 		*vel = -*vel, dist = -dist;
-		vm_scalar_interpolate_inner(-goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+		vm_scalar_interpolate_calc(-goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
 		*vel = -*vel, dist = -dist;
 	}
 	return dist;
 }
 
-float time_to_arrival_inner(float goal, float vel, float vel_limit, float acc_limit) {
-	float t1 = (vel_limit - vel) / acc_limit;
-	float apex_t = -vel / acc_limit;
-	float apex = vel * apex_t / 2;
-	float half_dist = (goal - apex) / 2;
-	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);
-	float time;
+float time_to_arrival_calc(float goal, float vel, float vel_limit, float acc_limit) {
+	float t1 = (vel_limit - vel) / acc_limit;    // time to accelerate from the current velocity (possibly negative) to +vel_limit
+	float apex_t = -vel / acc_limit;             // the time when we had / will have velocity zero, assuming acceleration at +acc_limit
+	float apex = vel * apex_t / 2;               // the position we had / will have at the apex
+	float half_dist = (goal - apex) / 2;                     // half the distance from apex to goal (where we hit peak velocity)
+	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);  // The time at which we reach half_dist, assuming we never hit vel_limit
+	
+	float time; // accumulated time to arrival
+
+	// If t1 <= t2 then we have a straight segment (cruising at +vel_limit)
 	if (t1 <= t2) {
-		time = t1;
-		float dist = vel * t1 + acc_limit * t1 * t1 / 2;
-		vel = vel_limit;
-		time += (goal - 0.5f * vel_limit * vel_limit / acc_limit - dist) / vel_limit;
+		float dist = vel * t1 + acc_limit * t1 * t1 / 2;  // at the end of the upward bend we are at dist
+		vel = vel_limit;                                  // and we reach velocity vel_limit
+		// and the time at the start of the approach is t1 + t_straight
+		time = t1 + (goal - 0.5f * vel_limit * vel_limit / acc_limit - dist) / vel_limit;
 	}
 	else {
+		// If t2 < t1 then there is no straight segment, we just accelerate until the approach
+		// so time = t2 and vel is however much we can accelerate in that time
 		time = t2;
 		vel += acc_limit * t2;
 	}
+	// The total time is the time to the approach + the deceleration time
 	return time + vel / acc_limit;
 }
 
+// called by vm_vector_interpolate to compute a slowing factor
 float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
-	// Ignore velocities out of range for the time estimate
+	// We won't consider speeds above our max, the time estimate gets complicated and the result won't be a striaght line anyway
 	if (fabs(vel) > vel_limit) {
 		vel = vel > 0 ? vel_limit : -vel_limit;
 	}
-	return (vel < (goal >= 0 ? fl_sqrt(2.0f * acc_limit * goal) : -fl_sqrt(2.0f * acc_limit * -goal)))
-		? time_to_arrival_inner(goal, vel, vel_limit, acc_limit)
-		: time_to_arrival_inner(-goal, -vel, vel_limit, acc_limit);
+	return (vel < (goal >= 0 ? fl_sqrt(2.0f * acc_limit * goal) : -fl_sqrt(2.0f * acc_limit * -goal))) // same thing as scalar interpolate
+		? time_to_arrival_calc(goal, vel, vel_limit, acc_limit)
+		: time_to_arrival_calc(-goal, -vel, vel_limit, acc_limit);
 }
 
+// splits up the accelerating/deccelerating/go to angular position function for each component
+// and also scales their speed to make a nice straight line
+// aggresive_bank is used by forward_interpolate since it's delta_bank is usually given in frame perturbations rather than goal z
 vec3d vm_vector_interpolate(const vec3d* goal, float delta_t,
-	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit)
+	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool aggresive_bank)
 {
 	vec3d ret, slow;
+	// first, the estimated time to arrive at the goal angular position is calculated for each component
 	slow.xyz.x = time_to_arrival(goal->xyz.x, vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x);
 	slow.xyz.y = time_to_arrival(goal->xyz.y, vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y);
 	slow.xyz.z = time_to_arrival(goal->xyz.z, vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z);
+
+	// then, compute a slowing factor for the 1 or 2 fastest-to-arrive-at-their-destination components
+	// so they arrive at approximately the same time as the slowest component, so the path there is nice and straight
 	float max = fmax(slow.xyz.x, fmax(slow.xyz.y, slow.xyz.z));
 	if (max != 0) vm_vec_scale(&slow, 1 / max);
+	if (aggresive_bank) slow.xyz.z = 1.f;
+
 	ret.xyz.x = vm_scalar_interpolate(goal->xyz.x, delta_t, &vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x, slow.xyz.x);
 	ret.xyz.y = vm_scalar_interpolate(goal->xyz.y, delta_t, &vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y, slow.xyz.y);
 	ret.xyz.z = vm_scalar_interpolate(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z);
@@ -2053,7 +2102,8 @@ void vm_better_matrix_interpolate(const matrix* goal_orient, const matrix* curr_
 		return;
 	}
 
-	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit);
+	*w_out = *w_in;
+	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit, false);
 
 	// arrived at goal?
 	if (rot_axis == theta_goal) {
@@ -2121,7 +2171,7 @@ void vm_better_forward_interpolate(const vec3d* goal_f, const matrix* orient, co
 
 	theta_goal.xyz.z = delta_bank;
 	*w_out = *w_in;
-	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit);
+	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit, true);
 
 	//	normalize rotation axis and determine total rotation angle
 	float theta = vm_vec_mag(&rot_axis);
@@ -2272,7 +2322,7 @@ void vm_forward_interpolate(const vec3d *goal_f, const matrix *orient, const vec
 		}
 	}
 
-	// no rotation if delta_bank and w_in both 0 or rotational acc in forward is 0
+	// no rotation if delta_bank 0 or rotational acc or vel in forward is 0
 	no_bank = ( delta_bank == 0.0f || vel_limit->xyz.z == 0.0f || acc_limit->xyz.z == 0.0f );
 
 	// do rotation about z

@@ -729,7 +729,7 @@ TEST_F(VecmatTest, basic_math)
 	EXPECT_LE(vm_vec_mag(&error), 1e-5);*/
 }
 
-
+/*
 TEST_F(VecmatTest, turn_towards_matrix)
 {
 	matrix goal_mat = make_matrix(frand()-0.5f,
@@ -789,23 +789,23 @@ TEST_F(VecmatTest, turn_towards_matrix)
 		w_in = w_out;
 	}
 
-}
+}*/
 
 TEST_F(VecmatTest, turn_towards_vector)
 {	vec3d goal_vec;
-	static_randvec(rand32(), &goal_vec);
-	//vm_vec_make(&goal_vec, -0.0f, 0.0f, -1.0f);
+	//static_randvec(rand32(), &goal_vec);
+	vm_vec_make(&goal_vec, -1.0f, 0.0f, 0.0f);
 	vm_vec_normalize(&goal_vec);
 
-	matrix orient;// = IDENTITY_MATRIX;
-	static_randvec(rand32(), &orient.vec.fvec);
-	static_randvec(rand32(), &orient.vec.uvec);
-	static_randvec(rand32(), &orient.vec.rvec);
+	matrix orient = IDENTITY_MATRIX;
+	//static_randvec(rand32(), &orient.vec.fvec);
+	//static_randvec(rand32(), &orient.vec.uvec);
+	//static_randvec(rand32(), &orient.vec.rvec);
 	vm_orthogonalize_matrix(&orient);
 	vec3d w_in;
-	static_randvec(rand32(), &w_in);
-	//vm_vec_make(&w_in, 0, 0, 0);// -0.220586f, -0.441793f, -0.170271f);
-	float delta_t = 0.2f;
+	//static_randvec(rand32(), &w_in);
+	vm_vec_make(&w_in, 0, 0, 0);// -0.220586f, -0.441793f, -0.170271f);
+	float delta_t = 3.0f;
 	float delta_bank = 0.0f;
 	matrix new_orient;
 	vec3d w_out;
@@ -819,11 +819,12 @@ TEST_F(VecmatTest, turn_towards_vector)
 	printf("goal_vec %f %f %f\n", goal_vec.xyz.x, goal_vec.xyz.y, goal_vec.xyz.z);
 	printf("orig_w %f %f %f\n", w_in.xyz.x, w_in.xyz.y, w_in.xyz.z);
 	for (int i = 0; i < 100; i++) {
+		goal_vec = orient.vec.rvec;
 		if (i == 1) {
 			printf("");
 		}
-		delta_t = frand();
-		delta_t = delta_t * delta_t + 0.01f;
+		//delta_t = frand();
+		//delta_t = delta_t * delta_t + 0.01f;
 		vm_better_forward_interpolate(&goal_vec, &orient, &w_in, delta_t, delta_bank , &new_orient, &w_out, &vel_limit, &acc_limit);
 		printf("%i : %f\n", i, delta_t);
 		printf("w_out %f %f %f\n", w_out.xyz.x, w_out.xyz.y, w_out.xyz.z);
