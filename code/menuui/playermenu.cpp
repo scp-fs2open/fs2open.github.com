@@ -1448,6 +1448,13 @@ void player_finish_select(const char* callsign, bool is_multi) {
 		// NOTE: this may fail if there is no current campaign, it's not fatal
 		Pilot.load_savefile(Player, Player->current_campaign);
 	}
+
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->player_was_multi = 1;
+	} else {
+		Player->player_was_multi = 0;
+	}
+
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
