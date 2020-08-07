@@ -1450,6 +1450,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				
 			}
 
+				if (optional_string("+Ship Classes:")) {
+				stuff_string_list(wip->ship_class_restrict_temp);
+
+			}
+
+				if (optional_string("+Species:")) {
+				stuff_string_list(wip->ship_species_restrict_temp);
+
+			}
+
 			if (wip->is_locked_homing()) {
 				// locked homing missiles have a much longer lifespan than the AI think they do
 				wip->max_lifetime = wip->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR; 
@@ -3680,14 +3690,45 @@ void weapon_level_init()
 		if ( Ships_inited ) {
 			// populate ship type lock restrictions
 			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
-				int idx = ship_type_name_lookup((char*)Weapon_info[i].ship_type_restrict_temp[j].c_str());
+				const char* name = Weapon_info[i].ship_type_restrict_temp[j].c_str();
+				int idx = ship_type_name_lookup(name);
 
 				if ( idx >= 0 ) {
 					Weapon_info[i].ship_type_restrict.push_back(idx);
 				}
+				else {
+					Warning(LOCATION, "Couldn't find multi lock restriction type '%s' for weapon '%s'", name, Weapon_info[i].name);
+				}
 			}
-
 			Weapon_info[i].ship_type_restrict_temp.clear();
+
+			// populate ship class lock restrictions
+			for (int j = 0; j < (int)Weapon_info[i].ship_class_restrict_temp.size(); ++j) {
+				const char* name = Weapon_info[i].ship_class_restrict_temp[j].c_str();
+				int idx = ship_info_lookup(name);
+
+				if (idx >= 0) {
+					Weapon_info[i].ship_class_restrict.push_back(idx);
+				}
+				else {
+					Warning(LOCATION, "Couldn't find multi lock restriction class '%s' for weapon '%s'", name, Weapon_info[i].name);
+				}
+			}
+			Weapon_info[i].ship_class_restrict_temp.clear();
+
+			// populate ship species lock restrictions
+			for (int j = 0; j < (int)Weapon_info[i].ship_species_restrict_temp.size(); ++j) {
+				const char* name = Weapon_info[i].ship_species_restrict_temp[j].c_str();
+				int idx = species_info_lookup(name);
+
+				if (idx >= 0) {
+					Weapon_info[i].ship_species_restrict.push_back(idx);
+				}
+				else {
+					Warning(LOCATION, "Couldn't find multi lock restriction species '%s' for weapon '%s'", name, Weapon_info[i].name);
+				}
+			}
+			Weapon_info[i].ship_species_restrict_temp.clear();
 		}
 	}
 
@@ -7806,6 +7847,10 @@ void weapon_info::reset()
 	this->max_seekers_per_target = 1;
 	this->ship_type_restrict.clear();
 	this->ship_type_restrict_temp.clear();
+	this->ship_class_restrict.clear();
+	this->ship_class_restrict_temp.clear();
+	this->ship_species_restrict.clear();
+	this->ship_species_restrict_temp.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
 
@@ -8239,7 +8284,29 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 
 bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
 {
-	// Determine if there are any restrictions, treating an empty list as true
+	// Determine if there are any type restrictions, treating an empty list as true
 	return (wip->ship_type_restrict.empty()) || 
 			std::any_of(wip->ship_type_restrict.begin(), wip->ship_type_restrict.end(), [ship_type](int type) { return type == ship_type; });
+}
+
+bool weapon_can_lock_on_ship_class(weapon_info* wip, int ship_class)
+{
+	// Determine if there are any class restrictions, treating an empty list as true
+	return (wip->ship_class_restrict.empty()) ||
+		std::any_of(wip->ship_class_restrict.begin(), wip->ship_class_restrict.end(), [ship_class](int restricted_class) { return restricted_class == ship_class; });
+}
+
+bool weapon_can_lock_on_ship_species(weapon_info* wip, int species)
+{
+	// Determine if there are any species restrictions, treating an empty list as true
+	return (wip->ship_species_restrict.empty()) ||
+		std::any_of(wip->ship_species_restrict.begin(), wip->ship_species_restrict.end(), [species](int restricted_species) { return restricted_species == species; });
+}
+
+bool weapon_multilock_can_lock_on_ship(weapon_info* wip, object* ship)
+{
+	int type = ship->ty
+	// Determine if there are any restrictions, treating an empty list as true
+	return (wip->ship_species_restrict.empty()) ||
+		std::any_of(wip->ship_species_restrict.begin(), wip->ship_species_restrict.end(), [species](int restricted_species) { return restricted_species == species; });
 }

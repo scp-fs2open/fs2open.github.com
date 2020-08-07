@@ -332,6 +332,10 @@ struct weapon_info
 
 	SCP_vector<int> ship_type_restrict;
 	SCP_vector<SCP_string> ship_type_restrict_temp;
+	SCP_vector<int> ship_class_restrict;
+	SCP_vector<SCP_string> ship_class_restrict_temp;
+	SCP_vector<int> ship_species_restrict;
+	SCP_vector<SCP_string> ship_species_restrict_temp;
 
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
 	bool launch_reset_locks;				// Lock indicators reset after firing
@@ -656,7 +660,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 int weapon_get_max_missile_seekers(weapon_info *wip);
 
 // return if this weapon can lock on this ship type
-bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type);
+bool weapon_multilock_can_lock_on_ship(weapon_info *wip, ship* ship);
 
 
 #endif
