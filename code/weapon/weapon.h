@@ -659,8 +659,8 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);
 
-// return if this weapon can lock on this ship type
-bool weapon_multilock_can_lock_on_ship(weapon_info *wip, ship* ship);
+// return if this weapon can lock on this ship, based on its type, class or species
+bool weapon_multilock_can_lock_on_ship(weapon_info *wip, int ship_num);
 
 
 #endif

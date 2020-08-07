@@ -8282,31 +8282,18 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 	return max_target_locks;
 }
 
-bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
+bool weapon_multilock_can_lock_on_ship(weapon_info* wip, int ship_num)
 {
-	// Determine if there are any type restrictions, treating an empty list as true
-	return (wip->ship_type_restrict.empty()) || 
-			std::any_of(wip->ship_type_restrict.begin(), wip->ship_type_restrict.end(), [ship_type](int type) { return type == ship_type; });
-}
-
-bool weapon_can_lock_on_ship_class(weapon_info* wip, int ship_class)
-{
-	// Determine if there are any class restrictions, treating an empty list as true
-	return (wip->ship_class_restrict.empty()) ||
-		std::any_of(wip->ship_class_restrict.begin(), wip->ship_class_restrict.end(), [ship_class](int restricted_class) { return restricted_class == ship_class; });
-}
-
-bool weapon_can_lock_on_ship_species(weapon_info* wip, int species)
-{
-	// Determine if there are any species restrictions, treating an empty list as true
-	return (wip->ship_species_restrict.empty()) ||
-		std::any_of(wip->ship_species_restrict.begin(), wip->ship_species_restrict.end(), [species](int restricted_species) { return restricted_species == species; });
-}
-
-bool weapon_multilock_can_lock_on_ship(weapon_info* wip, object* ship)
-{
-	int type = ship->ty
-	// Determine if there are any restrictions, treating an empty list as true
-	return (wip->ship_species_restrict.empty()) ||
-		std::any_of(wip->ship_species_restrict.begin(), wip->ship_species_restrict.end(), [species](int restricted_species) { return restricted_species == species; });
+	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
+	int class_num = Ships[ship_num].ship_info_index;
+	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
+	auto& types = wip->ship_type_restrict;
+	auto& classes = wip->ship_class_restrict;
+	auto& species = wip->ship_species_restrict;
+	// if you didn't specify any restrictions, you can always lock
+	if (types.empty() && classes.empty() && species.empty()) return true;
+	// otherwise, you're good as long as one of the lists is specified and the target's in it
+	return 	(!types.empty() && std::find(types.begin(), types.end(), type_num) != types.end()) ||
+		(!classes.empty() && std::find(classes.begin(), classes.end(), class_num) != classes.end()) ||
+		(!species.empty() && std::find(species.begin(), species.end(), species_num) != species.end());
 }
