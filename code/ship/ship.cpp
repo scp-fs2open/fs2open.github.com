@@ -8880,10 +8880,77 @@ static void lethality_decay(ai_info *aip)
 #endif
 }
 
-void ship_process_pre(object *objp, float frametime)
-{
-	if ( (objp == NULL) || !frametime )
+// moved out of ship_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
+void ship_evaluate_ai(object* obj, float frametime) {
+
+	int num = obj->instance;
+	Assertion(obj->type == OBJ_SHIP, "Non-ship object passed to ship_evaluate_ai");
+	Assertion(num >= 0 && num < MAX_SHIPS, "Invalid ship instance num in ship_evaluate_ai");
+	Assertion(Ships[num].objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
+
+	ship* shipp = &Ships[num];
+
+	//rotate player subobjects since its processed by the ai functions
+	// AL 2-19-98: Fire turret for player if it exists
+	//WMC - changed this to call process_subobjects
+	if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
+	{
+		ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
+		if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
+		{
+			if (aip->support_ship_objnum >= 0)
+			{
+				if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+					return;
+			}
+		}
+		if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
+			process_subobjects(OBJ_INDEX(obj));
+	}
+
+	// update ship lethality
+	if (Ships[num].ai_index >= 0 ){
+		if (!physics_paused && !ai_paused) {
+			lethality_decay(&Ai_info[Ships[num].ai_index]);
+		}
+	}
+
+	// if the ship is an observer ship don't need to do AI
+	if ( obj->type == OBJ_OBSERVER)  {
 		return;
+	}
+
+	// Goober5000 - player may want to use AI
+	if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
+		if (!physics_paused && !ai_paused){
+			ai_process( obj, Ships[num].ai_index, frametime );
+		}
+	}
+}
+
+void ship_process_pre(object *obj, float frametime)
+{
+	// If Ai_before_physics is false everything following is evaluated in ship_process_post()
+	// Also only multi masters do ai
+	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Ai_before_physics)
+		return;
+
+	if (obj->type != OBJ_SHIP) {
+		nprintf(("AI", "Ignoring non-ship object in ship_process_pre()\n"));
+		return;
+	}
+
+	int num = obj->instance;
+	Assert(num >= 0 && num < MAX_SHIPS);
+	Assert(Ships[num].objnum == OBJ_INDEX(obj));
+	ship* shipp = &Ships[num];
+
+	if ((!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
+		|| ((Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])))
+		&& !(shipp->flags[Ship_Flags::Depart_warp]))
+	{
+		ship_evaluate_ai(obj, frametime);
+	}
 }
 
 MONITOR( NumShips )
@@ -8939,7 +9006,7 @@ void ship_process_post(object * obj, float frametime)
 	ship_info *sip;
 
 	if(obj->type != OBJ_SHIP){
-		nprintf(("Network","Ignoring non-ship object in ship_process_post()\n"));
+		nprintf(("General","Ignoring non-ship object in ship_process_post()\n"));
 		return;
 	}
 
@@ -9092,47 +9159,13 @@ void ship_process_post(object * obj, float frametime)
 		// maybe fire a corkscrew missile (just like swarmers)
 		cscrew_maybe_fire_missile(num);
 
-		//rotate player subobjects since its processed by the ai functions
-		// AL 2-19-98: Fire turret for player if it exists
-		//WMC - changed this to call process_subobjects
-		if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
-		{
-			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
-			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
-			{
-				if (aip->support_ship_objnum >= 0)
-				{
-					if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-						return;
-				}
-			}
-			if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
-				process_subobjects(OBJ_INDEX(obj));
-		}
-
 		if (obj == Player_obj) {
 			ship_check_player_distance();
 		}
 
-		// update ship lethality
-		if ( Ships[num].ai_index >= 0 ){
-			if (!physics_paused && !ai_paused){
-				lethality_decay(&Ai_info[Ships[num].ai_index]);
-			}
-		}
-
-		// if the ship is an observer ship don't need to do AI
-		if ( obj->type == OBJ_OBSERVER)  {
-			return;
-		}
-
-		// Goober5000 - player may want to use AI
-		if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
-			if (!physics_paused && !ai_paused){
-				ai_process( obj, Ships[num].ai_index, frametime );
-			}
-		}
-	}			
+		if (!Ai_before_physics)
+			ship_evaluate_ai(obj, frametime);
+	}
 }
 
 
