@@ -236,6 +236,29 @@ enum InFlightSoundType
 
 #define MAX_SUBSTITUTION_PATTERNS	10
 
+class filter {
+public:
+	virtual bool apply(int ship) = 0;
+	virtual bool active() = 0;
+	virtual void clear() = 0;
+	virtual ~filter() {}
+};
+
+struct weapon_info;
+
+class multilock_filter {
+public:
+	multilock_filter();
+	void clear();
+	void init(weapon_info& wip);
+
+	// return if this weapon can lock on this ship, based on its type, class or species
+	bool can_lock_on_ship(int ship_num);
+private:
+	std::array<std::unique_ptr<filter>, 3> filters;
+	static void init_vec_filter(const weapon_info& wip, std::unique_ptr<filter>& dest, SCP_vector<SCP_string>& strs, int (*fun)(const char*));
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -330,11 +353,9 @@ struct weapon_info
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
 
-	SCP_vector<int> ship_type_restrict;
+	multilock_filter multilock;
 	SCP_vector<SCP_string> ship_type_restrict_temp;
-	SCP_vector<int> ship_class_restrict;
 	SCP_vector<SCP_string> ship_class_restrict_temp;
-	SCP_vector<int> ship_species_restrict;
 	SCP_vector<SCP_string> ship_species_restrict_temp;
 
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
@@ -658,9 +679,5 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);
-
-// return if this weapon can lock on this ship, based on its type, class or species
-bool weapon_multilock_can_lock_on_ship(weapon_info *wip, int ship_num);
-
 
 #endif

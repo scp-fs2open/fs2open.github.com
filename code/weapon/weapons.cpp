@@ -3135,24 +3135,24 @@ void weapon_sort_by_type()
 
 			case WP_LASER:
 				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_primaries[num_child_primaries++] = Weapon_info[i];
+					child_primaries[num_child_primaries++] = std::move(Weapon_info[i]);
 				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_lasers[num_big_lasers++] = Weapon_info[i];
+					big_lasers[num_big_lasers++] = std::move(Weapon_info[i]);
 				else
-					lasers[num_lasers++] = Weapon_info[i];
+					lasers[num_lasers++] = std::move(Weapon_info[i]);
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++] = Weapon_info[i];
+				beams[num_beams++] = std::move(Weapon_info[i]);
 				break;
 
 			case WP_MISSILE:
 				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_secondaries[num_child_secondaries++] = Weapon_info[i];
+					child_secondaries[num_child_secondaries++] = std::move(Weapon_info[i]);
 				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_missiles[num_big_missiles++] = Weapon_info[i];
+					big_missiles[num_big_missiles++] = std::move(Weapon_info[i]);
 				else
-					missiles[num_missiles++]=Weapon_info[i];
+					missiles[num_missiles++] = std::move(Weapon_info[i]);
 				break;
 
 			default:
@@ -3164,28 +3164,28 @@ void weapon_sort_by_type()
 
 	// reorder the weapon_info structure according to our rules defined above
 	for (i = 0; i < num_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = lasers[i];
+		Weapon_info[weapon_index] = std::move(lasers[i]);
 
 	for (i = 0; i < num_big_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_lasers[i];
+		Weapon_info[weapon_index] = std::move(big_lasers[i]);
 
 	for (i = 0; i < num_beams; i++, weapon_index++)
-		Weapon_info[weapon_index] = beams[i];
+		Weapon_info[weapon_index] = std::move(beams[i]);
 
 	for (i = 0; i < num_child_primaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_primaries[i];
+		Weapon_info[weapon_index] = std::move(child_primaries[i]);
 
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
 	for (i = 0; i < num_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = missiles[i];
+		Weapon_info[weapon_index] = std::move(missiles[i]);
 
 	for (i = 0; i < num_big_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_missiles[i];
+		Weapon_info[weapon_index] = std::move(big_missiles[i]);
 
 	for (i = 0; i < num_child_secondaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_secondaries[i];
+		Weapon_info[weapon_index] = std::move(child_secondaries[i]);
 
 
 	if (lasers)			delete [] lasers;
@@ -3689,46 +3689,7 @@ void weapon_level_init()
 
 		if ( Ships_inited ) {
 			// populate ship type lock restrictions
-			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
-				const char* name = Weapon_info[i].ship_type_restrict_temp[j].c_str();
-				int idx = ship_type_name_lookup(name);
-
-				if ( idx >= 0 ) {
-					Weapon_info[i].ship_type_restrict.push_back(idx);
-				}
-				else {
-					Warning(LOCATION, "Couldn't find multi lock restriction type '%s' for weapon '%s'", name, Weapon_info[i].name);
-				}
-			}
-			Weapon_info[i].ship_type_restrict_temp.clear();
-
-			// populate ship class lock restrictions
-			for (int j = 0; j < (int)Weapon_info[i].ship_class_restrict_temp.size(); ++j) {
-				const char* name = Weapon_info[i].ship_class_restrict_temp[j].c_str();
-				int idx = ship_info_lookup(name);
-
-				if (idx >= 0) {
-					Weapon_info[i].ship_class_restrict.push_back(idx);
-				}
-				else {
-					Warning(LOCATION, "Couldn't find multi lock restriction class '%s' for weapon '%s'", name, Weapon_info[i].name);
-				}
-			}
-			Weapon_info[i].ship_class_restrict_temp.clear();
-
-			// populate ship species lock restrictions
-			for (int j = 0; j < (int)Weapon_info[i].ship_species_restrict_temp.size(); ++j) {
-				const char* name = Weapon_info[i].ship_species_restrict_temp[j].c_str();
-				int idx = species_info_lookup(name);
-
-				if (idx >= 0) {
-					Weapon_info[i].ship_species_restrict.push_back(idx);
-				}
-				else {
-					Warning(LOCATION, "Couldn't find multi lock restriction species '%s' for weapon '%s'", name, Weapon_info[i].name);
-				}
-			}
-			Weapon_info[i].ship_species_restrict_temp.clear();
+			Weapon_info[i].multilock.init(Weapon_info[i]);
 		}
 	}
 
@@ -7845,11 +7806,9 @@ void weapon_info::reset()
 	
 	this->max_seeking = 1;
 	this->max_seekers_per_target = 1;
-	this->ship_type_restrict.clear();
+	this->multilock.clear();
 	this->ship_type_restrict_temp.clear();
-	this->ship_class_restrict.clear();
 	this->ship_class_restrict_temp.clear();
-	this->ship_species_restrict.clear();
 	this->ship_species_restrict_temp.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
@@ -8282,18 +8241,59 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 	return max_target_locks;
 }
 
-bool weapon_multilock_can_lock_on_ship(weapon_info* wip, int ship_num)
+struct vec_filter : public filter {
+	SCP_vector<int> allowed;
+	int (*to_index)(int);
+	vec_filter(int (*_to_index)(int)) : to_index(_to_index) {}
+	bool apply(int ship) {
+		return active() && std::binary_search(allowed.begin(), allowed.end(), to_index(ship));
+	}
+	bool active() {
+		return !allowed.empty();
+	}
+	void clear() {
+		allowed.clear();
+	}
+};
+
+// target filtering functions
+multilock_filter::multilock_filter() : filters{
+	std::make_unique<vec_filter>([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].class_type; }),
+	std::make_unique<vec_filter>([](int ship_num) { return Ships[ship_num].ship_info_index; }),
+	std::make_unique<vec_filter>([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].species; })
+} {}
+
+// initializing functions
+void multilock_filter::init(weapon_info& wip) {
+	init_vec_filter(wip, filters[0], wip.ship_type_restrict_temp, &ship_type_name_lookup);
+	init_vec_filter(wip, filters[1], wip.ship_class_restrict_temp, &ship_info_lookup);
+	init_vec_filter(wip, filters[2], wip.ship_species_restrict_temp, &species_info_lookup);
+}
+
+void multilock_filter::clear() {
+	for (auto& f : filters) f.get()->clear();
+}
+
+bool multilock_filter::can_lock_on_ship(int ship_num)
 {
-	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
-	int class_num = Ships[ship_num].ship_info_index;
-	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
-	auto& types = wip->ship_type_restrict;
-	auto& classes = wip->ship_class_restrict;
-	auto& species = wip->ship_species_restrict;
 	// if you didn't specify any restrictions, you can always lock
-	if (types.empty() && classes.empty() && species.empty()) return true;
+	if (!std::any_of(filters.begin(), filters.end(), [](auto& f) { return f.get()->active(); })) return true;
 	// otherwise, you're good as long as one of the lists is specified and the target's in it
-	return 	(!types.empty() && std::find(types.begin(), types.end(), type_num) != types.end()) ||
-		(!classes.empty() && std::find(classes.begin(), classes.end(), class_num) != classes.end()) ||
-		(!species.empty() && std::find(species.begin(), species.end(), species_num) != species.end());
+	return std::any_of(filters.begin(), filters.end(), [=](auto& f) { return f.get()->apply(ship_num); });
+}
+
+void multilock_filter::init_vec_filter(const weapon_info& wip, std::unique_ptr<filter>& dest, SCP_vector<SCP_string>& strs, int (*fun)(const char*)) {
+	SCP_vector<int>& result = static_cast<vec_filter*>(dest.get())->allowed;
+	for (auto s : strs) {
+		const char* name = s.c_str();
+		int idx = fun(name);
+		if (idx >= 0) {
+			result.push_back(idx);
+		}
+		else {
+			Warning(LOCATION, "Couldn't find multi lock restriction type '%s' for weapon '%s'", name, wip.name);
+		}
+	}
+	strs.clear();
+	std::sort(result.begin(), result.end());
 }

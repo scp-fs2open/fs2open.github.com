@@ -919,7 +919,7 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}*/
 
-		if (!weapon_multilock_can_lock_on_ship(wip, A->instance)) {
+		if (!wip->multilock.can_lock_on_ship(A->instance)) {
 			continue;
 		}
 
@@ -1037,7 +1037,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !wip->multilock.can_lock_on_ship(lock_slot->obj->instance) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1105,7 +1105,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !wip->multilock.can_lock_on_ship(lock_slot->obj->instance) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
