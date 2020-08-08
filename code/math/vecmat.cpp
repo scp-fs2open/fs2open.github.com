@@ -1150,47 +1150,64 @@ void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const ve
 	vm_vec_scale_add(dest, p1, d1, numerator / denominator);
 }
 
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src) {
+	float mag = vm_vec_mag(src);
+	if (mag < SMALL_NUM) return false;
+	vm_vec_copy_scale(dst, src, 1 / mag);
+	return true;
+}
+
+// Produce a vector perpendicular to the normalized input vector unit_normal,
+// in the direction preference (if not null). If that direction doesn't work it picks the z or y direction,
+// so that an output perpendicular vector is guaranteed.
+void vm_orthogonalize_one_vec(vec3d* dst, const vec3d* unit_normal, const vec3d* preference) {
+	if (preference) {
+		vm_vec_projection_onto_plane(dst, preference, unit_normal);
+		if (vm_maybe_normalize(dst, dst)) {
+			// The process of rescaling dst may have exaggerated floating point inaccuracy
+			// so that dst is no longer approximately orthogonal to unit_normal,
+			// so project it again.
+			if (fabs(vm_vec_dot(dst, unit_normal)) > 1e-4f) {
+				vm_vec_projection_onto_plane(dst, dst, unit_normal);
+				vm_vec_normalize(dst);
+			}
+			return;
+		}
+	}
+	vm_vec_projection_onto_plane(dst, &vmd_z_vector, unit_normal);
+	if (vm_maybe_normalize(dst, dst)) return;
+	vm_vec_projection_onto_plane(dst, &vmd_y_vector, unit_normal);
+}
+
+// Produce two vectors perpendicular to each other from two arbitrary vectors src1, src2.
+// In the normal case dst1 will point in the direction of src1 and dst2 will be in the plane
+// of src1, src2 and perpendicular to dst1, but in the case of degeneracy it tries to
+// give useful results. The vector preference is a third vector (which may be null)
+// that will be considered in case the first two vectors are zero.
+void vm_orthogonalize_two_vec(vec3d* dst1, vec3d* dst2, const vec3d* src1, const vec3d* src2, const vec3d* preference) {
+	if (vm_maybe_normalize(dst1, src1))
+		vm_orthogonalize_one_vec(dst2, dst1, src2);
+	else if (vm_maybe_normalize(dst2, src2))
+		vm_orthogonalize_one_vec(dst1, dst2, src1);
+	else {
+		if (!preference || !vm_maybe_normalize(dst1, preference))
+			vm_vec_make(dst1, 1, 0, 0);
+		vm_orthogonalize_one_vec(dst2, dst1, src2);
+	}
+}
+
 //make sure matrix is orthogonal
 //computes a matrix from one or more vectors. The forward vector is required,
 //with the other two being optional.  If both up & right vectors are passed,
 //the up vector is used.  If only the forward vector is passed, a bank of
 //zero is assumed
-//returns ptr to matrix
 void vm_orthogonalize_matrix(matrix *m_src)
 {
-	float umag, rmag;
-	matrix tempm;
-	matrix * m = &tempm;
-
-	vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec);
-
-	umag = vm_vec_mag(&m_src->vec.uvec);
-	rmag = vm_vec_mag(&m_src->vec.rvec);
-	if (umag <= 0.0f) {  // no up vector to use..
-		if (rmag <= 0.0f) {  // no right vector either, so make something up
-			if (!m->vec.fvec.xyz.x && !m->vec.fvec.xyz.z && m->vec.fvec.xyz.y)  // vertical vector
-				vm_vec_make(&m->vec.uvec, 0.0f, 0.0f, 1.0f);
-			else
-				vm_vec_make(&m->vec.uvec, 0.0f, 1.0f, 0.0f);
-
-		} else {  // use the right vector to figure up vector
-			vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
-			vm_vec_normalize(&m->vec.uvec);
-		}
-
-	} else {  // use source up vector
-		vm_vec_copy_normalize(&m->vec.uvec, &m_src->vec.uvec);
-	}
-
-	// use forward and up vectors as good vectors to calculate right vector
-	vm_vec_cross(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
-		
-	//normalize new perpendicular vector
-	vm_vec_normalize(&m->vec.rvec);
-
-	//now recompute up vector, in case it wasn't entirely perpendicular
-	vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
-	*m_src = tempm;
+	vec3d fvec, uvec;
+	vm_orthogonalize_two_vec(&fvec, &uvec, &m_src->vec.fvec, &m_src->vec.uvec, &m_src->vec.rvec);
+	vm_vec_cross(&m_src->vec.rvec, &uvec, &fvec);
+	m_src->vec.fvec = fvec;
+	m_src->vec.uvec = uvec;
 }
 
 // like vm_orthogonalize_matrix(), except that zero vectors can exist within the

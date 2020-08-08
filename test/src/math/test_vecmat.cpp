@@ -687,3 +687,32 @@ TEST_F(VecmatTest, test_vm_vec_copy_normalize)
 	}
 }
 
+TEST_F(VecmatTest, orthogonalize_matrix) {
+	matrix input_matrix = make_matrix(
+		0.636235237f, -0.0492025875f, -0.769924462f,
+		-0.513205945f, -0.419860631f, 0.748556376f,
+		-0.513205945f, -0.419860631f, 0.748556376f);
+	for (int i = 0; i < 10000; i++) {
+		matrix hopefully_orthogonal_matrix = input_matrix;
+		vm_orthogonalize_matrix(&hopefully_orthogonal_matrix);
+
+		// Test that the matrix we got is orthogonal
+		matrix transpose, hopefully_identity;
+		vm_copy_transpose(&transpose, &hopefully_orthogonal_matrix);
+		vm_matrix_x_matrix(&hopefully_identity, &transpose, &hopefully_orthogonal_matrix);
+		EXPECT_MATRIX_NEAR(vmd_identity_matrix, hopefully_identity);
+
+		// Test that old_fvec is (approximately) in the span of {new_fvec}
+		vec3d diff;
+		vm_vec_cross(&diff, &hopefully_orthogonal_matrix.vec.fvec, &input_matrix.vec.fvec);
+		EXPECT_LE(vm_vec_mag(&diff), 1e-7);
+
+		// Test that old_uvec is (approximately) in the span of {new_fvec, new_uvec} (which we know has new_rvec as normal vector)
+		float dot = vm_vec_dot(&input_matrix.vec.uvec, &hopefully_orthogonal_matrix.vec.rvec);
+		EXPECT_NEAR(dot, 0, 1e-7);
+
+		for (int j = 0; j < 9; j++)
+			input_matrix.a1d[j] = frand() - 0.5f;
+	}
+}
+
