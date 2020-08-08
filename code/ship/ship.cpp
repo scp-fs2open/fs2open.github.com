@@ -881,6 +881,7 @@ void ship_info::clone(const ship_info& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_ambient_sound = other.debris_ambient_sound;
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
@@ -1195,6 +1196,7 @@ void ship_info::move(ship_info&& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_ambient_sound = other.debris_ambient_sound;
 
 	std::swap(subsystems, other.subsystems);
 	std::swap(n_subsystems, other.n_subsystems);
@@ -1568,6 +1570,7 @@ ship_info::ship_info()
 	debris_max_hitpoints = -1.0f;
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
+	debris_ambient_sound = GameSounds::DEBRIS;
 
 	n_subsystems = 0;
 	subsystems = NULL;
@@ -1982,9 +1985,7 @@ static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
 
 	gamesnd_id temp_index;
 
-	parse_game_sound(name, &temp_index);
-
-	if (temp_index.isValid())
+	if (parse_game_sound(name, &temp_index))
 		sip->ship_sounds.insert(std::make_pair(id, temp_index));
 }
 
@@ -2852,6 +2853,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx);
+
+		parse_game_sound("+Collision Sound Light:", &sip->collision_physics.collision_sound_light_idx);
+		parse_game_sound("+Collision Sound Heavy:", &sip->collision_physics.collision_sound_heavy_idx);
+		parse_game_sound("+Collision Sound Shielded:", &sip->collision_physics.collision_sound_shielded_idx);
 	}
 
 
@@ -2915,7 +2920,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
 		}
-		
+		gamesnd_id ambient_snd;
+		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
+			sip->debris_ambient_sound = ambient_snd;
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {

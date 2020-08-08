@@ -1095,6 +1095,7 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	gamesnd_id		debris_ambient_sound;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

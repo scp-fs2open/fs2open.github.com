@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
-
+#include "gamesnd/gamesnd.h"
 
 class object;
 struct CFILE;
@@ -37,6 +37,7 @@ typedef struct debris {
 	int		damage_type_idx;	// Damage type of this debris
 	int		ship_info_index;	// Ship info index of the ship type debris came from
 	int		team;					// Team of the ship where the debris came from
+	gamesnd_id ambient_sound;	// Ambient looping sound
 	int		objnum;				// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
 	int		must_survive_until;	//WMC - timestamp of earliest point that it can be murthered.

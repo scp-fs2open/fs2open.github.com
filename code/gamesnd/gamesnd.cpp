@@ -417,8 +417,9 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
-	if(optional_string(tag))
+bool parse_game_sound(const char* tag, gamesnd_id* idx_dest)
+{
+	if (optional_string(tag))
 	{
 		SCP_string buf;
 		stuff_string(buf, F_NAME);
@@ -426,10 +427,13 @@ void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
 		*idx_dest = gamesnd_get_by_name(buf.c_str());
 
 		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
-		if (!idx_dest->isValid() && buf != "-1") {
-			error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
-		}
+		if (idx_dest->isValid() || buf == "-1")
+			return true;
+		
+		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
 	}
+
+	return false;
 }
 
 /**

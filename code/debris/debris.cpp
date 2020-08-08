@@ -243,7 +243,7 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
-			obj_snd_assign(objnum, GameSounds::DEBRIS, &vmd_zero_vector, 0);
+			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector, 0);
 			db->sound_delay = 0;
 		}
 	} else {
@@ -505,6 +505,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->damage_type_idx = shipp->debris_damage_type_idx;
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;
+	db->ambient_sound = sip->debris_ambient_sound;
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
