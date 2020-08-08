@@ -263,13 +263,15 @@ struct shield_impact_data {
 };
 
 struct rocketui_data {
-	matrix4 modelViewMatrix;
 	matrix4 projMatrix;
 
+	vec2d offset;
 	int textured;
 	int baseMapIndex;
 
-	float pad[2];
+	float horizontalSwipeOffset;
+
+	float pad[3];
 };
 
 struct lightshaft_data {
