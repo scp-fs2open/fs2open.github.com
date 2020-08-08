@@ -8258,9 +8258,9 @@ struct vec_filter : public filter {
 
 // target filtering functions
 multilock_filter::multilock_filter() : filters{
-	std::make_unique<vec_filter>([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].class_type; }),
-	std::make_unique<vec_filter>([](int ship_num) { return Ships[ship_num].ship_info_index; }),
-	std::make_unique<vec_filter>([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].species; })
+	std::unique_ptr<vec_filter>(new vec_filter([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].class_type; })),
+	std::unique_ptr<vec_filter>(new vec_filter([](int ship_num) { return Ships[ship_num].ship_info_index; })),
+	std::unique_ptr<vec_filter>(new vec_filter([](int ship_num) { return Ship_info[Ships[ship_num].ship_info_index].species; }))
 } {}
 
 // initializing functions
