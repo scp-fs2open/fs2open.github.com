@@ -8277,9 +8277,11 @@ void multilock_filter::clear() {
 bool multilock_filter::can_lock_on_ship(int ship_num)
 {
 	// if you didn't specify any restrictions, you can always lock
-	if (!std::any_of(filters.begin(), filters.end(), [](auto& f) { return f.get()->active(); })) return true;
+	if (!std::any_of(filters.begin(), filters.end(),
+		[](std::unique_ptr<vec_filter>& f) { return f.get()->active(); })) return true;
 	// otherwise, you're good as long as one of the lists is specified and the target's in it
-	return std::any_of(filters.begin(), filters.end(), [=](auto& f) { return f.get()->apply(ship_num); });
+	return std::any_of(filters.begin(), filters.end(),
+		[=](std::unique_ptr<vec_filter>& f) { return f.get()->apply(ship_num); });
 }
 
 void multilock_filter::init_vec_filter(const weapon_info& wip, std::unique_ptr<filter>& dest, SCP_vector<SCP_string>& strs, int (*fun)(const char*)) {
