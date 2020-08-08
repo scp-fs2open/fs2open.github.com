@@ -6120,9 +6120,9 @@ void ship_weapon::clear()
     num_secondary_banks = 0;
     num_tertiary_banks = 0;
 
-    current_primary_bank = 0;
-    current_secondary_bank = 0;
-    current_tertiary_bank = 0;
+    current_primary_bank = -1;
+    current_secondary_bank = -1;
+    current_tertiary_bank = -1;
 
     previous_primary_bank = 0;
     previous_secondary_bank = 0;
