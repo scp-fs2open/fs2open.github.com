@@ -1488,6 +1488,9 @@ ship_info::ship_info()
 	collision_physics.rotation_factor = COLLISION_ROTATION_FACTOR;
 	collision_physics.reorient_mult = 1.0f;
 	collision_physics.landing_sound_idx = gamesnd_id();
+	collision_physics.collision_sound_light_idx = gamesnd_id();
+	collision_physics.collision_sound_heavy_idx = gamesnd_id();
+	collision_physics.collision_sound_shielded_idx = gamesnd_id();
 
 	shockwave_create_info_init(&shockwave);
 	explosion_propagates = 0;

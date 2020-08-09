@@ -953,6 +953,41 @@ void collide_ship_ship_sounds_init()
 	AI_collide_shield_sound     = sound_handle::invalid();
 }
 
+gamesnd_id choose_collision_sound(gamesnd_id default_snd, object *A, object *B)
+{
+	gamesnd_id a_snd, b_snd;
+
+	if (default_snd == gamesnd_id(GameSounds::SHIP_SHIP_HEAVY))
+	{
+		if (A->type == OBJ_SHIP)
+			a_snd = Ship_info[Ships[A->instance].ship_info_index].collision_physics.collision_sound_heavy_idx;
+		if (B->type == OBJ_SHIP)
+			b_snd = Ship_info[Ships[B->instance].ship_info_index].collision_physics.collision_sound_heavy_idx;
+	}
+	else if (default_snd == gamesnd_id(GameSounds::SHIP_SHIP_LIGHT))
+	{
+		if (A->type == OBJ_SHIP)
+			a_snd = Ship_info[Ships[A->instance].ship_info_index].collision_physics.collision_sound_light_idx;
+		if (B->type == OBJ_SHIP)
+			b_snd = Ship_info[Ships[B->instance].ship_info_index].collision_physics.collision_sound_light_idx;
+	}
+	else if (default_snd == gamesnd_id(GameSounds::SHIP_SHIP_SHIELD))
+	{
+		if (A->type == OBJ_SHIP)
+			a_snd = Ship_info[Ships[A->instance].ship_info_index].collision_physics.collision_sound_shielded_idx;
+		if (B->type == OBJ_SHIP)
+			b_snd = Ship_info[Ships[B->instance].ship_info_index].collision_physics.collision_sound_shielded_idx;
+	}
+
+	// if both A *and* B have a sound, arbitrarily choose A's sound
+	if (a_snd.isValid())
+		return a_snd;
+	else if (b_snd.isValid())
+		return b_snd;
+	else
+		return default_snd;
+}
+
 /**
  * Determine what sound to play when two ships collide
  */
@@ -965,28 +1000,31 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	rel_speed = vm_vec_mag_quick(&rel_vel);
 
 	if ( rel_speed > MIN_REL_SPEED_FOR_LOUD_COLLISION ) {
-		snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_HEAVY), world_hit_pos, &View_position );
+		auto snd_id = choose_collision_sound(GameSounds::SHIP_SHIP_HEAVY, A, B);
+		snd_play_3d( gamesnd_get_game_sound(snd_id), world_hit_pos, &View_position );
 	} else {
+		auto snd_id = choose_collision_sound(GameSounds::SHIP_SHIP_LIGHT, A, B);
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
+				Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(snd_id), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(AI_collide_sound) ) {
-				AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
+				AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(snd_id), world_hit_pos, &View_position );
 			}
 		}
 	}
 
 	// maybe play a "shield" collision sound overlay if appropriate
 	if ( (shield_get_strength(A) > 5) || (shield_get_strength(B) > 5) ) {
+		auto snd_id = choose_collision_sound(GameSounds::SHIP_SHIP_SHIELD, A, B);
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
+				Player_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(snd_id), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				AI_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
+				AI_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(snd_id), world_hit_pos, &View_position );
 			}
 		}
 	}
