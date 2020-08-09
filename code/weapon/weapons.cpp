@@ -1422,42 +1422,46 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			
 				if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
-				
 			}
-			
-				if (optional_string("+Trigger Hold:")) {
+
+			if (optional_string("+Trigger Hold:")) {
 				stuff_boolean(&wip->trigger_lock);
-				
 			}
-			
-				if (optional_string("+Reset On Launch:")) {
+
+			if (optional_string("+Reset On Launch:")) {
 				stuff_boolean(&wip->launch_reset_locks);
-				
 			}
-			
-				if (optional_string("+Max Seekers Per Target:")) {
+
+			if (optional_string("+Max Seekers Per Target:")) {
 				stuff_int(&wip->max_seekers_per_target);
-				
 			}
-			
-				if (optional_string("+Max Active Seekers:")) {
+
+			if (optional_string("+Max Active Seekers:")) {
 				stuff_int(&wip->max_seeking);
-				
 			}
 
-				if (optional_string("+Ship Types:")) {
-				stuff_string_list(wip->ship_type_restrict_temp);
-				
+			if (optional_string("+Ship Types:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
+
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::TYPE, name);
 			}
 
-				if (optional_string("+Ship Classes:")) {
-				stuff_string_list(wip->ship_class_restrict_temp);
+			if (optional_string("+Ship Classes:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
 
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::CLASS, name);
 			}
 
-				if (optional_string("+Species:")) {
-				stuff_string_list(wip->ship_species_restrict_temp);
+			if (optional_string("+Species:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
 
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::SPECIES, name);
 			}
 
 			if (wip->is_locked_homing()) {
@@ -3689,46 +3693,25 @@ void weapon_level_init()
 
 		if ( Ships_inited ) {
 			// populate ship type lock restrictions
-			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
-				const char* name = Weapon_info[i].ship_type_restrict_temp[j].c_str();
-				int idx = ship_type_name_lookup(name);
-
+			for (auto& pair : Weapon_info[i].ship_restrict_strings) {
+				const char* name = pair.second.c_str();
+				int idx;
+				switch (pair.first)
+				{
+					case MultilockRestrictionType::TYPE: idx = ship_type_name_lookup(name); break;
+					case MultilockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
+					case MultilockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
+					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+						idx = -1;
+				}
 				if ( idx >= 0 ) {
-					Weapon_info[i].ship_restrict.emplace_back(MultilockRestrictionType::TYPE, idx);
+					Weapon_info[i].ship_restrict.emplace_back(pair.first, idx);
 				}
 				else {
 					Warning(LOCATION, "Couldn't find multi lock restriction type '%s' for weapon '%s'", name, Weapon_info[i].name);
 				}
 			}
-			Weapon_info[i].ship_type_restrict_temp.clear();
-
-			// populate ship class lock restrictions
-			for (int j = 0; j < (int)Weapon_info[i].ship_class_restrict_temp.size(); ++j) {
-				const char* name = Weapon_info[i].ship_class_restrict_temp[j].c_str();
-				int idx = ship_info_lookup(name);
-
-				if (idx >= 0) {
-					Weapon_info[i].ship_restrict.emplace_back(MultilockRestrictionType::CLASS, idx);
-				}
-				else {
-					Warning(LOCATION, "Couldn't find multi lock restriction class '%s' for weapon '%s'", name, Weapon_info[i].name);
-				}
-			}
-			Weapon_info[i].ship_class_restrict_temp.clear();
-
-			// populate ship species lock restrictions
-			for (int j = 0; j < (int)Weapon_info[i].ship_species_restrict_temp.size(); ++j) {
-				const char* name = Weapon_info[i].ship_species_restrict_temp[j].c_str();
-				int idx = species_info_lookup(name);
-
-				if (idx >= 0) {
-					Weapon_info[i].ship_restrict.emplace_back(MultilockRestrictionType::SPECIES, idx);
-				}
-				else {
-					Warning(LOCATION, "Couldn't find multi lock restriction species '%s' for weapon '%s'", name, Weapon_info[i].name);
-				}
-			}
-			Weapon_info[i].ship_species_restrict_temp.clear();
+			Weapon_info[i].ship_restrict_strings.clear();
 		}
 	}
 
@@ -7846,9 +7829,7 @@ void weapon_info::reset()
 	this->max_seeking = 1;
 	this->max_seekers_per_target = 1;
 	this->ship_restrict.clear();
-	this->ship_type_restrict_temp.clear();
-	this->ship_class_restrict_temp.clear();
-	this->ship_species_restrict_temp.clear();
+	this->ship_restrict_strings.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
 

@@ -338,9 +338,7 @@ struct weapon_info
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
 
 	SCP_vector<multilock_restriction> ship_restrict;
-	SCP_vector<SCP_string> ship_type_restrict_temp;
-	SCP_vector<SCP_string> ship_class_restrict_temp;
-	SCP_vector<SCP_string> ship_species_restrict_temp;
+	SCP_vector<std::pair<MultilockRestrictionType, SCP_string>> ship_restrict_strings;
 
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
 	bool launch_reset_locks;				// Lock indicators reset after firing
