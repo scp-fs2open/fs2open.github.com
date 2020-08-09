@@ -192,11 +192,19 @@ bool get_args_actual(lua_State* L, get_args_state& state, const char* fmt, T&& c
 template <typename... Args>
 inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 {
+	// Capture these variables locally and reset them. This is needed in case we indirectly call this function again
+	// from below which would cause some weird issues. This can happen if we call a Lua API function which then causes a
+	// GC run which then calls one of our destructors.
+	const auto get_args_skip = internal::Ade_get_args_skip;
+	const auto get_args_lfunction = internal::Ade_get_args_lfunction;
+	internal::Ade_get_args_skip = 0;
+	internal::Ade_get_args_lfunction = false;
+
 	// Check that we have all the arguments that we need
 	// If we don't, return 0
 	internal::get_args_state state;
 	state.needed_args = (int)strlen(fmt);
-	state.total_args  = lua_gettop(L) - internal::Ade_get_args_skip;
+	state.total_args  = lua_gettop(L) - get_args_skip;
 
 	if (strchr(fmt, '|') != nullptr) {
 		state.needed_args = (int)(strchr(fmt, '|') - fmt);
@@ -224,7 +232,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 	if (!strlen(state.funcname)) {
 		// WMC - This was causing crashes with user-defined functions.
 		// WMC - Try and get at function name from upvalue
-		if (!internal::Ade_get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX))) {
+		if (!get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX))) {
 			if (lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
 				strcpy_s(state.funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
@@ -248,8 +256,8 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 	// Are we parsing optional args yet?
 	state.optional_args = false;
 
-	state.nargs = 1 + internal::Ade_get_args_skip;
-	state.total_args += internal::Ade_get_args_skip;
+	state.nargs = 1 + get_args_skip;
+	state.total_args += get_args_skip;
 	if (!internal::get_args_actual(L, state, fmt, std::forward<Args>(args)...)) {
 		return 0;
 	}

@@ -334,8 +334,6 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				scripting::internal::Ade_get_args_skip      = stack_start;
 				scripting::internal::Ade_get_args_lfunction = true;
 				scripting::ade_get_args(LuaState, format, rtn);
-				scripting::internal::Ade_get_args_skip      = 0;
-				scripting::internal::Ade_get_args_lfunction = false;
 			}
 		} catch (const LuaException&) {
 			return false;
@@ -373,8 +371,6 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 			scripting::internal::Ade_get_args_skip      = stack_start;
 			scripting::internal::Ade_get_args_lfunction = true;
 			scripting::ade_get_args(LuaState, fmt, data);
-			scripting::internal::Ade_get_args_skip      = 0;
-			scripting::internal::Ade_get_args_lfunction = false;
 		}
 	} catch (const LuaException&) {
 		return 0;
