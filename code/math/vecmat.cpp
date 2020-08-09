@@ -1163,7 +1163,7 @@ bool vm_maybe_normalize(vec3d* dst, const vec3d* src) {
 // in the direction preference (if not null). If that direction doesn't work it picks the z or y direction,
 // so that an output perpendicular vector is guaranteed.
 void vm_orthogonalize_one_vec(vec3d* dst, const vec3d* unit_normal, const vec3d* preference) {
-	if (preference) {
+	if (preference != nullptr) {
 		vm_vec_projection_onto_plane(dst, preference, unit_normal);
 		if (vm_maybe_normalize(dst, dst)) {
 			// The process of rescaling dst may have exaggerated floating point inaccuracy
@@ -1192,7 +1192,7 @@ void vm_orthogonalize_two_vec(vec3d* dst1, vec3d* dst2, const vec3d* src1, const
 	else if (vm_maybe_normalize(dst2, src2))
 		vm_orthogonalize_one_vec(dst1, dst2, src1);
 	else {
-		if (!preference || !vm_maybe_normalize(dst1, preference))
+		if (preference == nullptr || !vm_maybe_normalize(dst1, preference))
 			vm_vec_make(dst1, 1, 0, 0);
 		vm_orthogonalize_one_vec(dst2, dst1, src2);
 	}
