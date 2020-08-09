@@ -379,27 +379,22 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* rel_world_hit_pos, object* objp)
+void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* world_hit_pos, object* objp)
 {
-	Assertion((objp != nullptr) && (impulse != nullptr) && (rel_world_hit_pos != nullptr),
+	Assertion((objp != nullptr) && (impulse != nullptr) && (world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
 
 	//	Detect null vector.
 	if (whack_below_limit(impulse))
 		return;
 
-	vec3d world_center_of_mass;
-	vec3d world_hit_pos;
-
-	// calc world hit pos of the hit ship
-	vm_vec_add(&world_hit_pos, rel_world_hit_pos, &objp->pos);
-
 	// calc overall world center-of-mass of all ships
+	vec3d world_center_of_mass;
 	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
 	vec3d hit_pos;
 	// the new hitpos is the vector from world center-of-mass to world hitpos
-	vm_vec_sub(&hit_pos, &world_hit_pos, &world_center_of_mass);
+	vm_vec_sub(&hit_pos, world_hit_pos, &world_center_of_mass);
 
 	matrix moi, inv_moi;
 	// calculate the effective inverse MOI for the docked composite object about its center of mass

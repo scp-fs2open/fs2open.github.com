@@ -8231,7 +8231,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	short windex = 0;
 	ushort udamage;
 	vec3d force;
-	vec3d local_hit_pos;
+	vec3d hit_pos;
 	weapon_info *wip;
 	int quadrant_num;
 
@@ -8240,7 +8240,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_SHORT(windex);
 	GET_USHORT(udamage);
 	GET_VECTOR(force);
-	GET_VECTOR(local_hit_pos);
+	GET_VECTOR(hit_pos);
 	GET_INT(quadrant_num);
 	PACKET_SET_SIZE();
 
@@ -8266,7 +8266,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	ship_hit_pain((float)udamage, quadrant_num);
 
 	// apply the whack	
-	ship_apply_whack(&force, &local_hit_pos, Player_obj);	
+	ship_apply_whack(&force, &hit_pos, Player_obj);	
 }
 
 // lightning packet

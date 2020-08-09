@@ -12067,7 +12067,7 @@ void sexp_explosion_effect(int n)
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
 							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 							vm_vec_scale( &force, (float)max_blast );
-							ship_apply_whack( &force, &vec_ship_to_impact, objp );
+							ship_apply_whack( &force, &origin, objp );
 						}
 						break;
 

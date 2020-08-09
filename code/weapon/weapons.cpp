@@ -6116,7 +6116,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, &vec_ship_to_impact, ship_objp);
+		ship_apply_whack( &force, blast_pos, ship_objp);
 	}
 }
 

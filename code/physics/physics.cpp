@@ -737,17 +737,15 @@ bool whack_below_limit(const vec3d* impulse)
 }
 
 // ----------------------------------------------------------------------------
-// physics_apply_whack applies an instaneous whack on an object changing
-// both the objects velocity and the rotational velocity based on the impulse
-// being applied.
+// physics_calculate_and_apply_whack changes the rotaional and linear velocites of a ship due to
+// an instantaneous whack.
 //
-//	input:	impulse		=>		impulse vector ( force*time = impulse = change in momentum (mv) )
+//	input:	impulse		=>		impulse vector (direction and magnitude of the impulse)
 //				pos			=>		vector from center of mass to location (in world coords) of where the force acts 
 //				pi				=>		pointer to phys_info struct of object getting whacked
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
-//				mass			=>		mass of the object (may be different from pi.mass if docked)
 //
-void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
+void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi)
 {
 	vec3d	local_angular_impulse, angular_impulse;
 
@@ -765,8 +763,7 @@ void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info 
 	vec3d delta_rotvel;
 	vm_vec_rotate(&delta_rotvel, &local_angular_impulse, inv_moi);
 
-	// Goober5000 - pi->mass should probably be just mass, as specified in the header
-	vec3d delta_vel = *impulse * (1.0f / mass);
+	vec3d delta_vel = *impulse * (1.0f / pi->mass);
 
 	physics_apply_whack(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
 }

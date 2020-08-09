@@ -9023,26 +9023,6 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 }
 
 // Goober5000
-// pruned version of below function
-void find_adjusted_dockpoint_normal(vec3d *global_p0_norm, object *objp, polymodel *pm, int submodel, int dock_index)
-{
-	Assertion(global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
-	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
-
-	// are we basing this off a rotating submodel?
-	if (submodel >= 0)
-	{
-		// find the normal of the first dockpoint
-		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], Ships[objp->instance].model_instance_num, submodel, &objp->orient);
-	}
-	// use the static dockpoints
-	else
-	{
-		vm_vec_unrotate(global_p0_norm, &pm->docking_bays[dock_index].norm[0], &objp->orient);
-	}
-}
-
-// Goober5000
 void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *global_p0_norm, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
 {
 	Assertion(global_p0 != nullptr && global_p1 != nullptr && global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
