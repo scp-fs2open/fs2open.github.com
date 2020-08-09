@@ -688,11 +688,12 @@ TEST_F(VecmatTest, test_vm_vec_copy_normalize)
 }
 
 TEST_F(VecmatTest, orthogonalize_matrix) {
+	// V regression test - old version couldn't handle this V
 	matrix input_matrix = make_matrix(
 		0.636235237f, -0.0492025875f, -0.769924462f,
 		-0.513205945f, -0.419860631f, 0.748556376f,
 		-0.513205945f, -0.419860631f, 0.748556376f);
-	for (int i = 0; i < 10000; i++) {
+	for (int i = 0; i < 1000; i++) {
 		matrix hopefully_orthogonal_matrix = input_matrix;
 		vm_orthogonalize_matrix(&hopefully_orthogonal_matrix);
 

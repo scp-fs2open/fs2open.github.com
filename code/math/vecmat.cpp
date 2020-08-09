@@ -1150,6 +1150,8 @@ void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const ve
 	vm_vec_scale_add(dest, p1, d1, numerator / denominator);
 }
 
+
+// normalizes only if above a small threshold, returns if normalized or not
 bool vm_maybe_normalize(vec3d* dst, const vec3d* src) {
 	float mag = vm_vec_mag(src);
 	if (mag < SMALL_NUM) return false;
@@ -1196,11 +1198,11 @@ void vm_orthogonalize_two_vec(vec3d* dst1, vec3d* dst2, const vec3d* src1, const
 	}
 }
 
-//make sure matrix is orthogonal
-//computes a matrix from one or more vectors. The forward vector is required,
-//with the other two being optional.  If both up & right vectors are passed,
-//the up vector is used.  If only the forward vector is passed, a bank of
-//zero is assumed
+// make sure matrix is orthogonal
+// computes a matrix from one or more vectors. The forward vector is required,
+// with the other two being optional.  If both up & right vectors are passed,
+// the up vector is used.  If only the forward vector is passed, a bank of
+// zero is assumed
 void vm_orthogonalize_matrix(matrix *m_src)
 {
 	vec3d fvec, uvec;
