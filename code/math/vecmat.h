@@ -42,7 +42,7 @@
 #define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
 
 /*
-//macro set set a matrix to the identity. Note: NO RETURN VALUE
+//macro to set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\
 										m->rvec.y = m->rvec.z = \
 										m->uvec.x = m->uvec.z = \
@@ -353,8 +353,8 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
  * @param[out] s  If successful, s is the scalar of v0
  * @param[in]  p0 Reference point for line 1
  * @param[in]  p1 Reference point for line 2
- * @param[in]  v0 Direction vector for line 1
- * @param[in]  v1 Direction vector for line 2
+ * @param[in]  v0 Direction vector for line 1 (must be normalized)
+ * @param[in]  v1 Direction vector for line 2 (must be normalized)
  *
  * @returns  0 If successful, or
  * @returns -1 If colinear, or
@@ -363,6 +363,19 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
  * @note If you want the coords of the intersection, scale v0 by s, then add p0.
  */
 int find_intersection(float *s, const vec3d* p0, const vec3d* p1, const vec3d* v0, const vec3d* v1);
+
+/**
+ * Finds the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space)
+ *
+ * @param[out] dest The closest point
+ * @param[in]  p1 Reference point for line 1
+ * @param[in]  d1 Direction vector for line 1 (must be normalized)
+ * @param[in]  p2 Reference point for line 2
+ * @param[in]  d2 Direction vector for line 2 (must be normalized)
+ *
+ * @note Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Skew_lines#Formulas
+ */
+void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const vec3d *d1, const vec3d *p2, const vec3d *d2);
 
 float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2);
 

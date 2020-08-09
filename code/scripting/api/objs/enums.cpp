@@ -485,6 +485,21 @@ flag_def_list Enumerations[] = {
 		LE_OPTION_TYPE_RANGE,
 		0
 	},
+	{
+		"AUDIOSTREAM_EVENTMUSIC",
+		LE_ASF_EVENTMUSIC,
+		0
+	},
+	{
+		"AUDIOSTREAM_MENUMUSIC",
+		LE_ASF_MENUMUSIC,
+		0
+	},
+	{
+		"AUDIOSTREAM_VOICE",
+		LE_ASF_VOICE,
+		0
+	},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!

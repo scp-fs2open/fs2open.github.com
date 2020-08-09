@@ -1266,6 +1266,7 @@ char *GetTrackerIdByUser(char *nickname)
 		if(Getting_user_tracker_error)
 		{
 			Getting_user_tracker_error = 0;
+			Getting_user_channel_error = 0;
 			GettingUserTID = 0;
 			return (char *)-1;
 		}
@@ -1296,6 +1297,7 @@ char *GetChannelByUser(char *nickname)
 		if(Getting_user_channel_error)
 		{
 			Getting_user_channel_error = 0;
+			Getting_user_tracker_error = 0;
 			GettingUserChannel = 0;
 			return (char *)-1;
 		}

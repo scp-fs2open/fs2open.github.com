@@ -1131,7 +1131,24 @@ int find_intersection(float* s, const vec3d* p0, const vec3d* p1, const vec3d* v
 
 	*s = vm_vec_mag(&crossB) / vm_vec_mag(&crossA);
 	return 0;
-};
+}
+
+void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const vec3d *d1, const vec3d *p2, const vec3d *d2)
+{
+	vec3d n, n2, pdiff;
+
+	// The cross product of the direction vectors is perpendicular to both lines
+	vm_vec_cross(&n, d1, d2);
+
+	// The plane formed by the translations of Line 2 along n contains the point p2 and is perpendicular to n2 = d2 x n
+	vm_vec_cross(&n2, d2, &n);
+
+	// So now we find the intersection of Line 1 with that plane, which is apparently this gibberish
+	vm_vec_sub(&pdiff, p2, p1);
+	float numerator = vm_vec_dot(&pdiff, &n2);
+	float denominator = vm_vec_dot(d1, &n2);
+	vm_vec_scale_add(dest, p1, d1, numerator / denominator);
+}
 
 //make sure matrix is orthogonal
 //computes a matrix from one or more vectors. The forward vector is required,
@@ -1268,7 +1285,6 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 
 	vm_vec_scale_add(q, p, &normal, -k);
 }
-
 
 //	Generate a fairly random vector that's normalized.
 void vm_vec_rand_vec(vec3d *rvec)

@@ -117,6 +117,7 @@ typedef struct angles {
 	float	p, b, h;
 } angles_t;
 
+// For the avoidance of doubt, this is a row-major order matrix.
 typedef struct matrix {
 	union {
 		struct {

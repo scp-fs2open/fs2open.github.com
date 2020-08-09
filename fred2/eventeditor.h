@@ -43,7 +43,7 @@ public:
 	int query_modified();
 	void OnOK();
 	void OnCancel();
-	int handler(int code, int node, char *str = NULL);
+	int handler(int code, int node, const char *str = nullptr);
 	void create_tree();
 	void load_tree();
 	int modified;

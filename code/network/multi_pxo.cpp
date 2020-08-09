@@ -1802,6 +1802,10 @@ void multi_pxo_button_pressed(int n)
 		if(Multi_pxo_player_select != NULL){
 			// if we successfully got info for this guy
 			if(multi_pxo_pinfo_get(Multi_pxo_player_select->name)){				
+				// convert stats to player
+				multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
+				SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
+
 				// show the stats
 				multi_pxo_pinfo_show();				
 			}
@@ -4364,7 +4368,7 @@ int multi_pxo_pinfo_cond()
 
 			if (ret_string != NULL) {
 				// user not-online/not found
-				if ( (int)ret_string[0] == -1) {
+				if (reinterpret_cast<ptr_s>(ret_string) == -1) {
 					return 1;
 				} 
 
@@ -4774,6 +4778,10 @@ void multi_pxo_run_medals()
 
 	// run the networking functions for the PXO API
 	multi_pxo_api_process();
+
+	// initialize the freespace data and the player struct
+	multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
+	SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
 
 	// initialize the medals screen
 	medal_main_init(&Multi_pxo_pinfo_player, MM_POPUP);

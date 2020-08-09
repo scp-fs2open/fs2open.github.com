@@ -45,7 +45,9 @@ target_link_libraries(code PUBLIC libRocket)
 
 target_link_libraries(code PUBLIC pcp)
 
-target_link_libraries(code PUBLIC vulkan-hpp)
+if (FSO_BUILD_WITH_VULKAN)
+	target_link_libraries(code PUBLIC vulkan-hpp)
+endif()
 
 target_link_libraries(code PUBLIC parsers)
 
@@ -91,6 +93,9 @@ endif()
 
 if (FSO_BUILD_WITH_FFMPEG)
 	target_compile_definitions(code PUBLIC WITH_FFMPEG)
+endif()
+if (FSO_BUILD_WITH_VULKAN)
+	target_compile_definitions(code PUBLIC WITH_VULKAN)
 endif()
 
 include(util)

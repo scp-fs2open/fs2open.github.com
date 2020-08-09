@@ -30,6 +30,7 @@
 #include "ship/afterburner.h"
 #include "cfile/cfile.h"
 #include "debugconsole/console.h"
+#include "weapon/weapon.h"
 
 
 // ---------------------------------------------------------------------------------------------------
@@ -265,39 +266,33 @@ void multi_oo_build_ship_list(net_player *pl)
 }
 
 // pack information for a client (myself), return bytes added
-int multi_oo_pack_client_data(ubyte *data)
+int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 {
 	ubyte out_flags;
 	ushort tnet_signature;
 	char t_subsys, l_subsys;
 	int packet_size = 0;
 
-	// get our firing stuff
+	// get our firing stuff. Cyborg17 - This line is only for secondary fire, not other controls.
 	out_flags = Net_player->s_info.accum_buttons;	
-
+	
 	// zero these values for now
 	Net_player->s_info.accum_buttons = 0;
 
 	// add any necessary targeting flags
-	if ( Player_ai->current_target_is_locked ){
-		out_flags |= OOC_TARGET_LOCKED;
-	}
 	if ( Player_ai->ai_flags[AI::AI_Flags::Seek_lock] ){	
 		out_flags |= OOC_TARGET_SEEK_LOCK;
 	}
-	if ( Player->locking_on_center ){
-		out_flags |= OOC_LOCKING_ON_CENTER;
-	}
-	if ( (Player_ship != NULL) && (Player_ship->flags[Ship::Ship_Flags::Trigger_down]) ){
+	if ( (Player_ship != nullptr) && (Player_ship->flags[Ship::Ship_Flags::Trigger_down]) ){
 		out_flags |= OOC_TRIGGER_DOWN;
 	}
 
-	if ( (Player_obj != NULL) && Player_obj->phys_info.flags & PF_AFTERBURNER_ON){
+	if ( (Player_obj != nullptr) && Player_obj->phys_info.flags & PF_AFTERBURNER_ON){
 		out_flags |= OOC_AFTERBURNER_ON;
 	}
 
 	// send my bank info
-	if(Player_ship != NULL){
+	if(Player_ship != nullptr){
 		if(Player_ship->weapons.current_primary_bank > 0){
 			out_flags |= OOC_PRIMARY_BANK;
 		}
@@ -325,12 +320,12 @@ int multi_oo_pack_client_data(ubyte *data)
 		tnet_signature = Objects[Player_ai->target_objnum].net_signature;
 			
 		// targeted subsys index
-		if(Player_ai->targeted_subsys != NULL){
+		if(Player_ai->targeted_subsys != nullptr){
 			t_subsys = (char)ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
 		}
 
 		// locked targeted subsys index
-		if(Player->locking_subsys != NULL){
+		if(Player->locking_subsys != nullptr){
 			l_subsys = (char)ship_get_index_from_subsys( Player->locking_subsys, Player_ai->target_objnum );
 		}
 	}
@@ -339,6 +334,40 @@ int multi_oo_pack_client_data(ubyte *data)
 	ADD_USHORT( tnet_signature );
 	ADD_DATA( t_subsys );
 	ADD_DATA( l_subsys );
+	
+	// multilock object update patch
+	ushort count = 0;
+	SCP_vector<ushort> lock_list;
+	SCP_vector<ubyte> subsystems;
+
+	// look for locked slots
+	for (auto & lock : shipp->missile_locks) {
+		if (lock.locked) {
+			lock_list.push_back(lock.obj->net_signature);
+			// if the subsystem is a nullptr within the lock, send nullptr to the server.
+			if (lock.subsys == nullptr) {
+				subsystems.push_back(OOC_INDEX_NULLPTR_SUBSYSEM);
+			} // otherwise, just send the subsystem index.
+			else {
+				subsystems.push_back( (ubyte)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
+			}
+				
+			count++;
+
+			// Quit looking if we're at the maximum.
+			if (count >= OOC_MAX_LOCKS) {
+				break;
+			}
+		}
+	}
+
+	// add the data we just found, in the correct order. (so the simulation will be as exact as possible)
+	ADD_DATA(count);
+
+	for (int i = 0; i < (int)lock_list.size(); i++) {
+		ADD_USHORT(lock_list[i]);
+		ADD_DATA(subsystems[i]);
+	}
 
 	return packet_size;
 }
@@ -400,7 +429,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// if we're a client (and therefore sending control info), pack client-specific info
 	if((Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		packet_size += multi_oo_pack_client_data(data + packet_size + header_bytes);		
+		packet_size += multi_oo_pack_client_data(data + packet_size + header_bytes, shipp);		
 	}		
 		
 	// position, velocity
@@ -575,82 +604,78 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 }
 
 // unpack information for a client , return bytes processed
-int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
+// unpack information for a client, return bytes processed
+int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 {
-	ubyte in_flags;
-	ship *shipp = NULL;
-	object *objp = NULL;
+	ushort in_flags;
+	ship* shipp = nullptr;
+	object* objp = nullptr;
 	int offset = 0;
 
-	if (pl == NULL)
+	if (pl == nullptr)
 		Error(LOCATION, "Invalid net_player pointer passed to multi_oo_unpack_client\n");
-	
-	memcpy(&in_flags, data, sizeof(ubyte));	
+
+	memcpy(&in_flags, data, sizeof(ubyte));
 	offset++;
 
 	// get the player ship and object
-	if((pl->m_player->objnum >= 0) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (Objects[pl->m_player->objnum].instance >= 0)){
+	if ((pl->m_player->objnum >= 0) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (Objects[pl->m_player->objnum].instance >= 0)) {
 		objp = &Objects[pl->m_player->objnum];
 		shipp = &Ships[objp->instance];
 	}
-		
+
 	// if we have a valid netplayer pointer
-	if((pl != NULL) && !(pl->flags & NETINFO_FLAG_RESPAWNING) && !(pl->flags & NETINFO_FLAG_LIMBO)){
+	if ((pl != nullptr) && !(pl->flags & NETINFO_FLAG_RESPAWNING) && !(pl->flags & NETINFO_FLAG_LIMBO)) {
 		// primary fired
-		pl->m_player->ci.fire_primary_count = 0;		
+		pl->m_player->ci.fire_primary_count = 0;
 
 		// secondary fired
 		pl->m_player->ci.fire_secondary_count = 0;
-		if ( in_flags & OOC_FIRE_SECONDARY ){
+		if (in_flags & OOC_FIRE_CONTROL_PRESSED) {
 			pl->m_player->ci.fire_secondary_count = 1;
 		}
 
 		// countermeasure fired		
-		pl->m_player->ci.fire_countermeasure_count = 0;		
-
-		// set up aspect locking information
-		pl->m_player->locking_on_center = 0;
-		if ( in_flags & OOC_LOCKING_ON_CENTER ){
-			pl->m_player->locking_on_center = 1;
-		}		
+		pl->m_player->ci.fire_countermeasure_count = 0;
 
 		// trigger down, bank info
-		if(shipp != NULL){
-			if(in_flags & OOC_TRIGGER_DOWN){
+		if (shipp != nullptr) {
+			if (in_flags & OOC_TRIGGER_DOWN) {
 				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
-			} else {
+			}
+			else {
 				shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
 			}
-			
-			if(in_flags & OOC_PRIMARY_BANK){		
+
+			if (in_flags & OOC_PRIMARY_BANK) {
 				shipp->weapons.current_primary_bank = 1;
-			} else {
+			}
+			else {
 				shipp->weapons.current_primary_bank = 0;
 			}
 
 			// linked or not								
-            shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
-			if(in_flags & OOC_PRIMARY_LINKED){				
+			shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
+			if (in_flags & OOC_PRIMARY_LINKED) {
 				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
 		}
 
 		// other locking information
-		if((shipp != NULL) && (shipp->ai_index != -1)){			
-			Ai_info[shipp->ai_index].current_target_is_locked = ( in_flags & OOC_TARGET_LOCKED) ? 1 : 0;
+		if ((shipp != nullptr) && (shipp->ai_index != -1)) {
 			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Seek_lock, (in_flags & OOC_TARGET_SEEK_LOCK) != 0);
 		}
 
 		// afterburner status
-		if ( (objp != NULL) && (in_flags & OOC_AFTERBURNER_ON) ) {
+		if ((objp != nullptr) && (in_flags & OOC_AFTERBURNER_ON)) {
 			Multi_oo_afterburn_hack = true;
 		}
 	}
-	
+
 	// client targeting information	
 	ushort tnet_sig;
-	char t_subsys,l_subsys;
-	object *tobj;
+	char t_subsys, l_subsys;
+	object* tobj;
 
 	// get the data
 	GET_USHORT(tnet_sig);
@@ -658,34 +683,78 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 	GET_DATA(l_subsys);
 
 	// try and find the targeted object
-	tobj = NULL;
-	if(tnet_sig != 0){
-		tobj = multi_get_network_object( tnet_sig );
+	tobj = nullptr;
+	if (tnet_sig != 0) {
+		tobj = multi_get_network_object(tnet_sig);
 	}
 	// maybe fill in targeted object values
-	if((tobj != NULL) && (pl != NULL) && (pl->m_player->objnum != -1)){
+	if ((tobj != nullptr) && (pl != nullptr) && (pl->m_player->objnum != -1)) {
 		// assign the target object
-		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){
+		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
 			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].target_objnum = OBJ_INDEX(tobj);
 		}
 		pl->s_info.target_objnum = OBJ_INDEX(tobj);
 
 		// assign subsystems if possible					
-		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){		
-			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = NULL;
-			if((t_subsys != -1) && (tobj->type == OBJ_SHIP)){
-				Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], t_subsys);
+		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
+			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = nullptr;
+			if ((t_subsys != -1) && (tobj->type == OBJ_SHIP)) {
+				Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
 			}
 		}
 
-		pl->m_player->locking_subsys = NULL;
-		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){		
-			if((l_subsys != -1) && (tobj->type == OBJ_SHIP)){
-				pl->m_player->locking_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], l_subsys);
-			}				
+		pl->m_player->locking_subsys = nullptr;
+		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
+			if ((l_subsys != -1) && (tobj->type == OBJ_SHIP)) {
+				pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+			}
 		}
-	}				
+	}
 
+	// Cyborg17 - this section allows multilock to work in multiplayer.
+	ushort count;
+
+	// Get how many locks were in the packet.
+	GET_USHORT(count);
+
+
+	lock_info temp_lock_info;
+	ship_clear_lock(&temp_lock_info);
+	temp_lock_info.locked = true;
+
+	ushort multilock_target_net_signature;
+	ubyte subsystem_index;
+
+	// clear whatever we had before, because we're getting brand new info straight from the client.
+	if (shipp != nullptr) {
+		shipp->missile_locks.clear();
+	}
+
+	// add each lock, one at a time.
+	for (int i = 0; i < count; i++) {
+		GET_USHORT(multilock_target_net_signature);
+		GET_DATA(subsystem_index);
+		temp_lock_info.obj = multi_get_network_object(multilock_target_net_signature);
+
+		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
+			// if the subsystem is the special null value.
+			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM) {
+				temp_lock_info.subsys = nullptr;
+			} // otherwise look it up to store the lock onto the subsystem
+			else {
+				ship_subsys* ml_target_subsysp = GET_FIRST(&Ships[temp_lock_info.obj->instance].subsys_list);
+				for (int j = 0; j < subsystem_index; j++) {
+					ml_target_subsysp = GET_NEXT(ml_target_subsysp);
+				}
+				temp_lock_info.subsys = ml_target_subsysp;
+			}
+			// store the lock.
+			shipp->missile_locks.push_back(temp_lock_info);
+		}
+		else if (shipp != nullptr) {
+			shipp->missile_locks.push_back(temp_lock_info);
+		}
+	}
 	return offset;
 }
 
@@ -754,9 +823,10 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	Multi_oo_afterburn_hack = false;
 
 	// if this is from a player, read his button info
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		offset += multi_oo_unpack_client_data(pl, data + offset);		
-	}	
+	if(MULTIPLAYER_MASTER){
+		int r0 = multi_oo_unpack_client_data(pl, data + offset);		
+		offset += r0;
+	}
 
 	// new info
 	vec3d new_pos = pobjp->pos;

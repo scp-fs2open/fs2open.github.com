@@ -475,12 +475,14 @@ add_file_folder("Graphics\\\\Util"
 	graphics/util/UniformBufferManager.cpp
 )
 
-add_file_folder("Graphics\\\\Vulkan"
-	graphics/vulkan/gr_vulkan.cpp
-	graphics/vulkan/gr_vulkan.h
-	graphics/vulkan/VulkanRenderer.cpp
-	graphics/vulkan/VulkanRenderer.h
-)
+if (FSO_BUILD_WITH_VULKAN)
+	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/gr_vulkan.cpp
+		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/VulkanRenderer.cpp
+		graphics/vulkan/VulkanRenderer.h
+	)
+endif()
 
 # HeadTracking files
 add_file_folder("HeadTracking"
@@ -1133,6 +1135,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
+	scripting/api/objs/audio_stream.cpp
+	scripting/api/objs/audio_stream.h
 	scripting/api/objs/background_element.cpp
 	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
@@ -1167,6 +1171,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/gamestate.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/intelentry.cpp
+	scripting/api/objs/intelentry.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/mc_info.cpp

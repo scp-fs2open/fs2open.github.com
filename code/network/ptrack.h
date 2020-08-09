@@ -236,6 +236,7 @@ struct vmt_fs2open_struct {
 const unsigned short FS2OPEN_BLOCK_SIZE = sizeof(vmt_fs2open_struct) - 1;	// ignore pad byte in size
 
 #define vmt_stats_struct vmt_fs2open_struct
+#define STATS_BLOCK_SIZE FS2OPEN_BLOCK_SIZE
 
 //Function prototypes
 int InitPilotTrackerClient();

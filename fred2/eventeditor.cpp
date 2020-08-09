@@ -626,7 +626,7 @@ void event_editor::update_cur_message()
 	UpdateData(FALSE);
 }
 
-int event_editor::handler(int code, int node, char *str)
+int event_editor::handler(int code, int node, const char *str)
 {
 	int i, index;
 

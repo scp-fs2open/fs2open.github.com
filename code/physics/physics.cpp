@@ -725,46 +725,69 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 }
 
 
+#define WHACK_LIMIT 0.001f
+#define ROTVEL_WHACK_CONST 0.12f
+
+//	-----------------------------------------------------------------------------------------------------------
+// Returns true if this impulse is below the limit and should be ignored.
+bool whack_below_limit(const vec3d* impulse)
+{
+	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
+		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
+}
+
 // ----------------------------------------------------------------------------
 // physics_apply_whack applies an instaneous whack on an object changing
 // both the objects velocity and the rotational velocity based on the impulse
 // being applied.
 //
 //	input:	impulse		=>		impulse vector ( force*time = impulse = change in momentum (mv) )
-//				pos			=>		vector from center of mass to location of where the force acts
+//				pos			=>		vector from center of mass to location (in world coords) of where the force acts 
 //				pi				=>		pointer to phys_info struct of object getting whacked
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
 //				mass			=>		mass of the object (may be different from pi.mass if docked)
 //
-#define WHACK_LIMIT	0.001f
-#define ROTVEL_WHACK_CONST 0.12
-void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass)
+void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass, matrix *inv_moi)
 {
-	vec3d	local_torque, torque;
-//	vec3d	npos;
+	vec3d	local_angular_impulse, angular_impulse;
 
 	//	Detect null vector.
-	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))
+	if (whack_below_limit(impulse))
 		return;
 
 	// first do the rotational velocity
-	// calculate the torque on the body based on the point on the
+	// calculate the angular impulse on the body based on the point on the
 	// object that was hit and the momentum being applied to the object
 
-	vm_vec_cross(&torque, pos, impulse);
-	vm_vec_rotate ( &local_torque, &torque, orient );
+	vm_vec_cross(&angular_impulse, pos, impulse);
+	vm_vec_rotate ( &local_angular_impulse, &angular_impulse, orient );
 
 	vec3d delta_rotvel;
-	vm_vec_rotate( &delta_rotvel, &local_torque, &pi->I_body_inv );
-	vm_vec_scale ( &delta_rotvel, (float) ROTVEL_WHACK_CONST );
-	vm_vec_add2( &pi->rotvel, &delta_rotvel );
+	vm_vec_rotate(&delta_rotvel, &local_angular_impulse, inv_moi);
+
+	// Goober5000 - pi->mass should probably be just mass, as specified in the header
+	vec3d delta_vel = *impulse * (1.0f / mass);
+
+	physics_apply_whack(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
+}
+
+
+// This function applies the calculated delta rotational and linear velocities calculated by physics_calculate_and_apply_whack
+// or dock_calculate_and_apply_whack_docked_object in objectdock.cpp if it was a docked object
+void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
+{
+	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
+		"physics_apply_whack_direct invalid argument(s)");
+
+	vm_vec_scale(delta_rotvel, (float)ROTVEL_WHACK_CONST);
+	vm_vec_add2(&pi->rotvel, delta_rotvel);
 
 	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 
 	// instant whack on the velocity
 	// reduce damping on all axes
 	pi->flags |= PF_REDUCED_DAMP;
-	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
+	update_reduced_damp_timestamp( pi, orig_impulse );
 
 	// find time for shake from weapon to end
 	int dtime = timestamp_until(pi->afterburner_decay);
@@ -772,16 +795,17 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
 	}
 
-	// Goober5000 - pi->mass should probably be just mass, as specified in the header
-	vm_vec_scale_add2( &pi->vel, impulse, 1.0f / mass );
+	vm_vec_add2(&pi->vel, delta_vel);
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
-	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );		// set so velocity will ramp starting from current speed
-																					// ramped velocity is now affected by collision
+
+	// set so velocity will ramp starting from current speed
+	// ramped velocity is now affected by collision
+	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );												
 }
 
 // function generates a velocity ramp with a given time constant independent of frame rate
@@ -1100,6 +1124,23 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 		pi->reduced_damp_decay = timestamp( reduced_damp_decay_time );
 	}
 
+}
+
+void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos)
+{
+	// moment of inertia for a point mass: 
+	// I_xx = m(y^2+z^2) | I_yx = -mxy       | I_zx = -mxz
+	// I_xy = -mxy       | I_yy = m(x^2+z^2) | I_zy = -myz 
+	// I_xz = -mxz		 | I_yz = -myz	     | I_zz = m(x^2+y^2)
+	moi->a2d[0][0] += mass * (pos->xyz.y * pos->xyz.y + pos->xyz.z * pos->xyz.z);
+	moi->a2d[0][1] -= mass * pos->xyz.x * pos->xyz.y;
+	moi->a2d[0][2] -= mass * pos->xyz.x * pos->xyz.z;
+	moi->a2d[1][0] -= mass * pos->xyz.x * pos->xyz.y;
+	moi->a2d[1][1] += mass * (pos->xyz.x * pos->xyz.x + pos->xyz.z * pos->xyz.z);
+	moi->a2d[1][2] -= mass * pos->xyz.y * pos->xyz.z;
+	moi->a2d[2][0] -= mass * pos->xyz.x * pos->xyz.z;
+	moi->a2d[2][1] -= mass * pos->xyz.y * pos->xyz.z;
+	moi->a2d[2][2] += mass * (pos->xyz.x * pos->xyz.x + pos->xyz.y * pos->xyz.y);
 }
 
 //*************************CLASS: avd_movement*************************

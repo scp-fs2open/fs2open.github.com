@@ -1,6 +1,7 @@
 
 #include "physics_info.h"
 #include "vecmath.h"
+#include "ship/shiphit.h"
 
 namespace scripting {
 namespace api {
@@ -469,7 +470,7 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 
 	objh = pih->objh;
 
-	physics_apply_whack(impulse, offset, pih->pi, &objh.objp->orient, pih->pi->mass);
+	ship_apply_whack(impulse, offset, objh.objp);
 
 	return ADE_RETURN_TRUE;
 

@@ -3,14 +3,15 @@
 
 #include "audio.h"
 
+#include "gamesnd/gamesnd.h"
+#include "menuui/credits.h"
+#include "menuui/mainhallmenu.h"
+#include "missionui/missionbrief.h"
+#include "render/3d.h"
+#include "scripting/api/objs/audio_stream.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/vecmath.h"
-
-#include "gamesnd/gamesnd.h"
-#include "missionui/missionbrief.h"
-#include "menuui/mainhallmenu.h"
-#include "menuui/credits.h"
-#include "render/3d.h"
 #include "sound/audiostr.h"
 
 extern float Master_event_music_volume;
@@ -20,6 +21,32 @@ namespace api {
 
 //**********LIBRARY: Audio
 ADE_LIB(l_Audio, "Audio", "ad", "Sound/Music Library");
+
+ADE_VIRTVAR(MasterVoiceVolume,
+	l_Audio,
+	nullptr,
+	"The current master voice volume. This property is read-only.",
+	"number",
+	"The volume in the range from 0 to 1")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read-only!");
+	}
+	return ade_set_args(L, "f", Master_voice_volume);
+}
+
+ADE_VIRTVAR(MasterEventMusicVolume,
+	l_Audio,
+	nullptr,
+	"The current master event music volume. This property is read-only.",
+	"number",
+	"The volume in the range from 0 to 1")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read-only!");
+	}
+	return ade_set_args(L, "f", Master_event_music_volume);
+}
 
 ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching the specified index or name. If you are using a number then the first valid index is 1", "soundentry", "soundentry or invalid handle on error")
 {
@@ -297,6 +324,42 @@ ADE_FUNC(pauseMusic,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(openAudioStream,
+	l_Audio,
+	"string fileName, enumeration stream_type /* AUDIOSTREAM_* values */",
+	"Opens an audio stream of the specified file and type. An audio stream is meant for more long time sounds since "
+	"they are streamed from the file instead of loaded in its entirety.",
+	"audio_stream",
+	"A handle to the opened stream or invalid on error")
+{
+	const char* fileName = nullptr;
+	enum_h streamTypeEnum;
+	if (!ade_get_args(L, "so", &fileName, l_Enum.Get(&streamTypeEnum))) {
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
 
+	int streamType;
+	switch (streamTypeEnum.index) {
+	case LE_ASF_EVENTMUSIC:
+		streamType = ASF_EVENTMUSIC;
+		break;
+	case LE_ASF_MENUMUSIC:
+		streamType = ASF_MENUMUSIC;
+		break;
+	case LE_ASF_VOICE:
+		streamType = ASF_VOICE;
+		break;
+	default:
+		LuaError(L, "Invalid audio stream type %d.", streamTypeEnum.index);
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
+
+	int ah = audiostream_open(fileName, streamType);
+	if (ah < 0)
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+
+	return ade_set_args(L, "o", l_AudioStream.Set(ah));
 }
-}
+
+} // namespace api
+} // namespace scripting

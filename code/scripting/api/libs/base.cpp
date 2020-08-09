@@ -46,15 +46,54 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(rand32,
+	l_Base,
+	"[number a, number b]",
+	"Calls FSO's rand32() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff).  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
+	"number",
+	"A random integer")
+{
+	int a, b;
+	int numargs = ade_get_args(L, "|ii", &a, &b);
+
+	int result;
+	if (numargs == 2)
+		result = rand32(a, b);
+	else if (numargs == 1)
+		result = rand32() % a;
+	else
+		result = rand32();
+
+	return ade_set_error(L, "i", result);
+}
+
+ADE_FUNC(rand32f,
+	l_Base,
+	"[number max]",
+	"Calls FSO's rand32() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
+	"number",
+	"A random float")
+{
+	float _max;
+	int numargs = ade_get_args(L, "|f", &_max);
+
+	float result = static_cast<float>(rand32()) / static_cast<float>(0x7fffffff);
+
+	if (numargs > 0)
+		result *= _max;
+
+	return ade_set_error(L, "f", _max);
+}
+
 ADE_FUNC(createOrientation,
 	l_Base,
 	ade_overload_list({nullptr,
 		"number p, number b, number h",
 		"number r1c1, number r1c2, number r1c3, number r2c1, number r2c2, number r2c3, number r3c1, number r3c2, "
 		"number r3c3"}),
-	"Given 0, 3, or 9 arguments, creates an orientation object with that orientation.",
+	"Given 0 arguments, creates an identity orientation; 3 arguments, creates an orientation from pitch/bank/heading (in radians); 9 arguments, creates an orientation from a 3x3 row-major order matrix.",
 	"orientation",
-	"New orientation object, or null orientation on failure")
+	"New orientation object, or the identity orientation on failure")
 {
 	matrix m;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
@@ -75,12 +114,104 @@ ADE_FUNC(createOrientation,
 	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 }
 
+ADE_FUNC(createOrientationFromVectors, l_Base, "[vector fvec, vector uvec, vector rvec]",
+	"Given 0 to 3 arguments, creates an orientation object from 0 to 3 vectors.  (This is essentially a wrapper for the vm_vector_2_matrix function.)  If supplied 0 arguments, this will return the identity orientation.  The first vector, if supplied, must be non-null.",
+	"orientation",
+	"New orientation object, or the identity orientation on failure")
+{
+	vec3d *fvec = nullptr, *uvec = nullptr, *rvec = nullptr;
+	int numargs = ade_get_args(L, "|ooo", l_Vector.GetPtr(&fvec), l_Vector.GetPtr(&uvec), l_Vector.GetPtr(&rvec));
+	if (!numargs)
+	{
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+	}
+	else
+	{
+		// if we have any vectors, the first one should be non-null
+		if (fvec == nullptr)
+			return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
+		matrix m;
+		vm_vector_2_matrix(&m, fvec, uvec, rvec);
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+	}
+}
+
 ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
 {
 	vec3d v3 = vmd_zero_vector;
 	ade_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
 	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
+ADE_FUNC(createSurfaceNormal,
+	l_Base,
+	"vector point1, vector point2, vector point3",
+	"Determines the surface normal of the plane defined by three points.  Returns a normalized vector.",
+	"vector",
+	"The surface normal, or NIL if a handle is invalid")
+{
+	vec3d *p0 = nullptr, *p1 = nullptr, *p2 = nullptr;
+	if (!ade_get_args(L, "ooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p2)))
+		return ADE_RETURN_NIL;
+
+	vec3d dest;
+	vm_vec_normal(&dest, p0, p1, p2);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
+ADE_FUNC(findIntersection,
+	l_Base,
+	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
+	ade_type_info({ "vector", "number" }),
+	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
+{
+	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;
+	if (!ade_get_args(L, "oooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p0_end), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p1_end)))
+		return ADE_RETURN_NIL;
+
+	// note: we must translate from this API's two-points method to the code's API of a reference point and a direction vector
+	vec3d v0, v1;
+	vm_vec_sub(&v0, p0_end, p0);
+	vm_vec_sub(&v1, p1_end, p1);
+
+	float scalar;
+	int retval = find_intersection(&scalar, p0, p1, &v0, &v1);
+
+	if (retval == 0)
+	{
+		// per comments:
+		// If you want the coords of the intersection, scale v0 by s, then add p0.
+		vm_vec_scale(&v0, scalar);
+		vm_vec_add2(&v0, p0);
+
+		return ade_set_args(L, "oi", l_Vector.Set(v0), retval);
+	}
+	else
+		return ade_set_args(L, "*i", retval);
+}
+
+ADE_FUNC(findPointOnLineNearestSkewLine,
+	l_Base,
+	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"Determines the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space).  (The lines are assumed to extend infinitely in both directions; the point will not necessarily be between the other points.)",
+	"vector",
+	"The closest point, or NIL if a handle is invalid")
+{
+	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;
+	if (!ade_get_args(L, "oooo", l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p0_end), l_Vector.GetPtr(&p1), l_Vector.GetPtr(&p1_end)))
+		return ADE_RETURN_NIL;
+
+	// note: we must translate from this API's two-points method to the code's API of a reference point and a direction vector
+	vec3d v0, v1;
+	vm_vec_sub(&v0, p0_end, p0);
+	vm_vec_sub(&v1, p1_end, p1);
+
+	vec3d dest;
+	find_point_on_line_nearest_skew_line(&dest, p0, &v0, p1, &v1);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
 }
 
 ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")

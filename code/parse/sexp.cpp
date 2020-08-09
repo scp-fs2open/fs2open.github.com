@@ -530,7 +530,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "don't-collide-invisible",		OP_DONT_COLLIDE_INVISIBLE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "collide-invisible",				OP_COLLIDE_INVISIBLE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-to-collision-group",			OP_ADD_TO_COLGROUP,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
-	{ "remove-from-collision-group",	OP_REMOVE_FROM_COLGROUP,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "remove-from-collision-group",	OP_REMOVE_FROM_COLGROUP,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
+	{ "add-to-collision-group2",		OP_ADD_TO_COLGROUP2,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 
@@ -13866,7 +13868,12 @@ void sexp_tech_add_ship(int node)
 		auto name = CTEXT(node);
 		int i = ship_info_lookup(name);
 		if (i >= 0)
-			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
+		{
+			if (Player && (Player->flags & PLAYER_FLAGS_IS_MULTI))
+				Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
+			else
+				Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
+		}
 		else
 			Warning(LOCATION, "In tech-add-ship, ship class \"%s\" invalid", name);
 
@@ -22455,6 +22462,33 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 	ship_entry->objp->collision_group_id = colgroup_id;
 }
 
+void sexp_manipulate_colgroup2(int node, bool add_to_group)
+{
+	bool is_nan, is_nan_forever;
+	int group = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	node = CDR(node);
+
+	if (group < 0 || group > 31)
+	{
+		WarningEx(LOCATION, "Invalid collision group id %d specified. Valid IDs range from 0 to 31.\n", group);
+		return;
+	}
+
+	for (; node != -1; node = CDR(node))
+	{
+		auto ship_entry = eval_ship(node);
+		if (!ship_entry || !ship_entry->shipp)
+			continue;
+
+		if (add_to_group)
+			ship_entry->objp->collision_group_id |= (1 << group);
+		else
+			ship_entry->objp->collision_group_id &= ~(1 << group);
+	}
+}
+
 int sexp_get_colgroup(int node)
 {
 	auto ship_entry = eval_ship(node);
@@ -24987,13 +25021,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_TO_COLGROUP:
+			case OP_REMOVE_FROM_COLGROUP:
+				sexp_manipulate_colgroup(node, op_num == OP_ADD_TO_COLGROUP);
 				sexp_val = SEXP_TRUE;
-				sexp_manipulate_colgroup(node, true);
 				break;
 
-			case OP_REMOVE_FROM_COLGROUP:
+			case OP_ADD_TO_COLGROUP2:
+			case OP_REMOVE_FROM_COLGROUP2:
+				sexp_manipulate_colgroup2(node, op_num == OP_ADD_TO_COLGROUP2);
 				sexp_val = SEXP_TRUE;
-				sexp_manipulate_colgroup(node, false);
 				break;
 
 			case OP_GET_COLGROUP_ID:
@@ -26083,6 +26119,8 @@ int query_operator_return_type(int op)
 		case OP_STRING_SET_SUBSTRING:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
+		case OP_ADD_TO_COLGROUP2:
+		case OP_REMOVE_FROM_COLGROUP2:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
@@ -28372,16 +28410,18 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_SHIP;
 
 		case OP_ADD_TO_COLGROUP:
-			if (argnum == 0)
-				return OPF_SHIP;
-			else
-				return OPF_POSITIVE;
-
 		case OP_REMOVE_FROM_COLGROUP:
 			if (argnum == 0)
 				return OPF_SHIP;
 			else
 				return OPF_POSITIVE;
+
+		case OP_ADD_TO_COLGROUP2:
+		case OP_REMOVE_FROM_COLGROUP2:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP;
 
 		case OP_SHIP_EFFECT:
 			if (argnum == 0)
@@ -29885,6 +29925,8 @@ int get_subcategory(int sexp_id)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
+		case OP_ADD_TO_COLGROUP2:
+		case OP_REMOVE_FROM_COLGROUP2:
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
@@ -33998,19 +34040,37 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
-		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups,\r"
-		"\tand that an object may be in several collision groups at the same time\r\n"
-		"Takes 2 or more Arguments...\r\n"
-		"\t1:\tObject to add\r\n"
+		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups, "
+		"and that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tShip to add.\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
 	{OP_REMOVE_FROM_COLGROUP, "remove-from-collision-group\r\n"
-		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups,\n"
-		"\tand that an object may be in several collision groups at the same time\r\n"
-		"Takes 2 or more Arguments...\r\n"
-		"\t1:\tObject to add\r\n"
+		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups, "
+		"and that an object may be in several collision groups at the same time\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tShip to add.\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
+	},
+
+	{OP_ADD_TO_COLGROUP2, "add-to-collision-group2\r\n"
+		"\tAdds one or more ships to the specified collision group. There are 32 collision groups, "
+		"and an object may be in several collision groups at the same time. This sexp functions identically to "
+		"add-to-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
+		"\t2+:\tShip to add.\r\n"
+	},
+
+	{OP_REMOVE_FROM_COLGROUP2, "remove-from-collision-group2\r\n"
+		"\tRemoves one or more ships from the specified collision group. There are 32 collision groups, "
+		"and an object may be in several collision groups at the same time. This sexp functions identically to "
+		"remove-from-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
+		"\t2+:\tShip to remove.\r\n"
 	},
 
 	{OP_GET_COLGROUP_ID, "get-collision-group\r\n"

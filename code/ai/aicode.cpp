@@ -1213,8 +1213,10 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	}
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
-	// Goober5000 - don't bank if sexp says not to
+	// Goober5000 - don't bank if sexp or ship says not to
 	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
+		delta_bank = 0.0f;
+	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
 		delta_bank = 0.0f;
 	else if ((bank_override) && (iff_x_attacks_y(Ships[objp->instance].team, Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
 		delta_bank = bank_override;
@@ -5579,11 +5581,14 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	// make linking decision based on weapon energy
-	if (energy > aip->ai_link_energy_levels_always) {
-        shipp->flags.set(Ship::Ship_Flags::Primary_linked);
-	} else if (energy > aip->ai_link_ammo_levels_maybe) {
-		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f) {
+	// but only if primary linking is allowed --wookieejedi
+	if (!sip->flags[Ship::Info_Flags::No_primary_linking]) {
+		if (energy > aip->ai_link_energy_levels_always) {
 			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+		} else if (energy > aip->ai_link_ammo_levels_maybe) {
+			if (objp->hull_strength < shipp->ship_max_hull_strength / 3.0f) {
+				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+			}
 		}
 	}
 
@@ -14108,7 +14113,7 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip, physics_info *pi)
+static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi)
 {
 	if (aip->ai_override_flags.none_set())
 		return;
@@ -14163,11 +14168,11 @@ static void ai_control_info_check(ai_info *aip, physics_info *pi)
 			}
 		}
 
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning])
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning] || sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
 			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity])
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity] || sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
 			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration])
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration] || sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
 			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
 
@@ -14185,15 +14190,19 @@ void ai_process( object * obj, int ai_index, float frametime )
 	if (obj->flags[Object::Object_Flags::Should_be_dead])
 		return;
 
+	Assert(obj->type == OBJ_SHIP);
+	auto shipp = &Ships[obj->instance];
+	auto sip = &Ship_info[shipp->ship_info_index];
+
 	// return if ship is dead, unless it's a big ship...then its turrets still fire, like I was quoted in a magazine.  -- MK, 5/15/98.
-	if ((Ships[obj->instance].flags[Ship::Ship_Flags::Dying] ) && !(Ship_info[Ships[obj->instance].ship_info_index].is_big_or_huge())) {
+	if ((shipp->flags[Ship::Ship_Flags::Dying] ) && !(Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 		return;
 	}
 
 	bool rfc = true;		//	Assume will be Reading Flying Controls.
 
-	Assert( obj->type == OBJ_SHIP );
 	Assert( ai_index >= 0 );
+	auto aip = &Ai_info[shipp->ai_index];
 
 	AI_frametime = frametime;
 	if (OBJ_INDEX(obj) <= Last_ai_obj) {
@@ -14209,8 +14218,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 	AI_ci.heading = 0.0f;
 
 	// the ships maximum velocity now depends on the energy flowing to engines
-	obj->phys_info.max_vel.xyz.z = Ships[obj->instance].current_max_speed;
-	ai_info	*aip = &Ai_info[Ships[obj->instance].ai_index];
+	obj->phys_info.max_vel.xyz.z = shipp->current_max_speed;
 
 	//	In certain circumstances, the AI says don't fly in the normal way.
 	//	One circumstance is in docking and undocking, when the ship is moving
@@ -14230,7 +14238,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip, &obj->phys_info);
+		ai_control_info_check(aip, sip, &obj->phys_info);
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel

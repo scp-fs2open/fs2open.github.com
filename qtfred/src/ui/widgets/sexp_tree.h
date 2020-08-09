@@ -226,7 +226,7 @@ class sexp_tree: public QTreeWidget {
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const char* str, int node);
+	SCP_string match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char* var_name);
 	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
 	int get_item_index_to_var_index();

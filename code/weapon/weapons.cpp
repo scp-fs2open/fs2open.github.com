@@ -175,8 +175,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
 
 int Num_weapons = 0;
-int Weapons_inited = 0;
-int Weapon_expl_initted = 0;
+bool Weapons_inited = false;
 
 int laser_model_inner = -1;
 int laser_model_outer = -1;
@@ -1399,6 +1398,56 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 					wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 				}
+			}
+
+			if (optional_string("+Target Lock Restriction:")) {
+				if (optional_string("current target, any subsystem")) {
+					wip->target_restrict = LR_CURRENT_TARGET_SUBSYS;
+					
+				}
+				else if (optional_string("any target")) {
+					wip->target_restrict = LR_ANY_TARGETS;
+					
+				}
+				else if (optional_string("current target only")) {
+					wip->target_restrict = LR_CURRENT_TARGET;
+					
+				}
+				else {
+					wip->target_restrict = LR_CURRENT_TARGET;
+					
+				}
+				
+			}
+			
+				if (optional_string("+Independent Seekers:")) {
+				stuff_boolean(&wip->multi_lock);
+				
+			}
+			
+				if (optional_string("+Trigger Hold:")) {
+				stuff_boolean(&wip->trigger_lock);
+				
+			}
+			
+				if (optional_string("+Reset On Launch:")) {
+				stuff_boolean(&wip->launch_reset_locks);
+				
+			}
+			
+				if (optional_string("+Max Seekers Per Target:")) {
+				stuff_int(&wip->max_seekers_per_target);
+				
+			}
+			
+				if (optional_string("+Max Active Seekers:")) {
+				stuff_int(&wip->max_seeking);
+				
+			}
+
+				if (optional_string("+Ship Types:")) {
+				stuff_string_list(wip->ship_type_restrict_temp);
+				
 			}
 
 			if (wip->is_locked_homing()) {
@@ -3562,7 +3611,7 @@ void weapon_init()
 		// do post-parse cleanup
 		weapon_do_post_parse();
 
-		Weapons_inited = 1;
+		Weapons_inited = true;
 	}
 
 	weapon_level_init();
@@ -3615,6 +3664,7 @@ void weapon_close()
 void weapon_level_init()
 {
 	int i;
+	extern bool Ships_inited;
 
 	// Reset everything between levels
 	Num_weapons = 0;
@@ -3626,6 +3676,19 @@ void weapon_level_init()
 	for (i = 0; i < weapon_info_size(); i++) {
 		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
 		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
+
+		if ( Ships_inited ) {
+			// populate ship type lock restrictions
+			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
+				int idx = ship_type_name_lookup((char*)Weapon_info[i].ship_type_restrict_temp[j].c_str());
+
+				if ( idx >= 0 ) {
+					Weapon_info[i].ship_type_restrict.push_back(idx);
+				}
+			}
+
+			Weapon_info[i].ship_type_restrict_temp.clear();
+		}
 	}
 
 	trail_level_init();		// reset all missile trails
@@ -4470,10 +4533,48 @@ void weapon_home(object *obj, int num, float frame_time)
 	}
 }
 
+
+// moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
+void weapon_update_missiles(object* obj, float  frame_time) {
+
+	Assertion(obj->type == OBJ_WEAPON, "weapon_update_missiles called on a non-weapon object");
+
+	weapon* wp = &Weapons[obj->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+	// a single player or multiplayer server function -- it affects actual weapon movement.
+	if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+		weapon_home(obj, obj->instance, frame_time);
+
+		// If this is a swarm type missile,  
+		if (wp->swarm_index >= 0) {
+			swarm_update_direction(obj);
+		}
+
+		if (wp->cscrew_index >= 0) {
+			cscrew_process_post(obj);
+		}
+	}
+	else if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+		}
+		else {
+			obj->phys_info.speed = wip->max_speed;
+			obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
+		}
+
+		vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+	}
+}
+
 // as Mike K did with ships -- break weapon into process_pre and process_post for code to execute
 // before and after physics movement
 
-void weapon_process_pre( object *obj, float  /*frame_time*/)
+void weapon_process_pre( object *obj, float  frame_time)
 {
 	if(obj->type != OBJ_WEAPON)
 		return;
@@ -4512,6 +4613,11 @@ void weapon_process_pre( object *obj, float  /*frame_time*/)
 				weapon_detonate(obj);
 			}
 		}
+	}
+
+	// If this flag is false missile turning is evaluated in weapon_process_post()
+	if (Ai_before_physics) {
+		weapon_update_missiles(obj, frame_time);
 	}
 }
 
@@ -4812,30 +4918,9 @@ void weapon_process_post(object * obj, float frame_time)
 		weapon_maybe_spew_particle(obj);
 	}
 
-	// a single player or multiplayer server function -- it affects actual weapon movement.
-	if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
-		weapon_home(obj, num, frame_time);
-		
-		// If this is a swarm type missile,  
-		if ( wp->swarm_index >= 0 ) {
-			swarm_update_direction(obj);
-		}
-
-		if( wp->cscrew_index >= 0) {
-			cscrew_process_post(obj);			
-		}
-	} else if (wip->acceleration_time > 0.0f) {
-		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-			float t;
-
-			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
-		} else {
-			obj->phys_info.speed = wip->max_speed;
-			obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
-		}
-
-		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+	// If this flag is true this is evaluated in weapon_process_pre()
+	if (!Ai_before_physics) {
+		weapon_update_missiles(obj, frame_time);
 	}
 
 	//local ssm stuff
@@ -5051,7 +5136,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		if ((target_objnum != -1) && (!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor))) ) {
+		// Cyborg17 - exclude all invalid object numbers here since in multi, the lock slots can get out of sync.
+		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && (!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor))) ) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -7733,12 +7819,25 @@ void weapon_info::reset()
 	// *Default is 150  -Et1
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
+	this->target_restrict = LR_CURRENT_TARGET;
+	this->multi_lock = false;
+	this->trigger_lock = false;
+	this->launch_reset_locks = false;
+	
+	this->max_seeking = 1;
+	this->max_seekers_per_target = 1;
+	this->ship_type_restrict.clear();
+	this->ship_type_restrict_temp.clear();
+	
+	this->acquire_method = WLOCK_PIXEL;
+
 	this->min_lock_time = 0.0f;
 	this->lock_pixels_per_sec = 50;
 	this->catchup_pixels_per_sec = 50;
 	this->catchup_pixel_penalty = 50;
 	this->fov = 0;				//should be cos(pi), not pi
 	this->seeker_strength = 1.0f;
+	this->lock_fov = 0.85f;
 
 	this->pre_launch_snd = gamesnd_id();
 	this->pre_launch_snd_min_interval = 0;
@@ -8138,4 +8237,31 @@ void weapon_spew_stats(WeaponSpewType type)
 		}
 	}
 #endif
+}
+
+// Given a weapon, figure out how many independent locks we can have with it.
+int weapon_get_max_missile_seekers(weapon_info *wip)
+{
+	int max_target_locks;
+
+	if ( wip->multi_lock ) {
+		if ( wip->wi_flags[Weapon::Info_Flags::Swarm] ) {
+			max_target_locks = wip->swarm_count;
+		} else if ( wip->wi_flags[Weapon::Info_Flags::Corkscrew] ) {
+			max_target_locks = wip->cs_num_fired;
+		} else {
+			max_target_locks = 1;
+		}
+	} else {
+		max_target_locks = 1;
+	}
+
+	return max_target_locks;
+}
+
+bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
+{
+	// Determine if there are any restrictions, treating an empty list as true
+	return (wip->ship_type_restrict.empty()) || 
+			std::any_of(wip->ship_type_restrict.begin(), wip->ship_type_restrict.end(), [ship_type](int type) { return type == ship_type; });
 }

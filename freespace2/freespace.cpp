@@ -876,6 +876,11 @@ void game_level_close()
 		stars_level_close();
 
 		Pilot.save_savefile();
+
+		// Cybor17 - also, undo cheats.
+		extern bool Weapon_energy_cheat;
+		Weapon_energy_cheat = false;
+
 	}
 	else
 	{

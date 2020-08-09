@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/redalert.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -56,7 +57,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
-extern int ships_inited;
+extern bool Ships_inited;
 
 namespace scripting {
 namespace api {
@@ -344,7 +345,7 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		 "number",
 		 "Number of ships in the mission, or 0 if ships haven't been initialized yet")
 {
-	if(ships_inited)
+	if(Ships_inited)
 		return ade_set_args(L, "i", ship_get_num_ships());
 	else
 		return ade_set_args(L, "i", 0);
@@ -966,7 +967,7 @@ ADE_FUNC(startMission,
 
 		if (e->index == LE_MISSION_REPEAT) {
 			if (Num_recent_missions > 0)  {
-				strncpy( s, Recent_missions[0], MAX_FILENAME_LEN );
+				strcpy_s( s, Recent_missions[0] );
 			} else {
 				return ade_set_args(L, "b", false);
 			}
@@ -1252,6 +1253,16 @@ ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
 	} else {
 		return ADE_RETURN_FALSE;
 	}
+}
+
+ADE_FUNC(isRedAlertMission,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission is a red alert mission",
+	"boolean",
+	"true if red alert mission, false otherwise.")
+{
+	return ade_set_args(L, "b", red_alert_mission() != 0);
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);

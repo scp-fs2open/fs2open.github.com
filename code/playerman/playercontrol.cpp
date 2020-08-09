@@ -854,7 +854,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 			// if we're a multiplayer client, set our accum bits now
 			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
-				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
+				Net_player->s_info.accum_buttons |= OOC_FIRE_CONTROL_PRESSED;
 			}
 		}
 
@@ -1008,6 +1008,18 @@ void read_player_controls(object *objp, float frametime)
 
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
+
+			// this is similar to ai_control_info_check
+			if (Player_obj->type == OBJ_SHIP) {
+				auto sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
+
+				if (sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
+					Player->ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+				if (sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+					Player->ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+				if (sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+					Player->ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
+			}
 
 			if ( lua_game_control & LGC_STEERING ) {
 				// make sure to copy the control before reseting it

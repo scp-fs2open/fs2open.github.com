@@ -177,7 +177,9 @@ ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model file
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
-		strncpy(pm->filename, s, sizeof(pm->filename) - sizeof(char));
+		auto len = sizeof(pm->filename);
+		strncpy(pm->filename, s, len);
+		pm->filename[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", pm->filename);
@@ -364,7 +366,7 @@ ADE_FUNC(__len, l_Eyepoints, NULL, "Gets the number of eyepoints on this model",
 	return ade_set_args(L, "i", pm->n_view_positions);
 }
 
-ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets en eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
+ADE_INDEXER(l_Eyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
 {
 	eyepoints_h *eph = NULL;
 	int index = -1;
