@@ -2513,17 +2513,17 @@ bool vm_inverse_matrix(matrix* dest, const matrix* m)
 	double inv[3][3];	// create a temp matrix so we can avoid getting a determinant that is 0
 
 	// Use a2d so it's easier for people to read
-	inv[0][0] = -(double)m->a2d[1][2] * m->a2d[2][1] + (double)m->a2d[1][1] * m->a2d[2][2];
-	inv[0][1] = (double)m->a2d[0][2] * m->a2d[2][1] - (double)m->a2d[0][1] * m->a2d[2][2];
-	inv[0][2] = -(double)m->a2d[0][2] * m->a2d[1][1] + (double)m->a2d[0][1] * m->a2d[1][2];
-	inv[1][0] = (double)m->a2d[1][2] * m->a2d[2][0] - (double)m->a2d[1][0] * m->a2d[2][2];
-	inv[1][1] = -(double)m->a2d[0][2] * m->a2d[2][0] + (double)m->a2d[0][0] * m->a2d[2][2];
-	inv[1][2] = (double)m->a2d[0][2] * m->a2d[1][0] - (double)m->a2d[0][0] * m->a2d[1][2];
-	inv[2][0] = -(double)m->a2d[1][1] * m->a2d[2][0] + (double)m->a2d[1][0] * m->a2d[2][1];
-	inv[2][1] = (double)m->a2d[0][1] * m->a2d[2][0] - (double)m->a2d[0][0] * m->a2d[2][1];
-	inv[2][2] = -(double)m->a2d[0][1] * m->a2d[1][0] + (double)m->a2d[0][0] * m->a2d[1][1];
+	inv[0][0] = -(double)m->a2d[1][2] * (double)m->a2d[2][1] + (double)m->a2d[1][1] * (double)m->a2d[2][2];
+	inv[0][1] = (double)m->a2d[0][2] * (double)m->a2d[2][1] - (double)m->a2d[0][1] * (double)m->a2d[2][2];
+	inv[0][2] = -(double)m->a2d[0][2] * (double)m->a2d[1][1] + (double)m->a2d[0][1] * (double)m->a2d[1][2];
+	inv[1][0] = (double)m->a2d[1][2] * (double)m->a2d[2][0] - (double)m->a2d[1][0] * (double)m->a2d[2][2];
+	inv[1][1] = -(double)m->a2d[0][2] * (double)m->a2d[2][0] + (double)m->a2d[0][0] * (double)m->a2d[2][2];
+	inv[1][2] = (double)m->a2d[0][2] * (double)m->a2d[1][0] - (double)m->a2d[0][0] * (double)m->a2d[1][2];
+	inv[2][0] = -(double)m->a2d[1][1] * (double)m->a2d[2][0] + (double)m->a2d[1][0] * (double)m->a2d[2][1];
+	inv[2][1] = (double)m->a2d[0][1] * (double)m->a2d[2][0] - (double)m->a2d[0][0] * (double)m->a2d[2][1];
+	inv[2][2] = -(double)m->a2d[0][1] * (double)m->a2d[1][0] + (double)m->a2d[0][0] * (double)m->a2d[1][1];
 
-	double det = m->a2d[0][0] * inv[0][0] + m->a2d[0][1] * inv[1][0] + m->a2d[0][2] * inv[2][0];
+	double det = (double)m->a2d[0][0] * inv[0][0] + (double)m->a2d[0][1] * inv[1][0] + (double)m->a2d[0][2] * inv[2][0];
 	if (det == 0) {
 		*dest = vmd_zero_matrix;
 		return false;
