@@ -343,6 +343,7 @@ float dock_calc_docked_speed(object *objp)
 //		dest		=>		output matrix
 //		objp		=>		one of the objects in the assembly
 //		center 		=>		center of mass of the assembly in world coords ( use dock_calc_docked_center_of_mass to find it )
+// NOTE: THIS FUNCTION MAY RETURN NAN, to indicate that it's inverse MOI would be zero
 void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
 	Assertion((dest != nullptr) && (objp != nullptr) && (center != nullptr), "dock_calc_total_moi invalid argument(s)");
@@ -399,7 +400,14 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 	matrix moi, inv_moi;
 	// calculate the effective inverse MOI for the docked composite object about its center of mass
 	dock_calc_total_moi(&moi, objp, &world_center_of_mass);
-	vm_inverse_matrix(&inv_moi, &moi);
+
+	// Just in case anything funky happened (usually due to some of the input matrices being non-invertable or too close to it)
+	if (is_valid_matrix(&moi)) {
+		vm_inverse_matrix(&inv_moi, &moi);
+	}
+	else { 
+		inv_moi = vmd_zero_matrix;
+	}
 
 	// calculate the angular_impulse about the center of mass in world coords
 	vec3d angular_impulse;
@@ -836,7 +844,11 @@ void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 	// So for each part:
 
 	// We invert the inverse MOI to get an MOI in the local frame
-	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
+	if (!vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv)) {
+		// This is done on purpose to indicate a zero inv_moi
+		infop->maintained_variables.matrix_value->a1d[0] = NAN;
+		return;
+	}
 
 	// We calculate the inverse of the orientation matrix (which is also the transpose)
 	vm_copy_transpose(&unorient, &objp->orient);
