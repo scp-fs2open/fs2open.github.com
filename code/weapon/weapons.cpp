@@ -4178,9 +4178,9 @@ void weapon_home(object *obj, int num, float frame_time)
 		// since free_flight_time can now be 0, guard against that
 		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
-				obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
-			} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
-				obj->phys_info.speed = max_speed / (2 / wip->free_flight_time);
+				obj->phys_info.speed -= frame_time * 4;
+			} else if ((obj->phys_info.speed < max_speed / 4) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
+				obj->phys_info.speed = max_speed / 4;
 			}
 		}
 		// no free_flight_time, so immediately set desired speed
