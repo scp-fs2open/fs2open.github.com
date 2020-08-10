@@ -262,6 +262,8 @@ add_file_folder("ExceptionHandler"
 
 # Executor files
 add_file_folder("Executor"
+	executor/CombinedExecutionContext.cpp
+	executor/CombinedExecutionContext.h
 	executor/Executor.cpp
 	executor/Executor.h
 	executor/GameStateExecutionContext.cpp
@@ -1091,6 +1093,8 @@ add_file_folder("Scripting\\\\Api"
 	scripting/api/LuaCoroutineRunner.h
 	scripting/api/LuaEventCallback.cpp
 	scripting/api/LuaEventCallback.h
+	scripting/api/LuaExecutionContext.cpp
+	scripting/api/LuaExecutionContext.h
 	scripting/api/LuaPromise.cpp
 	scripting/api/LuaPromise.h
 )
@@ -1157,6 +1161,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
 	scripting/api/objs/event.h
+	scripting/api/objs/execution_context.cpp
+	scripting/api/objs/execution_context.h
 	scripting/api/objs/executor.cpp
 	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
