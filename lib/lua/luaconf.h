@@ -161,7 +161,19 @@
 
 #else
 
+#ifdef WIN32
+// Export even when building statically to allow external libraries to load the Lua API symbols
+#if defined(LUA_CORE) || defined(LUA_LIB)
+#define LUA_API __declspec(dllexport)
+#else
+#define LUA_API extern
+#endif
+
+#else
+
 #define LUA_API		extern
+
+#endif
 
 #endif
 
