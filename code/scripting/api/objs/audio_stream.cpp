@@ -61,7 +61,12 @@ ADE_FUNC(unpause, l_AudioStream, nullptr, "Unpauses the audio stream", "boolean"
 	return ade_set_args(L, "b", true);
 }
 
-ADE_FUNC(stop, l_AudioStream, nullptr, "Stops the audio stream", "boolean", "true on success, false otherwise")
+ADE_FUNC(stop,
+	l_AudioStream,
+	nullptr,
+	"Stops the audio stream so that it can be started again later",
+	"boolean",
+	"true on success, false otherwise")
 {
 	int streamHandle = -1;
 	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
@@ -74,6 +79,57 @@ ADE_FUNC(stop, l_AudioStream, nullptr, "Stops the audio stream", "boolean", "tru
 
 	audiostream_stop(streamHandle);
 	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(close,
+	l_AudioStream,
+	"[boolean fade = true]",
+	"Irrevocably closes the audio file and optionally fades the music before stopping playback. This invalidates the "
+	"audio stream handle.",
+	"boolean",
+	"true on success, false otherwise")
+{
+	// We get ourself a pointer here so that we can invalidate the passed handle since otherwise it might be possible to
+	// still call functions on that handle
+	int* streamHandlePointer = nullptr;
+	bool fade = true;
+	if (!ade_get_args(L, "o|b", l_AudioStream.GetPtr(&streamHandlePointer), &fade)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (streamHandlePointer == nullptr) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (*streamHandlePointer < 0) {
+		return ADE_RETURN_FALSE;
+	}
+
+	audiostream_close_file(*streamHandlePointer, fade);
+
+	// Invalidate the handle so that it cannot be reused
+	*streamHandlePointer = -1;
+
+	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(isPlaying,
+	l_AudioStream,
+	nullptr,
+	"Determines if the audio stream is still playing",
+	"boolean",
+	"true when still playing, false otherwise")
+{
+	int streamHandle = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (streamHandle < 0) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", audiostream_is_playing(streamHandle) != 0);
 }
 
 ADE_FUNC(isValid,

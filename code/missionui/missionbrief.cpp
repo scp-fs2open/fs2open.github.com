@@ -1853,7 +1853,7 @@ void briefing_stop_music(bool fade)
 	}
 }
 
-void briefing_load_music(char* fname)
+void briefing_load_music(const char* fname)
 {
 	if ( Cmdline_freespace_no_music ) {
 		return;
