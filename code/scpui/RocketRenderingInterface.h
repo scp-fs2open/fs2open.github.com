@@ -52,6 +52,8 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 
 	vertex_layout layout;
 
+	float horizontal_swipe_offset = std::numeric_limits<float>::infinity();
+
   public:
 	RocketRenderingInterface();
 	~RocketRenderingInterface() override;
@@ -130,6 +132,12 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 	void setRenderOffset(const vec2d& render_offset);
 
 	float GetPixelsPerInch() override;
+
+	/**
+	 * @brief Set the horizontal swipe value for the following render operations
+	 * @param value The pixel location where the swipe is. Set to infinity to disable.
+	 */
+	void setHorizontalSwipeOffset(float value);
 
 	/**
 	 * @brief From a texture handle, get the bitmap number for bmpman

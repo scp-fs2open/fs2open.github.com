@@ -1078,13 +1078,6 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 
 void opengl_tnl_set_rocketui_material(interface_material* material_info)
 {
-	vec3d offset = vmd_zero_vector;
-	offset.xyz.x = material_info->get_offset().x;
-	offset.xyz.y = material_info->get_offset().y;
-
-	matrix4 modelViewMatrix;
-	vm_matrix4_set_transform(&modelViewMatrix, &vmd_identity_matrix, &offset);
-
 	opengl_tnl_set_material(material_info, false);
 
 	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
@@ -1098,13 +1091,16 @@ void opengl_tnl_set_rocketui_material(interface_material* material_info)
 		}
 	}
 
+	const vec2d& offset = material_info->get_offset();
 	opengl_set_generic_uniform_data<graphics::generic_data::rocketui_data>(
 		[&](graphics::generic_data::rocketui_data* data) {
-			data->modelViewMatrix = modelViewMatrix;
-			data->projMatrix      = gr_projection_matrix;
+			data->projMatrix = gr_projection_matrix;
 
-			data->textured     = material_info->is_textured() ? GL_TRUE : GL_FALSE;
+			data->offset = offset;
+			data->textured = material_info->is_textured() ? GL_TRUE : GL_FALSE;
 			data->baseMapIndex = baseMapIndex;
+
+			data->horizontalSwipeOffset = material_info->get_horizontal_swipe();
 		});
 }
 

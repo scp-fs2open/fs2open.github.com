@@ -261,7 +261,7 @@ void RocketRenderingInterface::renderGeometry(int vertex_buffer, int index_buffe
 	transl.x = translation.x + renderOffset.x;
 	transl.y = translation.y + renderOffset.y;
 
-	material_set_rocket_interface(&material, bitmap, transl);
+	material_set_rocket_interface(&material, bitmap, transl, horizontal_swipe_offset);
 
 	gr_render_rocket_primitives(&material, PRIM_TYPE_TRIS, &layout, num_elements, vertex_buffer, index_buffer);
 }
@@ -287,6 +287,9 @@ void RocketRenderingInterface::advanceAnimation(Rocket::Core::TextureHandle hand
 	extras.draw = false; // We only want to advance the time but not actually render the animation
 
 	generic_anim_render(&tex->animation, advanceTime, -1, -1, false, &extras);
+}
+void RocketRenderingInterface::setHorizontalSwipeOffset(float value) {
+	horizontal_swipe_offset = value;
 }
 
 } // namespace scpui
