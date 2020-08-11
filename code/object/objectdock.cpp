@@ -344,6 +344,7 @@ float dock_calc_docked_speed(object *objp)
 //		objp		=>		one of the objects in the assembly
 //		center 		=>		center of mass of the assembly in world coords ( use dock_calc_docked_center_of_mass to find it )
 // Returns whether or not was successful (in case some or all of the matrices were uninvertable or too close to it)
+// If not successful, dest will have NaN or infinity, use at your own risk!
 bool dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
 	Assertion((dest != nullptr) && (objp != nullptr) && (center != nullptr), "dock_calc_total_moi invalid argument(s)");
