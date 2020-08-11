@@ -8,9 +8,6 @@
 #include "globalincs/linklist.h"
 #include "ship/ship.h"
 
-extern int Num_hull_pieces;
-extern debris Hull_debris_list;
-
 namespace scripting {
 namespace api {
 
@@ -79,16 +76,10 @@ ADE_VIRTVAR(DoNotExpire, l_Debris, "boolean", "Whether the debris should expire.
 		// per comments in debris.cpp: "pieces that ... have the DoNotExpire flag should not be on it"
 		if (db->is_hull)
 		{
-			if (set && db->next)
-			{
-				list_remove(&Hull_debris_list, db);
-				Num_hull_pieces--;
-			}
-			else if (!set && !db->next)
-			{
-				list_append(&Hull_debris_list, db);
-				Num_hull_pieces++;
-			}
+			if (set)
+				debris_remove_from_hull_list(db);
+			else
+				debris_add_to_hull_list(db);
 		}
 	}
 
@@ -146,6 +137,34 @@ ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "bool
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", oh != NULL && oh->IsValid());
+}
+
+ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic debris model, not a model subobject", "boolean", "true if Debris_model")
+{
+	object_h *oh;
+	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
+		return ADE_RETURN_FALSE;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	debris *db = &Debris[oh->objp->instance];
+
+	return ade_set_args(L, "b", debris_is_generic(db));
+}
+
+ADE_FUNC(isVaporized, l_Debris, nullptr, "Return if this debris is the vaporized debris model, not a model subobject", "boolean", "true if Debris_vaporize_model")
+{
+	object_h *oh;
+	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
+		return ADE_RETURN_FALSE;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	debris *db = &Debris[oh->objp->instance];
+
+	return ade_set_args(L, "b", debris_is_vaporized(db));
 }
 
 

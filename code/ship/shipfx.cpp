@@ -786,21 +786,18 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	}
 
 	// Check all the big hull debris pieces.
-	debris	*db = Debris;
-
-	int i;
-	for ( i = 0; i < MAX_DEBRIS_PIECES; i++, db++ )	{
-		if ( !(db->flags[Debris_Flags::Used]) || !db->is_hull ){
+	for (auto &db: Debris)	{
+		if ( !(db.flags[Debris_Flags::Used]) || !db.is_hull ){
 			continue;
 		}
 
-		objp = &Objects[db->objnum];
+		objp = &Objects[db.objnum];
 
 		vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 		mc.model_instance_num = -1;
-		mc.model_num = db->model_num;	// Fill in the model to check
-		mc.submodel_num = db->submodel_num;
+		mc.model_num = db.model_num;	// Fill in the model to check
+		mc.submodel_num = db.submodel_num;
 		model_clear_instance( mc.model_num );
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position
@@ -927,7 +924,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
         return false;
     }
 
-    for (i = 0 ; i < MAX_ASTEROIDS; i++, ast++)
+    for (int i = 0 ; i < MAX_ASTEROIDS; i++, ast++)
     {
         if (!(ast->flags & AF_USED))
         {

@@ -172,8 +172,10 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 	if( !ade_get_args( L, "*i", &idx ) ) {
 		return ade_set_error(L, "o", l_Debris.Set(object_h()));
 	}
-	if( idx > -1 && idx < Num_debris_pieces ) {
-		idx--; // Lua -> C
+
+	idx--; // Lua -> C
+
+	if( idx >= 0 && idx < (int)Debris.size() ) {
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
 		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
@@ -188,7 +190,7 @@ ADE_FUNC(__len, l_Mission_Debris, NULL,
 		 "number",
 		 "Current number of debris particles")
 {
-	return ade_set_args(L, "i", Num_debris_pieces);
+	return ade_set_args(L, "i", (int)Debris.size());
 }
 
 //****SUBLIBRARY: Mission/EscortShips

@@ -155,10 +155,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// create fireballs when subsys destroy for large ships.
-	object* objp = &Objects[ship_p->objnum];
-
 	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
-		if (objp->radius > 100.0f) {
+		if (ship_objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
 			int num_fireballs;
 			if ( psub->radius < 3 ) {
@@ -168,7 +166,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			}
 
 			vec3d temp_vec, center_to_subsys, rand_vec;
-			vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
+			vm_vec_sub(&center_to_subsys, &g_subobj_pos, &ship_objp->pos);
 			for (i=0; i<num_fireballs; i++) {
 				if (i==0) {
 					// make first fireball at hitpos
@@ -192,14 +190,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				}
 
 				vec3d fb_vel;
-				vm_vec_cross(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
-				vm_vec_add2(&fb_vel, &objp->phys_info.vel);
+				vm_vec_cross(&fb_vel, &ship_objp->phys_info.rotvel, &center_to_subsys);
+				vm_vec_add2(&fb_vel, &ship_objp->phys_info.vel);
 
 				int fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
 					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 				}
-				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, false, &fb_vel );
+				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, ship_p->objnum, fireball_rad, false, &fb_vel );
 			}
 		}
 	}
@@ -285,7 +283,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( psub->type == SUBSYSTEM_TURRET ) {
 		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			//	Don't create "disarmed" event for small ships.
-			if (!(Ship_info[ship_p->ship_info_index].is_small_ship())) {
+			if (!(sip->is_small_ship())) {
 				mission_log_add_entry(LOG_SHIP_DISARMED, ship_p->ship_name, NULL );
 				// ship_p->flags |= SF_DISARMED;
 			}
@@ -318,10 +316,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if (notify && !no_explosion) {
 		// play sound effect when subsys gets blown up
 		gamesnd_id sound_index;
-		if ( Ship_info[ship_p->ship_info_index].is_huge_ship() ) {
-			sound_index=GameSounds::CAPSHIP_SUBSYS_EXPLODE;
-		} else if ( Ship_info[ship_p->ship_info_index].is_big_ship() ) {
-			sound_index=GameSounds::SUBSYS_EXPLODE;
+		if (ship_has_sound(ship_objp, GameSounds::SUBSYS_EXPLODE)) {
+			sound_index = ship_get_sound(ship_objp, GameSounds::SUBSYS_EXPLODE);
+		} else {
+			if ( sip->is_huge_ship() ) {
+				sound_index = GameSounds::CAPSHIP_SUBSYS_EXPLODE;
+			} else if ( sip->is_big_ship() ) {
+				sound_index = GameSounds::SUBSYS_EXPLODE;
+			}
 		}
 		if ( sound_index.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(sound_index), &g_subobj_pos, &View_position );
@@ -1507,7 +1509,9 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	ai_deathroll_start(objp);
 
 	// play death roll begin sound
-	sp->death_roll_snd = snd_play_3d( gamesnd_get_game_sound(GameSounds::DEATH_ROLL), &objp->pos, &View_position, objp->radius );
+	auto snd_id = ship_get_sound(objp, GameSounds::DEATH_ROLL);
+	if (snd_id.isValid())
+		sp->death_roll_snd = snd_play_3d( gamesnd_get_game_sound(snd_id), &objp->pos, &View_position, objp->radius );
 	if (objp == Player_obj)
 		joy_ff_deathroll();
 
@@ -2007,7 +2011,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		other_obj_is_beam = ((other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
 		other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
 		other_obj_is_asteroid = ((other_obj->type == OBJ_ASTEROID) && (other_obj->instance >= 0) && (other_obj->instance < MAX_ASTEROIDS));
-		other_obj_is_debris = ((other_obj->type == OBJ_DEBRIS) && (other_obj->instance >= 0) && (other_obj->instance < MAX_DEBRIS_PIECES));
+		other_obj_is_debris = ((other_obj->type == OBJ_DEBRIS) && (other_obj->instance >= 0) && (other_obj->instance < (int)Debris.size()));
 		other_obj_is_ship = ((other_obj->type == OBJ_SHIP) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHIPS));
 	}
 	else

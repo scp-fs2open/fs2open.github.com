@@ -2017,8 +2017,9 @@ static void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$MissileEvadedSnd:",                GameSounds::MISSILE_EVADED_POPUP, sip);
 	parse_ship_sound("$CargoScanningSnd:",                GameSounds::CARGO_SCAN, sip);
 
-	// Use SND_SHIP_EXPLODE_1 for custom explosion sounds
+	parse_ship_sound("$DeathRollSnd:",                    GameSounds::DEATH_ROLL, sip);
 	parse_ship_sound("$ExplosionSnd:",                    GameSounds::SHIP_EXPLODE_1, sip);
+	parse_ship_sound("$SubsysExplosionSnd:",              GameSounds::SUBSYS_EXPLODE, sip);
 } 
 
 static void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
