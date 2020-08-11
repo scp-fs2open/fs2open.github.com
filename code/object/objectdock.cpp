@@ -357,7 +357,7 @@ bool dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_moi_helper);
 
-	return is_valid_matrix(dest) != 0;
+	return is_valid_matrix(dest);
 }
 
 // This ship is the only ship NOT moved by docking AI to keep everyone together

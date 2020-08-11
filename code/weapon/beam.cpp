@@ -789,7 +789,7 @@ void beam_type_b_move(beam *b)
 
 	// now recalculate shot_point to be shooting through our new point
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
-	int is_valid = is_valid_vec(&b->last_shot);
+	bool is_valid = is_valid_vec(&b->last_shot);
 	Assert(is_valid);
 	if(!is_valid){
 		actual_dir = b->binfo.dir_a;

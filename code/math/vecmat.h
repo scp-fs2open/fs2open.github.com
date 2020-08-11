@@ -453,10 +453,10 @@ vec3d* vm_rotate_vec_to_world(vec3d *world_vec, const vec3d *body_vec, const mat
 void vm_estimate_next_orientation(const matrix *last_orient, const matrix *current_orient, matrix *next_orient);
 
 //	Return true if all elements of *vec are legal, that is, not a NAN.
-int is_valid_vec(const vec3d *vec);
+bool is_valid_vec(const vec3d *vec);
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
-int is_valid_matrix(const matrix *m);
+bool is_valid_matrix(const matrix *m);
 
 // Finds the rotation matrix corresponding to a rotation of theta about axis u
 void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
