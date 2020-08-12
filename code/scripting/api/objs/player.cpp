@@ -15,16 +15,25 @@ namespace scripting {
 namespace api {
 
 player_h::player_h() = default;
+player_h::player_h(player* plr)
+{
+	_plr = plr;
+	_owned = false;
+}
 player_h::player_h(const player& plr)
 {
 	_plr = new player();
 	_plr->assign(&plr);
+	_owned = true;
 }
 bool player_h::isValid() const { return _plr != nullptr; }
 player* player_h::get() { return _plr; }
 player_h::~player_h()
 {
-	delete _plr;
+	if (_owned)
+	{
+		delete _plr;
+	}
 	_plr = nullptr;
 }
 player_h::player_h(player_h&& other) noexcept { *this = std::move(other); }
@@ -137,6 +146,28 @@ ADE_VIRTVAR(WasMultiplayer, l_Player, "boolean value", "Determines if this playe
 	}
 
 	return ade_set_args(L, "b", plr->get()->player_was_multi != 0);
+}
+
+ADE_VIRTVAR(AutoAdvance,
+	l_Player,
+	"boolean value",
+	"Determines if briefing stages should be auto advanced.",
+	"boolean",
+	"true if auto advance is enabled, false otherwise or if the handle is invalid")
+{
+	player_h* plr;
+	bool value = false;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
+		return ADE_RETURN_FALSE;
+
+	if (!plr->isValid())
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		plr->get()->auto_advance = value ? 1 : 0;
+	}
+
+	return ade_set_args(L, "b", plr->get()->auto_advance != 0);
 }
 
 ADE_FUNC(isValid, l_Player, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

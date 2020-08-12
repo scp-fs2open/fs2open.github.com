@@ -3,12 +3,14 @@
 #include "ui.h"
 
 #include "cmdline/cmdline.h"
+#include "gamesnd/eventmusic.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missioncampaign.h"
+#include "missionui/missionscreencommon.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
@@ -388,6 +390,11 @@ ADE_FUNC(getBriefing,
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
 	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
+}
+
+ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
 }
 
 } // namespace api

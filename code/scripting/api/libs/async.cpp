@@ -175,7 +175,9 @@ ADE_FUNC(run,
 	"function() => any body, [executor executeOn = nil, boolean|execution_context captureContext = true /* Captures "
 	"game state context by default */]",
 	"Runs an asynchronous function. Inside this function you can use async.await to suspend the function until a "
-	"promise resolves.",
+	"promise resolves. Also allows to specify an executor on which the code of the coroutine should be executed. If "
+	"captureContext is true then the game context (the game state) at the time of the call is captured and the "
+	"coroutine is only run if that state is still active.",
 	"promise",
 	"A promise that resolves with the return value of the body when it reaches a return statement")
 {
