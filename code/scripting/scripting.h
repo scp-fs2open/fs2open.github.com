@@ -371,6 +371,9 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 			scripting::internal::Ade_get_args_skip      = stack_start;
 			scripting::internal::Ade_get_args_lfunction = true;
 			scripting::ade_get_args(LuaState, fmt, data);
+
+			// Reset stack again
+			lua_settop(LuaState, stack_start);
 		}
 	} catch (const LuaException&) {
 		return 0;
