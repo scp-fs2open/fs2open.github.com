@@ -155,7 +155,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// create fireballs when subsys destroy for large ships.
-	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
+	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished, Ship::Subsystem_Flags::No_disappear]) && !no_explosion) {
 		if (ship_objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
 			int num_fireballs;
@@ -304,13 +304,15 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
 	Script_system.RemHookVars(2, "Ship", "Subsystem");
 
-	if ( psub->subobj_num > -1 )	{
-		shipfx_blow_off_subsystem(ship_objp,ship_p,subsys,&g_subobj_pos,no_explosion);
-		subsys->submodel_info_1.blown_off = 1;
-	}
+	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
+		if (psub->subobj_num > -1) {
+			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion);
+			subsys->submodel_info_1.blown_off = 1;
+		}
 
-	if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-		subsys->submodel_info_2.blown_off = 1;
+		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
+			subsys->submodel_info_2.blown_off = 1;
+		}
 	}
 
 	if (notify && !no_explosion) {
