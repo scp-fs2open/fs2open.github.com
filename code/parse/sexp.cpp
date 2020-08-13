@@ -345,6 +345,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "number-of",						OP_NUMBER_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "in-sequence",					OP_IN_SEQUENCE,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Karajorma
 	{ "for-counter",					OP_FOR_COUNTER,							2,	3,			SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
+	{ "for-ship-class",					OP_FOR_SHIP_CLASS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-ship-type",					OP_FOR_SHIP_TYPE,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -9906,6 +9908,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	int i, count, counter_start, counter_stop, counter_step;
+	SCP_vector<std::pair<char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
@@ -9938,7 +9941,6 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	}
 
 	// build a vector of counter values
-	SCP_vector<std::pair<char*, int>> argument_vector;
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
 		sprintf(buf, "%d", i);
@@ -9963,6 +9965,49 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 		return SEXP_FALSE;
 }
 
+// Goober5000
+int eval_for_ship_class_or_type(int arg_handler_node, int condition_node, bool ship_type)
+{
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<char*, int>> argument_vector;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	n = CDR(arg_handler_node);
+
+	// handle each parameter
+	for (; n >= 0; n = CDR(n))
+	{
+		int index = ship_type ? ship_type_name_lookup(CTEXT(n)) : ship_info_lookup(CTEXT(n));
+		if (index < 0)
+			continue;
+
+		// add all ships of this class or type which are present in the mission
+		for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
+		{
+			if (objp->type == OBJ_SHIP)
+			{
+				int other_index = Ships[objp->instance].ship_info_index;
+				if (ship_type)
+					other_index = ship_class_query_general_type(other_index);
+
+				if (index == other_index)
+					argument_vector.emplace_back(vm_strdup(Ships[objp->instance].ship_name), -1);
+			}
+		}
+	}
+
+	// test the whole argument vector
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
 void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
@@ -9973,8 +10018,9 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 	if (arg_handler < 0)
 		return;
 
-	// can't change validity of for-counter
-	if (get_operator_const(arg_handler) == OP_FOR_COUNTER)
+	// can't change validity of for-* sexps
+	auto op_const = get_operator_const(arg_handler);
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE)
 		return;
 		
 	while (n != -1)
@@ -10031,7 +10077,8 @@ void sexp_change_argument_validity(int n, bool invalidate)
 		return;
 
 	// can't change validity of for-counter
-	if (get_operator_const(arg_handler) == OP_FOR_COUNTER)
+	auto op_const = get_operator_const(arg_handler);
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE)
 		return;
 		
 	// loop through arguments
@@ -10147,6 +10194,8 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 		case OP_FOR_COUNTER:
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
 			return true;
 
 		default:
@@ -23481,6 +23530,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_for_counter( cur_node, referenced_node );
 				break;
 
+			// Goober5000
+			case OP_FOR_SHIP_CLASS:
+			case OP_FOR_SHIP_TYPE:
+				sexp_val = eval_for_ship_class_or_type( cur_node, referenced_node, op_num == OP_FOR_SHIP_TYPE );
+				break;
+
 			// Karajorma
 			case OP_INVALIDATE_ALL_ARGUMENTS:
 			case OP_VALIDATE_ALL_ARGUMENTS:
@@ -26173,6 +26228,8 @@ int query_operator_return_type(int op)
 		case OP_NUMBER_OF:
 		case OP_IN_SEQUENCE:
 		case OP_FOR_COUNTER:
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default: {
@@ -26894,6 +26951,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_COUNTER:
 			return OPF_NUMBER;
+
+		case OP_FOR_SHIP_CLASS:
+			return OPF_SHIP_CLASS_NAME;
+
+		case OP_FOR_SHIP_TYPE:
+			return OPF_SHIP_TYPE;
 
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
@@ -31163,6 +31226,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tCounter increment (optional)" },
 
 	// Goober5000
+	{ OP_FOR_SHIP_CLASS, "For-Ship-Class (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain class (or classes) in the mission, and each ship will be provided as an argument to the action operators.  "
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tShip class from which to list ships\r\n" },
+
+	// Goober5000
+	{ OP_FOR_SHIP_TYPE, "For-Ship-Type (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain type (or types) in the mission, and each ship will be provided as an argument to the action operators.  "
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tShip type from which to list ships\r\n" },
+
+	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
 		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
 		"Takes 1 or more arguments...\r\n"
@@ -33632,7 +33709,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tFades in.  "
 		"Takes 0 to 4 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
-		"\t2:\tColor to fade to (optional).  If arguments 3 and 4 are specified, this is the R component of an RGB color.  Otherwise it is 1 for white, 2 for red, and any other number for black.\r\n"
+		"\t2:\tColor to fade from (optional).  If arguments 3 and 4 are specified, this is the R component of an RGB color.  Otherwise it is 1 for white, 2 for red, and any other number for black.\r\n"
 		"\t3:\tG component of an RGB color (optional)\r\n"
 		"\t4:\tB component of an RGB color (optional)\r\n"
 	},
@@ -33640,7 +33717,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
 		"\tFades out.  "
 		"Takes 0 to 4 arguments...\r\n"
-		"\t1:\tTime to fade in (in milliseconds)\r\n"
+		"\t1:\tTime to fade out (in milliseconds)\r\n"
 		"\t2:\tColor to fade to (optional).  If arguments 3 and 4 are specified, this is the R component of an RGB color.  Otherwise it is 1 for white, 2 for red, and any other number for black.\r\n"
 		"\t3:\tG component of an RGB color (optional)\r\n"
 		"\t4:\tB component of an RGB color (optional)\r\n"

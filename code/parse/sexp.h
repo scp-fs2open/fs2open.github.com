@@ -418,6 +418,8 @@ class waypoint_list;
 #define OP_IF_THEN_ELSE						(0x0010 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUM_VALID_ARGUMENTS				(0x0011 | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_CLASS					(0x0013 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_TYPE					(0x0014 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
