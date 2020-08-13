@@ -35,16 +35,14 @@
 
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
-#define MAX_HULL_PIECES			MAX_DEBRIS_PIECES // limit the number of hull debris chunks that can exist. 
 
-int		Num_hull_pieces;		// number of hull pieces in existance
+int		Num_hull_pieces;		// number of hull pieces in existence
 debris	Hull_debris_list;		// head of linked list for hull debris chunks, for quick search
 								// This list holds debris pieces that are set to expire when their lifetime runs out;
 								// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
 
-debris Debris[MAX_DEBRIS_PIECES];
+SCP_vector<debris> Debris;
 
-int Num_debris_pieces = 0;
 int Debris_inited = 0;
 
 int Debris_model = -1;
@@ -53,7 +51,7 @@ int Debris_num_submodels = 0;
 
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
-#define	DEBRIS_INDEX(dp) (int)(dp-Debris)
+#define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
 const auto OnDebrisCreatedHook = scripting::Hook::Factory(
 	"On Debris Created",
@@ -94,8 +92,6 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
  */
 void debris_init()
 {
-	int i;
-
 	if ( !Debris_inited ) {
 		Debris_inited = 1;
 	}
@@ -105,12 +101,8 @@ void debris_init()
 	Debris_num_submodels = 0;
 		
 	// Reset everything between levels
-	Num_debris_pieces = 0;
-	for (i=0; i<MAX_DEBRIS_PIECES; i++ )	{
-		Debris[i].flags.reset();
-		Debris[i].sound_delay = 0;
-		Debris[i].objnum = -1;
-	}
+	Debris.clear();
+	Debris.reserve(SOFT_LIMIT_DEBRIS_PIECES);
 		
 	Num_hull_pieces = 0;
 	list_init(&Hull_debris_list);
@@ -153,15 +145,24 @@ MONITOR(NumSmallDebrisRend)
 MONITOR(NumHullDebrisRend)
 
 /**
+ * Add item to ::Hull_debris_list
+ */
+void debris_add_to_hull_list(debris *db)
+{
+	if ( db->is_hull && db->next == nullptr && db->prev == nullptr ) {
+		Num_hull_pieces++;
+		list_append(&Hull_debris_list, db);
+	}
+}
+
+/**
  * Remove item from ::Hull_debris_list
  */
 void debris_remove_from_hull_list(debris *db)
 {
-	if ( !db->flags[Debris_Flags::DoNotExpire] ) {
-		if ( db->is_hull ) {
-			Num_hull_pieces--;
-			list_remove(Hull_debris_list, db);
-		}
+	if ( db->is_hull && db->next != nullptr && db->prev != nullptr ) {
+		Num_hull_pieces--;
+		list_remove(&Hull_debris_list, db);
 	}
 }
 
@@ -176,18 +177,18 @@ void debris_delete( object * obj )
 	debris	*db;
 
 	num = obj->instance;
-	Assert( Debris[num].objnum == OBJ_INDEX(obj));
+
+	Assert(num >= 0 && num < (int)Debris.size());
+	Assert(Debris[num].objnum == OBJ_INDEX(obj));
 
 	db = &Debris[num];
 
-	Assert( Num_debris_pieces >= 0 );
 	if ( db->is_hull ) {
 		debris_remove_from_hull_list(db);
 	}
 
 	db->flags.reset();
 	db->objnum = -1;
-	Num_debris_pieces--;
 }
 
 /**
@@ -231,11 +232,12 @@ MONITOR(NumHullDebris)
  */
 void debris_process_post(object * obj, float frame_time)
 {
-	int i, num;
-	num = obj->instance;
-
+	int num = obj->instance;
 	int objnum = OBJ_INDEX(obj);
-	Assert( Debris[num].objnum == objnum );
+
+	Assert(num >= 0 && num < (int)Debris.size());
+	Assert(Debris[num].objnum == objnum);
+
 	debris *db = &Debris[num];
 
 	if ( db->is_hull ) {
@@ -285,7 +287,7 @@ void debris_process_post(object * obj, float frame_time)
 			int lifetime = (myrand()%((b)-(a)+1))+(a);
 
 			// Create the spark effects
-			for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
 				if ( !timestamp_valid( db->arc_timestamp[i] ) )	{
 
 					db->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
@@ -342,7 +344,7 @@ void debris_process_post(object * obj, float frame_time)
 		}
 	}
 
-	for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
 		if ( timestamp_valid( db->arc_timestamp[i] ) )	{
 			if ( timestamp_elapsed( db->arc_timestamp[i] ) )	{
 				// Kill off the spark
@@ -401,7 +403,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
 {
-	int		i, n, objnum, parent_objnum;
+	int		n, objnum, parent_objnum;
 	object	*obj;
 	ship		*shipp;
 	debris	*db;	
@@ -429,7 +431,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	if ( hull_flag && (Num_hull_pieces >= MAX_HULL_PIECES ) ) {
+	if ( hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES ) ) {
 		// cause oldest hull debris chunk to blow up
 		n = debris_find_oldest();
 		if ( n >= 0 ) {
@@ -437,19 +439,24 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	for (n=0; n<MAX_DEBRIS_PIECES; n++ ) {
-		if ( !(Debris[n].flags[Debris_Flags::Used]) )
+	n = 0;
+	for (auto &db_temp: Debris) {
+		if ( !(db_temp.flags[Debris_Flags::Used]) )
 			break;
+		++n;
 	}
 
-	if (n == MAX_DEBRIS_PIECES) {
-		n = debris_find_oldest();
+	// if we have too much debris, try to get rid of a piece
+	if (n >= SOFT_LIMIT_DEBRIS_PIECES) {
+		int oldest_n = debris_find_oldest();
 
-		if (n >= 0)
-			debris_start_death_roll(&Objects[Debris[n].objnum], &Debris[n]);
+		if (oldest_n >= 0)
+			debris_start_death_roll(&Objects[Debris[oldest_n].objnum], &Debris[oldest_n]);
+	}
 
-		nprintf(("Warning","Frame %i: Could not create debris, no more slots left\n", Framecount));
-		return NULL;
+	// we might have to create a new slot
+	if (n == (int)Debris.size()) {
+		Debris.emplace_back();
 	}
 
 	db = &Debris[n];
@@ -513,7 +520,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->parent_alt_name = shipp->alt_type_index;
 	db->damage_mult = 1.0f;
 
-	for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
 		db->arc_timestamp[i] = timestamp(-1);
 	}
 
@@ -593,8 +600,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->damage_mult = sip->debris_damage_mult;
 	}
 
-	Num_debris_pieces++;
-
 	vec3d rotvel, radial_vel, to_center;
 
 	if ( exp_center )
@@ -622,8 +627,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->fire_timeout = timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		
 		if ( Objects[db->source_objnum].radius < MIN_RADIUS_FOR_PERSISTANT_DEBRIS ) {
-			Num_hull_pieces++;
-			list_append(&Hull_debris_list, db);
+			debris_add_to_hull_list(db);
 		} else {
 			db->flags.set(Debris_Flags::DoNotExpire);
 			nprintf(("Alan","A forever chunk of debris was created from ship with radius %f\n",Objects[db->source_objnum].radius));
@@ -755,13 +759,12 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 {
 	mc_info	mc;
 	mc_info_init(&mc);
-	int		num;
 
 	Assert( pdebris->type == OBJ_DEBRIS );
 
-	num = pdebris->instance;
-	Assert( num >= 0 );
+	int num = pdebris->instance;
 
+	Assert( num >= 0 && num < (int)Debris.size() );
 	Assert( Debris[num].objnum == OBJ_INDEX(pdebris));	
 
 	// debris_hit_info NULL - so debris-weapon collision
@@ -1017,7 +1020,8 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 int debris_get_team(object *objp)
 {
 	Assert( objp->type == OBJ_DEBRIS );
-	Assert( objp->instance >= 0 && objp->instance < MAX_DEBRIS_PIECES );
+	Assert( objp->instance >= 0 && objp->instance < (int)Debris.size() );
+
 	return Debris[objp->instance].team;
 }
 
@@ -1057,12 +1061,11 @@ void debris_render(object * obj, model_draw_list *scene)
 	polymodel	*pm;
 	debris		*db;
 
-
 	swapped = -1;
 	pm = NULL;	
 	num = obj->instance;
 
-	Assert(num >= 0 && num < MAX_DEBRIS_PIECES);
+	Assert(num >= 0 && num < (int)Debris.size());
 	db = &Debris[num];
 
 	Assert(db->flags[Debris_Flags::Used]);
@@ -1107,4 +1110,14 @@ void debris_render(object * obj, model_draw_list *scene)
 	if (tbase != NULL && (swapped!=-1) && pm)	{
 		tbase->SetTexture(swapped);
 	}
+}
+
+bool debris_is_generic(debris *db)
+{
+	return db->model_num == Debris_model;
+}
+
+bool debris_is_vaporized(debris *db)
+{
+	return db->model_num == Debris_vaporize_model;
 }

@@ -3521,7 +3521,6 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				int i;
 				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
@@ -3531,22 +3530,19 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
-				for (i = 0; i < MAX_DEBRIS_PIECES; i++)
+				for (auto &db: Debris)
 				{
-					debris *db;
-
-					db = &Debris[i];
-					if (!(db->flags[Debris_Flags::Used]))		// not used, move onto the next one.
+					if (!(db.flags[Debris_Flags::Used]))		// not used, move onto the next one.
 						continue;
-					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
+					if (db.source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
 					
-					debris_remove_from_hull_list(db);
-					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
-					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
+					debris_remove_from_hull_list(&db);
+					db.flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
+					db.lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
 					// now move the debris along its path for N seconds
-					objp = &Objects[db->objnum];
+					objp = &Objects[db.objnum];
 					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, (float) pobjp->destroy_before_mission_time);
 				}
 			}
