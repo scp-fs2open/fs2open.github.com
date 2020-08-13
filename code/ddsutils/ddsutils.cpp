@@ -29,7 +29,7 @@ static inline int is_power_of_two(int w, int h)
 
 int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, size_t *size, ubyte *palette)
 {
-	DDSURFACEDESC2 dds_header;
+	DDS_HEADER dds_header;
 	int code = 0;
 	CFILE *ddsfile;
 	char real_name[MAX_FILENAME_LEN];
@@ -83,17 +83,17 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	for (i = 0; i < 11; i++)
 		cfread_uint(ddsfile);
 
-	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwFourCC				= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwRGBBitCount		= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwRBitMask			= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwGBitMask			= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwBBitMask			= cfread_uint(ddsfile);
-	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= cfread_uint(ddsfile);
+	dds_header.ddspf.dwSize				= cfread_uint(ddsfile);
+	dds_header.ddspf.dwFlags			= cfread_uint(ddsfile);
+	dds_header.ddspf.dwFourCC			= cfread_uint(ddsfile);
+	dds_header.ddspf.dwRGBBitCount		= cfread_uint(ddsfile);
+	dds_header.ddspf.dwRBitMask			= cfread_uint(ddsfile);
+	dds_header.ddspf.dwGBitMask			= cfread_uint(ddsfile);
+	dds_header.ddspf.dwBBitMask			= cfread_uint(ddsfile);
+	dds_header.ddspf.dwABitMask			= cfread_uint(ddsfile);
 
-	dds_header.ddsCaps.dwCaps1		= cfread_uint(ddsfile);
-	dds_header.ddsCaps.dwCaps2		= cfread_uint(ddsfile);
+	dds_header.dwCaps		= cfread_uint(ddsfile);
+	dds_header.dwCaps2		= cfread_uint(ddsfile);
 
 	// sanity
 	if (dds_header.dwDepth == 0)
@@ -107,12 +107,12 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	d_depth = dds_header.dwDepth;
 
 	// calculate the type and size of the data
-	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
+	if (dds_header.ddspf.dwFlags & DDPF_FOURCC) {
 		// did I mention lately that I hate Microsoft?
 		// this is here to fix the situation where Microsoft doesn't follow their own docs
 		if ( dds_header.dwPitchOrLinearSize <= 0 ) {
 			// calculate the block size, mult by 8 for DXT1, 16 for DXT3 & 5
-			d_size = ((dds_header.dwWidth + 3)/4) * ((dds_header.dwHeight + 3)/4) * ((dds_header.dwDepth + 3)/4) * ((dds_header.ddpfPixelFormat.dwFourCC == FOURCC_DXT1) ? 8 : 16);
+			d_size = ((dds_header.dwWidth + 3)/4) * ((dds_header.dwHeight + 3)/4) * ((dds_header.dwDepth + 3)/4) * ((dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16);
 		} else {
 			d_size = dds_header.dwPitchOrLinearSize;
 		}
@@ -130,11 +130,11 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 				d_height = 1;
 
 			// size of data block (4x4)
-			d_size += ((d_width + 3) / 4) * ((d_height + 3) / 4) * ((dds_header.ddpfPixelFormat.dwFourCC == FOURCC_DXT1) ? 8 : 16);
+			d_size += ((d_width + 3) / 4) * ((d_height + 3) / 4) * ((dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16);
 		}
 
-		if ( dds_header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP ) {
-			if ( !(dds_header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP_ALLFACES) ) {
+		if ( dds_header.dwCaps2 & DDSCAPS2_CUBEMAP ) {
+			if ( !(dds_header.dwCaps2 & DDSCAPS2_CUBEMAP_ALLFACES) ) {
 				retval = DDS_ERROR_CUBEMAP_FACES;
 				ct = DDS_DXT_INVALID;
 				goto Done;
@@ -150,7 +150,9 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		Assert( d_size > 0 );
 		*size = d_size;
 
-		switch (dds_header.ddpfPixelFormat.dwFourCC) {
+		DDS_HEADER_DXT10 dx10_header;
+
+		switch (dds_header.ddspf.dwFourCC) {
 			case FOURCC_DXT1:
 				bits = 24;
 				ct = (is_cubemap) ? DDS_CUBEMAP_DXT1 : DDS_DXT1;
@@ -174,6 +176,10 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 				goto Done;
 				break;
 
+			case FOURCC_DX10:
+
+				break;
+
 			// none of the above
 			default:
 				retval = DDS_ERROR_INVALID_FORMAT;
@@ -181,8 +187,8 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 				goto Done;
 				break;
 		}
-	} else if ( dds_header.ddpfPixelFormat.dwFlags & (DDPF_RGB | DDPF_PALETTEINDEXED8) ) {
-		d_size += d_width * d_height * d_depth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
+	} else if ( dds_header.ddspf.dwFlags & (DDPF_RGB | DDPF_PALETTEINDEXED8) ) {
+		d_size += d_width * d_height * d_depth * (dds_header.ddspf.dwRGBBitCount / 8);
 
 		// calculate full data size for all mipmap levels
 		for (i = 1; i < (int)dds_header.dwMipMapCount; i++) {
@@ -199,13 +205,13 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 			if (d_depth < 1)
 				d_depth = 1;
 
-			d_size += d_width * d_height * d_depth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
+			d_size += d_width * d_height * d_depth * (dds_header.ddspf.dwRGBBitCount / 8);
 		}
 
 		Assert( d_size > 0 );
 
-		if ( dds_header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP ) {
-			if ( !(dds_header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP_ALLFACES) ) {
+		if ( dds_header.dwCaps2 & DDSCAPS2_CUBEMAP ) {
+			if ( !(dds_header.dwCaps2 & DDSCAPS2_CUBEMAP_ALLFACES) ) {
 				retval = DDS_ERROR_CUBEMAP_FACES;
 				ct = DDS_DXT_INVALID;
 				goto Done;
@@ -220,7 +226,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 
 		*size = d_size;
 		
-		bits = dds_header.ddpfPixelFormat.dwRGBBitCount;
+		bits = dds_header.ddspf.dwRGBBitCount;
 		ct = (is_cubemap) ? DDS_CUBEMAP_UNCOMPRESSED : DDS_UNCOMPRESSED;
 	} else {
 		// it's not a readable format

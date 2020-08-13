@@ -18,20 +18,21 @@
 #define DDS_ERROR_CUBEMAP_FACES			7		// file is a cubemap, but doesn't have all six faces
 
 
-#define DDS_DXT_INVALID				-1
+#define DDS_DXT_INVALID                -1
 #define DDS_UNCOMPRESSED				0
 #define DDS_DXT1						1
 #define DDS_DXT3						3
 #define DDS_DXT5						5
+#define DDS_BC7							7
 #define DDS_CUBEMAP_UNCOMPRESSED		10
 #define DDS_CUBEMAP_DXT1				11
 #define DDS_CUBEMAP_DXT3				13
 #define DDS_CUBEMAP_DXT5				15
 
 #ifndef MAKEFOURCC
-    #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
-                ((uint)(ubyte)(ch0) | ((uint)(ubyte)(ch1) << 8) |   \
-                ((uint)(ubyte)(ch2) << 16) | ((uint)(ubyte)(ch3) << 24 ))
+	#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+				((uint)(ubyte)(ch0) | ((uint)(ubyte)(ch1) << 8) |   \
+				((uint)(ubyte)(ch2) << 16) | ((uint)(ubyte)(ch3) << 24 ))
 #endif //defined(MAKEFOURCC)
 
 // FOURCC codes for DX compressed-texture pixel formats
@@ -40,6 +41,7 @@
 #define FOURCC_DXT3  (MAKEFOURCC('D','X','T','3'))
 #define FOURCC_DXT4  (MAKEFOURCC('D','X','T','4'))
 #define FOURCC_DXT5  (MAKEFOURCC('D','X','T','5'))
+#define FOURCC_DX10  (MAKEFOURCC('D','X','1','0'))
 
 #define DDS_FILECODE	0x20534444	// "DDS " in file
 
@@ -80,60 +82,7 @@
 									  DDSCAPS2_CUBEMAP_NEGATIVEZ )
 
 #pragma pack(1)
-// these structures are the headers for a dds file
-/*typedef struct _DDPIXELFORMAT {
-	uint	dwSize;
-	uint	dwFlags;
-	uint	dwFourCC;
-	uint	dwRGBBitCount;
-	uint	dwRBitMask;
-	uint 	dwGBitMask;
-	uint 	dwBBitMask;
-	uint	dwRGBAlphaBitMask;
-} DDPIXELFORMAT;
-
-typedef struct _DDSCAPS2
-{
-	uint		dwCaps1;
-	uint		dwCaps2;
-	uint		Reserved[2];
-} DDSCAPS2;*/
-
-typedef struct _DDSURFACEDESC2
-{
-	uint			dwSize;				// size of the DDSURFACEDESC structure
-	uint			dwFlags;			// determines what fields are valid
-	uint			dwHeight;			// height of surface to be created
-	uint			dwWidth;			// width of input surface
-	uint			dwPitchOrLinearSize;
-	uint			dwDepth;
-	uint			dwMipMapCount;
-	uint			dwReserved1[11];
-
-	struct {
-		uint	dwSize;
-		uint	dwFlags;
-		uint	dwFourCC;
-		uint	dwRGBBitCount;
-		uint	dwRBitMask;
-		uint 	dwGBitMask;
-		uint 	dwBBitMask;
-		uint	dwRGBAlphaBitMask;
-	} ddpfPixelFormat;
-
-	struct {
-		uint		dwCaps1;
-		uint		dwCaps2;
-		uint		Reserved[2];
-	} ddsCaps;
-
-//	DDPIXELFORMAT	ddpfPixelFormat;
-//	DDSCAPS2		ddsCaps;			// direct draw surface capabilities
-	uint			dwReserved2;
-} DDSURFACEDESC2;
-#pragma pack()
-
-typedef enum DXGI_FORMAT : uint32_t {
+typedef enum DXGI_FORMAT : int32_t {
 	DXGI_FORMAT_UNKNOWN,
 	DXGI_FORMAT_R32G32B32A32_TYPELESS,
 	DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -258,7 +207,7 @@ typedef enum DXGI_FORMAT : uint32_t {
 	DXGI_FORMAT_FORCE_UINT
 };
 
-typedef enum D3D11_RESOURCE_DIMENSION : uint32_t {
+typedef enum D3D11_RESOURCE_DIMENSION : int32_t {
 	D3D11_RESOURCE_DIMENSION_UNKNOWN,
 	D3D11_RESOURCE_DIMENSION_BUFFER,
 	D3D11_RESOURCE_DIMENSION_TEXTURE1D,
@@ -301,8 +250,10 @@ typedef struct {
 	uint32_t                     arraySize;
 	uint32_t                     miscFlags2;
 } DDS_HEADER_DXT10;
+#pragma pack()
 
-#define DDS_OFFSET						4+sizeof(DDSURFACEDESC2)		//place where the data starts -- should be 128
+#define DDS_OFFSET						4+sizeof(DDS_HEADER)		//place where the data starts -- should be 128
+#define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DX10)		// Unless a DX10 header is present
 
 //reads a dds header
 //returns one of the error values
