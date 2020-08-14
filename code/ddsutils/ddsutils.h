@@ -82,7 +82,7 @@
 									  DDSCAPS2_CUBEMAP_NEGATIVEZ )
 
 #pragma pack(1)
-typedef enum DXGI_FORMAT : int32_t {
+enum class DXGI_FORMAT : uint {
 	DXGI_FORMAT_UNKNOWN,
 	DXGI_FORMAT_R32G32B32A32_TYPELESS,
 	DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -207,53 +207,73 @@ typedef enum DXGI_FORMAT : int32_t {
 	DXGI_FORMAT_FORCE_UINT
 };
 
-typedef enum D3D11_RESOURCE_DIMENSION : int32_t {
-	D3D11_RESOURCE_DIMENSION_UNKNOWN,
-	D3D11_RESOURCE_DIMENSION_BUFFER,
-	D3D11_RESOURCE_DIMENSION_TEXTURE1D,
-	D3D11_RESOURCE_DIMENSION_TEXTURE2D,
-	D3D11_RESOURCE_DIMENSION_TEXTURE3D
+/* Potentially useful for later stuff - (DahBlount)
+typedef enum D3D10_RESOURCE_MISC_FLAG : uint {
+	D3D10_RESOURCE_MISC_GENERATE_MIPS,
+	D3D10_RESOURCE_MISC_SHARED,
+	D3D10_RESOURCE_MISC_TEXTURECUBE,
+	D3D10_RESOURCE_MISC_SHARED_KEYEDMUTEX,
+	D3D10_RESOURCE_MISC_GDI_COMPATIBLE
+};
+*/
+
+enum class D3D10_RESOURCE_DIMENSION : uint {
+	D3D10_RESOURCE_DIMENSION_UNKNOWN,
+	D3D10_RESOURCE_DIMENSION_BUFFER,
+	D3D10_RESOURCE_DIMENSION_TEXTURE1D,
+	D3D10_RESOURCE_DIMENSION_TEXTURE2D,
+	D3D10_RESOURCE_DIMENSION_TEXTURE3D
 };
 
+/* This is set in shaders for the most part - (DahBlount)
+typedef enum DDS_ALPHA_MODE : uint {
+	DDS_ALPHA_MODE_UNKNOWN,
+	DDS_ALPHA_MODE_STRAIGHT,
+	DDS_ALPHA_MODE_PREMULTIPLIED,
+	DDS_ALPHA_MODE_OPAQUE,
+	DDS_ALPHA_MODE_CUSTOM
+};
+*/
+
 typedef struct {
-	uint32_t           dwSize;
-	uint32_t           dwFlags;
-	uint32_t           dwHeight;
-	uint32_t           dwWidth;
-	uint32_t           dwPitchOrLinearSize;
-	uint32_t           dwDepth;
-	uint32_t           dwMipMapCount;
-	uint32_t           dwReserved1[11];
+	uint           dwSize;
+	uint           dwFlags;
+	uint           dwHeight;
+	uint           dwWidth;
+	uint           dwPitchOrLinearSize;
+	uint           dwDepth;
+	uint           dwMipMapCount;
+	uint           dwReserved1[11];
 
 	struct {
-		uint32_t dwSize;
-		uint32_t dwFlags;
-		uint32_t dwFourCC;
-		uint32_t dwRGBBitCount;
-		uint32_t dwRBitMask;
-		uint32_t dwGBitMask;
-		uint32_t dwBBitMask;
-		uint32_t dwABitMask;
+		uint dwSize;
+		uint dwFlags;
+		uint dwFourCC;
+		uint dwRGBBitCount;
+		uint dwRBitMask;
+		uint dwGBitMask;
+		uint dwBBitMask;
+		uint dwABitMask;
 	} ddspf;
 
-	uint32_t           dwCaps;
-	uint32_t           dwCaps2;
-	uint32_t           dwCaps3;
-	uint32_t           dwCaps4;
-	uint32_t           dwReserved2;
+	uint           dwCaps;
+	uint           dwCaps2;
+	uint           dwCaps3;
+	uint           dwCaps4;
+	uint           dwReserved2;
 } DDS_HEADER;
 
 typedef struct {
 	DXGI_FORMAT              dxgiFormat;
-	D3D11_RESOURCE_DIMENSION resourceDimension;
-	uint32_t                     miscFlag;
-	uint32_t                     arraySize;
-	uint32_t                     miscFlags2;
+	D3D10_RESOURCE_DIMENSION resourceDimension;
+	uint                     miscFlag;
+	uint                     arraySize;
+	uint                     miscFlags2;
 } DDS_HEADER_DXT10;
 #pragma pack()
 
 #define DDS_OFFSET						4+sizeof(DDS_HEADER)		//place where the data starts -- should be 128
-#define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DX10)		// Unless a DX10 header is present
+#define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
 //reads a dds header
 //returns one of the error values

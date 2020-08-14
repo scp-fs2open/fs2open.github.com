@@ -26,10 +26,30 @@ static inline int is_power_of_two(int w, int h)
 	return ( (w && !(w & (w-1))) && (h && !(h & (h-1))) );
 }
 
+// This function is used to verify that the file format specified in the DX10 Header
+// is supported by the OpenGL extensions
+bool dds_read_dx10_header(CFILE* dds_file, DDS_HEADER_DXT10* header) 
+{
+	header->dxgiFormat			= static_cast<DXGI_FORMAT>(cfread_uint(dds_file));
+	header->resourceDimension	= static_cast<D3D10_RESOURCE_DIMENSION>(cfread_uint(dds_file));
+	header->miscFlag			= cfread_uint(dds_file);
+	header->arraySize			= cfread_uint(dds_file);
+	header->miscFlags2			= cfread_uint(dds_file);
+
+	switch (header->dxgiFormat) {
+	case DXGI_FORMAT::DXGI_FORMAT_BC7_TYPELESS:
+	case DXGI_FORMAT::DXGI_FORMAT_BC7_UNORM:
+	case DXGI_FORMAT::DXGI_FORMAT_BC7_UNORM_SRGB:
+		return true;
+	default:
+		return false;
+	}
+}
 
 int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, size_t *size, ubyte *palette)
 {
 	DDS_HEADER dds_header;
+	DDS_HEADER_DXT10 dds_header_dx10;
 	int code = 0;
 	CFILE *ddsfile;
 	char real_name[MAX_FILENAME_LEN];
@@ -95,6 +115,11 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	dds_header.dwCaps		= cfread_uint(ddsfile);
 	dds_header.dwCaps2		= cfread_uint(ddsfile);
 
+	// Unused but need them checked for later
+	dds_header.dwCaps3		= cfread_uint(ddsfile);
+	dds_header.dwCaps4		= cfread_uint(ddsfile);
+	dds_header.dwReserved2	= cfread_uint(ddsfile);
+
 	// sanity
 	if (dds_header.dwDepth == 0)
 		dds_header.dwDepth = 1;
@@ -110,7 +135,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	if (dds_header.ddspf.dwFlags & DDPF_FOURCC) {
 		// did I mention lately that I hate Microsoft?
 		// this is here to fix the situation where Microsoft doesn't follow their own docs
-		if ( dds_header.dwPitchOrLinearSize <= 0 ) {
+		if ( !(dds_header.dwFlags & (DDSD_LINEARSIZE | DDSD_PITCH) ) || dds_header.dwPitchOrLinearSize <= 0 ) {
 			// calculate the block size, mult by 8 for DXT1, 16 for DXT3 & 5
 			d_size = ((dds_header.dwWidth + 3)/4) * ((dds_header.dwHeight + 3)/4) * ((dds_header.dwDepth + 3)/4) * ((dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16);
 		} else {
@@ -150,8 +175,6 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		Assert( d_size > 0 );
 		*size = d_size;
 
-		DDS_HEADER_DXT10 dx10_header;
-
 		switch (dds_header.ddspf.dwFourCC) {
 			case FOURCC_DXT1:
 				bits = 24;
@@ -177,7 +200,15 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 				break;
 
 			case FOURCC_DX10:
-
+				if (dds_read_dx10_header(ddsfile, &dds_header_dx10)) {
+					// Currently only BC7 is supported
+					bits = 32;
+					ct = DDS_BC7;
+				} else {
+					retval = DDS_ERROR_UNSUPPORTED;
+					ct = DDS_DXT_INVALID;
+					goto Done;
+				}
 				break;
 
 			// none of the above
@@ -263,7 +294,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		*levels = dds_header.dwMipMapCount;
 
 	if (palette && (bits == 8)) {
-		cfseek(ddsfile, DDS_OFFSET, CF_SEEK_SET);
+		cfseek(ddsfile, (ct == DDS_BC7) ? DX10_OFFSET : DDS_OFFSET, CF_SEEK_SET);
 		cfread(palette, 1, 1024, ddsfile);
 	}
 
@@ -313,7 +344,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 		return retval;
 	}
 
-	cfseek(cfp, DDS_OFFSET, CF_SEEK_SET);
+	cfseek(cfp, (ct == DDS_BC7) ? DX10_OFFSET : DDS_OFFSET, CF_SEEK_SET);
 
 	// read in the data
 	cfread(data, 1, (int)size, cfp);
@@ -331,7 +362,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 // NOTE: we only support, uncompressed, 24-bit RGB and 32-bit RGBA images here!!
 void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data, int cubemap, const char *filename)
 {
-	DDSURFACEDESC2 dds_header;
+	DDS_HEADER dds_header;
 	char real_filename[MAX_FILENAME_LEN];
 
 	if (data == NULL) {
@@ -340,7 +371,7 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 	}
 
 	// header size check
-	if (sizeof(DDSURFACEDESC2) != 124) {
+	if (sizeof(DDS_HEADER) != 124) {
 		Int3();
 		return;
 	}
@@ -383,7 +414,7 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 		num_mipmaps = 1;
 
 	// we have a filename and file handle, so now lets create our DDS header...
-	memset( &dds_header, 0, sizeof(DDSURFACEDESC2) );
+	memset( &dds_header, 0, sizeof(DDS_HEADER) );
 
 	uint flags = (DDSD_CAPS | DDSD_PITCH | DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT);
 	uint pixel_flags = DDPF_RGB;
@@ -412,22 +443,22 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 	dds_header.dwDepth				= 0;
 	dds_header.dwMipMapCount		= num_mipmaps;
 
-	dds_header.ddpfPixelFormat.dwSize				= 32;
-	dds_header.ddpfPixelFormat.dwFlags				= pixel_flags;
-	dds_header.ddpfPixelFormat.dwFourCC				= 0;
-	dds_header.ddpfPixelFormat.dwRGBBitCount		= bpp;
-	dds_header.ddpfPixelFormat.dwRBitMask			= 0x00ff0000;
-	dds_header.ddpfPixelFormat.dwGBitMask			= 0x0000ff00;
-	dds_header.ddpfPixelFormat.dwBBitMask			= 0x000000ff;
-	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= (bpp == 32) ? 0xff000000 : 0x00000000;
+	dds_header.ddspf.dwSize				= 32;
+	dds_header.ddspf.dwFlags				= pixel_flags;
+	dds_header.ddspf.dwFourCC				= 0;
+	dds_header.ddspf.dwRGBBitCount		= bpp;
+	dds_header.ddspf.dwRBitMask			= 0x00ff0000;
+	dds_header.ddspf.dwGBitMask			= 0x0000ff00;
+	dds_header.ddspf.dwBBitMask			= 0x000000ff;
+	dds_header.ddspf.dwABitMask	= (bpp == 32) ? 0xff000000 : 0x00000000;
 
-	dds_header.ddsCaps.dwCaps1		= caps1;
-	dds_header.ddsCaps.dwCaps2		= caps2;
+	dds_header.dwCaps		= caps1;
+	dds_header.dwCaps2		= caps2;
 
 	// now save it all...
 	uint dds_id = DDS_FILECODE;
 	cfwrite(&dds_id, 1, 4, image);
-	cfwrite(&dds_header, 1, sizeof(DDSURFACEDESC2), image);
+	cfwrite(&dds_header, 1, sizeof(DDS_HEADER), image);
 
 	int faces = (cubemap) ? 6 : 1;
 	int f_width = width;

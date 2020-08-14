@@ -58,7 +58,7 @@ union bm_extra_info {
 		// Stuff needed for user bitmaps
 		void* data;         //!< For user bitmaps, this is where the data comes from
 		ubyte bpp;          //!< For user bitmaps, this is what format the data is
-		ubyte flags;        //!< For user bitmaps, Flags passed to bm_create
+		ushort flags;        //!< For user bitmaps, Flags passed to bm_create
 	} user;
 };
 
@@ -82,7 +82,7 @@ struct bitmap_entry {
 	// Stuff to keep track of usage
 	ubyte preloaded;        //!< If set, then this was loaded from the lst file
 	int   preload_count;    //!< how many times this gets used in game, for unlocking
-	ubyte used_flags;       //!< What flags it was accessed thru
+	ushort used_flags;       //!< What flags it was accessed thru
 	int   load_count;
 
 	bitmap bm;              //!< Bitmap info
@@ -105,14 +105,14 @@ struct bitmap_slot {
 };
 
 // image specific lock functions
-void bm_lock_ani( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_dds( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_png( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_apng( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_jpg( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_pcx( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_tga( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_ani( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_dds( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_png( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_apng( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_jpg( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_pcx( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_tga( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
 
 const size_t BM_BLOCK_SIZE = 4096;
 
