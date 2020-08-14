@@ -346,7 +346,7 @@ int bm_is_valid(int handle);
  * @returns The handle to the first frame on success, or
  * @returns -1 on failure
  */
-int bm_get_info(int handle, int *w = NULL, int * h = NULL, ushort* flags = NULL, int *nframes = NULL, int *fps = NULL);
+int bm_get_info(int handle, int *w = nullptr, int * h = nullptr, ushort* flags = nullptr, int *nframes = nullptr, int *fps = nullptr);
 
 /**
  * @brief Gets the filename of the bitmap indexed by handle
