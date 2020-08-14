@@ -8,6 +8,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
@@ -49,7 +50,7 @@ extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 extern bool Use_engine_wash_intensity;
 extern bool Ai_before_physics;
-extern SCP_vector<int> Required_render_ext;
+extern SCP_vector<gr_capability> Required_render_ext;
 
 void mod_table_init();
 
