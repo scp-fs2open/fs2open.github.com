@@ -365,7 +365,7 @@ void parse_mod_table(const char *filename)
 
 			for (auto& ext_str : ext_strings) {
 				auto ext = std::find_if(req_render_ext_pairs.begin(), req_render_ext_pairs.end(), 
-								[ext_str](std::pair<SCP_string, gr_capability> ext_pair) { return !stricmp(ext_pair.first.c_str(), ext_str.c_str()); });
+								[ext_str](const std::pair<SCP_string, gr_capability> &ext_pair) { return !stricmp(ext_pair.first.c_str(), ext_str.c_str()); });
 				if (ext != req_render_ext_pairs.end()) {
 					Required_render_ext.push_back(ext->second);
 				}

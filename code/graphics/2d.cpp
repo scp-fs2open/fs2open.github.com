@@ -1381,7 +1381,7 @@ static void init_window_icon() {
 	bm_release(icon_handle);
 }
 
-char* gr_capability_to_string(gr_capability capability) 
+SCP_string gr_capability_to_string(gr_capability capability) 
 {
 	switch (capability) {
 	case CAPABILITY_BPTC:
@@ -1610,7 +1610,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	mprintf(("Checking mod required rendering features...\n"));
 	for (gr_capability ext : Required_render_ext) {
 		if (!gr_is_capable(ext)) {
-			Error(LOCATION, "Feature %s required by mod not supported by system.\n", gr_capability_to_string(ext));
+			Error(LOCATION, "Feature %s required by mod not supported by system.\n", gr_capability_to_string(ext).c_str());
 		}
 	}
 	mprintf(("  All required features are supported.\n"));
