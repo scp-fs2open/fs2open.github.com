@@ -12,6 +12,7 @@
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weaponclass.h"
@@ -35,7 +36,8 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
-														  { "weaponclass",  OPF_WEAPON_NAME }, };
+														  { "weaponclass",  OPF_WEAPON_NAME },
+														  { "soundentry",   OPF_GAME_SND }, };
 std::pair<SCP_string, int> get_parameter_type(const SCP_string& name) {
 	SCP_string copy = name;
 	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
@@ -215,6 +217,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 	case OPF_WEAPON_NAME: {
 		auto name = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), l_Weaponclass.Set(weapon_info_lookup(name)));
+	}
+	case OPF_GAME_SND: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_SoundEntry.Set(sound_entry_h(gamesnd_get_by_name(name))));
 	}
 	case OPF_STRING: {
 		auto text = CTEXT(node);
