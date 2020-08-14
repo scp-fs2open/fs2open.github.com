@@ -1597,6 +1597,14 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	mprintf(("  Persistent buffer mapping: %s\n",
 	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
+	mprintf(("Checking mod required rendering features...\n"));
+	for (int ext : Required_render_ext) {
+		if (!gr_is_capable(static_cast<gr_capability>(ext))) {
+			Error(LOCATION, "  Feature %d required by mod not supported by system.\n", ext);
+		}
+	}
+	mprintf(("  All required features are supported.\n"));
+
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
 		if (Is_standalone) {

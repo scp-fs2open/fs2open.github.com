@@ -49,6 +49,7 @@ extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 extern bool Use_engine_wash_intensity;
 extern bool Ai_before_physics;
+extern SCP_vector<int> Required_render_ext;
 
 void mod_table_init();
 

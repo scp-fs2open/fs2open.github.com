@@ -9,18 +9,6 @@
 *
 */
 
-/**
- * @file bm_internal.h
- * These are functions and types used by bmpman and a few others.
- *
- * @details It is a "protected" header that requires BMPMAN_INTERNAL to be defined before it can be included. This is to
- * provide a small measure of safety since this functions can cause problems if not used correctly
- */
-
-#ifndef BMPMAN_INTERNAL
-#error The file header "bmpman/bm_internal.h" is protected. Make sure you know what you are doing!
-#endif
-
 #include "bmpman/bmpman.h"
 
 #include <array>
