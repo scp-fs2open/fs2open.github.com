@@ -58,6 +58,11 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
 bool Ai_before_physics;
+SCP_vector<gr_capability> Required_render_ext;
+
+SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
+	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
+};
 
 void parse_mod_table(const char *filename)
 {
@@ -354,6 +359,19 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Requires Rendering Feature:")) {
+			SCP_vector<SCP_string> ext_strings;
+			stuff_string_list(ext_strings);
+
+			for (auto& ext_str : ext_strings) {
+				auto ext = std::find_if(req_render_ext_pairs.begin(), req_render_ext_pairs.end(), 
+								[ext_str](const std::pair<SCP_string, gr_capability> &ext_pair) { return !stricmp(ext_pair.first.c_str(), ext_str.c_str()); });
+				if (ext != req_render_ext_pairs.end()) {
+					Required_render_ext.push_back(ext->second);
+				}
+			}
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -596,4 +614,5 @@ void mod_table_reset()
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
 	Ai_before_physics = false;
+	Required_render_ext.clear();
 }
