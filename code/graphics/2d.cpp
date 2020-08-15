@@ -1381,16 +1381,6 @@ static void init_window_icon() {
 	bm_release(icon_handle);
 }
 
-SCP_string gr_capability_to_string(gr_capability capability) 
-{
-	switch (capability) {
-	case CAPABILITY_BPTC:
-		return "BPTC Texture Compression";
-	default:
-		return "Invalid Capability";
-	}
-}
-
 bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
@@ -1606,14 +1596,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	mprintf(("Checking graphics capabilities:\n"));
 	mprintf(("  Persistent buffer mapping: %s\n",
 	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
-
-	mprintf(("Checking mod required rendering features...\n"));
-	for (gr_capability ext : Required_render_ext) {
-		if (!gr_is_capable(ext)) {
-			Error(LOCATION, "Feature %s required by mod not supported by system.\n", gr_capability_to_string(ext).c_str());
-		}
-	}
-	mprintf(("  All required features are supported.\n"));
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
