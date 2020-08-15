@@ -1,5 +1,11 @@
 
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <windowsx.h>
+#include <direct.h>
+#endif
+
 #include "gropengl.h"
 
 #include "gropenglbmpman.h"
@@ -27,12 +33,6 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
-
-#if defined(_WIN32)
-#include <windows.h>
-#include <windowsx.h>
-#include <direct.h>
-#endif
 
 #include <glad/glad.h>
 
