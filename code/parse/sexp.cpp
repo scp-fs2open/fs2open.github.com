@@ -5899,7 +5899,7 @@ int sexp_is_subsystem_destroyed(int n, fix *time)
 {
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 
@@ -6086,7 +6086,7 @@ int sexp_is_disabled_xor_disarmed(int n, bool check_disabled, fix *latest_time)
 
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry)
-			return SEXP_KNOWN_FALSE;
+			return SEXP_FALSE;
 		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
@@ -6162,7 +6162,7 @@ int sexp_are_waypoints_done(int n, fix *time, int count = 1)
 	}
 
 	// neither a ship nor a wing
-	return SEXP_KNOWN_FALSE;
+	return SEXP_FALSE;
 }
 
 // since we can't use lambda-captures as function pointers (see also disabled_xor_disarmed), we need a lot of code duplication from sexp_check_objective_delay
@@ -6220,7 +6220,7 @@ int sexp_was_destroyed_by(int n, fix *latest_time)
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 
@@ -6232,7 +6232,7 @@ int sexp_was_destroyed_by(int n, fix *latest_time)
 
 		auto destroyed_ship_entry = eval_ship(n);
 		if (!destroyed_ship_entry)
-			return SEXP_KNOWN_FALSE;
+			return SEXP_FALSE;
 		if (destroyed_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
@@ -6266,14 +6266,14 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 
 	auto docker = eval_ship(n);
 	if (!docker)
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	if (docker->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 	n = CDR(n);
 
 	auto dockee = eval_ship(n);
 	if (!dockee)
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	if (dockee->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 	n = CDR(n);
@@ -6406,10 +6406,10 @@ int sexp_special_warp_dist( int n)
 	auto ship_entry = eval_ship(n);
 
 	// ships which aren't present get NAN
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto shipp = ship_entry->shipp;
 
@@ -6469,9 +6469,7 @@ int sexp_time_exited(int n, int op_num)
 	if (ship)
 	{
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry)
-			return SEXP_NAN_FOREVER;
-		if (ship_entry->status != ShipStatus::EXITED)
+		if (!ship_entry || ship_entry->status != ShipStatus::EXITED)
 			return SEXP_NAN;
 
 		if (destroyed)
@@ -6491,9 +6489,7 @@ int sexp_time_exited(int n, int op_num)
 	else
 	{
 		auto wingp = eval_wing(n);
-		if (!wingp)
-			return SEXP_NAN_FOREVER;
-		if (!wingp->flags[Ship::Wing_Flags::Gone])
+		if (!wingp || !wingp->flags[Ship::Wing_Flags::Gone])
 			return SEXP_NAN;
 
 		if (!mission_log_get_time(destroyed ? LOG_WING_DESTROYED : LOG_WING_DEPARTED, wingp->name, nullptr, &time)) {
@@ -6512,9 +6508,7 @@ int sexp_time_arrived(int n, bool ship)
 	if (ship)
 	{
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry)
-			return SEXP_NAN_FOREVER;
-		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_NAN;
 
 		if (!mission_log_get_time(LOG_SHIP_ARRIVED, CTEXT(n), nullptr, &time)) {
@@ -6524,9 +6518,7 @@ int sexp_time_arrived(int n, bool ship)
 	else
 	{
 		auto wingp = eval_wing(n);
-		if (!wingp)
-			return SEXP_NAN_FOREVER;
-		if (wing_has_yet_to_arrive(wingp))
+		if (!wingp || wing_has_yet_to_arrive(wingp))
 			return SEXP_NAN;
 
 		if (!mission_log_get_time(LOG_WING_ARRIVED, CTEXT(n), nullptr, &time)) {
@@ -6544,16 +6536,12 @@ int sexp_time_docked_or_undocked(int n, bool docked)
 	bool is_nan, is_nan_forever;
 
 	auto docker = eval_ship(n);
-	if (!docker)
-		return SEXP_NAN_FOREVER;
-	if (docker->status == ShipStatus::NOT_YET_PRESENT)
+	if (!docker || docker->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 	n = CDR(n);
 
 	auto dockee = eval_ship(n);
-	if (!dockee)
-		return SEXP_NAN_FOREVER;
-	if (dockee->status == ShipStatus::NOT_YET_PRESENT)
+	if (!dockee || dockee->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 	n = CDR(n);
 
@@ -6676,10 +6664,10 @@ int sexp_get_energy_pct (int node, int op_num)
 
 	// get the ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 	auto shipp = ship_entry->shipp;
 	auto sip = &Ship_info[shipp->ship_info_index]; 
 
@@ -6705,17 +6693,14 @@ int sexp_get_energy_pct (int node, int op_num)
 /**
  * Return the remaining shields as a percentage of the given ship.
  */
-int sexp_shields_left(int n)
+int sexp_shields_left(int node)
 {
-	auto ship_entry = eval_ship(n);
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	// Goober5000: in case ship has no shields
 	if (ship_entry->shipp->ship_max_shield_strength == 0.0f)
@@ -6733,17 +6718,14 @@ int sexp_shields_left(int n)
  *
  * This hit amount counts for all hits on the ship (hull + subsystems).  Use hits_left_hull to find hull hits remaining.
  */
-int sexp_hits_left(int n, bool sim_hull)
+int sexp_hits_left(int node, bool sim_hull)
 {
-	auto ship_entry = eval_ship(n);
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	float hull_pct = sim_hull ? get_sim_hull_pct(ship_entry->objp) : get_hull_pct(ship_entry->objp);
 
@@ -6759,7 +6741,7 @@ int sexp_hits_left(int n, bool sim_hull)
  * @return 1 - marginally targetable (jiggly on radar)
  * @return 2 - fully targetable
  */
-int sexp_is_ship_visible(int n)
+int sexp_is_ship_visible(int node)
 {
 	int ship_is_visible = 0;
 
@@ -6768,15 +6750,12 @@ int sexp_is_ship_visible(int n)
 		return SEXP_NAN_FOREVER;
 	}
 
-	auto ship_entry = eval_ship(n);
-	
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	// get ship's *radar* visiblity
 	if (Player_ship)
@@ -6803,17 +6782,14 @@ int sexp_is_ship_visible(int n)
 /**
  * Determine if a flag is set on this ship
  */
-int sexp_check_ship_flag(int n, Ship::Ship_Flags flag)
+int sexp_check_ship_flag(int node, Ship::Ship_Flags flag)
 {
-	auto ship_entry = eval_ship(n);
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	// get the ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	if (ship_entry->shipp->flags[flag])
 		return SEXP_TRUE;
@@ -6862,15 +6838,12 @@ int sexp_hits_left_subsystem(int n)
 	bool single_subsystem = false;
 	int percent, type;
 
+	// get the ship
 	auto ship_entry = eval_ship(n);
-	
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto subsys_name = CTEXT(CDR(n));
 	auto ss = ship_get_subsys(ship_entry->shipp, subsys_name);
@@ -6913,15 +6886,12 @@ int sexp_hits_left_subsystem(int n)
 // Goober5000
 int sexp_hits_left_subsystem_generic(int node)
 {
+	// get the ship
 	auto ship_entry = eval_ship(node);
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto subsys_type_name = CTEXT(CDR(node));
 
@@ -6953,15 +6923,12 @@ int sexp_hits_left_subsystem_generic(int node)
 // Goober5000
 int sexp_hits_left_subsystem_specific(int node)
 {
+	// get the ship
 	auto ship_entry = eval_ship(node);
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto subsys_name = CTEXT(CDR(node));
 
@@ -7320,15 +7287,12 @@ int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 	if (oswpt.type == OSWPT_TYPE_EXITED)
 		return SEXP_NAN_FOREVER;
 
+	// get the ship
 	auto ship_with_subsys = eval_ship(CDR(n));
-
-	// if ship is nonexistent or exited, cannot ever evaluate properly.  Return NAN_FOREVER
-	if (!ship_with_subsys || ship_with_subsys->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-
-	// hmm.. if true, must not have arrived yet
-	if (ship_with_subsys->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_with_subsys || ship_with_subsys->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_with_subsys->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto subsys_name = CTEXT(CDR(CDR(n)));
 
@@ -8447,7 +8411,7 @@ int sexp_get_damage_caused(int node)
 
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry)
-		return SEXP_NAN_FOREVER;
+		return SEXP_NAN;
 
 	// a ship which hasn't arrived can't have taken any damage yet
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
@@ -8601,7 +8565,7 @@ int sexp_depart_node_delay(int n)
 
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry)
-			return SEXP_KNOWN_FALSE;
+			return SEXP_FALSE;
 		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_CANT_EVAL;
 
@@ -8763,7 +8727,7 @@ int sexp_is_cargo_known( int n, bool check_delay )
 		{
 			auto ship_entry = eval_ship(n);
 			if (!ship_entry)
-				return SEXP_KNOWN_FALSE;
+				return SEXP_FALSE;
 			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 				return SEXP_CANT_EVAL;
 
@@ -8856,7 +8820,7 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 	// get ship
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 	n = CDR(n);
@@ -9025,7 +8989,7 @@ int sexp_has_been_tagged_delay(int n)
 		{
 			auto ship_entry = eval_ship(n);
 			if (!ship_entry)
-				return SEXP_KNOWN_FALSE;
+				return SEXP_FALSE;
 			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 				return SEXP_CANT_EVAL;
 
@@ -10566,7 +10530,7 @@ int sexp_is_ship_class_or_type(int n, bool ship_class)
 		// get ship
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry)
-			return SEXP_NAN_FOREVER;
+			return SEXP_NAN;
 
 		int other_index;
 		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
@@ -10624,10 +10588,10 @@ int sexp_is_ai_class(int n)
 
 	// find ship
 	auto ship_entry = eval_ship(n);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 	n = CDR(n);
 
 	// subsys?
@@ -13116,7 +13080,7 @@ int sexp_is_cargo(int n)
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry)
-		return SEXP_NAN_FOREVER;
+		return SEXP_NAN;
 	n = CDR(n);
 
 	auto subsystem = (n >= 0) ? CTEXT(n) : nullptr;
@@ -14412,17 +14376,15 @@ int sexp_are_ship_flags_set(int node)
 	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_NAN_FOREVER;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	node = CDR(node);
+
 	auto shipp = ship_entry->shipp;
 	auto objp = ship_entry->objp;
 	auto aip = &Ai_info[shipp->ai_index];
-
-	node = CDR(node); 
 
 	while (node != -1) {
 		auto flag_name = CTEXT(node); 
@@ -14816,7 +14778,10 @@ int sexp_weapon_fired_delay(int node, int op_num)
 	bool is_nan, is_nan_forever;
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
+	if (!ship_entry) {
+		return SEXP_FALSE;
+	}
+	if (ship_entry->status == ShipStatus::EXITED) {
 		return SEXP_KNOWN_FALSE;
 	}
 	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
@@ -14881,16 +14846,15 @@ int sexp_has_weapon(int node, int op_num)
 	int *weapon_banks = nullptr;
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_NAN_FOREVER;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	node = CDR(node);
+
 	shipp = ship_entry->shipp;
 
 	// Get the bank to check
-	node = CDR(node);
 	if (!strcmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
 		requested_bank = -1;
 	}
@@ -16286,11 +16250,10 @@ int sexp_targeted(int node)
 	ship_subsys *ptr;
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_KNOWN_FALSE;
-	} else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_FALSE;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 
 	if (!Player_ai || (ship_entry->shipp->objnum != Players_target)){
 		return SEXP_FALSE;
@@ -16408,10 +16371,10 @@ int sexp_weapons_depleted(int node, bool primary)
 
 	// get ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	// get bank stuff
 	if (primary) {
@@ -16456,15 +16419,14 @@ int sexp_facing(int node)
 	}
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_KNOWN_FALSE;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_FALSE;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 	auto target_objp = ship_entry->objp;
+	node = CDR(node);
 
-	angle = eval_num(CDR(node), is_nan, is_nan_forever);
+	angle = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
@@ -16493,12 +16455,10 @@ int sexp_is_facing(int node)
 	vec3d v1, v2;
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_KNOWN_FALSE;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_FALSE;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 	auto origin_objp = ship_entry->objp;
 	node = CDR(node);
 
@@ -16751,10 +16711,10 @@ int sexp_gse_recharge_pct(int node, int op_num)
 {
 	// get the ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	else if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	int index;
 	if (op_num == OP_WEAPON_RECHARGE_PCT)
@@ -16779,10 +16739,10 @@ int sexp_get_ets_value(int node)
 	node = CDR(node);
 
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	else if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	if (!stricmp(ets_type, "engine")) {
 		return ship_entry->shipp->engine_recharge_index;
@@ -16856,10 +16816,10 @@ int sexp_shield_quad_low(int node)
 
 	// get the ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	auto sip = &Ship_info[ship_entry->shipp->ship_info_index];
 	if(!(sip->is_small_ship())){
@@ -16939,10 +16899,10 @@ int sexp_get_ammo(int node, bool for_turret, bool primary, bool do_percent)
 
 	// get the ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 	node = CDR(node);
 
 	// Get the turret
@@ -17218,12 +17178,10 @@ void multi_sexp_set_weapon()
 int sexp_get_countermeasures(int node) 
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_NAN_FOREVER;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	return ship_entry->shipp->cmeasure_count;
 }
@@ -18691,17 +18649,17 @@ int sexp_is_in_turret_fov(int node)
 	vec3d tpos, tvec;
 
 	auto target_ship = eval_ship(n);
-	if (!target_ship || target_ship->status == ShipStatus::EXITED)
-		return SEXP_KNOWN_FALSE;
-	if (target_ship->status == ShipStatus::NOT_YET_PRESENT)
+	if (!target_ship || target_ship->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_FALSE;
+	if (target_ship->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 	n = CDR(n);
 
 	auto turret_ship = eval_ship(n);
-	if (!turret_ship || turret_ship->status == ShipStatus::EXITED)
-		return SEXP_KNOWN_FALSE;
-	if (turret_ship->status == ShipStatus::NOT_YET_PRESENT)
+	if (!turret_ship || turret_ship->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_FALSE;
+	if (turret_ship->status == ShipStatus::EXITED)
+		return SEXP_KNOWN_FALSE;
 	n = CDR(n);
 
 	auto turret_subsys_name = CTEXT(n);
@@ -19673,10 +19631,10 @@ int is_nav_visited(int node)
 int is_nav_linked(int node)
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	return ship_entry->shipp->flags[Ship::Ship_Flags::Navpoint_carry] ? SEXP_TRUE : SEXP_FALSE;
 }
@@ -19706,10 +19664,10 @@ void select_unselect_nav(int node, bool select_it)
 int sexp_is_tagged(int node)
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	return ship_is_tagged(ship_entry->objp) ? SEXP_TRUE : SEXP_FALSE;
 }
@@ -20163,10 +20121,10 @@ int sexp_is_weapon_selected(int node, bool primary)
 
 	// lookup ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 
 	num_banks = primary ? ship_entry->shipp->weapons.num_primary_banks : ship_entry->shipp->weapons.num_secondary_banks;
 
@@ -22406,10 +22364,10 @@ int sexp_is_in_box(int n)
 	if (n != -1)
 	{
 		auto reference = eval_ship(n);
-		if (!reference || reference->status == ShipStatus::EXITED)
-			return SEXP_KNOWN_FALSE;
-		if (reference->status == ShipStatus::NOT_YET_PRESENT)
+		if (!reference || reference->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_FALSE;
+		if (reference->status == ShipStatus::EXITED)
+			return SEXP_KNOWN_FALSE;
 
 		reference_ship_obj = reference->objp;
 	}
@@ -22439,8 +22397,7 @@ int sexp_is_in_mission(int node)
 {
 	for (int n = node; n != -1; n = CDR(n))
 	{
-		// For this sexp, we do not short-circuit known-false because we want to handle two exceptions that are normally optimized away.
-		// For confirmed-exited ships, they might be respawned in multiplayer.  For nonexistent ships, they might be ship-created.
+		// For this sexp, we do not short-circuit known-true or known-false.
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT)
 			return SEXP_FALSE;
@@ -22456,10 +22413,10 @@ int sexp_is_docked(int node)
 	for (int n = node; n != -1; n = CDR(n))
 	{
 		auto current_entry = eval_ship(n);
-		if (!current_entry || current_entry->status == ShipStatus::EXITED)
-			return SEXP_NAN_FOREVER;
-		if (current_entry->status == ShipStatus::NOT_YET_PRESENT)
+		if (!current_entry || current_entry->status == ShipStatus::NOT_YET_PRESENT)
 			return SEXP_NAN;
+		if (current_entry->status == ShipStatus::EXITED)
+			return SEXP_NAN_FOREVER;
 
 		// if host_objp is a nullptr then we're on the 1st loop iteration
 		if (host_objp == nullptr)
@@ -22541,12 +22498,10 @@ void sexp_manipulate_colgroup2(int node, bool add_to_group)
 int sexp_get_colgroup(int node)
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED) {
-		return SEXP_NAN_FOREVER;
-	}
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
-	}
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
 	return ship_entry->objp->collision_group_id;
 }
 
