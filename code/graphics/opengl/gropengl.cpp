@@ -1304,8 +1304,6 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
 	case CAPABILITY_PERSISTENT_BUFFER_MAPPING:
 		return GLAD_GL_ARB_buffer_storage != 0;
-	case CAPABILITY_BPTC:
-		return GLAD_GL_ARB_texture_compression_bptc != 0;
 	}
 
 	return false;

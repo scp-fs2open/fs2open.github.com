@@ -330,7 +330,6 @@ typedef enum gr_capability {
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
-	CAPABILITY_BPTC
 } gr_capability;
 
 enum class gr_property {

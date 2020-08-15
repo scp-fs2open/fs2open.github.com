@@ -40,12 +40,11 @@
 #define BMP_TEX_DXT1        (1<<3)      //!< dxt1 compressed 8r8g8b1a (24bit)
 #define BMP_TEX_DXT3        (1<<4)      //!< dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5        (1<<5)      //!< dxt5 compressed 8r8g8b8a (32bit)
-#define BMP_TEX_BC7			(1<<6)		//!< BC7  compressed 8r8g8b8a (32bit)
-#define BMP_TEX_CUBEMAP     (1<<7)      //!< a texture made for cubic environment map
-#define BMP_MASK_BITMAP     (1<<8)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
+#define BMP_TEX_CUBEMAP     (1<<6)      //!< a texture made for cubic environment map
+#define BMP_MASK_BITMAP     (1<<7)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
 
 // Combined flags
-#define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 | BMP_TEX_BC7 )  //!< Compressed textures
+#define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )  //!< Compressed textures
 #define BMP_TEX_NONCOMP     ( BMP_TEX_XPARENT | BMP_TEX_OTHER )             //!< Non-compressed textures
 #define	BMP_TEX_ANY         ( BMP_TEX_COMP | BMP_TEX_NONCOMP )              //!< Any texture
 
@@ -75,7 +74,6 @@ enum BM_TYPE
 	BM_TYPE_DXT1,           //!< 24 bit with switchable alpha
 	BM_TYPE_DXT3,           //!< 32 bit with 4 bit alpha
 	BM_TYPE_DXT5,           //!< 32 bit with 8 bit alpha
-	BM_TYPE_BC7,			//!< 32-bit with variable alpha
 	BM_TYPE_CUBEMAP_DDS,    //!< generic DDS cubemap (uncompressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT1,   //!< 24-bit cubemap        (compressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT3,   //!< 32-bit cubemap        (compressed cubemap surface)
@@ -93,7 +91,7 @@ struct bitmap
 	short	rowsize;    //!< What you need to add to go to next row
 	int	bpp;        //!< Requested bitdepth of each pixel. ( 7, 8, 15, 16, 24, 32)
 	int	true_bpp;   //!< The image's actual bitdepth
-	ushort	flags;      //!< Various texture type flags. @see BMPMAN_CONSTANTS
+	ubyte	flags;      //!< Various texture type flags. @see BMPMAN_CONSTANTS
 	ptr_u	data;       //!< Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;     /**< @brief   Pointer to this bitmap's palette (if it has one).
 	                     *   @details If BMP_NO_PALETTE_MAP flag is cleared, this palette just points to the screen palette. (gr_palette)
@@ -303,7 +301,7 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
  * @returns A pointer to the bitmap that's valid until bm_unlock is called if successful, or
  * @returns NULL if unsuccessful
  */
-bitmap* bm_lock(int handle, int bpp, ushort flags, bool nodebug = false);
+bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
 
 /**
  * @brief Returns the image type of the given bitmap handle
@@ -346,7 +344,7 @@ int bm_is_valid(int handle);
  * @returns The handle to the first frame on success, or
  * @returns -1 on failure
  */
-int bm_get_info(int handle, int *w = nullptr, int * h = nullptr, ushort* flags = nullptr, int *nframes = nullptr, int *fps = nullptr);
+int bm_get_info(int handle, int *w = NULL, int * h = NULL, ubyte * flags = NULL, int *nframes = NULL, int *fps = NULL);
 
 /**
  * @brief Gets the filename of the bitmap indexed by handle
