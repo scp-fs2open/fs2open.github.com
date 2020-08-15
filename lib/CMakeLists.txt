@@ -11,7 +11,9 @@ ADD_SUBDIRECTORY(lua)
 
 include(OpenAL.cmake)
 
-add_subdirectory(opengl)
+if (FSO_BUILD_WITH_OPENGL)
+	add_subdirectory(opengl)
+endif()
 
 ADD_SUBDIRECTORY(libsdl)
 

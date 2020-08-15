@@ -11,6 +11,15 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [gcc-5, gcc-9, clang-9]
+        cmake_options: [""]
+        include:
+          # Also include configurations that check if the code compiles without the graphics backends
+          - configuration: Debug
+            compiler: gcc-9
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
+          - configuration: Release
+            compiler: gcc-9
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-16.04
     steps:
@@ -49,6 +58,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
+          JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
         run: |
           if [ "$COMPILER" = "gcc-5" ]; then
             export CC=gcc-5
@@ -67,8 +77,9 @@ jobs:
           CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
           CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
+          CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
           if [[ "$CC" =~ ^clang.*$ ]]; then
-              CMAKE_OPTIONS="-DCLANG_USE_LIBCXX=ON"
+              CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
           fi
 
           mkdir build

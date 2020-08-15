@@ -42,8 +42,6 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
-#include "graphics/opengl/gropenglshader.h"
-#include "graphics/opengl/gropenglpostprocessing.h"
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
@@ -5970,7 +5968,7 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 	sexp_list_item head;
 
 	SCP_vector<SCP_string> ppe_names;
-	get_post_process_effect_names(ppe_names);
+	gr_get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
 		head.add_data_dup(ppe_names[i].c_str());
 	}

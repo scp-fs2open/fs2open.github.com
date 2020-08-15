@@ -67,6 +67,7 @@ extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
+extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;

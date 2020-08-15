@@ -62,7 +62,6 @@ GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
-bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
 
@@ -641,7 +640,6 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
-extern bool Scene_framebuffer_in_frame;
 extern GLuint Framebuffer_fallback_texture_id;
 extern GLuint Scene_depth_texture;
 extern GLuint Scene_position_texture;

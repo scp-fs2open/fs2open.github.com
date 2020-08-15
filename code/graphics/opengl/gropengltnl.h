@@ -32,7 +32,6 @@ extern float shadow_veryneardist;
 extern float shadow_neardist;
 extern float shadow_middist;
 extern float shadow_fardist;
-extern bool Rendering_to_shadow_map;
 
 extern GLuint Shadow_map_texture;
 
