@@ -107,7 +107,8 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	obj_move_all(frametime);
-	process_subobjects(LMGR->CurrentObject);
+	if (LMGR->CurrentMode == LabMode::Ship)
+		process_subobjects(LMGR->CurrentObject);
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
