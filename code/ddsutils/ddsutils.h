@@ -18,20 +18,21 @@
 #define DDS_ERROR_CUBEMAP_FACES			7		// file is a cubemap, but doesn't have all six faces
 
 
-#define DDS_DXT_INVALID				-1
+#define DDS_DXT_INVALID                -1
 #define DDS_UNCOMPRESSED				0
 #define DDS_DXT1						1
 #define DDS_DXT3						3
 #define DDS_DXT5						5
+#define DDS_BC7							7
 #define DDS_CUBEMAP_UNCOMPRESSED		10
 #define DDS_CUBEMAP_DXT1				11
 #define DDS_CUBEMAP_DXT3				13
 #define DDS_CUBEMAP_DXT5				15
 
 #ifndef MAKEFOURCC
-    #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
-                ((uint)(ubyte)(ch0) | ((uint)(ubyte)(ch1) << 8) |   \
-                ((uint)(ubyte)(ch2) << 16) | ((uint)(ubyte)(ch3) << 24 ))
+	#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+				((uint)(ubyte)(ch0) | ((uint)(ubyte)(ch1) << 8) |   \
+				((uint)(ubyte)(ch2) << 16) | ((uint)(ubyte)(ch3) << 24 ))
 #endif //defined(MAKEFOURCC)
 
 // FOURCC codes for DX compressed-texture pixel formats
@@ -40,6 +41,7 @@
 #define FOURCC_DXT3  (MAKEFOURCC('D','X','T','3'))
 #define FOURCC_DXT4  (MAKEFOURCC('D','X','T','4'))
 #define FOURCC_DXT5  (MAKEFOURCC('D','X','T','5'))
+#define FOURCC_DX10  (MAKEFOURCC('D','X','1','0'))
 
 #define DDS_FILECODE	0x20534444	// "DDS " in file
 
@@ -80,60 +82,198 @@
 									  DDSCAPS2_CUBEMAP_NEGATIVEZ )
 
 #pragma pack(1)
-// these structures are the headers for a dds file
-/*typedef struct _DDPIXELFORMAT {
-	uint	dwSize;
-	uint	dwFlags;
-	uint	dwFourCC;
-	uint	dwRGBBitCount;
-	uint	dwRBitMask;
-	uint 	dwGBitMask;
-	uint 	dwBBitMask;
-	uint	dwRGBAlphaBitMask;
-} DDPIXELFORMAT;
+enum class DXGI_FORMAT : uint {
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_R32G32B32A32_TYPELESS,
+	DXGI_FORMAT_R32G32B32A32_FLOAT,
+	DXGI_FORMAT_R32G32B32A32_UINT,
+	DXGI_FORMAT_R32G32B32A32_SINT,
+	DXGI_FORMAT_R32G32B32_TYPELESS,
+	DXGI_FORMAT_R32G32B32_FLOAT,
+	DXGI_FORMAT_R32G32B32_UINT,
+	DXGI_FORMAT_R32G32B32_SINT,
+	DXGI_FORMAT_R16G16B16A16_TYPELESS,
+	DXGI_FORMAT_R16G16B16A16_FLOAT,
+	DXGI_FORMAT_R16G16B16A16_UNORM,
+	DXGI_FORMAT_R16G16B16A16_UINT,
+	DXGI_FORMAT_R16G16B16A16_SNORM,
+	DXGI_FORMAT_R16G16B16A16_SINT,
+	DXGI_FORMAT_R32G32_TYPELESS,
+	DXGI_FORMAT_R32G32_FLOAT,
+	DXGI_FORMAT_R32G32_UINT,
+	DXGI_FORMAT_R32G32_SINT,
+	DXGI_FORMAT_R32G8X24_TYPELESS,
+	DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
+	DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS,
+	DXGI_FORMAT_X32_TYPELESS_G8X24_UINT,
+	DXGI_FORMAT_R10G10B10A2_TYPELESS,
+	DXGI_FORMAT_R10G10B10A2_UNORM,
+	DXGI_FORMAT_R10G10B10A2_UINT,
+	DXGI_FORMAT_R11G11B10_FLOAT,
+	DXGI_FORMAT_R8G8B8A8_TYPELESS,
+	DXGI_FORMAT_R8G8B8A8_UNORM,
+	DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+	DXGI_FORMAT_R8G8B8A8_UINT,
+	DXGI_FORMAT_R8G8B8A8_SNORM,
+	DXGI_FORMAT_R8G8B8A8_SINT,
+	DXGI_FORMAT_R16G16_TYPELESS,
+	DXGI_FORMAT_R16G16_FLOAT,
+	DXGI_FORMAT_R16G16_UNORM,
+	DXGI_FORMAT_R16G16_UINT,
+	DXGI_FORMAT_R16G16_SNORM,
+	DXGI_FORMAT_R16G16_SINT,
+	DXGI_FORMAT_R32_TYPELESS,
+	DXGI_FORMAT_D32_FLOAT,
+	DXGI_FORMAT_R32_FLOAT,
+	DXGI_FORMAT_R32_UINT,
+	DXGI_FORMAT_R32_SINT,
+	DXGI_FORMAT_R24G8_TYPELESS,
+	DXGI_FORMAT_D24_UNORM_S8_UINT,
+	DXGI_FORMAT_R24_UNORM_X8_TYPELESS,
+	DXGI_FORMAT_X24_TYPELESS_G8_UINT,
+	DXGI_FORMAT_R8G8_TYPELESS,
+	DXGI_FORMAT_R8G8_UNORM,
+	DXGI_FORMAT_R8G8_UINT,
+	DXGI_FORMAT_R8G8_SNORM,
+	DXGI_FORMAT_R8G8_SINT,
+	DXGI_FORMAT_R16_TYPELESS,
+	DXGI_FORMAT_R16_FLOAT,
+	DXGI_FORMAT_D16_UNORM,
+	DXGI_FORMAT_R16_UNORM,
+	DXGI_FORMAT_R16_UINT,
+	DXGI_FORMAT_R16_SNORM,
+	DXGI_FORMAT_R16_SINT,
+	DXGI_FORMAT_R8_TYPELESS,
+	DXGI_FORMAT_R8_UNORM,
+	DXGI_FORMAT_R8_UINT,
+	DXGI_FORMAT_R8_SNORM,
+	DXGI_FORMAT_R8_SINT,
+	DXGI_FORMAT_A8_UNORM,
+	DXGI_FORMAT_R1_UNORM,
+	DXGI_FORMAT_R9G9B9E5_SHAREDEXP,
+	DXGI_FORMAT_R8G8_B8G8_UNORM,
+	DXGI_FORMAT_G8R8_G8B8_UNORM,
+	DXGI_FORMAT_BC1_TYPELESS,
+	DXGI_FORMAT_BC1_UNORM,
+	DXGI_FORMAT_BC1_UNORM_SRGB,
+	DXGI_FORMAT_BC2_TYPELESS,
+	DXGI_FORMAT_BC2_UNORM,
+	DXGI_FORMAT_BC2_UNORM_SRGB,
+	DXGI_FORMAT_BC3_TYPELESS,
+	DXGI_FORMAT_BC3_UNORM,
+	DXGI_FORMAT_BC3_UNORM_SRGB,
+	DXGI_FORMAT_BC4_TYPELESS,
+	DXGI_FORMAT_BC4_UNORM,
+	DXGI_FORMAT_BC4_SNORM,
+	DXGI_FORMAT_BC5_TYPELESS,
+	DXGI_FORMAT_BC5_UNORM,
+	DXGI_FORMAT_BC5_SNORM,
+	DXGI_FORMAT_B5G6R5_UNORM,
+	DXGI_FORMAT_B5G5R5A1_UNORM,
+	DXGI_FORMAT_B8G8R8A8_UNORM,
+	DXGI_FORMAT_B8G8R8X8_UNORM,
+	DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM,
+	DXGI_FORMAT_B8G8R8A8_TYPELESS,
+	DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
+	DXGI_FORMAT_B8G8R8X8_TYPELESS,
+	DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,
+	DXGI_FORMAT_BC6H_TYPELESS,
+	DXGI_FORMAT_BC6H_UF16,
+	DXGI_FORMAT_BC6H_SF16,
+	DXGI_FORMAT_BC7_TYPELESS,
+	DXGI_FORMAT_BC7_UNORM,
+	DXGI_FORMAT_BC7_UNORM_SRGB,
+	DXGI_FORMAT_AYUV,
+	DXGI_FORMAT_Y410,
+	DXGI_FORMAT_Y416,
+	DXGI_FORMAT_NV12,
+	DXGI_FORMAT_P010,
+	DXGI_FORMAT_P016,
+	DXGI_FORMAT_420_OPAQUE,
+	DXGI_FORMAT_YUY2,
+	DXGI_FORMAT_Y210,
+	DXGI_FORMAT_Y216,
+	DXGI_FORMAT_NV11,
+	DXGI_FORMAT_AI44,
+	DXGI_FORMAT_IA44,
+	DXGI_FORMAT_P8,
+	DXGI_FORMAT_A8P8,
+	DXGI_FORMAT_B4G4R4A4_UNORM,
+	DXGI_FORMAT_P208,
+	DXGI_FORMAT_V208,
+	DXGI_FORMAT_V408,
+	DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE,
+	DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE,
+	DXGI_FORMAT_FORCE_UINT
+};
 
-typedef struct _DDSCAPS2
-{
-	uint		dwCaps1;
-	uint		dwCaps2;
-	uint		Reserved[2];
-} DDSCAPS2;*/
+/* Potentially useful for later stuff - (DahBlount)
+typedef enum D3D10_RESOURCE_MISC_FLAG : uint {
+	D3D10_RESOURCE_MISC_GENERATE_MIPS,
+	D3D10_RESOURCE_MISC_SHARED,
+	D3D10_RESOURCE_MISC_TEXTURECUBE,
+	D3D10_RESOURCE_MISC_SHARED_KEYEDMUTEX,
+	D3D10_RESOURCE_MISC_GDI_COMPATIBLE
+};
+*/
 
-typedef struct _DDSURFACEDESC2
-{
-	uint			dwSize;				// size of the DDSURFACEDESC structure
-	uint			dwFlags;			// determines what fields are valid
-	uint			dwHeight;			// height of surface to be created
-	uint			dwWidth;			// width of input surface
-	uint			dwPitchOrLinearSize;
-	uint			dwDepth;
-	uint			dwMipMapCount;
-	uint			dwReserved1[11];
+enum class D3D10_RESOURCE_DIMENSION : uint {
+	D3D10_RESOURCE_DIMENSION_UNKNOWN,
+	D3D10_RESOURCE_DIMENSION_BUFFER,
+	D3D10_RESOURCE_DIMENSION_TEXTURE1D,
+	D3D10_RESOURCE_DIMENSION_TEXTURE2D,
+	D3D10_RESOURCE_DIMENSION_TEXTURE3D
+};
+
+/* This is set in shaders for the most part - (DahBlount)
+typedef enum DDS_ALPHA_MODE : uint {
+	DDS_ALPHA_MODE_UNKNOWN,
+	DDS_ALPHA_MODE_STRAIGHT,
+	DDS_ALPHA_MODE_PREMULTIPLIED,
+	DDS_ALPHA_MODE_OPAQUE,
+	DDS_ALPHA_MODE_CUSTOM
+};
+*/
+
+typedef struct {
+	uint           dwSize;
+	uint           dwFlags;
+	uint           dwHeight;
+	uint           dwWidth;
+	uint           dwPitchOrLinearSize;
+	uint           dwDepth;
+	uint           dwMipMapCount;
+	uint           dwReserved1[11];
 
 	struct {
-		uint	dwSize;
-		uint	dwFlags;
-		uint	dwFourCC;
-		uint	dwRGBBitCount;
-		uint	dwRBitMask;
-		uint 	dwGBitMask;
-		uint 	dwBBitMask;
-		uint	dwRGBAlphaBitMask;
-	} ddpfPixelFormat;
+		uint dwSize;
+		uint dwFlags;
+		uint dwFourCC;
+		uint dwRGBBitCount;
+		uint dwRBitMask;
+		uint dwGBitMask;
+		uint dwBBitMask;
+		uint dwABitMask;
+	} ddspf;
 
-	struct {
-		uint		dwCaps1;
-		uint		dwCaps2;
-		uint		Reserved[2];
-	} ddsCaps;
+	uint           dwCaps;
+	uint           dwCaps2;
+	uint           dwCaps3;
+	uint           dwCaps4;
+	uint           dwReserved2;
+} DDS_HEADER;
 
-//	DDPIXELFORMAT	ddpfPixelFormat;
-//	DDSCAPS2		ddsCaps;			// direct draw surface capabilities
-	uint			dwReserved2;
-} DDSURFACEDESC2;
+typedef struct {
+	DXGI_FORMAT              dxgiFormat;
+	D3D10_RESOURCE_DIMENSION resourceDimension;
+	uint                     miscFlag;
+	uint                     arraySize;
+	uint                     miscFlags2;
+} DDS_HEADER_DXT10;
 #pragma pack()
 
-#define DDS_OFFSET						4+sizeof(DDSURFACEDESC2)		//place where the data starts -- should be 128
+#define DDS_OFFSET						4+sizeof(DDS_HEADER)		//place where the data starts -- should be 128
+#define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
 //reads a dds header
 //returns one of the error values
