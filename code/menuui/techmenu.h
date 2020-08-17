@@ -13,6 +13,7 @@
 #define _TECHMENU_H
 
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 typedef struct {
 	char name[NAME_LENGTH];
