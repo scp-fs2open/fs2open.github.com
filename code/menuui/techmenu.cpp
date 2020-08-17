@@ -781,11 +781,7 @@ void techroom_change_tab(int num)
 			if ( !Ships_loaded ) {
 				if (Ship_list == NULL) {
 					Ship_list = new tech_list_entry[Ship_info.size()];
-
-					if (Ship_list == NULL)
-						Error(LOCATION, "Couldn't init ships list!");
 				}
-
 				Ship_list_size = 0;
 
 				for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
@@ -837,12 +833,9 @@ void techroom_change_tab(int num)
 			if ( !Weapons_loaded ) {
 				if (Weapon_list == NULL) {
 					Weapon_list = new tech_list_entry[Weapon_info.size()];
-
-					if (Weapon_list == NULL)
-						Error(LOCATION, "Couldn't init weapons list!");
 				}
-
 				Weapon_list_size = 0;
+
 				wi_mask.set(multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database);
                 wi_mask.set(Weapon::Info_Flags::Default_in_tech_database);
 
@@ -898,9 +891,6 @@ void techroom_change_tab(int num)
 			if ( !Intel_loaded ) {
 				if (Intel_list == nullptr) {
 					Intel_list = new tech_list_entry[Intel_info.size()];
-
-					if (Intel_list == nullptr)
-						Error(LOCATION, "Couldn't init intel list!");
 				}
 
 				Intel_list_size = 0;
@@ -1077,27 +1067,27 @@ void techroom_intel_init()
 
 		Intel_info.clear();
 		while (optional_string("$Entry:")) {
-			Intel_info.emplace_back();
-			auto ii = &Intel_info.back();
-
-			ii->flags = IIF_DEFAULT_VALUE;
+			intel_data entry;
+			entry.flags = IIF_DEFAULT_VALUE;
 
 			required_string("$Name:");
-			stuff_string(ii->name, F_NAME, NAME_LENGTH);
+			stuff_string(entry.name, F_NAME, NAME_LENGTH);
 
 			required_string("$Anim:");
-			stuff_string(ii->anim_filename, F_NAME, NAME_LENGTH);
+			stuff_string(entry.anim_filename, F_NAME, NAME_LENGTH);
 
 			required_string("$AlwaysInTechRoom:");
 			stuff_int(&temp);
 			if (temp) {
 				// set default to align with what we read - Goober5000
-				ii->flags |= IIF_IN_TECH_DATABASE;
-				ii->flags |= IIF_DEFAULT_IN_TECH_DATABASE;
+				entry.flags |= IIF_IN_TECH_DATABASE;
+				entry.flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 			}
 
 			required_string("$Description:");
-			stuff_string(ii->desc, F_MULTITEXT);
+			stuff_string(entry.desc, F_MULTITEXT);
+
+			Intel_info.push_back(entry);
 		}
 
 		Intel_inited = true;
