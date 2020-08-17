@@ -215,9 +215,9 @@ static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
-static int Ships_loaded = 0;
-static int Weapons_loaded = 0;
-static int Intel_loaded = 0;
+static bool Ships_loaded = false;
+static bool Weapons_loaded = false;
+static bool Intel_loaded = false;
 
 int Techroom_overlay_id;
 
@@ -225,7 +225,7 @@ int Techroom_overlay_id;
 typedef struct {
 	int	index;		// index into the master table that its in (ie Ship_info[])
 	const char* name;			// ptr to name string
-	char* desc;			// ptr to description string
+	const char* desc;			// ptr to description string
 	char tech_anim_filename[MAX_FILENAME_LEN];	//duh
 	generic_anim animation;	// animation info
 	int	bitmap;		// bitmap handle
@@ -234,11 +234,11 @@ typedef struct {
 	int textures_loaded;	// if the model has textures loaded for it or not (hacky mem management)
 } tech_list_entry;
 
-static tech_list_entry *Ship_list = NULL;
+static tech_list_entry *Ship_list = nullptr;
 static int Ship_list_size = 0;
-static tech_list_entry *Weapon_list = NULL;
+static tech_list_entry *Weapon_list = nullptr;
 static int Weapon_list_size = 0;
-static tech_list_entry Intel_list[MAX_INTEL_ENTRIES];
+static tech_list_entry *Intel_list = nullptr;
 static int Intel_list_size = 0;
 static tech_list_entry *Current_list;								// points to currently valid display list
 static int Current_list_size = 0;
@@ -247,8 +247,7 @@ static int Current_list_size = 0;
 static UI_SLIDER2 Tech_slider;
 
 // Intelligence master data structs (these get inited @ game startup from species.tbl)
-intel_data Intel_info[MAX_INTEL_ENTRIES];
-int Intel_info_size = 0;
+SCP_vector<intel_data> Intel_info;
 bool Intel_inited = false;
 
 // some prototypes to make you happy
@@ -261,7 +260,7 @@ void tech_scroll_list_down();
 ////////////////////////////////////////////////////
 // like, functions and stuff
 
-void techroom_init_desc(char *src, int w)
+void techroom_init_desc(const char *src, int w)
 {
 	Text_size = Text_offset = 0;
 	if (!src) {
@@ -779,7 +778,7 @@ void techroom_change_tab(int num)
             si_mask.set(multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database);
 			
 			// load ship info if necessary
-			if ( Ships_loaded == 0 ) {
+			if ( !Ships_loaded ) {
 				if (Ship_list == NULL) {
 					Ship_list = new tech_list_entry[Ship_info.size()];
 
@@ -819,7 +818,7 @@ void techroom_change_tab(int num)
 					Ship_list[0].textures_loaded = 0;
 				}
 
-				Ships_loaded = 1;
+				Ships_loaded = true;
 			}
 
 			Current_list = Ship_list;
@@ -835,12 +834,12 @@ void techroom_change_tab(int num)
 		case WEAPONS_DATA_TAB:
 				
 			// load weapon info & anims if necessary
-			if ( Weapons_loaded == 0 ) {
+			if ( !Weapons_loaded ) {
 				if (Weapon_list == NULL) {
 					Weapon_list = new tech_list_entry[Weapon_info.size()];
 
 					if (Weapon_list == NULL)
-						Error(LOCATION, "Couldn't init ships list!");
+						Error(LOCATION, "Couldn't init weapons list!");
 				}
 
 				Weapon_list_size = 0;
@@ -881,7 +880,7 @@ void techroom_change_tab(int num)
 					Weapon_list[0].textures_loaded = 0;
 				}
 
-				Weapons_loaded = 1;
+				Weapons_loaded = true;
 			}
 
 			Current_list = Weapon_list;
@@ -896,35 +895,43 @@ void techroom_change_tab(int num)
 		case INTEL_DATA_TAB:
 
 			// load intel if necessary
-			if ( Intel_loaded == 0 ) {
-				// now populate the entry structs
+			if ( !Intel_loaded ) {
+				if (Intel_list == nullptr) {
+					Intel_list = new tech_list_entry[Intel_info.size()];
+
+					if (Intel_list == nullptr)
+						Error(LOCATION, "Couldn't init intel list!");
+				}
+
 				Intel_list_size = 0;
 
-				for (int i=0; i<Intel_info_size; i++) {
-					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE)) {
+				int i = 0;
+				for (auto &ii : Intel_info) {
+					if (Techroom_show_all || (ii.flags & IIF_IN_TECH_DATABASE)) {
 						// leave option for no animation if string == "none"
-						if (!strcmp(Intel_info[i].anim_filename, "none")) {
+						if (!strcmp(ii.anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
 							Intel_list[Intel_list_size].animation.num_frames = 0;
 						} else {
 							// try and load as an animation
 							Intel_list[Intel_list_size].has_anim = 0;
 							Intel_list[Intel_list_size].bitmap = -1;
-							strncpy(Intel_list[Intel_list_size].tech_anim_filename, Intel_info[i].anim_filename, NAME_LENGTH - 1);
+							strncpy(Intel_list[Intel_list_size].tech_anim_filename, ii.anim_filename, NAME_LENGTH - 1);
 						}
 
-						Intel_list[Intel_list_size].desc = Intel_info[i].desc;
+						Intel_list[Intel_list_size].desc = ii.desc.c_str();
 						Intel_list[Intel_list_size].index = i;
-						Intel_list[Intel_list_size].name = Intel_info[i].name;
+						Intel_list[Intel_list_size].name = ii.name;
 						Intel_list[Intel_list_size].model_num = -1;
 						Intel_list[Intel_list_size].textures_loaded = 0;
 
 						Intel_list_size++;
 					}
+					++i;
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
-				if (Intel_info_size && !Intel_list_size) {
+				if (!Intel_info.empty() && !Intel_list_size) {
 					Intel_list[0].index = -1;
 					Intel_list[0].desc = NULL;
 					Intel_list[0].name = NULL;
@@ -935,7 +942,7 @@ void techroom_change_tab(int num)
 					Intel_list[0].textures_loaded = 0;
 				}
 
-				Intel_loaded = 1;
+				Intel_loaded = true;
 			}
 
 			// index lookup on intel is a pretty pointless, but it keeps everything 
@@ -1068,34 +1075,29 @@ void techroom_intel_init()
 		read_file_text("species.tbl", CF_TYPE_TABLES);
 		reset_parse();
 
-		Intel_info_size = 0;
+		Intel_info.clear();
 		while (optional_string("$Entry:")) {
-			Assert(Intel_info_size < MAX_INTEL_ENTRIES);
-			if (Intel_info_size >= MAX_INTEL_ENTRIES) {
-				mprintf(("TECHMENU: Too many intel entries!\n"));
-				break;
-			}
+			Intel_info.emplace_back();
+			auto ii = &Intel_info.back();
 
-			Intel_info[Intel_info_size].flags = IIF_DEFAULT_VALUE;
+			ii->flags = IIF_DEFAULT_VALUE;
 
 			required_string("$Name:");
-			stuff_string(Intel_info[Intel_info_size].name, F_NAME, NAME_LENGTH);
+			stuff_string(ii->name, F_NAME, NAME_LENGTH);
 
 			required_string("$Anim:");
-			stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NAME_LENGTH);
+			stuff_string(ii->anim_filename, F_NAME, NAME_LENGTH);
 
 			required_string("$AlwaysInTechRoom:");
 			stuff_int(&temp);
 			if (temp) {
 				// set default to align with what we read - Goober5000
-				Intel_info[Intel_info_size].flags |= IIF_IN_TECH_DATABASE;
-				Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
+				ii->flags |= IIF_IN_TECH_DATABASE;
+				ii->flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 			}
 
 			required_string("$Description:");
-			stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, TECH_INTEL_DESC_LEN);
-
-			Intel_info_size++;
+			stuff_string(ii->desc, F_MULTITEXT);
 		}
 
 		Intel_inited = true;
@@ -1109,8 +1111,7 @@ void techroom_intel_init()
 
 void techroom_intel_reset()
 {
-	Intel_info_size = 0;
-	memset(Intel_info, 0, sizeof(Intel_info));
+	Intel_info.clear();
 	Intel_inited = false;
 }
 
@@ -1119,9 +1120,9 @@ void techroom_init()
 	int i, idx;
 	techroom_buttons *b;
 
-	Ships_loaded = 0;
-	Weapons_loaded = 0;
-	Intel_loaded = 0;
+	Ships_loaded = false;
+	Weapons_loaded = false;
+	Intel_loaded = false;
 
 	Techroom_show_all = 0;
 
@@ -1205,7 +1206,7 @@ void techroom_init()
 	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], (int)Ship_info.size(), Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
 
 	// zero intel anim/bitmap stuff
-	for(idx=0; idx<MAX_INTEL_ENTRIES; idx++){
+	for(idx=0; idx<Intel_list_size; idx++){
 		Intel_list[idx].animation.num_frames = 0;
 		Intel_list[idx].bitmap = -1;
 	}
@@ -1233,7 +1234,7 @@ void techroom_lists_reset()
 	}
 
 	Ship_list_size = 0;
-	Ships_loaded = 0;
+	Ships_loaded = false;
 
 	if (Weapon_list != NULL) {
 		for (i = 0; i < Weapon_list_size; i++) {
@@ -1252,21 +1253,26 @@ void techroom_lists_reset()
 	}
 
 	Weapon_list_size = 0;
-	Weapons_loaded = 0;
+	Weapons_loaded = false;
 
-	for (i = 0; i < Intel_list_size; i++) {
-		if (Intel_list[i].animation.num_frames != 0) {
-			generic_anim_unload(&Intel_list[i].animation);
+	if (Intel_list != nullptr) {
+		for (i = 0; i < Intel_list_size; i++) {
+			if (Intel_list[i].animation.num_frames != 0) {
+				generic_anim_unload(&Intel_list[i].animation);
+			}
+
+			if (Intel_list[i].bitmap >= 0) {
+				bm_release(Intel_list[i].bitmap);
+				Intel_list[i].bitmap = -1;
+			}
 		}
 
-		if (Intel_list[i].bitmap >= 0) {
-			bm_release(Intel_list[i].bitmap);
-			Intel_list[i].bitmap = -1;
-		}
+		delete[] Intel_list;
+		Intel_list = nullptr;
 	}
 
 	Intel_list_size = 0;
-	Intel_loaded = 0;
+	Intel_loaded = false;
 }
 
 void techroom_close()
@@ -1452,13 +1458,11 @@ void techroom_do_frame(float frametime)
 // note: the name has to be pre-translated before being passed into this function
 int intel_info_lookup(const char *name)
 {
-	int	i;
-
 	// bogus
 	if (!name)
 		return -1;
 
-	for (i=0; i<Intel_info_size; i++)
+	for (int i = 0; i < intel_info_size(); i++)
 		if (!stricmp(name, Intel_info[i].name))
 			return i;
 
@@ -1490,7 +1494,7 @@ void tech_reset_to_default()
 	}
 
 	// intelligence
-	for (int i = 0; i < Intel_info_size; ++i)
+	for (int i = 0; i < intel_info_size(); ++i)
 	{
 		if (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;

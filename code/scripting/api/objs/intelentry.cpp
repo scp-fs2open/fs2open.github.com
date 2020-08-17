@@ -18,7 +18,7 @@ ADE_FUNC(__tostring, l_Intelentry, nullptr, "Intel entry name", "string", "Intel
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Intel_info[idx].name);
@@ -30,10 +30,10 @@ ADE_FUNC(__eq, l_Intelentry, "intel_entry, intel_entry", "Checks if the two entr
 	if(!ade_get_args(L, "oo", l_Intelentry.Get(&idx1), l_Intelentry.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
-	if(idx1 < 0 || idx1 >= Intel_info_size)
+	if(idx1 < 0 || idx1 >= intel_info_size())
 		return ade_set_error(L, "b", false);
 
-	if(idx2 < 0 || idx2 >= Intel_info_size)
+	if(idx2 < 0 || idx2 >= intel_info_size())
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", idx1 == idx2);
@@ -46,7 +46,7 @@ ADE_VIRTVAR(Name, l_Intelentry, "string", "Intel entry name", "string", "Intel e
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
@@ -65,16 +65,14 @@ ADE_VIRTVAR(Description, l_Intelentry, "string", "Intel entry description", "str
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
 		if(s != nullptr) {
-			auto len = sizeof(Intel_info[idx].desc);
-			strncpy(Intel_info[idx].desc, s, len);
-			Intel_info[idx].desc[len - 1] = 0;
+			Intel_info[idx].desc = s;
 		} else {
-			strcpy_s(Intel_info[idx].desc, "");
+			Intel_info[idx].desc = "";
 		}
 	}
 
@@ -88,7 +86,7 @@ ADE_VIRTVAR(AnimFilename, l_Intelentry, "string", "Intel entry animation filenam
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
@@ -111,7 +109,7 @@ ADE_VIRTVAR(InTechDatabase, l_Intelentry, "boolean", "Gets or sets whether this 
 	if (!ade_get_args(L, "o|b", l_Intelentry.Get(&idx), &new_value))
 		return ade_set_error(L, "b", false);
 
-	if (idx < 0 || idx >= Intel_info_size)
+	if (idx < 0 || idx >= intel_info_size())
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR) {
@@ -131,7 +129,7 @@ ADE_FUNC(isValid, l_Intelentry, nullptr, "Detects whether handle is valid", "boo
 	if(!ade_get_args(L, "o", l_Intelentry.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -143,7 +141,7 @@ ADE_FUNC(getIntelEntryIndex, l_Intelentry, nullptr, "Gets the index value of the
 	if(!ade_get_args(L, "o", l_Intelentry.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 
-	if(idx < 0 || idx >= Intel_info_size)
+	if(idx < 0 || idx >= intel_info_size())
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx + 1); // Lua is 1-based

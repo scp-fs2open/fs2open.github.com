@@ -205,10 +205,10 @@ void pilotfile::csg_write_info()
 	}
 
 	// intel list
-	cfwrite_int(Intel_info_size, cfp);
+	cfwrite_int(intel_info_size(), cfp);
 
-	for (idx = 0; idx < Intel_info_size; idx++) {
-		cfwrite_string_len(Intel_info[idx].name, cfp);
+	for (auto &ii : Intel_info) {
+		cfwrite_string_len(ii.name, cfp);
 	}
 
 	// medals list
@@ -504,7 +504,6 @@ void pilotfile::csg_read_techroom()
 
 void pilotfile::csg_write_techroom()
 {
-	int idx;
 	TechroomState state;
 
 	startSection(Section::Techroom);
@@ -536,10 +535,10 @@ void pilotfile::csg_write_techroom()
 	}
 
 	// and for intel entries
-	for (idx = 0; idx < Intel_info_size; idx++) {
-		if (((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) == ((Intel_info[idx].flags & IIF_DEFAULT_IN_TECH_DATABASE) != 0)) {
+	for (auto &ii : Intel_info) {
+		if (((ii.flags & IIF_IN_TECH_DATABASE) != 0) == ((ii.flags & IIF_DEFAULT_IN_TECH_DATABASE) != 0)) {
 			state = TechroomState::DEFAULT;
-		} else if ((Intel_info[idx].flags & IIF_IN_TECH_DATABASE) != 0) {
+		} else if ((ii.flags & IIF_IN_TECH_DATABASE) != 0) {
 			state = TechroomState::ADDED;
 		} else {
 			state = TechroomState::REMOVED;
