@@ -1864,6 +1864,16 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
 						}
 
+#ifndef NDEBUG
+						// check for duplicates
+						// (we just warn here and take no action, because even some retail models have duplicate dockpoints)
+						for (j = 0; j < i; j++) {
+							if (stricmp(bay->name, pm->docking_bays[j].name) == 0) {
+								Warning(LOCATION, "Duplicate docking bay name '%s' found on model '%s'!", bay->name, pm->filename);
+							}
+						}
+#endif
+
 						bay->num_spline_paths = cfread_int( fp );
 						if ( bay->num_spline_paths > 0 ) {
 							bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
