@@ -770,7 +770,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	if (in.compare(0, 4, "XSTR") != 0) {
+	if (strnicmp(in.c_str(), "XSTR", 4) != 0) {
 		// NOT an XSTR() tag
 		out = in;
 
