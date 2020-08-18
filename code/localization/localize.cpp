@@ -712,8 +712,8 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		return false;
 	}
 	
-	// if the localization file is not open, or there's no entry, return the original string
-	if ( !Xstr_inited || (str_id < 0) ) {
+	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == LCL_UNTRANSLATED) ) {
 		if ( strlen(text_str) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
@@ -770,7 +770,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	if (in.compare(0, 4, "XSTR")) {
+	if (in.compare(0, 4, "XSTR") != 0) {
 		// NOT an XSTR() tag
 		out = in;
 
