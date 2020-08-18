@@ -122,7 +122,7 @@ ADE_INDEXER(l_Tables_IntelEntries, "number/string IndexOrName", "Array of intel 
 			return ade_set_error(L, "o", l_Intelentry.Set(-1));
 		}
 
-		if (idx < 0 || idx >= Intel_info_size) {
+		if (idx < 0 || idx >= intel_info_size()) {
 			return ade_set_error(L, "o", l_Intelentry.Set(-1));
 		}
 	}
@@ -135,7 +135,7 @@ ADE_FUNC(__len, l_Tables_IntelEntries, nullptr, "Number of intel entries", "numb
 	if(!Intel_inited)
 		return ade_set_args(L, "i", 0);	//No intel loaded...should be 0
 
-	return ade_set_args(L, "i", Intel_info_size);
+	return ade_set_args(L, "i", intel_info_size());
 }
 
 

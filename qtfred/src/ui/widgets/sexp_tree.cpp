@@ -4218,11 +4218,10 @@ sexp_list_item* sexp_tree::get_listing_opf_weapon_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_intel_name() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Intel_info_size; i++) {
-		head.add_data(Intel_info[i].name);
+	for (auto &ii : Intel_info) {
+		head.add_data(ii.name);
 	}
 
 	return head.next;
@@ -4231,8 +4230,8 @@ sexp_list_item* sexp_tree::get_listing_opf_intel_name() {
 sexp_list_item* sexp_tree::get_listing_opf_ship_class_name() {
 	sexp_list_item head;
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		head.add_data(it->name);
+	for (auto &si : Ship_info) {
+		head.add_data(si.name);
 	}
 
 	return head.next;

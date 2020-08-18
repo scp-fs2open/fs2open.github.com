@@ -2745,7 +2745,7 @@ void lab_pseudomission_setup() {
 		strcpy_s(teamp->ship_count_variables[i], "");
 	}
 	teamp->default_ship = 0;
-	teamp->num_ship_choices = static_cast<int>(Ship_info.size());
+	teamp->num_ship_choices = ship_info_size();
 
 	// you want guns? you get guns.
 	for (size_t i = 0; i < Weapon_info.size(); ++i) {
@@ -2754,7 +2754,7 @@ void lab_pseudomission_setup() {
 		strcpy_s(teamp->weaponry_amount_variable[i], "");
 		strcpy_s(teamp->weaponry_pool_variable[i], "");
 	}
-	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
+	teamp->num_weapon_choices = weapon_info_size();
 }
 
 void lab_init()
