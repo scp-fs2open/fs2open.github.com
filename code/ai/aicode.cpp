@@ -1138,7 +1138,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	}
 }
 
-//	If rvec != NULL, use it to match bank by calling vm_matrix_interpolate.
+//	If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 //	(rvec defaults to NULL)
 void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags)
 {
@@ -1230,7 +1230,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
 	//	that is causing ships to inexplicably rotate very far.  If you see the message below in the log, set the next statement to be
 	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
-	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
+	//	This will allow you to rerun vm_angular_move_forward_vec() with the values that caused the error.
 #ifndef NDEBUG
 vec3d tvec = objp->orient.vec.fvec;
 vec3d	vel_in_copy;
@@ -1247,11 +1247,11 @@ objp->orient = objp_orient_copy; //-V587
 		matrix	out_orient, goal_orient;
 
 		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
-		vm_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, 
+		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 		objp->orient = out_orient;
 	} else {
-		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, 
+		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank,
 			&objp->orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	}
 
@@ -9188,7 +9188,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			vm_vec_scale(&acc_limit, 2.0f);
 
 		// true at end of line prevent overshoot
-		vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, true);
+		vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false, true);
 		docker_objp->phys_info.rotvel = omega_out;
 		docker_objp->orient = nm;
 
@@ -9238,7 +9238,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			if (sip0->flags[Ship::Info_Flags::Support])
 				vm_vec_scale(&acc_limit, 2.0f);
 
-			vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit);
+			vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false);
 			docker_objp->phys_info.rotvel = omega_out;
 			docker_objp->orient = nm;
 
@@ -11959,7 +11959,7 @@ int ai_formation()
 		vec3d	angular_accel;
 
 		vm_vec_copy_scale(&angular_accel, &Pl_objp->phys_info.max_rotvel, 0.2f);
-		vm_matrix_interpolate(&leader_objp->orient, &Pl_objp->orient, &Pl_objp->phys_info.rotvel, flFrametime, &new_orient, &w_out, &Pl_objp->phys_info.max_rotvel, &angular_accel, true);
+		vm_angular_move_matrix(&leader_objp->orient, &Pl_objp->orient, &Pl_objp->phys_info.rotvel, flFrametime, &new_orient, &w_out, &Pl_objp->phys_info.max_rotvel, &angular_accel, false, true);
 
 		Pl_objp->orient = new_orient;
 		Pl_objp->phys_info.rotvel = w_out;

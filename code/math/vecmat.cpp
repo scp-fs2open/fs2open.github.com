@@ -1614,7 +1614,7 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 
 // physically models within the frame the physical behavior to get to a goal position
 // given an arbitrary initial velocity
-void vm_scalar_interpolate_calc(float goal, float* vel, float delta_t,
+void vm_angular_move_1dimension_calc(float goal, float* vel, float delta_t,
 	float* dist, float vel_limit, float acc_limit)
 {
 	// These diagrams depict two common situations, and although they both start with negative velocity
@@ -1632,8 +1632,8 @@ void vm_scalar_interpolate_calc(float goal, float* vel, float delta_t,
 	// 
 	//  t1 > t2, no straight segment, accelerate then deccelerate, no coasting
 	//
-	//  now          _..--- goal
-	//   |		   .'
+	//  now           _..--- goal
+	//   |         .'
 	//   v        . 
 	//   .       .|   
 	//    ''-.-'' |
@@ -1683,17 +1683,17 @@ void vm_scalar_interpolate_calc(float goal, float* vel, float delta_t,
 
 // physically models within the frame the physical behavior to get to a one-dimensional goal position
 // given an arbitrary initial velocity
-float vm_scalar_interpolate(float goal, float delta_t, float* vel, float vel_limit, float acc_limit, float slowdown_factor, bool force_no_overshoot)
+float vm_angular_move_1dimension(float goal, float delta_t, float* vel, float vel_limit, float acc_limit, float slowdown_factor, bool force_no_overshoot)
 {
 	float effective_vel_limit = slowdown_factor == 0 ? 0 : slowdown_factor * vel_limit;
 	float effective_acc_limit = slowdown_factor == 0 ? 0 : slowdown_factor * acc_limit;
 	if (acc_limit <= 0) return *vel * delta_t;		// Can't accelerate? No point in continuing!
 	float dist = 0;
-	float t_slow = fmin(delta_t, (fabs(*vel) - effective_vel_limit) / acc_limit);	// Time until we get down to our max speed
-	if (t_slow > 0) {																// If that's zero (were at max) or negative (below max)
-		float acc = *vel >= 0 ? -acc_limit : acc_limit;								// excellent, but otherwise, there's no choices to make
-		dist += *vel * t_slow + acc * t_slow * t_slow / 2;							// slam on the brakes and continue only if there was enough
-		*vel += acc * t_slow;														// time in the frame to get down to max
+	float t_slow = fmin(delta_t, (fabs(*vel) - effective_vel_limit) / acc_limit);  // Time until we get down to our max speed
+	if (t_slow > 0) {                                                              // If that's zero (were at max) or negative (below max)
+		float acc = *vel >= 0 ? -acc_limit : acc_limit;                            // excellent, but otherwise, there's no choices to make
+		dist += *vel * t_slow + acc * t_slow * t_slow / 2;                         // slam on the brakes and continue only if there was enough
+		*vel += acc * t_slow;                                                      // time in the frame to get down to max
 		if (delta_t <= t_slow) return dist;
 		delta_t -= t_slow;
 	}
@@ -1707,14 +1707,14 @@ float vm_scalar_interpolate(float goal, float delta_t, float* vel, float vel_lim
 	if (should_acc_upwards) {
 		if (goal < 0 && force_no_overshoot)
 			*vel = -goal_trajectory_speed; // With no overshoot our input velocity is always to set to the perfect trajectory
-		vm_scalar_interpolate_calc(goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+		vm_angular_move_1dimension_calc(goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
 
 	}
 	else { // else flip it so our goal is above and again we get initial positive accel
 		if (goal > 0 && force_no_overshoot)
 			*vel = goal_trajectory_speed; // With no overshoot our input velocity is always to set to the perfect trajectory
 		*vel = -*vel, dist = -dist; 
-		vm_scalar_interpolate_calc(-goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+		vm_angular_move_1dimension_calc(-goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
 		*vel = -*vel, dist = -dist;
 	}
 	return dist;
@@ -1746,7 +1746,7 @@ float time_to_arrival_calc(float goal, float vel, float vel_limit, float acc_lim
 	return time + vel / acc_limit;
 }
 
-// called by vm_vector_interpolate to compute a slowing factor
+// called by vm_angular_move to compute a slowing factor
 // pared down versions of the scalar functions
 float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
 	// We won't consider speeds above our max, the time estimate gets complicated and the result won't be a straight line anyway
@@ -1760,7 +1760,7 @@ float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
 
 // splits up the accelerating/deccelerating/go to position function for each component
 // and also scales their speed to make a nice straight line
-vec3d vm_vector_interpolate(const vec3d* goal, float delta_t,
+vec3d vm_angular_move(const vec3d* goal, float delta_t,
 	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool aggressive_bank, bool force_no_overshoot, bool no_directional_bias)
 {
 	vec3d ret, slow;
@@ -1771,16 +1771,16 @@ vec3d vm_vector_interpolate(const vec3d* goal, float delta_t,
 		slow.xyz.y = time_to_arrival(goal->xyz.y, vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y);
 		slow.xyz.z = time_to_arrival(goal->xyz.z, vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z);
 
-		// then, compute a slowing factor for the 1 or 2 fastest-to-arrive-at-their-destination components
+		// then, compute a slowing factor for the 1 or 2 faster-to-arrive-at-their-destination components
 		// so they arrive at approximately the same time as the slowest component, so the path there is nice and straight
 		float max = fmax(slow.xyz.x, fmax(slow.xyz.y, slow.xyz.z));
 		if (max != 0) vm_vec_scale(&slow, 1 / max);
 		if (aggressive_bank) slow.xyz.z = 1.f;
 	}
 
-	ret.xyz.x = vm_scalar_interpolate(goal->xyz.x, delta_t, &vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x, slow.xyz.x, force_no_overshoot);
-	ret.xyz.y = vm_scalar_interpolate(goal->xyz.y, delta_t, &vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y, slow.xyz.y, force_no_overshoot);
-	ret.xyz.z = vm_scalar_interpolate(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z, force_no_overshoot);
+	ret.xyz.x = vm_angular_move_1dimension(goal->xyz.x, delta_t, &vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x, slow.xyz.x, force_no_overshoot);
+	ret.xyz.y = vm_angular_move_1dimension(goal->xyz.y, delta_t, &vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y, slow.xyz.y, force_no_overshoot);
+	ret.xyz.z = vm_angular_move_1dimension(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z, force_no_overshoot);
 	return ret;
 }
 
@@ -1794,15 +1794,15 @@ vec3d vm_vector_interpolate(const vec3d* goal, float delta_t,
 //					w_out		=>		the angular velocity of the ship at delta_t
 //					vel_limit	=>		maximum rotational speed
 //					acc_limit	=>		maximum rotational acceleration
-//					no_directional_bias  => will cause the path generated to be as straight as possible, rather than greedily
+//					no_directional_bias  => will cause the angular path generated to be as straight as possible, rather than greedily
 //											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
 //					force_no_overshoot   => forces the interpolation to not overshoot, if it is approaching its goal too fast
 //											it will always arrive with 0 velocity, even if its acceleration would not normally 
 //											allow it slow down in time
 //					
-//		function moves the input matrix into the goal matrix taking account of anglular
+//		function attempts to rotate the input matrix into the goal matrix taking account of anglular
 //		momentum (velocity)
-void vm_matrix_interpolate(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
+void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias, bool force_no_overshoot)
 {
 	//	Find rotation needed for goal
@@ -1829,7 +1829,7 @@ void vm_matrix_interpolate(const matrix* goal_orient, const matrix* curr_orient,
 
 	// calculate best approach in linear space (returns velocity in w_out and position difference in rot_axis)
 	*w_out = *w_in;
-	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit, false, force_no_overshoot, no_directional_bias);
+	rot_axis = vm_angular_move(&theta_goal, delta_t, w_out, vel_limit, acc_limit, false, force_no_overshoot, no_directional_bias);
 
 	// arrived at goal? (equality comparison is okay here because vm_vector_interpolate returns theta_goal on arrival)
 	if (rot_axis == theta_goal) {
@@ -1873,12 +1873,12 @@ void vm_matrix_interpolate(const matrix* goal_orient, const matrix* curr_orient,
 //					w_out		=>		the angular velocity of the ship at delta_t
 //					vel_limit	=>		maximum rotational speed
 //					acc_limit	=>		maximum rotational acceleration
-//					no_directional_bias  => will cause the path generated to be as straight as possible, rather than greedily
+//					no_directional_bias  => will cause the angular path generated to be as straight as possible, rather than greedily
 //											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
 //
-//		function moves the forward vector toward the goal forward vector taking account of anglular
+//		function attempts to rotate the forward vector toward the goal forward vector taking account of anglular
 //		momentum (velocity)  Attempt to try to move bank by goal delta_bank.  
-void vm_forward_interpolate(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
+void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias)
 {
 	vec3d rot_axis;
@@ -1921,7 +1921,7 @@ void vm_forward_interpolate(const vec3d* goal_f, const matrix* orient, const vec
 
 	// calculate best approach in linear space (returns velocity in w_out and position difference in rot_axis)
 	*w_out = *w_in;
-	rot_axis = vm_vector_interpolate(&theta_goal, delta_t, w_out, vel_limit, acc_limit, true, false, no_directional_bias);
+	rot_axis = vm_angular_move(&theta_goal, delta_t, w_out, vel_limit, acc_limit, true, false, no_directional_bias);
 
 	//	normalize rotation axis and determine total rotation angle
 	float theta = vm_vec_mag(&rot_axis);
