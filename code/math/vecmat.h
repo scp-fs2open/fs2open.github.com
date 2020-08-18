@@ -428,22 +428,14 @@ int vm_matrix_same(matrix *m1, matrix *m2);
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next_orientation valid at time delta_t.
 void vm_matrix_interpolate(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, int no_overshoot=0);
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, bool no_directional_bias, bool force_no_overshoot = false);
 
 //	Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next forward vec valid at time delta_t.
 void vm_forward_interpolate(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot=0);
-
-void vm_better_forward_interpolate(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
-	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit);
-
-void vm_better_matrix_interpolate(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
-	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit);
-
-float vm_scalar_interpolate(float goal, float delta_t, float* vel, float vel_limit, float acc_limit, float slowdown_factor);
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, bool no_directional_bias);
 
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);

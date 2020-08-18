@@ -1247,10 +1247,12 @@ objp->orient = objp_orient_copy; //-V587
 		matrix	out_orient, goal_orient;
 
 		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
-		vm_better_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, &out_orient, &vel_out, &vel_limit, &acc_limit);
+		vm_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, 
+			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 		objp->orient = out_orient;
 	} else {
-		vm_better_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
+		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, 
+			&objp->orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	}
 
 	#ifndef NDEBUG
@@ -9185,8 +9187,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		if (sip0->flags[Ship::Info_Flags::Support])
 			vm_vec_scale(&acc_limit, 2.0f);
 
-		// 1 at end of line prevent overshoot
-		vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, 1);
+		// true at end of line prevent overshoot
+		vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, true);
 		docker_objp->phys_info.rotvel = omega_out;
 		docker_objp->orient = nm;
 
@@ -11947,6 +11949,22 @@ int ai_formation()
 			}
 		}
 
+	}
+
+	//	See how different this ship's bank is relative to wing leader
+	float	up_dot = vm_vec_dot(&leader_objp->orient.vec.uvec, &Pl_objp->orient.vec.uvec);
+	if (up_dot < 0.996f) {
+		vec3d	w_out;
+		matrix	new_orient;
+		vec3d	angular_accel;
+
+		vm_vec_copy_scale(&angular_accel, &Pl_objp->phys_info.max_rotvel, 0.2f);
+		vm_matrix_interpolate(&leader_objp->orient, &Pl_objp->orient, &Pl_objp->phys_info.rotvel, flFrametime, &new_orient, &w_out, &Pl_objp->phys_info.max_rotvel, &angular_accel, true);
+
+		Pl_objp->orient = new_orient;
+		Pl_objp->phys_info.rotvel = w_out;
+	} else {
+		Pl_objp->phys_info.rotvel.xyz.z = 0.0f;
 	}
 
 	return 0;
