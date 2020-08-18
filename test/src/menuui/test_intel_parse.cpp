@@ -29,20 +29,20 @@ class IntelParseTest : public test::FSTestFixture {
 
 // Commonly used expected intel data entries.
 static intel_data expected_foo = {
-	"Foo name default", // XSTR id 3000
-	"Foo desc default", // XSTR id 3001
+	"Foo name", // XSTR id 3000
+	"Foo desc", // XSTR id 3001
 	"Foo anim",
 	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 };
 static intel_data expected_bar = {
-	"Bar name default", // XSTR id 3002
-	"Bar desc default", // XSTR id 3003
+	"Bar name", // XSTR id 3002
+	"Bar desc", // XSTR id 3003
 	"Bar anim",
 	0
 };
 static intel_data expected_baz = {
-	"Baz name default", // XSTR id 3004
-	"Baz desc default", // XSTR id 3005
+	"Baz name", // XSTR id 3004
+	"Baz desc", // XSTR id 3005
 	"Baz anim",
 	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 };
