@@ -1802,6 +1802,7 @@ vec3d vm_angular_move(const vec3d* goal, float delta_t,
 //					
 //		function attempts to rotate the input matrix into the goal matrix taking account of anglular
 //		momentum (velocity)
+//		called "vm_matrix_interpolate" in retail 
 void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias, bool force_no_overshoot)
 {
@@ -1877,7 +1878,8 @@ void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient
 //											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
 //
 //		function attempts to rotate the forward vector toward the goal forward vector taking account of anglular
-//		momentum (velocity)  Attempt to try to move bank by goal delta_bank.  
+//		momentum (velocity)  Attempt to try to move bank by goal delta_bank. 
+//		called "vm_forward_interpolate" in retail 
 void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias)
 {

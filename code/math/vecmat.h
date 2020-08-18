@@ -427,6 +427,7 @@ int vm_matrix_same(matrix *m1, matrix *m2);
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next_orientation valid at time delta_t.
+// called "vm_matrix_interpolate" in retail 
 void vm_angular_move_matrix(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
 		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, bool no_directional_bias, bool force_no_overshoot = false);
 
@@ -434,6 +435,7 @@ void vm_angular_move_matrix(const matrix *goal_orient, const matrix *start_orien
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next forward vec valid at time delta_t.
+// called "vm_forward_interpolate" in retail 
 void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
 		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, bool no_directional_bias);
 
