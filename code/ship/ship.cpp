@@ -6131,9 +6131,9 @@ void ship_weapon::clear()
     num_secondary_banks = 0;
     num_tertiary_banks = 0;
 
-    current_primary_bank = -1;
-    current_secondary_bank = -1;
-    current_tertiary_bank = -1;
+    current_primary_bank = 0;
+    current_secondary_bank = 0;
+    current_tertiary_bank = 0;
 
     previous_primary_bank = 0;
     previous_secondary_bank = 0;
@@ -11934,7 +11934,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert(swp->secondary_bank_weapons[bank] < weapon_info_size());
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size())){
 		return 0;
 	}
@@ -19494,7 +19496,12 @@ bool ship_start_secondary_fire(object* objp)
 		return false;
 	}
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert( swp->secondary_bank_weapons[bank] < weapon_info_size() );
+	if ( (swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size()) ) {
+		return false;
+	}
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
@@ -19532,7 +19539,12 @@ bool ship_stop_secondary_fire(object* objp)
 		return false;
 	}
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert(swp->secondary_bank_weapons[bank] < weapon_info_size());
+	if ((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size())) {
+		return false;
+	}
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
