@@ -82,6 +82,12 @@ void parse_ssm(const char *filename)
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
 
+			// see if we have a valid weapon
+			s.weapon_info_index = weapon_info_lookup(weapon_name);
+			if (s.weapon_info_index < 0) {
+				error_display(0, "Unknown weapon [%s] for SSM strike [%s]; this SSM strike will be discarded.", weapon_name, s.name);
+			}
+
 			string_index = optional_string_either("+Count:", "+Min Count:");
 			if (string_index == 0) {
 				stuff_int(&s.count);
@@ -104,14 +110,14 @@ void parse_ssm(const char *filename)
 					stuff_string(unique_id, F_NAME, NAME_LENGTH);
 					int fireball_type = fireball_info_lookup(unique_id);
 					if (fireball_type < 0) {
-						error_display(1, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
+						error_display(0, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
 						s.fireball_idx = FIREBALL_WARP;
 					} else {
 						s.fireball_idx = fireball_type;
 					}
 				} else {
 					if ((temp < 0) || (temp >= Num_fireball_types)) {
-						error_display(1, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
+						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
 						s.fireball_idx = FIREBALL_WARP;
 					} else {
 						s.fireball_idx = temp;
@@ -129,7 +135,7 @@ void parse_ssm(const char *filename)
 				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
 				if ( (s.warp_time) < 4.0f) {
 					// So let's warn them before they try to use it, shall we?
-					Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s.warp_time, weapon_name);
+					error_display(0, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in SSM strike [%s].\nSetting to 4.0, please check and set to a number 4.0 or greater!", s.warp_time, s.name);
 					// And then make the Assert obsolete -- Zacam
 					s.warp_time = 4.0f;
 				}
@@ -198,8 +204,6 @@ void parse_ssm(const char *filename)
 			s.sound_index = gamesnd_id();
 			parse_game_sound("+Alarm Sound:", &s.sound_index);
 
-			// see if we have a valid weapon
-			s.weapon_info_index = weapon_info_lookup(weapon_name);
 			if(s.weapon_info_index >= 0) {
 				// valid
 				int existing = ssm_info_lookup(s.name);
@@ -208,7 +212,7 @@ void parse_ssm(const char *filename)
 				} else {
 					Ssm_info.push_back(s);
 				}
-			}
+			} // We already warned the modder that the SSM strike was invalid without a valid weapon.
 		}
 	}
 	catch (const parse::ParseException& e)
