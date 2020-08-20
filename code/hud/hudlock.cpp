@@ -1595,23 +1595,27 @@ void hud_do_lock_indicators(float frametime)
 		}
 
 		if ( !current_lock_status && lock_slot->locked ) {
-			if ( Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop) ) {
-				snd_stop(Missile_lock_loop);
+			if (Missile_track_loop.isValid()) {
+				snd_stop(Missile_track_loop);
 				Missile_track_loop = sound_handle::invalid();
-			}
 
-			if (wip->hud_locked_snd.isValid())
-			{
-				Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
-			}
-			else
-			{
-				Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
+				if (wip->hud_locked_snd.isValid())
+				{
+					Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
+				}
+				else
+				{
+					Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
+				}
 			}
 
 			lock_slot->locked_timestamp = timestamp();
 		} else if ( !lock_slot->locked ) {
 			Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
+			if (Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop)) {
+				snd_stop(Missile_lock_loop);
+				Missile_lock_loop = sound_handle::invalid();
+			}
 		}
 
 		// if there's at least one lock_slot current locking, play the looping sound
