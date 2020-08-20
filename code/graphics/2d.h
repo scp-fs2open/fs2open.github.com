@@ -712,9 +712,6 @@ typedef struct screen {
 	// dumps the current screen to a file
 	std::function<void(const char* filename)> gf_print_screen;
 
-	// Retrieves the zbuffer mode.
-	std::function<int()> gf_zbuffer_get;
-
 	// Sets mode.  Returns previous mode.
 	std::function<int(int mode)> gf_zbuffer_set;
 
@@ -722,12 +719,12 @@ typedef struct screen {
 	std::function<void(int use_zbuffer)> gf_zbuffer_clear;
 
 	// Set the stencil buffer mode. Returns previous mode
-	std::function<int(int mode)> gf_stencil_set;
+	std::function<void(int mode)> gf_stencil_set;
 
 	// Clears the stencil buffer.
 	std::function<void()> gf_stencil_clear;
 
-	std::function<int(int mode, float alpha)> gf_alpha_mask_set;
+	std::function<void(int mode, float alpha)> gf_alpha_mask_set;
 
 	// Saves screen. Returns an id you pass to restore and free.
 	std::function<int()> gf_save_screen;
@@ -742,7 +739,7 @@ typedef struct screen {
 	std::function<void(int front, int w, int h, ubyte* data)> gf_get_region;
 
 	// poly culling
-	std::function<int(int cull)> gf_set_cull;
+	std::function<void(int cull)> gf_set_cull;
 
 	// color buffer writes
 	std::function<int(int mode)> gf_set_color_buffer;
@@ -758,10 +755,9 @@ typedef struct screen {
 	std::function<void(bitmap_slot* slot)> gf_bm_create;
 	std::function<void(bitmap_slot* slot)> gf_bm_init;
 	std::function<void()> gf_bm_page_in_start;
-	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
-	std::function<int(int handle, int face)> gf_bm_set_render_target;
+	std::function<void(int handle, int face)> gf_bm_set_render_target;
 
 	std::function<void(int)> gf_set_texture_addressing;
 
@@ -1008,7 +1004,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 
-#define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
 #define gr_zbuffer_clear	GR_CALL(gr_screen.gf_zbuffer_clear)
 
@@ -1036,13 +1031,12 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 #define gr_bm_create				GR_CALL(gr_screen.gf_bm_create)
 #define gr_bm_init					GR_CALL(gr_screen.gf_bm_init)
 #define gr_bm_page_in_start			GR_CALL(gr_screen.gf_bm_page_in_start)
-#define gr_bm_data					GR_CALL(gr_screen.gf_bm_data)
 
 #define gr_bm_make_render_target					GR_CALL(gr_screen.gf_bm_make_render_target)
 
-inline int gr_bm_set_render_target(int n, int face = -1)
+inline void gr_bm_set_render_target(int n, int face = -1)
 {
-	return gr_screen.gf_bm_set_render_target(n, face);
+	gr_screen.gf_bm_set_render_target(n, face);
 }
 
 #define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)

@@ -627,8 +627,6 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 			render_buffer(Render_elements[render_index]);
 		}
 	}
-
-	gr_alpha_mask_set(0, 1.0f);
 }
 
 void model_draw_list::render_arc(arc_effect &arc)
@@ -1922,8 +1920,6 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 
 	int i, j;
 
-	int cull = gr_set_cull(0);
-
 	glow_point_bank_override *gpo = NULL;
 	bool override_all = false;
 	SCP_unordered_map<int, void*>::iterator gpoi;
@@ -1982,8 +1978,6 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 			} // for slot
 		} // bank is on
 	} // for bank
-
-	gr_set_cull(cull);
 }
 
 void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)

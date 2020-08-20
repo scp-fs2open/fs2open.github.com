@@ -374,7 +374,7 @@ void HudGaugeTargetBox::render(float frametime)
 
 	if ( Monitor_mask >= 0 ) {
 		// render the alpha mask
-		gr_alpha_mask_set(1, 0.5f);
+		gr_alpha_mask_set(0.5f);
 		gr_stencil_clear();
 		gr_stencil_set(GR_STENCIL_WRITE);
 		gr_set_color_buffer(0);
@@ -383,7 +383,7 @@ void HudGaugeTargetBox::render(float frametime)
 
 		gr_set_color_buffer(1);
 		gr_stencil_set(GR_STENCIL_NONE);
-		gr_alpha_mask_set(0, 1.0f);
+		gr_alpha_mask_set(0.0f);
 	}
 
 	switch ( target_objp->type ) {

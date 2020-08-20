@@ -690,7 +690,7 @@ void model_draw_paths_htl( int model_num, uint flags )
 
 	if (pm->n_paths<1){
 		return;
-	}	
+	}
 
 	int cull = gr_set_cull(0);
 	for (i=0; i<pm->n_paths; i++ )	{

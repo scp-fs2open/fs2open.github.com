@@ -1654,7 +1654,7 @@ void opengl_kill_all_render_targets()
 	RenderTarget.clear();
 }
 
-int opengl_set_render_target( int slot, int face, int is_static )
+void opengl_set_render_target( int slot, int face, int is_static )
 {
 	tcache_slot_opengl *ts = NULL;
 	fbo_t *fbo = NULL;
@@ -1683,30 +1683,21 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 		GL_CHECK_FOR_ERRORS("end of set_render_target(0)");
 
-		return 1;
+		return;
 	}
 
 	ts = bm_get_gr_info<tcache_slot_opengl>(slot);
 	Assert( ts != NULL );
 
-	if (!ts->texture_id) {
-		Int3();
-		return 0;
-	}
+	Assertion(ts->texture_id, "Render target bitmap slot did not have a texture id!");
 
 	fbo = opengl_get_fbo(ts->fbo_id);
 
-	if (fbo == NULL) {
-		mprintf(("Tried to get an OpenGL FBO that didn't exist!\n"));
-		return 0;
-	}
+	Assertion(fbo != nullptr, "Tried to get an OpenGL FBO that didn't exist!");
+	Assertion(glIsFramebuffer(fbo->framebuffer_id),
+		"Frame buffer id %d was not a valid frame buffer according to OpenGL!",
+		fbo->framebuffer_id);
 
-	if ( !glIsFramebuffer(fbo->framebuffer_id) /*|| !glIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
-		Int3();
-		return 0;
-	}
-
-//	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
 	GL_state.BindFrameBuffer(fbo->framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
@@ -1718,8 +1709,6 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		Assert( face <= 0 );
 	}
 
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->renderbuffer_id);
-
 	fbo->working_handle = slot;
 	fbo->is_static = is_static;
 
@@ -1729,8 +1718,6 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	GL_rendering_to_texture = true;
 
 	GL_CHECK_FOR_ERRORS("end of set_render_target()");
-
-	return 1;
 }
 
 int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl, int flags )

@@ -82,7 +82,7 @@ void opengl_set_modulate_tex_env();
 void opengl_preload_init();
 void opengl_kill_render_target(bitmap_slot* slot);
 int opengl_make_render_target(int handle, int *w, int *h, int *bpp, int *mm_lvl, int flags);
-int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
+void opengl_set_render_target(int slot, int face = -1, int is_static = 0);
 void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num);
 size_t opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data );
 void opengl_set_texture_target(GLenum target = GL_TEXTURE_2D);

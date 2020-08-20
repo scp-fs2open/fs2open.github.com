@@ -1912,14 +1912,6 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 
 		return NULL;
 	}
-	
-	if (!gr_bm_data(handle, bmp)) {
-		// graphics subsystem failed, reset and return NULL
-		bm_unlock( handle );
-		bm_unload( handle );
-
-		return NULL;
-	}
 
 	MONITOR_INC(NumBitmapPage, 1);
 	MONITOR_INC(SizeBitmapPage, bmp->w*bmp->h);
@@ -2973,68 +2965,66 @@ bool bm_set_render_target(int handle, int face) {
 		}
 	}
 
-	if (gr_bm_set_render_target(handle, face)) {
-		if (gr_screen.rendering_to_texture == -1) {
-			//if we are moving from the back buffer to a texture save whatever the current settings are
-			gr_screen.save_max_w = gr_screen.max_w;
-			gr_screen.save_max_h = gr_screen.max_h;
+	gr_bm_set_render_target(handle, face);
 
-			gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
-			gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
+	if (gr_screen.rendering_to_texture == -1) {
+		//if we are moving from the back buffer to a texture save whatever the current settings are
+		gr_screen.save_max_w = gr_screen.max_w;
+		gr_screen.save_max_h = gr_screen.max_h;
 
-			gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
-			gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+		gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
+		gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 
-			gr_screen.save_center_w = gr_screen.center_w;
-			gr_screen.save_center_h = gr_screen.center_h;
+		gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+		gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
-			gr_screen.save_center_offset_x = gr_screen.center_offset_x;
-			gr_screen.save_center_offset_y = gr_screen.center_offset_y;
-		}
+		gr_screen.save_center_w = gr_screen.center_w;
+		gr_screen.save_center_h = gr_screen.center_h;
 
-		if (handle < 0) {
-			gr_screen.max_w = gr_screen.save_max_w;
-			gr_screen.max_h = gr_screen.save_max_h;
-
-			gr_screen.max_w_unscaled = gr_screen.save_max_w_unscaled;
-			gr_screen.max_h_unscaled = gr_screen.save_max_h_unscaled;
-
-			gr_screen.max_w_unscaled_zoomed = gr_screen.save_max_w_unscaled_zoomed;
-			gr_screen.max_h_unscaled_zoomed = gr_screen.save_max_h_unscaled_zoomed;
-
-			gr_screen.center_w = gr_screen.save_center_w;
-			gr_screen.center_h = gr_screen.save_center_h;
-
-			gr_screen.center_offset_x = gr_screen.save_center_offset_x;
-			gr_screen.center_offset_y = gr_screen.save_center_offset_y;
-		} else {
-			gr_screen.max_w = entry->bm.w;
-			gr_screen.max_h = entry->bm.h;
-
-			gr_screen.max_w_unscaled = entry->bm.w;
-			gr_screen.max_h_unscaled = entry->bm.h;
-
-			gr_screen.max_w_unscaled_zoomed = entry->bm.w;
-			gr_screen.max_h_unscaled_zoomed = entry->bm.h;
-
-			gr_screen.center_w = entry->bm.w;
-			gr_screen.center_h = entry->bm.h;
-
-			gr_screen.center_offset_x = 0;
-			gr_screen.center_offset_y = 0;
-		}
-
-		gr_screen.rendering_to_face = face;
-		gr_screen.rendering_to_texture = handle;
-
-		gr_reset_clip();
-
-		gr_setup_viewport();
-
-		return true;
+		gr_screen.save_center_offset_x = gr_screen.center_offset_x;
+		gr_screen.save_center_offset_y = gr_screen.center_offset_y;
 	}
 
-	return false;
+	if (handle < 0) {
+		gr_screen.max_w = gr_screen.save_max_w;
+		gr_screen.max_h = gr_screen.save_max_h;
+
+		gr_screen.max_w_unscaled = gr_screen.save_max_w_unscaled;
+		gr_screen.max_h_unscaled = gr_screen.save_max_h_unscaled;
+
+		gr_screen.max_w_unscaled_zoomed = gr_screen.save_max_w_unscaled_zoomed;
+		gr_screen.max_h_unscaled_zoomed = gr_screen.save_max_h_unscaled_zoomed;
+
+		gr_screen.center_w = gr_screen.save_center_w;
+		gr_screen.center_h = gr_screen.save_center_h;
+
+		gr_screen.center_offset_x = gr_screen.save_center_offset_x;
+		gr_screen.center_offset_y = gr_screen.save_center_offset_y;
+	} else {
+		gr_screen.max_w = entry->bm.w;
+		gr_screen.max_h = entry->bm.h;
+
+		gr_screen.max_w_unscaled = entry->bm.w;
+		gr_screen.max_h_unscaled = entry->bm.h;
+
+		gr_screen.max_w_unscaled_zoomed = entry->bm.w;
+		gr_screen.max_h_unscaled_zoomed = entry->bm.h;
+
+		gr_screen.center_w = entry->bm.w;
+		gr_screen.center_h = entry->bm.h;
+
+		gr_screen.center_offset_x = 0;
+		gr_screen.center_offset_y = 0;
+	}
+
+	gr_screen.rendering_to_face = face;
+	gr_screen.rendering_to_texture = handle;
+
+	gr_reset_clip();
+
+	gr_setup_viewport();
+
+	return true;
 }
 
 int bm_unload(int handle, int clear_render_targets, bool nodebug) {

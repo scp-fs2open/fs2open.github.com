@@ -134,9 +134,8 @@ int gr_stub_set_cull(int  /*cull*/)
 	return 0;
 }
 
-int gr_stub_set_color_buffer(int  /*mode*/)
+void gr_stub_set_color_buffer(int  /*mode*/)
 {
-	return 0;
 }
 
 void gr_stub_set_tex_env_scale(float  /*scale*/)
@@ -172,9 +171,8 @@ void gr_stub_stencil_clear()
 {
 }
 
-int gr_stub_alpha_mask_set(int  /*mode*/, float  /*alpha*/)
+void gr_stub_alpha_mask_set(float  /*alpha*/)
 {
-	return 0;
 }
 
 /*void gr_stub_shade(int x,int y,int w,int h)
@@ -274,11 +272,6 @@ void gr_stub_bm_init(bitmap_slot* /*slot*/)
 
 void gr_stub_bm_page_in_start()
 {
-}
-
-bool gr_stub_bm_data(int  /*n*/, bitmap*  /*bm*/)
-{
-	return true;
 }
 
 int gr_stub_maybe_create_shader(shader_type  /*shader_t*/, unsigned int  /*flags*/) {
@@ -471,7 +464,6 @@ bool gr_stub_init()
 	gr_screen.gf_bm_create				= gr_stub_bm_create;
 	gr_screen.gf_bm_init				= gr_stub_bm_init;
 	gr_screen.gf_bm_page_in_start		= gr_stub_bm_page_in_start;
-	gr_screen.gf_bm_data				= gr_stub_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_stub_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
 
