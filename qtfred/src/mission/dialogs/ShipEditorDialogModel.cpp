@@ -35,16 +35,17 @@ int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 
 void ShipEditorDialogModel::initializeData()
 {
-	int type, total_count, wing = -1, pvalid_count;
-	int a_cue, d_cue, cue_init = 0, cargo = 0, base_player, pship = -1;
-	int no_arrival_warp = 0, no_departure_warp = 0, escort_count, ship_orders, current_orders;
-	int pship_count; // a total count of the player ships not marked
-
+	int type, wing = -1;
+	int a_cue, d_cue, cargo = 0, base_player = 0, pship = -1;
+	int no_arrival_warp = 0, no_departure_warp = 0, escort_count = 0,  current_orders = 0;
+	cue_init = 0;
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		mission_type = 0; // multi player mission
 	} else {
 		mission_type = 1; // non-multiplayer mission (implies single player mission I guess)
 	}
+	ship_count = player_count = escort_count = pship_count = pvalid_count = 0;
+	base_ship = base_player = -1;
 	auto ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if ((ptr->type == OBJ_SHIP) && (Ships[ptr->instance].flags[Ship::Ship_Flags::Escort])) {
@@ -332,10 +333,10 @@ void ShipEditorDialogModel::initializeData()
 				ptr = GET_NEXT(ptr);
 			}
 			// only 1 player selected..
-		} else if (query_valid_object(_viewport->cur_model_index) &&
-				   (Objects[_viewport->cur_model_index].type == OBJ_START)) {
+		} else if (query_valid_object(_editor->currentObject) &&
+				   (Objects[_editor->currentObject].type == OBJ_START)) {
 			Assert((player_count == 1) && !multi_edit);
-			player_ship = Objects[_viewport->cur_model_index].instance;
+			player_ship = Objects[_editor->currentObject].instance;
 			_m_ship_name = Ships[player_ship].ship_name;
 			_m_ship_class = Ships[player_ship].ship_info_index;
 			_m_team = Ships[player_ship].team;
@@ -372,7 +373,7 @@ void ShipEditorDialogModel::initializeData()
 	}
 }
 
-bool ShipEditorDialogModel::apply()
+bool ShipEditorDialogModel::update_data(int redraw)
 {
 	char *str, old_name[255];
 	object* ptr;
@@ -392,7 +393,7 @@ bool ShipEditorDialogModel::apply()
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) &&
-				(_viewport->cur_model_index != OBJ_INDEX(ptr))) {
+				(_editor->currentObject != OBJ_INDEX(ptr))) {
 				str = Ships[ptr->instance].ship_name;
 				if (!stricmp(_m_ship_name.c_str(), str)) {
 					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -565,6 +566,10 @@ bool ShipEditorDialogModel::apply()
 	return true;
 }
 
+bool ShipEditorDialogModel::apply() { update_data(1); 
+return true;
+}
+
 void ShipEditorDialogModel::reject() {}
 
 bool ShipEditorDialogModel::update_ship(int ship)
@@ -613,7 +618,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 	}
 
 	modify(Ships[ship].score, _m_score);
-	if (_m_assist_score = -1) {
+	if (_m_assist_score == -1) {
 		Ships[ship].assist_score_pct = ((float)_m_assist_score) / 100;
 		if (Ships[ship].assist_score_pct < 0) {
 			Ships[ship].assist_score_pct = 0;
@@ -840,29 +845,70 @@ void ShipEditorDialogModel::ship_callsign_close(int base_ship)
 void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name) { modify(_m_ship_name, m_ship_name); }
 SCP_string ShipEditorDialogModel::getShipName() { return _m_ship_name; }
 
-void ShipEditorDialogModel::setShipClass(int m_ship_class) { modify(_m_ship_class, m_ship_class); }
+void ShipEditorDialogModel::setShipClass(int m_ship_class)
+{
+	object* ptr;
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked]))
+			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
+				change_ship_type(ptr->instance, m_ship_class);
+				set_modified();
+			}
+
+		ptr = GET_NEXT(ptr);
+	}
+	_editor->missionChanged();
+}
 
 int ShipEditorDialogModel::getShipClass() { return _m_ship_class; }
 
-void ShipEditorDialogModel::setAIClass(int m_ai_class) { modify(_m_ai_class, m_ai_class); }
+void ShipEditorDialogModel::setAIClass(int m_ai_class)
+{
+	modify(_m_ai_class, m_ai_class);
+	modelChanged();
+}
 
 int ShipEditorDialogModel::getAIClass() { return _m_ai_class; }
 
-void ShipEditorDialogModel::setTeam(int m_team) { modify(_m_team, m_team); }
+void ShipEditorDialogModel::setTeam(int m_team)
+{
+	modify(_m_team, m_team);
+	modelChanged();
+}
 
 int ShipEditorDialogModel::getTeam() { return _m_team; }
 
-void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo) { modify(_m_cargo1, m_cargo); }
+void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
+{
+	modify(_m_cargo1, m_cargo);
+	modelChanged();
+}
 
 SCP_string ShipEditorDialogModel::getCargo() { return _m_cargo1; }
 
-void ShipEditorDialogModel::setAltName(const SCP_string& m_altName) { modify(_m_alt_name, m_altName); }
+void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
+{
+	modify(_m_alt_name, m_altName);
+	modelChanged();
+}
 
 SCP_string ShipEditorDialogModel::getAltName() { return _m_alt_name; }
 
-void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign) { modify(_m_callsign, m_callsign); }
+void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
+{
+	modify(_m_callsign, m_callsign);
+	modelChanged();
+}
 
 SCP_string ShipEditorDialogModel::getCallsign() { return _m_callsign; }
+
+SCP_string ShipEditorDialogModel::getWing()
+{
+	return m_wing;
+}
+
+bool ShipEditorDialogModel::wing_is_player_wing(int wing) { return _editor->wing_is_player_wing(wing); }
 
 void ShipEditorDialogModel::set_modified()
 {

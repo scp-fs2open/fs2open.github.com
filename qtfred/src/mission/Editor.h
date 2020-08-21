@@ -150,6 +150,8 @@ class Editor : public QObject {
 
 	bool query_single_wing_marked();
 
+	bool wing_is_player_wing(int);
+
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
 	 *

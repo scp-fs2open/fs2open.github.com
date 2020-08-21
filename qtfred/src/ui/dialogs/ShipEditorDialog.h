@@ -39,6 +39,8 @@ class ShipEditorDialog : public QDialog {
 
 	void updateUI();
 	void updateColumnOne();
+	void updateColumnTwo();
+	void enableDisable();
 
 	void shipNameChanged(const QString&);
 	void shipClassChanged(int);

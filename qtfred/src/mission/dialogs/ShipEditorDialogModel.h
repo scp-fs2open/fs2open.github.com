@@ -51,11 +51,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	SCP_string m_wing;
 	bool m_player;
 
-	int player_ship, single_ship;
+	int mission_type;
 
 	void set_modified();
 
 	bool update_ship(int ship);
+	bool update_data(int redraw);
 
 	void ship_alt_name_close(int base_ship);
 	void ship_callsign_close(int base_ship);
@@ -87,12 +88,21 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setCallsign(const SCP_string&);
 	SCP_string getCallsign();
 
+	SCP_string getWing();
+
+	bool wing_is_player_wing(int);
+
 	int select_sexp_node;
 	int player_count;
-	int mission_type;
 	int ship_count;
 	int multi_edit;
 	int base_ship;
+	int cue_init;
+	int total_count;
+	int pvalid_count;
+	int pship_count; // a total count of the player ships not marked
+	int player_ship, single_ship;
+	int ship_orders;
 	int tristate_set(int val, int cur_state);
 };
 

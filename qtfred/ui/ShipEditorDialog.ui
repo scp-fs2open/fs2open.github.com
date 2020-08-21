@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>432</width>
-    <height>589</height>
+    <width>464</width>
+    <height>674</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,16 +27,16 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
+    <layout class="QVBoxLayout" name="fullLayout">
      <item>
-      <layout class="QGridLayout" name="gridLayout_4">
+      <layout class="QGridLayout" name="topLayout">
        <item row="1" column="2">
-        <layout class="QVBoxLayout" name="verticalLayout_4">
+        <layout class="QVBoxLayout" name="lastColumn">
          <property name="spacing">
           <number>6</number>
          </property>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <layout class="QHBoxLayout" name="directionalBtnLayout">
            <property name="spacing">
             <number>6</number>
            </property>
@@ -101,9 +101,9 @@
         </layout>
        </item>
        <item row="1" column="1">
-        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <layout class="QVBoxLayout" name="middleColumn">
          <item>
-          <layout class="QGridLayout" name="gridLayout_3">
+          <layout class="QGridLayout" name="middleOptionsGrid">
            <item row="1" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
@@ -129,7 +129,7 @@
             <widget class="QComboBox" name="hotkeyCombo"/>
            </item>
            <item row="1" column="1">
-            <widget class="QLabel" name="label_3">
+            <widget class="QLabel" name="wing">
              <property name="text">
               <string>Static</string>
              </property>
@@ -201,9 +201,9 @@
         </layout>
        </item>
        <item row="1" column="0">
-        <layout class="QVBoxLayout" name="verticalLayout">
+        <layout class="QVBoxLayout" name="firstColumn">
          <item>
-          <layout class="QGridLayout" name="gridLayout_2">
+          <layout class="QGridLayout" name="firstColumnOptions">
            <item row="3" column="0">
             <widget class="QLabel" name="label_7">
              <property name="text">
@@ -300,7 +300,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="buttons">
        <property name="sizeConstraint">
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
@@ -345,7 +345,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <layout class="QHBoxLayout" name="cueLayout">
        <item>
         <widget class="QGroupBox" name="arrivalGroupBox">
          <property name="title">
@@ -461,7 +461,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QCheckBox" name="updateCueCheckBox">
+             <widget class="QCheckBox" name="updateArrivalCueCheckBox">
               <property name="text">
                <string>Update Cue</string>
               </property>
@@ -471,6 +471,13 @@
           </item>
           <item>
            <widget class="fso::fred::sexp_tree" name="arrivalTree"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="noArrivalWarpCheckBox">
+            <property name="text">
+             <string>No Warp Effect</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -566,7 +573,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="customWarpinButton">
+           <widget class="QPushButton" name="customWarpoutButton">
             <property name="text">
              <string>Custom Warp-out Parameters</string>
             </property>
@@ -595,7 +602,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QCheckBox" name="updateCueCheckBox">
+             <widget class="QCheckBox" name="updateDepartureCueCheckBox">
               <property name="text">
                <string>Update Cue</string>
               </property>
@@ -606,10 +613,31 @@
           <item>
            <widget class="fso::fred::sexp_tree" name="departureTree"/>
           </item>
+          <item>
+           <widget class="QCheckBox" name="noDepartureWarpCheckBox">
+            <property name="text">
+             <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="HelpTitle">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTextEdit" name="helpText">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
