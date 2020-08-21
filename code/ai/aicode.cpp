@@ -1511,8 +1511,6 @@ void get_tangent_point(vec3d *tan1, vec3d *p0, vec3d *centerp, vec3d *p1, float 
  */
 void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient)
 {
-	ai_info	*aip;
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 	vec3d* rvec = nullptr;
 	vec3d goal_rvec;
 
