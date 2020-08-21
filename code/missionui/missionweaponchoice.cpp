@@ -3537,7 +3537,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 				} else if (pl != NULL) {
-					send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, NULL, 1);
+					send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 				}
 
 				return forced_update;
@@ -3692,7 +3692,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, NULL, 1);
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
 
 			return 0;
@@ -3769,7 +3769,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, NULL, 1);
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
 
 			return 0;
