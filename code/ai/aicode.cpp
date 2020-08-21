@@ -11768,7 +11768,7 @@ int ai_formation()
 	}
 
 	if (dist_to_goal > 500.0f) {
-		turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f, leader_orient);
+		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 		if (ab_allowed && !(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.2f)) {
 			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 			if (percent_left > 30.0f) {
@@ -11779,7 +11779,7 @@ int ai_formation()
 		accelerate_ship(aip, 1.0f);
 	} else if (dist_to_goal > 200.0f) {
 		if (dot_to_goal > -0.5f) {
-			turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
 				set_accel_for_target_speed(Pl_objp, leader_speed + range_speed * (dist_to_goal+100.0f)/500.0f);
@@ -11801,7 +11801,7 @@ int ai_formation()
 				}
 			}
 		} else {
-			turn_towards_point(Pl_objp, &future_goal_point_5, NULL, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient);
 			if (leader_speed > 10.0f)
 				set_accel_for_target_speed(Pl_objp, leader_speed *(1.0f + dot_to_goal));
 			else
@@ -11819,12 +11819,12 @@ int ai_formation()
 
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
 		if (chaotic_leader) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
 			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
 				afterburners_stop(Pl_objp);
 		} else if (dist_to_goal > 75.0f) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 			float	delta_speed;
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
@@ -11870,11 +11870,11 @@ int ai_formation()
 				//	moving very slowly, else momentum can carry far away from goal.
 
 				if ((dist_to_goal > 10.0f) || ((Pl_objp->phys_info.speed > leader_speed + 2.5f) && (dot_to_goal > 0.5f))) {
-					turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 					set_accel_for_target_speed(Pl_objp, leader_speed + dist_to_goal/10.0f);
 				} else {
 					if (Pl_objp->phys_info.speed < 0.5f) {
-						turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f, leader_orient);
+						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
 					}
 					set_accel_for_target_speed(Pl_objp, leader_speed);
 				}
@@ -11884,7 +11884,7 @@ int ai_formation()
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
-				turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f, leader_orient);
+				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 
 				if (dist_to_goal > 25.0f) {
 					if (dot_to_goal < 0.3f)
@@ -11918,9 +11918,9 @@ int ai_formation()
 
 			} else {
 				if (Pl_objp->phys_info.speed < 0.1f)
-					turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
 				else
-					turn_towards_point(Pl_objp, &future_goal_point_x, NULL, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient);
 
 				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
 				set_accel_for_target_speed(Pl_objp, leader_speed);
