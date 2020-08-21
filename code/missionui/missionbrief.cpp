@@ -1274,10 +1274,7 @@ int brief_setup_closeup(brief_icon *bi)
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label,(sip->alt_name[0]) ? sip->alt_name : sip->name);
-
-		// cut any text off after (and including) '#' char
-		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
+		strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
 		// Goober5000 - wcsaga doesn't want this
 		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {

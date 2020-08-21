@@ -2749,37 +2749,36 @@ void say_view_target()
 	if (!(Game_mode & GM_DEAD_DIED) && ((Game_mode & (GM_DEAD_BLEW_UP)) || ((Last_view_target != nullptr) && (Last_view_target != view_target)))) {
 		if (view_target != Player_obj){
 
-			char view_target_name[128] = "";
+			const char *view_target_name = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
 				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
-					strcpy_s(view_target_name, "targeted ship");
+					view_target_name = "targeted ship";
 				} else {
-					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].get_display_string());
+					view_target_name = Ships[Objects[Player_ai->target_objnum].instance].get_display_name();
 				}
 				break;
 			case OBJ_WEAPON:
-				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].get_display_string());
+				view_target_name = Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].get_display_name();
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 			case OBJ_JUMP_NODE: {
-				strcpy_s(view_target_name, XSTR( "jump node", 184));
+				view_target_name = XSTR("jump node", 184);
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}
 			case OBJ_DEBRIS: {
-				strcpy_s(view_target_name, "Debris");
+				view_target_name = "Debris";
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}
 
 			default:
-				Int3();
+				UNREACHABLE("Trying to view an invalid object!");
 				break;
 			}
 
-			end_string_at_first_hash_symbol(view_target_name);
-			if ( strlen(view_target_name) ) {
+			if ( view_target_name[0] ) {
 				hud_set_iff_color(&Objects[Player_ai->target_objnum], 1);
 				HUD_fixed_printf(0.0f, gr_screen.current_color, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
 				Show_viewing_from_self = 1;

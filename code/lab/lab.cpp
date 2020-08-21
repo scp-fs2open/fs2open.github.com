@@ -1052,7 +1052,7 @@ void labviewer_update_variables_window()
 		Assert(Lab_selected_index < weapon_info_size());
 		weapon_info* wip = &Weapon_info[Lab_selected_index];
 
-		VAR_SET_VALUE(wip->get_display_string());
+		VAR_SET_VALUE(wip->get_display_name());
 		VAR_SET_VALUE_SAVE(wip->subtype, Num_weapon_subtypes - 1);
 
 		VAR_SET_VALUE_SAVE(wip->mass, 0);
@@ -1416,7 +1416,7 @@ void labviewer_update_desc_window()
 				Lab_description_text->SetText("No description available.");
 			}
 		} else if (Lab_mode == LAB_MODE_WEAPON) {
-			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].get_display_string());
+			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].get_display_name());
 
 			if (Weapon_info[Lab_selected_index].tech_desc != nullptr) {
 				Lab_description_text->SetText(Weapon_info[Lab_selected_index].tech_desc);
@@ -1753,7 +1753,7 @@ void labviewer_make_weap_window(Button* /*caller*/)
 		}
 
 		TreeItem* new_weap_item =
-		    weap_tree->AddItem(stip, wi.get_display_string(), i, false, labviewer_change_weapon);
+		    weap_tree->AddItem(stip, wi.get_display_name(), i, false, labviewer_change_weapon);
 
 		if (weap_list_endpoints[wi.subtype].first == nullptr) {
 			weap_list_endpoints[wi.subtype].first = new_weap_item;

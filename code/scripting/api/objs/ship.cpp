@@ -1693,7 +1693,7 @@ ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the curren
 	char temp_callsign[NAME_LENGTH];
 
 	*temp_callsign = 0;
-	mission_parse_lookup_callsign_index(shipp->callsign_index, temp_callsign);
+	strcpy(temp_callsign, mission_parse_lookup_callsign_index(shipp->callsign_index));
 
 	if (*temp_callsign)
 		return ade_set_args(L, "s", temp_callsign);
@@ -1717,13 +1717,13 @@ ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the sh
 	if (shipp->alt_type_index < 0)
 		return ade_set_args(L, "s", "");
 
-	char temp[NAME_LENGTH];
+	char temp_altname[NAME_LENGTH];
 
-	*temp = 0;
-	mission_parse_lookup_alt_index(shipp->alt_type_index, temp);
+	*temp_altname = 0;
+	strcpy(temp_altname, mission_parse_lookup_alt_index(shipp->alt_type_index));
 
-	if (*temp)
-		return ade_set_args(L, "s", temp);
+	if (*temp_altname)
+		return ade_set_args(L, "s", temp_altname);
 	else
 		return ade_set_args(L, "s", "");
 }
@@ -1806,7 +1806,7 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 		return ade_set_error(L, "s", "");
 
 	shipp = &Ships[objh->objp->instance];
-	return ade_set_args(L, "s", shipp->get_display_string());
+	return ade_set_args(L, "s", shipp->get_display_name());
 }
 
 

@@ -823,7 +823,7 @@ int scoring_eval_kill(object *ship_objp)
 				strcpy_s(temp, Ship_info[si_index].name);
 				end_string_at_first_hash_symbol(temp);
 
-				// Goober5000 - previous error checking guarantees that this will be >= 0
+				// Goober5000 - previous error checking (for base ship in ship_parse_post_cleanup()) guarantees that this will be >= 0
 				si_index = ship_info_lookup(temp);	
 			}
 

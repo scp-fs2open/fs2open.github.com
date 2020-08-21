@@ -761,8 +761,8 @@ public:
 	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
 	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
+	const char* get_display_name();
 	bool has_display_name();
-	const char* get_display_string();
 
 	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
 };
@@ -791,7 +791,7 @@ ai_target_priority init_ai_target_priorities();
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
-	SCP_string display_string;
+	SCP_string display_name;
 	int		obj_signature;
 	int		ship_class;
 	int		team;
@@ -1008,7 +1008,7 @@ class ship_info
 {
 public:
 	char		name[NAME_LENGTH];				// name for the ship
-	char		alt_name[NAME_LENGTH];			// display another name for the ship
+	char		display_name[NAME_LENGTH];		// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
@@ -1318,6 +1318,9 @@ public:
     inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber]; }
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
+
+	const char* get_display_name();
+	bool has_display_name();
 
 private:
 	void move(ship_info&& other);

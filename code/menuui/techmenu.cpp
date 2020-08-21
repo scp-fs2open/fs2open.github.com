@@ -793,7 +793,7 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].index = (int)std::distance(Ship_info.begin(), it);
 						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-						Ship_list[Ship_list_size].name = *it->tech_title ? it->tech_title : (*it->alt_name ? it->alt_name : it->name);
+						Ship_list[Ship_list_size].name = *it->tech_title ? it->tech_title : it->get_display_name();
 						Ship_list[Ship_list_size].desc = it->tech_desc;
 						Ship_list[Ship_list_size].model_num = -1;
 						Ship_list[Ship_list_size].textures_loaded = 0;
@@ -848,7 +848,7 @@ void techroom_change_tab(int num)
 						Weapon_list[Weapon_list_size].index = i;
 						Weapon_list[Weapon_list_size].desc = wi.tech_desc;
 						Weapon_list[Weapon_list_size].has_anim = 1;
-						Weapon_list[Weapon_list_size].name = wi.tech_title[0] ? wi.tech_title : wi.get_display_string();
+						Weapon_list[Weapon_list_size].name = wi.tech_title[0] ? wi.tech_title : wi.get_display_name();
 						Weapon_list[Weapon_list_size].bitmap = -1;
 						Weapon_list[Weapon_list_size].animation.num_frames = 0;
 						Weapon_list[Weapon_list_size].model_num = -1;

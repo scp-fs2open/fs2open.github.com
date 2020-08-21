@@ -413,10 +413,10 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 			return ade_set_error(L, "s", "");
 		}
 
-		strcpy_s(Ship_info[idx].alt_name, newName);
+		strcpy_s(Ship_info[idx].display_name, newName);
 	}
 
-	return ade_set_args(L, "s", Ship_info[idx].alt_name);
+	return ade_set_args(L, "s", Ship_info[idx].display_name);
 }
 
 ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")

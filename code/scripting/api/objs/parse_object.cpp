@@ -57,7 +57,7 @@ ADE_VIRTVAR(
 		poh->getObject()->display_name = newName;
 	}
 
-	return ade_set_args(L, "s", poh->getObject()->get_display_string());
+	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
 ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object will arrive.", "vector",

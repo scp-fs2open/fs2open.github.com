@@ -872,10 +872,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		first_time = true;
 
 		strcpy_s(wip->name, fname);
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(wip->name)) {
+			strcpy_s(wip->display_name, wip->name);
+			end_string_at_first_hash_symbol(wip->display_name);
+		}
+
+		// do German translation
+		if (Lcl_gr && !Disable_built_in_translations) {
+			if (!wip->display_name[0]) {
+				strcpy_s(wip->display_name, wip->name);
+			}
+			lcl_translate_wep_name_gr(wip->display_name);
+		}
 	}
 
-	if(optional_string("$Alt name:"))
-		stuff_string(wip->alt_name, F_NAME, NAME_LENGTH);
+	if(optional_string("$Alt name:") || optional_string("$Display Name:"))
+		stuff_string(wip->display_name, F_NAME, NAME_LENGTH);
 
 	//Set subtype
 	if(optional_string("$Subtype:"))
@@ -7744,7 +7758,7 @@ void weapon_info::reset()
 	int i, j;
 
 	memset(this->name, 0, sizeof(this->name));
-	memset(this->alt_name, 0, sizeof(this->alt_name));
+	memset(this->display_name, 0, sizeof(this->display_name));
 	memset(this->title, 0, sizeof(this->title));
 	this->desc = nullptr;
 
@@ -8053,18 +8067,17 @@ void weapon_info::reset()
 	this->impact_decal = decals::creation_info();
 }
 
-const char* weapon_info::get_display_string()
+const char* weapon_info::get_display_name()
 {
-	if (has_alternate_name()) {
-		return alt_name;
-	} else {
+	if (has_display_name())
+		return display_name;
+	else
 		return name;
-	}
 }
 
-bool weapon_info::has_alternate_name()
+bool weapon_info::has_display_name()
 {
-	return alt_name[0] != '\0';
+	return display_name[0] != '\0';
 }
 
 void weapon_spew_stats(WeaponSpewType type)

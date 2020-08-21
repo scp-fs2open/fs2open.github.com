@@ -2748,14 +2748,14 @@ p_object::~p_object()
 {
 	dock_free_dock_list(this);
 }
-const char* p_object::get_display_string() {
-	if (has_display_string()) {
+const char* p_object::get_display_name() {
+	if (has_display_name()) {
 		return display_name.c_str();
 	} else {
 		return name;
 	}
 }
-bool p_object::has_display_string() {
+bool p_object::has_display_name() {
 	return !display_name.empty();
 }
 
@@ -2787,6 +2787,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
 	if (mission_parse_get_parse_object(p_objp->name))
 		error_display(0, NOX("Redundant ship name: %s\n"), p_objp->name);
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(p_objp->name)) {
+		p_objp->display_name = p_objp->name;
+		end_string_at_first_hash_symbol(p_objp->display_name);
+	}
 
 	if (optional_string("$Display Name:")) {
 		stuff_string(p_objp->display_name, F_NAME);
@@ -7938,12 +7944,8 @@ int mission_parse_lookup_alt(const char *name)
 }
 
 static int mission_parse_lookup_alt_index_warn = 1;
-void mission_parse_lookup_alt_index(int index, char *out)
+const char *mission_parse_lookup_alt_index(int index)
 {
-	// sanity
-	if(out == NULL)
-		return;
-
 	if((index < 0) || (index >= Mission_alt_type_count))
 	{
 		if (mission_parse_lookup_alt_index_warn)
@@ -7951,11 +7953,11 @@ void mission_parse_lookup_alt_index(int index, char *out)
 			Warning(LOCATION, "Ship with invalid alt_name.  Get a programmer");
 			mission_parse_lookup_alt_index_warn = 0;
 		}
-		return;
+		return "";
 	}
 
-	// stuff it
-	strcpy(out, Mission_alt_types[index]);
+	// get it
+	return Mission_alt_types[index];
 }
 
 int mission_parse_add_alt(const char *name)
@@ -8026,12 +8028,8 @@ int mission_parse_lookup_callsign(const char *name)
 }
 
 static int mission_parse_lookup_callsign_index_warn = 1;
-void mission_parse_lookup_callsign_index(int index, char *out)
+const char *mission_parse_lookup_callsign_index(int index)
 {
-	// sanity
-	if(out == NULL)
-		return;
-
 	if((index < 0) || (index >= Mission_callsign_count))
 	{
 		if (mission_parse_lookup_callsign_index_warn)
@@ -8039,11 +8037,11 @@ void mission_parse_lookup_callsign_index(int index, char *out)
 			Warning(LOCATION, "Ship with invalid callsign.  Get a programmer");
 			mission_parse_lookup_callsign_index_warn = 0;
 		}
-		return;
+		return "";
 	}
 
-	// stuff it
-	strcpy(out, Mission_callsigns[index]);
+	// get it
+	return Mission_callsigns[index];
 }
 
 int mission_parse_add_callsign(const char *name)

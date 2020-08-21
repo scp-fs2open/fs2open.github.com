@@ -22,7 +22,7 @@ ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Weapon_info[idx].get_display_string());
+	return ade_set_args(L, "s", Weapon_info[idx].get_display_name());
 }
 
 ADE_FUNC(__eq, l_Weaponclass, "weaponclass, weaponclass", "Checks if the two classes are equal", "boolean", "true if equal, false otherwise")
@@ -70,12 +70,12 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].alt_name);
-		strncpy(Weapon_info[idx].alt_name, s, len);
-		Weapon_info[idx].alt_name[len - 1] = 0;
+		auto len = sizeof(Weapon_info[idx].display_name);
+		strncpy(Weapon_info[idx].display_name, s, len);
+		Weapon_info[idx].display_name[len - 1] = 0;
 	}
 
-	return ade_set_args(L, "s", Weapon_info[idx].alt_name);
+	return ade_set_args(L, "s", Weapon_info[idx].display_name);
 }
 
 ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Weapon class title, or empty string if handle is invalid")

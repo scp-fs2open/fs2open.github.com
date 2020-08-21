@@ -483,7 +483,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Medal"))) {
 		if (Medal_bitmap >= 0){
-			return Medals[Player->stats.m_medal_earned].get_display_string();
+			return Medals[Player->stats.m_medal_earned].get_display_name();
 		}
 
 	} else if (!stricmp(str, NOX("@Rank"))) {
@@ -493,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned.back()].get_display_string();
+			return Medals[Player->stats.m_badge_earned.back()].get_display_name();
 		}
 	}
 
@@ -984,7 +984,7 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
-		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_string());
+		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_name());
 	}
 	
 	// handle promotions
@@ -1030,7 +1030,7 @@ void debrief_award_init()
 		// choose appropriate badge voice for this mission
 		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_string());
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_name());
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
