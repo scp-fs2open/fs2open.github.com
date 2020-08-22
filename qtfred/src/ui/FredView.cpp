@@ -693,6 +693,7 @@ void FredView::on_actionShips_triggered(bool)
 {
 	auto editorDialog = new dialogs::ShipEditorDialog(this, _viewport);
 	editorDialog->show();
+
 }
 void FredView::on_actionObjects_triggered(bool) {
 	orientEditorTriggered();
@@ -764,14 +765,11 @@ void FredView::editObjectTriggered() {
 }
 void FredView::handleObjectEditor(int objNum) {
 	if (fred->getNumMarked() > 1) {
-		// Open ship editor dialog
-		// TODO: Not yet implemented!
 		on_actionShips_triggered(false);
 	} else {
 		Assertion(objNum >= 0, "Popup object is not valid when editObjectTriggered was called!");
 
 		if ((Objects[objNum].type == OBJ_START) || (Objects[objNum].type == OBJ_SHIP)) {
-			// TODO: Not yet implemented!
 			on_actionShips_triggered(false);
 		} else if (Objects[objNum].type == OBJ_JUMP_NODE || Objects[objNum].type == OBJ_WAYPOINT) {
 

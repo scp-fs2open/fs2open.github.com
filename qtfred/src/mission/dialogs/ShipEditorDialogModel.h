@@ -21,10 +21,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool _m_no_arrival_warp;
 	bool _m_player_ship;
 	int _m_destroy_spin;
-	int _m_departure_delay_spin;
-	int _m_arrival_delay_spin;
-	sexp_tree _m_departure_tree;
-	sexp_tree _m_arrival_tree;
+	int _m_departure_tree_formula;
+	int _m_arrival_tree_formula;
 	SCP_string _m_ship_name;
 	SCP_string _m_cargo1;
 	SCP_string _m_alt_name;
@@ -49,17 +47,18 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _m_persona;
 
 	SCP_string m_wing;
-	bool m_player;
 
 	int mission_type;
 
 	void set_modified();
 
 	bool update_ship(int ship);
-	bool update_data(int redraw);
+	bool update_data();
 
 	void ship_alt_name_close(int base_ship);
 	void ship_callsign_close(int base_ship);
+
+	int make_ship_list(int* arr);
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
@@ -90,7 +89,59 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	SCP_string getWing();
 
+	void setHotkey(int);
+	int getHotkey();
+
+	void setPersona(int);
+	int getPersona();
+
+	void setScore(int);
+	int getScore();
+
+	void setAssist(int);
+	int getAssist();
+
+	void setPlayer(bool);
+	bool getPlayer();
+
+	void setArrivalLocation(int);
+	int getArrivalLocation();
+
+	void setArrivalTarget(int);
+	int getArrivalTarget();
+
+	void setArrivalDistance(int);
+	int getArrivalDistance();
+
+	void setArrivalDelay(int);
+	int getArrivalDelay();
+
+	void setArrivalFormula(int old_form, int new_form);
+	int getArrivalFormula();
+
+	void setNoArrivalWarp(bool);
+	bool getNoArrivalWarp();
+
+	void setDepartureLocation(int);
+	int getDepartureLocation();
+
+	void setDepartureTarget(int);
+	int getDepartureTarget();
+
+	void setDepartureDelay(int);
+	int getDepartureDelay();
+	void setDepartureFormula(int, int);
+	int getDepartureFormula();
+	void setNoDepartureWarp(bool);
+	bool getNoDepartureWarp();
+
+	void OnPrevious();
+	void OnNext();
+	void OnDeleteShip();
+	void OnShipReset();
+
 	bool wing_is_player_wing(int);
+	int get_ship_from_obj(object*);
 
 	int select_sexp_node;
 	int player_count;

@@ -7,6 +7,7 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
+
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -15,7 +16,8 @@ namespace Ui {
 class ShipEditorDialog;
 }
 
-class ShipEditorDialog : public QDialog {
+class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
+
 	Q_OBJECT
 
   public:
@@ -24,13 +26,24 @@ class ShipEditorDialog : public QDialog {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-
+	void focusOutEvent(QFocusEvent*) override;
   private slots:
 	//void on_textureReplacementButton_clicked();
 	//void on_miscButton_clicked();
 	//void on_initialStatusButton_clicked();
 	//void on_initialOrdersButton_clicked();
 	//void on_tblInfoButton_clicked();
+	void on_playerShipButton_clicked();
+	void on_altShipClassButton_clicked();
+	void on_prevButton_clicked();
+	void on_nextButton_clicked();
+	void on_deleteButton_clicked();
+	void on_resetButton_clicked();
+	void on_weaponsButton_clicked();
+	void on_playerOrdersButton_clicked();
+	void on_specialExpButton_clicked();
+	void on_specialHitsButton_clicked();
+	void on_hideCuesButton_clicked();
 
   private:
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
@@ -40,16 +53,39 @@ class ShipEditorDialog : public QDialog {
 	void updateUI();
 	void updateColumnOne();
 	void updateColumnTwo();
+	void updateArrival();
+	void updateDeparture();
 	void enableDisable();
 
+	//column one
 	void shipNameChanged(const QString&);
 	void shipClassChanged(int);
 	void aiClassChanged(int);
 	void teamChanged(int);
 	void cargoChanged(int);
-
 	void altNameChanged(int);
 	void callsignChanged(int);
+
+	//column two
+	void hotkeyChanged(int);
+	void personaChanged(int);
+	void scoreChanged(int);
+	void assistChanged(int);
+	void playerChanged(bool);
+
+	//arrival
+	void arrivalLocationChanged(int);
+	void arrivalTargetChanged(int);
+	void arrivalDistanceChanged(int);
+	void arrivalDelayChanged(int);
+	void arrivalWarpChanged(bool);
+
+	//departure
+	void departureLocationChanged(int);
+	void departureTargetChanged(int);
+	void departureDelayChanged(int);
+	void departureWarpChanged(bool);
+
 };
 } // namespace dialogs
 } // namespace fred

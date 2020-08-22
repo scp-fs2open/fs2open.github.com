@@ -5,8 +5,8 @@
 #include "ui/dialogs/ShipEditorDialog.h"
 
 #include <globalincs\linklist.h>
-#include <mission/object.h>
 #include <jumpnode/jumpnode.h>
+#include <mission/object.h>
 
 namespace fso {
 namespace fred {
@@ -36,8 +36,8 @@ int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 void ShipEditorDialogModel::initializeData()
 {
 	int type, wing = -1;
-	int a_cue, d_cue, cargo = 0, base_player = 0, pship = -1;
-	int no_arrival_warp = 0, no_departure_warp = 0, escort_count = 0,  current_orders = 0;
+	int d_cue, cargo = 0, base_player = 0, pship = -1;
+	int no_arrival_warp = 0, no_departure_warp = 0, escort_count = 0, current_orders = 0;
 	cue_init = 0;
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		mission_type = 0; // multi player mission
@@ -90,7 +90,7 @@ void ShipEditorDialogModel::initializeData()
 		multi_edit = 0;
 	}
 
-	a_cue = d_cue = -1;
+	_m_arrival_tree_formula = d_cue = -1;
 	_m_arrival_location = -1;
 	_m_arrival_dist = -1;
 	_m_arrival_target = -1;
@@ -100,7 +100,7 @@ void ShipEditorDialogModel::initializeData()
 	_m_departure_delay = -1;
 
 	player_ship = single_ship = -1;
-	_m_arrival_tree.select_sexp_node = _m_departure_tree.select_sexp_node = select_sexp_node;
+	//_m_arrival_tree->select_sexp_node = _m_departure_tree->select_sexp_node = select_sexp_node;
 	select_sexp_node = -1;
 	ship_orders = 0; // assume they are all the same type
 	if (ship_count) {
@@ -156,7 +156,7 @@ void ShipEditorDialogModel::initializeData()
 						if (Ships[i].wingnum < 0) {
 							if (!cue_init) {
 								cue_init = 1;
-								a_cue = Ships[i].arrival_cue;
+								_m_arrival_tree_formula = Ships[i].arrival_cue;
 								d_cue = Ships[i].departure_cue;
 								_m_arrival_location = Ships[i].arrival_location;
 								_m_arrival_dist = (Ships[i].arrival_distance);
@@ -184,8 +184,8 @@ void ShipEditorDialogModel::initializeData()
 									_m_arrival_target = -1;
 								}
 
-								if (!cmp_sexp_chains(a_cue, Ships[i].arrival_cue)) {
-									a_cue = -1;
+								if (!cmp_sexp_chains(_m_arrival_tree_formula, Ships[i].arrival_cue)) {
+									_m_arrival_tree_formula = -1;
 									_m_update_arrival = 0;
 								}
 
@@ -267,37 +267,9 @@ void ShipEditorDialogModel::initializeData()
 			ptr = GET_NEXT(ptr);
 		}
 
-		if (multi_edit) {
-			_m_arrival_tree.clear_tree("");
-			_m_departure_tree.clear_tree("");
-		}
-		if (cue_init) {
-			_m_arrival_tree.load_tree(a_cue);
-			_m_departure_tree.load_tree(d_cue, "false");
-
-		} else {
-			_m_arrival_tree.clear_tree();
-			//_m_arrival_tree.DeleteAllItems();
-			_m_departure_tree.clear_tree();
-			//_m_departure_tree.DeleteAllItems();
-		}
-
 		_m_player_ship = pship;
 		_m_no_arrival_warp = no_arrival_warp;
 		_m_no_departure_warp = no_departure_warp;
-
-		if (!multi_edit) {
-			auto i = _m_arrival_tree.select_sexp_node;
-			if (i != -1) {
-				_m_arrival_tree.hilite_item(i);
-
-			} else {
-				i = _m_departure_tree.select_sexp_node;
-				if (i != -1) {
-					_m_departure_tree.hilite_item(i);
-				}
-			}
-		}
 
 		_m_persona++;
 		if (_m_persona > 0) {
@@ -333,8 +305,7 @@ void ShipEditorDialogModel::initializeData()
 				ptr = GET_NEXT(ptr);
 			}
 			// only 1 player selected..
-		} else if (query_valid_object(_editor->currentObject) &&
-				   (Objects[_editor->currentObject].type == OBJ_START)) {
+		} else if (query_valid_object(_editor->currentObject) && (Objects[_editor->currentObject].type == OBJ_START)) {
 			Assert((player_count == 1) && !multi_edit);
 			player_ship = Objects[_editor->currentObject].instance;
 			_m_ship_name = Ships[player_ship].ship_name;
@@ -362,18 +333,14 @@ void ShipEditorDialogModel::initializeData()
 		_m_arrival_dist = 0;
 		_m_arrival_target = -1;
 		_m_departure_target = -1;
-		_m_arrival_tree.clear_tree();
-		//_m_arrival_tree.DeleteAllItems();
-		_m_departure_tree.clear_tree();
-		//_m_departure_tree.DeleteAllItems();
 		_m_no_arrival_warp = false;
 		_m_no_departure_warp = false;
-		m_player = false;
 		m_wing = "None";
 	}
+	modelChanged();
 }
 
-bool ShipEditorDialogModel::update_data(int redraw)
+bool ShipEditorDialogModel::update_data()
 {
 	char *str, old_name[255];
 	object* ptr;
@@ -392,8 +359,7 @@ bool ShipEditorDialogModel::update_data(int redraw)
 		drop_white_space(_m_ship_name);
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) &&
-				(_editor->currentObject != OBJ_INDEX(ptr))) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (_editor->currentObject != OBJ_INDEX(ptr))) {
 				str = Ships[ptr->instance].ship_name;
 				if (!stricmp(_m_ship_name.c_str(), str)) {
 					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -562,12 +528,16 @@ bool ShipEditorDialogModel::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 	}
-
+	_editor->missionChanged();
 	return true;
 }
 
-bool ShipEditorDialogModel::apply() { update_data(1); 
-return true;
+bool ShipEditorDialogModel::apply()
+{
+	update_data();
+	_editor->missionChanged();
+	initializeData();
+	return true;
 }
 
 void ShipEditorDialogModel::reject() {}
@@ -576,7 +546,6 @@ bool ShipEditorDialogModel::update_ship(int ship)
 {
 	int z, d;
 	SCP_string str;
-	int persona;
 
 	ship_alt_name_close(ship);
 	ship_callsign_close(ship);
@@ -605,7 +574,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 				strcpy(Cargo_names[z], _m_cargo1.c_str());
 			} else {
 				sprintf(str, "Maximum number of cargo names %s reached.\nIgnoring new name.\n", MAX_CARGO);
-				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 					"Cargo Error",
 					str,
 					{DialogButton::Ok});
@@ -622,13 +591,13 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		Ships[ship].assist_score_pct = ((float)_m_assist_score) / 100;
 		if (Ships[ship].assist_score_pct < 0) {
 			Ships[ship].assist_score_pct = 0;
-			auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 				"Ship Error",
 				"Assist Percentage too low. Set to 0. No score will be granted for an assist",
 				{DialogButton::Ok});
 		} else if (Ships[ship].assist_score_pct > 1) {
 			Ships[ship].assist_score_pct = 1;
-			auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 				"Ship Error",
 				"Assist Percentage too high. Set to 1. Assists will score as many points as a kill",
 				{DialogButton::Ok});
@@ -636,9 +605,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		set_modified();
 	}
 
-	if (_m_persona != -1) {
-		modify(Ships[ship].persona_index, _m_persona);
-	}
+	modify(Ships[ship].persona_index, _m_persona);
 
 	if (Ships[ship].wingnum < 0) {
 
@@ -651,14 +618,14 @@ bool ShipEditorDialogModel::update_ship(int ship)
 			if (Ships[ship].arrival_cue >= 0)
 				free_sexp2(Ships[ship].arrival_cue);
 
-			Ships[ship].arrival_cue = _m_arrival_tree.save_tree();
+			Ships[ship].arrival_cue = _m_arrival_tree_formula;
 		}
 
 		if (!multi_edit || _m_update_departure) {
 			if (Ships[ship].departure_cue >= 0)
 				free_sexp2(Ships[ship].departure_cue);
 
-			Ships[ship].departure_cue = _m_departure_tree.save_tree();
+			Ships[ship].departure_cue = _m_departure_tree_formula;
 		}
 		modify(Ships[ship].arrival_distance, _m_arrival_dist);
 		modify(Ships[ship].arrival_delay, _m_arrival_delay);
@@ -750,7 +717,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		Objects[Ships[ship].objnum].type = OBJ_SHIP;
 		break;
 	}
-
+	_editor->missionChanged();
 	return 0;
 }
 void ShipEditorDialogModel::ship_alt_name_close(int base_ship)
@@ -792,7 +759,7 @@ void ShipEditorDialogModel::ship_alt_name_close(int base_ship)
 		return;
 	}
 	strcpy_s(Fred_alt_names[base_ship], "");
-	auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+	_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 		"Alt Name Error",
 		"Couldn't add new alternate type name. Already using too many!",
 		{DialogButton::Ok});
@@ -837,7 +804,7 @@ void ShipEditorDialogModel::ship_callsign_close(int base_ship)
 		return;
 	}
 	strcpy_s(Fred_callsigns[base_ship], "");
-	auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+	_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 		"Alt Name Error",
 		"Couldn't add new Callsign. Already using too many!",
 		{DialogButton::Ok});
@@ -903,12 +870,324 @@ void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
 
 SCP_string ShipEditorDialogModel::getCallsign() { return _m_callsign; }
 
-SCP_string ShipEditorDialogModel::getWing()
+SCP_string ShipEditorDialogModel::getWing() { return m_wing; }
+
+void ShipEditorDialogModel::setHotkey(int m_hotkey)
 {
-	return m_wing;
+	modify(_m_hotkey, m_hotkey);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getHotkey() { return _m_hotkey; }
+
+void ShipEditorDialogModel::setPersona(int m_persona)
+{
+	modify(_m_persona, m_persona);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getPersona() { return _m_persona; }
+
+void ShipEditorDialogModel::setScore(int m_score)
+{
+	modify(_m_score, m_score);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getScore() { return _m_score; }
+
+void ShipEditorDialogModel::setAssist(int m_assist_score)
+{
+	modify(_m_assist_score, m_assist_score);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getAssist() { return _m_assist_score; }
+
+void ShipEditorDialogModel::setPlayer(bool m_player)
+{
+	modify(_m_player_ship, m_player);
+	modelChanged();
+}
+
+bool ShipEditorDialogModel::getPlayer() { return _m_player_ship; }
+
+void ShipEditorDialogModel::setArrivalLocation(int value)
+{
+	modify(_m_arrival_location, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getArrivalLocation() { return _m_arrival_location; }
+
+void ShipEditorDialogModel::setArrivalTarget(int value)
+{
+	modify(_m_arrival_target, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getArrivalTarget() { return _m_arrival_target; }
+
+void ShipEditorDialogModel::setArrivalDistance(int value)
+{
+	modify(_m_arrival_dist, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getArrivalDistance() { return _m_arrival_dist; }
+
+void ShipEditorDialogModel::setArrivalDelay(int value)
+{
+	modify(_m_arrival_delay, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getArrivalDelay() { return _m_arrival_delay; }
+
+void ShipEditorDialogModel::setArrivalFormula(int old_form, int new_form)
+{
+	modify(_m_arrival_tree_formula, new_form);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getArrivalFormula() { return _m_arrival_tree_formula; }
+
+void ShipEditorDialogModel::setNoArrivalWarp(bool value)
+{
+	modify(_m_no_arrival_warp, value);
+	modelChanged();
+}
+
+bool ShipEditorDialogModel::getNoArrivalWarp() { return _m_no_arrival_warp; }
+
+void ShipEditorDialogModel::setDepartureLocation(int value)
+{
+	modify(_m_departure_location, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDepartureLocation() { return _m_departure_location; }
+
+void ShipEditorDialogModel::setDepartureTarget(int value)
+{
+	modify(_m_departure_target, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDepartureTarget() { return _m_departure_target; }
+
+void ShipEditorDialogModel::setDepartureDelay(int value)
+{
+	modify(_m_departure_delay, value);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDepartureDelay() { return _m_departure_delay; }
+
+void ShipEditorDialogModel::setDepartureFormula(int old_form, int new_form)
+{
+	modify(_m_departure_tree_formula, new_form);
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDepartureFormula() { return _m_departure_tree_formula; }
+
+void ShipEditorDialogModel::setNoDepartureWarp(bool value)
+{
+	modify(_m_no_departure_warp, value);
+	modelChanged();
+}
+
+bool ShipEditorDialogModel::getNoDepartureWarp() { return _m_no_departure_warp; }
+
+void ShipEditorDialogModel::OnPrevious()
+{
+	int i, n, arr[MAX_SHIPS];
+	if (!update_data()) {
+		n = make_ship_list(arr);
+		if (!n) {
+			return;
+		}
+		if (_editor->cur_ship < 0) {
+			i = n - 1;
+		}
+
+		else {
+			for (i = 0; i < n; i++) {
+				if (Ships[_editor->cur_ship].objnum == arr[i]) {
+					break;
+				}
+			}
+
+			Assert(i < n);
+			i--;
+			if (i < 0) {
+				i = n - 1;
+			}
+		}
+
+		_editor->unmark_all();
+		_editor->selectObject(arr[i]);
+		initializeData();
+	}
+
+	return;
+}
+
+void ShipEditorDialogModel::OnNext()
+{
+	int i, n, arr[MAX_SHIPS];
+
+	if (!update_data()) {
+		n = make_ship_list(arr);
+		if (!n)
+			return;
+
+		if (_editor->cur_ship < 0)
+			i = 0;
+
+		else {
+			for (i = 0; i < n; i++)
+				if (Ships[_editor->cur_ship].objnum == arr[i])
+					break;
+
+			Assert(i < n);
+			i++;
+			if (i == n)
+				i = 0;
+		}
+
+		_editor->unmark_all();
+		_editor->selectObject(arr[i]);
+		initializeData();
+	}
+
+	return;
+}
+
+void ShipEditorDialogModel::OnDeleteShip()
+{
+	_editor->delete_marked();
+	_editor->unmark_all();
+}
+
+void ShipEditorDialogModel::OnShipReset()
+{
+	int i, j, index, ship;
+	object* objp;
+	ship_info* sip;
+	ship_subsys* ptr;
+	ship_weapon* wp;
+	model_subsystem* sp;
+
+	_m_cargo1 = "Nothing";
+	_m_ai_class = AI_DEFAULT_CLASS;
+	if (_m_ship_class) {
+		_m_team = Species_info[Ship_info[_m_ship_class].species].default_iff;
+	}
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (((objp->type == OBJ_SHIP) || ((objp->type == OBJ_START) && !mission_type)) &&
+			(objp->flags[Object::Object_Flags::Marked])) {
+			ship = objp->instance;
+
+			// reset ship goals
+			for (i = 0; i < MAX_AI_GOALS; i++) {
+				Ai_info[Ships[ship].ai_index].goals[i].ai_mode = AI_GOAL_NONE;
+			}
+
+			objp->phys_info.speed = 0.0f;
+			objp->shield_quadrant[0] = 100.0f;
+			objp->hull_strength = 100.0f;
+
+			sip = &Ship_info[Ships[ship].ship_info_index];
+			for (i = 0; i < sip->num_primary_banks; i++)
+				Ships[ship].weapons.primary_bank_weapons[i] = sip->primary_bank_weapons[i];
+
+			for (i = 0; i < sip->num_secondary_banks; i++) {
+				Ships[ship].weapons.secondary_bank_weapons[i] = sip->secondary_bank_weapons[i];
+				Ships[ship].weapons.secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
+			}
+
+			index = 0;
+			ptr = GET_FIRST(&Ships[ship].subsys_list);
+			while (ptr != END_OF_LIST(&Ships[ship].subsys_list)) {
+				ptr->current_hits = 0.0f;
+				if (ptr->system_info->type == SUBSYSTEM_TURRET) {
+					wp = &ptr->weapons;
+					sp = &Ship_info[Ships[ship].ship_info_index].subsystems[index];
+
+					j = 0;
+					for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+						if (sp->primary_banks[i] != -1) {
+							wp->primary_bank_weapons[j++] = sp->primary_banks[i];
+						}
+					}
+
+					wp->num_primary_banks = j;
+					j = 0;
+					for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+						if (sp->secondary_banks[i] != -1) {
+							wp->secondary_bank_weapons[j] = sp->secondary_banks[i];
+							wp->secondary_bank_capacity[j++] = sp->secondary_bank_capacity[i];
+						}
+					}
+
+					wp->num_secondary_banks = j;
+					for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+						wp->secondary_bank_ammo[i] = 100;
+					}
+				}
+
+				index++;
+				ptr = GET_NEXT(ptr);
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+	modelChanged();
+	_editor->missionChanged();
+	if (multi_edit)
+		_viewport->dialogProvider->showButtonDialog(DialogType::Information,
+			"Reset",
+			"Ships reset to ship class defaults",
+			{DialogButton::Ok});
+	else
+		_viewport->dialogProvider->showButtonDialog(DialogType::Information,
+			"Reset",
+			"Ship reset to ship class defaults",
+			{DialogButton::Ok});
 }
 
 bool ShipEditorDialogModel::wing_is_player_wing(int wing) { return _editor->wing_is_player_wing(wing); }
+
+int ShipEditorDialogModel::make_ship_list(int* arr)
+{
+	int n = 0;
+	object* ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
+			arr[n++] = OBJ_INDEX(ptr);
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	return n;
+}
+
+int ShipEditorDialogModel::get_ship_from_obj(object* objp)
+{
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
+		return objp->instance;
+
+	Int3();
+	return 0;
+}
 
 void ShipEditorDialogModel::set_modified()
 {

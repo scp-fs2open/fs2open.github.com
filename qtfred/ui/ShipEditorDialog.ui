@@ -29,85 +29,200 @@
    <item row="1" column="0">
     <layout class="QVBoxLayout" name="fullLayout">
      <item>
-      <layout class="QGridLayout" name="topLayout">
-       <item row="1" column="2">
-        <layout class="QVBoxLayout" name="lastColumn">
-         <property name="spacing">
-          <number>6</number>
+      <layout class="QHBoxLayout" name="topLayout" stretch="2,2,1">
+       <item>
+        <layout class="QVBoxLayout" name="firstColumn" stretch="1,1">
+         <property name="rightMargin">
+          <number>0</number>
          </property>
          <item>
-          <layout class="QHBoxLayout" name="directionalBtnLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QPushButton" name="prevButton">
+          <layout class="QGridLayout" name="firstColumnOptions">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Prev</string>
+              <string>Team</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QPushButton" name="nextButton">
+           <item row="2" column="1">
+            <widget class="QComboBox" name="AIClassCombo"/>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="cargoCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="shipClassCombo"/>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="teamCombo"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="shipNameEdit"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_8">
              <property name="text">
-              <string>Next</string>
+              <string>Cargo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>AI Class</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Ship Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QComboBox" name="callsignCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Alt Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Ship Class</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Callsign</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QComboBox" name="altNameCombo">
+             <property name="editable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
           </layout>
          </item>
          <item>
-          <widget class="QPushButton" name="deleteButton">
+          <widget class="QPushButton" name="textureReplacementButton">
            <property name="text">
-            <string>Delete</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="resetButton">
-           <property name="text">
-            <string>Reset</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="weaponsButton">
-           <property name="text">
-            <string>Weapons</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="playerOrdersButton">
-           <property name="text">
-            <string>Player Orders</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="specialExpButton">
-           <property name="text">
-            <string>Special Exp</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="specialHitsButton">
-           <property name="text">
-            <string>Special Hits</string>
+            <string>Texture Replacement</string>
            </property>
           </widget>
          </item>
         </layout>
        </item>
-       <item row="1" column="1">
-        <layout class="QVBoxLayout" name="middleColumn">
+       <item>
+        <layout class="QVBoxLayout" name="middleColumn" stretch="1,1,1,1">
          <item>
           <layout class="QGridLayout" name="middleOptionsGrid">
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Kill Score</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="hotkeyCombo">
+             <item>
+              <property name="text">
+               <string>None</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 1 (F5)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 2 (F6)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 3 (F7)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 4 (F8)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 5 (F9)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 6 (F10)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 7 (F11)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 8 (F12)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Hidden</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="personaCombo"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QSpinBox" name="assistEdit">
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+            </widget>
+           </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
               <string>Wing:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="wing">
+             <property name="text">
+              <string>Static</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Persona</string>
              </property>
             </widget>
            </item>
@@ -118,33 +233,10 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_12">
-             <property name="text">
-              <string>Kill Score</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="hotkeyCombo"/>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="wing">
-             <property name="text">
-              <string>Static</string>
-             </property>
-            </widget>
-           </item>
            <item row="4" column="1">
-            <widget class="QLineEdit" name="killScoreEdit"/>
-           </item>
-           <item row="3" column="1">
-            <widget class="QComboBox" name="personaCombo"/>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string>Persona</string>
+            <widget class="QSpinBox" name="killScoreEdit">
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
              </property>
             </widget>
            </item>
@@ -154,9 +246,6 @@
               <string>Assist %</string>
              </property>
             </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QLineEdit" name="assistEdit"/>
            </item>
           </layout>
          </item>
@@ -200,98 +289,98 @@
          </item>
         </layout>
        </item>
-       <item row="1" column="0">
-        <layout class="QVBoxLayout" name="firstColumn">
-         <item>
-          <layout class="QGridLayout" name="firstColumnOptions">
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_7">
+       <item>
+        <layout class="QGridLayout" name="lastColumn">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetDefaultConstraint</enum>
+         </property>
+         <property name="horizontalSpacing">
+          <number>0</number>
+         </property>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="specialExpButton">
+           <property name="text">
+            <string>Special Exp</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <layout class="QHBoxLayout" name="directionalBtnLayout">
+           <property name="spacing">
+            <number>6</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="prevButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>35</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>Team</string>
+              <string>Prev</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="shipClassCombo"/>
-           </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="label_9">
+           <item>
+            <widget class="QPushButton" name="nextButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>35</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>Alt Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>AI Class</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QComboBox" name="altNameCombo">
-             <property name="editable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Ship Class</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QComboBox" name="teamCombo"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Ship Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="AIClassCombo"/>
-           </item>
-           <item row="4" column="1">
-            <widget class="QComboBox" name="cargoCombo">
-             <property name="editable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="shipNameEdit"/>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Cargo</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Callsign</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
-            <widget class="QComboBox" name="callsignCombo">
-             <property name="editable">
-              <bool>true</bool>
+              <string>Next</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
-         <item>
-          <widget class="QPushButton" name="textureReplacementButton">
+         <item row="3" column="0">
+          <widget class="QPushButton" name="weaponsButton">
            <property name="text">
-            <string>Texture Replacement</string>
+            <string>Weapons</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QPushButton" name="playerOrdersButton">
+           <property name="text">
+            <string>Player Orders</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="resetButton">
+           <property name="text">
+            <string>Reset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPushButton" name="specialHitsButton">
+           <property name="text">
+            <string>Special Hits</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="deleteButton">
+           <property name="text">
+            <string>Delete</string>
            </property>
           </widget>
          </item>
@@ -405,12 +494,19 @@
             <item row="2" column="1">
              <layout class="QHBoxLayout" name="horizontalLayout_6">
               <item>
-               <widget class="QLineEdit" name="arrivalDistanceEdit"/>
+               <widget class="QSpinBox" name="arrivalDistanceEdit">
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+               </widget>
               </item>
               <item>
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Preferred</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -628,14 +724,23 @@
      <item>
       <widget class="QLineEdit" name="HelpTitle">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QTextEdit" name="helpText">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
