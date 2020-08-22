@@ -1027,7 +1027,13 @@ void gr_close()
 			gr_opengl_cleanup(true);
 #endif
 			break;
-	
+
+		case GR_VULKAN:
+#ifdef WITH_VULKAN
+			graphics::vulkan::cleanup();
+#endif
+			break;
+
 		case GR_STUB:
 			break;
 	
