@@ -11,15 +11,17 @@
 #endif
 
 #include "scpui/rocket_ui.h"
+
 #include "cfile/cfile.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
+#include "scpui/IncludeNodeHandler.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketRenderingInterface.h"
-#include "scpui/IncludeNodeHandler.h"
 #include "scpui/RocketSystemInterface.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/elements/AnimationElement.h"
+#include "scpui/elements/ScrollingTextElement.h"
 #include "scripting/scripting.h"
 
 // Our Assert conflicts with the definitions inside libRocket
@@ -534,7 +536,10 @@ void initialize()
 	Rocket::Controls::Initialise();
 
 	Rocket::Core::Factory::RegisterElementInstancer("ani", new ElementInstancerGeneric<elements::AnimationElement>())
-	    ->RemoveReference();
+		->RemoveReference();
+	Rocket::Core::Factory::RegisterElementInstancer("scrollingText",
+		new ElementInstancerGeneric<elements::ScrollingTextElement>())
+		->RemoveReference();
 
 	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
 

@@ -511,6 +511,13 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_boolean(&temp);
                     profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, !temp);
 				}
+				if (optional_string("$lead indicator second-order prediction factor:")) {
+					stuff_float(&profile->second_order_lead_predict_factor);
+					if (profile->second_order_lead_predict_factor > 1 || profile->second_order_lead_predict_factor < 0) {
+						mprintf(("Warning: \"$lead indicator second-order prediction factor\" must be 0 - 1, resetting to 0.\"\n"));
+						profile->second_order_lead_predict_factor = 0;
+					}
+				}
 
 
 				// if we've been through once already and are at the same place, force a move
@@ -588,6 +595,7 @@ void ai_profile_t::reset()
 	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
+	second_order_lead_predict_factor = 0;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;

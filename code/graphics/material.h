@@ -335,11 +335,16 @@ class decal_material : public material {
 class interface_material : public material {
 	vec2d offset;
 
+	float horizontalSwipeOff = -1.0f;
+
   public:
 	interface_material();
 
 	void set_offset(const vec2d& new_offset);
-	vec2d get_offset();
+	vec2d get_offset() const;
+
+	void set_horizontal_swipe(float hor_offset);
+	float get_horizontal_swipe() const;
 };
 
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparent);
@@ -347,7 +352,10 @@ gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparen
 gr_zbuffer_type material_determine_depth_mode(bool depth_testing, bool is_transparent);
 
 void material_set_interface(material* mat_info, int texture, bool blended, float alpha);
-void material_set_rocket_interface(interface_material* mat_info, int texture, const vec2d& offset);
+void material_set_rocket_interface(interface_material* mat_info,
+	int texture,
+	const vec2d& offset,
+	float horizontal_swipe);
 void material_set_unlit(material* mat_info, int texture, float alpha, bool blending, bool depth_testing);
 void material_set_unlit_emissive(material* mat_info, int texture, float alpha, float color_scale);
 void material_set_unlit_color(material* mat_info, int texture, color *clr, bool blending, bool depth_testing);

@@ -108,6 +108,7 @@ void multi_chat_scroll_down();
 void	set_active_ui(UI_WINDOW *ui_window);
 
 // music functions exported for multiplayer team selection screen to start briefing music
+SCP_string common_music_get_filename(int score_index);
 void common_music_init( int score_index );
 void common_music_do();
 void common_music_close();

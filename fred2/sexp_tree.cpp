@@ -42,8 +42,6 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
-#include "graphics/opengl/gropenglshader.h"
-#include "graphics/opengl/gropenglpostprocessing.h"
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
@@ -5764,11 +5762,10 @@ sexp_list_item *sexp_tree::get_listing_opf_weapon_name()
 
 sexp_list_item *sexp_tree::get_listing_opf_intel_name()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Intel_info_size; i++)
-		head.add_data(Intel_info[i].name);
+	for (auto &ii : Intel_info)
+		head.add_data(ii.name);
 
 	return head.next;
 }
@@ -5777,8 +5774,8 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_class_name()
 {
 	sexp_list_item head;
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-		head.add_data(it->name);
+	for (auto &si : Ship_info)
+		head.add_data(si.name);
 
 	return head.next;
 }
@@ -5970,7 +5967,7 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 	sexp_list_item head;
 
 	SCP_vector<SCP_string> ppe_names;
-	get_post_process_effect_names(ppe_names);
+	gr_get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
 		head.add_data_dup(ppe_names[i].c_str());
 	}

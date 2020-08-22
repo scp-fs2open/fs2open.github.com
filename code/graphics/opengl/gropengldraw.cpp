@@ -44,7 +44,6 @@ GLuint Distortion_texture[2];
 int Distortion_switch = 0;
 
 int Scene_texture_initialized;
-bool Scene_framebuffer_in_frame;
 
 int Scene_texture_width;
 int Scene_texture_height;

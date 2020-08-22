@@ -92,8 +92,11 @@ const int32_t LE_OPTION_TYPE_RANGE           = 79;
 const int32_t LE_ASF_EVENTMUSIC              = 80;
 const int32_t LE_ASF_MENUMUSIC               = 81;
 const int32_t LE_ASF_VOICE                   = 82;
+const int32_t LE_CONTEXT_VALID               = 83;
+const int32_t LE_CONTEXT_SUSPENDED           = 84;
+const int32_t LE_CONTEXT_INVALID             = 85;
 
-const int ENUM_NEXT_INDEX = 83; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 86; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
@@ -104,6 +107,8 @@ struct enum_h {
 	enum_h();
 
 	explicit enum_h(int n_index);
+
+	SCP_string getName() const;
 
 	bool IsValid() const;
 };

@@ -988,6 +988,11 @@ typedef struct ship_collision_physics {
 	float reorient_mult{};		// How quickly the ship will reorient towards it's resting position
 	float landing_rest_angle{};	// The vertical angle where the ship's orientation comes to rest
 	gamesnd_id landing_sound_idx;		//Sound to play on successful landing collisions
+	
+	// Collision sounds
+	gamesnd_id collision_sound_light_idx;
+	gamesnd_id collision_sound_heavy_idx;
+	gamesnd_id collision_sound_shielded_idx;
 
 } ship_collision_physics;
 
@@ -1095,6 +1100,7 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	gamesnd_id		debris_ambient_sound;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

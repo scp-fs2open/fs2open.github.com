@@ -313,27 +313,37 @@ void set_active_ui(UI_WINDOW *ui_window)
 	Active_ui_window = ui_window;
 }
 
-void common_music_init(int score_index)
+SCP_string common_music_get_filename(int score_index)
 {
-	if ( Cmdline_freespace_no_music ) {
-		return;
+	if (Cmdline_freespace_no_music) {
+		return SCP_string();
 	}
 
-	if ( score_index >= NUM_SCORES ) {
-		Int3();
-		return;
-	}
+	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
 
-	if ( Mission_music[score_index] < 0 ) {
-		if ( Num_music_files > 0 ) {
+	if (Mission_music[score_index] < 0) {
+		if (Num_music_files > 0) {
 			Mission_music[score_index] = 0;
-			nprintf(("Sound","No briefing music is selected, so play first briefing track: %s\n",Spooled_music[Mission_music[score_index]].name));
+			nprintf(("Sound",
+				"No briefing music is selected, so play first briefing track: %s\n",
+				Spooled_music[Mission_music[score_index]].name));
 		} else {
-			return;
+			return SCP_string();
 		}
 	}
 
-	briefing_load_music( Spooled_music[Mission_music[score_index]].filename );
+	return Spooled_music[Mission_music[score_index]].filename;
+}
+
+void common_music_init(int score_index)
+{
+	const auto file_name = common_music_get_filename(score_index);
+
+	if (file_name.empty()) {
+		return;
+	}
+
+	briefing_load_music(file_name.c_str());
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
 }

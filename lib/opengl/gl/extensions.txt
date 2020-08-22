@@ -10,3 +10,4 @@ GL_ARB_gpu_shader5
 GL_ARB_vertex_attrib_binding
 GL_ARB_draw_buffers_blend
 GL_ARB_buffer_storage
+GL_ARB_texture_compression_bptc

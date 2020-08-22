@@ -58,7 +58,7 @@ void brief_turn_off_closeup_icon();
 
 void briefing_stop_music(bool fade);
 void briefing_start_music();
-void briefing_load_music(char* fname);
+void briefing_load_music(const char* fname);
 void brief_stop_voices();
 
 void brief_pause();

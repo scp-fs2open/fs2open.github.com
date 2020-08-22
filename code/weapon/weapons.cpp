@@ -1422,32 +1422,46 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			
 				if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
-				
-			}
-			
-				if (optional_string("+Trigger Hold:")) {
-				stuff_boolean(&wip->trigger_lock);
-				
-			}
-			
-				if (optional_string("+Reset On Launch:")) {
-				stuff_boolean(&wip->launch_reset_locks);
-				
-			}
-			
-				if (optional_string("+Max Seekers Per Target:")) {
-				stuff_int(&wip->max_seekers_per_target);
-				
-			}
-			
-				if (optional_string("+Max Active Seekers:")) {
-				stuff_int(&wip->max_seeking);
-				
 			}
 
-				if (optional_string("+Ship Types:")) {
-				stuff_string_list(wip->ship_type_restrict_temp);
-				
+			if (optional_string("+Trigger Hold:")) {
+				stuff_boolean(&wip->trigger_lock);
+			}
+
+			if (optional_string("+Reset On Launch:")) {
+				stuff_boolean(&wip->launch_reset_locks);
+			}
+
+			if (optional_string("+Max Seekers Per Target:")) {
+				stuff_int(&wip->max_seekers_per_target);
+			}
+
+			if (optional_string("+Max Active Seekers:")) {
+				stuff_int(&wip->max_seeking);
+			}
+
+			if (optional_string("+Ship Types:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
+
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::TYPE, name);
+			}
+
+			if (optional_string("+Ship Classes:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
+
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::CLASS, name);
+			}
+
+			if (optional_string("+Species:")) {
+				SCP_vector<SCP_string> temp_names;
+				stuff_string_list(temp_names);
+
+				for (auto& name : temp_names)
+					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::SPECIES, name);
 			}
 
 			if (wip->is_locked_homing()) {
@@ -3679,15 +3693,25 @@ void weapon_level_init()
 
 		if ( Ships_inited ) {
 			// populate ship type lock restrictions
-			for ( int j = 0; j < (int)Weapon_info[i].ship_type_restrict_temp.size(); ++j ) {
-				int idx = ship_type_name_lookup((char*)Weapon_info[i].ship_type_restrict_temp[j].c_str());
-
+			for (auto& pair : Weapon_info[i].ship_restrict_strings) {
+				const char* name = pair.second.c_str();
+				int idx;
+				switch (pair.first)
+				{
+					case MultilockRestrictionType::TYPE: idx = ship_type_name_lookup(name); break;
+					case MultilockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
+					case MultilockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
+					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+						idx = -1;
+				}
 				if ( idx >= 0 ) {
-					Weapon_info[i].ship_type_restrict.push_back(idx);
+					Weapon_info[i].ship_restrict.emplace_back(pair.first, idx);
+				}
+				else {
+					Warning(LOCATION, "Couldn't find multi lock restriction type '%s' for weapon '%s'", name, Weapon_info[i].name);
 				}
 			}
-
-			Weapon_info[i].ship_type_restrict_temp.clear();
+			Weapon_info[i].ship_restrict_strings.clear();
 		}
 	}
 
@@ -4178,9 +4202,9 @@ void weapon_home(object *obj, int num, float frame_time)
 		// since free_flight_time can now be 0, guard against that
 		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
-				obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
-			} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
-				obj->phys_info.speed = max_speed / (2 / wip->free_flight_time);
+				obj->phys_info.speed -= frame_time * 4;
+			} else if ((obj->phys_info.speed < max_speed / 4) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
+				obj->phys_info.speed = max_speed / 4;
 			}
 		}
 		// no free_flight_time, so immediately set desired speed
@@ -6116,7 +6140,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, &vec_ship_to_impact, ship_objp);
+		ship_apply_whack( &force, blast_pos, ship_objp);
 	}
 }
 
@@ -7664,7 +7688,11 @@ void validate_SSM_entries()
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		wip->SSM_index = ssm_info_lookup(dat->ssm_entry.c_str());
 		if (wip->SSM_index < 0) {
-			Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			if (Ssm_info.empty()) {
+				Warning(LOCATION, "SSM entry '%s' in specification for %s (%s:line %d), despite no SSM strikes being defined.\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			} else {
+				Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			}
 		}
 		nprintf(("parse", "Validation complete, SSM_index is %d.\n", wip->SSM_index));
 	}
@@ -7680,7 +7708,11 @@ void validate_SSM_entries()
 		wip = &Weapon_info[wi];
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
-			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			if (Ssm_info.empty()) {
+				Warning(LOCATION, "SSM index '%d' in specification for %s (%s:line %d), despite no SSM strikes being defined.\n", wip->SSM_index, it->c_str(), dat->filename.c_str(), dat->linenum);
+			} else {
+				Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			}
 			wip->SSM_index = -1;
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
@@ -7826,8 +7858,8 @@ void weapon_info::reset()
 	
 	this->max_seeking = 1;
 	this->max_seekers_per_target = 1;
-	this->ship_type_restrict.clear();
-	this->ship_type_restrict_temp.clear();
+	this->ship_restrict.clear();
+	this->ship_restrict_strings.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
 
@@ -8259,9 +8291,24 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 	return max_target_locks;
 }
 
-bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type)
+bool weapon_multilock_can_lock_on_ship(weapon_info* wip, int ship_num)
 {
-	// Determine if there are any restrictions, treating an empty list as true
-	return (wip->ship_type_restrict.empty()) || 
-			std::any_of(wip->ship_type_restrict.begin(), wip->ship_type_restrict.end(), [ship_type](int type) { return type == ship_type; });
+	auto& restrictions = wip->ship_restrict;
+	// if you didn't specify any restrictions, you can always lock
+	if (restrictions.empty()) return true;
+
+	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
+	int class_num = Ships[ship_num].ship_info_index;
+	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
+
+	// otherwise, you're good as long as it matches one of the allowances in the restriction list
+	return std::any_of(restrictions.begin(), restrictions.end(),
+		[=](std::pair<MultilockRestrictionType, int>& restriction) {
+			switch (restriction.first) {
+				case MultilockRestrictionType::TYPE: return restriction.second == type_num;
+				case MultilockRestrictionType::CLASS: return restriction.second == class_num;
+				case MultilockRestrictionType::SPECIES: return restriction.second == species_num;
+				default: return true;
+			}
+		});
 }

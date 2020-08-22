@@ -88,8 +88,7 @@ shader Grey_shader;
 ////////////////////////////////////////////////////////////////////
 static int help_left_bracket_bitmap;
 static int help_right_bracket_bitmap;
-static help_overlay help_overlaylist[MAX_HELP_OVERLAYS];
-int num_help_overlays;
+static SCP_vector<help_overlay> help_overlaylist;
 
 static int current_helpid = -1;		// the currently active overlay_id, only really used for the debug console funxions
 static int current_resolution = -1;
@@ -103,7 +102,7 @@ static int Source_game_state;			// state from where F1 was pressed
 
 int help_overlay_get_index(const char* overlay_name)
 {
-	for (int i = 0; i < num_help_overlays; i++) {
+	for (int i = 0; i < static_cast<int>(help_overlaylist.size()); i++) {
 		if (!stricmp(overlay_name, help_overlaylist[i].name)) {
 			return i;
 		}
@@ -115,7 +114,7 @@ int help_overlay_get_index(const char* overlay_name)
 // query whether a help overlay is active (ie being displayed)
 int help_overlay_active(int overlay_id)
 {
-	Assert(overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < static_cast<int>(help_overlaylist.size()));
 
 	if (overlay_id < 0) {
 		return 0;
@@ -127,9 +126,7 @@ int help_overlay_active(int overlay_id)
 // stop displaying a help overlay
 void help_overlay_set_state(int overlay_id, int resolution_index, int state)
 {
-	Assert(overlay_id < MAX_HELP_OVERLAYS);
-
-	if ( (overlay_id >= 0) && (overlay_id < num_help_overlays) &&
+	if ( (overlay_id >= 0) && (overlay_id < static_cast<int>(help_overlaylist.size())) &&
 			(resolution_index >= 0) && (resolution_index < help_overlaylist[overlay_id].num_resolutions) ) {
 		if ( state > 0 ) {
 			Help_overlay_flags |= (1<<overlay_id);
@@ -146,8 +143,6 @@ void help_overlay_set_state(int overlay_id, int resolution_index, int state)
 // maybe blit a bitmap of a help overlay to the screen
 void help_overlay_maybe_blit(int overlay_id, int resolution_index)
 {
-	Assert(overlay_id < MAX_HELP_OVERLAYS);
-
 	if ( (overlay_id >= 0) && (Help_overlay_flags & (1<<overlay_id)) &&
 			(resolution_index >= 0) && (resolution_index < help_overlaylist[overlay_id].num_resolutions) ) {
 		context_help_grey_screen();
@@ -283,14 +278,16 @@ void launch_context_help()
 	}
 }
 
-void close_help(){
-	for (int overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++){
-		if (!help_overlaylist[overlay_id].textlist.empty()) {
-			for(SCP_vector<help_text>::iterator ii = help_overlaylist[overlay_id].textlist.at(0).begin(); ii != help_overlaylist[overlay_id].textlist.at(0).end(); ++ii) {
-				safe_kill(ii->string);
+void close_help()
+{
+	for (auto &ho : help_overlaylist) {
+		if (!ho.textlist.empty()) {
+			for (auto &text : ho.textlist.at(0)) {
+				safe_kill(text.string);
 			}
 		}
 	}
+	help_overlaylist.clear();
 }
 
 // Called once at the beginning of the game to load help bitmaps & data
@@ -308,7 +305,8 @@ void help_overlay_init()
 
 	atexit(close_help);
 
-	num_help_overlays = 0;
+	// clear the list if it's not empty for whatever reason
+	close_help();
 
 	// parse help.tbl
 	parse_helptbl(HELP_OVERLAY_FILENAME);
@@ -348,20 +346,9 @@ void parse_helptbl(const char *filename)
 			overlay_id = help_overlay_get_index(name);
 
 			if (overlay_id < 0) {
-				if (num_help_overlays >= MAX_HELP_OVERLAYS) {
-					Warning(LOCATION, "Could not load help overlay '%s' as maximum number of help overlays was reached (Max is %d)", name, MAX_HELP_OVERLAYS);
-
-					if (!skip_to_string("$end")) {
-						Error(LOCATION, "Couldn't find $end. Help.tbl or -hlp.tbm is invalid.\n");
-					}
-
-					continue;
-				}
-				else {
-					overlay_id = num_help_overlays;
-					strcpy_s(help_overlaylist[overlay_id].name, name);
-					num_help_overlays++;
-				}
+				overlay_id = static_cast<int>(help_overlaylist.size());
+				help_overlaylist.emplace_back();
+				strcpy_s(help_overlaylist[overlay_id].name, name);
 			}
 
 			// clear out counters in the overlay struct
@@ -508,8 +495,6 @@ void help_overlay_blit(int overlay_id, int resolution_index)
 	int rbracketcount = help_overlaylist[overlay_id].rbracketcount;
 	int lbracketcount = help_overlaylist[overlay_id].lbracketcount;
 
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
-
 	// this draws each line of help text with white on black text (use the first resolution index for the string)
 	font::set_font(help_overlaylist[overlay_id].fontlist.at(resolution_index));
 	for (idx = 0; idx < textcount; idx++) {
@@ -553,7 +538,7 @@ DCF(help_reload, "Reloads help overlay data from help.tbl")
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
 	}
 
-	num_help_overlays = 0;
+	close_help();
 	parse_helptbl(HELP_OVERLAY_FILENAME);
 	parse_modular_table(NOX("*-hlp.tbm"), parse_helptbl);
 }

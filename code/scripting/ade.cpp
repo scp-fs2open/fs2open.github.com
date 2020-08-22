@@ -332,10 +332,8 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 		}
 
 		if (data_ldx != INT_MAX) {
-			//WMC - Cannot delete libs and stuff off here.
-			if (p_amt_ldx != LUA_GLOBALSINDEX) {
-				cleanup_items++;
-			}
+			// Remove data once we are done
+			cleanup_items++;
 
 			//WMC - Handle virtual variables by getting their table
 			if (Type == 'v') {

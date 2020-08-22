@@ -114,6 +114,13 @@ void multi_campaign_client_start()
 
 	// set campaign mode. why not.
 	Game_mode |= GM_CAMPAIGN_MODE;
+
+	// also, set the campaign type correctly so that we can also rely on that info
+	if (Netgame.type_flags & NG_TYPE_TVT) {
+		Campaign.type = CAMPAIGN_TYPE_MULTI_TEAMS;
+	} else {
+		Campaign.type = CAMPAIGN_TYPE_MULTI_COOP;
+	}
 }
 
 // move everything and eveyrone into the next mission state

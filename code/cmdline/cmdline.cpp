@@ -351,7 +351,7 @@ int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
 int Cmdline_bloom_intensity = 25;
-extern bool ls_force_off;
+bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 int Cmdline_aniso_level = 0;
 
@@ -2061,7 +2061,7 @@ bool SetCmdlineParams()
 
 	if ( flightshaftsoff_arg.found() )
 	{
-		ls_force_off = true;
+		Cmdline_force_lightshaft_off = true;
 	}
 
 	if( reparse_mainhall_arg.found() )

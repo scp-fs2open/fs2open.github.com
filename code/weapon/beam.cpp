@@ -789,7 +789,7 @@ void beam_type_b_move(beam *b)
 
 	// now recalculate shot_point to be shooting through our new point
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
-	int is_valid = is_valid_vec(&b->last_shot);
+	bool is_valid = is_valid_vec(&b->last_shot);
 	Assert(is_valid);
 	if(!is_valid){
 		actual_dir = b->binfo.dir_a;
@@ -3300,9 +3300,7 @@ void beam_handle_collisions(beam *b)
 				// if this is the first hit on the player ship. whack him
 				if(apply_beam_physics)
 				{
-					// Goober5000 - AGH!  BAD BAD BAD BAD BAD BAD BAD BAD bug!  The whack's hit point is in *local*
-					// coordinates, NOT world coordinates!
-					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point);
+					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;
 			}		

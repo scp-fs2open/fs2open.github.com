@@ -3521,7 +3521,6 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				int i;
 				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
@@ -3531,22 +3530,19 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
-				for (i = 0; i < MAX_DEBRIS_PIECES; i++)
+				for (auto &db: Debris)
 				{
-					debris *db;
-
-					db = &Debris[i];
-					if (!(db->flags[Debris_Flags::Used]))		// not used, move onto the next one.
+					if (!(db.flags[Debris_Flags::Used]))		// not used, move onto the next one.
 						continue;
-					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
+					if (db.source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
 					
-					debris_remove_from_hull_list(db);
-					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
-					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
+					debris_remove_from_hull_list(&db);
+					db.flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
+					db.lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
 					// now move the debris along its path for N seconds
-					objp = &Objects[db->objnum];
+					objp = &Objects[db.objnum];
 					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, (float) pobjp->destroy_before_mission_time);
 				}
 			}
@@ -5694,7 +5690,7 @@ bool parse_mission(mission *pm, int flags)
 		// don't do this in FRED; we will display a separate popup
 		else if (!Fred_running) {
 			// build up the prompt...
-			char text[1024];
+			SCP_string text;
 
 			if (Num_unknown_ship_classes > 0) {
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
@@ -5704,32 +5700,33 @@ bool parse_mission(mission *pm, int flags)
 			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
-				strcat_s(text, "(The current campaign is \"");
-				strcat_s(text, Campaign.name);
+				text += "(The current campaign is \"";
+				text += Campaign.name;
 			} else {
-				strcat_s(text, "(The current mission is \"");
-				strcat_s(text, pm->name);
+				text += "(The current mission is \"";
+				text += pm->name;
 			}
 
-			strcat_s(text, "\", and the current mod is \"");
+			text += "\", and the current mod is \"";
 
 			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
-				strcat_s(text, "<retail default> ");
+				text += "<retail default> ";
 			} else {
 				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
-					strcat_s(text, mod_token);
-					strcat_s(text, " ");
+					text += mod_token;
+					text += " ";
 				}
 			}
 
-			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ");
-			strcat(text, (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
-			strcat(text, " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
+			text.erase(text.length() - 1);	// trim last space
+			text += "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ";
+			text += (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission";
+			text += " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n";
 
-			strcat(text, "Do you want to continue to load the mission?");
+			text += "Do you want to continue to load the mission?";
 
 			// now display the popup
-			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text);
+			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text.c_str());
 			if (popup_rval == 0) {
 				return false;
 			}

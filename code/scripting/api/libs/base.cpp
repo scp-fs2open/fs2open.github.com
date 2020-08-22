@@ -257,7 +257,7 @@ ADE_FUNC(getCurrentMPStatus, l_Base, nullptr, "Gets this computers current MP st
 
 ADE_FUNC(getCurrentPlayer, l_Base, NULL, "Gets a handle of the currently used player.<br><b>Note:</b> If there is no current player then the first player will be returned, check the game state to make sure you have a valid player handle.", "player", "Player handle")
 {
-	return ade_set_args(L, "o", l_Player.Set(player_h(Players[Player_num])));
+	return ade_set_args(L, "o", l_Player.Set(player_h(&Players[Player_num])));
 }
 
 ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the specified callsign.", "player",

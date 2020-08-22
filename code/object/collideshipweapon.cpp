@@ -96,7 +96,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, hitpos, quadrant_num);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num);
 		}
 	}	
 
@@ -115,7 +115,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	// don't apply whack for multiplayer_client from laser - will occur with pain packet
 	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) ) {		
 		// apply a whack		
-		ship_apply_whack( &force, hitpos, pship_obj );
+		ship_apply_whack( &force, world_hitpos, pship_obj );
 	}
 
 	// Add impact decal
