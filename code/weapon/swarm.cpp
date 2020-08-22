@@ -249,9 +249,35 @@ void swarm_update_direction(object *objp)
 
 		} else if (hobjp != &obj_used_list &&
 				   f2fl(Missiontime - wp->creation_time) > 0.5f &&
-				   f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
-			// swarm missile is homing in on homing_pos
-			swarmp->original_target = wp->homing_pos;
+				   f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) 
+		{
+			// This is a copy of the relevant bits near the end of weapon_home() to make missiles lead their targets
+			// note that if the swarm missile has a target_lead_scaler of 0 this is equivalent to retail behavior (no leading)
+			if (Swarmers_lead_targets) { 
+				vec3d target_pos = wp->homing_pos;
+				vec3d vec_to_goal;
+				float dist_to_target = vm_vec_normalized_dir(&vec_to_goal, &target_pos, &objp->pos);
+				float time_to_target = dist_to_target / wip->max_speed;
+
+				vec3d tvec;
+				tvec = objp->phys_info.vel;
+				vm_vec_normalize(&tvec);
+
+				float old_dot = vm_vec_dot(&tvec, &vec_to_goal);
+
+				if ((old_dot > 0.1f) && (time_to_target > 0.1f)) {
+					if (wip->wi_flags[Weapon::Info_Flags::Variable_lead_homing]) {
+						vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, (0.33f * wip->target_lead_scaler * MIN(time_to_target, 6.0f)));
+					}
+					else if (wip->is_locked_homing()) {
+						vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
+					}
+				}
+				swarmp->original_target = target_pos;
+			}
+			else { // Else, retail behavior (usually simply the target's position)
+				swarmp->original_target = wp->homing_pos;
+			}
 		}
 
 		// Calculate a rvec and uvec that will determine the displacement from the
