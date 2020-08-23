@@ -210,7 +210,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 #define HOMING_DEFAULT_FREE_FLIGHT_TIME	0.5f
 
 // default percentage of max speed to coast at during freeflight
-#define HOMING_DEFAULT_FREE_FLIGHT_FACTOR	0.25f
+const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
@@ -1508,13 +1508,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Free Flight Speed:")) {
 		stuff_float(&(wip->free_flight_speed));
 		if (wip->free_flight_speed < 0.01f) {
-			nprintf(("Warning", "Free Flight Speed value is too low for weapon '%s'. Resetting to default (0.25 times maximum)\n", wip->name));
-			wip->free_flight_speed = 0.25f;
+			error_display(0, "Free Flight Speed value is too low for weapon '%s'. Resetting to default (0.25 times maximum)", wip->name);
+			wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 		}
 	}
 	else if (first_time && is_homing) {
 		wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
-
 	}
 	//Optional one-shot sound to play at the beginning of firing
 	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd);
