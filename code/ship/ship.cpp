@@ -12111,7 +12111,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		ship_subsys *target_subsys;
 		int locked;
 
-		if ( (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] )) ) {
+		if ( obj == Player_obj || ( MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
 				lock_info lock_data = shipp->missile_locks_firing.back();
@@ -12123,6 +12123,10 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				target_objnum = OBJ_INDEX(lock_data.obj);
 				target_subsys = lock_data.subsys;
 				locked = 1;
+			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
+				target_objnum = aip->target_objnum;
+				target_subsys = aip->targeted_subsys;
+				locked = aip->current_target_is_locked;
 			} else {
 				target_objnum = -1;
 				target_subsys = nullptr;
