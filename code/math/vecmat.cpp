@@ -1612,6 +1612,7 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 	}
 }
 
+#define OVERSHOOT_PREVENTION_PADDING 0.98f
 // physically models within the frame the physical behavior to get to a goal position
 // given an arbitrary initial velocity
 void vm_angular_move_1dimension_calc(float goal, float* vel, float delta_t,
@@ -1643,7 +1644,9 @@ void vm_angular_move_1dimension_calc(float goal, float* vel, float delta_t,
 	float t1 = (vel_limit - *vel) / acc_limit;  // time to accelerate from the current velocity (possibly negative) to +vel_limit
 	float apex_t = -*vel / acc_limit;           // the time when we had / will have velocity zero, assuming acceleration at +acc_limit
 	float apex = *vel * apex_t / 2;             // the position we had / will have at the apex
-	float half_dist = (goal - *dist - apex) / 2;             // half the distance from apex to goal (where we hit peak velocity)
+	float switchover_point = OVERSHOOT_PREVENTION_PADDING / (OVERSHOOT_PREVENTION_PADDING + 1.f); // when on the path 
+	                                                            // we switch from accelerating to deccelerating (very close to 1/2)
+	float half_dist = (goal - *dist - apex) * switchover_point; // half the distance from apex to goal (where we hit peak velocity)
 	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);  // The time at which we reach half_dist, assuming we never hit vel_limit
 	float t_up = fmin(delta_t, fmin(t1, t2));                // We exit the initial upward curve when we either hit vel_limit (t1)
 	                                                         // or we start the approach to the goal (t2), so t_up is the min
@@ -1668,6 +1671,8 @@ void vm_angular_move_1dimension_calc(float goal, float* vel, float delta_t,
 
 	// On approach to the goal, with acceleration -acc_limit
 	// Our current velocity is either vel_limit if we had a straight segment, or the peak velocity at half_dist
+	// slow down our acc very slightly to avoid possible time costly overshoot
+	acc_limit *= OVERSHOOT_PREVENTION_PADDING;
 	// t_down is the time to slow to a stop
 	float t_down = fmin(delta_t, *vel / acc_limit);
 	// add distance and vel for t_down
