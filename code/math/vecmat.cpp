@@ -2849,3 +2849,38 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w) {
 
 	return out;
 }
+
+// This function is used when we want to "match orientation" to a target, here match_orient,
+// while still pointing our forward vector in a certain direction, here goal_fvec.
+// out_rvec is the best matching right vector to match_orient.rvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient) {
+	// We want to calculate out_rvec as a frame transformation, translating match_orient.rvec
+	// from source_frame to dest_frame.
+	//
+	// We set up the frames such that:
+	// * source fvec = match_orient.fvec
+	// * dest fvec = goal_fvec
+	// * source uvec = dest uvec
+	// This uniquely determines both frames, and the rvecs go along for the ride.
+	// Once we have these frames, we just rotate match_orient.rvec from one frame to the other.
+
+	// Calculate the source frame. The common uvec has to be perpendicular to match_orient.fvec
+	// and goal_fvec so we cross to get it. The rvec is left as 0 to be set by vm_orthogonalize_matrix
+	matrix source_frame = vmd_zero_matrix;
+	source_frame.vec.fvec = match_orient->vec.fvec;
+	vm_vec_cross(&source_frame.vec.uvec, &source_frame.vec.fvec, goal_fvec);
+	vm_orthogonalize_matrix(&source_frame);
+
+	// Calculate the destination frame, using goal_fvec and the common uvec.
+	// These are already orthogonal and normalized so we can just cross to get the rvec rather than
+	// calling vm_orthogonalize_matrix
+	matrix dest_frame;
+	dest_frame.vec.fvec = *goal_fvec;
+	dest_frame.vec.uvec = source_frame.vec.uvec;
+	vm_vec_cross(&dest_frame.vec.rvec, &dest_frame.vec.uvec, &dest_frame.vec.fvec);
+
+	// Apply the transformation to match_orient.rvec, returning the result in out_rvec
+	vec3d temp;
+	vm_vec_rotate(&temp, &match_orient->vec.rvec, &source_frame);
+	vm_vec_unrotate(out_rvec, &temp, &dest_frame);
+}

@@ -537,6 +537,9 @@ vec3d vm_vec4_to_vec3(const vec4& vec);
  */
 vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 
+// calculates the best rvec to match another orient while maintaining a given fvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
+
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
 inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }
