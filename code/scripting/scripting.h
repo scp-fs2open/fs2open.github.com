@@ -171,6 +171,9 @@ private:
 
 	SCP_vector<script_function> GameInitFunctions;
 
+	// Stores references to the Lua values for the hook variables. Uses a raw reference since we do not need the more
+	// advanced features of LuaValue
+	SCP_unordered_map<SCP_string, luacpp::LuaReference> HookVariableValues;
 private:
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
@@ -178,10 +181,6 @@ private:
 	void SetLuaSession(struct lua_State *L);
 
 	void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc);
-
-	//Lua private helper functions
-	bool OpenHookVarTable();
-	bool CloseHookVarTable();
 
 	//Internal Lua helper functions
 	void EndLuaFrame();
@@ -220,7 +219,9 @@ public:
 	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
 	void RemHookVar(const char *name);
-	void RemHookVars(unsigned int num, ...);
+	void RemHookVars(std::initializer_list<SCP_string> names);
+
+	const SCP_unordered_map<SCP_string, luacpp::LuaReference>& GetHookVariableReferences();
 
 	//***Hook creation functions
 	template <typename T>
@@ -247,6 +248,8 @@ public:
 	//*****Other functions
 	void EndFrame();
 
+	static script_state* GetScriptState(lua_State* L);
+
 	util::event<void, lua_State*> OnStateDestroy;
 };
 
@@ -259,26 +262,11 @@ void script_state::SetHookVar(const char *name, char format, T&& value)
 	if(LuaState != nullptr)
 	{
 		char fmt[2] = {format, '\0'};
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-			lua_pushstring(LuaState, name);
-			scripting::ade_set_args(LuaState, fmt, std::forward<T>(value));
-			//--------------------
-			//WMC - This was a separate function
-			//lua_set_arg(LuaState, format, data);
-			//WMC - switch to the scripting library
-			//lua_setglobal(LuaState, name);
-			lua_rawset(LuaState, amt_ldx);
+		::scripting::ade_set_args(LuaState, fmt, std::forward<T>(value));
+		auto reference = luacpp::UniqueLuaReference::create(LuaState);
+		lua_pop(LuaState, 1); // Remove object value from the stack
 
-			//Close hook var table
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
-		}
+		HookVariableValues.emplace(name, std::move(reference));
 	}
 }
 

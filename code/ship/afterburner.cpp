@@ -151,7 +151,7 @@ void afterburners_start(object *objp)
 
 	Script_system.SetHookObjects(1, "Ship", objp);
 	Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
-	Script_system.RemHookVars(1, "Ship");
+	Script_system.RemHookVars({"Ship"});
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
 }
@@ -304,7 +304,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	Script_system.SetHookObjects(1, "Ship", objp);
 	Script_system.RunCondition(CHA_AFTERBURNEND, objp);
-	Script_system.RemHookVars(1, "Ship");
+	Script_system.RemHookVars({"Ship"});
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 

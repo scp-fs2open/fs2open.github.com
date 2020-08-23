@@ -303,7 +303,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Script_system.SetHookObject("Ship", ship_objp);
 	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
 	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-	Script_system.RemHookVars(2, "Ship", "Subsystem");
+	Script_system.RemHookVars({"Ship", "Subsystem"});
 
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
@@ -1601,7 +1601,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		if (hitpos)
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
 		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars(3, "Self", "Ship", "Killer");
+		Script_system.RemHookVars({"Self", "Ship", "Killer"});
 		if (hitpos)
 			Script_system.RemHookVar("Hitpos");
 		return;
@@ -1747,7 +1747,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 	if (hitpos)
 		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars(3, "Self", "Ship", "Killer");
+	Script_system.RemHookVars({"Self", "Ship", "Killer"});
 	if (hitpos)
 		Script_system.RemHookVar("Hitpos");
 }

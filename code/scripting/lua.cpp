@@ -82,6 +82,10 @@
 using namespace scripting;
 using namespace scripting::api;
 
+namespace {
+const char* ScriptStateReferenceName = "SCP_ScriptState";
+}
+
 // *************************Housekeeping*************************
 
 static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
@@ -116,6 +120,11 @@ int script_state::CreateLuaState()
 
 	//*****INITIALIZE OUR SUPPORT LIBRARY
 	luacpp::util::initializeLuaSupportLib(L);
+
+	// Store our script state pointer in this Lua state so that it can be retrieved from the Lua API without depending
+	// on global state
+	lua_pushlightuserdata(L, this);
+	lua_setfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
 
 	//*****DISABLE DANGEROUS COMMANDS
 	lua_pushstring(L, "os");
@@ -230,4 +239,14 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 		doc.enumerations.push_back(e);
 	}
+}
+
+script_state* script_state::GetScriptState(lua_State* L)
+{
+	lua_getfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
+	Assertion(lua_islightuserdata(L, -1), "Function called for Lua state that is not properly set up!");
+	auto scriptStatePtr = lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	return static_cast<script_state*>(scriptStatePtr);
 }
