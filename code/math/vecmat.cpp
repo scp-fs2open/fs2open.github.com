@@ -1752,7 +1752,7 @@ float time_to_arrival_calc(float goal, float vel, float vel_limit, float acc_lim
 }
 
 // called by vm_angular_move to compute a slowing factor
-// pared down versions of the scalar functions
+// pared down versions of the 1dimension functions
 float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
 	// We won't consider speeds above our max, the time estimate gets complicated and the result won't be a straight line anyway
 	if (fabs(vel) > vel_limit) {
@@ -1765,6 +1765,7 @@ float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
 
 // splits up the accelerating/deccelerating/go to position function for each component
 // and also scales their speed to make a nice straight line
+// note that this is now treated as a movement in linear space, despite the name
 vec3d vm_angular_move(const vec3d* goal, float delta_t,
 	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool aggressive_bank, bool force_no_overshoot, bool no_directional_bias)
 {
@@ -1804,10 +1805,13 @@ vec3d vm_angular_move(const vec3d* goal, float delta_t,
 //					force_no_overshoot   => forces the interpolation to not overshoot, if it is approaching its goal too fast
 //											it will always arrive with 0 velocity, even if its acceleration would not normally 
 //											allow it slow down in time
-//					
-//		function attempts to rotate the input matrix into the goal matrix taking account of anglular
+//		
+//		Asteroth - this replaced retail's "vm_matrix_interpolate" in PR 2668.
+//		The produced behavior is on average 0.52% slower (std dev 0.74%) than the retail function 
+//		Roughly twice that if framerate_independent_turning is enabled.
+//
+//		The function attempts to rotate the input matrix into the goal matrix taking account of anglular
 //		momentum (velocity)
-//		called "vm_matrix_interpolate" in retail 
 void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias, bool force_no_overshoot)
 {
@@ -1881,6 +1885,10 @@ void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient
 //					acc_limit	=>		maximum rotational acceleration
 //					no_directional_bias  => will cause the angular path generated to be as straight as possible, rather than greedily
 //											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
+//
+//		Asteroth - this replaced retail's "vm_forward_interpolate" in PR 2668.
+//		The produced behavior is on average 0.06% slower (std dev 0.32%) than the retail function 
+//		Roughly twice that if framerate_independent_turning is enabled, or if the object is a missile.
 //
 //		function attempts to rotate the forward vector toward the goal forward vector taking account of anglular
 //		momentum (velocity)  Attempt to try to move bank by goal delta_bank. 

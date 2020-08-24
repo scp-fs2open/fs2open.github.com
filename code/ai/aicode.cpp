@@ -11951,22 +11951,6 @@ int ai_formation()
 
 	}
 
-	//	See how different this ship's bank is relative to wing leader
-	float	up_dot = vm_vec_dot(&leader_objp->orient.vec.uvec, &Pl_objp->orient.vec.uvec);
-	if (up_dot < 0.996f) {
-		vec3d	w_out;
-		matrix	new_orient;
-		vec3d	angular_accel;
-
-		vm_vec_copy_scale(&angular_accel, &Pl_objp->phys_info.max_rotvel, 0.2f);
-		vm_angular_move_matrix(&leader_objp->orient, &Pl_objp->orient, &Pl_objp->phys_info.rotvel, flFrametime, &new_orient, &w_out, &Pl_objp->phys_info.max_rotvel, &angular_accel, false, true);
-
-		Pl_objp->orient = new_orient;
-		Pl_objp->phys_info.rotvel = w_out;
-	} else {
-		Pl_objp->phys_info.rotvel.xyz.z = 0.0f;
-	}
-
 	return 0;
 }
 
