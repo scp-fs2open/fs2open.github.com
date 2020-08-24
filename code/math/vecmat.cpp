@@ -1151,10 +1151,10 @@ void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const ve
 }
 
 
-// normalizes only if above a small threshold, returns if normalized or not
-bool vm_maybe_normalize(vec3d* dst, const vec3d* src) {
+// normalizes only if above a threshold, returns if normalized or not
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold) {
 	float mag = vm_vec_mag(src);
-	if (mag < SMALL_NUM) return false;
+	if (mag < threshold) return false;
 	vm_vec_copy_scale(dst, src, 1 / mag);
 	return true;
 }
