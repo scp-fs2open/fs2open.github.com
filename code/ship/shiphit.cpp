@@ -41,6 +41,7 @@
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/subsystem.h"
+#include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -1589,16 +1590,20 @@ static void ship_vaporize(ship *shipp)
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
-void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, int self_destruct)
+void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct)
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
 	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
-		Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
+		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
+		if (hitpos)
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
 		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars(2, "Self", "Killer");
+		Script_system.RemHookVars(3, "Self", "Ship", "Killer");
+		if (hitpos)
+			Script_system.RemHookVar("Hitpos");
 		return;
 	}
 
@@ -1738,9 +1743,13 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 		ship_maybe_lament();
 	}
 
-	Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
+	Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
+	if (hitpos)
+		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars(2, "Self", "Killer");
+	Script_system.RemHookVars(3, "Self", "Ship", "Killer");
+	if (hitpos)
+		Script_system.RemHookVar("Hitpos");
 }
 
 // function to simply explode a ship where it is currently at
@@ -1779,7 +1788,7 @@ void ship_self_destruct( object *objp )
 	}
 
 	// self destruct
-	ship_hit_kill(objp, NULL, 1.0f, 1);	
+	ship_hit_kill(objp, nullptr, nullptr, 1.0f, 1);	
 }
 
 extern int Homing_hits, Homing_misses;
@@ -2355,7 +2364,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				}
 
 				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
-					ship_hit_kill(ship_objp, other_obj, percent_killed, 0);
+					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed, 0);
 				}
 			}
 		}

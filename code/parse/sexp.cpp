@@ -681,7 +681,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	5,			SEXP_ACTION_OPERATOR,	},	// Hery
 	{ "reset-post-effects",				OP_RESET_POST_EFFECTS,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-effect",					OP_SHIP_EFFECT,							3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Valathil
-	{ "ship-create",					OP_SHIP_CREATE,							5,	8,			SEXP_ACTION_OPERATOR,	},	// WMC
+	{ "ship-create",					OP_SHIP_CREATE,							5,	9,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "weapon-create",					OP_WEAPON_CREATE,						5,	10,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-vanish",					OP_SHIP_VANISH,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -15641,7 +15641,7 @@ void sexp_ships_guardian( int n, bool guardian )
 
 void sexp_ship_create(int n)
 {
-	int new_ship_class, angle_count;
+	int new_ship_class, angle_count, team = -1;
 	vec3d new_ship_pos;
 	angles new_ship_ang;
 	matrix new_ship_ori;
@@ -15660,7 +15660,8 @@ void sexp_ship_create(int n)
 	
 	//Get ship class
 	new_ship_class = ship_info_lookup(CTEXT(n));
-	if (new_ship_class < 0) {
+	if (new_ship_class < 0)
+	{
 		Warning(LOCATION, "Invalid ship class passed to ship-create; ship type '%s' does not exist", CTEXT(n));
 		return;
 	}
@@ -15675,12 +15676,13 @@ void sexp_ship_create(int n)
 		return;
 
 	//This is a costly function, so only do it if needed
-	if (angle_count > 0) {
+	if (angle_count > 0)
 		vm_angles_2_matrix(&new_ship_ori, &new_ship_ang);
-	}
-	else {
+	else
 		new_ship_ori = vmd_identity_matrix;
-	}
+
+	if (n >= 0)
+		team = iff_lookup(CTEXT(n));
 
 	int objnum = ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
 	Assert(objnum != -1);
@@ -15689,6 +15691,11 @@ void sexp_ship_create(int n)
 	int shipnum = Objects[objnum].instance;
 	ship *shipp = &Ships[shipnum];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	if (team >= 0)
+		shipp->team = team;
+
+	// note: model_page_in_textures was called via the sexp preloader
 
 	ship_set_warp_effects(&Objects[objnum]);
 
@@ -26451,10 +26458,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_SHIP_CREATE:
-			if(argnum == 0)
+			if (argnum == 0)
 				return OPF_STRING;
-			else if(argnum == 1)
+			else if (argnum == 1)
 				return OPF_SHIP_CLASS_NAME;
+			else if (argnum == 8)
+				return OPF_IFF;
 			else
 				return OPF_NUMBER;
 
@@ -33116,6 +33125,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6: Pitch (optional)\r\n"
 		"\t7: Bank (optional)\r\n"
 		"\t8: Heading (optional)\r\n"
+		"\t9: Team (optional)\r\n"
 	},
 
 	// Goober5000
