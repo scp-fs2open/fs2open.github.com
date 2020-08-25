@@ -12,7 +12,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
-#include <jumpnode\jumpnode.h>
+#include <jumpnode/jumpnode.h>
 
 namespace fso {
 namespace fred {

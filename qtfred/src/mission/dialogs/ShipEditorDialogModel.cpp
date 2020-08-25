@@ -1,12 +1,14 @@
 #include "ShipEditorDialogModel.h"
 
 #include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
 #include "mission/missionmessage.h"
 #include "ui/dialogs/ShipEditorDialog.h"
 
-#include <globalincs\linklist.h>
-#include <jumpnode/jumpnode.h>
+#include <globalincs/linklist.h>
 #include <mission/object.h>
+
+#include <QtWidgets>
 
 namespace fso {
 namespace fred {
@@ -35,8 +37,12 @@ int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 
 void ShipEditorDialogModel::initializeData()
 {
-	int type, wing = -1;
-	int d_cue, cargo = 0, base_player = 0, pship = -1;
+	select_sexp_node = player_count = ship_count = multi_edit = base_ship = cue_init = total_count = pvalid_count =
+		pship_count = // a total count of the player ships not marked
+		player_ship,
+	single_ship = ship_orders = 0;
+	int type = 0, wing = -1;
+	int d_cue = 0, cargo = 0, base_player = 0, pship = -1;
 	int no_arrival_warp = 0, no_departure_warp = 0, escort_count = 0, current_orders = 0;
 	cue_init = 0;
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
@@ -46,6 +52,7 @@ void ShipEditorDialogModel::initializeData()
 	}
 	ship_count = player_count = escort_count = pship_count = pvalid_count = 0;
 	base_ship = base_player = -1;
+	enable = p_enable = 1;
 	auto ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if ((ptr->type == OBJ_SHIP) && (Ships[ptr->instance].flags[Ship::Ship_Flags::Escort])) {
@@ -90,7 +97,7 @@ void ShipEditorDialogModel::initializeData()
 		multi_edit = 0;
 	}
 
-	_m_arrival_tree_formula = d_cue = -1;
+	_m_arrival_tree_formula = _m_departure_tree_formula = -1;
 	_m_arrival_location = -1;
 	_m_arrival_dist = -1;
 	_m_arrival_target = -1;
@@ -306,7 +313,7 @@ void ShipEditorDialogModel::initializeData()
 			}
 			// only 1 player selected..
 		} else if (query_valid_object(_editor->currentObject) && (Objects[_editor->currentObject].type == OBJ_START)) {
-			Assert((player_count == 1) && !multi_edit);
+			// Assert((player_count == 1) && !multi_edit);
 			player_ship = Objects[_editor->currentObject].instance;
 			_m_ship_name = Ships[player_ship].ship_name;
 			_m_ship_class = Ships[player_ship].ship_info_index;
@@ -336,6 +343,7 @@ void ShipEditorDialogModel::initializeData()
 		_m_no_arrival_warp = false;
 		_m_no_departure_warp = false;
 		m_wing = "None";
+		enable = p_enable = 0;
 	}
 	modelChanged();
 }
@@ -373,62 +381,47 @@ bool ShipEditorDialogModel::update_data()
 						modelChanged();
 					}
 				}
-
-				ptr = GET_NEXT(ptr);
 			}
 
-			for (i = 0; i < MAX_WINGS; i++) {
-				if (Wings[i].wave_count && !stricmp(Wings[i].name, _m_ship_name.c_str())) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Ship Name Error",
-						"This ship name is already being used by a wing.\n Press OK to restore old name",
-						{DialogButton::Ok, DialogButton::Cancel});
-					if (button == DialogButton::Cancel) {
-						return false;
-					} else {
-						_m_ship_name = Ships[single_ship].ship_name;
-						modelChanged();
-					}
+			ptr = GET_NEXT(ptr);
+		}
+
+		for (i = 0; i < MAX_WINGS; i++) {
+			if (Wings[i].wave_count && !stricmp(Wings[i].name, _m_ship_name.c_str())) {
+				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+					"Ship Name Error",
+					"This ship name is already being used by a wing.\n Press OK to restore old name",
+					{DialogButton::Ok, DialogButton::Cancel});
+				if (button == DialogButton::Cancel) {
+					return false;
+				} else {
+					_m_ship_name = Ships[single_ship].ship_name;
+					modelChanged();
 				}
 			}
+		}
 
-			for (i = 0; i < Num_iffs; i++) {
-				if (!stricmp(_m_ship_name.c_str(), Iff_info[i].iff_name)) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Ship Name Error",
-						"This ship name is already being used by a team.\n Press OK to restore old name",
-						{DialogButton::Ok, DialogButton::Cancel});
-					if (button == DialogButton::Cancel) {
-						return false;
-					} else {
-						_m_ship_name = Ships[single_ship].ship_name;
-						modelChanged();
-					}
+		for (i = 0; i < Num_iffs; i++) {
+			if (!stricmp(_m_ship_name.c_str(), Iff_info[i].iff_name)) {
+				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+					"Ship Name Error",
+					"This ship name is already being used by a team.\n Press OK to restore old name",
+					{DialogButton::Ok, DialogButton::Cancel});
+				if (button == DialogButton::Cancel) {
+					return false;
+				} else {
+					_m_ship_name = Ships[single_ship].ship_name;
+					modelChanged();
 				}
 			}
+		}
 
-			for (i = 0; i < (int)Ai_tp_list.size(); i++) {
-				if (!stricmp(_m_ship_name.c_str(), Ai_tp_list[i].name)) {
-
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Ship Name Error",
-						"This ship name is already being used by a target priority group.\n Press OK to restore old "
-						"name",
-						{DialogButton::Ok, DialogButton::Cancel});
-					if (button == DialogButton::Cancel) {
-						return false;
-					} else {
-						_m_ship_name = Ships[single_ship].ship_name;
-						modelChanged();
-					}
-				}
-			}
-
-			if (find_matching_waypoint_list(_m_ship_name.c_str()) != NULL) {
+		for (i = 0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(_m_ship_name.c_str(), Ai_tp_list[i].name)) {
 
 				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
 					"Ship Name Error",
-					"This ship name is already being used by a a waypoint path.\n Press OK to restore old "
+					"This ship name is already being used by a target priority group.\n Press OK to restore old "
 					"name",
 					{DialogButton::Ok, DialogButton::Cancel});
 				if (button == DialogButton::Cancel) {
@@ -438,58 +431,73 @@ bool ShipEditorDialogModel::update_data()
 					modelChanged();
 				}
 			}
+		}
 
-			if (jumpnode_get_by_name(_m_ship_name.c_str()) != NULL) {
+		if (find_matching_waypoint_list(_m_ship_name.c_str()) != NULL) {
+
+			auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+				"Ship Name Error",
+				"This ship name is already being used by a a waypoint path.\n Press OK to restore old "
+				"name",
+				{DialogButton::Ok, DialogButton::Cancel});
+			if (button == DialogButton::Cancel) {
+				return false;
+			} else {
+				_m_ship_name = Ships[single_ship].ship_name;
+				modelChanged();
+			}
+		}
+
+		if (jumpnode_get_by_name(_m_ship_name.c_str()) != NULL) {
+
+			auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+				"Ship Name Error",
+				"This ship name is already being used by a a jump node.\n Press OK to restore old "
+				"name",
+				{DialogButton::Ok, DialogButton::Cancel});
+			if (button == DialogButton::Cancel) {
+				return false;
+			} else {
+				_m_ship_name = Ships[single_ship].ship_name;
+				modelChanged();
+			}
+		}
+
+		if (_m_ship_name[0] == '<') {
+
+			auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+				"Ship Name Error",
+				"Ship names not allowed to begin with <.\n Press OK to restore old "
+				"name",
+				{DialogButton::Ok, DialogButton::Cancel});
+			if (button == DialogButton::Cancel) {
+				return false;
+			} else {
+				_m_ship_name = Ships[single_ship].ship_name;
+				modelChanged();
+			}
+		}
+
+		wing = Ships[single_ship].wingnum;
+		if (wing >= 0) {
+			Assert((wing < MAX_WINGS) && Wings[wing].wave_count);
+			for (i = 0; i < Wings[wing].wave_count; i++)
+				if (_editor->wing_objects[wing][i] == Ships[single_ship].objnum)
+					break;
+
+			Assert(i < Wings[wing].wave_count);
+			wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
+			if (strcmp(old_name, _m_ship_name.c_str())) {
 
 				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
 					"Ship Name Error",
-					"This ship name is already being used by a a jump node.\n Press OK to restore old "
-					"name",
+					"This ship is part of a wing, and its name cannot be changed",
 					{DialogButton::Ok, DialogButton::Cancel});
 				if (button == DialogButton::Cancel) {
 					return false;
 				} else {
-					_m_ship_name = Ships[single_ship].ship_name;
+					_m_ship_name = old_name;
 					modelChanged();
-				}
-			}
-
-			if (_m_ship_name[0] == '<') {
-
-				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-					"Ship Name Error",
-					"Ship names not allowed to begin with <.\n Press OK to restore old "
-					"name",
-					{DialogButton::Ok, DialogButton::Cancel});
-				if (button == DialogButton::Cancel) {
-					return false;
-				} else {
-					_m_ship_name = Ships[single_ship].ship_name;
-					modelChanged();
-				}
-			}
-
-			wing = Ships[single_ship].wingnum;
-			if (wing >= 0) {
-				Assert((wing < MAX_WINGS) && Wings[wing].wave_count);
-				for (i = 0; i < Wings[wing].wave_count; i++)
-					if (_editor->wing_objects[wing][i] == Ships[single_ship].objnum)
-						break;
-
-				Assert(i < Wings[wing].wave_count);
-				wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
-				if (strcmp(old_name, _m_ship_name.c_str())) {
-
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Ship Name Error",
-						"This ship is part of a wing, and its name cannot be changed",
-						{DialogButton::Ok, DialogButton::Cancel});
-					if (button == DialogButton::Cancel) {
-						return false;
-					} else {
-						_m_ship_name = old_name;
-						modelChanged();
-					}
 				}
 			}
 		}
@@ -542,6 +550,8 @@ bool ShipEditorDialogModel::apply()
 
 void ShipEditorDialogModel::reject() {}
 
+void ShipEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) { initializeData(); }
+
 bool ShipEditorDialogModel::update_ship(int ship)
 {
 	int z, d;
@@ -573,7 +583,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 				z = Num_cargo++;
 				strcpy(Cargo_names[z], _m_cargo1.c_str());
 			} else {
-				sprintf(str, "Maximum number of cargo names %s reached.\nIgnoring new name.\n", MAX_CARGO);
+				sprintf(str, "Maximum number of cargo names %d reached.\nIgnoring new name.\n", MAX_CARGO);
 				_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 					"Cargo Error",
 					str,
@@ -582,7 +592,6 @@ bool ShipEditorDialogModel::update_ship(int ship)
 				_m_cargo1 = Cargo_names[z];
 			}
 		}
-
 		modify(Ships[ship].cargo1, (char)z);
 	}
 
@@ -666,61 +675,55 @@ bool ShipEditorDialogModel::update_ship(int ship)
 	if (_m_hotkey != -1)
 		modify(Ships[ship].hotkey, _m_hotkey - 1);
 
-	switch (_m_no_arrival_warp) {
-	case 0:
+	if (_m_no_arrival_warp) {
+
 		if (Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp])
 			set_modified();
 
 		Ships[ship].flags.remove(Ship::Ship_Flags::No_arrival_warp);
-		break;
+	}
 
-	case 1:
+	else {
 		if (!(Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp]))
 			set_modified();
 
 		Ships[ship].flags.set(Ship::Ship_Flags::No_arrival_warp);
-		break;
 	}
 
-	switch (_m_no_departure_warp) {
-	case 0:
+	if (_m_no_departure_warp) {
+
 		if (Ships[ship].flags[Ship::Ship_Flags::No_departure_warp])
 			set_modified();
 
 		Ships[ship].flags.remove(Ship::Ship_Flags::No_departure_warp);
-		break;
+	}
 
-	case 1:
+	else {
 		if (!(Ships[ship].flags[Ship::Ship_Flags::No_departure_warp]))
 			set_modified();
 
 		Ships[ship].flags.set(Ship::Ship_Flags::No_departure_warp);
-		break;
 	}
 
-	switch (_m_player_ship) {
-	case 1:
+	if (_m_player_ship) {
 		if (Objects[Ships[ship].objnum].type != OBJ_START) {
 			Player_starts++;
 			set_modified();
 		}
 
 		Objects[Ships[ship].objnum].type = OBJ_START;
-		break;
-
-	case 0:
+	} else {
 		if (Objects[Ships[ship].objnum].type == OBJ_START) {
 			Player_starts--;
 			set_modified();
 		}
 
 		Objects[Ships[ship].objnum].type = OBJ_SHIP;
-		break;
 	}
 	_editor->missionChanged();
 	return 0;
 }
-void ShipEditorDialogModel::ship_alt_name_close(int base_ship)
+void ShipEditorDialogModel::ship_alt_name_close(int ship)
 {
 
 	if (multi_edit) {
@@ -732,40 +735,40 @@ void ShipEditorDialogModel::ship_alt_name_close(int base_ship)
 	}
 
 	if (!_m_alt_name.empty() || !stricmp(_m_alt_name.c_str(), "<none>")) {
-		if (*Fred_alt_names[base_ship]) {
+		if (*Fred_alt_names[ship]) {
 			bool used = false;
 			for (int i = 0; i < MAX_SHIPS; ++i) {
-				if (i != base_ship && !strcmp(Fred_alt_names[i], Fred_alt_names[base_ship])) {
+				if (i != ship && !strcmp(Fred_alt_names[i], Fred_alt_names[ship])) {
 					used = true;
 					break;
 				}
 			}
 			if (!used) {
-				mission_parse_remove_alt(Fred_alt_names[base_ship]);
+				mission_parse_remove_alt(Fred_alt_names[ship]);
 			}
 			// zero the entry
-			strcpy_s(Fred_alt_names[base_ship], "");
+			strcpy_s(Fred_alt_names[ship], "");
 		}
 		return;
 	}
 	// otherwise see if it already exists
 	if (mission_parse_lookup_alt(_m_alt_name.c_str()) >= 0) {
-		strcpy_s(Fred_alt_names[base_ship], _m_alt_name.c_str());
+		strcpy_s(Fred_alt_names[ship], _m_alt_name.c_str());
 		return;
 	}
 	// otherwise try and add it
 	if (mission_parse_add_alt(_m_alt_name.c_str()) >= 0) {
-		strcpy_s(Fred_alt_names[base_ship], _m_alt_name.c_str());
+		strcpy_s(Fred_alt_names[ship], _m_alt_name.c_str());
 		return;
 	}
-	strcpy_s(Fred_alt_names[base_ship], "");
+	strcpy_s(Fred_alt_names[ship], "");
 	_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 		"Alt Name Error",
 		"Couldn't add new alternate type name. Already using too many!",
 		{DialogButton::Ok});
 }
 
-void ShipEditorDialogModel::ship_callsign_close(int base_ship)
+void ShipEditorDialogModel::ship_callsign_close(int ship)
 {
 
 	if (multi_edit) {
@@ -777,33 +780,33 @@ void ShipEditorDialogModel::ship_callsign_close(int base_ship)
 	}
 
 	if (!_m_callsign.empty() || !stricmp(_m_callsign.c_str(), "<none>")) {
-		if (*Fred_callsigns[base_ship]) {
+		if (*Fred_callsigns[ship]) {
 			bool used = false;
 			for (int i = 0; i < MAX_SHIPS; ++i) {
-				if (i != base_ship && !strcmp(Fred_callsigns[i], Fred_callsigns[base_ship])) {
+				if (i != ship && !strcmp(Fred_callsigns[i], Fred_callsigns[ship])) {
 					used = true;
 					break;
 				}
 			}
 			if (!used) {
-				mission_parse_remove_callsign(Fred_callsigns[base_ship]);
+				mission_parse_remove_callsign(Fred_callsigns[ship]);
 			}
 			// zero the entry
-			strcpy_s(Fred_callsigns[base_ship], "");
+			strcpy_s(Fred_callsigns[ship], "");
 		}
 		return;
 	}
 	// otherwise see if it already exists
 	if (mission_parse_lookup_callsign(_m_callsign.c_str()) >= 0) {
-		strcpy_s(Fred_callsigns[base_ship], _m_callsign.c_str());
+		strcpy_s(Fred_callsigns[ship], _m_callsign.c_str());
 		return;
 	}
 	// otherwise try and add it
 	if (mission_parse_add_callsign(_m_callsign.c_str()) >= 0) {
-		strcpy_s(Fred_callsigns[base_ship], _m_callsign.c_str());
+		strcpy_s(Fred_callsigns[ship], _m_callsign.c_str());
 		return;
 	}
-	strcpy_s(Fred_callsigns[base_ship], "");
+	strcpy_s(Fred_callsigns[ship], "");
 	_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 		"Alt Name Error",
 		"Couldn't add new Callsign. Already using too many!",
@@ -846,157 +849,97 @@ void ShipEditorDialogModel::setTeam(int m_team)
 
 int ShipEditorDialogModel::getTeam() { return _m_team; }
 
-void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
-{
-	modify(_m_cargo1, m_cargo);
-	modelChanged();
-}
+void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo) { modify(_m_cargo1, m_cargo); }
 
 SCP_string ShipEditorDialogModel::getCargo() { return _m_cargo1; }
 
-void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
-{
-	modify(_m_alt_name, m_altName);
-	modelChanged();
-}
+void ShipEditorDialogModel::setAltName(const SCP_string& m_altName) { modify(_m_alt_name, m_altName); }
 
 SCP_string ShipEditorDialogModel::getAltName() { return _m_alt_name; }
 
-void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
-{
-	modify(_m_callsign, m_callsign);
-	modelChanged();
-}
+void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign) { modify(_m_callsign, m_callsign); }
 
 SCP_string ShipEditorDialogModel::getCallsign() { return _m_callsign; }
 
 SCP_string ShipEditorDialogModel::getWing() { return m_wing; }
 
-void ShipEditorDialogModel::setHotkey(int m_hotkey)
-{
-	modify(_m_hotkey, m_hotkey);
-	modelChanged();
-}
+void ShipEditorDialogModel::setHotkey(int m_hotkey) { modify(_m_hotkey, m_hotkey); }
 
 int ShipEditorDialogModel::getHotkey() { return _m_hotkey; }
 
-void ShipEditorDialogModel::setPersona(int m_persona)
-{
-	modify(_m_persona, m_persona);
-	modelChanged();
-}
+void ShipEditorDialogModel::setPersona(int m_persona) { modify(_m_persona, m_persona); }
 
 int ShipEditorDialogModel::getPersona() { return _m_persona; }
 
-void ShipEditorDialogModel::setScore(int m_score)
-{
-	modify(_m_score, m_score);
-	modelChanged();
-}
+void ShipEditorDialogModel::setScore(int m_score) { modify(_m_score, m_score); }
 
 int ShipEditorDialogModel::getScore() { return _m_score; }
 
-void ShipEditorDialogModel::setAssist(int m_assist_score)
-{
-	modify(_m_assist_score, m_assist_score);
-	modelChanged();
-}
+void ShipEditorDialogModel::setAssist(int m_assist_score) { modify(_m_assist_score, m_assist_score); }
 
 int ShipEditorDialogModel::getAssist() { return _m_assist_score; }
 
-void ShipEditorDialogModel::setPlayer(bool m_player)
-{
-	modify(_m_player_ship, m_player);
-	modelChanged();
-}
+void ShipEditorDialogModel::setPlayer(bool m_player) { modify(_m_player_ship, m_player); }
 
 bool ShipEditorDialogModel::getPlayer() { return _m_player_ship; }
 
-void ShipEditorDialogModel::setArrivalLocation(int value)
-{
-	modify(_m_arrival_location, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setArrivalLocation(int value) { modify(_m_arrival_location, value); }
 
 int ShipEditorDialogModel::getArrivalLocation() { return _m_arrival_location; }
 
-void ShipEditorDialogModel::setArrivalTarget(int value)
-{
-	modify(_m_arrival_target, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setArrivalTarget(int value) { modify(_m_arrival_target, value); }
 
 int ShipEditorDialogModel::getArrivalTarget() { return _m_arrival_target; }
 
-void ShipEditorDialogModel::setArrivalDistance(int value)
-{
-	modify(_m_arrival_dist, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setArrivalDistance(int value) { modify(_m_arrival_dist, value); }
 
 int ShipEditorDialogModel::getArrivalDistance() { return _m_arrival_dist; }
 
-void ShipEditorDialogModel::setArrivalDelay(int value)
-{
-	modify(_m_arrival_delay, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setArrivalDelay(int value) { modify(_m_arrival_delay, value); }
 
 int ShipEditorDialogModel::getArrivalDelay() { return _m_arrival_delay; }
 
+void ShipEditorDialogModel::setArrivalCue(bool value) { modify(_m_update_arrival, value); }
+
+bool ShipEditorDialogModel::getArrivalCue() { return _m_update_arrival; }
+
 void ShipEditorDialogModel::setArrivalFormula(int old_form, int new_form)
 {
-	modify(_m_arrival_tree_formula, new_form);
-	modelChanged();
+	if (old_form != _m_arrival_tree_formula)
+		modify(_m_arrival_tree_formula, new_form);
 }
 
 int ShipEditorDialogModel::getArrivalFormula() { return _m_arrival_tree_formula; }
 
-void ShipEditorDialogModel::setNoArrivalWarp(bool value)
-{
-	modify(_m_no_arrival_warp, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setNoArrivalWarp(bool value) { modify(_m_no_arrival_warp, value); }
 
 bool ShipEditorDialogModel::getNoArrivalWarp() { return _m_no_arrival_warp; }
 
-void ShipEditorDialogModel::setDepartureLocation(int value)
-{
-	modify(_m_departure_location, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setDepartureLocation(int value) { modify(_m_departure_location, value); }
 
 int ShipEditorDialogModel::getDepartureLocation() { return _m_departure_location; }
 
-void ShipEditorDialogModel::setDepartureTarget(int value)
-{
-	modify(_m_departure_target, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setDepartureTarget(int value) { modify(_m_departure_target, value); }
 
 int ShipEditorDialogModel::getDepartureTarget() { return _m_departure_target; }
 
-void ShipEditorDialogModel::setDepartureDelay(int value)
-{
-	modify(_m_departure_delay, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setDepartureDelay(int value) { modify(_m_departure_delay, value); }
 
 int ShipEditorDialogModel::getDepartureDelay() { return _m_departure_delay; }
 
+void ShipEditorDialogModel::setDepartureCue(bool value) { modify(_m_update_departure, value); }
+
+bool ShipEditorDialogModel::getDepartureCue() { return _m_update_departure; }
+
 void ShipEditorDialogModel::setDepartureFormula(int old_form, int new_form)
 {
-	modify(_m_departure_tree_formula, new_form);
-	modelChanged();
+	if (old_form != _m_departure_tree_formula)
+		modify(_m_departure_tree_formula, new_form);
 }
 
 int ShipEditorDialogModel::getDepartureFormula() { return _m_departure_tree_formula; }
 
-void ShipEditorDialogModel::setNoDepartureWarp(bool value)
-{
-	modify(_m_no_departure_warp, value);
-	modelChanged();
-}
+void ShipEditorDialogModel::setNoDepartureWarp(bool value) { modify(_m_no_departure_warp, value); }
 
 bool ShipEditorDialogModel::getNoDepartureWarp() { return _m_no_departure_warp; }
 

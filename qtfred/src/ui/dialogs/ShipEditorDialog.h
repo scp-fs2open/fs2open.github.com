@@ -1,6 +1,7 @@
 #ifndef SHIPDEDITORDIALOG_H
 #define SHIPDEDITORDIALOG_H
 
+#include <QtWidgets/QDialog>
 #include <mission/dialogs/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
 
@@ -26,13 +27,13 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void focusOutEvent(QFocusEvent*) override;
   private slots:
-	//void on_textureReplacementButton_clicked();
-	//void on_miscButton_clicked();
-	//void on_initialStatusButton_clicked();
-	//void on_initialOrdersButton_clicked();
-	//void on_tblInfoButton_clicked();
+
+	void on_textureReplacementButton_clicked();
+	void on_miscButton_clicked();
+	void on_initialStatusButton_clicked();
+	void on_initialOrdersButton_clicked();
+	void on_tblInfoButton_clicked();
 	void on_playerShipButton_clicked();
 	void on_altShipClassButton_clicked();
 	void on_prevButton_clicked();
@@ -44,6 +45,10 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_specialExpButton_clicked();
 	void on_specialHitsButton_clicked();
 	void on_hideCuesButton_clicked();
+	void on_restrictArrivalPathsButton_clicked();
+	void on_customWarpinButton_clicked();
+	void on_restrictDeparturePathsButton_clicked();
+	void on_customWarpoutButton_clicked();
 
   private:
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
@@ -62,9 +67,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void shipClassChanged(int);
 	void aiClassChanged(int);
 	void teamChanged(int);
-	void cargoChanged(int);
-	void altNameChanged(int);
-	void callsignChanged(int);
+	void cargoChanged();
+	void altNameChanged(const QString&);
+	void callsignChanged(const QString&);
 
 	//column two
 	void hotkeyChanged(int);
@@ -79,12 +84,14 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void arrivalDistanceChanged(int);
 	void arrivalDelayChanged(int);
 	void arrivalWarpChanged(bool);
+	void ArrivalCueChanged(bool);
 
 	//departure
 	void departureLocationChanged(int);
 	void departureTargetChanged(int);
 	void departureDelayChanged(int);
 	void departureWarpChanged(bool);
+	void DepartureCueChanged(bool);
 
 };
 } // namespace dialogs

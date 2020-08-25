@@ -2,6 +2,7 @@
 
 #include "AbstractDialogModel.h"
 
+#include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
 
 namespace fso {
@@ -20,7 +21,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool _m_no_departure_warp;
 	bool _m_no_arrival_warp;
 	bool _m_player_ship;
-	int _m_destroy_spin;
 	int _m_departure_tree_formula;
 	int _m_arrival_tree_formula;
 	SCP_string _m_ship_name;
@@ -37,11 +37,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _m_hotkey;
 	bool _m_update_arrival;
 	bool _m_update_departure;
-	int _m_destroy_value;
 	int _m_score;
 	int _m_assist_score;
 	int _m_arrival_dist;
-	int _m_kdamage;
 	int _m_arrival_target;
 	int _m_departure_target;
 	int _m_persona;
@@ -65,6 +63,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
+	void onSelectedObjectMarkingChanged(int, bool);
 
 	void setShipName(const SCP_string& m_ship_name);
 	SCP_string getShipName();
@@ -116,7 +115,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalDelay(int);
 	int getArrivalDelay();
 
-	void setArrivalFormula(int old_form, int new_form);
+	void setArrivalCue(bool);
+	bool getArrivalCue();
+
+	void setArrivalFormula(int, int);
 	int getArrivalFormula();
 
 	void setNoArrivalWarp(bool);
@@ -130,6 +132,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setDepartureDelay(int);
 	int getDepartureDelay();
+
+	void setDepartureCue(bool);
+	bool getDepartureCue();
+
 	void setDepartureFormula(int, int);
 	int getDepartureFormula();
 	void setNoDepartureWarp(bool);
@@ -143,6 +149,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool wing_is_player_wing(int);
 	int get_ship_from_obj(object*);
 
+	bool enable;
+	bool p_enable;
 	int select_sexp_node;
 	int player_count;
 	int ship_count;

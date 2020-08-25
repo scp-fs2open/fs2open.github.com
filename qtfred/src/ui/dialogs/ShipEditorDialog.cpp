@@ -5,7 +5,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
 
-#include <globalincs\linklist.h>
+#include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
@@ -23,6 +23,8 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipEditorDialog::updateUI);
 	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
+	connect(viewport->editor, &Editor::currentObjectChanged, _model.get(), &ShipEditorDialogModel::apply);
+	connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &ShipEditorDialogModel::apply);
 
 	// Column One
 	connect(ui->shipNameEdit,
@@ -42,16 +44,16 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
 		this,
 		&ShipEditorDialog::teamChanged);
-	connect(ui->cargoCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::cargoChanged);
+
+	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
+
+	// ui->cargoCombo->installEventFilter(this);
 	connect(ui->altNameCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
 		this,
 		&ShipEditorDialog::altNameChanged);
 	connect(ui->callsignCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
 		this,
 		&ShipEditorDialog::callsignChanged);
 
@@ -95,7 +97,11 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&ShipEditorDialog::arrivalDelayChanged);
 
+	connect(ui->updateArrivalCueCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::ArrivalCueChanged);
+
 	connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
+		//use this otherwise linux complains
+		
 		_model->setArrivalFormula(old, node);
 	});
 	connect(ui->arrivalTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
@@ -121,7 +127,10 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 		this,
 		&ShipEditorDialog::departureDelayChanged);
 
+	connect(ui->updateDepartureCueCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::DepartureCueChanged);
+
 	connect(ui->departureTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
+		// use this otherwise linux complains
 		_model->setDepartureFormula(old, node);
 	});
 	connect(ui->departureTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
@@ -145,10 +154,24 @@ void ShipEditorDialog::closeEvent(QCloseEvent* event)
 	_model->apply();
 	QDialog::closeEvent(event);
 }
-void ShipEditorDialog::focusOutEvent(QFocusEvent* event)
+
+void ShipEditorDialog::on_miscButton_clicked()
+{ // TODO:: Flags Dialog
+}
+
+void ShipEditorDialog::on_initialStatusButton_clicked()
 {
-	QDialog::focusOutEvent(event);
-	_model->apply();
+	// TODO:: Initial Status dialog
+}
+
+void ShipEditorDialog::on_initialOrdersButton_clicked()
+{
+	// TODO:: Initial orders dialog
+}
+
+void ShipEditorDialog::on_tblInfoButton_clicked()
+{
+	// TODO:: TBL Dialog
 }
 
 void ShipEditorDialog::updateUI()
@@ -166,7 +189,7 @@ void ShipEditorDialog::updateColumnOne()
 	int i;
 	auto idx = _model->getShipClass();
 	ui->shipClassCombo->clear();
-	for (i = 0; i < Ship_info.size(); i++) {
+	for (i = 0; i < int(Ship_info.size()); i++) {
 		ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(i));
 	}
 	ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
@@ -191,59 +214,59 @@ void ShipEditorDialog::updateColumnOne()
 		}
 	} else {
 		idx = _model->getTeam();
-		ui->teamCombo->setEnabled(true);
+		ui->teamCombo->setEnabled(_model->enable);
 		ui->teamCombo->clear();
 		for (i = 0; i < Num_iffs; i++) {
 			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
 		}
 		ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
 	}
-
 	auto cargo = _model->getCargo();
 	ui->cargoCombo->clear();
 	for (i = 0; i < Num_cargo; i++) {
-		ui->cargoCombo->addItem(Cargo_names[i], QVariant(i));
+		ui->cargoCombo->addItem(Cargo_names[i]);
 	}
-	ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findData(QString(cargo.c_str())));
+	if (ui->cargoCombo->findText(QString(cargo.c_str()))) {
+		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
+	} else {
+		ui->cargoCombo->addItem(cargo.c_str());
 
+		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
+	}
+	ui->altNameCombo->clear();
 	if (_model->multi_edit) {
 		ui->altNameCombo->setEnabled(false);
 	} else {
+		auto altname = _model->getAltName();
 		ui->altNameCombo->setEnabled(true);
-		ui->altNameCombo->clear();
 		ui->altNameCombo->addItem("<none>");
-		int sel_idx = (_model->base_ship < 0 || !strlen(Fred_alt_names[_model->base_ship])) ? -1 : -2;
 		for (i = 0; i < Mission_alt_type_count; i++) {
 			ui->altNameCombo->addItem(Mission_alt_types[i], QVariant(Mission_alt_types[i]));
-			if (sel_idx == -2 && !strcmp(Mission_alt_types[i], Fred_alt_names[_model->base_ship])) {
-				sel_idx = i;
-			}
-			sel_idx = i;
 		}
-		Assertion(sel_idx >= -1, "Alt name exists but can't be found in Mission_alt_types; get a coder!\n");
-
-		sel_idx += 1;
-		ui->altNameCombo->setCurrentIndex(sel_idx);
+		if (ui->altNameCombo->findText(QString(altname.c_str()))) {
+			ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+		} else {
+			ui->altNameCombo->addItem(altname.c_str(), QVariant(altname.c_str()));
+			ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+		}
 	}
-
+	ui->callsignCombo->clear();
 	if (_model->multi_edit) {
 		ui->callsignCombo->setEnabled(false);
 	} else {
-		ui->callsignCombo->setEnabled(true);
-		ui->callsignCombo->clear();
+		auto callsign = _model->getCallsign();
 		ui->callsignCombo->addItem("<none>");
-		int sel_idx = (_model->base_ship < 0 || !strlen(Fred_callsigns[_model->base_ship])) ? -1 : -2;
+		ui->callsignCombo->setEnabled(true);
 		for (i = 0; i < Mission_callsign_count; i++) {
 			ui->callsignCombo->addItem(Mission_callsigns[i], QVariant(Mission_callsigns[i]));
-			if (sel_idx == -2 && !strcmp(Mission_callsigns[i], Fred_callsigns[_model->base_ship])) {
-				sel_idx = i;
-			}
-			sel_idx = i;
 		}
-		Assertion(sel_idx >= -1, "Callsign exists but can't be found in Mission_callsigns; get a coder!\n");
 
-		sel_idx += 1;
-		ui->callsignCombo->setCurrentIndex(sel_idx);
+		if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
+			ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+		} else {
+			ui->callsignCombo->addItem(callsign.c_str(), QVariant(callsign.c_str()));
+			ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+		}
 	}
 }
 void ShipEditorDialog::updateColumnTwo()
@@ -294,7 +317,6 @@ void ShipEditorDialog::updateArrival()
 				// char *buf, int iff_index, int restrict_to_players, //int retail_format
 				char* iff_name = Iff_info[i].iff_name;
 
-
 				if (restrict_to_players)
 					sprintf(tmp, "<any %s player>", iff_name);
 				else
@@ -334,6 +356,8 @@ void ShipEditorDialog::updateArrival()
 	ui->arrivalDistanceEdit->clear();
 	ui->arrivalDistanceEdit->setValue(_model->getArrivalDistance());
 	ui->arrivalDelaySpinBox->setValue(_model->getArrivalDelay());
+
+	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
 	ui->arrivalTree->initializeEditor(_viewport->editor, this);
 	if (_model->ship_count) {
@@ -410,6 +434,8 @@ void ShipEditorDialog::updateDeparture()
 	}
 
 	ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarp());
+
+	ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 }
 // Enables disbales controls based on what is selected
 void ShipEditorDialog::enableDisable()
@@ -432,42 +458,42 @@ void ShipEditorDialog::enableDisable()
 		ui->restrictArrivalPathsButton->setEnabled(false);
 		ui->restrictDeparturePathsButton->setEnabled(false);
 	} else {
-		ui->arrivalLocationCombo->setEnabled(true);
+		ui->arrivalLocationCombo->setEnabled(_model->enable);
 		if (_model->getArrivalLocation()) {
-			ui->arrivalDistanceEdit->setEnabled(true);
-			ui->arrivalTargetCombo->setEnabled(true);
+			ui->arrivalDistanceEdit->setEnabled(_model->enable);
+			ui->arrivalTargetCombo->setEnabled(_model->enable);
 		} else {
 			ui->arrivalDistanceEdit->setEnabled(false);
 			ui->arrivalTargetCombo->setEnabled(false);
 		}
 		if (_model->getArrivalLocation() == ARRIVE_FROM_DOCK_BAY) {
-			ui->restrictArrivalPathsButton->setEnabled(true);
+			ui->restrictArrivalPathsButton->setEnabled(_model->enable);
 			ui->customWarpinButton->setEnabled(false);
 		} else {
 			ui->restrictArrivalPathsButton->setEnabled(false);
-			ui->customWarpinButton->setEnabled(true);
+			ui->customWarpinButton->setEnabled(_model->enable);
 		}
 
-		ui->departureLocationCombo->setEnabled(true);
+		ui->departureLocationCombo->setEnabled(_model->enable);
 		if (_model->getDepartureLocation()) {
-			ui->departureTargetCombo->setEnabled(true);
+			ui->departureTargetCombo->setEnabled(_model->enable);
 		} else {
 			ui->departureTargetCombo->setEnabled(false);
 		}
 		if (_model->getDepartureLocation() == DEPART_AT_DOCK_BAY) {
-			ui->restrictDeparturePathsButton->setEnabled(true);
+			ui->restrictDeparturePathsButton->setEnabled(_model->enable);
 			ui->customWarpoutButton->setEnabled(false);
 		} else {
 			ui->restrictDeparturePathsButton->setEnabled(false);
-			ui->customWarpoutButton->setEnabled(true);
+			ui->customWarpoutButton->setEnabled(_model->enable);
 		}
 
-		ui->arrivalDelaySpinBox->setEnabled(true);
-		ui->arrivalTree->setEnabled(true);
-		ui->departureDelaySpinBox->setEnabled(true);
-		ui->departureTree->setEnabled(true);
-		ui->noArrivalWarpCheckBox->setEnabled(true);
-		ui->noDepartureWarpCheckBox->setEnabled(true);
+		ui->arrivalDelaySpinBox->setEnabled(_model->enable);
+		ui->arrivalTree->setEnabled(_model->enable);
+		ui->departureDelaySpinBox->setEnabled(_model->enable);
+		ui->departureTree->setEnabled(_model->enable);
+		ui->noArrivalWarpCheckBox->setEnabled(_model->enable);
+		ui->noDepartureWarpCheckBox->setEnabled(_model->enable);
 	}
 
 	if (_model->total_count) {
@@ -499,14 +525,14 @@ void ShipEditorDialog::enableDisable()
 		ui->textureReplacementButton->setEnabled(false);
 	}
 
-	ui->AIClassCombo->setEnabled(true);
-	ui->cargoCombo->setEnabled(true);
-	ui->hotkeyCombo->setEnabled(true);
+	ui->AIClassCombo->setEnabled(_model->enable);
+	ui->cargoCombo->setEnabled(_model->enable);
+	ui->hotkeyCombo->setEnabled(_model->enable);
 	if ((_model->getShipClass() >= 0) && !(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::Cargo]) &&
 		!(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::No_ship_type]))
-		ui->initialOrdersButton->setEnabled(true);
+		ui->initialOrdersButton->setEnabled(_model->enable);
 	else if (_model->multi_edit)
-		ui->initialOrdersButton->setEnabled(true);
+		ui->initialOrdersButton->setEnabled(_model->enable);
 	else
 		ui->initialOrdersButton->setEnabled(false);
 
@@ -535,10 +561,10 @@ void ShipEditorDialog::enableDisable()
 			ui->playerShipButton->setEnabled(false);
 	}
 
-	ui->deleteButton->setEnabled(true);
-	ui->resetButton->setEnabled(false);
-	ui->killScoreEdit->setEnabled(true);
-	ui->assistEdit->setEnabled(true);
+	ui->deleteButton->setEnabled(_model->enable);
+	ui->resetButton->setEnabled(_model->enable);
+	ui->killScoreEdit->setEnabled(_model->enable);
+	ui->assistEdit->setEnabled(_model->enable);
 
 	ui->tblInfoButton->setEnabled(_model->getShipClass() >= 0);
 
@@ -562,10 +588,10 @@ void ShipEditorDialog::enableDisable()
 		}
 	} else
 		// always enabled when one ship is selected
-		ui->playerOrdersButton->setEnabled(true);
+		ui->playerOrdersButton->setEnabled(_model->enable);
 
 	// always enabled if >= 1 ship selected
-	ui->personaCombo->setEnabled(true);
+	ui->personaCombo->setEnabled(_model->enable);
 
 	if (_model->multi_edit) {
 		this->setWindowTitle("Edit Marked Ships");
@@ -575,6 +601,7 @@ void ShipEditorDialog::enableDisable()
 		this->setWindowTitle("Edit Ship");
 	}
 }
+
 void ShipEditorDialog::shipNameChanged(const QString& string) { _model->setShipName(string.toStdString()); }
 void ShipEditorDialog::shipClassChanged(int index)
 {
@@ -591,21 +618,9 @@ void ShipEditorDialog::teamChanged(int index)
 	auto teamIdx = ui->teamCombo->itemData(index).value<int>();
 	_model->setTeam(teamIdx);
 }
-void ShipEditorDialog::cargoChanged(int index)
-{
-	auto cargoIdx = ui->cargoCombo->itemData(index).value<QString>();
-	_model->setCargo(cargoIdx.toStdString());
-}
-void ShipEditorDialog::altNameChanged(int index)
-{
-	auto altNameIdx = ui->altNameCombo->itemData(index).value<QString>();
-	_model->setAltName(altNameIdx.toStdString());
-}
-void ShipEditorDialog::callsignChanged(int index)
-{
-	auto callsignIdx = ui->callsignCombo->itemData(index).value<QString>();
-	_model->setCallsign(callsignIdx.toStdString());
-}
+void ShipEditorDialog::cargoChanged() { _model->setCargo(ui->cargoCombo->currentText().toStdString()); }
+void ShipEditorDialog::altNameChanged(const QString& value) { _model->setAltName(value.toStdString()); }
+void ShipEditorDialog::callsignChanged(const QString& value) { _model->setCallsign(value.toStdString()); }
 void ShipEditorDialog::hotkeyChanged(int index)
 {
 	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).value<int>();
@@ -638,6 +653,8 @@ void ShipEditorDialog::arrivalDelayChanged(int value) { _model->setArrivalDelay(
 
 void ShipEditorDialog::arrivalWarpChanged(bool enable) { _model->setNoArrivalWarp(enable); }
 
+void ShipEditorDialog::ArrivalCueChanged(bool value) { _model->setArrivalCue(value); }
+
 void ShipEditorDialog::departureLocationChanged(int index)
 {
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).value<int>();
@@ -653,6 +670,12 @@ void ShipEditorDialog::departureTargetChanged(int index)
 void ShipEditorDialog::departureDelayChanged(int value) { _model->setDepartureDelay(value); }
 
 void ShipEditorDialog::departureWarpChanged(bool value) { _model->setNoDepartureWarp(value); }
+
+void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue(value); }
+
+void ShipEditorDialog::on_textureReplacementButton_clicked() {
+	//TODO:: Texture Replacement Dialog
+}
 
 void ShipEditorDialog::on_playerShipButton_clicked() { _model->setPlayer(true); }
 void ShipEditorDialog::on_altShipClassButton_clicked()
@@ -696,7 +719,21 @@ void ShipEditorDialog::on_hideCuesButton_clicked()
 		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 		resize(sizeHint());
 	}
-
+}
+void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
+{
+	// TODO:: Restrict Paths Dialog
+}
+void ShipEditorDialog::on_customWarpinButton_clicked()
+{
+	// TODO:: Custom warp Dialog
+}
+void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
+{
+	// TODO:: Restrict Paths Dialog
+}
+void ShipEditorDialog::on_customWarpoutButton_clicked()
+{ // TODO:: Custom warp Dialog
 }
 } // namespace dialogs
 } // namespace fred
