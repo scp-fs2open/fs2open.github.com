@@ -1254,13 +1254,9 @@
 #define ID_SPEED50                      32917
 #define ID_SPEED100                     32918
 #define ID_SELECT_LIST                  32919
-#define ID_CONTRAIN_X                   32920
 #define ID_CONSTRAIN_Y                  32921
-#define ID_BUTTON32922                  32922
-#define ID_BUTTON32923                  32923
 #define ID_ZOOM                         32924
 #define ID_SELECTION_LOCK               32925
-#define ID_BUTTON32926                  32926
 #define ID_DISSOLVE_WING                32927
 #define ID_SELECT_AND_MOVE              32932
 #define ID_SELECT_AND_ROTATE            32933
@@ -1275,8 +1271,6 @@
 #define ID_SHOW_DISTANCES               32941
 #define ID_UNIVERSAL_HEADING            32942
 #define ID_FIND_DISTANCE                32943
-#define ID_BUTTON32944                  32944
-#define ID_BUTTON32945                  32945
 #define ID_CONSTRAIN_YZ                 32946
 #define ID_CONSTRAIN_XY                 32947
 #define ID_FLYING_CONTROLS              32948
@@ -1408,6 +1402,8 @@
 #define ID_FORMAT_FS2_OPEN_COMP         33092
 #define ID_AUTOBALANCE                  33093
 #define ID_EDITORS_FICTION              33094
+#define ID_MISC_MOVESHIPSWHENUNDOCKING  33098
+#define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1419,7 +1415,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        322
-#define _APS_NEXT_COMMAND_VALUE         33098
+#define _APS_NEXT_COMMAND_VALUE         33100
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

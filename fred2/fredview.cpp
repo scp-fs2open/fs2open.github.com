@@ -101,6 +101,8 @@ int Id_select_type_jump_node;
 int Id_select_type_start = 0;
 int Id_select_type_waypoint = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
+int Move_ships_when_undocking = 1;			// true by default
+
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
 Marking_box	marking_box;
@@ -302,6 +304,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_CONTROL_OBJ, OnControlObj)
 	ON_COMMAND(ID_NEXT_OBJ, OnNextObj)
 	ON_COMMAND(ID_PREV_OBJ, OnPrevObj)
+	ON_COMMAND(ID_EDIT_CLONEMARKEDOBJECTS, OnEditCloneMarkedObjects)
 	ON_COMMAND(ID_EDIT_DELETE_WING, OnEditDeleteWing)
 	ON_COMMAND(ID_MARK_WING, OnMarkWing)
 	ON_UPDATE_COMMAND_UI(ID_CONTROL_OBJ, OnUpdateControlObj)
@@ -328,6 +331,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_RETAIL, OnUpdateFormatFs2Retail)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
+	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
+	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
@@ -4272,6 +4277,10 @@ void CFREDView::OnEditDelete()
 	Update_window = 2;  // For some strange reason, need to redraw twice for it to take.
 }
 
+void CFREDView::OnEditCloneMarkedObjects()
+{
+}
+
 void CFREDView::OnEditDeleteWing() 
 {
 	if (!button_down && (cur_wing >= 0)) {
@@ -4510,6 +4519,17 @@ void CFREDView::OnShowDockPoints()
 void CFREDView::OnUpdateShowDockPoints(CCmdUI* pCmdUI)
 {	
 	pCmdUI->SetCheck(Show_dock_points);
+}
+
+void CFREDView::OnMoveShipsWhenUndocking()
+{
+	Move_ships_when_undocking = !Move_ships_when_undocking;
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Move_ships_when_undocking);
 }
 
 void CFREDView::OnDumpStats()

@@ -218,6 +218,7 @@ BEGIN
     POPUP "&Edit"
     BEGIN
         MENUITEM "Undo\tCtrl+Z",                57643
+        MENUITEM "Clone Marked Objects",        33099
         MENUITEM "Delete\tDel",                 32789
         MENUITEM "Delete Wing\tCtrl+Del",       33035
         MENUITEM SEPARATOR
@@ -347,16 +348,19 @@ BEGIN
     END
     POPUP "&Misc"
     BEGIN
-        MENUITEM "Level Object\tL",             33037
-        MENUITEM "Align Object\tCtrl+L",        33036
-        MENUITEM "Mark Wing\tW",                33038
-        MENUITEM "Control Object\tT",           33041
         MENUITEM "Next Object\tTab",            33039
         MENUITEM "Previous Object\tCtrl+Tab",   33040
-        MENUITEM "Adjust Grid",                 33032
+        MENUITEM "Control Object\tT",           33041
+        MENUITEM "Level Object\tL",             33037
+        MENUITEM "Align Object\tCtrl+L",        33036
+        MENUITEM SEPARATOR
         MENUITEM "Next Subsystem\tK",           33059
         MENUITEM "Prev Subsystem\tShift+K",     33060
         MENUITEM "Cancel Subsystem\tAlt+K",     33061
+        MENUITEM SEPARATOR
+        MENUITEM "Mark Wing\tW",                33038
+        MENUITEM "Adjust Grid",                 33032
+        MENUITEM "Move Ships When Undocking",   33098, CHECKED
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM SEPARATOR
         MENUITEM "Error checker\tShift+H",      32978
@@ -2894,6 +2898,7 @@ BEGIN
     ID_EDIT_SELECT_ALL      "Select the entire document\nSelect All"
     ID_EDIT_UNDO            "Undo the last action\nUndo"
     ID_EDIT_REDO            "Redo the previously undone action\nRedo"
+    ID_EDIT_CLONEMARKEDOBJECTS  "Clone every marked object in-place, like Ctrl-drag without the dragging"
 END
 
 STRINGTABLE
@@ -3013,16 +3018,11 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_SHOW_GRID_POSITIONS  "Show position on grid for all visible objects"
+    ID_SHOW_GRID_POSITIONS  "Draw an elevation line above or below the grid plane for all visible objects"
     ID_SHOW_COORDINATES     "Display the coordinates of objects/waypoints."
     ID_SELECT_LIST          "Select from List\nSelect List (H)"
-    ID_CONTRAIN_X           "Constrain to X axis\nX Constraint"
-    ID_CONSTRAIN_Y          "Constrain to Y axis\nY Constraint (`)"
-    ID_BUTTON32922          "Constrain to X axis\nX Constraint"
-    ID_BUTTON32923          "Constrain to XZ axis\nXZ Constraint"
     ID_ZOOM                 "Zoom view in/out\nZoom Mode"
     ID_SELECTION_LOCK       "Selection Lock\nSelection Lock (Spacebar)"
-    ID_BUTTON32926          "Fo"
     ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
 END
 
@@ -3030,9 +3030,12 @@ STRINGTABLE
 BEGIN
     ID_SELECT_AND_MOVE      "Select and Move objects\nSelect and Move (M)"
     ID_SELECT_AND_ROTATE    "Select and Rotate objects\nSelect and Rotate (R)"
-    ID_CONSTRAIN_X          "Constrain to global X axis\nX Constraint (`)"
-    ID_CONSTRAIN_Z          "Constrain to global Z axis\nZ Constraint (`)"
-    ID_CONSTRAIN_XZ         "Constrain to global XZ plane\nXZ Constraint (`)"
+    ID_CONSTRAIN_X          "Constrain movement to global X axis\nX Constraint"
+    ID_CONSTRAIN_Y          "Constrain movement to global Y axis\nY Constraint"
+    ID_CONSTRAIN_Z          "Constrain movement to global Z axis\nZ Constraint"
+    ID_CONSTRAIN_XZ         "Constrain movement to global XZ plane\nXZ Constraint"
+    ID_CONSTRAIN_YZ         "Constrain movement to global YZ plane\nYZ Constraint"
+    ID_CONSTRAIN_XY         "Constrain movement to global XY plane\nXY Constraint"
     ID_FORM_WING            "Form marked ships into Wing\nForm Wing (Ctrl+W)"
     ID_DISBAND_WING         "Take marked ships out of wing\nDisband Wing (Ctrl+D)"
     ID_SHOW_DISTANCED       "Show distances between marked objects"
@@ -3043,10 +3046,6 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_BUTTON32944          "Constrain to YZ axis\nYZ Constraint"
-    ID_BUTTON32945          "Constrain to XY axis\nXY Constraint"
-    ID_CONSTRAIN_YZ         "Constrain to global YZ plane\nYZ Constraint (`)"
-    ID_CONSTRAIN_XY         "Constrain to global XY plane\nXY Constraint (`)"
     ID_FLYING_CONTROLS      "Use real time flying controls instead of stepped controls"
     ID_SELECT_AND_ROTATE_LOCALLY "Rotate objects locally\nRotate Locally"
     ID_ROTATE_LOCALLY       "Rotate around local object's axis system\nRotate locally (X)"
@@ -3068,7 +3067,7 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_ERROR_CHECKER        "Checks campaign for errors"
+    ID_ERROR_CHECKER        "Checks mission for FRED-detectable errors"
 END
 
 STRINGTABLE
@@ -3078,10 +3077,12 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid."
-    ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships."
-    ID_ALIGN_OBJ            "Align object's axis with global axis (use camera if no objects are marked)"
-    ID_MARK_WING            "Mark entire wing selected object is a member of."
+    ID_LEVEL_OBJ            "Rotate object (or camera if no objects are marked) so that its Y-axis matches the grid's normal vector"
+    ID_ALIGN_OBJ            "Align object (or camera if no objects are marked) X/Y/Z axes with the global axes that are closest"
+    ID_MARK_WING            "Mark the entire wing that contains the currently marked object"
+    ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid"
+    ID_MISC_MOVESHIPSWHENUNDOCKING  "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
+    ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships"
 END
 
 STRINGTABLE
