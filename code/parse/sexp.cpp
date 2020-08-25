@@ -347,6 +347,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-counter",					OP_FOR_COUNTER,							2,	3,			SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "for-ship-class",					OP_FOR_SHIP_CLASS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-type",					OP_FOR_SHIP_TYPE,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -3300,6 +3302,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					{
 						return SEXP_CHECK_INVALID_FIREBALL;
 					}
+				}
+				break;
+
+			case OPF_SPECIES:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (species_info_lookup(CTEXT(node)) < 0 ) {
+					return SEXP_CHECK_INVALID_SPECIES;
 				}
 				break;
 
@@ -9930,7 +9942,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_ship_class_or_type(int arg_handler_node, int condition_node, bool ship_type)
+int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_num)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -9941,21 +9953,54 @@ int eval_for_ship_class_or_type(int arg_handler_node, int condition_node, bool s
 	// handle each parameter
 	for (; n >= 0; n = CDR(n))
 	{
-		int index = ship_type ? ship_type_name_lookup(CTEXT(n)) : ship_info_lookup(CTEXT(n));
-		if (index < 0)
+		auto constraint = CTEXT(n);
+		int constraint_index = -1;
+
+		switch (op_num)
+		{
+			case OP_FOR_SHIP_CLASS:
+				constraint_index = ship_info_lookup(constraint);
+				break;
+			case OP_FOR_SHIP_TYPE:
+				constraint_index = ship_type_name_lookup(constraint);
+				break;
+			case OP_FOR_SHIP_TEAM:
+				constraint_index = iff_lookup(constraint);
+				break;
+			case OP_FOR_SHIP_SPECIES:
+				constraint_index = species_info_lookup(constraint);
+				break;
+		}
+
+		if (constraint_index < 0)
 			continue;
 
-		// add all ships of this class or type which are present in the mission
+		// add all ships of this constraint which are present in the mission
 		for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
 		{
 			if (objp->type == OBJ_SHIP)
 			{
-				int other_index = Ships[objp->instance].ship_info_index;
-				if (ship_type)
-					other_index = ship_class_query_general_type(other_index);
+				auto shipp = &Ships[objp->instance];
+				int ship_index = -1;
 
-				if (index == other_index)
-					argument_vector.emplace_back(vm_strdup(Ships[objp->instance].ship_name), -1);
+				switch (op_num)
+				{
+					case OP_FOR_SHIP_CLASS:
+						ship_index = shipp->ship_info_index;
+						break;
+					case OP_FOR_SHIP_TYPE:
+						ship_index = ship_class_query_general_type(shipp->ship_info_index);
+						break;
+					case OP_FOR_SHIP_TEAM:
+						ship_index = shipp->team;
+						break;
+					case OP_FOR_SHIP_SPECIES:
+						ship_index = Ship_info[shipp->ship_info_index].species;
+						break;
+				}
+
+				if (constraint_index == ship_index)
+					argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
 			}
 		}
 	}
@@ -9984,7 +10029,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE)
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
 		return;
 		
 	while (n != -1)
@@ -10042,7 +10087,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-counter
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE)
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
 		return;
 		
 	// loop through arguments
@@ -10160,6 +10205,8 @@ bool is_blank_of_op(int op_const)
 		case OP_FOR_COUNTER:
 		case OP_FOR_SHIP_CLASS:
 		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
 			return true;
 
 		default:
@@ -23488,7 +23535,9 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_FOR_SHIP_CLASS:
 			case OP_FOR_SHIP_TYPE:
-				sexp_val = eval_for_ship_class_or_type( cur_node, referenced_node, op_num == OP_FOR_SHIP_TYPE );
+			case OP_FOR_SHIP_TEAM:
+			case OP_FOR_SHIP_SPECIES:
+				sexp_val = eval_for_ship_collection( cur_node, referenced_node, op_num );
 				break;
 
 			// Karajorma
@@ -26185,6 +26234,8 @@ int query_operator_return_type(int op)
 		case OP_FOR_COUNTER:
 		case OP_FOR_SHIP_CLASS:
 		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default: {
@@ -26912,6 +26963,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_SHIP_TYPE:
 			return OPF_SHIP_TYPE;
+
+		case OP_FOR_SHIP_TEAM:
+			return OPF_IFF;
+
+		case OP_FOR_SHIP_SPECIES:
+			return OPF_SPECIES;
 
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
@@ -28948,6 +29005,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_FIREBALL:
 			return "Invalid fireball";
+
+		case SEXP_CHECK_INVALID_SPECIES:
+			return "Invalid species";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -31193,6 +31253,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tShip type from which to list ships\r\n" },
+
+	// Goober5000
+	{ OP_FOR_SHIP_TEAM, "For-Ship-Team (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain team (or teams) in the mission, and each ship will be provided as an argument to the action operators.  "
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tTeam (IFF) from which to list ships\r\n" },
+
+	// Goober5000
+	{ OP_FOR_SHIP_SPECIES, "For-Ship-Species (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships of a certain species (or multiple species) in the mission, and each ship will be provided as an argument to the action operators.  "
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tSpecies from which to list ships\r\n" },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"

@@ -1457,6 +1457,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_TEAM_COLOR:
 	case OPF_GAME_SND:
 	case OPF_FIREBALL:
+	case OPF_SPECIES:
 		return 1;
 
 	case OPF_SHIP:
@@ -3013,6 +3014,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_fireball();
 		break;
 
+	case OPF_SPECIES:
+		list = get_listing_opf_species();
+		break;
+
 	default:
 		Int3();  // unknown OPF code
 		list = NULL;
@@ -4552,6 +4557,16 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 		if (strlen(unique_id) > 0)
 			head.add_data(unique_id);
 	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_species()
+{
+	sexp_list_item head;
+
+	for (auto &species : Species_info)
+		head.add_data(species.species_name);
 
 	return head.next;
 }
