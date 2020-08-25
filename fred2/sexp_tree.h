@@ -234,7 +234,6 @@ public:
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
 	sexp_list_item *get_listing_opf_variable_names();
-	sexp_list_item *get_listing_opf_variable_type();
 	sexp_list_item *get_listing_opf_skybox_model();
 	sexp_list_item *get_listing_opf_skybox_flags();
 	sexp_list_item *get_listing_opf_background_bitmap();
@@ -278,7 +277,7 @@ public:
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
-	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_species();	// NOLINT
 
 	int m_mode;
 	int item_index;
