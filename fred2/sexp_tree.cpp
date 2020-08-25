@@ -6130,7 +6130,7 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_species()
+sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
 {
 	sexp_list_item head;
 

@@ -277,7 +277,7 @@ public:
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
-	sexp_list_item *get_listing_opf_species();	// NOLINT
+	sexp_list_item *get_listing_opf_species();
 
 	int m_mode;
 	int item_index;
