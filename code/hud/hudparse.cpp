@@ -1575,13 +1575,13 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 {
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int text_alignment = 0;
+	HudAlignment text_alignment = HudAlignment::NONE;
 	bool always_show_text = false;
 	bool show_ballistic = false;
 	bool moving_text = false;
 	int armed_weapon_offsets[2] = {0, 0};
 	int armed_weapon_h = 12;
-	int weapon_alignment = 0;
+	HudAlignment weapon_alignment = HudAlignment::NONE;
 	bool show_weapons = false;
 	char fname[MAX_FILENAME_LEN];
 	
@@ -1633,9 +1633,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		stuff_int_list(Wenergy_text_offsets, 2);
 
 		if(optional_string("Text Alignment:")) {
-			if(required_string("Right")) {
-				text_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			text_alignment = hud_alignment_lookup(temp);
 		}
 	}
 	if(optional_string("Always Show Text:")) {
@@ -1652,9 +1652,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		show_weapons = true;
 
 		if(optional_string("Armed Guns List Alignment:")) {
-			if(required_string("Right")) {
-				weapon_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			weapon_alignment = hud_alignment_lookup(temp);
 		}
 
 		if(optional_string("Armed Guns List Entry Height:")) {
@@ -4919,7 +4919,7 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	int icon_height = 0;
 	int max_icons = 0;
 	int max_columns = 0;
-	int alignment = 0;
+	HudAlignment alignment = HudAlignment::NONE;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
 	
 	settings->origin[0] = 1.0f;
@@ -4965,11 +4965,9 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	}
 
 	if ( optional_string("Name Alignment:") ) {
-		if ( optional_string("Right") ) {
-			alignment = 1;
-		} else {
-			alignment = 0;
-		}
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		alignment = hud_alignment_lookup(temp);
 	}
 
 	hud_gauge->initBitmap(fname);

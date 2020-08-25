@@ -3271,6 +3271,15 @@ int hud_gauge_maybe_flash(int gauge_index)
 	return flash_status;
 }
 
+HudAlignment hud_alignment_lookup(const char *name)
+{
+	if (!stricmp(name, "left"))
+		return HudAlignment::LEFT;
+	if (!stricmp(name, "right"))
+		return HudAlignment::RIGHT;
+	return HudAlignment::NONE;
+}
+
 /**
  * @brief Initialise the objective message display data
  */

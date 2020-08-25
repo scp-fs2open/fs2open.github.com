@@ -262,10 +262,10 @@ protected:
 
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int Text_alignment;
+	HudAlignment Text_alignment;
 
 	int Armed_name_offsets[2];
-	int Armed_alignment;
+	HudAlignment Armed_alignment;
 	bool Show_armed;
 	int Armed_name_h;
 	
@@ -280,7 +280,7 @@ public:
 	void initAlwaysShowText(bool show_text);
 	void initMoveText(bool move_text);
 	void initShowBallistics(bool show_ballistics);
-	void initAlignments(int text_align, int armed_align);
+	void initAlignments(HudAlignment text_align, HudAlignment armed_align);
 	void initArmedOffsets(int x, int y, int h, bool show);
 	void render(float frametime) override;
 	void pageIn() override;
@@ -451,7 +451,7 @@ class HudGaugeWarheadCount: public HudGauge
 	int Warhead_count_size[2];
 
 	int Max_symbols;
-	int Text_align;
+	HudAlignment Text_align;
 	int Max_columns;
 public:
 	HudGaugeWarheadCount();
@@ -461,7 +461,7 @@ public:
 	void initCountSizes(int w, int h);
 	void initMaxSymbols(int count);
 	void initMaxColumns(int count);
-	void initTextAlign(int align);
+	void initTextAlign(HudAlignment align);
 	void render(float frametime) override;
 	void pageIn() override;
 };
