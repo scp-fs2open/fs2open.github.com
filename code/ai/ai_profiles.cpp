@@ -519,6 +519,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					}
 				}
 
+                set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
