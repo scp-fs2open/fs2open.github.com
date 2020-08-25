@@ -379,7 +379,7 @@ void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const ve
 
 // normalizes only if the vector's magnitude is above an optionally specified threshold, defaulting to 10 times machine epsilon
 // returns whether or not it normalized
-bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold = std::numeric_limits<int>::epsilon() * 10.f);
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold = std::numeric_limits<float>::epsilon() * 10.f);
 
 float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2);
 
