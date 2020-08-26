@@ -1123,6 +1123,25 @@ int ShipEditorDialogModel::make_ship_list(int* arr)
 	return n;
 }
 
+void ShipEditorDialogModel::stuff_special_arrival_anchor_name(char* buf,
+	int iff_index,
+	int restrict_to_players,
+	int retail_format)
+{
+	char* iff_name = Iff_info[iff_index].iff_name;
+
+	// stupid retail hack
+	if (retail_format && !stricmp(iff_name, "hostile") && !restrict_to_players)
+		iff_name = (char*)"enemy";
+
+	if (restrict_to_players)
+		sprintf(buf, "<any %s player>", iff_name);
+	else
+		sprintf(buf, "<any %s>", iff_name);
+
+	strlwr(buf);
+}
+
 int ShipEditorDialogModel::get_ship_from_obj(object* objp)
 {
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))

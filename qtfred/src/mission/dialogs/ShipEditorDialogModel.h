@@ -148,6 +148,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	bool wing_is_player_wing(int);
 	int get_ship_from_obj(object*);
+	void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
 
 	bool enable;
 	bool p_enable;

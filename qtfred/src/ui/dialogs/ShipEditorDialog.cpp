@@ -100,8 +100,8 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->updateArrivalCueCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::ArrivalCueChanged);
 
 	connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
-		//use this otherwise linux complains
-		
+		// use this otherwise linux complains
+
 		_model->setArrivalFormula(old, node);
 	});
 	connect(ui->arrivalTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
@@ -314,15 +314,7 @@ void ShipEditorDialog::updateArrival()
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (i = 0; i < Num_iffs; i++) {
 				char tmp[NAME_LENGTH + 15];
-				// char *buf, int iff_index, int restrict_to_players, //int retail_format
-				char* iff_name = Iff_info[i].iff_name;
-
-				if (restrict_to_players)
-					sprintf(tmp, "<any %s player>", iff_name);
-				else
-					sprintf(tmp, "<any %s>", iff_name);
-
-				strlwr(tmp);
+				_model->stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}
@@ -673,8 +665,9 @@ void ShipEditorDialog::departureWarpChanged(bool value) { _model->setNoDeparture
 
 void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue(value); }
 
-void ShipEditorDialog::on_textureReplacementButton_clicked() {
-	//TODO:: Texture Replacement Dialog
+void ShipEditorDialog::on_textureReplacementButton_clicked()
+{
+	// TODO:: Texture Replacement Dialog
 }
 
 void ShipEditorDialog::on_playerShipButton_clicked() { _model->setPlayer(true); }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>464</width>
-    <height>674</height>
+    <width>466</width>
+    <height>681</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -38,7 +38,7 @@
          <item>
           <layout class="QGridLayout" name="firstColumnOptions">
            <item row="3" column="0">
-            <widget class="QLabel" name="label_7">
+            <widget class="QLabel" name="teamLabel">
              <property name="text">
               <string>Team</string>
              </property>
@@ -64,21 +64,21 @@
             <widget class="QLineEdit" name="shipNameEdit"/>
            </item>
            <item row="4" column="0">
-            <widget class="QLabel" name="label_8">
+            <widget class="QLabel" name="cargoLabel">
              <property name="text">
               <string>Cargo</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_6">
+            <widget class="QLabel" name="AIClassLabel">
              <property name="text">
               <string>AI Class</string>
              </property>
             </widget>
            </item>
            <item row="0" column="0">
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="shipNameLabel">
              <property name="text">
               <string>Ship Name</string>
              </property>
@@ -92,21 +92,21 @@
             </widget>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="label_9">
+            <widget class="QLabel" name="altNameLabel">
              <property name="text">
               <string>Alt Name</string>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLabel" name="label_2">
+            <widget class="QLabel" name="shipClassLabel">
              <property name="text">
               <string>Ship Class</string>
              </property>
             </widget>
            </item>
            <item row="6" column="0">
-            <widget class="QLabel" name="label_10">
+            <widget class="QLabel" name="callsignLabel">
              <property name="text">
               <string>Callsign</string>
              </property>
@@ -135,7 +135,7 @@
          <item>
           <layout class="QGridLayout" name="middleOptionsGrid">
            <item row="4" column="0">
-            <widget class="QLabel" name="label_12">
+            <widget class="QLabel" name="scoreLabel">
              <property name="text">
               <string>Kill Score</string>
              </property>
@@ -206,7 +206,7 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLabel" name="label_4">
+            <widget class="QLabel" name="wingLabel">
              <property name="text">
               <string>Wing:</string>
              </property>
@@ -220,14 +220,14 @@
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QLabel" name="label_11">
+            <widget class="QLabel" name="personaLabel">
              <property name="text">
               <string>Persona</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="hotkeyLabel">
              <property name="text">
               <string>Hotkey</string>
              </property>
@@ -241,7 +241,7 @@
             </widget>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="label_13">
+            <widget class="QLabel" name="assistLabel">
              <property name="text">
               <string>Assist %</string>
              </property>
@@ -250,7 +250,7 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <layout class="QHBoxLayout" name="playerCheckboxLayout">
            <item>
             <spacer name="horizontalSpacer_4">
              <property name="orientation">
@@ -440,18 +440,18 @@
          <property name="title">
           <string>Arrival</string>
          </property>
-         <layout class="QVBoxLayout" name="horizontalLayout_13">
+         <layout class="QVBoxLayout" name="arrivalLayout">
           <item>
-           <layout class="QGridLayout" name="gridLayout_5">
+           <layout class="QGridLayout" name="arrivalBoxLayout">
             <item row="2" column="0">
-             <widget class="QLabel" name="label_16">
+             <widget class="QLabel" name="arrivalDistanceLabel">
               <property name="text">
                <string>Distance</string>
               </property>
              </widget>
             </item>
             <item row="0" column="0">
-             <widget class="QLabel" name="label_14">
+             <widget class="QLabel" name="arrivalLocationLabel">
               <property name="text">
                <string>Location</string>
               </property>
@@ -461,14 +461,14 @@
              <widget class="QComboBox" name="arrivalTargetCombo"/>
             </item>
             <item row="1" column="0">
-             <widget class="QLabel" name="label_15">
+             <widget class="QLabel" name="arrivalTargetLabel">
               <property name="text">
                <string>Target</string>
               </property>
              </widget>
             </item>
             <item row="3" column="0">
-             <widget class="QLabel" name="label_17">
+             <widget class="QLabel" name="arrivalDelayLabel">
               <property name="text">
                <string>Delay</string>
               </property>
@@ -478,12 +478,12 @@
              <widget class="QComboBox" name="arrivalLocationCombo"/>
             </item>
             <item row="3" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <layout class="QHBoxLayout" name="arrivalDelayLayout">
               <item>
                <widget class="QSpinBox" name="arrivalDelaySpinBox"/>
               </item>
               <item>
-               <widget class="QLabel" name="label_18">
+               <widget class="QLabel" name="arrivalSeconds">
                 <property name="text">
                  <string>Seconds</string>
                 </property>
@@ -492,7 +492,7 @@
              </layout>
             </item>
             <item row="2" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <layout class="QHBoxLayout" name="arrivalDistanceLayout">
               <item>
                <widget class="QSpinBox" name="arrivalDistanceEdit">
                 <property name="buttonSymbols">
@@ -501,7 +501,7 @@
                </widget>
               </item>
               <item>
-               <spacer name="horizontalSpacer_2">
+               <spacer name="distanceSpaceer">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
@@ -535,9 +535,9 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <layout class="QHBoxLayout" name="arrivalCueLayout">
             <item>
-             <widget class="QLabel" name="label_19">
+             <widget class="QLabel" name="arrivalCureLabel">
               <property name="text">
                <string>Cue:</string>
               </property>
@@ -583,47 +583,59 @@
          <property name="title">
           <string>Departure</string>
          </property>
-         <layout class="QVBoxLayout" name="horizontalLayout_13">
+         <layout class="QVBoxLayout" name="departureLayout_2">
           <item>
-           <layout class="QGridLayout" name="gridLayout_5">
+           <layout class="QGridLayout" name="departureLayout">
             <item row="1" column="0">
-             <widget class="QLabel" name="label_15">
+             <widget class="QLabel" name="departureTargetLabel">
               <property name="text">
                <string>Target</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="departureLocationCombo"/>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="departureTargetCombo"/>
             </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_17">
+            <item row="3" column="0">
+             <widget class="QLabel" name="departureDelayLabel">
               <property name="text">
                <string>Delay</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_14">
-              <property name="text">
-               <string>Location</string>
+            <item row="2" column="1">
+             <spacer name="departureSpaceer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
               </property>
-             </widget>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>22</height>
+               </size>
+              </property>
+             </spacer>
             </item>
-            <item row="4" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item row="0" column="1">
+             <widget class="QComboBox" name="departureLocationCombo"/>
+            </item>
+            <item row="3" column="1">
+             <layout class="QHBoxLayout" name="departureDelayLayout">
               <item>
                <widget class="QSpinBox" name="departureDelaySpinBox"/>
               </item>
               <item>
-               <widget class="QLabel" name="label_18">
+               <widget class="QLabel" name="departureSeconds">
                 <property name="text">
                  <string>Seconds</string>
                 </property>
                </widget>
               </item>
               <item>
-               <spacer name="horizontalSpacer_3">
+               <spacer name="departuredelaySpacer">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
@@ -637,27 +649,12 @@
               </item>
              </layout>
             </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="departureTargetCombo"/>
-            </item>
-            <item row="3" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_6"/>
-            </item>
-            <item row="2" column="1">
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
+            <item row="0" column="0">
+             <widget class="QLabel" name="departureLocationLabel">
+              <property name="text">
+               <string>Location</string>
               </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Minimum</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>19</height>
-               </size>
-              </property>
-             </spacer>
+             </widget>
             </item>
            </layout>
           </item>
@@ -676,16 +673,16 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <layout class="QHBoxLayout" name="departureCueLayout">
             <item>
-             <widget class="QLabel" name="label_19">
+             <widget class="QLabel" name="departureCueLabel">
               <property name="text">
                <string>Cue:</string>
               </property>
              </widget>
             </item>
             <item>
-             <spacer name="horizontalSpacer">
+             <spacer name="departureCueSpacer">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
