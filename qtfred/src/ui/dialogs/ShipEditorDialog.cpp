@@ -15,8 +15,8 @@ namespace fred {
 namespace dialogs {
 
 ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), SexpTreeEditorInterface(), ui(new Ui::ShipEditorDialog()),
-	  _model(new ShipEditorDialogModel(this, viewport)), _viewport(viewport)
+	: QDialog(parent), ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
+	  _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
@@ -147,7 +147,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	resize(QDialog::sizeHint());
 }
 
-ShipEditorDialog::~ShipEditorDialog() {}
+ShipEditorDialog::~ShipEditorDialog() = default;
 
 void ShipEditorDialog::closeEvent(QCloseEvent* event)
 {
@@ -323,8 +323,8 @@ void ShipEditorDialog::updateArrival()
 		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				!(objp->flags[Object::Object_Flags::Marked])) {
-				ui->arrivalTargetCombo->addItem(Ships[_model->get_ship_from_obj(objp)].ship_name,
-					QVariant(_model->get_ship_from_obj(objp)));
+				auto ship = _model->get_ship_from_obj(objp);
+				ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
 	} else {
@@ -337,8 +337,8 @@ void ShipEditorDialog::updateArrival()
 				pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 				Assert(pm);
 				if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-					ui->arrivalTargetCombo->addItem(Ships[_model->get_ship_from_obj(objp)].ship_name,
-						QVariant(_model->get_ship_from_obj(objp)));
+					auto ship = _model->get_ship_from_obj(objp);
+					ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 				}
 			}
 		}
@@ -394,8 +394,8 @@ void ShipEditorDialog::updateDeparture()
 			pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 			Assert(pm);
 			if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-				ui->departureTargetCombo->addItem(Ships[_model->get_ship_from_obj(objp)].ship_name,
-					QVariant(_model->get_ship_from_obj(objp)));
+				auto ship = _model->get_ship_from_obj(objp);
+				ui->departureTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
 	}

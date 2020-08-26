@@ -56,7 +56,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void ship_alt_name_close(int base_ship);
 	void ship_callsign_close(int base_ship);
 
-	int make_ship_list(int* arr);
+	static int make_ship_list(int* arr);
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
@@ -146,9 +146,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void OnDeleteShip();
 	void OnShipReset();
 
-	bool wing_is_player_wing(int);
-	int get_ship_from_obj(object*);
-	void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
+	static bool wing_is_player_wing(int);
+	static int get_ship_from_obj(object*);
+	static void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
 
 	bool enable;
 	bool p_enable;
@@ -163,7 +163,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int pship_count; // a total count of the player ships not marked
 	int player_ship, single_ship;
 	int ship_orders;
-	int tristate_set(int val, int cur_state);
+	static int tristate_set(int val, int cur_state);
 };
 
 template <typename T>

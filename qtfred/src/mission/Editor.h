@@ -124,7 +124,7 @@ class Editor : public QObject {
 	// Goober5000
 	// This must be done when either the wing name or the custom name is changed.
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-	void update_custom_wing_indexes();
+	static void update_custom_wing_indexes();
 
 	void ai_update_goal_references(int type, const char* old_name, const char* new_name);
 
@@ -150,7 +150,7 @@ class Editor : public QObject {
 
 	bool query_single_wing_marked();
 
-	bool wing_is_player_wing(int);
+	static bool wing_is_player_wing(int);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
@@ -251,7 +251,7 @@ class Editor : public QObject {
 	/**
 	 * @brief Finds a free wing slot (i.e. unused)
 	 */
-	int find_free_wing();
+	static int find_free_wing();
 
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
