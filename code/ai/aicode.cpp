@@ -1141,7 +1141,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 // If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 // (rvec defaults to NULL)
 // optionally specified turnrate_mod contains multipliers for each component of the turnrate (RATE, so 0.5 = slower)
-void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags, vec3d* turnrate_mod)
+void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, vec3d* turnrate_mod)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
@@ -1154,7 +1154,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 
 	//	Don't allow a ship to turn if it has no engine strength.
 	// AL 3-12-98: objp may not always be a ship!
-	if ( (objp->type == OBJ_SHIP) && !(sexp_flags & AITTV_VIA_SEXP) ) {
+	if ( (objp->type == OBJ_SHIP) && !(flags & AITTV_VIA_SEXP) ) {
 		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return;
 	}
@@ -1175,8 +1175,8 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 	// get the turn rate if we have Use_axial_turnrate_differences
 	if (objp->type == OBJ_SHIP && The_mission.ai_profile->flags[AI::Profile_Flags::Use_axial_turnrate_differences]) {
 		vel_limit = Ship_info[Ships[objp->instance].ship_info_index].max_rotvel;
-	}
-	else { // else get the turn time
+
+	} else { // else get the turn time
 		float turn_time = 0.f;
 		if (objp->type == OBJ_WEAPON) {
 			turn_time = Weapon_info[Weapons[objp->instance].weapon_info_index].turn_time;
@@ -1203,7 +1203,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 	
 
 	//	Scale turnrate based on skill level and team.
-	if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP)) {
+	if (!(flags & AITTV_FAST) && !(flags & AITTV_VIA_SEXP)) {
 		if (objp->type == OBJ_SHIP) {
 			if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) {
 				if (Ai_info[Ships[objp->instance].ai_index].ai_turn_time_scale != 0.f) {
@@ -1218,6 +1218,11 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 	acc_limit = vel_limit;
 	if (objp->type == OBJ_WEAPON)
 		vm_vec_scale(&acc_limit, 8.0f);
+
+	// for formation flying
+	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
+		acc_limit.xyz.z *= 0.2f;
+	}
 
 	src = objp->pos;
 
@@ -1239,7 +1244,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp or ship says not to
-	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
+	if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
 		delta_bank = 0.0f;
 	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
 		delta_bank = 0.0f;
@@ -1536,7 +1541,7 @@ void get_tangent_point(vec3d *tan1, vec3d *p0, vec3d *centerp, vec3d *p1, float 
  * Given an object and a point, turn towards the point, resulting in
  * approach behavior. Optional argument target_orient to attempt to match bank with
  */
-void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient, vec3d* turnrate_mod)
+void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient, int flags)
 {
 	vec3d* rvec = nullptr;
 	vec3d goal_rvec;
@@ -1549,7 +1554,7 @@ void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank
 		vm_match_bank(rvec, &goal_fvec, target_orient);
 	}
 	
-	ai_turn_towards_vector(point, objp, slide_vec, nullptr, bank_override, 0, rvec, 0, turnrate_mod);
+	ai_turn_towards_vector(point, objp, slide_vec, nullptr, bank_override, flags, rvec);
 }
 
 /**
@@ -4400,11 +4405,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 		} else {
 			vm_vec_scale_add(&perp, &Pl_objp->pos, &Autopilot_flight_leader->phys_info.vel, 1000.0f);
-			ai_turn_towards_vector(&perp, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, 0, &turnrate_mod);
+			ai_turn_towards_vector(&perp, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, &turnrate_mod);
 		}
 	} else {
 		if (dist_to_goal > 0.1f) {
-			ai_turn_towards_vector(target_pos, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, 0, &turnrate_mod);
+			ai_turn_towards_vector(target_pos, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, &turnrate_mod);
 		}
 	}
 
@@ -11760,13 +11765,8 @@ int ai_formation()
 	// (nullptr will be ignored otherwise)
 	float	leader_up_dot = vm_vec_dot(&leader_objp->orient.vec.uvec, &Pl_objp->orient.vec.uvec);
 	matrix* leader_orient = nullptr;
-	vec3d* slow_bank = nullptr;
-	vec3d turnrate_mod;
 	if (leader_up_dot < 0.996f) {
-		slow_bank = &turnrate_mod;
 		leader_orient = &leader_objp->orient;
-		// slower than normal banking for this purpose
-		vm_vec_make(slow_bank, 1.f, 1.f, 0.35f);
 	}
 
 	int	chaotic_leader = 0;
@@ -11792,7 +11792,7 @@ int ai_formation()
 	}
 
 	if (dist_to_goal > 500.0f) {
-		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, slow_bank);
+		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 		if (ab_allowed && !(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.2f)) {
 			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 			if (percent_left > 30.0f) {
@@ -11803,7 +11803,7 @@ int ai_formation()
 		accelerate_ship(aip, 1.0f);
 	} else if (dist_to_goal > 200.0f) {
 		if (dot_to_goal > -0.5f) {
-			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, slow_bank);
+			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
 				set_accel_for_target_speed(Pl_objp, leader_speed + range_speed * (dist_to_goal+100.0f)/500.0f);
@@ -11825,7 +11825,7 @@ int ai_formation()
 				}
 			}
 		} else {
-			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient, slow_bank);
+			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			if (leader_speed > 10.0f)
 				set_accel_for_target_speed(Pl_objp, leader_speed *(1.0f + dot_to_goal));
 			else
@@ -11843,12 +11843,12 @@ int ai_formation()
 
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
 		if (chaotic_leader) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, slow_bank);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
 			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
 				afterburners_stop(Pl_objp);
 		} else if (dist_to_goal > 75.0f) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, slow_bank);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			float	delta_speed;
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
@@ -11894,11 +11894,11 @@ int ai_formation()
 				//	moving very slowly, else momentum can carry far away from goal.
 
 				if ((dist_to_goal > 10.0f) || ((Pl_objp->phys_info.speed > leader_speed + 2.5f) && (dot_to_goal > 0.5f))) {
-					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, slow_bank);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 					set_accel_for_target_speed(Pl_objp, leader_speed + dist_to_goal/10.0f);
 				} else {
 					if (Pl_objp->phys_info.speed < 0.5f) {
-						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, slow_bank);
+						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 					}
 					set_accel_for_target_speed(Pl_objp, leader_speed);
 				}
@@ -11908,7 +11908,7 @@ int ai_formation()
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
-				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, slow_bank);
+				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 
 				if (dist_to_goal > 25.0f) {
 					if (dot_to_goal < 0.3f)
@@ -11942,9 +11942,9 @@ int ai_formation()
 
 			} else {
 				if (Pl_objp->phys_info.speed < 0.1f)
-					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, slow_bank);
+					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 				else
-					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient, slow_bank);
+					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 
 				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
 				set_accel_for_target_speed(Pl_objp, leader_speed);

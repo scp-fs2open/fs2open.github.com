@@ -7946,10 +7946,12 @@ void sexp_set_orient_sub(matrix *orient_to_set, vec3d *pos, vec3d *location, int
 			bankflag = AITTV_IGNORE_BANK;
 		}
 
-		// turn
+		// slow down or speed up the ship's turnrate to match the given turn time
 		vec3d turnrate_mod;
-		vm_vec_make(&turnrate_mod,1000,1000,1000);
-		ai_turn_towards_vector(location, objp, nullptr, nullptr, 0.0f, 0, nullptr, (AITTV_VIA_SEXP | bankflag), &turnrate_mod);
+		float turnrate_adjust = Ship_info[Ships[objp->instance].ship_info_index].srotation_time / (turn_time / 1000.f);
+		vm_vec_make(&turnrate_mod, turnrate_adjust, turnrate_adjust, turnrate_adjust);
+		// turn
+		ai_turn_towards_vector(location, objp, nullptr, nullptr, 0.0f, (AITTV_VIA_SEXP | bankflag), nullptr, &turnrate_mod);
 
 		// return
 		return;
