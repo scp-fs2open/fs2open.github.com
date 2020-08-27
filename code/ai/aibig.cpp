@@ -662,8 +662,8 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			compute_desired_rvec(rvec, enemy_pos, &Pl_objp->pos);
 		else
 			rvec = NULL;
-
-		ai_turn_towards_vector(enemy_pos, Pl_objp, sip->srotation_time, nullptr, rel_pos, 0.0f, 0, rvec);
+		
+		ai_turn_towards_vector(enemy_pos, Pl_objp, nullptr, rel_pos, 0.0f, 0, rvec);
 
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
@@ -1328,7 +1328,7 @@ void ai_big_strafe_attack()
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
-			ai_turn_towards_vector(&target_pos, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0);
+			ai_turn_towards_vector(&target_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);

@@ -7947,7 +7947,9 @@ void sexp_set_orient_sub(matrix *orient_to_set, vec3d *pos, vec3d *location, int
 		}
 
 		// turn
-		ai_turn_towards_vector(location, objp, float(turn_time)/(1000.0f), nullptr, nullptr, 0.0f, 0, nullptr, (AITTV_VIA_SEXP | bankflag));
+		vec3d turnrate_mod;
+		vm_vec_make(&turnrate_mod,1000,1000,1000);
+		ai_turn_towards_vector(location, objp, nullptr, nullptr, 0.0f, 0, nullptr, (AITTV_VIA_SEXP | bankflag), &turnrate_mod);
 
 		// return
 		return;
