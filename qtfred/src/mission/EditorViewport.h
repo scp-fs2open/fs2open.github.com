@@ -32,6 +32,7 @@ struct ViewSettings {
 	bool FullDetail = false;
 	bool Show_waypoints = true;
 	bool Show_compass = true;
+	bool Move_ships_when_undocking = true;
 
 	ViewSettings();
 };
@@ -97,6 +98,7 @@ class EditorViewport {
 
 	int	create_object(vec3d *pos, int waypoint_instance = -1);
 
+	int duplicate_marked_objects();
 	int drag_objects(int x, int y);
 
 	int drag_rotate_objects(int mouse_dx, int mouse_dy);
