@@ -6552,11 +6552,8 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 void ai_chase_ct()
 {
 	vec3d		tvec;
-	ship_info	*sip;
 	ai_info		*aip;
 
-	Assert(Ships[Pl_objp->instance].ship_info_index >= 0);
-	sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	Assert(Ships[Pl_objp->instance].ai_index >= 0);
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -6588,7 +6585,7 @@ void ai_chase_ct()
 /**
  * ATTACK submode handler for chase mode.
  */
-static void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos)
+static void ai_chase_eb(ai_info *aip, vec3d *predicted_enemy_pos)
 {
 	vec3d	_pep;
 	float		dot_to_enemy, dot_from_enemy;
@@ -6797,7 +6794,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 //	Pl_objp (aip) tries to get behind En_objp.
 //	New on 2/21/98: If this ship can move backwards and slide, maybe do that to get behind.
-static void get_behind_ship(ai_info *aip, ship_info *sip)
+static void get_behind_ship(ai_info *aip)
 {
 	vec3d	new_pos;
 	float	dot;
@@ -7137,10 +7134,7 @@ void ai_stealth_find()
 void ai_stealth_sweep()
 {
 	ai_info		*aip;
-	ship_info	*sip;
 
-	Assert(Ships[Pl_objp->instance].ship_info_index >= 0);
-	sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	Assert(Ships[Pl_objp->instance].ai_index >= 0);
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -7324,7 +7318,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 //	Used to evade towards a point off the right or up vector.
 //	Now, evade straight away to try to get far away.
 //	The squiggling should protect against laser fire.
-void ai_chase_es(ai_info *aip, ship_info *sip)
+void ai_chase_es(ai_info *aip)
 {
 	vec3d	tvec;
 	fix		timeslice;
@@ -8335,11 +8329,11 @@ void ai_chase()
 		break;
 
 	case SM_EVADE_SQUIGGLE:
-		ai_chase_es(aip, sip);
+		ai_chase_es(aip);
 		break;
 
 	case SM_EVADE_BRAKE:
-		ai_chase_eb(aip, sip, &predicted_enemy_pos);
+		ai_chase_eb(aip, &predicted_enemy_pos);
 		break;
 
 	case SM_EVADE:
@@ -8351,7 +8345,7 @@ void ai_chase()
 		break;
 
 	case SM_GET_BEHIND:
-		get_behind_ship(aip, sip);
+		get_behind_ship(aip);
 		break;
 
 	case SM_GET_AWAY:		//	Used to get away from opponent to prevent endless circling.
@@ -11772,7 +11766,7 @@ int ai_formation()
 		slow_bank = &turnrate_mod;
 		leader_orient = &leader_objp->orient;
 		// slower than normal banking for this purpose
-		vm_vec_make(slow_bank, 1.f, 1.f, 0.2f);
+		vm_vec_make(slow_bank, 1.f, 1.f, 0.35f);
 	}
 
 	int	chaotic_leader = 0;
