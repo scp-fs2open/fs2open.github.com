@@ -25590,7 +25590,7 @@ int get_sexp_main()
 	return start_node;
 }
 
-int run_sexp(const char* sexpression)
+int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
 	int n, i, sexp_val = UNINITIALIZED;
@@ -25608,9 +25608,19 @@ int run_sexp(const char* sexpression)
 	n = get_sexp_main();
 	if (n != -1)
 	{
-		sexp_val = eval_sexp(n);
+		if (run_eval_num)
+		{
+			bool is_nan, is_nan_forever;
+			sexp_val = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan_or_nan_forever != nullptr)
+				*is_nan_or_nan_forever = (is_nan || is_nan_forever);
+		}
+		else
+			sexp_val = eval_sexp(n);
+
 		free_sexp2(n);
 	}
+
 	Mp = oldMp;
 
 	return sexp_val;

@@ -83,7 +83,7 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 	return ade_set_object_with_breed(L, objnum);
 }
 
-ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a boolean", "boolean", "true if the SEXP returned SEXP_TRUE or SEXP_KNOWN_TRUE; false if the SEXP returned anything else (even a number)")
 {
 	const char* s;
 	int r_val;
@@ -99,7 +99,24 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boo
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+ADE_FUNC(evaluateNumericSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a number", "number", "the value of the SEXP result (or NaN if the SEXP returned SEXP_NAN or SEXP_NAN_FOREVER)")
+{
+	const char* s;
+	int r_val;
+	bool got_nan;
+
+	if (!ade_get_args(L, "s", &s))
+		return ade_set_args(L, "i", 0);
+
+	r_val = run_sexp(s, true, &got_nan);
+
+	if (got_nan)
+		return ade_set_args(L, "f", std::numeric_limits<float>::quiet_NaN());
+	else
+		return ade_set_args(L, "i", r_val);
+}
+
+ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `when` operator", "boolean", "if the operation was successful")
 {
 	const char* s;
 	int r_val;
