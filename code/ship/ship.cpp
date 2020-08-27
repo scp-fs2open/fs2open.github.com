@@ -71,6 +71,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/api/objs/vecmath.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
@@ -7472,9 +7473,9 @@ void ship_destroy_instantly(object *ship_objp)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObject("Self", ship_objp);
+	Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVar("Self");
+	Script_system.RemHookVars(2, "Self", "Ship");
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
@@ -8113,7 +8114,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 			}
 
-			snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+			if (sound_index.isValid())
+				snd_play_3d(gamesnd_get_game_sound(sound_index), &objp->pos, &View_position, objp->radius, nullptr, 0, 1.0f, SND_PRIORITY_MUST_PLAY);
 			if (objp == Player_obj)
 				joy_ff_explode();
 
@@ -13955,7 +13957,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;
 
-					swp->primary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(sound_index)));
+					if (sound_index.isValid())
+						swp->primary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(sound_index)));
+					else
+						swp->primary_bank_rearm_time[i] = timestamp(0);
 				}
 
 				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
@@ -13979,7 +13984,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 						else
 							sound_index = GameSounds::MISSILE_LOAD;
 
-						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
+						if (sound_index.isValid())
+							snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 	
 						swp->primary_bank_ammo[i] += Weapon_info[swp->primary_bank_weapons[i]].reloaded_per_batch;
 						if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
@@ -14010,7 +14016,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;
 
-					snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
+					if (sound_index.isValid())
+						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 				}
 
 				aip->rearm_first_ballistic_primary = FALSE;

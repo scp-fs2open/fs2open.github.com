@@ -220,9 +220,6 @@ void maybe_delete_debris(debris *db)
 	}
 }
 
-MONITOR(NumSmallDebris)
-MONITOR(NumHullDebris)
-
 /**
  * Do various updates to debris:  check if time to die, start fireballs
  * Maybe delete debris if it's very far away from player.
@@ -241,15 +238,12 @@ void debris_process_post(object * obj, float frame_time)
 	debris *db = &Debris[num];
 
 	if ( db->is_hull ) {
-		MONITOR_INC(NumHullDebris,1);
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
 			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector, 0);
 			db->sound_delay = 0;
 		}
-	} else {
-		MONITOR_INC(NumSmallDebris,1);
 	}
 
 	if (!db->flags[Debris_Flags::DoNotExpire]) {
@@ -389,6 +383,9 @@ int debris_find_oldest()
 
 #define	DEBRIS_ROTVEL_SCALE	5.0f
 void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
+
+MONITOR(NumSmallDebris)
+MONITOR(NumHullDebris)
 
 /**
  * Create debris from an object
@@ -690,6 +687,12 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	OnDebrisCreatedHook->run(scripting::hook_param_list(
 		scripting::hook_param("Debris", 'o', obj),
 		scripting::hook_param("Source", 'o', source_obj)));
+
+	if (db->is_hull) {
+		MONITOR_INC(NumHullDebris,1);
+	} else {
+		MONITOR_INC(NumSmallDebris,1);
+	}
 
 	return obj;
 }
