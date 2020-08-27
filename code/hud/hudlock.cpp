@@ -1610,8 +1610,11 @@ void hud_do_lock_indicators(float frametime)
 			}
 
 			lock_slot->locked_timestamp = timestamp();
+			Player_ai->ai_flags.remove(AI::AI_Flags::Seek_lock);
+			Player_ai->current_target_is_locked = 1;
 		} else if ( !lock_slot->locked ) {
 			Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
+			Player_ai->current_target_is_locked = 0;
 			if (Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop)) {
 				snd_stop(Missile_lock_loop);
 				Missile_lock_loop = sound_handle::invalid();
