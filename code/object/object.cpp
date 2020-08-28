@@ -1217,12 +1217,15 @@ void obj_move_all_post(object *objp, float frametime)
 				int group_id = Weapons[objp->instance].group_id;
 				int cast_light = 1;
 
-				if ( (group_id >= 0) && (Obj_weapon_group_id_used[group_id]==0) )	{
-					// Mark this group as done
-					Obj_weapon_group_id_used[group_id]++;
-				} else {
-					// This group has already done its light casting
-					cast_light = 0;
+				if (group_id >= 0) {
+					if (Obj_weapon_group_id_used[group_id] == 0) {
+						// Mark this group as done
+						Obj_weapon_group_id_used[group_id]++;
+					}
+					else {
+						// This group has already done its light casting
+						cast_light = 0;
+					}
 				}
 
 				if ( cast_light )	{
