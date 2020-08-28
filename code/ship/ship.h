@@ -1101,6 +1101,9 @@ public:
 	float			debris_damage_mult;
 	float			debris_arc_percent;
 	gamesnd_id		debris_ambient_sound;
+	gamesnd_id		debris_collision_sound_light;
+	gamesnd_id		debris_collision_sound_heavy;
+	gamesnd_id		debris_explosion_sound;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

@@ -79,8 +79,10 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 
 		// only play debris destroy sound if hull piece and it has been around for at least 2 seconds
 		if ( Missiontime > debris_p->time_started + 2*F1_0 ) {
-			snd_play_3d( gamesnd_get_game_sound(gamesnd_id(GameSounds::MISSILE_IMPACT1)), &debris_obj->pos, &View_position, debris_obj->radius );
-			
+			auto snd_id = Ship_info[debris_p->ship_info_index].debris_explosion_sound;
+			if (snd_id.isValid()) {
+				snd_play_3d( gamesnd_get_game_sound(snd_id), &debris_obj->pos, &View_position, debris_obj->radius );
+			}
 		}
 	}
 

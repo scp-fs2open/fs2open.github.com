@@ -961,15 +961,25 @@ gamesnd_id choose_collision_sound(gamesnd_id default_snd, object *A, object *B)
 	{
 		if (A->type == OBJ_SHIP)
 			a_snd = Ship_info[Ships[A->instance].ship_info_index].collision_physics.collision_sound_heavy_idx;
+		else if (A->type == OBJ_DEBRIS)
+			a_snd = Ship_info[Debris[A->instance].ship_info_index].debris_collision_sound_heavy;
+
 		if (B->type == OBJ_SHIP)
 			b_snd = Ship_info[Ships[B->instance].ship_info_index].collision_physics.collision_sound_heavy_idx;
+		else if (B->type == OBJ_DEBRIS)
+			b_snd = Ship_info[Debris[B->instance].ship_info_index].debris_collision_sound_heavy;
 	}
 	else if (default_snd == gamesnd_id(GameSounds::SHIP_SHIP_LIGHT))
 	{
 		if (A->type == OBJ_SHIP)
 			a_snd = Ship_info[Ships[A->instance].ship_info_index].collision_physics.collision_sound_light_idx;
+		else if (A->type == OBJ_DEBRIS)
+			a_snd = Ship_info[Debris[A->instance].ship_info_index].debris_collision_sound_light;
+
 		if (B->type == OBJ_SHIP)
 			b_snd = Ship_info[Ships[B->instance].ship_info_index].collision_physics.collision_sound_light_idx;
+		else if (B->type == OBJ_DEBRIS)
+			b_snd = Ship_info[Debris[B->instance].ship_info_index].debris_collision_sound_light;
 	}
 	else if (default_snd == gamesnd_id(GameSounds::SHIP_SHIP_SHIELD))
 	{

@@ -883,6 +883,9 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_ambient_sound = other.debris_ambient_sound;
+	debris_collision_sound_light = other.debris_collision_sound_light;
+	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
+	debris_explosion_sound = other.debris_explosion_sound;
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
@@ -1198,6 +1201,9 @@ void ship_info::move(ship_info&& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_ambient_sound = other.debris_ambient_sound;
+	debris_collision_sound_light = other.debris_collision_sound_light;
+	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
+	debris_explosion_sound = other.debris_explosion_sound;
 
 	std::swap(subsystems, other.subsystems);
 	std::swap(n_subsystems, other.n_subsystems);
@@ -1575,6 +1581,9 @@ ship_info::ship_info()
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
 	debris_ambient_sound = GameSounds::DEBRIS;
+	debris_collision_sound_light = gamesnd_id();
+	debris_collision_sound_heavy = gamesnd_id();
+	debris_explosion_sound = GameSounds::MISSILE_IMPACT1;
 
 	n_subsystems = 0;
 	subsystems = NULL;
@@ -2925,9 +2934,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
 		}
-		gamesnd_id ambient_snd;
+		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
 			sip->debris_ambient_sound = ambient_snd;
+		if (parse_game_sound("+Collision Sound Light:", &collision_snd_light))
+			sip->debris_collision_sound_light = collision_snd_light;
+		if (parse_game_sound("+Collision Sound Heavy:", &collision_snd_heavy))
+			sip->debris_collision_sound_heavy = collision_snd_heavy;
+		if (parse_game_sound("+Explosion Sound:", &explosion_snd))
+			sip->debris_explosion_sound = explosion_snd;
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
