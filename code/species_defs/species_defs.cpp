@@ -328,6 +328,30 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
+			if (optional_string("$Custom wingmate relative positions:")) {
+
+				int wing_index = 1;
+
+				while (check_for_string("(")) {
+
+					if (wing_index >= MAX_SHIPS_PER_WING)
+					{
+						Warning(LOCATION, "Species %s : Custom wing positions cannot exceed %d.  Ignoring the rest...", species_name, MAX_SHIPS_PER_WING);
+						break;
+					}
+
+					if (stuff_float_list(species->wing_positions[wing_index-1].a1d, 3) != 3) {
+						Warning(LOCATION, "Species %s : Incorrect position definition, each wing position must have an x, y and z coordinate.", species_name);
+						break;
+					}
+
+
+					wing_index++;
+				}
+
+				species->custom_wing_positions = wing_index;
+			}
+
 			// don't add new entry if this is just a modified one
 			if (!no_create)
 				Species_info.push_back(new_species);

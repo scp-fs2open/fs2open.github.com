@@ -75,6 +75,11 @@ public:
 	char cmeasure_name[NAME_LENGTH];
 	int cmeasure_index;
 
+	// if 0, default positions
+	int custom_wing_positions;
+	// does NOT include wing leader, so index 0 is the second in the wing, 1 is third, etc
+	vec3d wing_positions[MAX_SHIPS_PER_WING-1];
+
 	species_info()
 	{
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
