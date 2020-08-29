@@ -58,6 +58,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
 bool Ai_before_physics;
+bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
@@ -541,6 +542,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
+		if (optional_string("$Swarmers Lead Targets:")) {
+			stuff_boolean(&Swarmers_lead_targets);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -613,6 +618,7 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
-	Ai_before_physics = false;
+  Ai_before_physics = false;
+	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 }

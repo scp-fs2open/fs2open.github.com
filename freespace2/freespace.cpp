@@ -4961,7 +4961,7 @@ void game_leave_state( int old_state, int new_state )
     if (Script_system.IsConditionOverride(CHA_ONSTATEEND))
 	{
 		Script_system.RunCondition(CHA_ONSTATEEND);
-		Script_system.RemHookVars(2, "OldState", "NewState");
+		Script_system.RemHookVars({"OldState", "NewState"});
 		return;
 	}
 
@@ -5352,7 +5352,7 @@ void game_leave_state( int old_state, int new_state )
 
 	//WMC - Now run scripting stuff
 	Script_system.RunCondition(CHA_ONSTATEEND);
-	Script_system.RemHookVars(2, "OldState", "NewState");
+	Script_system.RemHookVars({"OldState", "NewState"});
 }
 
 // variable used for automatic netgame starting/joining
@@ -5376,7 +5376,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(Script_system.IsConditionOverride(CHA_ONSTATESTART)) {
 		Script_system.RunCondition(CHA_ONSTATESTART);
-		Script_system.RemHookVars(2, "OldState", "NewState");
+		Script_system.RemHookVars({"OldState", "NewState"});
 		return;
 	}
 
@@ -5871,7 +5871,7 @@ void mouse_force_pos(int x, int y);
 
 	//WMC - now do user scripting stuff
 	Script_system.RunCondition(CHA_ONSTATESTART);
-	Script_system.RemHookVars(2, "OldState", "NewState");
+	Script_system.RemHookVars({"OldState", "NewState"});
 }
 
 // do stuff that may need to be done regardless of state

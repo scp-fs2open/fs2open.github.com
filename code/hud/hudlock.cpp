@@ -1530,6 +1530,7 @@ void hud_do_lock_indicators(float frametime)
 	lock_info *lock_slot;
 	int num_active_seekers = 0;
 	bool play_tracking_sound = false;
+	bool player_has_lock = false;
 
 	// go through all lock slots in play and do missile locks
 	for ( int i = 0; i < max_target_locks; ++i ) {
@@ -1595,29 +1596,42 @@ void hud_do_lock_indicators(float frametime)
 		}
 
 		if ( !current_lock_status && lock_slot->locked ) {
-			if ( Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop) ) {
-				snd_stop(Missile_lock_loop);
+			if (Missile_track_loop.isValid()) {
+				snd_stop(Missile_track_loop);
 				Missile_track_loop = sound_handle::invalid();
-			}
 
-			if (wip->hud_locked_snd.isValid())
-			{
-				Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
-			}
-			else
-			{
-				Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
+				if (wip->hud_locked_snd.isValid())
+				{
+					Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
+				}
+				else
+				{
+					Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
+				}
 			}
 
 			lock_slot->locked_timestamp = timestamp();
+
+			player_has_lock = true;
 		} else if ( !lock_slot->locked ) {
-			Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
+			if (Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop)) {
+				snd_stop(Missile_lock_loop);
+				Missile_lock_loop = sound_handle::invalid();
+			}
 		}
 
 		// if there's at least one lock_slot current locking, play the looping sound
 		if ( lock_slot->indicator_visible && !lock_slot->locked ) {
 			play_tracking_sound = true;
 		}
+	}
+
+	if (player_has_lock) {
+		Player_ai->ai_flags.remove(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
+		Player_ai->current_target_is_locked = 1;
+	} else {
+		Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
+		Player_ai->current_target_is_locked = 0;
 	}
 
 	if ( play_tracking_sound ) {

@@ -1138,7 +1138,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	}
 }
 
-//	If rvec != NULL, use it to match bank by calling vm_matrix_interpolate.
+//	If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 //	(rvec defaults to NULL)
 void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags)
 {
@@ -1230,7 +1230,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
 	//	that is causing ships to inexplicably rotate very far.  If you see the message below in the log, set the next statement to be
 	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
-	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
+	//	This will allow you to rerun vm_angular_move_forward_vec() with the values that caused the error.
 #ifndef NDEBUG
 vec3d tvec = objp->orient.vec.fvec;
 vec3d	vel_in_copy;
@@ -1247,10 +1247,12 @@ objp->orient = objp_orient_copy; //-V587
 		matrix	out_orient, goal_orient;
 
 		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
-		vm_matrix_interpolate(&goal_orient, &curr_orient, &vel_in, delta_time, &out_orient, &vel_out, &vel_limit, &acc_limit);
+		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
+			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 		objp->orient = out_orient;
 	} else {
-		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
+		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank,
+			&objp->orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	}
 
 	#ifndef NDEBUG
@@ -1507,24 +1509,22 @@ void get_tangent_point(vec3d *tan1, vec3d *p0, vec3d *centerp, vec3d *p1, float 
 
 /**
  * Given an object and a point, turn towards the point, resulting in
- * approach behavior.
+ * approach behavior. Optional argument target_orient to attempt to match bank with
  */
-void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override)
+void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient)
 {
-	ai_info	*aip;
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
-	
-	// check if in formation and if not leader, don't change rotvel.z (bank to match leader elsewhere)
-	if (aip->ai_flags[AI::AI_Flags::Formation_object, AI::AI_Flags::Formation_wing]) {
-		if (&Objects[aip->goal_objnum] != objp) {
-			float rotvel_z = objp->phys_info.rotvel.xyz.z;
-			ai_turn_towards_vector(point, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, slide_vec, nullptr, bank_override, 0);
-			objp->phys_info.rotvel.xyz.z = rotvel_z;
-		}
-	} else {
-		// normal turn
-		ai_turn_towards_vector(point, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, slide_vec, nullptr, bank_override, 0);
+	vec3d* rvec = nullptr;
+	vec3d goal_rvec;
+
+	if (target_orient != nullptr) {
+		rvec = &goal_rvec;
+		vec3d goal_fvec;
+
+		vm_vec_normalized_dir(&goal_fvec,point, &objp->pos);
+		vm_match_bank(rvec, &goal_fvec, target_orient);
 	}
+	
+	ai_turn_towards_vector(point, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, slide_vec, nullptr, bank_override, 0, rvec);
 }
 
 /**
@@ -4605,7 +4605,7 @@ void ai_waypoints()
 				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
 				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
 				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointlist");
+				Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
 			}
 		}
 	}
@@ -9187,8 +9187,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		if (sip0->flags[Ship::Info_Flags::Support])
 			vm_vec_scale(&acc_limit, 2.0f);
 
-		// 1 at end of line prevent overshoot
-		vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, 1);
+		// true at end of line prevent overshoot
+		vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false, true);
 		docker_objp->phys_info.rotvel = omega_out;
 		docker_objp->orient = nm;
 
@@ -9238,7 +9238,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			if (sip0->flags[Ship::Info_Flags::Support])
 				vm_vec_scale(&acc_limit, 2.0f);
 
-			vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit);
+			vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false);
 			docker_objp->phys_info.rotvel = omega_out;
 			docker_objp->orient = nm;
 
@@ -11738,6 +11738,15 @@ int ai_formation()
 	dist_to_goal = vm_vec_dist_quick(&Pl_objp->pos, &goal_point);
 	float	dist_to_goal_2 = vm_vec_dist_quick(&Pl_objp->pos, &future_goal_point_2);
 
+	// See how different this ship's bank is relative to wing leader
+	// If it's too different, set leader_orient in subsequent calls to turn_towards_point
+	// (nullptr will be ignored otherwise)
+	float	leader_up_dot = vm_vec_dot(&leader_objp->orient.vec.uvec, &Pl_objp->orient.vec.uvec);
+	matrix* leader_orient = nullptr;
+	if (leader_up_dot < 0.996f) {
+		leader_orient = &leader_objp->orient;
+	}
+
 	int	chaotic_leader = 0;
 
 	chaotic_leader = formation_is_leader_chaotic(leader_objp);	//	Set to 1 if leader is player and flying erratically.  Causes ships to not aggressively pursue formation location.
@@ -11761,7 +11770,7 @@ int ai_formation()
 	}
 
 	if (dist_to_goal > 500.0f) {
-		turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 		if (ab_allowed && !(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.2f)) {
 			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 			if (percent_left > 30.0f) {
@@ -11772,7 +11781,7 @@ int ai_formation()
 		accelerate_ship(aip, 1.0f);
 	} else if (dist_to_goal > 200.0f) {
 		if (dot_to_goal > -0.5f) {
-			turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
 				set_accel_for_target_speed(Pl_objp, leader_speed + range_speed * (dist_to_goal+100.0f)/500.0f);
@@ -11794,7 +11803,7 @@ int ai_formation()
 				}
 			}
 		} else {
-			turn_towards_point(Pl_objp, &future_goal_point_5, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient);
 			if (leader_speed > 10.0f)
 				set_accel_for_target_speed(Pl_objp, leader_speed *(1.0f + dot_to_goal));
 			else
@@ -11812,12 +11821,12 @@ int ai_formation()
 
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
 		if (chaotic_leader) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
 			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
 				afterburners_stop(Pl_objp);
 		} else if (dist_to_goal > 75.0f) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 			float	delta_speed;
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
@@ -11863,11 +11872,11 @@ int ai_formation()
 				//	moving very slowly, else momentum can carry far away from goal.
 
 				if ((dist_to_goal > 10.0f) || ((Pl_objp->phys_info.speed > leader_speed + 2.5f) && (dot_to_goal > 0.5f))) {
-					turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
 					set_accel_for_target_speed(Pl_objp, leader_speed + dist_to_goal/10.0f);
 				} else {
 					if (Pl_objp->phys_info.speed < 0.5f) {
-						turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f);
+						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
 					}
 					set_accel_for_target_speed(Pl_objp, leader_speed);
 				}
@@ -11877,7 +11886,7 @@ int ai_formation()
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
-				turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
+				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
 
 				if (dist_to_goal > 25.0f) {
 					if (dot_to_goal < 0.3f)
@@ -11911,9 +11920,9 @@ int ai_formation()
 
 			} else {
 				if (Pl_objp->phys_info.speed < 0.1f)
-					turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f);
+					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
 				else
-					turn_towards_point(Pl_objp, &future_goal_point_x, NULL, 0.0f);
+					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient);
 
 				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
 				set_accel_for_target_speed(Pl_objp, leader_speed);
@@ -11940,22 +11949,6 @@ int ai_formation()
 			}
 		}
 
-	}
-
-	//	See how different this ship's bank is relative to wing leader
-	float	up_dot = vm_vec_dot(&leader_objp->orient.vec.uvec, &Pl_objp->orient.vec.uvec);
-	if (up_dot < 0.996f) {
-		vec3d	w_out;
-		matrix	new_orient;
-		vec3d	angular_accel;
-
-		vm_vec_copy_scale(&angular_accel, &Pl_objp->phys_info.max_rotvel, 0.2f);
-		vm_matrix_interpolate(&leader_objp->orient, &Pl_objp->orient, &Pl_objp->phys_info.rotvel, flFrametime, &new_orient, &w_out, &Pl_objp->phys_info.max_rotvel, &angular_accel, 1);
-
-		Pl_objp->orient = new_orient;
-		Pl_objp->phys_info.rotvel = w_out;
-	} else {
-		Pl_objp->phys_info.rotvel.xyz.z = 0.0f;
 	}
 
 	return 0;
@@ -14219,15 +14212,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
 		ai_control_info_check(aip, sip, &obj->phys_info);
-		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
-		// if obj is in formation and not flight leader, don't update rotvel
-		if (aip->ai_flags[AI::AI_Flags::Formation_object, AI::AI_Flags::Formation_wing]) {
-			if (&Objects[aip->goal_objnum] != obj) {
-				obj->phys_info.desired_rotvel = copy_desired_rotvel;
-				obj->phys_info.rotvel = copy_desired_rotvel;
-			}
-		}
 	}
 
 	Last_ai_obj = OBJ_INDEX(obj);

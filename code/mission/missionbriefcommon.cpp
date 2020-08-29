@@ -1862,7 +1862,7 @@ void brief_camera_move(float frametime, int  /*stage_num*/)
 
 	// Update orientation
 	if ( (Elapsed_time < Total_move_time) ) {
-		vm_matrix_interpolate(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit);
+		vm_angular_move_matrix(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit, false);
 		Current_cam_orient = result;
 		W_init = w_out;
 	}

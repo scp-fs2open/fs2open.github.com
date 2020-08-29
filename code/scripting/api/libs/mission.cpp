@@ -831,7 +831,7 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */]",
+	"null vector by default */, team Team]",
 	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
@@ -840,7 +840,8 @@ ADE_FUNC(createShip,
 	int sclass       = -1;
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
-	ade_get_args(L, "|sooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
+	int team         = -1;
+	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -855,6 +856,10 @@ ADE_FUNC(createShip,
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx >= 0) {
+		if (team >= 0) {
+			Ships[Objects[obj_idx].instance].team = team;
+		}
+
 		model_page_in_textures(Ship_info[sclass].model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
@@ -867,7 +872,7 @@ ADE_FUNC(createShip,
 
 		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
+		Script_system.RemHookVars({"Ship", "Parent"});
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else

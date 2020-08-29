@@ -209,6 +209,9 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 //default time of a homing weapon to not home
 #define HOMING_DEFAULT_FREE_FLIGHT_TIME	0.5f
 
+// default percentage of max speed to coast at during freeflight
+const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
+
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
@@ -1531,9 +1534,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if(optional_string("$Free Flight Speed:")) {
-		float temp;
-		stuff_float(&temp);
-		nprintf(("Warning", "Ignoring free flight speed for weapon '%s'\n", wip->name));
+		stuff_float(&(wip->free_flight_speed));
+		if (wip->free_flight_speed < 0.01f) {
+			error_display(0, "Free Flight Speed value is too low for weapon '%s'. Resetting to default (0.25 times maximum)", wip->name);
+			wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
+		}
+	}
+	else if (first_time && is_homing) {
+		wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 	}
 	//Optional one-shot sound to play at the beginning of firing
 	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd);
@@ -3763,7 +3771,7 @@ void weapon_delete(object *obj)
 
 	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
 	Script_system.RunCondition(CHA_ONWEAPONDELETE);
-	Script_system.RemHookVars(2, "Weapon", "Self");
+	Script_system.RemHookVars({"Weapon", "Self"});
 
 	num = obj->instance;
 
@@ -4217,8 +4225,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
 				obj->phys_info.speed -= frame_time * 4;
-			} else if ((obj->phys_info.speed < max_speed / 4) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
-				obj->phys_info.speed = max_speed / 4;
+			} else if ((obj->phys_info.speed < max_speed * wip->free_flight_speed) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
+				obj->phys_info.speed = max_speed * wip->free_flight_speed;
 			}
 		}
 		// no free_flight_time, so immediately set desired speed
@@ -5576,18 +5584,18 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
 	} else {		
-		//	For weapons that home, set velocity to sum of forward component of parent's velocity and 1/4 weapon's max speed.
+		//	For weapons that home, set velocity to sum of forward component of parent's velocity and freeflight speed factor(default 1/4)
 		//	Note that it is important to extract the forward component of the parent's velocity to factor out sliding, else
 		//	the missile will not be moving forward.
 		if(parent_objp != NULL){
 			if (wip->free_flight_time > 0.0)
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z * wip->free_flight_speed);
 			else
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z*wip->free_flight_speed );
 		} else {
 			if (!is_locked && wip->free_flight_time > 0.0)
             {
-			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
+			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z* wip->free_flight_speed);
             }
             else
             {
@@ -7702,7 +7710,11 @@ void validate_SSM_entries()
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		wip->SSM_index = ssm_info_lookup(dat->ssm_entry.c_str());
 		if (wip->SSM_index < 0) {
-			Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			if (Ssm_info.empty()) {
+				Warning(LOCATION, "SSM entry '%s' in specification for %s (%s:line %d), despite no SSM strikes being defined.\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			} else {
+				Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+			}
 		}
 		nprintf(("parse", "Validation complete, SSM_index is %d.\n", wip->SSM_index));
 	}
@@ -7718,7 +7730,11 @@ void validate_SSM_entries()
 		wip = &Weapon_info[wi];
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
-			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			if (Ssm_info.empty()) {
+				Warning(LOCATION, "SSM index '%d' in specification for %s (%s:line %d), despite no SSM strikes being defined.\n", wip->SSM_index, it->c_str(), dat->filename.c_str(), dat->linenum);
+			} else {
+				Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			}
 			wip->SSM_index = -1;
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
@@ -7800,6 +7816,7 @@ void weapon_info::reset()
 	this->acceleration_time = 0.0f;
 	this->vel_inherit_amount = 1.0f;
 	this->free_flight_time = 0.0f;
+	this->free_flight_speed = 0.25f;
 	this->mass = 1.0f;
 	this->fire_wait = 1.0f;
 	this->max_delay = 0.0f;

@@ -36,10 +36,12 @@
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
 
-int		Num_hull_pieces;		// number of hull pieces in existence
-debris	Hull_debris_list;		// head of linked list for hull debris chunks, for quick search
-								// This list holds debris pieces that are set to expire when their lifetime runs out;
-								// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
+int Num_hull_pieces;	// number of hull pieces in existence
+						// we now maintain a kind of "virtual" Hull_debris_list,
+						// but all we really need to know is how many hull pieces there are and whether a debris piece is on it
+
+						// This list holds debris pieces that are set to expire when their lifetime runs out;
+						// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
 
 SCP_vector<debris> Debris;
 
@@ -79,8 +81,10 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 
 		// only play debris destroy sound if hull piece and it has been around for at least 2 seconds
 		if ( Missiontime > debris_p->time_started + 2*F1_0 ) {
-			snd_play_3d( gamesnd_get_game_sound(gamesnd_id(GameSounds::MISSILE_IMPACT1)), &debris_obj->pos, &View_position, debris_obj->radius );
-			
+			auto snd_id = Ship_info[debris_p->ship_info_index].debris_explosion_sound;
+			if (snd_id.isValid()) {
+				snd_play_3d( gamesnd_get_game_sound(snd_id), &debris_obj->pos, &View_position, debris_obj->radius );
+			}
 		}
 	}
 
@@ -103,9 +107,8 @@ void debris_init()
 	// Reset everything between levels
 	Debris.clear();
 	Debris.reserve(SOFT_LIMIT_DEBRIS_PIECES);
-		
+
 	Num_hull_pieces = 0;
-	list_init(&Hull_debris_list);
 }
 
 /**
@@ -145,24 +148,24 @@ MONITOR(NumSmallDebrisRend)
 MONITOR(NumHullDebrisRend)
 
 /**
- * Add item to ::Hull_debris_list
+ * Add item to [virtual] Hull_debris_list
  */
 void debris_add_to_hull_list(debris *db)
 {
-	if ( db->is_hull && db->next == nullptr && db->prev == nullptr ) {
+	if ( db->is_hull && !db->flags[Debris_Flags::OnHullDebrisList] ) {
 		Num_hull_pieces++;
-		list_append(&Hull_debris_list, db);
+		db->flags.set(Debris_Flags::OnHullDebrisList);
 	}
 }
 
 /**
- * Remove item from ::Hull_debris_list
+ * Remove item from [virtual] Hull_debris_list
  */
 void debris_remove_from_hull_list(debris *db)
 {
-	if ( db->is_hull && db->next != nullptr && db->prev != nullptr ) {
+	if ( db->is_hull && db->flags[Debris_Flags::OnHullDebrisList] ) {
 		Num_hull_pieces--;
-		list_remove(&Hull_debris_list, db);
+		db->flags.remove(Debris_Flags::OnHullDebrisList);
 	}
 }
 
@@ -220,9 +223,6 @@ void maybe_delete_debris(debris *db)
 	}
 }
 
-MONITOR(NumSmallDebris)
-MONITOR(NumHullDebris)
-
 /**
  * Do various updates to debris:  check if time to die, start fireballs
  * Maybe delete debris if it's very far away from player.
@@ -241,15 +241,12 @@ void debris_process_post(object * obj, float frame_time)
 	debris *db = &Debris[num];
 
 	if ( db->is_hull ) {
-		MONITOR_INC(NumHullDebris,1);
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
 			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector, 0);
 			db->sound_delay = 0;
 		}
-	} else {
-		MONITOR_INC(NumSmallDebris,1);
 	}
 
 	if (!db->flags[Debris_Flags::DoNotExpire]) {
@@ -365,22 +362,23 @@ void debris_process_post(object * obj, float frame_time)
 }
 
 /**
- * Locate the oldest hull debris chunk.  Search through the ::Hull_debris_list, which is a list
+ * Locate the oldest hull debris chunk.  Search through the Hull_debris_list, which is a list
  * of all the hull debris chunks.
  */
 int debris_find_oldest()
 {
 	int		oldest_index;
 	fix		oldest_time;
-	debris	*db;
 
 	oldest_index = -1;
 	oldest_time = 0x7fffffff;
 
-	for ( db = GET_FIRST(&Hull_debris_list); db != END_OF_LIST(&Hull_debris_list); db = GET_NEXT(db) ) {
-		if ( (db->time_started < oldest_time) && !(Objects[db->objnum].flags[Object::Object_Flags::Should_be_dead]) ) {
-			oldest_index = DEBRIS_INDEX(db);
-			oldest_time = db->time_started;
+	for (auto &db: Debris) {
+		if (db.flags[Debris_Flags::OnHullDebrisList]) {
+			if ((db.time_started < oldest_time) && !(Objects[db.objnum].flags[Object::Object_Flags::Should_be_dead])) {
+				oldest_index = DEBRIS_INDEX(&db);
+				oldest_time = db.time_started;
+			}
 		}
 	}
 
@@ -389,6 +387,9 @@ int debris_find_oldest()
 
 #define	DEBRIS_ROTVEL_SCALE	5.0f
 void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
+
+MONITOR(NumSmallDebris)
+MONITOR(NumHullDebris)
 
 /**
  * Create debris from an object
@@ -403,7 +404,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
 {
-	int		n, objnum, parent_objnum;
+	int		objnum, parent_objnum;
 	object	*obj;
 	ship		*shipp;
 	debris	*db;	
@@ -431,27 +432,19 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	if ( hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES ) ) {
+	// try to maintain our soft limit
+	if (hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES)) {
 		// cause oldest hull debris chunk to blow up
-		n = debris_find_oldest();
-		if ( n >= 0 ) {
-			debris_start_death_roll(&Objects[Debris[n].objnum], &Debris[n] );
-		}
+		int oldest_n = debris_find_oldest();
+		if (oldest_n >= 0)
+			debris_start_death_roll(&Objects[Debris[oldest_n].objnum], &Debris[oldest_n]);
 	}
 
-	n = 0;
+	int n = 0;
 	for (auto &db_temp: Debris) {
 		if ( !(db_temp.flags[Debris_Flags::Used]) )
 			break;
 		++n;
-	}
-
-	// if we have too much debris, try to get rid of a piece
-	if (n >= SOFT_LIMIT_DEBRIS_PIECES) {
-		int oldest_n = debris_find_oldest();
-
-		if (oldest_n >= 0)
-			debris_start_death_roll(&Objects[Debris[oldest_n].objnum], &Debris[oldest_n]);
 	}
 
 	// we might have to create a new slot
@@ -690,6 +683,12 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	OnDebrisCreatedHook->run(scripting::hook_param_list(
 		scripting::hook_param("Debris", 'o', obj),
 		scripting::hook_param("Source", 'o', source_obj)));
+
+	if (db->is_hull) {
+		MONITOR_INC(NumHullDebris,1);
+	} else {
+		MONITOR_INC(NumSmallDebris,1);
+	}
 
 	return obj;
 }

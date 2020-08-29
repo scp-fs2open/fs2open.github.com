@@ -377,6 +377,10 @@ int find_intersection(float *s, const vec3d* p0, const vec3d* p1, const vec3d* v
  */
 void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const vec3d *d1, const vec3d *p2, const vec3d *d2);
 
+// normalizes only if the vector's magnitude is above an optionally specified threshold, defaulting to 10 times machine epsilon
+// returns whether or not it normalized
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold = std::numeric_limits<float>::epsilon() * 10.f);
+
 float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2);
 
 void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p);
@@ -423,19 +427,21 @@ int vm_vec_same(const vec3d *v1, const vec3d *v2);
 // see if two matrices are identical
 int vm_matrix_same(matrix *m1, matrix *m2);
 
-//	Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
+// Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next_orientation valid at time delta_t.
-void vm_matrix_interpolate(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_matrix_interpolate" in retail 
+void vm_angular_move_matrix(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, bool no_directional_bias, bool force_no_overshoot = false);
 
-//	Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
+// Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next forward vec valid at time delta_t.
-void vm_forward_interpolate(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_forward_interpolate" in retail 
+void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, bool no_directional_bias);
 
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
@@ -536,6 +542,9 @@ vec3d vm_vec4_to_vec3(const vec4& vec);
  * @return The 4 component vector
  */
 vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
+
+// calculates the best rvec to match another orient while maintaining a given fvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
 
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }

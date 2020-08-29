@@ -169,7 +169,7 @@ int ade_index_handler(lua_State* L) {
 	}
 	lua_pop(L, 1);    //WMC - metatable
 
-	if (type_name != NULL) {
+	if (type_name != nullptr) {
 		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring(L, key_ldx), type_name);
 	} else {
 		LuaError(L, "Could not find index '%s'", lua_tostring(L, key_ldx));

@@ -14,6 +14,7 @@
 #include "order.h"
 #include "enums.h"
 #include "wing.h"
+#include "vecmath.h"
 
 #include "ship/shiphit.h"
 #include "hud/hudshield.h"
@@ -961,16 +962,35 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
 }
 
-ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's physical center, which may not be the position of the origin of the model", "vector", "World position of the center of the ship, or nil if an error occurred")
 {
-	object_h *victim,*killer=NULL;
-	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer)))
+	object_h *shiph;
+	vec3d center_pos, actual_local_center;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ADE_RETURN_NIL;
+
+	// find local center
+	ship_class_get_actual_center(&Ship_info[Ships[shiph->objp->instance].ship_info_index], &actual_local_center);
+
+	// find world position of the center
+	vm_vec_unrotate(&center_pos, &actual_local_center, &shiph->objp->orient);
+	vm_vec_add2(&center_pos, &shiph->objp->pos);
+
+	return ade_set_args(L, "o", l_Vector.Set(center_pos));
+}
+
+ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct, and \"Hitpos\" to the world coordinates of the weapon impact", "boolean", "True if successful, false or nil otherwise")
+{
+	object_h *victim, *killer = nullptr;
+	vec3d *hitpos = nullptr;
+	if(!ade_get_args(L, "o|oo", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
 	if(!victim->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(!killer || !killer->IsValid())
+	if(killer && !killer->IsValid())
 		return ADE_RETURN_NIL;
 
 	//Ripped straight from shiphit.cpp
@@ -979,7 +999,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 		percent_killed = 1.0f;
 	}
 
-	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
 
 	return ADE_RETURN_TRUE;
 }

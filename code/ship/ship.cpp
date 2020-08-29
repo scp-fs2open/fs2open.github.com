@@ -71,6 +71,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/api/objs/vecmath.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
@@ -882,6 +883,9 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_ambient_sound = other.debris_ambient_sound;
+	debris_collision_sound_light = other.debris_collision_sound_light;
+	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
+	debris_explosion_sound = other.debris_explosion_sound;
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
@@ -1197,6 +1201,9 @@ void ship_info::move(ship_info&& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_ambient_sound = other.debris_ambient_sound;
+	debris_collision_sound_light = other.debris_collision_sound_light;
+	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
+	debris_explosion_sound = other.debris_explosion_sound;
 
 	std::swap(subsystems, other.subsystems);
 	std::swap(n_subsystems, other.n_subsystems);
@@ -1574,6 +1581,9 @@ ship_info::ship_info()
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
 	debris_ambient_sound = GameSounds::DEBRIS;
+	debris_collision_sound_light = gamesnd_id();
+	debris_collision_sound_heavy = gamesnd_id();
+	debris_explosion_sound = GameSounds::MISSILE_IMPACT1;
 
 	n_subsystems = 0;
 	subsystems = NULL;
@@ -2944,9 +2954,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
 		}
-		gamesnd_id ambient_snd;
+		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
 			sip->debris_ambient_sound = ambient_snd;
+		if (parse_game_sound("+Collision Sound Light:", &collision_snd_light))
+			sip->debris_collision_sound_light = collision_snd_light;
+		if (parse_game_sound("+Collision Sound Heavy:", &collision_snd_heavy))
+			sip->debris_collision_sound_heavy = collision_snd_heavy;
+		if (parse_game_sound("+Explosion Sound:", &explosion_snd))
+			sip->debris_explosion_sound = explosion_snd;
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -6151,9 +6167,9 @@ void ship_weapon::clear()
     num_secondary_banks = 0;
     num_tertiary_banks = 0;
 
-    current_primary_bank = -1;
-    current_secondary_bank = -1;
-    current_tertiary_bank = -1;
+    current_primary_bank = 0;
+    current_secondary_bank = 0;
+    current_tertiary_bank = 0;
 
     previous_primary_bank = 0;
     previous_secondary_bank = 0;
@@ -7492,9 +7508,9 @@ void ship_destroy_instantly(object *ship_objp)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObject("Self", ship_objp);
+	Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVar("Self");
+	Script_system.RemHookVars({"Self", "Ship"});
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
@@ -7612,7 +7628,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		Script_system.SetHookVar("Method", 's', departmethod);
 		Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
 		Script_system.RunCondition(CHA_ONSHIPDEPART);
-		Script_system.RemHookVars(3, "Ship", "Method", "JumpNode");
+		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 	}
 
 #ifndef NDEBUG
@@ -8133,7 +8149,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 			}
 
-			snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+			if (sound_index.isValid())
+				snd_play_3d(gamesnd_get_game_sound(sound_index), &objp->pos, &View_position, objp->radius, nullptr, 0, 1.0f, SND_PRIORITY_MUST_PLAY);
 			if (objp == Player_obj)
 				joy_ff_explode();
 
@@ -11664,7 +11681,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
 		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 	}
 
 	return num_fired;
@@ -11954,7 +11971,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert(swp->secondary_bank_weapons[bank] < weapon_info_size());
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size())){
 		return 0;
 	}
@@ -12123,7 +12142,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		ship_subsys *target_subsys;
 		int locked;
 
-		if ( (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] )) ) {
+		if ( obj == Player_obj || ( MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
 				lock_info lock_data = shipp->missile_locks_firing.back();
@@ -12135,6 +12154,10 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				target_objnum = OBJ_INDEX(lock_data.obj);
 				target_subsys = lock_data.subsys;
 				locked = 1;
+			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
+				target_objnum = aip->target_objnum;
+				target_subsys = aip->targeted_subsys;
+				locked = aip->current_target_is_locked;
 			} else {
 				target_objnum = -1;
 				target_subsys = nullptr;
@@ -12380,7 +12403,7 @@ done_secondary:
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp);
 		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
@@ -12640,7 +12663,7 @@ int ship_select_next_primary(object *objp, int direction)
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 
 		return 1;
 	}
@@ -12742,7 +12765,7 @@ int ship_select_next_secondary(object *objp)
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-			Script_system.RemHookVars(2, "User", "Target");
+			Script_system.RemHookVars({"User", "Target"});
 
 			return 1;
 		}
@@ -13963,7 +13986,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;
 
-					swp->primary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(sound_index)));
+					if (sound_index.isValid())
+						swp->primary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(sound_index)));
+					else
+						swp->primary_bank_rearm_time[i] = timestamp(0);
 				}
 
 				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
@@ -13987,7 +14013,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 						else
 							sound_index = GameSounds::MISSILE_LOAD;
 
-						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
+						if (sound_index.isValid())
+							snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 	
 						swp->primary_bank_ammo[i] += Weapon_info[swp->primary_bank_weapons[i]].reloaded_per_batch;
 						if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
@@ -14018,7 +14045,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;
 
-					snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
+					if (sound_index.isValid())
+						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 				}
 
 				aip->rearm_first_ballistic_primary = FALSE;
@@ -19510,7 +19538,12 @@ bool ship_start_secondary_fire(object* objp)
 		return false;
 	}
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert( swp->secondary_bank_weapons[bank] < weapon_info_size() );
+	if ( (swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size()) ) {
+		return false;
+	}
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
@@ -19548,7 +19581,12 @@ bool ship_stop_secondary_fire(object* objp)
 		return false;
 	}
 
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < weapon_info_size()) );
+	// It's possible for banks to be empty without issue
+	// but indices outside the weapon_info range are a problem
+	Assert(swp->secondary_bank_weapons[bank] < weapon_info_size());
+	if ((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= weapon_info_size())) {
+		return false;
+	}
 
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 

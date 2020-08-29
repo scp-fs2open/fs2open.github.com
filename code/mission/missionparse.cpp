@@ -2454,7 +2454,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
+		Script_system.RemHookVars({"Ship", "Parent"});
 	}
 
 	return objnum;
@@ -6203,7 +6203,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 
 			Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
-			Script_system.RemHookVars(2, "Ship", "Parent");
+			Script_system.RemHookVars({"Ship", "Parent"});
 
 			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
 				shipfx_warpin_start(objp);

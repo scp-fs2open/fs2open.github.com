@@ -1150,47 +1150,66 @@ void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const ve
 	vm_vec_scale_add(dest, p1, d1, numerator / denominator);
 }
 
-//make sure matrix is orthogonal
-//computes a matrix from one or more vectors. The forward vector is required,
-//with the other two being optional.  If both up & right vectors are passed,
-//the up vector is used.  If only the forward vector is passed, a bank of
-//zero is assumed
-//returns ptr to matrix
+
+// normalizes only if above a threshold, returns if normalized or not
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold) {
+	float mag = vm_vec_mag(src);
+	if (mag < threshold) return false;
+	vm_vec_copy_scale(dst, src, 1 / mag);
+	return true;
+}
+
+// Produce a vector perpendicular to the normalized input vector unit_normal,
+// in the direction preference (if not null). If that direction doesn't work it picks the z or y direction,
+// so that an output perpendicular vector is guaranteed.
+void vm_orthogonalize_one_vec(vec3d* dst, const vec3d* unit_normal, const vec3d* preference) {
+	if (preference != nullptr) {
+		vm_vec_projection_onto_plane(dst, preference, unit_normal);
+		if (vm_maybe_normalize(dst, dst)) {
+			// The process of rescaling dst may have exaggerated floating point inaccuracy
+			// so that dst is no longer approximately orthogonal to unit_normal,
+			// so project it again.
+			if (fabs(vm_vec_dot(dst, unit_normal)) > 1e-4f) {
+				vm_vec_projection_onto_plane(dst, dst, unit_normal);
+				vm_vec_normalize(dst);
+			}
+			return;
+		}
+	}
+	vm_vec_projection_onto_plane(dst, &vmd_z_vector, unit_normal);
+	if (vm_maybe_normalize(dst, dst)) return;
+	vm_vec_projection_onto_plane(dst, &vmd_y_vector, unit_normal);
+}
+
+// Produce two vectors perpendicular to each other from two arbitrary vectors src1, src2.
+// In the normal case dst1 will point in the direction of src1 and dst2 will be in the plane
+// of src1, src2 and perpendicular to dst1, but in the case of degeneracy it tries to
+// give useful results. The vector preference is a third vector (which may be null)
+// that will be considered in case the first two vectors are zero.
+void vm_orthogonalize_two_vec(vec3d* dst1, vec3d* dst2, const vec3d* src1, const vec3d* src2, const vec3d* preference) {
+	if (vm_maybe_normalize(dst1, src1))
+		vm_orthogonalize_one_vec(dst2, dst1, src2);
+	else if (vm_maybe_normalize(dst2, src2))
+		vm_orthogonalize_one_vec(dst1, dst2, src1);
+	else {
+		if (preference == nullptr || !vm_maybe_normalize(dst1, preference))
+			vm_vec_make(dst1, 1, 0, 0);
+		vm_orthogonalize_one_vec(dst2, dst1, src2);
+	}
+}
+
+// make sure matrix is orthogonal
+// computes a matrix from one or more vectors. The forward vector is required,
+// with the other two being optional.  If both up & right vectors are passed,
+// the up vector is used.  If only the forward vector is passed, a bank of
+// zero is assumed
 void vm_orthogonalize_matrix(matrix *m_src)
 {
-	float umag, rmag;
-	matrix tempm;
-	matrix * m = &tempm;
-
-	vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec);
-
-	umag = vm_vec_mag(&m_src->vec.uvec);
-	rmag = vm_vec_mag(&m_src->vec.rvec);
-	if (umag <= 0.0f) {  // no up vector to use..
-		if (rmag <= 0.0f) {  // no right vector either, so make something up
-			if (!m->vec.fvec.xyz.x && !m->vec.fvec.xyz.z && m->vec.fvec.xyz.y)  // vertical vector
-				vm_vec_make(&m->vec.uvec, 0.0f, 0.0f, 1.0f);
-			else
-				vm_vec_make(&m->vec.uvec, 0.0f, 1.0f, 0.0f);
-
-		} else {  // use the right vector to figure up vector
-			vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
-			vm_vec_normalize(&m->vec.uvec);
-		}
-
-	} else {  // use source up vector
-		vm_vec_copy_normalize(&m->vec.uvec, &m_src->vec.uvec);
-	}
-
-	// use forward and up vectors as good vectors to calculate right vector
-	vm_vec_cross(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
-		
-	//normalize new perpendicular vector
-	vm_vec_normalize(&m->vec.rvec);
-
-	//now recompute up vector, in case it wasn't entirely perpendicular
-	vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
-	*m_src = tempm;
+	vec3d fvec, uvec;
+	vm_orthogonalize_two_vec(&fvec, &uvec, &m_src->vec.fvec, &m_src->vec.uvec, &m_src->vec.rvec);
+	vm_vec_cross(&m_src->vec.rvec, &uvec, &fvec);
+	m_src->vec.fvec = fvec;
+	m_src->vec.uvec = uvec;
 }
 
 // like vm_orthogonalize_matrix(), except that zero vectors can exist within the
@@ -1569,324 +1588,6 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 	}
 }
 
-
-// --------------------------------------------------------------------------------------
-// This routine determines the resultant angular displacement and angular velocity in trying to reach a goal
-// given an angular velocity APPROACHing a goal.  It uses maximal acceleration to a point (called peak), then maximal
-// deceleration to arrive at the goal with zero angular velocity.  This can occasionally cause overshoot.  
-// w_in			> 0
-// w_max			> 0
-// theta_goal	> 0
-// aa				> 0 
-// returns delta_theta
-static float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot);
-static float approach(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
-{
-	float delta_theta;		// amount rotated during time delta_t
-	Assert(w_in >= 0);
-	Assert(theta_goal > 0);
-	float effective_aa;
-
-	if (aa == 0) {
-		*w_out = w_in;
-		delta_theta = w_in*delta_t;
-		return delta_theta;
-	}
-
-	if (no_overshoot && (w_in*w_in > 2.0f*1.05f*aa*theta_goal)) {
-		w_in = fl_sqrt(2.0f*aa*theta_goal);
-	}
-
-	if (w_in*w_in > 2.0f*1.05f*aa*theta_goal) {		// overshoot condition
-		effective_aa = 1.05f*aa;
-		delta_theta = w_in*delta_t - 0.5f*effective_aa*delta_t*delta_t;
-
-		if (delta_theta > theta_goal) {	// pass goal during this frame
-			float t_goal = (-w_in + fl_sqrt(w_in*w_in +2.0f*effective_aa*theta_goal)) / effective_aa;
-			// get time to theta_goal and away
-			Assert(t_goal < delta_t);
-			w_in -= effective_aa*t_goal;
-			delta_theta = w_in*t_goal + 0.5f*effective_aa*t_goal*t_goal;
-			delta_theta -= away(-w_in, w_max, 0.0f, aa, delta_t - t_goal, w_out, no_overshoot);
-			*w_out = -*w_out;
-			return delta_theta;
-		} else {	
-			if (delta_theta < 0) {
-				// pass goal and return this frame
-				*w_out = 0.0f;
-				return theta_goal;
-			} else {
-				// do not pass goal this frame
-				*w_out = w_in - effective_aa*delta_t;
-				return delta_theta;
-			}
-		}
-	} else if (w_in*w_in < 2.0f*0.95f*aa*theta_goal) {	// undershoot condition
-		// find peak angular velocity
-		float wp_sqr = fl_abs(aa*theta_goal + 0.5f*w_in*w_in);
-		Assert(wp_sqr >= 0);
-
-		if (wp_sqr > w_max*w_max) {
-			float time_to_w_max = (w_max - w_in) / aa;
-			if (time_to_w_max < 0) {
-				// speed already too high
-				// TODO: consider possible ramp down to below w_max
-				*w_out = w_in - aa*delta_t;
-				if (*w_out < 0) {
-					*w_out = 0.0f;
-				}
-
-				delta_theta = 0.5f*(w_in + *w_out)*delta_t;
-				return delta_theta;
-			} else if (time_to_w_max > delta_t) {
-				// does not reach w_max this frame
-				*w_out = w_in + aa*delta_t;
-				delta_theta = 0.5f*(w_in + *w_out)*delta_t;
-				return delta_theta;
-			} else {
-				// reaches w_max this frame
-				// TODO: consider when to ramp down from w_max
-				*w_out = w_max;
-				delta_theta = 0.5f*(w_in + *w_out)*delta_t;
-				return delta_theta;
-			}
-		} else {	// wp < w_max
-			if (wp_sqr > (w_in + aa*delta_t)*(w_in + aa*delta_t)) {
-				// does not reach wp this frame
-				*w_out = w_in + aa*delta_t;
-				delta_theta = 0.5f*(w_in + *w_out)*delta_t;
-				return delta_theta;
-			} else {
-				// reaches wp this frame
-				float wp = fl_sqrt(wp_sqr);
-				float time_to_wp = (wp - w_in) / aa;
-				//Assert(time_to_wp > 0);	//WMC - this is not needed, right?
-
-				// accel
-				*w_out = wp;
-				delta_theta = 0.5f*(w_in + *w_out)*time_to_wp;
-
-				// decel
-				float time_remaining = delta_t - time_to_wp;
-				*w_out -= aa*time_remaining;
-				if (*w_out < 0) { // reached goal
-					*w_out = 0.0f;
-					delta_theta = theta_goal;
-					return delta_theta;
-				}
-				delta_theta += 0.5f*(wp + *w_out)*time_remaining;
-				return delta_theta;
-			}
-		}
-	} else {														// on target
-		// reach goal this frame
-		if (w_in - aa*delta_t < 0) {
-			// reach goal this frame
-			*w_out = 0.0f;
-			return theta_goal;
-		} else {
-			// move toward goal
-			*w_out = w_in - aa*delta_t;
-			Assert(*w_out >= 0);
-			delta_theta = 0.5f*(w_in + *w_out)*delta_t;
-			return delta_theta;
-		}
-	}
-}
-
-
-// --------------------------------------------------------------------------------------
-
-// This routine determines the resultant angular displacement and angular velocity in trying to reach a goal
-// given an angular velocity AWAY from a goal.  It uses maximal acceleration to a point (called peak), then maximal
-// deceleration to arrive at the goal with zero angular acceleration.  
-// w_in			< 0
-// w_max			> 0
-// theta_goal	> 0
-// aa				> 0 
-// returns angle rotated this frame
-static float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
-
-{
-	float delta_theta;// amount rotated during time
-	float t0;			// time to velocity is 0
-	float t_excess;	// time remaining in interval after velocity is 0
-
-	Assert(theta_goal >=0);
-	Assert(w_in <= 0);
-
-	if ((-w_in < 1e-5) && (theta_goal < 1e-5)) {
-		*w_out = 0.0f;
-		return theta_goal;
-	}
-
-	if (aa == 0) {
-		*w_out = w_in;
-		delta_theta = w_in*delta_t;
-		return delta_theta;
-	}
-
-	t0 = -w_in / aa;
-
-	if (t0 > delta_t)	{	// no reversal in this time interval
-		*w_out = w_in + aa * delta_t;
-		delta_theta =  (w_in + *w_out) / 2.0f * delta_t;
-		return delta_theta;
-	}
-
-	// use time remaining after v = 0
-	delta_theta = 0.5f*w_in*t0;
-	theta_goal -= delta_theta;		// delta_theta is *negative*
-	t_excess = delta_t - t0;
-	delta_theta += approach(0.0f, w_max, theta_goal, aa, t_excess, w_out, no_overshoot);
-	return delta_theta;
-}
-
-// --------------------------------------------------------------------------------------
-
-void vm_matrix_interpolate(const matrix *goal_orient, const matrix *curr_orient, const vec3d *w_in, float delta_t,
-								matrix *next_orient, vec3d *w_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot)
-{
-	matrix rot_matrix;		// rotation matrix from curr_orient to goal_orient
-	matrix Mtemp1;				// temp matrix
-	vec3d rot_axis;			// vector indicating direction of rotation axis
-	vec3d theta_goal;		// desired angular position at the end of the time interval
-	vec3d theta_end;			// actual angular position at the end of the time interval
-	float theta;				// magnitude of rotation about the rotation axis
-
-	//	FIND ROTATION NEEDED FOR GOAL
-	// goal_orient = R curr_orient,  so R = goal_orient curr_orient^-1
-	vm_copy_transpose(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
-	vm_matrix_x_matrix(&rot_matrix, &Mtemp1, goal_orient);	// R = goal * Mtemp1
-	vm_orthogonalize_matrix(&rot_matrix);
-	vm_matrix_to_rot_axis_and_angle(&rot_matrix, &theta, &rot_axis);		// determines angle and rotation axis from curr to goal
-
-	// find theta to goal
-	vm_vec_copy_scale(&theta_goal, &rot_axis, theta);
-
-	if (theta < SMALL_NUM) {
-		*next_orient = *goal_orient;
-		vm_vec_zero(w_out);
-		return;
-	}
-
-	theta_end = vmd_zero_vector;
-	float delta_theta;
-
-	// find rotation about x
-	if (theta_goal.xyz.x > 0) {
-		if (w_in->xyz.x >= 0) {
-			delta_theta = approach(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		} else { // w_in->xyz.x < 0
-			delta_theta = away(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		}
-	} else if (theta_goal.xyz.x < 0) {
-		if (w_in->xyz.x <= 0) {
-			delta_theta = approach(-w_in->xyz.x, vel_limit->xyz.x, -theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		} else { // w_in->xyz.x > 0
-			delta_theta = away(-w_in->xyz.x, vel_limit->xyz.x, -theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		}
-	} else { // theta_goal == 0
-		if (w_in->xyz.x < 0) {
-			delta_theta = away(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		} else {
-			delta_theta = away(-w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		}
-	}
-
-
-	// find rotation about y
-	if (theta_goal.xyz.y > 0) {
-		if (w_in->xyz.y >= 0) {
-			delta_theta = approach(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		} else { // w_in->xyz.y < 0
-			delta_theta = away(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		}
-	} else if (theta_goal.xyz.y < 0) {
-		if (w_in->xyz.y <= 0) {
-			delta_theta = approach(-w_in->xyz.y, vel_limit->xyz.y, -theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		} else { // w_in->xyz.y > 0
-			delta_theta = away(-w_in->xyz.y, vel_limit->xyz.y, -theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		}
-	} else { // theta_goal == 0
-		if (w_in->xyz.y < 0) {
-			delta_theta = away(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		} else {
-			delta_theta = away(-w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		}
-	}
-
-	// find rotation about z
-	if (theta_goal.xyz.z > 0) {
-		if (w_in->xyz.z >= 0) {
-			delta_theta = approach(w_in->xyz.z, vel_limit->xyz.z, theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = delta_theta;
-		} else { // w_in->xyz.z < 0
-			delta_theta = away(w_in->xyz.z, vel_limit->xyz.z, theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = delta_theta;
-		}
-	} else if (theta_goal.xyz.z < 0) {
-		if (w_in->xyz.z <= 0) {
-			delta_theta = approach(-w_in->xyz.z, vel_limit->xyz.z, -theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = -delta_theta;
-			w_out->xyz.z = -w_out->xyz.z;
-		} else { // w_in->xyz.z > 0
-			delta_theta = away(-w_in->xyz.z, vel_limit->xyz.z, -theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = -delta_theta;
-			w_out->xyz.z = -w_out->xyz.z;
-		}
-	} else { // theta_goal == 0
-		if (w_in->xyz.z < 0) {
-			delta_theta = away(w_in->xyz.z, vel_limit->xyz.z, theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = delta_theta;
-		} else {
-			delta_theta = away(-w_in->xyz.z, vel_limit->xyz.z, theta_goal.xyz.z, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-			theta_end.xyz.z = -delta_theta;
-			w_out->xyz.z = -w_out->xyz.z;
-		}
-	}
-
-	// the amount of rotation about each axis is determined in 
-	// functions approach and away.  first find the magnitude		
-	// of the rotation and then normalize the axis
-	rot_axis = theta_end;
-	Assert(is_valid_vec(&rot_axis));
-	Assert(vm_vec_mag(&rot_axis) > 0);
-
-	//	normalize rotation axis and determine total rotation angle
-	theta = vm_vec_normalize(&rot_axis);
-
-	// arrived at goal?
-	if (theta_end.xyz.x == theta_goal.xyz.x && theta_end.xyz.y == theta_goal.xyz.y && theta_end.xyz.z == theta_goal.xyz.z) {
-		*next_orient = *goal_orient;
-	} else {
-	// otherwise rotate to better position
-		vm_quaternion_rotate(&Mtemp1, theta, &rot_axis);
-		Assert(is_valid_matrix(&Mtemp1));
-		vm_matrix_x_matrix(next_orient, curr_orient, &Mtemp1);
-		vm_orthogonalize_matrix(next_orient);
-	}
-}	// end matrix_interpolate
-
-
 // --------------------------------------------------------------------------------------
 
 
@@ -1930,198 +1631,355 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 	}
 }
 
+#define OVERSHOOT_PREVENTION_PADDING 0.98f
+// physically models within the frame the physical behavior to get to a goal position
+// given an arbitrary initial velocity
+void vm_angular_move_1dimension_calc(float goal, float* vel, float delta_t,
+	float* dist, float vel_limit, float acc_limit)
+{
+	// These diagrams depict two common situations, and although they both start with negative velocity
+	// for illustrative purposes, it is not necessary and the apex may be at the present or even in the past.
+	//
+	// t1 < t2 means there is a straight segment, so we coast for some time
+	// 
+	//                    _..--- goal
+	//  now            .''
+	//   |           .' |
+	//   v         .'   |
+	//   .       .'    t_straight
+	//    ''-.-''|
+	//     apex  t1 (= t_up)
+	// 
+	//  t1 > t2, no straight segment, accelerate then deccelerate, no coasting
+	//
+	//  now           _..--- goal
+	//   |         .'
+	//   v        . 
+	//   .       .|   
+	//    ''-.-'' |
+	//     apex    t2 (= t_up)
+	//     
+
+	float t1 = (vel_limit - *vel) / acc_limit;  // time to accelerate from the current velocity (possibly negative) to +vel_limit
+	float apex_t = -*vel / acc_limit;           // the time when we had / will have velocity zero, assuming acceleration at +acc_limit
+	float apex = *vel * apex_t / 2;             // the position we had / will have at the apex
+	float switchover_point = OVERSHOOT_PREVENTION_PADDING / (OVERSHOOT_PREVENTION_PADDING + 1.f); // when on the path 
+	                                                            // we switch from accelerating to deccelerating (very close to 1/2)
+	float half_dist = (goal - *dist - apex) * switchover_point; // half the distance from apex to goal (where we hit peak velocity)
+	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);  // The time at which we reach half_dist, assuming we never hit vel_limit
+	float t_up = fmin(delta_t, fmin(t1, t2));                // We exit the initial upward curve when we either hit vel_limit (t1)
+	                                                         // or we start the approach to the goal (t2), so t_up is the min
+	
+	// add distance and vel for t_up
+	*dist += *vel * t_up + acc_limit * t_up * t_up / 2;
+	*vel += acc_limit * t_up;
+	// If we have run out of time in the frame, break, else advance by t_up
+	if (delta_t <= t_up) return;
+	delta_t -= t_up;
+
+	// If t1 <= t2 then we have a straight segment (cruising at +vel_limit)
+	if (t1 <= t2) {
+		// time it takes to reach the approach
+		float t_straight = fmin(delta_t, (goal - 0.5f * vel_limit * vel_limit / acc_limit - *dist) / vel_limit);
+		// add distance and vel
+		*dist += vel_limit * t_straight;
+		// If we have run out of time in the frame, break, else advance by t_straight
+		if (delta_t <= t_straight) return;
+		delta_t -= t_straight;
+	}
+
+	// On approach to the goal, with acceleration -acc_limit
+	// Our current velocity is either vel_limit if we had a straight segment, or the peak velocity at half_dist
+	// slow down our acc very slightly to avoid possible time costly overshoot
+	acc_limit *= OVERSHOOT_PREVENTION_PADDING;
+	// t_down is the time to slow to a stop
+	float t_down = fmin(delta_t, *vel / acc_limit);
+	// add distance and vel for t_down
+	*dist += *vel * t_down - acc_limit * t_down * t_down / 2;
+	*vel -= acc_limit * t_down;
+	// If we have run out of time in the frame, break, else advance by t_down
+	if (delta_t <= t_down) return;
+	
+	// We've arrived
+	*dist = goal;
+	*vel = 0;
+}
+
+// physically models within the frame the physical behavior to get to a one-dimensional goal position
+// given an arbitrary initial velocity
+float vm_angular_move_1dimension(float goal, float delta_t, float* vel, float vel_limit, float acc_limit, float slowdown_factor, bool force_no_overshoot)
+{
+	float effective_vel_limit = slowdown_factor == 0 ? 0 : slowdown_factor * vel_limit;
+	float effective_acc_limit = slowdown_factor == 0 ? 0 : slowdown_factor * acc_limit;
+	if (acc_limit <= 0) return *vel * delta_t;		// Can't accelerate? No point in continuing!
+	float dist = 0;
+	float t_slow = fmin(delta_t, (fabs(*vel) - effective_vel_limit) / acc_limit);  // Time until we get down to our max speed
+	if (t_slow > 0) {                                                              // If that's zero (were at max) or negative (below max)
+		float acc = *vel >= 0 ? -acc_limit : acc_limit;                            // excellent, but otherwise, there's no choices to make
+		dist += *vel * t_slow + acc * t_slow * t_slow / 2;                         // slam on the brakes and continue only if there was enough
+		*vel += acc * t_slow;                                                      // time in the frame to get down to max
+		if (delta_t <= t_slow) return dist;
+		delta_t -= t_slow;
+	}
+	if (effective_vel_limit <= 0 || effective_acc_limit <= 0) return dist + *vel * delta_t;		// Can't move (from slowdown factor or otherwise)? Also no point in continuing!
+
+	
+	float goal_trajectory_speed = fl_sqrt(2.0f * acc_limit * fabsf(goal));
+	bool should_acc_upwards = goal >= 0 ? *vel < goal_trajectory_speed : *vel < -goal_trajectory_speed;
+	// This makes sure that the initial acceleration is always positive
+	// If the goal is above, or if it's below but our vel will put it above us before we can slow down enough, we're good
+	if (should_acc_upwards) {
+		if (goal < 0 && force_no_overshoot)
+			*vel = -goal_trajectory_speed; // With no overshoot our input velocity is always to set to the perfect trajectory
+		vm_angular_move_1dimension_calc(goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+
+	}
+	else { // else flip it so our goal is above and again we get initial positive accel
+		if (goal > 0 && force_no_overshoot)
+			*vel = goal_trajectory_speed; // With no overshoot our input velocity is always to set to the perfect trajectory
+		*vel = -*vel, dist = -dist; 
+		vm_angular_move_1dimension_calc(-goal, vel, delta_t, &dist, effective_vel_limit, effective_acc_limit);
+		*vel = -*vel, dist = -dist;
+	}
+	return dist;
+}
+
+float time_to_arrival_calc(float goal, float vel, float vel_limit, float acc_limit) {
+	float t1 = (vel_limit - vel) / acc_limit;    // time to accelerate from the current velocity (possibly negative) to +vel_limit
+	float apex_t = -vel / acc_limit;             // the time when we had / will have velocity zero, assuming acceleration at +acc_limit
+	float apex = vel * apex_t / 2;               // the position we had / will have at the apex
+	float half_dist = (goal - apex) / 2;                     // half the distance from apex to goal (where we hit peak velocity)
+	float t2 = apex_t + fl_sqrt(2 * half_dist / acc_limit);  // The time at which we reach half_dist, assuming we never hit vel_limit
+	
+	float time; // accumulated time to arrival
+
+	// If t1 <= t2 then we have a straight segment (cruising at +vel_limit)
+	if (t1 <= t2) {
+		float dist = vel * t1 + acc_limit * t1 * t1 / 2;  // at the end of the upward bend we are at dist
+		vel = vel_limit;                                  // and we reach velocity vel_limit
+		// and the time at the start of the approach is t1 + t_straight
+		time = t1 + (goal - 0.5f * vel_limit * vel_limit / acc_limit - dist) / vel_limit;
+	}
+	else {
+		// If t2 < t1 then there is no straight segment, we just accelerate until the approach
+		// so time = t2 and vel is however much we can accelerate in that time
+		time = t2;
+		vel += acc_limit * t2;
+	}
+	// The total time is the time to the approach + the deceleration time
+	return time + vel / acc_limit;
+}
+
+// called by vm_angular_move to compute a slowing factor
+// pared down versions of the 1dimension functions
+float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
+	// We won't consider speeds above our max, the time estimate gets complicated and the result won't be a straight line anyway
+	if (fabs(vel) > vel_limit) {
+		vel = vel > 0 ? vel_limit : -vel_limit;
+	}
+	return (vel < (goal >= 0 ? fl_sqrt(2.0f * acc_limit * goal) : -fl_sqrt(2.0f * acc_limit * -goal))) // same thing as scalar interpolate
+		? time_to_arrival_calc(goal, vel, vel_limit, acc_limit)
+		: time_to_arrival_calc(-goal, -vel, vel_limit, acc_limit);
+}
+
+// splits up the accelerating/deccelerating/go to position function for each component
+// and also scales their speed to make a nice straight line
+// note that this is now treated as a movement in linear space, despite the name
+vec3d vm_angular_move(const vec3d* goal, float delta_t,
+	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool aggressive_bank, bool force_no_overshoot, bool no_directional_bias)
+{
+	vec3d ret, slow;
+	vm_vec_make(&slow, 1.f, 1.f, 1.f);
+	if (no_directional_bias) {
+		// first, the estimated time to arrive at the goal angular position is calculated for each component
+		slow.xyz.x = time_to_arrival(goal->xyz.x, vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x);
+		slow.xyz.y = time_to_arrival(goal->xyz.y, vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y);
+		slow.xyz.z = time_to_arrival(goal->xyz.z, vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z);
+
+		// then, compute a slowing factor for the 1 or 2 faster-to-arrive-at-their-destination components
+		// so they arrive at approximately the same time as the slowest component, so the path there is nice and straight
+		float max = fmax(slow.xyz.x, fmax(slow.xyz.y, slow.xyz.z));
+		if (max != 0) vm_vec_scale(&slow, 1 / max);
+		if (aggressive_bank) slow.xyz.z = 1.f;
+	}
+
+	ret.xyz.x = vm_angular_move_1dimension(goal->xyz.x, delta_t, &vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x, slow.xyz.x, force_no_overshoot);
+	ret.xyz.y = vm_angular_move_1dimension(goal->xyz.y, delta_t, &vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y, slow.xyz.y, force_no_overshoot);
+	ret.xyz.z = vm_angular_move_1dimension(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z, force_no_overshoot);
+	return ret;
+}
+
 // ---------------------------------------------------------------------------------------------
 //
-//		inputs:		goal_f		=>		goal forward vector
-//						orient		=>		current orientation matrix (with current forward vector)
-//						w_in			=>		current input angular velocity
-//						delta_t		=>		time to move toward goal
-//						delta_bank	=>		desired change in bank in degrees
-//						next_orient	=>		the orientation matrix at time delta_t (with current forward vector)
-//												NOTE: this does not include any rotation about z (bank)
-//						w_out			=>		the angular velocity of the ship at delta_t
-//						vel_limit	=>		maximum rotational speed
-//						acc_limit	=>		maximum rotational speed
+//		inputs:		goal_orient	=>		goal orientation matrix
+//					curr_orient	=>		current orientation matrix
+//					w_in		=>		current input angular velocity
+//					delta_t		=>		time to move toward goal
+//					next_orient	=>		the orientation matrix at time delta_t (with current forward vector)
+//					w_out		=>		the angular velocity of the ship at delta_t
+//					vel_limit	=>		maximum rotational speed
+//					acc_limit	=>		maximum rotational acceleration
+//					no_directional_bias  => will cause the angular path generated to be as straight as possible, rather than greedily
+//											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
+//					force_no_overshoot   => forces the interpolation to not overshoot, if it is approaching its goal too fast
+//											it will always arrive with 0 velocity, even if its acceleration would not normally 
+//											allow it slow down in time
+//		
+//		Asteroth - this replaced retail's "vm_matrix_interpolate" in PR 2668.
+//		The produced behavior is on average 0.52% slower (std dev 0.74%) than the retail function 
+//		Roughly twice that if framerate_independent_turning is enabled.
 //
-//		function moves the forward vector toward the goal forward vector taking account of anglular
-//		momentum (velocity)  Attempt to try to move bank by goal delta_bank.  Rotational velocity
-//		on x/y is rotated with bank, giving smoother motion.
-void vm_forward_interpolate(const vec3d *goal_f, const matrix *orient, const vec3d *w_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *w_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot)
+//		The function attempts to rotate the input matrix into the goal matrix taking account of anglular
+//		momentum (velocity)
+void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient, const vec3d* w_in, float delta_t,
+	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias, bool force_no_overshoot)
 {
-	matrix Mtemp1;				// temporary matrix
-	vec3d local_rot_axis;	// vector indicating direction of rotation axis (local coords)
-	vec3d rot_axis;			// vector indicating direction of rotation axis (world coords)
-	vec3d theta_goal;		// desired angular position at the end of the time interval
-	vec3d theta_end;			// actual angular position at the end of the time interval
+	//	Find rotation needed for goal
+	// goal_orient = R curr_orient,  so R = goal_orient curr_orient^-1
+	matrix Mtemp1;
+	vm_copy_transpose(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
+	matrix rot_matrix;		// rotation matrix from curr_orient to goal_orient
+	vm_matrix_x_matrix(&rot_matrix, &Mtemp1, goal_orient);	// R = goal * Mtemp1
+	vm_orthogonalize_matrix(&rot_matrix);
+	vec3d rot_axis;			// vector indicating direction of rotation axis
 	float theta;				// magnitude of rotation about the rotation axis
-	float bank;					// magnitude of rotation about the forward axis
-	int no_bank;				// flag set if there is no bank for the object
-	vec3d vtemp;				// 
-	float z_dotprod;
-
-	// FIND ROTATION NEEDED FOR GOAL
-	// rotation vector is (current fvec)  orient->vec.fvec x goal_f
-	// magnitude = asin ( magnitude of crossprod )
-	vm_vec_cross( &rot_axis, &orient->vec.fvec, goal_f );
-
-	float t = vm_vec_mag(&rot_axis);
-	if (t > 1.0f)
-		t = 1.0f;
-
-	z_dotprod = vm_vec_dot( &orient->vec.fvec, goal_f );
-
-	if ( t < SMALLER_NUM )  {
-		if ( z_dotprod > 0.0f )
-			theta = 0.0f;
-		else  {  // the forward vector is pointing exactly opposite of goal
-					// arbitrarily choose the x axis to rotate around until t becomes large enough
-			theta = PI;
-			rot_axis = orient->vec.rvec;
-		}
-	} else {
-		theta = asinf( t );
-		vm_vec_scale ( &rot_axis, 1/t );
-		if ( z_dotprod < 0.0f )
-			theta = PI - theta;
-	}
-
-	// rotate rot_axis into ship reference frame
-	vm_vec_rotate( &local_rot_axis, &rot_axis, orient );
+	vm_matrix_to_rot_axis_and_angle(&rot_matrix, &theta, &rot_axis);		// determines angle and rotation axis from curr to goal
 
 	// find theta to goal
-	vm_vec_copy_scale(&theta_goal, &local_rot_axis, theta);
+	vec3d theta_goal;		// desired angular position at the end of the time interval
+	vm_vec_copy_scale(&theta_goal, &rot_axis, theta);
 
-	// DO NOT COMMENT THIS OUT!!
-	if(!(fl_abs(theta_goal.xyz.z) < 0.001f))	   
-		// check for proper rotation
-		mprintf(("vm_forward_interpolate: Bad rotation\n"));
-
-	theta_end = vmd_zero_vector;
-	float delta_theta;
-
-	// find rotation about x
-	if (theta_goal.xyz.x > 0) {
-		if (w_in->xyz.x >= 0) {
-			delta_theta = approach(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		} else { // w_in->xyz.x < 0
-			delta_theta = away(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		}
-	} else if (theta_goal.xyz.x < 0) {
-		if (w_in->xyz.x <= 0) {
-			delta_theta = approach(-w_in->xyz.x, vel_limit->xyz.x, -theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		} else { // w_in->xyz.x > 0
-			delta_theta = away(-w_in->xyz.x, vel_limit->xyz.x, -theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		}
-	} else { // theta_goal == 0
-		if (w_in->xyz.x < 0) {
-			delta_theta = away(w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = delta_theta;
-		} else {
-			delta_theta = away(-w_in->xyz.x, vel_limit->xyz.x, theta_goal.xyz.x, acc_limit->xyz.x, delta_t, &w_out->xyz.x, no_overshoot);
-			theta_end.xyz.x = -delta_theta;
-			w_out->xyz.x = -w_out->xyz.x;
-		}
+	// continue to interpolate, unless we are at the goal with no velocity, in which case we have arrived
+	if (theta < SMALL_NUM && vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM) {
+		*next_orient = *goal_orient;
+		vm_vec_zero(w_out);
+		return;
 	}
 
-	// find rotation about y
-	if (theta_goal.xyz.y > 0) {
-		if (w_in->xyz.y >= 0) {
-			delta_theta = approach(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		} else { // w_in->xyz.y < 0
-			delta_theta = away(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		}
-	} else if (theta_goal.xyz.y < 0) {
-		if (w_in->xyz.y <= 0) {
-			delta_theta = approach(-w_in->xyz.y, vel_limit->xyz.y, -theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		} else { // w_in->xyz.y > 0
-			delta_theta = away(-w_in->xyz.y, vel_limit->xyz.y, -theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		}
-	} else { // theta_goal == 0
-		if (w_in->xyz.y < 0) {
-			delta_theta = away(w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = delta_theta;
-		} else {
-			delta_theta = away(-w_in->xyz.y, vel_limit->xyz.y, theta_goal.xyz.y, acc_limit->xyz.y, delta_t, &w_out->xyz.y, no_overshoot);
-			theta_end.xyz.y = -delta_theta;
-			w_out->xyz.y = -w_out->xyz.y;
-		}
+	// calculate best approach in linear space (returns velocity in w_out and position difference in rot_axis)
+	*w_out = *w_in;
+	rot_axis = vm_angular_move(&theta_goal, delta_t, w_out, vel_limit, acc_limit, false, force_no_overshoot, no_directional_bias);
+
+	// arrived at goal? (equality comparison is okay here because vm_vector_interpolate returns theta_goal on arrival)
+	if (rot_axis == theta_goal) {
+		*next_orient = *goal_orient;
+		// rotate velocity out to reflect new local frame
+		vec3d vtemp = *w_out;
+		vm_vec_rotate(w_out, &vtemp, &rot_matrix);
+		return;
 	}
-
-	// no rotation if delta_bank and w_in both 0 or rotational acc in forward is 0
-	no_bank = ( delta_bank == 0.0f && vel_limit->xyz.z == 0.0f && acc_limit->xyz.z == 0.0f );
-
-	// do rotation about z
-	bank = 0.0f;
-	if ( !no_bank )  {
-		// convert delta_bank to radians
-		delta_bank *= (float) CONVERT_RADIANS;
-
-		// find rotation about z
-		if (delta_bank > 0) {
-			if (w_in->xyz.z >= 0) {
-				delta_theta = approach(w_in->xyz.z, vel_limit->xyz.z, delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = delta_theta;
-			} else { // w_in->xyz.z < 0
-				delta_theta = away(w_in->xyz.z, vel_limit->xyz.z, delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = delta_theta;
-			}
-		} else if (delta_bank < 0) {
-			if (w_in->xyz.z <= 0) {
-				delta_theta = approach(-w_in->xyz.z, vel_limit->xyz.z, -delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = -delta_theta;
-				w_out->xyz.z = -w_out->xyz.z;
-			} else { // w_in->xyz.z > 0
-				delta_theta = away(-w_in->xyz.z, vel_limit->xyz.z, -delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = -delta_theta;
-				w_out->xyz.z = -w_out->xyz.z;
-			}
-		} else { // theta_goal == 0
-			if (w_in->xyz.z < 0) {
-				delta_theta = away(w_in->xyz.z, vel_limit->xyz.z, delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = delta_theta;
-			} else {
-				delta_theta = away(-w_in->xyz.z, vel_limit->xyz.z, delta_bank, acc_limit->xyz.z, delta_t, &w_out->xyz.z, no_overshoot);
-				bank = -delta_theta;
-				w_out->xyz.z = -w_out->xyz.z;
-			}
-		}
-	}
-
-	// the amount of rotation about each axis is determined in 
-	// functions approach and away.  first find the magnitude		
-	// of the rotation and then normalize the axis  (ship coords)
-	theta_end.xyz.z = bank;
-	rot_axis = theta_end;
 
 	//	normalize rotation axis and determine total rotation angle
 	theta = vm_vec_mag(&rot_axis);
-	if ( theta > SMALL_NUM )
-		vm_vec_scale( &rot_axis, 1/theta );
+	if (theta > SMALL_NUM)
+		vm_vec_scale(&rot_axis, 1 / theta);
 
-	if ( theta < SMALL_NUM ) {
+	// if the positional change is small, reuse orient (and return because velocity is already set)
+	if (theta < SMALL_NUM) {
+		*next_orient = *curr_orient;
+		return;
+	}
+
+	// otherwise rotate orient by theta along rot_axis
+	vm_quaternion_rotate(&Mtemp1, theta, &rot_axis);
+	Assert(is_valid_matrix(&Mtemp1));
+	vm_matrix_x_matrix(next_orient, curr_orient, &Mtemp1);
+	vm_orthogonalize_matrix(next_orient);
+	// and rotate velocity out to reflect new local frame
+	vec3d vtemp = *w_out;
+	vm_vec_rotate(w_out, &vtemp, &Mtemp1);
+}
+
+
+// ---------------------------------------------------------------------------------------------
+//
+//		inputs:		goal_f		=>		goal forward vector
+//					orient		=>		current orientation matrix (with current forward vector)
+//					w_in		=>		current input angular velocity
+//					delta_t		=>		this frametime
+//					delta_bank	=>		desired change in bank in degrees
+//					next_orient	=>		the orientation matrix at time delta_t (with current forward vector)
+//					w_out		=>		the angular velocity of the ship at delta_t
+//					vel_limit	=>		maximum rotational speed
+//					acc_limit	=>		maximum rotational acceleration
+//					no_directional_bias  => will cause the angular path generated to be as straight as possible, rather than greedily
+//											turning at maximum on all axes (and thus possibly produce a 'crooked' path)
+//
+//		Asteroth - this replaced retail's "vm_forward_interpolate" in PR 2668.
+//		The produced behavior is on average 0.06% slower (std dev 0.32%) than the retail function 
+//		Roughly twice that if framerate_independent_turning is enabled, or if the object is a missile.
+//
+//		function attempts to rotate the forward vector toward the goal forward vector taking account of anglular
+//		momentum (velocity)  Attempt to try to move bank by goal delta_bank. 
+//		called "vm_forward_interpolate" in retail 
+void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
+	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias)
+{
+	vec3d rot_axis;
+	vm_vec_cross(&rot_axis, &orient->vec.fvec, goal_f); // Get the direction to rotate to the goal
+	float cos_theta = vm_vec_dot(&orient->vec.fvec, goal_f);  // Get cos(theta) where theta is the amount to rotate
+	float sin_theta = fmin(vm_vec_mag(&rot_axis), 1.0f);      // Get sin(theta) (cap at 1 for floating point errors)
+	vec3d theta_goal;
+	vm_vec_make(&theta_goal, 0, 0, delta_bank);         // theta_goal will contain the radians to rotate (in the same direction as rot_axis but in local coords)
+
+	if (sin_theta <= SMALL_NUM) { // sin(theta) is small so we are either very close or very far
+		if (cos_theta < 0) { // cos(theta) < 0, sin(theta) ~ 0 means we are pointed exactly the opposite way
+			float w_mag_sq = w_in->xyz.x * w_in->xyz.x + w_in->xyz.y * w_in->xyz.y;
+			if (w_mag_sq <= SMALL_NUM * SMALL_NUM) { // if we have ~ no angular velocity
+				theta_goal.xyz.x = PI; // Rotate in x direction (arbitrarily)
+			}
+			else { // otherwise prefer to rotate in the direction of angular velocity
+				float d = PI / fl_sqrt(w_mag_sq);
+				theta_goal.xyz.x = w_in->xyz.x * d;
+				theta_goal.xyz.y = w_in->xyz.y * d;
+			}
+		}
+		// continue to interpolate, unless we also have no velocity, in which case we have arrived
+		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM) {
+			*next_orient = *orient;
+			vm_vec_zero(w_out);
+			return;
+		}
+	}
+	else {
+		vec3d local_rot_axis;
+		// rotate rot_axis into ship reference frame
+		vm_vec_rotate(&local_rot_axis, &rot_axis, orient);
+
+		// derive theta from sin(theta) for better accuracy
+		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf(sin_theta) : PI - asinf(sin_theta)) / sin_theta);
+		
+		// reset z to delta_bank, because it just got cleared
+		theta_goal.xyz.z = delta_bank;
+	}
+
+	// calculate best approach in linear space (returns velocity in w_out and position difference in rot_axis)
+	*w_out = *w_in;
+	rot_axis = vm_angular_move(&theta_goal, delta_t, w_out, vel_limit, acc_limit, true, false, no_directional_bias);
+
+	//	normalize rotation axis and determine total rotation angle
+	float theta = vm_vec_mag(&rot_axis);
+	if (theta > SMALL_NUM)
+		vm_vec_scale(&rot_axis, 1 / theta);
+
+	// if the positional change is small, reuse orient (and return because velocity is already set)
+	if (theta < SMALL_NUM) {
 		*next_orient = *orient;
 		return;
-	} else {
-		vm_quaternion_rotate( &Mtemp1, theta, &rot_axis );
-		vm_matrix_x_matrix( next_orient, orient, &Mtemp1 );
-		Assert(is_valid_matrix(next_orient));
-		vtemp = *w_out;
-		vm_vec_rotate( w_out, &vtemp, &Mtemp1 );
 	}
-}	// end vm_forward_interpolate
+
+	// otherwise rotate orient by theta along rot_axis
+	matrix Mtemp1;
+	vm_quaternion_rotate(&Mtemp1, theta, &rot_axis);
+	vm_matrix_x_matrix(next_orient, orient, &Mtemp1);
+	Assert(is_valid_matrix(next_orient));
+	// and rotate velocity out to reflect new local frame
+	vec3d vtemp = *w_out;
+	vm_vec_rotate(w_out, &vtemp, &Mtemp1);
+}
+
+
+
 
 // ------------------------------------------------------------------------------------
 // vm_find_bounding_sphere()
@@ -2848,4 +2706,39 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w) {
 	out.xyzw.w = w;
 
 	return out;
+}
+
+// This function is used when we want to "match orientation" to a target, here match_orient,
+// while still pointing our forward vector in a certain direction, here goal_fvec.
+// out_rvec is the best matching right vector to match_orient.rvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient) {
+	// We want to calculate out_rvec as a frame transformation, translating match_orient.rvec
+	// from source_frame to dest_frame.
+	//
+	// We set up the frames such that:
+	// * source fvec = match_orient.fvec
+	// * dest fvec = goal_fvec
+	// * source uvec = dest uvec
+	// This uniquely determines both frames, and the rvecs go along for the ride.
+	// Once we have these frames, we just rotate match_orient.rvec from one frame to the other.
+
+	// Calculate the source frame. The common uvec has to be perpendicular to match_orient.fvec
+	// and goal_fvec so we cross to get it. The rvec is left as 0 to be set by vm_orthogonalize_matrix
+	matrix source_frame = vmd_zero_matrix;
+	source_frame.vec.fvec = match_orient->vec.fvec;
+	vm_vec_cross(&source_frame.vec.uvec, &source_frame.vec.fvec, goal_fvec);
+	vm_orthogonalize_matrix(&source_frame);
+
+	// Calculate the destination frame, using goal_fvec and the common uvec.
+	// These are already orthogonal and normalized so we can just cross to get the rvec rather than
+	// calling vm_orthogonalize_matrix
+	matrix dest_frame;
+	dest_frame.vec.fvec = *goal_fvec;
+	dest_frame.vec.uvec = source_frame.vec.uvec;
+	vm_vec_cross(&dest_frame.vec.rvec, &dest_frame.vec.uvec, &dest_frame.vec.fvec);
+
+	// Apply the transformation to match_orient.rvec, returning the result in out_rvec
+	vec3d temp;
+	vm_vec_rotate(&temp, &match_orient->vec.rvec, &source_frame);
+	vm_vec_unrotate(out_rvec, &temp, &dest_frame);
 }

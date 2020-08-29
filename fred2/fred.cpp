@@ -233,6 +233,7 @@ BOOL CFREDApp::InitInstance() {
 	// Goober5000
 	Mission_save_format = GetProfileInt("Preferences", "FS2 open format", FSO_FORMAT_STANDARD);
 	Mission_save_format = GetProfileInt("Preferences", "Mission save format", Mission_save_format);
+	Move_ships_when_undocking = GetProfileInt("Preferences", "Move ships when undocking", Move_ships_when_undocking);
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -493,6 +494,7 @@ void CFREDApp::write_ini_file(int degree) {
 
 	// Goober5000
 	WriteProfileInt("Preferences", "Mission save format", Mission_save_format);
+	WriteProfileInt("Preferences", "Move ships when undocking", Move_ships_when_undocking);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);

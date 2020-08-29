@@ -53,6 +53,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/base.cpp
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
+    scripting/api/hookvars.cpp
 )
 
 add_file_folder("Scripting\\\\Lua"

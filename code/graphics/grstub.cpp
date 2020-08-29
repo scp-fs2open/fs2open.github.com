@@ -516,13 +516,16 @@ bool gr_stub_init()
 	gr_screen.gf_get_query_value = gr_stub_get_query_value;
 	gr_screen.gf_delete_query_object = gr_stub_delete_query_object;
 
-	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) {
-		return std::unique_ptr<os::Viewport>();
-	};
-	gr_screen.gf_use_viewport = [](os::Viewport*) {
-	};
+	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) { return std::unique_ptr<os::Viewport>(); };
+	gr_screen.gf_use_viewport = [](os::Viewport*) {};
 
 	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
+
+	gr_screen.gf_sync_fence = []() -> gr_sync { return nullptr; };
+	gr_screen.gf_sync_wait = [](gr_sync /*sync*/, uint64_t /*timeoutns*/) { return true; };
+	gr_screen.gf_sync_delete = [](gr_sync /*sync*/) {};
+
+	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
 
 	return true;
 }

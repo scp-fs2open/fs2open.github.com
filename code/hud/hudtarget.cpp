@@ -5447,7 +5447,7 @@ void HudGaugeWeaponEnergy::initEnergyHeight(int h)
 	Wenergy_h = h;
 }
 
-void HudGaugeWeaponEnergy::initAlignments(int text_align, int armed_align)
+void HudGaugeWeaponEnergy::initAlignments(HudAlignment text_align, HudAlignment armed_align)
 {
 	Text_alignment = text_align;
 	Armed_alignment = armed_align;
@@ -5675,7 +5675,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 
 			hud_num_make_mono(buf, font_num);
 
-			if ( Text_alignment ) {
+			if ( Text_alignment == HudAlignment::RIGHT ) {
 				gr_get_string_size(&w, &h, buf);
 				delta_x = -w;
 			}
@@ -5693,7 +5693,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
 					auto weapon_name = wip->get_display_name();
 
-					if ( Armed_alignment ) {
+					if ( Armed_alignment == HudAlignment::RIGHT ) {
 						gr_get_string_size(&w, &h, weapon_name);
 					} else {
 						w = 0;
@@ -5707,7 +5707,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				wip = &Weapon_info[sw->primary_bank_weapons[i]];
 				auto weapon_name = wip->get_display_name();
 
-				if ( Armed_alignment ) {
+				if ( Armed_alignment == HudAlignment::RIGHT ) {
 					gr_get_string_size(&w, &h, weapon_name);
 				} else {
 					w = 0;
@@ -6594,7 +6594,7 @@ void HudGaugeWarheadCount::initMaxColumns(int count)
 	Max_columns = count;
 }
 
-void HudGaugeWarheadCount::initTextAlign(int align)
+void HudGaugeWarheadCount::initTextAlign(HudAlignment align)
 {
 	Text_align = align;
 }
@@ -6634,12 +6634,12 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// display the weapon name
-	if ( Text_align ) {
+	if ( Text_align == HudAlignment::RIGHT ) {
 		int w, h;
 
 		gr_get_string_size(&w, &h, weapon_name);
 		renderString(position[0] + Warhead_name_offsets[0] - w, position[1] + Warhead_name_offsets[1], weapon_name);
-	} else {
+	} else if ( Text_align == HudAlignment::LEFT ) {
 		renderString(position[0] + Warhead_name_offsets[0], position[1] + Warhead_name_offsets[1], weapon_name);
 	}
 
@@ -6652,12 +6652,12 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 		sprintf(ammo_str, "%d", ammo);
 		hud_num_make_mono(ammo_str, font_num);
 
-		if ( Text_align ) {
+		if ( Text_align == HudAlignment::RIGHT ) {
 			int w, h;
 
 			gr_get_string_size(&w, &h, ammo_str);
 			renderString(position[0] + Warhead_count_offsets[0] - w, position[1] + Warhead_count_offsets[1], ammo_str);
-		} else {
+		} else if ( Text_align == HudAlignment::LEFT ) {
 			renderString(position[0] + Warhead_count_offsets[0], position[1] + Warhead_count_offsets[1], ammo_str);
 		}
 
@@ -6665,9 +6665,9 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 	}
 
 	int delta_x = 0, delta_y = 0;
-	if ( Text_align ) {
+	if ( Text_align == HudAlignment::RIGHT ) {
 		delta_x = -Warhead_count_size[0];
-	} else {
+	} else if ( Text_align == HudAlignment::LEFT ) {
 		delta_x = Warhead_count_size[0];
 	}
 

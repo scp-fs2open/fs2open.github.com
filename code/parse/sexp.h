@@ -114,6 +114,7 @@ class waypoint_list;
 #define OPF_SKYBOX_FLAGS		87		// niffiwan - valid skybox flags
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
+#define OPF_SPECIES				90		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -420,6 +421,8 @@ class waypoint_list;
 #define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FOR_SHIP_CLASS					(0x0013 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FOR_SHIP_TYPE					(0x0014 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_TEAM					(0x0015 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_SPECIES					(0x0016 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -1044,6 +1047,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_GAME_SND				-159
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
+#define SEXP_CHECK_INVALID_SPECIES				-162
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
