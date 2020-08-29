@@ -127,6 +127,7 @@ namespace AI {
         Use_newtonian_dampening,
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
+		Use_axial_turnrate_differences,
 
 		NUM_VALUES
 	};

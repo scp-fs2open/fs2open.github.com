@@ -70,6 +70,7 @@ extern ai_flag_name Ai_flag_names[];
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
 #define AITTV_IGNORE_BANK			(1<<2)	//	Goober5000 - ignore bank when turning
+#define AITTV_SLOW_BANK_ACCEL		(1<<3)  //  Asteroth - used by formation flying
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
@@ -566,7 +567,7 @@ extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum);
-extern void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = nullptr, int sexp_flags = 0);
+extern void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = nullptr, vec3d* turnrate_mod = nullptr);
 extern void init_ai_object(int objnum);
 extern void ai_init(void);				//	Call this one to parse ai.tbl.
 extern void ai_level_init(void);		//	Call before each level to reset AI
@@ -618,7 +619,7 @@ extern int might_collide_with_ship(object *obj1, object *obj2, float dot_to_enem
 extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it fired-Bobboau
 extern int ai_fire_secondary_weapon(object *objp);
 extern float ai_get_weapon_dist(ship_weapon *swp);
-extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient = nullptr);
+extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient = nullptr, int flags = 0);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 

@@ -1138,9 +1138,10 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	}
 }
 
-//	If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
-//	(rvec defaults to NULL)
-void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags)
+// If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
+// (rvec defaults to NULL)
+// optionally specified turnrate_mod contains multipliers for each component of the turnrate (RATE, so 0.5 = slower)
+void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, vec3d* turnrate_mod)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
@@ -1149,9 +1150,11 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	vec3d	vel_limit, acc_limit;
 	float		delta_bank;
 
+	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON, "ai_turn_towards_vector called on a non-ship non-weapon object!");
+
 	//	Don't allow a ship to turn if it has no engine strength.
 	// AL 3-12-98: objp may not always be a ship!
-	if ( (objp->type == OBJ_SHIP) && !(sexp_flags & AITTV_VIA_SEXP) ) {
+	if ( (objp->type == OBJ_SHIP) && !(flags & AITTV_VIA_SEXP) ) {
 		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return;
 	}
@@ -1167,25 +1170,47 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	curr_orient = objp->orient;
 	delta_time = flFrametime;
 
-	if(turn_time > 0.0f)
-	{
-		//	Scale turn_time based on skill level and team.
-		if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
-			if (objp->type == OBJ_SHIP){
-				if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) {
-					turn_time *= Ai_info[Ships[objp->instance].ai_index].ai_turn_time_scale;
+	vm_vec_zero(&vel_limit);
+
+	// get the turn rate if we have Use_axial_turnrate_differences
+	if (objp->type == OBJ_SHIP && The_mission.ai_profile->flags[AI::Profile_Flags::Use_axial_turnrate_differences]) {
+		vel_limit = Ship_info[Ships[objp->instance].ship_info_index].max_rotvel;
+
+	} else { // else get the turn time
+		float turn_time = 0.f;
+		if (objp->type == OBJ_WEAPON) {
+			turn_time = Weapon_info[Weapons[objp->instance].weapon_info_index].turn_time;
+		}
+		else if (objp->type == OBJ_SHIP) {
+			turn_time = Ship_info[Ships[objp->instance].ship_info_index].srotation_time;
+		}
+
+		//and then turn it into turnrate
+		if (turn_time > 0.0f)
+		{
+			vel_limit.xyz.x = PI2 / turn_time;
+			vel_limit.xyz.y = PI2 / turn_time;
+			vel_limit.xyz.z = PI2 / turn_time;
+		}
+	}
+
+	// maybe modify the ship's turnrate if caller wants
+	if (turnrate_mod) {
+		vel_limit.xyz.x *= turnrate_mod->xyz.x;
+		vel_limit.xyz.y *= turnrate_mod->xyz.y;
+		vel_limit.xyz.z *= turnrate_mod->xyz.z;
+	}
+	
+
+	//	Scale turnrate based on skill level and team.
+	if (!(flags & AITTV_FAST) && !(flags & AITTV_VIA_SEXP)) {
+		if (objp->type == OBJ_SHIP) {
+			if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) {
+				if (Ai_info[Ships[objp->instance].ai_index].ai_turn_time_scale != 0.f) {
+					vm_vec_scale(&vel_limit, 1/Ai_info[Ships[objp->instance].ai_index].ai_turn_time_scale);
 				}
 			}
 		}
-
-		//	Set max turn rate.
-		vel_limit.xyz.x = PI2/turn_time;
-		vel_limit.xyz.y = PI2/turn_time;
-		vel_limit.xyz.z = PI2/turn_time;
-	}
-	else
-	{
-		vm_vec_zero(&vel_limit);
 	}
 
 	//	Set rate at which ship can accelerate to its rotational velocity.
@@ -1193,6 +1218,11 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 	acc_limit = vel_limit;
 	if (objp->type == OBJ_WEAPON)
 		vm_vec_scale(&acc_limit, 8.0f);
+
+	// for formation flying
+	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
+		acc_limit.xyz.z *= 0.2f;
+	}
 
 	src = objp->pos;
 
@@ -1214,7 +1244,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float turn_time, vec3d *s
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp or ship says not to
-	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
+	if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
 		delta_bank = 0.0f;
 	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
 		delta_bank = 0.0f;
@@ -1511,7 +1541,7 @@ void get_tangent_point(vec3d *tan1, vec3d *p0, vec3d *centerp, vec3d *p1, float 
  * Given an object and a point, turn towards the point, resulting in
  * approach behavior. Optional argument target_orient to attempt to match bank with
  */
-void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient)
+void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient, int flags)
 {
 	vec3d* rvec = nullptr;
 	vec3d goal_rvec;
@@ -1524,7 +1554,7 @@ void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank
 		vm_match_bank(rvec, &goal_fvec, target_orient);
 	}
 	
-	ai_turn_towards_vector(point, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, slide_vec, nullptr, bank_override, 0, rvec);
+	ai_turn_towards_vector(point, objp, slide_vec, nullptr, bank_override, flags, rvec);
 }
 
 /**
@@ -1538,7 +1568,7 @@ void turn_away_from_point(object *objp, vec3d *point, float bank_override)
 	vm_vec_sub(&opposite_point, &objp->pos, point);
 	vm_vec_add2(&opposite_point, &objp->pos);
 
-	ai_turn_towards_vector(&opposite_point, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, nullptr, nullptr, bank_override, AITTV_FAST);
+	ai_turn_towards_vector(&opposite_point, objp, nullptr, nullptr, bank_override, AITTV_FAST);
 }
 
 
@@ -3881,7 +3911,7 @@ float ai_path_0()
 	}
 
 	if (dist_to_goal > 0.1f)
-		ai_turn_towards_vector(&gcvp, Pl_objp, sip->srotation_time, slop_vec, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&gcvp, Pl_objp, slop_vec, nullptr, 0.0f, 0);
 
 	//	Code to control speed is MUCH less forgiving in path following than in waypoint
 	//	following.  Must be very close to path or might hit objects.
@@ -4023,10 +4053,10 @@ float ai_path_1()
 		if (r <= 1.0f) {
 			vec3d midpoint;
 			vm_vec_avg3(&midpoint, &gcvp, &closest_point, &closest_point);
-			ai_turn_towards_vector(&midpoint, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0, prvec);
+			ai_turn_towards_vector(&midpoint, Pl_objp, nullptr, nullptr, 0.0f, 0, prvec);
 		}
 		else {
-			ai_turn_towards_vector(&gcvp, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0, prvec);
+			ai_turn_towards_vector(&gcvp, Pl_objp, nullptr, nullptr, 0.0f, 0, prvec);
 		}
 	}
 
@@ -4325,6 +4355,10 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])));
 
+	float waypoint_turnrate = 1 / (3.0f * scale);
+	vec3d turnrate_mod;
+	vm_vec_make(&turnrate_mod, waypoint_turnrate, waypoint_turnrate, waypoint_turnrate);
+
 	if (AutoPilotEngaged)
 		ab_allowed = false;
 
@@ -4371,11 +4405,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 		} else {
 			vm_vec_scale_add(&perp, &Pl_objp->pos, &Autopilot_flight_leader->phys_info.vel, 1000.0f);
-			ai_turn_towards_vector(&perp, Pl_objp, sip->srotation_time*3.0f*scale, slop_vec, nullptr, 0.0f, 0);
+			ai_turn_towards_vector(&perp, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, &turnrate_mod);
 		}
 	} else {
 		if (dist_to_goal > 0.1f) {
-			ai_turn_towards_vector(target_pos, Pl_objp, sip->srotation_time*3.0f*scale, slop_vec, nullptr, 0.0f, 0);
+			ai_turn_towards_vector(target_pos, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, &turnrate_mod);
 		}
 	}
 
@@ -5046,7 +5080,7 @@ void slide_face_ship()
 
 	dist = vm_vec_normalized_dir(&vec_from_enemy, &Pl_objp->pos, &En_objp->pos);
 
-	ai_turn_towards_vector(&En_objp->pos, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	ai_turn_towards_vector(&En_objp->pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 
 	dot_from_enemy = vm_vec_dot(&vec_from_enemy, &En_objp->orient.vec.fvec);
 
@@ -6523,11 +6557,8 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 void ai_chase_ct()
 {
 	vec3d		tvec;
-	ship_info	*sip;
 	ai_info		*aip;
 
-	Assert(Ships[Pl_objp->instance].ship_info_index >= 0);
-	sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	Assert(Ships[Pl_objp->instance].ai_index >= 0);
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -6552,14 +6583,14 @@ void ai_chase_ct()
 		vm_vec_add2(&tvec, &Pl_objp->orient.vec.rvec);
 	}
 
-	ai_turn_towards_vector(&tvec, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, 0.0f, 0);
 	accelerate_ship(aip, 1.0f);
 }
 
 /**
  * ATTACK submode handler for chase mode.
  */
-static void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos)
+static void ai_chase_eb(ai_info *aip, vec3d *predicted_enemy_pos)
 {
 	vec3d	_pep;
 	float		dot_to_enemy, dot_from_enemy;
@@ -6571,7 +6602,7 @@ static void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos
 	if ((dot_to_enemy > dot_from_enemy + 0.1f) || (dot_to_enemy > 0.9f))
 		vm_vec_scale_add(&_pep, &Pl_objp->pos, &En_objp->orient.vec.fvec, 100.0f);
 
-	ai_turn_towards_vector(&_pep, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	ai_turn_towards_vector(&_pep, Pl_objp, nullptr, nullptr, 0.0f, 0);
 
 	accelerate_ship(aip, 0.0f);
 }
@@ -6768,7 +6799,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 //	Pl_objp (aip) tries to get behind En_objp.
 //	New on 2/21/98: If this ship can move backwards and slide, maybe do that to get behind.
-static void get_behind_ship(ai_info *aip, ship_info *sip)
+static void get_behind_ship(ai_info *aip)
 {
 	vec3d	new_pos;
 	float	dot;
@@ -6777,7 +6808,7 @@ static void get_behind_ship(ai_info *aip, ship_info *sip)
 	vm_vec_normalized_dir(&vec_from_enemy, &Pl_objp->pos, &En_objp->pos);
 
 	vm_vec_scale_add(&new_pos, &En_objp->pos, &En_objp->orient.vec.fvec, -100.0f);		//	Pick point 100 units behind.
-	ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 
 	dot = vm_vec_dot(&vec_from_enemy, &En_objp->orient.vec.fvec);
 
@@ -6793,10 +6824,8 @@ int avoid_player(object *objp, vec3d *goal_pos)
 	maybe_avoid_player(Pl_objp, goal_pos);
 	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	if (aip->ai_flags[AI::AI_Flags::Avoiding_small_ship]) {
-		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-		
-		ai_turn_towards_vector(&aip->avoid_goal_point, objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	if (aip->ai_flags[AI::AI_Flags::Avoiding_small_ship]) {		
+		ai_turn_towards_vector(&aip->avoid_goal_point, objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 0.5f);
 		return 1;
 	}
@@ -6990,11 +7019,9 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
 	}
 	
 	if (aip->ai_flags[AI::AI_Flags::Avoiding_big_ship]) {
-		ship_info *sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
-
 		vec3d	v2g;
 
-		ai_turn_towards_vector(&aip->avoid_goal_point, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&aip->avoid_goal_point, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		vm_vec_normalized_dir(&v2g, &aip->avoid_goal_point, &Pl_objp->pos);
 		float dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		float d2 = (1.0f + dot) * (1.0f + dot);
@@ -7086,7 +7113,7 @@ void ai_stealth_find()
 			}
 		}
 
-		ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		return;
 	}
 
@@ -7096,9 +7123,9 @@ void ai_stealth_find()
 	if (dist_to_enemy > 500.0f) {
 		vec3d	rvec;
 		compute_desired_rvec(&rvec, &new_pos, &Pl_objp->pos);
-		ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0, &rvec);
+		ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, nullptr, 0.0f, 0, &rvec);
 	} else {
-		ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 	}
 
 	dot_from_enemy = -vm_vec_dot(&vec_to_enemy, &En_objp->orient.vec.fvec);
@@ -7112,10 +7139,7 @@ void ai_stealth_find()
 void ai_stealth_sweep()
 {
 	ai_info		*aip;
-	ship_info	*sip;
 
-	Assert(Ships[Pl_objp->instance].ship_info_index >= 0);
-	sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	Assert(Ships[Pl_objp->instance].ai_index >= 0);
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -7226,7 +7250,7 @@ void ai_stealth_sweep()
 		return;
 	}
 
-	ai_turn_towards_vector(&goal_pt, Pl_objp, sip->srotation_time, nullptr, nullptr, 0.0f, 0);
+	ai_turn_towards_vector(&goal_pt, Pl_objp, nullptr, nullptr, 0.0f, 0);
 
 	float dot = 1.0f;
 	if (dist_to_goal < 100) {
@@ -7286,9 +7310,9 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	if (dist_to_enemy > 500.0f) {
 		vec3d	rvec;
 		compute_desired_rvec(&rvec, predicted_enemy_pos, &Pl_objp->pos);
-		ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, rel_pos, bank_override, 0, &rvec);
+		ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, rel_pos, bank_override, 0, &rvec);
 	} else {
-		ai_turn_towards_vector(&new_pos, Pl_objp, sip->srotation_time, nullptr, rel_pos, bank_override, 0);
+		ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, rel_pos, bank_override, 0);
 	}
 
 	attack_set_accel(aip, sip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
@@ -7299,7 +7323,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 //	Used to evade towards a point off the right or up vector.
 //	Now, evade straight away to try to get far away.
 //	The squiggling should protect against laser fire.
-void ai_chase_es(ai_info *aip, ship_info *sip)
+void ai_chase_es(ai_info *aip)
 {
 	vec3d	tvec;
 	fix		timeslice;
@@ -7326,7 +7350,7 @@ void ai_chase_es(ai_info *aip, ship_info *sip)
 
 	float bank_override = Pl_objp->phys_info.speed;
 
-	ai_turn_towards_vector(&tvec, Pl_objp, sip->srotation_time, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
 	accelerate_ship(aip, 1.0f);
 }
 
@@ -7352,7 +7376,7 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 
 	bank_override = Pl_objp->phys_info.speed;
 
-	ai_turn_towards_vector(&tvec, Pl_objp, sip->srotation_time, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
 
 	accelerate_ship(aip, 2.0f);
 
@@ -7984,11 +8008,10 @@ void ai_cruiser_chase()
 	}
 
 	vec3d	goal_pos;
-	float turn_time = Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time;
 
 	// kamikaze - ram and explode
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
-		ai_turn_towards_vector(&En_objp->pos, Pl_objp, turn_time, nullptr, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&En_objp->pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 	} 
 	
@@ -8028,7 +8051,7 @@ void ai_cruiser_chase()
 		}
 
 		// now move as desired
-		ai_turn_towards_vector(&goal_pos, Pl_objp, turn_time, nullptr, nullptr, 0.0f, 0, rvecp);
+		ai_turn_towards_vector(&goal_pos, Pl_objp, nullptr, nullptr, 0.0f, 0, rvecp);
 		accelerate_ship(aip, accel);
 
 		// maybe switch to new mode
@@ -8311,11 +8334,11 @@ void ai_chase()
 		break;
 
 	case SM_EVADE_SQUIGGLE:
-		ai_chase_es(aip, sip);
+		ai_chase_es(aip);
 		break;
 
 	case SM_EVADE_BRAKE:
-		ai_chase_eb(aip, sip, &predicted_enemy_pos);
+		ai_chase_eb(aip, &predicted_enemy_pos);
 		break;
 
 	case SM_EVADE:
@@ -8327,7 +8350,7 @@ void ai_chase()
 		break;
 
 	case SM_GET_BEHIND:
-		get_behind_ship(aip, sip);
+		get_behind_ship(aip);
 		break;
 
 	case SM_GET_AWAY:		//	Used to get away from opponent to prevent endless circling.
@@ -9307,8 +9330,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		else
 		{
 			float	dot, accel;
-			float turn_time = Ship_info[Ships[docker_objp->instance].ship_info_index].srotation_time;
-			ai_turn_towards_vector(&goal_point, docker_objp, turn_time, nullptr, nullptr, 0.0f, 0);
+			ai_turn_towards_vector(&goal_point, docker_objp, nullptr, nullptr, 0.0f, 0);
 
 			dot = vm_vec_dot(&docker_objp->orient.vec.fvec, &away_vec);
 			accel = 0.1f;
@@ -9947,7 +9969,7 @@ void ai_big_guard()
 		}
 
 		// got the point, now let's go there
-		ai_turn_towards_vector(&goal_pt, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0);
+		ai_turn_towards_vector(&goal_pt, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 
 		if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (cur_guard_rad > 1.1f * max_guard_dist)) {
@@ -10071,7 +10093,7 @@ void ai_guard()
 
 			// quite far away, so try to go straight to 
 			compute_desired_rvec(&rvec, &goal_point, &Pl_objp->pos);
-			ai_turn_towards_vector(&goal_point, Pl_objp, Ship_info[shipp->ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0, &rvec);
+			ai_turn_towards_vector(&goal_point, Pl_objp, nullptr, nullptr, 0.0f, 0, &rvec);
 
 			if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
 				if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
@@ -11770,7 +11792,7 @@ int ai_formation()
 	}
 
 	if (dist_to_goal > 500.0f) {
-		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
+		turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 		if (ab_allowed && !(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && (dot_to_goal > 0.2f)) {
 			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 			if (percent_left > 30.0f) {
@@ -11781,7 +11803,7 @@ int ai_formation()
 		accelerate_ship(aip, 1.0f);
 	} else if (dist_to_goal > 200.0f) {
 		if (dot_to_goal > -0.5f) {
-			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
 				set_accel_for_target_speed(Pl_objp, leader_speed + range_speed * (dist_to_goal+100.0f)/500.0f);
@@ -11803,7 +11825,7 @@ int ai_formation()
 				}
 			}
 		} else {
-			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_5, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			if (leader_speed > 10.0f)
 				set_accel_for_target_speed(Pl_objp, leader_speed *(1.0f + dot_to_goal));
 			else
@@ -11821,12 +11843,12 @@ int ai_formation()
 
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
 		if (chaotic_leader) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
 			if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)
 				afterburners_stop(Pl_objp);
 		} else if (dist_to_goal > 75.0f) {
-			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
+			turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 			float	delta_speed;
 			float range_speed = shipp->current_max_speed - leader_speed;
 			if (range_speed > 0.0f) {
@@ -11872,11 +11894,11 @@ int ai_formation()
 				//	moving very slowly, else momentum can carry far away from goal.
 
 				if ((dist_to_goal > 10.0f) || ((Pl_objp->phys_info.speed > leader_speed + 2.5f) && (dot_to_goal > 0.5f))) {
-					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &goal_point, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 					set_accel_for_target_speed(Pl_objp, leader_speed + dist_to_goal/10.0f);
 				} else {
 					if (Pl_objp->phys_info.speed < 0.5f) {
-						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
+						turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 					}
 					set_accel_for_target_speed(Pl_objp, leader_speed);
 				}
@@ -11886,7 +11908,7 @@ int ai_formation()
 			} else if (dist_to_goal > 10.0f) {
 				float	dv;
 
-				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient);
+				turn_towards_point(Pl_objp, &future_goal_point_2, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 
 				if (dist_to_goal > 25.0f) {
 					if (dot_to_goal < 0.3f)
@@ -11920,9 +11942,9 @@ int ai_formation()
 
 			} else {
 				if (Pl_objp->phys_info.speed < 0.1f)
-					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &future_goal_point_1000x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 				else
-					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient);
+					turn_towards_point(Pl_objp, &future_goal_point_x, nullptr, 0.0f, leader_orient, AITTV_SLOW_BANK_ACCEL);
 
 				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
 				set_accel_for_target_speed(Pl_objp, leader_speed);
@@ -13797,7 +13819,7 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 	vec3d	v2g;
 	
 	if (aip->ai_flags[AI::AI_Flags::Big_ship_collide_recover_1]) {
-		ai_turn_towards_vector(&aip->big_recover_pos_1, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0, nullptr);
+		ai_turn_towards_vector(&aip->big_recover_pos_1, objp, nullptr, nullptr, 0.0f, 0, nullptr);
 		dist = vm_vec_normalized_dir(&v2g, &aip->big_recover_pos_1, &objp->pos);
 		dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		accelerate_ship(aip, dot);
@@ -13811,7 +13833,7 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 		return 1;
 
 	} else if (aip->ai_flags[AI::AI_Flags::Big_ship_collide_recover_2]) {
-		ai_turn_towards_vector(&aip->big_recover_pos_2, objp, Ship_info[Ships[objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0, nullptr);
+		ai_turn_towards_vector(&aip->big_recover_pos_2, objp, nullptr, nullptr, 0.0f, 0, nullptr);
 		dist = vm_vec_normalized_dir(&v2g, &aip->big_recover_pos_2, &objp->pos);
 		dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		accelerate_ship(aip, dot);
