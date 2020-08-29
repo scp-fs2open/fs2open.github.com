@@ -36,10 +36,12 @@
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
 
-int		Num_hull_pieces;		// number of hull pieces in existence
-debris	Hull_debris_list;		// head of linked list for hull debris chunks, for quick search
-								// This list holds debris pieces that are set to expire when their lifetime runs out;
-								// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
+int Num_hull_pieces;	// number of hull pieces in existence
+						// we now maintain a kind of "virtual" Hull_debris_list,
+						// but all we really need to know is how many hull pieces there are and whether a debris piece is on it
+
+						// This list holds debris pieces that are set to expire when their lifetime runs out;
+						// pieces that were placed by FREDers (i.e. that have the DoNotExpire flag) should not be on it.
 
 SCP_vector<debris> Debris;
 
@@ -105,9 +107,8 @@ void debris_init()
 	// Reset everything between levels
 	Debris.clear();
 	Debris.reserve(SOFT_LIMIT_DEBRIS_PIECES);
-		
+
 	Num_hull_pieces = 0;
-	list_init(&Hull_debris_list);
 }
 
 /**
@@ -147,24 +148,24 @@ MONITOR(NumSmallDebrisRend)
 MONITOR(NumHullDebrisRend)
 
 /**
- * Add item to ::Hull_debris_list
+ * Add item to [virtual] Hull_debris_list
  */
 void debris_add_to_hull_list(debris *db)
 {
-	if ( db->is_hull && db->next == nullptr && db->prev == nullptr ) {
+	if ( db->is_hull && !db->flags[Debris_Flags::OnHullDebrisList] ) {
 		Num_hull_pieces++;
-		list_append(&Hull_debris_list, db);
+		db->flags.set(Debris_Flags::OnHullDebrisList);
 	}
 }
 
 /**
- * Remove item from ::Hull_debris_list
+ * Remove item from [virtual] Hull_debris_list
  */
 void debris_remove_from_hull_list(debris *db)
 {
-	if ( db->is_hull && db->next != nullptr && db->prev != nullptr ) {
+	if ( db->is_hull && db->flags[Debris_Flags::OnHullDebrisList] ) {
 		Num_hull_pieces--;
-		list_remove(&Hull_debris_list, db);
+		db->flags.remove(Debris_Flags::OnHullDebrisList);
 	}
 }
 
@@ -361,22 +362,23 @@ void debris_process_post(object * obj, float frame_time)
 }
 
 /**
- * Locate the oldest hull debris chunk.  Search through the ::Hull_debris_list, which is a list
+ * Locate the oldest hull debris chunk.  Search through the Hull_debris_list, which is a list
  * of all the hull debris chunks.
  */
 int debris_find_oldest()
 {
 	int		oldest_index;
 	fix		oldest_time;
-	debris	*db;
 
 	oldest_index = -1;
 	oldest_time = 0x7fffffff;
 
-	for ( db = GET_FIRST(&Hull_debris_list); db != END_OF_LIST(&Hull_debris_list); db = GET_NEXT(db) ) {
-		if ( (db->time_started < oldest_time) && !(Objects[db->objnum].flags[Object::Object_Flags::Should_be_dead]) ) {
-			oldest_index = DEBRIS_INDEX(db);
-			oldest_time = db->time_started;
+	for (auto &db: Debris) {
+		if (db.flags[Debris_Flags::OnHullDebrisList]) {
+			if ((db.time_started < oldest_time) && !(Objects[db.objnum].flags[Object::Object_Flags::Should_be_dead])) {
+				oldest_index = DEBRIS_INDEX(&db);
+				oldest_time = db.time_started;
+			}
 		}
 	}
 

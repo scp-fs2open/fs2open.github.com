@@ -24,6 +24,7 @@ class model_draw_list;
 
 FLAG_LIST(Debris_Flags) {
 	Used,
+	OnHullDebrisList,
 	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
 
 	NUM_VALUES
@@ -31,10 +32,6 @@ FLAG_LIST(Debris_Flags) {
 
 
 typedef struct debris {
-	// used for a linked list of the hull debris chunks
-	debris	*next = nullptr;
-	debris *prev = nullptr;
-
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
 	int		source_objnum;			// What object this came from
 	int		damage_type_idx;		// Damage type of this debris
