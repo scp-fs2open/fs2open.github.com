@@ -404,7 +404,7 @@ MONITOR(NumHullDebris)
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
 {
-	int		n, objnum, parent_objnum;
+	int		objnum, parent_objnum;
 	object	*obj;
 	ship		*shipp;
 	debris	*db;	
@@ -432,27 +432,19 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	if ( hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES ) ) {
+	// try to maintain our soft limit
+	if (hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES)) {
 		// cause oldest hull debris chunk to blow up
-		n = debris_find_oldest();
-		if ( n >= 0 ) {
-			debris_start_death_roll(&Objects[Debris[n].objnum], &Debris[n] );
-		}
+		int oldest_n = debris_find_oldest();
+		if (oldest_n >= 0)
+			debris_start_death_roll(&Objects[Debris[oldest_n].objnum], &Debris[oldest_n]);
 	}
 
-	n = 0;
+	int n = 0;
 	for (auto &db_temp: Debris) {
 		if ( !(db_temp.flags[Debris_Flags::Used]) )
 			break;
 		++n;
-	}
-
-	// if we have too much debris, try to get rid of a piece
-	if (n >= SOFT_LIMIT_DEBRIS_PIECES) {
-		int oldest_n = debris_find_oldest();
-
-		if (oldest_n >= 0)
-			debris_start_death_roll(&Objects[Debris[oldest_n].objnum], &Debris[oldest_n]);
 	}
 
 	// we might have to create a new slot
