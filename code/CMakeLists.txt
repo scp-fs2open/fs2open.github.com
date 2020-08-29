@@ -73,22 +73,6 @@ IF(FSO_BUILD_TOOLS)
 	ADD_SUBDIRECTORY(cfileextractor)
 ENDIF(FSO_BUILD_TOOLS)
 
-if (ENABLE_COTIRE)
-	set_target_properties(code PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")
-else()
-	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		target_compile_options(code PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h>")
-	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-		target_compile_options(code PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/FI ${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h>")
-	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-		target_compile_options(code PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h>")
-	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-		target_compile_options(code PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-include${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h>")
-	ELSE()
-		MESSAGE("Unknown compiler for global includes. This will probably break the build.")
-	ENDIF()
-endif()
-
 if (FSO_RELEASE_LOGGING)
 	target_compile_definitions(code PUBLIC SCP_RELEASE_LOGGING)
 endif()
@@ -104,7 +88,8 @@ if (FSO_BUILD_WITH_VULKAN)
 endif()
 
 include(util)
-configure_cotire(code)
+
+set_precompiled_header(code "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")
 
 # Ensure that Xcode generates debug symbols on macOS for Debug builds
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES")
