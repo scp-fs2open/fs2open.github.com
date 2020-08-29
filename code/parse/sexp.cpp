@@ -15753,7 +15753,7 @@ void sexp_ship_create(int n)
 
 	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
 	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-	Script_system.RemHookVars(2, "Ship", "Parent");
+	Script_system.RemHookVars({"Ship", "Parent"});
 }
 
 // Goober5000

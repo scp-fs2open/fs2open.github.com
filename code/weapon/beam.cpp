@@ -1924,7 +1924,7 @@ int beam_start_firing(beam *b)
 
 	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
 	Script_system.RunCondition(CHA_BEAMFIRE, &Objects[b->objnum], b->weapon_info_index);
-	Script_system.RemHookVars(3, "Beam", "User", "Target");
+	Script_system.RemHookVars({"Beam", "User", "Target"});
 
 	// success
 	return 1;
@@ -2534,11 +2534,11 @@ int beam_collide_ship(obj_pair *pair)
 
 		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Beam", weapon_objp);
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, ship_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Beam");
+		Script_system.RemHookVars({"Self", "Object", "Ship", "Beam"});
 
 		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Beam", weapon_objp);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Beam");
+		Script_system.RemHookVars({"Self", "Object", "Ship", "Beam"});
 
 		if(!ship_override && !weapon_override) {
 			beam_add_collision(b, ship_objp, &mc, quadrant_num);
@@ -2547,12 +2547,12 @@ int beam_collide_ship(obj_pair *pair)
 		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Beam", weapon_objp);
 		if(!(weapon_override && !ship_override))
 			Script_system.RunCondition(CHA_COLLIDEBEAM, ship_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Beam");
+		Script_system.RemHookVars({"Self", "Object", "Ship", "Beam"});
 
 		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Beam", weapon_objp);
 		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
 			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Beam");
+		Script_system.RemHookVars({"Self", "Object", "Ship", "Beam"});
 
 		// if we got "tooled", add an exit hole too
 		if (hull_exit_collision)
@@ -2629,11 +2629,11 @@ int beam_collide_asteroid(obj_pair *pair)
 
 		Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Asteroid", pair->b);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pair->a);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Asteroid");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Asteroid"});
 
 		Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Asteroid", pair->b);
 		bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Asteroid");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Asteroid"});
 
 		if(!weapon_override && !asteroid_override)
 		{
@@ -2643,12 +2643,12 @@ int beam_collide_asteroid(obj_pair *pair)
 		Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Asteroid", pair->b);
 		if(!(asteroid_override && !weapon_override))
 			Script_system.RunCondition(CHA_COLLIDEASTEROID, pair->a);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Asteroid");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Asteroid"});
 
 		Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Asteroid", pair->b);
 		if((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
 			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Asteroid");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Asteroid"});
 
 		return 0;
 	}
@@ -2720,12 +2720,12 @@ int beam_collide_missile(obj_pair *pair)
 
 		Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Weapon", pair->b);
 		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pair->a);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Weapon");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Weapon"});
 
 		//Should be reversed
 		Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Weapon", pair->b);
 		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Weapon");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Weapon"});
 
 		if(!a_override && !b_override){
 			beam_add_collision(b, pair->b, &test_collide);
@@ -2735,14 +2735,14 @@ int beam_collide_missile(obj_pair *pair)
 		{
 			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Weapon", pair->b);
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, pair->a);
-			Script_system.RemHookVars(4, "Self", "Object", "Beam", "Weapon");
+			Script_system.RemHookVars({"Self", "Object", "Beam", "Weapon"});
 		}
 		if((b_override && !a_override) || (!b_override && !a_override))
 		{
 			//Should be reversed
 			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Weapon", pair->b);
 			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b);
-			Script_system.RemHookVars(4, "Self", "Object", "Beam", "Weapon");
+			Script_system.RemHookVars({"Self", "Object", "Beam", "Weapon"});
 		}
 	}
 
@@ -2812,11 +2812,11 @@ int beam_collide_debris(obj_pair *pair)
 
 		Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Debris", pair->b);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pair->a);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Debris");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Debris"});
 
 		Script_system.SetHookObjects(4, "Self", pair->b, "Object",  pair->a, "Beam", pair->a, "Debris", pair->b);
 		bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Debris");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Debris"});
 
 		if(!weapon_override && !debris_override)
 		{
@@ -2827,12 +2827,12 @@ int beam_collide_debris(obj_pair *pair)
 		Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Debris", pair->b);
 		if(!(debris_override && !weapon_override))
 			Script_system.RunCondition(CHA_COLLIDEDEBRIS, pair->a);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Debris");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Debris"});
 
 		Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Debris", pair->b);
 		if((debris_override && !weapon_override) || (!debris_override && !weapon_override))
 			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b);
-		Script_system.RemHookVars(4, "Self", "Object", "Beam", "Debris");
+		Script_system.RemHookVars({"Self", "Object", "Beam", "Debris"});
 	}
 
 	// reset timestamp to timeout immediately

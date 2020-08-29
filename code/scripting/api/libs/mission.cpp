@@ -872,7 +872,7 @@ ADE_FUNC(createShip,
 
 		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
+		Script_system.RemHookVars({"Ship", "Parent"});
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else

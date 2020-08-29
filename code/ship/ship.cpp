@@ -7490,7 +7490,7 @@ void ship_destroy_instantly(object *ship_objp)
 	// scripting stuff
 	Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars(2, "Self", "Ship");
+	Script_system.RemHookVars({"Self", "Ship"});
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
@@ -7608,7 +7608,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		Script_system.SetHookVar("Method", 's', departmethod);
 		Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
 		Script_system.RunCondition(CHA_ONSHIPDEPART);
-		Script_system.RemHookVars(3, "Ship", "Method", "JumpNode");
+		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 	}
 
 #ifndef NDEBUG
@@ -11661,7 +11661,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
 		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 	}
 
 	return num_fired;
@@ -12389,7 +12389,7 @@ done_secondary:
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp);
 		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
@@ -12649,7 +12649,7 @@ int ship_select_next_primary(object *objp, int direction)
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-		Script_system.RemHookVars(2, "User", "Target");
+		Script_system.RemHookVars({"User", "Target"});
 
 		return 1;
 	}
@@ -12751,7 +12751,7 @@ int ship_select_next_secondary(object *objp)
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-			Script_system.RemHookVars(2, "User", "Target");
+			Script_system.RemHookVars({"User", "Target"});
 
 			return 1;
 		}

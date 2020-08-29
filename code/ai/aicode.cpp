@@ -4605,7 +4605,7 @@ void ai_waypoints()
 				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
 				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
 				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointlist");
+				Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
 			}
 		}
 	}

@@ -3749,7 +3749,7 @@ void weapon_delete(object *obj)
 
 	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
 	Script_system.RunCondition(CHA_ONWEAPONDELETE);
-	Script_system.RemHookVars(2, "Weapon", "Self");
+	Script_system.RemHookVars({"Weapon", "Self"});
 
 	num = obj->instance;
 

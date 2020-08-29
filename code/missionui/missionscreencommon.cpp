@@ -1055,7 +1055,7 @@ void common_fire_stage_script_hook(int old_stage, int new_stage)
 	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
 	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
 	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
-	Script_system.RemHookVars(2, "OldStage", "NewStage");
+	Script_system.RemHookVars({"OldStage", "NewStage"});
 }
 
 // NEWSTUFF BEGIN
