@@ -1719,8 +1719,7 @@ ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the sh
 
 	char temp_altname[NAME_LENGTH];
 
-	*temp_altname = 0;
-	strcpy(temp_altname, mission_parse_lookup_alt_index(shipp->alt_type_index));
+	strcpy_s(temp_altname, mission_parse_lookup_alt_index(shipp->alt_type_index));
 
 	if (*temp_altname)
 		return ade_set_args(L, "s", temp_altname);
