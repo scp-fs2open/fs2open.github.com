@@ -4574,6 +4574,14 @@ void parse_wing(mission *pm)
 	// wing could be created if it needs to be
 	wingp->wave_delay_timestamp = timestamp(0);
 
+	// Use a custom formation if specified
+	if (optional_string("+Formation Index:")) {
+		stuff_int(&(wingp->formation));
+	}
+	else { // else use the retail formation
+		wingp->formation = -1;
+	}
+
 	// initialize wing goals
 	for (i=0; i<MAX_AI_GOALS; i++) {
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;

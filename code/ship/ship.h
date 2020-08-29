@@ -1407,6 +1407,9 @@ typedef struct wing {
 	// of stuff that needs to be sitting in memory at once - each ship uses the wing texture;
 	// and it also makes practical sense: no wing has two different squadrons in it :)
 	int wing_insignia_texture;
+
+	// if -1, retail formation, else a custom one defined by the species
+	int formation;
 } wing;
 
 extern wing Wings[MAX_WINGS];

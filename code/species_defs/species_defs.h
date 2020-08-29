@@ -75,10 +75,10 @@ public:
 	char cmeasure_name[NAME_LENGTH];
 	int cmeasure_index;
 
-	// if 0, default positions
-	int custom_wing_positions;
-	// does NOT include wing leader, so index 0 is the second in the wing, 1 is third, etc
-	vec3d wing_positions[MAX_SHIPS_PER_WING-1];
+
+	// does NOT include wing leader, so index 0 for each formation is the second in the wing, 1 is third, etc
+	SCP_vector<std::array<vec3d, MAX_SHIPS_PER_WING - 1>> formations;
+	int default_formation;
 
 	species_info()
 	{

@@ -11429,10 +11429,11 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 	vec3d	wing_delta, rotated_wing_delta;
 	float		wing_spread_size;
 	species_info* species = &Species_info[Ship_info[Ships[leader_objp->instance].ship_info_index].species];
-	bool is_custom_pos = species->custom_wing_positions > wing_index;
+	int formation_index = Wings[Ships[leader_objp->instance].wingnum].formation;
 
-	if (wing_index != 0 && is_custom_pos) {
-		wing_delta = species->wing_positions[wing_index - 1]; //  custom desired location in leader's reference frame
+
+	if (wing_index != 0 && formation_index != -1) {
+		wing_delta = species->formations[formation_index][wing_index - 1]; //  custom desired location in leader's reference frame
 	}
 	else {
 		get_wing_delta(&wing_delta, wing_index);		//	default desired location in leader's reference frame
@@ -11442,12 +11443,13 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 
 	// apply debug modifications to spread size and also y scale (2x default) unless it's a custom position
 	if (leader_objp->flags[Object::Object_Flags::Player_ship]) {
-		if(!is_custom_pos)
+		if(formation_index == -1)
 			wing_delta.xyz.y *= Wing_y_scale;
 		wing_spread_size *= Wing_scale;
 	}
 
 	vm_vec_scale(&wing_delta, wing_spread_size * (1.0f + leader_objp->phys_info.speed/70.0f));
+
 
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 

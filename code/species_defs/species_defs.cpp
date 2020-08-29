@@ -328,28 +328,29 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
-			if (optional_string("$Custom wingmate relative positions:")) {
-
-				int wing_index = 1;
+			if (optional_string("$Custom wingmate formations:")) {
 
 				while (check_for_string("(")) {
-
-					if (wing_index >= MAX_SHIPS_PER_WING)
-					{
-						Warning(LOCATION, "Species %s : Custom wing positions cannot exceed %d.  Ignoring the rest...", species_name, MAX_SHIPS_PER_WING);
-						break;
+					species->formations.emplace_back();
+					if (stuff_vec3d_list(species->formations.back().data(), MAX_SHIPS_PER_WING - 1) != MAX_SHIPS_PER_WING - 1) {
+						Warning(LOCATION, "A custom formation for species %s did not have 5 positions. Ignoring.", species->species_name);
+						species->formations.pop_back();
 					}
-
-					if (stuff_float_list(species->wing_positions[wing_index-1].a1d, 3) != 3) {
-						Warning(LOCATION, "Species %s : Incorrect position definition, each wing position must have an x, y and z coordinate.", species_name);
-						break;
-					}
-
-
-					wing_index++;
 				}
+			}
 
-				species->custom_wing_positions = wing_index;
+			if (optional_string("$Default formation index:")) {
+				if (species->formations.empty()) {
+					Warning(LOCATION, "A default formation index was provided for species %s but no formations are defined.", species->species_name);
+				}
+				else {
+					stuff_int(&species->default_formation);
+
+					if (species->default_formation >= species->formations.size() || species->default_formation <= -2) {
+						Warning(LOCATION, "Invalid default formation index for species %s. Ignoring.", species->species_name);
+						species->default_formation = -1;
+					}
+				}
 			}
 
 			// don't add new entry if this is just a modified one
