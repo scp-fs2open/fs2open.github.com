@@ -346,7 +346,7 @@ void parse_species_tbl(const char *filename)
 				else {
 					stuff_int(&species->default_formation);
 
-					if (species->default_formation >= species->formations.size() || species->default_formation <= -2) {
+					if (species->default_formation >= (int)species->formations.size() || species->default_formation <= -2) {
 						Warning(LOCATION, "Invalid default formation index for species %s. Ignoring.", species->species_name);
 						species->default_formation = -1;
 					}
