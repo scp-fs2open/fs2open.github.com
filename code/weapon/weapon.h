@@ -284,7 +284,7 @@ struct weapon_info
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
-	float	free_flight_speed;
+	float	free_flight_speed_factor;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)

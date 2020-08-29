@@ -1519,15 +1519,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
 	}
 
-	if(optional_string("$Free Flight Speed:")) {
-		stuff_float(&(wip->free_flight_speed));
-		if (wip->free_flight_speed < 0.01f) {
-			error_display(0, "Free Flight Speed value is too low for weapon '%s'. Resetting to default (0.25 times maximum)", wip->name);
-			wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
+	if (optional_string("$Free Flight Speed:")) {
+		error_display(0, "$Free Flight Speed: used for weapon '%s' is depreciated and ignored, use $Free Flight Speed Factor: instead. ", wip->name);
+		float temp;
+		stuff_float(&temp);
+	}
+
+	if(optional_string("$Free Flight Speed Factor:")) {
+		stuff_float(&(wip->free_flight_speed_factor));
+		if (wip->free_flight_speed_factor < 0.01f) {
+			error_display(0, "Free Flight Speed Factor value is too low for weapon '%s'. Resetting to default (0.25 times maximum)", wip->name);
+			wip->free_flight_speed_factor = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 		}
 	}
 	else if (first_time && is_homing) {
-		wip->free_flight_speed = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
+		wip->free_flight_speed_factor = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 	}
 	//Optional one-shot sound to play at the beginning of firing
 	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd);
@@ -4211,8 +4217,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
 				obj->phys_info.speed -= frame_time * 4;
-			} else if ((obj->phys_info.speed < max_speed * wip->free_flight_speed) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
-				obj->phys_info.speed = max_speed * wip->free_flight_speed;
+			} else if ((obj->phys_info.speed < max_speed * wip->free_flight_speed_factor) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
+				obj->phys_info.speed = max_speed * wip->free_flight_speed_factor;
 			}
 		}
 		// no free_flight_time, so immediately set desired speed
@@ -5575,13 +5581,13 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		//	the missile will not be moving forward.
 		if(parent_objp != NULL){
 			if (wip->free_flight_time > 0.0)
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z * wip->free_flight_speed);
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z * wip->free_flight_speed_factor);
 			else
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z*wip->free_flight_speed );
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z*wip->free_flight_speed_factor );
 		} else {
 			if (!is_locked && wip->free_flight_time > 0.0)
             {
-			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z* wip->free_flight_speed);
+			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z* wip->free_flight_speed_factor);
             }
             else
             {
@@ -7802,7 +7808,7 @@ void weapon_info::reset()
 	this->acceleration_time = 0.0f;
 	this->vel_inherit_amount = 1.0f;
 	this->free_flight_time = 0.0f;
-	this->free_flight_speed = 0.25f;
+	this->free_flight_speed_factor = 0.25f;
 	this->mass = 1.0f;
 	this->fire_wait = 1.0f;
 	this->max_delay = 0.0f;
