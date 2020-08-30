@@ -2213,9 +2213,9 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 }
 
 
-// given a start vector, an orientation and a radius, give a point on the plane of the circle
-// if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge)
+// given a start vector, an orientation, and a radius, generate a point on the plane of the circle
+// if on_edge is true, the point will be on the edge of the circle
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge)
 {
 	vec3d temp;
 
@@ -2226,17 +2226,19 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
 }
 
-// given a start vector, an orientation, and a radius, give a point in a spherical volume
-// if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, int on_edge)
+// given a start vector and a radius, generate a point in a spherical volume
+// if on_surface is true, the point will be on the surface of the sphere
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface)
 {
 	vec3d temp;
+
 	// Uniformly distributing each coordinate of a vector then normalizing results in a uniform sphere distribution
 	util::UniformFloatRange coords(-1.0f,1.0f);
 	vm_vec_make( &temp, coords.next(), coords.next(), coords.next() );
 	vm_vec_normalize(&temp);
+
 	// We then add the scaled result to the initial position to get the final position
-	vm_vec_scale_add(out, in, &temp, on_edge ? radius : util::UniformFloatRange(0.0f,radius).next());
+	vm_vec_scale_add(out, in, &temp, on_surface ? radius : util::UniformFloatRange(0.0f, radius).next());
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

@@ -5054,7 +5054,7 @@ void weapon_process_post(object * obj, float frame_time)
 			matrix orient;
 
 			//spawn the ssm at a random point in a circle around the target
-			vm_vec_random_in_circle(&warpin, &wp->lssm_target_pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius,1);
+			vm_vec_random_in_circle(&warpin, &wp->lssm_target_pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius, true);
 	
 			//orient the missile properly
 			vm_vec_sub(&fvec,&wp->lssm_target_pos, &warpin);

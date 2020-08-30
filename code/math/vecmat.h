@@ -477,13 +477,13 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float 
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matrix *orient = NULL);
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_angle, const matrix *orient = NULL);
 
-// given a start vector, an orientation and a radius, give a point on the plane of the circle
-// if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge);
+// given a start vector, an orientation, and a radius, generate a point on the plane of the circle
+// if on_edge is true, the point will be on the edge of the circle
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge);
 
-// given a start vector, an orientation, and a radius, give a point in a spherical volume
-// if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, int on_edge);
+// given a start vector and a radius, generate a point in a spherical volume
+// if on_surface is true, the point will be on the surface of the sphere
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
