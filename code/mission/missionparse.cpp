@@ -4575,11 +4575,16 @@ void parse_wing(mission *pm)
 	wingp->wave_delay_timestamp = timestamp(0);
 
 	// Use a custom formation if specified
+	species_info species = Species_info[Ship_info[Ships[wingp->ship_index[0]].ship_info_index].species];
 	if (optional_string("+Formation Index:")) {
 		stuff_int(&(wingp->formation));
+		if (wingp->formation <= -2 || wingp->formation >= (int)species.formations.size()) {
+			Warning(LOCATION, "Invalid Formation Index %d.", wingp->formation);
+			wingp->formation = species.default_formation;
+		}
 	}
-	else { // else use the retail formation
-		wingp->formation = -1;
+	else { // else use the species' default formation
+		wingp->formation = species.default_formation;
 	}
 
 	// initialize wing goals

@@ -331,10 +331,13 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Custom wingmate formations:")) {
 
 				while (check_for_string("(")) {
-					species->formations.emplace_back();
-					if (stuff_vec3d_list(species->formations.back().data(), MAX_SHIPS_PER_WING - 1) != MAX_SHIPS_PER_WING - 1) {
+					SCP_vector<vec3d> current_formation;
+
+					if (stuff_vec3d_list(current_formation) != MAX_SHIPS_PER_WING - 1) {
 						Warning(LOCATION, "A custom formation for species %s did not have 5 positions. Ignoring.", species->species_name);
-						species->formations.pop_back();
+					} else {
+						species->formations.emplace_back();
+						std::copy_n(current_formation.begin(), MAX_SHIPS_PER_WING-1, species->formations.back().begin());
 					}
 				}
 			}

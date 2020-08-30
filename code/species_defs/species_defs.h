@@ -87,6 +87,7 @@ public:
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
+		default_formation = -1;
 	}
 };
 

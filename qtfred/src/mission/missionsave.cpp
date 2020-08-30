@@ -4297,6 +4297,20 @@ int CFred_mission_save::save_wings()
 			fout(" %d", Wings[i].wave_delay_max);
 		}
 
+		if (save_format != MissionFormat::RETAIL) {
+			if (Wings[i].formation > -1)
+			{
+				if (optional_string_fred("+Formation Index:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation Index:");
+				}
+
+				fout(" %d", Wings[i].formation);
+			}
+		}
+
 		fso_comment_pop();
 	}
 
