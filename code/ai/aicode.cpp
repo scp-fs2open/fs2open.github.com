@@ -1138,16 +1138,52 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	}
 }
 
+// Asteroth - figures out if we're turning in a frametime-independant way or not, and if so
+// ensures retail behavior is maintained (if the modder wants to).
+// vel and acc_limit should already be sent in with retail values
+void ai_get_vel_acc_limit_for_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool weapon) {
+
+	if (!Framerate_independent_turning)
+		return;
+	
+	if (weapon) {
+		// Missiles accelerated instantly technically, but this should do.
+		vm_vec_copy_scale(acc_limit, vel_limit, 1000.f);
+		// Approximately what you'd get at 60fps
+		*vel_limit *= 0.128f;
+		return;
+	}
+	else { // If we're a ship instead things get a bit hairier
+
+		for (int i = 0; i < 3; i++) {
+			float& vel = vel_limit->a1d[i];
+			float& acc = acc_limit->a1d[i];
+
+			float v1 = 2 * acc * rotdamp;
+			float v2 = 2 * vel;
+			if (v1 <= v2) {
+				vel = v1;
+			}
+			else {
+				vel = v2;
+				if (v1 == 0)
+					acc = 1000.f;
+				else
+					acc = acc * (2 - v2 / v1);
+			}
+		}
+	}
+}
+
 // If rvec != NULL, use it to match bank by calling vm_angular_move_matrix.
 // (rvec defaults to NULL)
 // optionally specified turnrate_mod contains multipliers for each component of the turnrate (RATE, so 0.5 = slower)
-void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, vec3d* turnrate_mod)
+void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* rel_pos, float bank_override, int flags, vec3d* rvec, vec3d* turnrate_mod)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
 	float		delta_time;
 	physics_info	*pip;
-	vec3d	vel_limit, acc_limit;
 	float		delta_bank;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON, "ai_turn_towards_vector called on a non-ship non-weapon object!");
@@ -1170,6 +1206,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 	curr_orient = objp->orient;
 	delta_time = flFrametime;
 
+	vec3d vel_limit, acc_limit;
 	vm_vec_zero(&vel_limit);
 
 	// get the turn rate if we have Use_axial_turnrate_differences
@@ -1218,6 +1255,9 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *
 	acc_limit = vel_limit;
 	if (objp->type == OBJ_WEAPON)
 		vm_vec_scale(&acc_limit, 8.0f);
+
+	//maybe change vel and acc based on framerate_independant_turning
+	ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, pip->rotdamp, objp->type == OBJ_WEAPON);
 
 	// for formation flying
 	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
@@ -1273,16 +1313,26 @@ vel_in = vel_in_copy;	//	HERE //-V587
 objp->orient = objp_orient_copy; //-V587
 #endif
 	
+	matrix out_orient;
+
 	if (rvec != NULL) {
-		matrix	out_orient, goal_orient;
+		matrix	goal_orient;
 
 		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
 		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
-		objp->orient = out_orient;
 	} else {
 		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank,
-			&objp->orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
+			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
+	}
+	
+	if (Framerate_independent_turning) {
+		pip->ai_desired_orient = out_orient;
+		pip->desired_rotvel = vel_out;
+	}
+	else {
+		objp->orient = out_orient;
+		pip->rotvel = vel_out;
 	}
 
 	#ifndef NDEBUG
@@ -1291,7 +1341,7 @@ objp->orient = objp_orient_copy; //-V587
 			mprintf(("A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name));
 	}
 	#endif
-	pip->rotvel = vel_out;
+
 }
 
 //	Set aip->target_objnum to objnum
@@ -9103,7 +9153,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	ship_info	*sip0, *sip1;
 	polymodel	*pm0, *pm1;
 	ai_info		*aip;
-	matrix		dom, nm;
+	matrix		dom, out_orient;
 	vec3d docker_p0, docker_p1, docker_p0_norm;
 	vec3d dockee_p0, dockee_p1, dockee_p0_norm;
 	vec3d docker_point, dockee_point;
@@ -9213,10 +9263,19 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		if (sip0->flags[Ship::Info_Flags::Support])
 			vm_vec_scale(&acc_limit, 2.0f);
 
+		ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
+
 		// true at end of line prevent overshoot
-		vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false, true);
-		docker_objp->phys_info.rotvel = omega_out;
-		docker_objp->orient = nm;
+		vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &out_orient, &omega_out, &vel_limit, &acc_limit, false, true);
+
+		if (Framerate_independent_turning) {
+			docker_objp->phys_info.desired_rotvel = omega_out;
+			docker_objp->phys_info.ai_desired_orient = out_orient;
+		}
+		else {
+			docker_objp->phys_info.rotvel = omega_out;
+			docker_objp->orient = out_orient;
+		}
 
 		//	Translate towards goal and note distance to goal.
 		goal_point = &Path_points[aip->path_cur].pos;
@@ -9264,9 +9323,18 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			if (sip0->flags[Ship::Info_Flags::Support])
 				vm_vec_scale(&acc_limit, 2.0f);
 
-			vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, false);
-			docker_objp->phys_info.rotvel = omega_out;
-			docker_objp->orient = nm;
+			ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
+
+			vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &out_orient, &omega_out, &vel_limit, &acc_limit, false);
+
+			if (Framerate_independent_turning) {
+				docker_objp->phys_info.desired_rotvel = omega_out;
+				docker_objp->phys_info.ai_desired_orient = out_orient;
+			}
+			else {
+				docker_objp->phys_info.rotvel = omega_out;
+				docker_objp->orient = out_orient;
+			}
 
 			fdist = dock_move_towards_point(docker_objp, &docker_point, &dockee_point, speed_scale, dockee_objp->phys_info.speed, rdinfo);
 		
@@ -11970,7 +12038,6 @@ int ai_formation()
 		}
 
 	}
-
 	return 0;
 }
 

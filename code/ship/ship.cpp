@@ -9047,7 +9047,7 @@ static void lethality_decay(ai_info *aip)
 #endif
 }
 
-// moved out of ship_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
+// moved out of ship_process_post() so it can be called from either -post() or -pre() depending on Framerate_independent_turning
 void ship_evaluate_ai(object* obj, float frametime) {
 
 	int num = obj->instance;
@@ -9097,9 +9097,9 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
-	// If Ai_before_physics is false everything following is evaluated in ship_process_post()
+	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
 	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Ai_before_physics)
+	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9330,7 +9330,8 @@ void ship_process_post(object * obj, float frametime)
 			ship_check_player_distance();
 		}
 
-		if (!Ai_before_physics)
+		// If Framerate_independent_turning is true this is evaluated in ship_process_pre()
+		if (!Framerate_independent_turning)
 			ship_evaluate_ai(obj, frametime);
 	}
 }

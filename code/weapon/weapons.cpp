@@ -4623,7 +4623,7 @@ void weapon_home(object *obj, int num, float frame_time)
 }
 
 
-// moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Ai_before_physics
+// moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Framerate_independent_turning
 void weapon_update_missiles(object* obj, float  frame_time) {
 
 	Assertion(obj->type == OBJ_WEAPON, "weapon_update_missiles called on a non-weapon object");
@@ -4638,10 +4638,6 @@ void weapon_update_missiles(object* obj, float  frame_time) {
 		// If this is a swarm type missile,  
 		if (wp->swarm_index >= 0) {
 			swarm_update_direction(obj);
-		}
-
-		if (wp->cscrew_index >= 0) {
-			cscrew_process_post(obj);
 		}
 	}
 	else if (wip->acceleration_time > 0.0f) {
@@ -4705,7 +4701,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 	}
 
 	// If this flag is false missile turning is evaluated in weapon_process_post()
-	if (Ai_before_physics) {
+	if (Framerate_independent_turning) {
 		weapon_update_missiles(obj, frame_time);
 	}
 }
@@ -5008,8 +5004,13 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// If this flag is true this is evaluated in weapon_process_pre()
-	if (!Ai_before_physics) {
+	if (!Framerate_independent_turning) {
 		weapon_update_missiles(obj, frame_time);
+	}
+
+	//handle corkscrew missiles
+	if (wip->is_homing() && !(wp->weapon_flags[Weapon::Weapon_Flags::No_homing]) && wp->cscrew_index >= 0) {
+		cscrew_process_post(obj);
 	}
 
 	//local ssm stuff

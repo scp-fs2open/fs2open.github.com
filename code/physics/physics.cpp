@@ -150,7 +150,7 @@ void physics_set_viewer( physics_info * p, int dir )
 
 void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 {
-	angles	tangles;
+	angles	tangles = { 0,0,0 };
 	vec3d	new_vel;
 	matrix	tmp;
 	float		shock_amplitude;
@@ -161,35 +161,70 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	Assert(is_valid_vec(&pi->rotvel));
 	Assert(is_valid_vec(&pi->desired_rotvel));
 
-	// Handle special case of shockwave
-	shock_amplitude = 0.0f;
-	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		if ( timestamp_elapsed(pi->shockwave_decay) ) {
-			pi->flags &= ~PF_IN_SHOCKWAVE;
-			rotdamp = pi->rotdamp;
-		} else {
- 			shock_fraction_time_left = timestamp_until( pi->shockwave_decay ) / (float) SW_BLAST_DURATION;
-			rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
-			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
+	bool frit_ai_wants_to_move = Framerate_independent_turning && !IS_MAT_NULL(&pi->ai_desired_orient);
+	bool spinning_too_fast = vm_vec_mag(&pi->max_rotvel) > 0.001f &&
+		(pi->rotvel.xyz.x > pi->max_rotvel.xyz.x * 1.5f ||
+		pi->rotvel.xyz.y > pi->max_rotvel.xyz.y * 1.5f ||
+		pi->rotvel.xyz.z > pi->max_rotvel.xyz.z * 1.5f);
+	// In the case an ai entity used matrix or forward interpolate, we should use those calculations instead
+	// Unless it's spinning too fast, in which case let the exponential damping handle it
+	if (frit_ai_wants_to_move && !(spinning_too_fast)){
+		Assert(is_valid_matrix(&pi->ai_desired_orient));
+
+		// AI simply get the rotvel they ask for, calculations were already done
+		pi->rotvel = pi->desired_rotvel;
+		// Zero it out because the same AI might not call an interpolate function again next time
+		// So we'll assume it's going to "go limp" unless it specifies otherwise next frame
+		vm_vec_zero(&pi->desired_rotvel);
+
+		// Pretty much same as above
+		*orient = pi->ai_desired_orient;
+		vm_mat_zero(&pi->ai_desired_orient);
+
+		vm_orthogonalize_matrix(orient);
+
+	} else { // players and no framerate_independent_turning go here
+
+		if (frit_ai_wants_to_move) {
+			// Make sure its slowing down as much as possible by desiring 0 velocity
+			vm_vec_zero(&pi->desired_rotvel);
 		}
-	} else if ( pi->flags & PF_NO_DAMP ) {
-		rotdamp = 0.0f;
-	} else {
-		rotdamp = pi->rotdamp;
+
+		// Handle special case of shockwave
+		shock_amplitude = 0.0f;
+		if (pi->flags & PF_IN_SHOCKWAVE) {
+			if (timestamp_elapsed(pi->shockwave_decay)) {
+				pi->flags &= ~PF_IN_SHOCKWAVE;
+				rotdamp = pi->rotdamp;
+			}
+			else {
+				shock_fraction_time_left = timestamp_until(pi->shockwave_decay) / (float)SW_BLAST_DURATION;
+				rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
+				shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
+			}
+		}
+		else if (pi->flags & PF_NO_DAMP) {
+			rotdamp = 0.0f;
+		}
+		else {
+			rotdamp = pi->rotdamp;
+		}
+
+		// Do rotational physics with given damping
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, NULL);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL);
+
+		Assert(is_valid_vec(&new_vel));
+
+		pi->rotvel = new_vel;
+
+		tangles.p = pi->rotvel.xyz.x * sim_time;
+		tangles.h = pi->rotvel.xyz.y * sim_time;
+		tangles.b = pi->rotvel.xyz.z * sim_time;
+	
 	}
-
-	// Do rotational physics with given damping
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL );
-
-	Assert(is_valid_vec(&new_vel));
-
-	pi->rotvel = new_vel;
-
-	tangles.p = pi->rotvel.xyz.x*sim_time;
-	tangles.h = pi->rotvel.xyz.y*sim_time;
-	tangles.b = pi->rotvel.xyz.z*sim_time;
+	
 
 /*	//	Make ship shake due to afterburner.
 	if (pi->flags & PF_AFTERBURNER_ON || !timestamp_elapsed(pi->afterburner_decay) ) {
@@ -456,50 +491,54 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 	}
 
-	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
-		// Default behavior; eyepoint orientation has no effect on controls
-		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
-		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
-	} else {
-		// Optional behavior; pitch and yaw are always relative to the eyepoint
-		// orientation (excluding slew)
-		vec3d tmp_vec, new_rotvel;
-		matrix tmp_mat, eyemat, rotvelmat;
+	// If Framerate_independent_turning is on, AI don't use CI to turn
+	if (!Framerate_independent_turning || IS_MAT_NULL(&pi->ai_desired_orient)){
+		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
+			// Default behavior; eyepoint orientation has no effect on controls
+			pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+			pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+		} else {
+			// Optional behavior; pitch and yaw are always relative to the eyepoint
+			// orientation (excluding slew)
+			vec3d tmp_vec, new_rotvel;
+			matrix tmp_mat, eyemat, rotvelmat;
 
-		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+			ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
 
-		vm_copy_transpose(&tmp_mat, &Player_obj->orient);
-		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
+			vm_copy_transpose(&tmp_mat, &Player_obj->orient);
+			vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
 
-		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
-		vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
-		new_rotvel.xyz.x = tmp_vec.xyz.x;
+			vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
+			vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
+			new_rotvel.xyz.x = tmp_vec.xyz.x;
 
-		new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
-		new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
+			new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
+			new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
 
-		vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
+			vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
 
-		pi->desired_rotvel = tmp_vec;
-	}
+			pi->desired_rotvel = tmp_vec;
+		}
 
-	float	delta_bank;
+		float	delta_bank;
 
 #ifdef BANK_WHEN_TURN
-	if ( ci->control_flags & CIF_DONT_BANK_WHEN_TURNING )
-		delta_bank = 0.0f;
-	else
-	{
-		//	To change direction of bank, negate the whole expression.
-		//	To increase magnitude of banking, decrease denominator.
-		//	Adam: The following statement is all the math for banking while turning.
-		delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
-	}
+		if ( ci->control_flags & CIF_DONT_BANK_WHEN_TURNING )
+			delta_bank = 0.0f;
+		else
+		{
+			//	To change direction of bank, negate the whole expression.
+			//	To increase magnitude of banking, decrease denominator.
+			//	Adam: The following statement is all the math for banking while turning.
+			delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+		}
 #else
-	delta_bank = 0.0f;
+		delta_bank = 0.0f;
 #endif
 
-	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
+		pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
+	}
+
 	pi->forward_thrust = ci->forward;
 	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters
 	pi->side_thrust = ci->sideways;	//to glow brighter when the ship is moving in the right direction -Bobboau

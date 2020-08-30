@@ -839,6 +839,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
 				vm_vec_zero(&objp->phys_info.desired_vel);
 				vm_vec_zero(&objp->phys_info.desired_rotvel);
+				vm_mat_zero(&objp->phys_info.ai_desired_orient);
 				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
 			}

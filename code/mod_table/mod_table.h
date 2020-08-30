@@ -55,6 +55,7 @@ extern bool Ai_before_physics;
 extern bool Swarmers_lead_targets;
 extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
+extern bool Framerate_independent_turning;
 
 void mod_table_init();
 

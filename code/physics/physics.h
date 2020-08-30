@@ -69,8 +69,9 @@ typedef struct physics_info {
 	// These get changed by the control code.  The physics uses these
 	// as input values when doing physics.
 	vec3d	prev_ramp_vel;				// follows the user's desired velocity, in local coord
-	vec3d	desired_vel;				// in world coord
-	vec3d	desired_rotvel;			// in local coord
+	vec3d	desired_vel;				// in world coord, (possibly) damped by side_slip_time_const to get final vel
+	vec3d	desired_rotvel;				// in local coords, damped by rotdamp to get final rotvel
+										// With framerate_independent_turning, the AI are not damped, see physics_sim_rot
 	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
 	float		side_thrust;			// How much the forward thruster is +x.  0-1.
 	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
@@ -94,6 +95,9 @@ typedef struct physics_info {
 
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
 	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
+
+	matrix ai_desired_orient;   // Asteroth - This is only set if Frametime_independent_turning is enabled, and only by the AI after calls to matrix/forward_interpolate
+							// It is read and then discarded by physics_sim_rot
 } physics_info;
 
 
