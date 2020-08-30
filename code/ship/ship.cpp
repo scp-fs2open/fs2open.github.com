@@ -787,7 +787,7 @@ do {\
 void ship_info::clone(const ship_info& other)
 {
 	strcpy_s(name, other.name);
-	strcpy_s(alt_name, other.alt_name);
+	strcpy_s(display_name, other.display_name);
 	strcpy_s(short_name, other.short_name);
 	species = other.species;
 	class_type = other.class_type;
@@ -1106,7 +1106,7 @@ void ship_info::clone(const ship_info& other)
 void ship_info::move(ship_info&& other)
 {
 	std::swap(name, other.name);
-	std::swap(alt_name, other.alt_name);
+	std::swap(display_name, other.display_name);
 	std::swap(short_name, other.short_name);
 	species = other.species;
 	class_type = other.class_type;
@@ -1436,7 +1436,7 @@ ship_info::ship_info()
 	int i,j;
 
 	name[0] = '\0';
-	alt_name[0] = '\0';
+	display_name[0] = '\0';
 	sprintf(short_name, "ShipClass%d", ship_info_size());
 	species = 0;
 	class_type = -1;
@@ -1812,6 +1812,20 @@ ship_info::~ship_info()
 	free_strings();
 }
 
+const char* ship_info::get_display_name()
+{
+	if (has_display_name())
+		return display_name;
+	else
+		return name;
+}
+
+bool ship_info::has_display_name()
+{
+	return display_name[0] != '\0';
+}
+
+
 static SCP_vector<SCP_string> Removed_ships;
 
 /**
@@ -1912,6 +1926,12 @@ static void parse_ship(const char *filename, bool replace)
 		first_time = true;
 
 		strcpy_s(sip->name, fname);
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(sip->name)) {
+			strcpy_s(sip->display_name, sip->name);
+			end_string_at_first_hash_symbol(sip->display_name);
+		}
 	}
 
 	// Use a template for this ship.
@@ -2442,8 +2462,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		type_name = "$Template";
 	}
 	
-	if(optional_string("$Alt name:"))
-		stuff_string(sip->alt_name, F_NAME, NAME_LENGTH);
+	if(optional_string("$Alt name:") || optional_string("$Display Name:"))
+		stuff_string(sip->display_name, F_NAME, NAME_LENGTH);
 
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
@@ -5588,7 +5608,7 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 	exited_ship entry; 
 
 	strcpy_s(entry.ship_name, sp->ship_name );
-	entry.display_string = sp->get_display_string();
+	entry.display_name = sp->get_display_name();
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
@@ -6104,7 +6124,7 @@ void ship::clear()
 bool ship::has_display_name() {
 	return !display_name.empty();
 }
-const char* ship::get_display_string() {
+const char* ship::get_display_name() {
 	if (has_display_name()) {
 		return display_name.c_str();
 	} else {
@@ -12011,10 +12031,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 						(vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Too far from target to acquire lock", 487));
 					} else {
-						char missile_name[NAME_LENGTH];
-						strcpy_s(missile_name, wip->get_display_string());
-						end_string_at_first_hash_symbol(missile_name);
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot fire %s without a lock", 488), missile_name);
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot fire %s without a lock", 488), wip->get_display_name());
 					}
 
 					snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)));
@@ -12039,7 +12056,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			{
 				if ( !Weapon_energy_cheat )
 				{
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->get_display_string());
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"), wip->get_display_name());
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
@@ -12105,10 +12122,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		if ( ship_weapon_maybe_fail(shipp) ) {
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
-					char missile_name[NAME_LENGTH];
-					strcpy_s(missile_name, Weapon_info[weapon_idx].get_display_string());
-					end_string_at_first_hash_symbol(missile_name);
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), Weapon_info[weapon_idx].get_display_name());
 				}
 			goto done_secondary;
 		}
@@ -12500,7 +12514,7 @@ int ship_select_next_primary(object *objp, int direction)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].get_display_string(), swp->current_primary_bank + 1);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].get_display_name(), swp->current_primary_bank + 1);
 			gamesnd_play_error_beep();
 		}
 		return 0;
@@ -12699,7 +12713,7 @@ int ship_select_next_secondary(object *objp)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].get_display_string(), swp->current_secondary_bank + 1);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].get_display_name(), swp->current_secondary_bank + 1);
 			gamesnd_play_error_beep();
 		}
 		return 0;
@@ -15314,7 +15328,7 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 		if (ship < 0) {
 			return name;
 		}
-		return Ships[ship].get_display_string();
+		return Ships[ship].get_display_name();
 	}
 
 		// These goals need no special handling
@@ -15360,11 +15374,13 @@ SCP_string ship_return_orders(ship* sp)
 
 	SCP_string outbuf = order_text;
 
-	SCP_string target_name;
+	const char *target_name;
 	if (aigp->target_name) {
 		target_name = ship_get_ai_target_display_name(aigp->ai_mode, aigp->target_name);
-		end_string_at_first_hash_symbol(target_name);
+	} else {
+		target_name = "";
 	}
+
 	switch (aigp->ai_mode) {
 	case AI_GOAL_FORM_ON_WING:
 	case AI_GOAL_GUARD_WING:
@@ -15407,7 +15423,7 @@ SCP_string ship_return_orders(ship* sp)
 			char subsys_name[NAME_LENGTH];
 			strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
 			hud_targetbox_truncate_subsys_name(subsys_name);
-			sprintf(outbuf, XSTR("atk %s %s", 496), target_name.c_str(), subsys_name);
+			sprintf(outbuf, XSTR("atk %s %s", 496), target_name, subsys_name);
 		} else {
 			outbuf += XSTR("no orders", 495);
 		}

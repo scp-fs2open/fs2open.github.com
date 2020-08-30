@@ -425,8 +425,8 @@ public:
 	p_object();
 	~p_object();
 
-	const char* get_display_string();
-	bool has_display_string();
+	const char* get_display_name();
+	bool has_display_name();
 };
 
 // Goober5000 - this is now dynamic
@@ -529,14 +529,14 @@ void mission_parse_support_arrived( int objnum );
 
 // alternate name stuff
 int mission_parse_lookup_alt(const char *name);
-void mission_parse_lookup_alt_index(int index, char *out);
+const char *mission_parse_lookup_alt_index(int index);
 int mission_parse_add_alt(const char *name);
 void mission_parse_remove_alt(const char *name);
 void mission_parse_reset_alt();
 
 // callsign stuff
 int mission_parse_lookup_callsign(const char *name);
-void mission_parse_lookup_callsign_index(int index, char *out);
+const char *mission_parse_lookup_callsign_index(int index);
 int mission_parse_add_callsign(const char *name);
 void mission_parse_remove_callsign(const char *name);
 void mission_parse_reset_callsign();

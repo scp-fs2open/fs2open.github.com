@@ -1601,8 +1601,6 @@ void message_queue_process()
 	}
 #endif
 	
-	strcpy_s (who_from, q->who_from);
-
 	// if this is a ship, do we use name or callsign or ship class?
 	if ( Message_shipnum >= 0 ) {
 		ship *shipp = &Ships[Message_shipnum];
@@ -1611,8 +1609,10 @@ void message_queue_process()
 		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
 			hud_stuff_ship_class( who_from, shipp );
 		} else {
-			end_string_at_first_hash_symbol(who_from);
+			strcpy_s( who_from, shipp->get_display_name() );
 		}
+	} else {
+		strcpy_s( who_from, q->who_from );
 	}
 
 	if ( !stricmp(who_from, "<none>") ) {

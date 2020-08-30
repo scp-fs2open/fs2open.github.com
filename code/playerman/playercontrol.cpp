@@ -1788,10 +1788,10 @@ float	player_farthest_weapon_range()
  * @param killer_species Species of ship that fired weapon
  * @param weapon_name (Output parameter) Stores weapon name generated in this function
  */
-void player_generate_killer_weapon_name(int weapon_info_index, int killer_species, char *weapon_name)
+const char *player_get_killer_weapon_name(int weapon_info_index, int killer_species)
 {
 	if ( weapon_info_index < 0 ) {
-		return;
+		return "";
 	}
 
 #ifndef NDEBUG
@@ -1799,12 +1799,12 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 #else
 	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
 #endif
-		strcpy(weapon_name, Weapon_info[weapon_info_index].get_display_string());
+		return Weapon_info[weapon_info_index].get_display_name();
 	} else {
 		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
-			strcpy(weapon_name, XSTR( "missile", 90));
+			return XSTR( "missile", 90);
 		} else {
-			strcpy(weapon_name, XSTR( "laser fire", 91));
+			return XSTR( "laser fire", 91);
 		}
 	}
 }
@@ -1814,12 +1814,10 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
  */
 void player_generate_death_message(player *player_p)
 {
-	char weapon_name[NAME_LENGTH];
-	weapon_name[0] = 0;
 	SCP_string &msg = player_p->death_message;
 	int ship_index;
 
-	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
+	auto weapon_name = player_get_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species);
 
 	switch (player_p->killer_objtype)
 	{

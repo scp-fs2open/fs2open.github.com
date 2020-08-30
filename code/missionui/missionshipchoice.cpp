@@ -943,15 +943,9 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header_clr);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Class",739), GR_RESIZE_MENU);
 	y_start += line_height;
-	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
+	if(strlen(sip->get_display_name())){
 		gr_set_color_fast(text);
-
-		// Goober5000
-		char temp[NAME_LENGTH];
-		strcpy_s(temp, (sip->alt_name[0]) ? sip->alt_name : sip->name);
-		end_string_at_first_hash_symbol(temp);
-
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp, GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->get_display_name(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1951,7 +1945,7 @@ void commit_pressed()
 			num_required_weapons++;
 			if (num_required_weapons > 1)
 				weapon_list.append(1, EOLN);
-			weapon_list.append(Weapon_info[j].get_display_string());
+			weapon_list.append(Weapon_info[j].get_display_name());
 
 			// see if it's carried by any ship
 			if (is_weapon_carried(j))
