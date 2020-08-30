@@ -1698,7 +1698,10 @@ void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_inde
 	else {
 		// get the wing index first.
 		int wing_index = ship_regp->p_objp->wing_status_wing_index;
-		*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp->pos_in_wing; 
+		// only if the wing index is valid do we set a slot index.
+		if (wing_index >= 0 && wing_index < MAX_STARTING_WINGS) {
+			*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp->pos_in_wing; 
+		}
 	}
 }
 
