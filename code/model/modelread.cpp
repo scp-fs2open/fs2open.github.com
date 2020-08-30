@@ -1717,25 +1717,20 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				{
 					pm->submodel[n].bsp_data_size = cfread_int(fp);
 					if (pm->submodel[n].bsp_data_size > 0) {
-						mprintf(("BSP_Data is being aligned.\n"));
-						ubyte *bsp_in, *bsp_out;
+						//mprintf(("BSP_Data is being aligned.\n"));
 
-						bsp_in = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
-						bsp_out = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size * 2);
+						std::unique_ptr<ubyte[]> bsp_in (new ubyte[pm->submodel[n].bsp_data_size]);
+						std::unique_ptr<ubyte[]> bsp_out (new ubyte[pm->submodel[n].bsp_data_size*2]);
 
-						cfread(bsp_in, 1, pm->submodel[n].bsp_data_size, fp);
+						cfread(bsp_in.get(), 1, pm->submodel[n].bsp_data_size, fp);
 
 						//mprintf(("BSP_Data was %d bytes in size\n", pm->submodel[n].bsp_data_size));
-						pm->submodel[n].bsp_data_size = align_bsp_data(bsp_in, bsp_out, pm->submodel[n].bsp_data_size);
+						pm->submodel[n].bsp_data_size = align_bsp_data(bsp_in.get(), bsp_out.get(), pm->submodel[n].bsp_data_size);
 						//mprintf(("BSP_Data now is %d bytes in size\n", pm->submodel[n].bsp_data_size));
 
 						pm->submodel[n].bsp_data = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
-						memcpy(pm->submodel[n].bsp_data, bsp_out, pm->submodel[n].bsp_data_size);
-
+						memcpy(pm->submodel[n].bsp_data, bsp_out.get(), pm->submodel[n].bsp_data_size);
 						swap_bsp_data(pm, pm->submodel[n].bsp_data);
-
-						vm_free(bsp_in);
-						vm_free(bsp_out);
 					}
 					else {
 						pm->submodel[n].bsp_data = nullptr;
@@ -1773,20 +1768,19 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			case ID_SLDC: // kazan - Shield Collision tree
 				{   //ShivanSpS - if pof version is 2118 or higher ignore SLDC, otherwise convert it to slc2.
 					if (pm->version < 2118) {
-						mprintf(("SLDC data is being converted to SLC2.\n"));
+						//mprintf(("SLDC data is being converted to SLC2.\n"));
 						pm->sldc_size = cfread_int(fp);
-						ubyte* sldc_tree, * slc2_tree;
-						sldc_tree = (ubyte*)vm_malloc(pm->sldc_size);
-						slc2_tree = (ubyte*)vm_malloc(pm->sldc_size * 2);
-						cfread(sldc_tree, 1, pm->sldc_size, fp);
+
+						std::unique_ptr<ubyte[]> sldc_tree (new ubyte[pm->sldc_size]);
+						std::unique_ptr<ubyte[]> slc2_tree (new ubyte[pm->sldc_size*2]);
+
+						cfread(sldc_tree.get(), 1, pm->sldc_size, fp);
 						//mprintf(("SLDC Shield Collision Tree was %d bytes in size\n", pm->sldc_size));
-						pm->sldc_size = convert_sldc_to_slc2(sldc_tree, slc2_tree, pm->sldc_size);
+						pm->sldc_size = convert_sldc_to_slc2(sldc_tree.get(), slc2_tree.get(), pm->sldc_size);
 						//mprintf(("SLC2 Shield Collision Tree is %d bytes in size\n", pm->sldc_size));
 						pm->shield_collision_tree = (ubyte*)vm_malloc(pm->sldc_size); //sldc_size is slc2 size, reused variable
-						memcpy(pm->shield_collision_tree, slc2_tree, pm->sldc_size);
+						memcpy(pm->shield_collision_tree, slc2_tree.get(), pm->sldc_size);
 						swap_sldc_data(pm->shield_collision_tree);
-						vm_free(sldc_tree);
-						vm_free(slc2_tree);
 					}
 				}
 				break;
@@ -5889,8 +5883,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 	char node_type_char;
 
 	//Process the SLDC tree to the end
-	while (count < tree_size)
-	{
+	while (count < tree_size) {
 		//Save Node type and size
 		memcpy(&node_type_char, sldc, 1);
 		memcpy(&node_size, sldc + 1, 4);
@@ -5912,8 +5905,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 		slc2 += 24;
 		sldc += 24;
 
-		if (node_type_char == 0)
-		{
+		if (node_type_char == 0) {
 			//Front and back offsets must be adjusted
 			uint front, back, newback = 0;
 			ubyte* p;
@@ -5922,15 +5914,13 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 			memcpy(&back, p + 33, 4);
 
 			//I need to find the new distance to back.
-			while (p < sldc + back - 29)
-			{
+			while (p < sldc + back - 29) {
 				uint ns;
 				memcpy(&ns, p + 1, 4);
 				p += ns;
 				newback += ns + 3;
 
 			}
-
 			//Copy offsets
 			front = node_size + 3;
 			memcpy(slc2, &front, 4); //Front is always this node size+3;
@@ -5939,8 +5929,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 			slc2 += 8;
 			sldc += 8;
 		}
-		else
-		{
+		else{
 			//Copy the remaining data on the node
 			memcpy(slc2, sldc, node_size - 29);
 
@@ -5948,7 +5937,6 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 			slc2 += node_size - 29;
 			sldc += node_size - 29;
 		}
-
 		//Count the new tree size and move the counter
 		count += node_size;
 		new_tree_size += node_size + 3;
@@ -5978,11 +5966,9 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
 
 		//DEFPOINTS is the only bsp data chunk that could be unaligned
-		if (bsp_chunk_type == 1)
-		{
+		if (bsp_chunk_type == 1) {
 			//if the size is not divisible by 4 align it, otherwise copy it.
-			if ((bsp_chunk_size % 4) != 0)
-			{
+			if ((bsp_chunk_size % 4) != 0) {
 				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
 				//Get the new size
 				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
@@ -6003,8 +5989,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 				bsp_out += newsize;
 				copied += newsize;
 			}
-			else
-			{
+			else {
 				//if aligned just copy it
 				memcpy(bsp_out, bsp_in, bsp_chunk_size);
 				bsp_in += bsp_chunk_size;
@@ -6012,8 +5997,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 				copied += bsp_chunk_size;
 			}
 		}
-		else
-		{
+		else {
 			//If the chunk is not a defpoint just copy it
 			memcpy(bsp_out, bsp_in, bsp_chunk_size);
 			bsp_in += bsp_chunk_size;

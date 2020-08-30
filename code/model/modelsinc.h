@@ -17,7 +17,7 @@ struct matrix;
 typedef std::uint8_t ubyte;
 
 #ifndef MODEL_LIB 
-#error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
+#pragma message ("This should only be used internally by the model library.  See John if you think you need to include this elsewhere.")
 #endif
 
 #define OP_EOF 			0
