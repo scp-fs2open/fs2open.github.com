@@ -551,6 +551,8 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 
 SCP_vector<ship_counts>	Ship_type_counts;
 
+SCP_vector<wing_formation> Wing_formations;
+
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
 // inited to 1 at mission start.

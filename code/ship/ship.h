@@ -1447,7 +1447,7 @@ typedef struct wing_formation {
 	std::array<vec3d, MAX_SHIPS_PER_WING - 1> positions;	// does NOT include wing leader, so index 0 for each formation is the second in the wing, 1 is third, etc
 } wing_formation;
 
-SCP_vector<wing_formation> Wing_formations;
+extern SCP_vector<wing_formation> Wing_formations;
 
 
 // Use the below macros when you want to find the index of an array element in the
