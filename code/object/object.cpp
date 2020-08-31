@@ -619,6 +619,7 @@ void obj_delete(int objnum)
 		} else {
 			// we need to be able to delete GHOST objects in multiplayer to allow for player respawns.
 			nprintf(("Network","Deleting GHOST object\n"));
+			objp->net_signature = 0;
 		}		
 		break;
 	case OBJ_OBSERVER:
