@@ -1087,7 +1087,10 @@ void techroom_intel_init()
 			required_string("$Description:");
 			stuff_string(entry.desc, F_MULTITEXT);
 
-			Intel_info.push_back(entry);
+			if (intel_info_lookup(entry.name) >= 0)
+				error_display(0, "Duplicate entry %s in species.tbl!", entry.name);
+			else
+				Intel_info.push_back(entry);
 		}
 
 		Intel_inited = true;
