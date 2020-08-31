@@ -1408,7 +1408,7 @@ typedef struct wing {
 	// and it also makes practical sense: no wing has two different squadrons in it :)
 	int wing_insignia_texture;
 
-	// if -1, retail formation, else a custom one defined by the species
+	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
 } wing;
 
