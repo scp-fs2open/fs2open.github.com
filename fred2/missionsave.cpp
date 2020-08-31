@@ -4134,8 +4134,22 @@ int CFred_mission_save::save_wings()
 
 		required_string_fred("$Special Ship:");
 		parse_comments();
-		fout(" %d\t\t;! %s\n", Wings[i].special_ship,
+		fout(" %d\t\t;! %s", Wings[i].special_ship,
 			 Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+
+		if (Mission_save_format != FSO_FORMAT_RETAIL) {
+			if (Wings[i].formation >= 0 && Wings[i].formation < (int)Wing_formations.size())
+			{
+				if (optional_string_fred("+Formation:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation:");
+				}
+
+				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+		}
 
 		required_string_fred("$Arrival Location:");
 		parse_comments();
@@ -4318,20 +4332,6 @@ int CFred_mission_save::save_wings()
 				fout("\n+Wave Delay Max:");
 
 			fout(" %d", Wings[i].wave_delay_max);
-		}
-
-		if (Mission_save_format != FSO_FORMAT_RETAIL) {
-			if (Wings[i].formation > -1)
-			{
-				if (optional_string_fred("+Formation Index:", "$Name:")) {
-					parse_comments();
-				}
-				else {
-					fout("\n+Formation Index:");
-				}
-
-				fout(" %d", Wings[i].formation);
-			}
 		}
 
 		fso_comment_pop();

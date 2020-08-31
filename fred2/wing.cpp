@@ -176,6 +176,7 @@ int create_wing() {
 
 		Wings[wing].num_waves = 1;
 		Wings[wing].threshold = 0;
+		Wings[wing].formation = -1;
 		Wings[wing].arrival_location = Wings[wing].departure_location = 0;
 		Wings[wing].arrival_distance = 0;
 		Wings[wing].arrival_anchor = -1;

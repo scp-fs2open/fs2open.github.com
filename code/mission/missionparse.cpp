@@ -4438,6 +4438,20 @@ void parse_wing(mission *pm)
 	required_string("$Special Ship:");
 	stuff_int(&wingp->special_ship);
 
+	// Use a custom formation if specified
+	if (optional_string("+Formation:")) {
+		char f[NAME_LENGTH];
+		stuff_string(f, F_NAME, NAME_LENGTH);
+
+		wingp->formation = wing_formation_lookup(f);
+		if (wingp->formation < 0) {
+			Warning(LOCATION, "Invalid Formation %s.", f);
+		}
+	}
+	else {
+		wingp->formation = -1;
+	}
+
 	wingp->arrival_anchor = -1;
 	wingp->arrival_distance = 0;
 	wingp->arrival_path_mask = -1;	// -1 only until resolved
@@ -4573,20 +4587,6 @@ void parse_wing(mission *pm)
 	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
 	// wing could be created if it needs to be
 	wingp->wave_delay_timestamp = timestamp(0);
-
-	// Use a custom formation if specified
-	if (optional_string("+Formation:")) {
-		char f[NAME_LENGTH];
-		stuff_string(f, F_NAME, NAME_LENGTH);
-
-		wingp->formation = wing_formation_lookup(f);
-		if (wingp->formation < 0) {
-			Warning(LOCATION, "Invalid Formation %s.", f);
-		}
-	}
-	else {
-		wingp->formation = -1;
-	}
 
 	// initialize wing goals
 	for (i=0; i<MAX_AI_GOALS; i++) {
