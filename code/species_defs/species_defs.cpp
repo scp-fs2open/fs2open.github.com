@@ -334,7 +334,7 @@ void parse_species_tbl(const char *filename)
 					SCP_vector<vec3d> current_formation;
 
 					if (stuff_vec3d_list(current_formation) != MAX_SHIPS_PER_WING - 1) {
-						Warning(LOCATION, "A custom formation for species %s did not have %d positions. Ignoring.", species->species_name, MAX_SHIPS_PER_WING-1);
+						Warning(LOCATION, "A custom formation for species %s did not have " SIZE_T_ARG " positions. Ignoring.", species->species_name, (size_t)(MAX_SHIPS_PER_WING-1));
 					} else {
 						species->formations.emplace_back();
 						std::copy_n(current_formation.begin(), MAX_SHIPS_PER_WING-1, species->formations.back().begin());
