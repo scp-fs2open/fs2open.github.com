@@ -75,11 +75,6 @@ public:
 	char cmeasure_name[NAME_LENGTH];
 	int cmeasure_index;
 
-
-	// does NOT include wing leader, so index 0 for each formation is the second in the wing, 1 is third, etc
-	SCP_vector<std::array<vec3d, MAX_SHIPS_PER_WING - 1>> formations;
-	int default_formation;
-
 	species_info()
 	{
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
@@ -87,7 +82,6 @@ public:
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
-		default_formation = -1;
 	}
 };
 

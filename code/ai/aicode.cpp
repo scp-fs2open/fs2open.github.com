@@ -11428,13 +11428,12 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 {
 	vec3d	wing_delta, rotated_wing_delta;
 	float		wing_spread_size;
-	species_info* species = &Species_info[Ship_info[Ships[leader_objp->instance].ship_info_index].species];
 	int formation_index = Wings[Ships[leader_objp->instance].wingnum].formation;
 
 	if (wing_index == 0)
 		wing_delta = vmd_zero_vector;
 	else if ( formation_index != -1) 
-		wing_delta = species->formations[formation_index][wing_index - 1]; //  custom desired location in leader's reference frame
+		wing_delta = Wing_formations[formation_index].positions[wing_index - 1]; //  custom desired location in leader's reference frame
 	else 
 		get_wing_delta(&wing_delta, wing_index);		//	default desired location in leader's reference frame
 	

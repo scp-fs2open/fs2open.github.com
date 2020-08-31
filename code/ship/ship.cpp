@@ -709,7 +709,7 @@ static void parse_engine_wash(bool replace)
 		}
 		else
 		{
-			Error(LOCATION, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewt.name);
+			error_display(1, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewt.name);
 		}
 	}
 	else
@@ -748,6 +748,33 @@ static void parse_engine_wash(bool replace)
 	if(optional_string("$Intensity:")) {
 		stuff_float(&ewp->intensity);
 	}
+}
+
+static void parse_wing_formation(bool replace)
+{
+	char name[NAME_LENGTH];
+	SCP_vector<vec3d> position_list;
+
+	required_string("$Name:");
+	stuff_string(name, F_NAME, NAME_LENGTH);
+
+	if (stuff_vec3d_list(position_list) != MAX_SHIPS_PER_WING - 1)
+	{
+		Warning(LOCATION, "Wing formation %s did not have " SIZE_T_ARG " positions.  Ignoring.", name, (size_t)(MAX_SHIPS_PER_WING - 1));
+		return;
+	}
+
+	int idx = wing_formation_lookup(name);
+	if (idx < 0)
+	{
+		idx = (int)Wing_formations.size();
+		Wing_formations.emplace_back();
+	}
+	else if (!replace)
+		error_display(0, "Formation %s already exists.  All formation names must be unique.", name);
+
+	strcpy_s(Wing_formations[idx].name, name);
+	std::copy_n(position_list.begin(), MAX_SHIPS_PER_WING - 1, Wing_formations[idx].positions.begin());
 }
 
 static const char *Lightning_types[] = {
@@ -5201,6 +5228,15 @@ static void parse_shiptbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:"))
 				parse_ship(filename, Parsing_modular_table);
+
+			required_string("#End");
+		}
+
+		//Add formations
+		if (optional_string("#Wing Formations"))
+		{
+			while (required_string_either("#End", "$Name:"))
+				parse_wing_formation(Parsing_modular_table);
 
 			required_string("#End");
 		}
@@ -12859,6 +12895,17 @@ int wing_lookup(const char *name)
 	for(int idx=0;idx<Num_wings;idx++)
 		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
+
+	return -1;
+}
+
+int wing_formation_lookup(const char *formation_name)
+{
+	Assertion(formation_name != nullptr, "NULL formation name passed to wing_formation_lookup");
+
+	for (int idx = 0; idx < (int)Wing_formations.size(); ++idx)
+		if (stricmp(Wing_formations[idx].name, formation_name) == 0)
+			return idx;
 
 	return -1;
 }

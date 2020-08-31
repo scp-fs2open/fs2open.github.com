@@ -328,33 +328,6 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
-			if (optional_string("$Custom wingmate formations:")) {
-
-				while (check_for_string("(")) {
-					SCP_vector<vec3d> current_formation;
-
-					if (stuff_vec3d_list(current_formation) != MAX_SHIPS_PER_WING - 1) {
-						Warning(LOCATION, "A custom formation for species %s did not have " SIZE_T_ARG " positions. Ignoring.", species->species_name, (size_t)(MAX_SHIPS_PER_WING-1));
-					} else {
-						species->formations.emplace_back();
-						std::copy_n(current_formation.begin(), MAX_SHIPS_PER_WING-1, species->formations.back().begin());
-					}
-				}
-			}
-
-			if (optional_string("$Default formation index:")) {
-				if (species->formations.empty()) {
-					Warning(LOCATION, "A default formation index was provided for species %s but no formations are defined.", species->species_name);
-				}
-				else {
-					stuff_int(&species->default_formation);
-
-					if (species->default_formation >= (int)species->formations.size() || species->default_formation <= -2) {
-						Warning(LOCATION, "Invalid default formation index for species %s. Ignoring.", species->species_name);
-						species->default_formation = -1;
-					}
-				}
-			}
 
 			// don't add new entry if this is just a modified one
 			if (!no_create)
