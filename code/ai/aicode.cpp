@@ -11450,18 +11450,26 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 {
 	vec3d	wing_delta, rotated_wing_delta;
 	float		wing_spread_size;
+	int formation_index = Wings[Ships[leader_objp->instance].wingnum].formation;
 
-	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
-
+	if (wing_index == 0)
+		wing_delta = vmd_zero_vector;
+	else if ( formation_index != -1) 
+		wing_delta = Wing_formations[formation_index].positions[wing_index - 1]; //  custom desired location in leader's reference frame
+	else 
+		get_wing_delta(&wing_delta, wing_index);		//	default desired location in leader's reference frame
+	
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
-	// for player obj (1) move ships up 20% (2) scale formation up 20%
+	// apply debug modifications to spread size and also y scale (2x default) unless it's a custom position
 	if (leader_objp->flags[Object::Object_Flags::Player_ship]) {
-		wing_delta.xyz.y *= Wing_y_scale;
+		if(formation_index == -1)
+			wing_delta.xyz.y *= Wing_y_scale;
 		wing_spread_size *= Wing_scale;
 	}
 
 	vm_vec_scale(&wing_delta, wing_spread_size * (1.0f + leader_objp->phys_info.speed/70.0f));
+
 
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 

@@ -1413,6 +1413,9 @@ typedef struct wing {
 	// of stuff that needs to be sitting in memory at once - each ship uses the wing texture;
 	// and it also makes practical sense: no wing has two different squadrons in it :)
 	int wing_insignia_texture;
+
+	// if -1, retail formation, else a custom one defined in ships.tbl
+	int formation;
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1442,6 +1445,15 @@ typedef struct ship_counts {
 } ship_counts;
 
 extern SCP_vector<ship_counts> Ship_type_counts;
+
+
+// Formations
+typedef struct wing_formation {
+	char name[NAME_LENGTH];
+	std::array<vec3d, MAX_SHIPS_PER_WING - 1> positions;	// does NOT include wing leader, so index 0 for each formation is the second in the wing, 1 is third, etc
+} wing_formation;
+
+extern SCP_vector<wing_formation> Wing_formations;
 
 
 // Use the below macros when you want to find the index of an array element in the
@@ -1530,6 +1542,7 @@ inline int ship_info_size()
 }
 
 extern int wing_lookup(const char *name);
+extern int wing_formation_lookup(const char *formation_name);
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct
 extern int wing_has_conflicting_teams(int wing_index);

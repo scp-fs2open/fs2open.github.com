@@ -543,6 +543,7 @@
 #define IDC_FILTER_SHIPS_IFF_8          1225
 #define IDC_DEPARTURE_CUE2              1226
 #define IDC_FILTER_SHIPS_IFF_9          1226
+#define IDC_WING_FORMATION              1226
 #define IDC_ARRIVAL_TREE                1227
 #define IDC_DEPARTURE_TREE              1228
 #define ID_NUMBERS                      1229
