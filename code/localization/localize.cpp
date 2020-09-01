@@ -190,20 +190,22 @@ void parse_stringstbl_quick(const char *filename)
 
 				if (!Unicode_text_mode) {
 					required_string("+Special Character Index:");
-					stuff_ubyte(&language.special_char_indexes[0]);
-					for (i = 1; i < LCL_MAX_FONTS; ++i) {
+					ubyte temp;
+					stuff_ubyte(&temp);
+					language.special_char_indexes.push_back(temp);
+					for (i = 1; i < LCL_MINIMUM_FONTS; ++i) {
 						// default to "none"/0 except for font03 which defaults to 176
 						// NOTE: fonts.tbl may override these values
 						if (i == font::FONT3) {
-							language.special_char_indexes[i] = 176;
+							language.special_char_indexes.push_back(176);
 						} else {
-							language.special_char_indexes[i] = 0;
+							language.special_char_indexes.push_back(0);
 						}
 					}
 				} else {
 					// Set all indices to valid values
-					for (i = 0; i < LCL_MAX_FONTS; ++i) {
-						language.special_char_indexes[i] = 0;
+					for (i = 1; i < LCL_MINIMUM_FONTS; ++i) {
+						language.special_char_indexes.push_back(0);
 					}
 				}
 
@@ -521,8 +523,8 @@ ubyte lcl_get_font_index(int font_num)
 		// we just return 0 to signify that there are no special characters in this font
 		return 0;
 	} else {
-		Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Passed an invalid language index %d when the size of the language array was %d ", lang, (int)Lcl_languages.size());
+		Assertion((font_num >= 0) && (font_num < (int)Lcl_languages[lang].special_char_indexes.size()), "Passed an invalid font index %d when the size of the vector was %d", font_num, (int)Lcl_languages[lang].special_char_indexes.size());
 
 		return Lcl_languages[lang].special_char_indexes[font_num];
 	}

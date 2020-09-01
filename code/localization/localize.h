@@ -31,13 +31,14 @@
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
 
-#define LCL_MAX_FONTS					5
+// Cyborg17 - We define at least this many special_char_indexes for each language to match retail behavior
+#define LCL_MINIMUM_FONTS				3   
 
 // language info table
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
-	ubyte special_char_indexes[LCL_MAX_FONTS];			// where in the font do we have the special characters for this language
+	SCP_vector<ubyte> special_char_indexes;				// where in the font do we have the special characters for this language
 														// note: treats 0 as "none" since a zero offset in a font makes no sense
 														// i.e. all the normal chars start at zero
 	int checksum;										// used for language auto-detection
