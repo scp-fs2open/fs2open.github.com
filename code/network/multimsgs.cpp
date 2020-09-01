@@ -2127,7 +2127,14 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_handle_state_special();
 
 			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
-			gameseq_post_event(GS_EVENT_START_BRIEFING);			
+
+			extern int red_alert_mission();
+
+			if ( red_alert_mission() ) {
+				gameseq_post_event(GS_EVENT_RED_ALERT);
+			} else {
+				gameseq_post_event(GS_EVENT_START_BRIEFING);
+			}
 		}
 	} 		
 	// move from the debriefing to the create game screen
