@@ -50,6 +50,8 @@ bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
+bool Shockwaves_always_damage_bombs;
+bool Shockwaves_damage_all_obj_types_once;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -538,6 +540,14 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shockwaves Always Damage Bombs:")) {
+			stuff_boolean(&Shockwaves_always_damage_bombs);
+		}
+
+		if (optional_string("$Shockwaves Damage All Object Types Once:")) {
+			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
+		}
+
 		if (optional_string("$Use Engine Wash Intensity:")) {
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
@@ -611,6 +621,8 @@ void mod_table_reset()
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = false;
 	Dinky_shockwave_default_multiplier = 1.0f;
+	Shockwaves_always_damage_bombs = false;
+	Shockwaves_damage_all_obj_types_once = false;
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
