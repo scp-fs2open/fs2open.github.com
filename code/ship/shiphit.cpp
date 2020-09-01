@@ -1503,7 +1503,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	sp->pre_death_explosion_happened = 0;				// The little fireballs haven't came in yet.
 
-	sp->next_fireball = timestamp(0);	//start one right away
+	sp->next_fireball = 0.0f;	//start one right away
 
 	ai_deathroll_start(objp);
 

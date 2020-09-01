@@ -5911,7 +5911,7 @@ void ship::clear()
 	warpin_params_index = -1;
 	warpout_params_index = -1;
 
-	next_fireball = timestamp(-1);
+	next_fireball = -1.0f;
 	next_hit_spark = timestamp(-1);
 	num_hits = 0;
 	memset(sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
@@ -8028,7 +8028,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
 		if (!(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
-			if ( timestamp_elapsed(shipp->next_fireball))	{
+			if ( shipp->next_fireball < flFrametime)	{
 				vec3d outpnt, pnt1, pnt2;
 				polymodel *pm = model_get(sip->model_num);
 
@@ -8048,24 +8048,27 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
-				int min_time = 333;
-				int max_time = 500;
+				float min_time = 0.333f;
+				float max_time = 0.500f;
 
 				if (sip->death_roll_time_mult != 1.0f) {
-					min_time = (int) (min_time / sip->death_roll_time_mult);
-					max_time = (int) (max_time / sip->death_roll_time_mult);
+					min_time /= sip->death_roll_time_mult;
+					max_time /= sip->death_roll_time_mult;
 				}
 
-				shipp->next_fireball = timestamp_rand(min_time,max_time);
+				shipp->next_fireball = frand_range(min_time,max_time);
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
+			}
+			else {
+				shipp->next_fireball -= flFrametime;
 			}
 		}
 
 		// create little fireballs for knossos as it dies
 		if (knossos_ship) {
-			if ( timestamp_elapsed(shipp->next_fireball)) {
+			if ( shipp->next_fireball < flFrametime) {
 				vec3d rand_vec, outpnt; // [0-.7 rad] in plane
 				vm_vec_rand_vec_quick(&rand_vec);
 				float scale = -vm_vec_dot(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
@@ -8083,7 +8086,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
-				shipp->next_fireball = timestamp_rand(333,500);
+				shipp->next_fireball = frand_range(0.333f,0.500f);
 
 				// emit particles
 				particle::particle_emitter	pe;
@@ -8109,6 +8112,9 @@ static void ship_dying_frame(object *objp, int ship_num)
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
 			}
+			else {
+				shipp->next_fireball -= flFrametime;
+			}
 		}
 
 		int time_until_minor_explosions = timestamp_until(shipp->final_death_time);
@@ -8120,7 +8126,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 			// If we're already exploding and missed our chance, then do it anyway; better late than never
 			|| ((time_until_minor_explosions <= 0) && (!shipp->pre_death_explosion_happened)) )
 		{
-			shipp->next_fireball = timestamp(-1);	// never time out again
+			shipp->next_fireball = (float)INT_MAX / (float)TIMESTAMP_FREQUENCY;	// never time out again (Cybor17 - MAX_TIME is INT_MAX/2 and INT_MAX is easier to access, the timer will probably never get here.)
 			shipp->pre_death_explosion_happened=1;		// Mark this event as having occurred
 
 			polymodel *pm = model_get(sip->model_num);

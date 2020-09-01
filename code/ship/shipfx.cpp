@@ -1394,7 +1394,7 @@ typedef struct clip_ship {
 	float				cur_clip_plane_pt;						// displacement from half ship clip plane to original model center
 	float				explosion_vel;
 	ubyte				draw_debris[MAX_DEBRIS_OBJECTS];
-	int				next_fireball;
+	float				next_fireball;
 } clip_ship;
 
 typedef struct split_ship {
@@ -1452,8 +1452,8 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	split_shipp->explosion_flash_started = 0;
 	split_shipp->front_ship.orient = *orient;
 	split_shipp->back_ship.orient  = *orient;
-	split_shipp->front_ship.next_fireball = timestamp_rand(0, 100);
-	split_shipp->back_ship.next_fireball  = timestamp_rand(0, 100);
+	split_shipp->front_ship.next_fireball = frand_range(0.0f, 0.100f);
+	split_shipp->back_ship.next_fireball  = frand_range(0.0f, 0.100f);
 
 	split_shipp->front_ship.clip_plane_norm = vmd_z_vector;
 	vm_vec_copy_scale(&split_shipp->back_ship.clip_plane_norm, &vmd_z_vector, -1.0f);
@@ -1885,7 +1885,7 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* handle_arra
 static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array)
 {
 	// maybe make fireball to cover wipe.
-	if ( timestamp_elapsed(half_ship->next_fireball) ) {
+	if ( half_ship->next_fireball < flFrametime ) {
 		if ( half_ship->length_left > 0.2f*fl_abs(half_ship->explosion_vel) )	{
 			ship_info *sip = &Ship_info[Ships[half_ship->parent_obj->instance].ship_info_index];
 			
@@ -1926,10 +1926,10 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
-			int time_low, time_high;
-			time_low = int(650 * Bs_exp_fire_time_mult);
-			time_high = int(900 * Bs_exp_fire_time_mult);
-			half_ship->next_fireball = timestamp_rand(time_low, time_high);
+			float time_low, time_high;
+			time_low = 0.650f * Bs_exp_fire_time_mult;
+			time_high = 0.900f * Bs_exp_fire_time_mult;
+			half_ship->next_fireball = frand_range(time_low, time_high);
 
 			// do sound
 			do_sub_expl_sound(half_ship->parent_obj->radius, &model_clip_plane_pt, handle_array);
@@ -1978,8 +1978,11 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 
 		} else {
 			// time out forever
-			half_ship->next_fireball = timestamp(-1);
+			half_ship->next_fireball = float(INT_MAX / TIMESTAMP_FREQUENCY); 
 		}
+	}
+	else {
+		half_ship->next_fireball -= flFrametime;
 	}
 }
 

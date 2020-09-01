@@ -43,7 +43,7 @@ typedef struct debris {
 	int		must_survive_until;		//WMC - timestamp of earliest point that it can be murthered.
 	int		model_num;				// What model this uses
 	int		submodel_num;			// What submodel this uses
-	int		next_fireball;			// When to start a fireball
+	float	next_fireball;			// In how many ms to start a fireball
 	int		is_hull;				// indicates a large hull chunk of debris
 	int		species;				// What species this is from.  -1 if don't care.
 	int		fire_timeout;			// timestamp that holds time for fireballs to stop appearing

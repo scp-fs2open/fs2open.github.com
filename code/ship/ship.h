@@ -501,7 +501,7 @@ public:
 	int warpin_params_index;
 	int warpout_params_index;
 
-	int	next_fireball;
+	float next_fireball;
 
 	int	next_hit_spark;
 	int	num_hits;			//	Note, this is the number of spark emitter positions!

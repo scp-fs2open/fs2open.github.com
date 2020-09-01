@@ -264,9 +264,10 @@ void debris_process_post(object * obj, float frame_time)
 		return;			// If arc_frequency <= 0, this piece has no arcs on it
 	}
 
-	if ( !timestamp_elapsed(db->fire_timeout) && timestamp_elapsed(db->next_fireball))	{		
+	if ( !timestamp_elapsed(db->fire_timeout) && (db->next_fireball < flFrametime))	{		
 
-		db->next_fireball = timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
+		// use timestamp frequency to convert to float version of time
+		db->next_fireball = frand_range(db->arc_frequency,db->arc_frequency*2 )/TIMESTAMP_FREQUENCY;
 		db->arc_frequency += 100;	
 
 		if (db->is_hull)	{
@@ -339,6 +340,9 @@ void debris_process_post(object * obj, float frame_time)
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 			}
 		}
+	}
+	else {
+		db->next_fireball -= flFrametime;
 	}
 
 	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
@@ -541,7 +545,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	}
 	float radius = submodel_get_radius( db->model_num, db->submodel_num );
 
-	db->next_fireball = timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
+	db->next_fireball = frand_range(0.500f,2.000f);	//start one 1/2 - 2 secs later
 
 	if ( pos == NULL )
 		pos = &source_obj->pos;
