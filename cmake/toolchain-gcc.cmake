@@ -139,7 +139,7 @@ IF(NOT MINGW)
 	# Allow the linker to perform dead code elimination; this is considered
 	# experimental for COFF and PE formats and thus disabled for Windows builds
 	# (https://sourceware.org/binutils/docs/ld/Options.html)
-	if (NOT GCC_INCREMENTAL_LINKING)
+	if (NOT GCC_INCREMENTAL_LINKING AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 	endif()
 ENDIF(NOT MINGW)
