@@ -28,6 +28,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "network/multiteamselect.h"
+#include "network/multi_endgame.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "object/deadobjectdock.h"
@@ -409,7 +410,12 @@ void red_alert_do_frame(float frametime)
 	switch (k) {
 		case KEY_ESC:
 //			gameseq_post_event(GS_EVENT_ENTER_GAME);
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			if (Game_mode & GM_MULTIPLAYER) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_ALL);
+			} else {
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 			break;
 	}	// end switch
 
