@@ -23,6 +23,11 @@
 #include <netdb.h>
 #endif
 
+#ifdef __FreeBSD__
+#define IPV6_ADD_MEMBERSHIP		IPV6_JOIN_GROUP
+#define IPV6_DROP_MEMBERSHIP	IPV6_LEAVE_GROUP
+#endif
+
 #include <cstdio>
 #include <climits>
 #include <algorithm>
