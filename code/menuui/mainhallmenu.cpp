@@ -2208,6 +2208,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 			}
 		}
 	}
+	// if we don't have a name, but this isn't the first resolution, use the name of the first resolution
+	else if (res_idx != 0)
+	{
+		strcpy_s(temp_string, Main_hall_defines.at(hall_idx).at(0).name.c_str());
+	}
 
 	// now that that's all (optionally) sorted, figure out which entry we're parsing
 	if (hall_idx >= (int)Main_hall_defines.size())
