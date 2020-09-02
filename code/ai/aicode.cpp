@@ -11991,12 +11991,13 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 {
 	static bool rearm_eta_found=false;
 
-	if (Ships[objp->instance].team == Iff_traitor) {
-		ai_abort_rearm_request(objp);
-		return;
-	}
 
 	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+		if (Ships[objp->instance].team == Iff_traitor) {
+			ai_abort_rearm_request(objp);
+			return;
+		}
+
 		int	support_objnum;
 		
 		ai_info	*repair_aip;

@@ -3385,20 +3385,20 @@ void bitbuffer_put( bitbuffer *bitbuf, uint data, int bit_count )
 
 uint bitbuffer_get_unsigned( bitbuffer *bitbuf, int bit_count ) 
 {
-	uint mask;
+	uint local_mask;
 	uint return_value;
 
-	mask = 1L << ( bit_count - 1 );
+	local_mask = 1L << ( bit_count - 1 );
 	return_value = 0;
 
-	while ( mask != 0)	{
+	while ( local_mask != 0)	{
 		if ( bitbuf->mask == 0x80 ) {
 			bitbuf->rack = *bitbuf->data++;
 		}
 		if ( bitbuf->rack & bitbuf->mask )	{
-			return_value |= mask;
+			return_value |= local_mask;
 		}
-		mask >>= 1;
+		local_mask >>= 1;
 		bitbuf->mask >>= 1;
 		if ( bitbuf->mask == 0 )	{
 			bitbuf->mask = 0x80;
@@ -3410,20 +3410,19 @@ uint bitbuffer_get_unsigned( bitbuffer *bitbuf, int bit_count )
 
 int bitbuffer_get_signed( bitbuffer *bitbuf, int bit_count ) 
 {
-	uint mask;
+	uint local_mask;
 	uint return_value;
 
-	mask = 1L << ( bit_count - 1 );
+	local_mask = 1L << ( bit_count - 1 );
 	return_value = 0;
-
-	while ( mask != 0)	{
+	while ( local_mask != 0)	{
 		if ( bitbuf->mask == 0x80 ) {
 			bitbuf->rack = *bitbuf->data++;
 		}
 		if ( bitbuf->rack & bitbuf->mask )	{
-			return_value |= mask;
+			return_value |= local_mask;
 		}
-		mask >>= 1;
+		local_mask >>= 1;
 		bitbuf->mask >>= 1;
 		if ( bitbuf->mask == 0 )	{
 			bitbuf->mask = 0x80;
