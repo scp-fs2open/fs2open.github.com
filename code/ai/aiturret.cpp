@@ -1821,23 +1821,23 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 		// should not get this far. check if ship is protected from beam and weapon is type beam
 		if ( (wip->wi_flags[Weapon::Info_Flags::Beam]) && (tobjp->flags[Object::Object_Flags::Beam_protected]) ) {
-			Int3();
-			return 0;
+            nprintf(("Warning","Ship %s is trying to fire beam turret at beam protected ship\n", parent_ship->ship_name));
+            return false;
 		}
 		// should not get this far. check if ship is protected from flak and weapon is type flak
 		else if ( (wip->wi_flags[Weapon::Info_Flags::Flak]) && (tobjp->flags[Object::Object_Flags::Flak_protected]) ) {
-			Int3();
-			return 0;
+            nprintf(("Warning","Ship %s is trying to fire flak turret at flak protected ship\n", parent_ship->ship_name));
+            return false;
 		}
 		// should not get this far. check if ship is protected from laser and weapon is type laser
 		else if ( (wip->subtype == WP_LASER) && (tobjp->flags[Object::Object_Flags::Laser_protected]) ) {
-			Int3();
-			return 0;
+            nprintf(("Warning","Ship %s is trying to fire laser turret at laser protected ship\n", parent_ship->ship_name));
+            return false;
 		}
 		// should not get this far. check if ship is protected from missile and weapon is type missile
 		else if ( (wip->subtype == WP_MISSILE) && (tobjp->flags[Object::Object_Flags::Missile_protected]) ) {
-			Int3();
-			return 0;
+            nprintf(("Warning","Ship %s is trying to fire missile turret at missile protected ship\n", parent_ship->ship_name));
+            return false;
 		}
 	}
 #endif
