@@ -886,6 +886,12 @@ int player_select_get_last_pilot()
 			Player = &Players[0];
 			Pilot.load_player(Pilots_arr[idx], Player);
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
+
+			// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
+			if (Player->player_was_multi) {
+				Player->flags |= PLAYER_FLAGS_IS_MULTI;
+			}
+
 			return 1;
 		}
 	}
