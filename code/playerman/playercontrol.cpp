@@ -261,9 +261,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	} else {
 		//If time compression is less than normal, still move camera at same speed
 		//This gives a cool matrix effect
-		ma->p += da->p * flRealframetime;
-		ma->b += da->b * flRealframetime;
-		ma->h += da->h * flRealframetime;
+		ma->p += da->p * flFrametime;
+		ma->b += da->b * flFrametime;
+		ma->h += da->h * flFrametime;
 	}
 
 	// Clamp resulting angles to their maximums
@@ -431,7 +431,7 @@ void do_view_chase(float  /*frame_time*/)
 	}
 	
 	// Process distance +/- keys
-	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
+	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE); 
 	Viewer_chase_info.distance += t*4;
 	if (Viewer_chase_info.distance < 0.0f)
 		Viewer_chase_info.distance = 0.0f;
@@ -472,9 +472,20 @@ void do_view_external(float frame_time)
 		Viewer_external_info.angles.h = 0.0f;
 		Viewer_external_info.distance = 0.0f;
 	}
+
+	object* viewer_obj;
+	if (!(Viewer_mode & VM_FREECAMERA))
+		viewer_obj = Player_obj;
+
+	if (Viewer_mode & VM_OTHER_SHIP) {
+		if (Player_ai->target_objnum != -1) {
+			viewer_obj = &Objects[Player_ai->target_objnum];
+		}
+	}
+	float currentdist = 2.0f * viewer_obj->radius + Viewer_external_info.distance;
 	
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
-	Viewer_external_info.distance += t*4*camera_zoom_scale;
+	Viewer_external_info.distance += t * (currentdist / 10) * camera_zoom_scale;
 	if (Viewer_external_info.distance < 0.0f){
 		Viewer_external_info.distance = 0.0f;
 	}
