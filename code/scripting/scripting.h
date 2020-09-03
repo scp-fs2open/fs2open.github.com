@@ -266,7 +266,7 @@ void script_state::SetHookVar(const char *name, char format, T&& value)
 		auto reference = luacpp::UniqueLuaReference::create(LuaState);
 		lua_pop(LuaState, 1); // Remove object value from the stack
 
-		HookVariableValues.emplace(name, std::move(reference));
+		HookVariableValues[name] = std::move(reference);
 	}
 }
 

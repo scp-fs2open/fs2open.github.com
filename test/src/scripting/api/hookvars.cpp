@@ -20,6 +20,9 @@ TEST_F(HookVarsTest, empty)
 
 TEST_F(HookVarsTest, withHookVars)
 {
+	_state->SetHookVar("Test", 's', "Something else");
+
+	// Check that overwriting hook vars works
 	_state->SetHookVar("Test", 's', "Hello World");
 	_state->SetHookVar("Value", 'i', 1234);
 
