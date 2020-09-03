@@ -242,7 +242,7 @@ void red_alert_button_pressed(int n)
 		break;
 
 	case RA_REPLAY_MISSION:
-		if ( Game_mode & GM_CAMPAIGN_MODE ) {
+		if ( (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER) ) {
 			// TODO: make call to campaign code to set correct mission for loading
 			// mission_campaign_play_previous_mission(Red_alert_precursor_mission);
 			if ( !mission_campaign_previous_mission() ) {
