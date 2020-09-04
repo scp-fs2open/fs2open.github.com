@@ -3105,7 +3105,9 @@ camid game_render_frame_setup()
 				vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 				vm_matrix_x_matrix(&tm, &Viewer_obj->orient, &tm2);
 
-				vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &tm.vec.fvec, 2.0f * Viewer_obj->radius + Viewer_external_info.distance);
+				Viewer_external_info.current_distance = cam_get_bbox_dist(Viewer_obj, Viewer_external_info.preferred_distance, &tm2);
+
+				vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
 				vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
 				vm_vec_normalize(&tmp_dir);

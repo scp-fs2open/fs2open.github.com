@@ -1095,3 +1095,34 @@ eye* get_submodel_eye(polymodel *pm, int submodel_num)
 	}
 	return NULL;
 }
+
+// maybe push the camera away from preferred dist if it would intersect the ship's bounding box
+float cam_get_bbox_dist(object* viewer_obj, float preferred_distance, const matrix* cam_orient) {
+	if (viewer_obj == nullptr)
+		return preferred_distance;
+
+	// radius should be the maximal extent of the bbox from the center, so if its at least that plus the padding its guaranteed to be good
+	if (preferred_distance > viewer_obj->radius * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING) 
+		return preferred_distance;
+	
+	int modelnum = object_get_model(viewer_obj);
+	polymodel* pm = model_get(modelnum);
+	vec3d adjusted_bbox;
+	const vec3d* cam_vec = &cam_orient->vec.fvec;
+
+	// the bounding box is expanded by the padding and maybe use negative min instead of max, because they could differ significantly
+	// and we only care about the one thats on the side of the camera
+	adjusted_bbox.xyz.x = (cam_vec->xyz.x < 0 ? -pm->mins.xyz.x : pm->maxs.xyz.x) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+	adjusted_bbox.xyz.y = (cam_vec->xyz.y < 0 ? -pm->mins.xyz.y : pm->maxs.xyz.y) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+	adjusted_bbox.xyz.z = (cam_vec->xyz.z < 0 ? -pm->mins.xyz.z : pm->maxs.xyz.z) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+
+	vec3d adjusted_dist;
+	// adjusted_dist is the vector (with an inverted magnitude) that contacts the surface of an 
+	// ellipsoid which contacts the adjusted_bbox at each of its faces 
+	adjusted_dist.xyz.x = cam_vec->xyz.x / adjusted_bbox.xyz.x;
+	adjusted_dist.xyz.y = cam_vec->xyz.y / adjusted_bbox.xyz.y;
+	adjusted_dist.xyz.z = cam_vec->xyz.z / adjusted_bbox.xyz.z;
+	float compensation =  vm_vec_mag(&adjusted_dist);
+
+	return fmaxf(1 / compensation, preferred_distance);
+}

@@ -72,6 +72,8 @@ float Player_warpout_speed = 40.0f;
 float Target_warpout_match_percent = 0.05f;
 float Minimum_player_warpout_time = 3.0f;
 
+#define MAX_CHASE_EXTERN_CAM_DISTANCE 30000.f
+
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
@@ -141,9 +143,8 @@ angles	Viewer_external_angles_delta;
  * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
  * @param[in]   max_p   The maximum pitch magnitude ma may have (radians).
  * @param[in]   max_h   The maximum heading magnitude ma may have (radians).
- * @param[in]   frame_time  The frame time at which this function is called.
  */
-void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_time)
+void view_modify(angles *ma, angles *da, float max_p, float max_h)
 {
 	// Digital inputs
 	float	t = 0;
@@ -222,7 +223,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		playercontrol_read_stick(axis, frame_time);
+		playercontrol_read_stick(axis, flRealframetime);
 
 		// Does the same thing as t and u but for the joystick input 
 		h = f2fl(axis[JOY_HEADING_AXIS]);
@@ -261,9 +262,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	} else {
 		//If time compression is less than normal, still move camera at same speed
 		//This gives a cool matrix effect
-		ma->p += da->p * flFrametime;
-		ma->b += da->b * flFrametime;
-		ma->h += da->h * flFrametime;
+		ma->p += da->p * flRealframetime;
+		ma->b += da->b * flRealframetime;
+		ma->h += da->h * flRealframetime;
 	}
 
 	// Clamp resulting angles to their maximums
@@ -346,7 +347,7 @@ void do_view_track_target(float  /*frame_time*/)
  */
 void do_view_slew(float frame_time)
 {
-	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
+	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3);
 
 	// Check Track target
 	if (Viewer_mode & VM_TRACK) {
@@ -414,6 +415,20 @@ void do_view_slew(float frame_time)
 	}
 }
 
+float camera_zoom_scale = 1.0f;
+
+DCF(camera_speed, "Sets the camera zoom scale")
+{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Camera zoom scale is %f\n", camera_zoom_scale);
+		return;
+	}
+
+	dc_stuff_float(&camera_zoom_scale);
+
+	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
+}
+
 void do_view_chase(float  /*frame_time*/)
 {
 	float t;
@@ -429,49 +444,6 @@ void do_view_chase(float  /*frame_time*/)
 	if (check_control_timef(VIEW_CENTER)) {
 		Viewer_chase_info.distance = 0.0f;
 	}
-	
-	// Process distance +/- keys
-	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE); 
-	Viewer_chase_info.distance += t*4;
-	if (Viewer_chase_info.distance < 0.0f)
-		Viewer_chase_info.distance = 0.0f;
-
-	Viewer_mode |= VM_CAMERA_LOCKED;
-}
-
-float camera_zoom_scale = 1.0f;
-
-DCF(camera_speed, "Sets the camera zoom scale")
-{
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Camera zoom scale is %f\n", camera_zoom_scale);
-		return;
-	}
-
-	dc_stuff_float(&camera_zoom_scale);
-
-	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
-}
-
-void do_view_external(float frame_time)
-{
-	float	t;
-
-	if (Viewer_mode & VM_TRACK) {
-		// Snap back to zero and disable target tracking
-		reset_angles(&Viewer_slew_angles);
-		reset_angles(&chase_slew_angles);
-		Viewer_mode &= ~VM_TRACK;
-	}
-
-	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
-
-	//	Process centering key.
-	if (check_control_timef(VIEW_CENTER)) {
-		Viewer_external_info.angles.p = 0.0f;
-		Viewer_external_info.angles.h = 0.0f;
-		Viewer_external_info.distance = 0.0f;
-	}
 
 	object* viewer_obj;
 	if (!(Viewer_mode & VM_FREECAMERA))
@@ -482,12 +454,58 @@ void do_view_external(float frame_time)
 			viewer_obj = &Objects[Player_ai->target_objnum];
 		}
 	}
-	float currentdist = 2.0f * viewer_obj->radius + Viewer_external_info.distance;
-	
+
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
-	Viewer_external_info.distance += t * (currentdist / 10) * camera_zoom_scale;
-	if (Viewer_external_info.distance < 0.0f){
-		Viewer_external_info.distance = 0.0f;
+
+	float current_distance = 2 * viewer_obj->radius + Viewer_chase_info.distance;
+	Viewer_chase_info.distance += -t * (current_distance / 35) * camera_zoom_scale;
+	if (Viewer_chase_info.distance < 0.0f)
+		Viewer_chase_info.distance = 0.0f;
+	if (Viewer_chase_info.distance > MAX_CHASE_EXTERN_CAM_DISTANCE)
+		Viewer_chase_info.distance = MAX_CHASE_EXTERN_CAM_DISTANCE;
+
+
+
+	Viewer_mode |= VM_CAMERA_LOCKED;
+}
+
+void do_view_external(float frame_time)
+{
+	float	t;
+
+	object* viewer_obj;
+	if (!(Viewer_mode & VM_FREECAMERA))
+		viewer_obj = Player_obj;
+
+	if (Viewer_mode & VM_OTHER_SHIP) {
+		if (Player_ai->target_objnum != -1) {
+			viewer_obj = &Objects[Player_ai->target_objnum];
+		}
+	}
+
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
+
+	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2);
+
+	//	Process centering key.
+	if (check_control_timef(VIEW_CENTER)) {
+		Viewer_external_info.angles.p = 0.0f;
+		Viewer_external_info.angles.h = 0.0f;
+		Viewer_external_info.preferred_distance = 2 * viewer_obj->radius;
+	}
+
+	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
+	if (t != 0.f) {
+		Viewer_external_info.preferred_distance = Viewer_external_info.current_distance + (t * (Viewer_external_info.current_distance / 25) * camera_zoom_scale);
+		if (Viewer_external_info.preferred_distance < 0.0f)
+			Viewer_external_info.preferred_distance = 0.0f;
+		if (Viewer_external_info.preferred_distance > MAX_CHASE_EXTERN_CAM_DISTANCE)
+			Viewer_external_info.preferred_distance = MAX_CHASE_EXTERN_CAM_DISTANCE;
 	}
 
 	//	Do over-the-top correction.
@@ -1362,7 +1380,8 @@ void player_level_init()
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
-	Viewer_external_info.distance = 0.0f;
+	Viewer_external_info.preferred_distance = 0.0f;
+	Viewer_external_info.current_distance = 0.0f;
 
 	Viewer_mode = 0;
  
@@ -2160,7 +2179,9 @@ camid player_get_cam()
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 			vm_matrix_x_matrix(&tm, &viewer_obj->orient, &tm2);
 
-			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
+			Viewer_external_info.current_distance = cam_get_bbox_dist(viewer_obj, Viewer_external_info.preferred_distance, &tm2);
+
+			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
 			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
 			vm_vec_normalize(&tmp_dir);

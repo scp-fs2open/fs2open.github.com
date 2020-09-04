@@ -4435,6 +4435,14 @@ void hud_target_change_check()
 				hud_restore_subsystem_target(&Ships[Objects[Player_ai->target_objnum].instance]);
 			}
 		}
+
+		// reset external cam distance
+		if (Viewer_mode & VM_EXTERNAL) {
+			if (Viewer_mode & VM_OTHER_SHIP)
+				Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+			else
+				Viewer_external_info.preferred_distance = 2 * Player_obj->radius;
+		}
 	}
 	else {
 		if (Player_ai->current_target_distance < Player_ai->last_dist-0.01){
