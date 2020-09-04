@@ -272,7 +272,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 	CLAMP(ma->h, -max_h, max_h);
 }
 
-void do_view_track_target(float  /*frame_time*/)
+void do_view_track_target()
 {
 	vec3d view_vector;
 	vec3d targetpos_rotated;
@@ -345,14 +345,14 @@ void do_view_track_target(float  /*frame_time*/)
  *
  * @note Some mods may prefer to set their own limits, so, maybe make this as a table option in the future
  */
-void do_view_slew(float frame_time)
+void do_view_slew()
 {
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3);
 
 	// Check Track target
 	if (Viewer_mode & VM_TRACK) {
 		// Player's vision will track current target.
-		do_view_track_target(frame_time);
+		do_view_track_target();
 		Viewer_mode |= VM_CAMERA_LOCKED;
 		return;
 	}
@@ -429,7 +429,7 @@ DCF(camera_speed, "Sets the camera zoom scale")
 	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }
 
-void do_view_chase(float  /*frame_time*/)
+void do_view_chase()
 {
 	float t;
 
@@ -445,9 +445,7 @@ void do_view_chase(float  /*frame_time*/)
 		Viewer_chase_info.distance = 0.0f;
 	}
 
-	object* viewer_obj;
-	if (!(Viewer_mode & VM_FREECAMERA))
-		viewer_obj = Player_obj;
+	object* viewer_obj = Player_obj;
 
 	if (Viewer_mode & VM_OTHER_SHIP) {
 		if (Player_ai->target_objnum != -1) {
@@ -469,13 +467,11 @@ void do_view_chase(float  /*frame_time*/)
 	Viewer_mode |= VM_CAMERA_LOCKED;
 }
 
-void do_view_external(float frame_time)
+void do_view_external()
 {
 	float	t;
 
-	object* viewer_obj;
-	if (!(Viewer_mode & VM_FREECAMERA))
-		viewer_obj = Player_obj;
+	object* viewer_obj = Player_obj;
 
 	if (Viewer_mode & VM_OTHER_SHIP) {
 		if (Player_ai->target_objnum != -1) {
@@ -628,15 +624,15 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	if ( Viewer_mode & VM_EXTERNAL ) {
 		control_used(VIEW_EXTERNAL);
 
-		do_view_external(frame_time);
+		do_view_external();
 		do_thrust_keys(ci);
 
 	} else if ( Viewer_mode & VM_CHASE ) {
-		do_view_chase(frame_time);
+		do_view_chase();
 
 	} else {
 		// We're in the cockpit. 
-		do_view_slew(frame_time);
+		do_view_slew();
 	}
 
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
