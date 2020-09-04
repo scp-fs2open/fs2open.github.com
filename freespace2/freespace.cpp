@@ -5069,11 +5069,20 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_OPTIONS_MENU:
-			//game_start_time();
 			if(new_state == GS_STATE_MULTI_JOIN_GAME){
 				multi_join_clear_game_list();
 			}
+
 			options_menu_close();
+
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+				// unpause all sounds, since we could be headed back to the game
+				// only unpause if we're in-mission; we could also be in the main hall
+				if (Game_mode & GM_IN_MISSION) {
+					weapon_unpause_sounds();
+					audiostream_unpause_all();
+				}
+			}
 			break;
 
 		case GS_STATE_BARRACKS_MENU:
@@ -5529,6 +5538,15 @@ void game_enter_state( int old_state, int new_state )
 
 		case GS_STATE_OPTIONS_MENU:
 			options_menu_init();
+
+			if (old_state != GS_STATE_CONTROL_CONFIG && old_state != GS_STATE_HUD_CONFIG) {
+				// pause all sounds, since we could get here through the game
+				// only pause if we're in-mission; we could also be in the main hall
+				if (Game_mode & GM_IN_MISSION) {
+					weapon_pause_sounds();
+					audiostream_pause_all();
+				}
+			}
 			break;
  
 		case GS_STATE_GAME_PLAY:
