@@ -343,7 +343,7 @@ void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
-int object_get_model(object *objp);
+int object_get_model(const object *objp);
 
 void obj_render_queue_all();
 

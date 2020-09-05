@@ -1097,7 +1097,7 @@ eye* get_submodel_eye(polymodel *pm, int submodel_num)
 }
 
 // maybe push the camera away from preferred dist if it would intersect the ship's bounding box
-float cam_get_bbox_dist(object* viewer_obj, float preferred_distance, const matrix* cam_orient) {
+float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, const matrix* cam_orient) {
 	if (viewer_obj == nullptr)
 		return preferred_distance;
 

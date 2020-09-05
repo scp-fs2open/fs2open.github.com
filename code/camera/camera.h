@@ -167,7 +167,7 @@ camid cam_lookup(const char* name);
 camid cam_get_camera(uint index);
 camid cam_get_current();
 size_t cam_get_num();
-float cam_get_bbox_dist(object* viewer_obj, float preferred_distance, const matrix* cam_orient);
+float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, const matrix* cam_orient);
 
 void get_turret_cam_pos(camera *cam, vec3d *pos);
 void get_turret_cam_orient(camera *cam, matrix *ori);
