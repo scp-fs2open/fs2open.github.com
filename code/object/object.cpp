@@ -1993,7 +1993,7 @@ int obj_get_by_signature(int sig)
 /**
  * Gets object model
  */
-int object_get_model(object *objp)
+int object_get_model(const object *objp)
 {
 	switch(objp->type)
 	{

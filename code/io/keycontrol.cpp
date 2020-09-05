@@ -2188,6 +2188,13 @@ int button_function_demo_valid(int n)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
 			Viewer_mode &= ~VM_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
+			// reset external camera distance if we're external
+			if (Viewer_mode & VM_EXTERNAL) {
+				if (Viewer_mode & VM_OTHER_SHIP)
+					Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+				else
+					Viewer_external_info.preferred_distance = 2 * Player_obj->radius;
+			}
 		}
 		else
 		{
@@ -2231,6 +2238,13 @@ int button_function_demo_valid(int n)
 				snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 			} else {
 				Viewer_mode ^= VM_OTHER_SHIP;
+				// reset external camera distance if we're external
+				if (Viewer_mode & VM_EXTERNAL) {
+					if (Viewer_mode & VM_OTHER_SHIP)
+						Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+					else
+						Viewer_external_info.preferred_distance = 2 * Player_obj->radius;
+				}
 			}
 		}
 		ret = 1;
