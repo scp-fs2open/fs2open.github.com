@@ -4376,7 +4376,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 				if (wing_leader != Pl_objp) {
 					// not wing leader.. get my position relative to wing leader
-					get_absolute_wing_pos(&goal_point, wing_leader, shipp->wingnum, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object], true);
+					get_absolute_wing_pos(&goal_point, wing_leader, aip->wing, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object], true);
 				} else {
 					// Am wing leader.. get the wings position relative to the flight leader
 					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
@@ -11508,7 +11508,7 @@ void render_wing_phantoms(object *objp)
 
 	for (i=0; i<32; i++)
 		if (Debug_render_wing_phantoms & (1 << i)) {
-			get_absolute_wing_pos(&goal_point, objp, shipp->wingnum, i, false);
+			get_absolute_wing_pos(&goal_point, objp, wingnum, i, false);
 	
 			vertex	vert;
 			gr_set_color(255, 0, 128);
@@ -11736,7 +11736,7 @@ int ai_formation()
 	leader_speed = leader_objp->phys_info.speed;
 	vec3d leader_vec = leader_objp->phys_info.vel;
 
-	get_absolute_wing_pos(&goal_point, leader_objp, Ships[Pl_objp->instance].wingnum, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
+	get_absolute_wing_pos(&goal_point, leader_objp, aip->wing, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
 	vm_vec_scale_add(&future_goal_point_5, &goal_point, &leader_vec, 10.0f);
 	vm_vec_scale_add(&future_goal_point_2, &goal_point, &leader_vec, 5.0f);
 	vm_vec_scale_add(&future_goal_point_x, &goal_point, &leader_objp->orient.vec.fvec, 10.0f);	//	used when very close to destination
