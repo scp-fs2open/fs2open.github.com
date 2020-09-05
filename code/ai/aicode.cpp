@@ -4376,7 +4376,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 				if (wing_leader != Pl_objp) {
 					// not wing leader.. get my position relative to wing leader
-					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
+					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object], shipp->wingnum);
 				} else {
 					// Am wing leader.. get the wings position relative to the flight leader
 					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
@@ -11443,14 +11443,14 @@ DCF(wing_scale, "Adjusts the wing formation scale. (Default is 1.0f)")
 }
 
 /**
- * Given a wing leader and a position in the wing formation, return the desired absolute location to fly to.
+ * Given an object to fly off of, a wing and a position in the wing formation, return the desired absolute location to fly to.
  * @return result in *result_pos.
  */
-void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag)
+void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag, int wingnum)
 {
 	vec3d	wing_delta, rotated_wing_delta;
 	float		wing_spread_size;
-	int formation_index = Wings[Ships[leader_objp->instance].wingnum].formation;
+	int formation_index = Wings[wingnum].formation;
 
 	if (wing_index == 0)
 		wing_delta = vmd_zero_vector;
@@ -11477,12 +11477,19 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 }
 
 // autopilot variant.. removes some scaling crap
-void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag)
+void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag, int wingnum)
 {
 	vec3d	wing_delta, rotated_wing_delta;
 	float		wing_spread_size;
+	int formation_index = Wings[wingnum].formation;
 
-	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
+	if (wing_index == 0)
+		wing_delta = vmd_zero_vector;
+	else if (formation_index != -1)
+		wing_delta = Wing_formations[formation_index].positions[wing_index - 1]; //  custom desired location in leader's reference frame
+	else
+		get_wing_delta(&wing_delta, wing_index);		//	default desired location in leader's reference frame
+
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
 	vm_vec_scale(&wing_delta, wing_spread_size * 1.5f);
@@ -11523,7 +11530,7 @@ void render_wing_phantoms(object *objp)
 
 	for (i=0; i<32; i++)
 		if (Debug_render_wing_phantoms & (1 << i)) {
-			get_absolute_wing_pos(&goal_point, objp, i, 0);
+			get_absolute_wing_pos(&goal_point, objp, i, 0, shipp->wingnum);
 	
 			vertex	vert;
 			gr_set_color(255, 0, 128);
@@ -11751,7 +11758,7 @@ int ai_formation()
 	leader_speed = leader_objp->phys_info.speed;
 	vec3d leader_vec = leader_objp->phys_info.vel;
 
-	get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
+	get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object], Ships[Pl_objp->instance].wingnum);
 	vm_vec_scale_add(&future_goal_point_5, &goal_point, &leader_vec, 10.0f);
 	vm_vec_scale_add(&future_goal_point_2, &goal_point, &leader_vec, 5.0f);
 	vm_vec_scale_add(&future_goal_point_x, &goal_point, &leader_objp->orient.vec.fvec, 10.0f);	//	used when very close to destination
