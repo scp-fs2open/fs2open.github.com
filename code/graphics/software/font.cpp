@@ -249,8 +249,22 @@ namespace
 					  fontName.c_str(), MAX_SPECIAL_CHAR_IDX);
 			}
 
-			for (auto i = 0; i < (int)Lcl_languages.size(); ++i) {
-				Lcl_languages[i].special_char_indexes[font_id] = (ubyte)default_special_char_index;
+		}
+
+		// add the index specified to all the languages 
+		for (auto & Lcl_language : Lcl_languages) {
+
+			// if there wasn't already something specified for this font.
+			if (font_id >= (int)Lcl_language.special_char_indexes.size()) {
+				// if a lot of indexes were missing, add some defaults to fill in the gaps until ...
+				while (font_id > (int)Lcl_language.special_char_indexes.size()) {
+					Lcl_language.special_char_indexes.push_back(0);
+				}
+				// we're at just the right place in the vector to add the index we just read from the table.
+				Lcl_language.special_char_indexes.push_back((ubyte)default_special_char_index);
+			} // if there was something already specified that's being replaced.
+			else {
+				Lcl_language.special_char_indexes[font_id] = (ubyte)default_special_char_index;
 			}
 		}
 
