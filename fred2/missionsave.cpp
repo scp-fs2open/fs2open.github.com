@@ -2849,17 +2849,23 @@ int CFred_mission_save::save_objects()
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
-		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
+		fout(" %s\t\t;! Object #%d", shipp->ship_name, i);
 
 		// Display name
+		// The display name is only written if there was one at the start to avoid introducing inconsistencies
 		if (Mission_save_format != FSO_FORMAT_RETAIL && shipp->has_display_name()) {
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			fout("\n$Display name:");
-			fout_ext(" ", "%s", shipp->display_name.c_str());
-			fout("\n");
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, shipp->ship_name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (strcmp(shipp->get_display_name(), truncated_name) != 0) {
+				fout("\n$Display name:");
+				fout_ext(" ", "%s", shipp->display_name.c_str());
+			}
 		}
 
-		required_string_fred("$Class:");
+		required_string_fred("\n$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[shipp->ship_info_index].name);
 
