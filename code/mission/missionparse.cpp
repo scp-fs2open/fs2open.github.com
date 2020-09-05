@@ -6202,7 +6202,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 
 				// change the position of the next ships in the wing.  Use the cool function in AiCode.cpp which
 				// Mike K wrote to give new positions to the wing members.
-				get_absolute_wing_pos( &objp->pos, leader_objp, wing_index++, Ships[objp->instance].wingnum, false);
+				get_absolute_wing_pos( &objp->pos, leader_objp, Ships[objp->instance].wingnum, wing_index++, false);
 				memcpy( &objp->orient, &orient, sizeof(matrix) );
 
 				index++;
