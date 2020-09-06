@@ -110,6 +110,7 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, ade_oda
 
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaTable* t);
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaFunction* f);
+bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaValue* f);
 
 // This is not a template function so we can put the implementation in a source file
 inline bool get_args_actual(lua_State* /*L*/, get_args_state& state, const char* fmt)
@@ -312,6 +313,8 @@ void set_single_arg(lua_State* /*L*/, char fmt, const luacpp::LuaTable& table);
 
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaFunction* func);
 void set_single_arg(lua_State* /*L*/, char fmt, const luacpp::LuaFunction& func);
+
+void set_single_arg(lua_State* /*L*/, char fmt, const luacpp::LuaValue& func);
 
 // This is not a template function so we can put the implementation in a source file
 inline void set_args_actual(lua_State* /*L*/, set_args_state& /*state*/, const char* fmt)

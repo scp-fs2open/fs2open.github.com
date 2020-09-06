@@ -52,7 +52,7 @@ void LuaTable::setReference(const LuaReference& ref) {
 	}
 }
 
-size_t LuaTable::getLength() {
+size_t LuaTable::getLength() const {
 	this->pushValue(_luaState);
 
 	size_t length = lua_objlen(_luaState, -1);
@@ -90,13 +90,13 @@ std::pair<LuaValue, LuaValue> LuaTable::iterator::operator*() {
 	return _iter->getElement();
 }
 
-LuaTable::iterator LuaTable::begin() {
+LuaTable::iterator LuaTable::begin() const {
 	iterator iter(*this);
 
 	// This will call lua_next and automatically handle the end of the table
 	return iter;
 }
-LuaTable::iterator LuaTable::end() {
+LuaTable::iterator LuaTable::end() const { // NOLINT(readability-convert-member-functions-to-static)
 	return iterator(); // Empty iterator
 }
 

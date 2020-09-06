@@ -159,7 +159,7 @@ class LuaTable: public LuaValue {
      * @return @c true when the value could be successfully converted, @c false otherwise
      */
 	template<class IndexType, class ValueType>
-	bool getValue(const IndexType& index, ValueType& target) {
+	bool getValue(const IndexType& index, ValueType& target) const {
 		this->pushValue(_luaState);
 
 		convert::pushValue(_luaState, index);
@@ -189,7 +189,7 @@ class LuaTable: public LuaValue {
      */
 	template<class ValueType, class IndexType>
 	// IndexType is last so the compiler can deduce it from the argument
-	ValueType getValue(const IndexType& index) {
+	ValueType getValue(const IndexType& index) const {
 		ValueType target;
 
 		if (!getValue(index, target)) {
@@ -206,7 +206,7 @@ class LuaTable: public LuaValue {
      *
      * @return The size value.
      */
-	size_t getLength();
+	size_t getLength() const;
 
 	/**
 	 * @brief Returns an iterator to the begin of this table
@@ -217,7 +217,7 @@ class LuaTable: public LuaValue {
 	 *
 	 * @return The iterator to the begin of the table
 	 */
-	iterator begin();
+	iterator begin() const;
 
 	/**
 	 * @brief Returns an iterator to the end of this table
@@ -226,7 +226,7 @@ class LuaTable: public LuaValue {
 	 *
 	 * @return The iterator to the end of the table
 	 */
-	iterator end();
+	iterator end() const;
 
 };
 

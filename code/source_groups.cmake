@@ -1097,6 +1097,13 @@ add_file_folder("Scripting"
 	scripting/scripting_doc.h
 )
 
+add_file_folder("Scripting\\\\Util"
+	scripting/util/LuaValueDeserializer.cpp
+	scripting/util/LuaValueDeserializer.h
+	scripting/util/LuaValueSerializer.cpp
+	scripting/util/LuaValueSerializer.h
+)
+
 add_file_folder("Scripting\\\\Api"
 	scripting/api/LuaCoroutineRunner.cpp
 	scripting/api/LuaCoroutineRunner.h
@@ -1154,6 +1161,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
+	scripting/api/objs/bytearray.cpp
+	scripting/api/objs/bytearray.h
 	scripting/api/objs/camera.cpp
 	scripting/api/objs/camera.h
 	scripting/api/objs/cmd_brief.cpp
