@@ -880,6 +880,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (get_pointer_to_first_hash_symbol(wip->name)) {
 			strcpy_s(wip->display_name, wip->name);
 			end_string_at_first_hash_symbol(wip->display_name);
+			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
 		}
 
 		// do German translation
@@ -891,8 +892,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	if(optional_string("$Alt name:") || optional_string("$Display Name:"))
+	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
+	{
 		stuff_string(wip->display_name, F_NAME, NAME_LENGTH);
+		wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
+	}
 
 	//Set subtype
 	if(optional_string("$Subtype:"))
@@ -8100,7 +8104,7 @@ const char* weapon_info::get_display_name()
 
 bool weapon_info::has_display_name()
 {
-	return display_name[0] != '\0';
+	return wi_flags[Weapon::Info_Flags::Has_display_name];
 }
 
 void weapon_spew_stats(WeaponSpewType type)

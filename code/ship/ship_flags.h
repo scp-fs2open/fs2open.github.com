@@ -120,6 +120,7 @@ namespace Ship {
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Has_display_name,			// Goober5000
 
 		NUM_VALUES
 
@@ -192,6 +193,7 @@ namespace Ship {
 		Dont_bank_when_turning,			// Goober5000
 		Dont_clamp_max_velocity,		// Goober5000
 		Instantaneous_acceleration,		// Goober5000
+		Has_display_name,				// Goober5000
 
 		NUM_VALUES
 	};

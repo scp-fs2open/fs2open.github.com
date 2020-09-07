@@ -1291,8 +1291,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 		if (targetp == nullptr) {
 			ship* shipp = &Ships[Objects[ssp->parent_objnum].instance];
-            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship name %s is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, 
-																								(shipp->has_display_name()) ? shipp->display_name.c_str() : shipp->ship_name);
+            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship name %s is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, shipp->ship_name);
             object *lep = &Objects[ssp->turret_enemy_objnum];
 
 			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
