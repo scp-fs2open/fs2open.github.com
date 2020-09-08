@@ -487,6 +487,8 @@ typedef struct ai_info {
 	flagset<AI::Maneuver_Override_Flags>	ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
 	int		ai_override_timestamp;		// mark for when to end the current override
+
+	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
 } ai_info;
 
 // Goober5000
@@ -662,5 +664,7 @@ void ai_update_aim(ai_info *aip);
 
 //SUSHI: Random evasive sidethrust
 void do_random_sidethrust(ai_info *aip, ship_info *sip);
+
+void ai_formation_object_recalculate_slotnums(int form_objnum, int dying_objnum = -1);
 
 #endif

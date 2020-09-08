@@ -3379,33 +3379,36 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 	aip->ai_flags.set(AI::AI_Flags::Formation_object);
 
 	aip->goal_objnum = OBJ_INDEX(goal_objp);
+
+	ai_formation_object_recalculate_slotnums(aip->goal_objnum);
+
 	ai_set_goal_maybe_abort_dock(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME*4);		//	Super extra long time until can target another ship.
 
 }
 
 /**
- * Given an object and an object on whose wing to form, return slot to use.
- *
- * @todo This function is called per object in formation per frame.  Should store slot in ::ai_info struct.
+ * Redistributes slotnums to all ships flying off a given formation object
+ * In the case this is needed because a ship is dying, its objnum is needed to explicitly exclude it
  */
-int ai_formation_object_get_slotnum(int objnum, object *objp)
+void ai_formation_object_recalculate_slotnums(int form_objnum, int dying_objnum)
 {
+	Assertion(form_objnum >= 0, "Invalid object number in ai_formation_object_recalculate_slotnums!");
 	int	slotnum = 1;			//	Note: Slot #0 means leader, which isn't someone who was told to form-on-wing.
 
-	object *o;
-	for ( o = GET_FIRST(&obj_used_list); o != END_OF_LIST(&obj_used_list); o = GET_NEXT(o) ) {
-		if (objp == o)
-			break;
-		else if (o->type == OBJ_SHIP)
-			if (Ai_info[Ships[o->instance].ai_index].ai_flags[AI::AI_Flags::Formation_object])
-				if (Ai_info[Ships[o->instance].ai_index].goal_objnum == objnum)
-					slotnum++;
+	for (ship_obj* ship = GET_FIRST(&Ship_obj_list); ship != END_OF_LIST(&Ship_obj_list); ship = GET_NEXT(ship) ) {
+		ai_info* aip = &Ai_info[Ships[Objects[ship->objnum].instance].ai_index];
+
+		if (ship->objnum == dying_objnum)
+			continue;
+
+		if (aip->ai_flags[AI::AI_Flags::Formation_object]) {
+			if (aip->goal_objnum == form_objnum) {
+				aip->form_obj_slotnum = slotnum;
+				slotnum++;
+			}
+		}
 	}
-
-	Assert(o != END_OF_LIST(&obj_used_list));	//	Didn't find objp in list of used ships.  Impossible!
-
-	return slotnum;
 }
 
 #define	BIGNUM	100000.0f
@@ -11651,7 +11654,7 @@ int ai_formation()
 			return 1;
 		}
 		
-		wing_index = ai_formation_object_get_slotnum(aip->goal_objnum, Pl_objp);
+		wing_index = aip->form_obj_slotnum;
 		leader_objp = &Objects[aip->goal_objnum];
 	} else {	//	Formation flying in waypoint mode.
 		Assert(aip->ai_flags[AI::AI_Flags::Formation_wing]);
@@ -15210,6 +15213,10 @@ void ai_ship_destroy(int shipnum)
 		if (aip->hitter_objnum == objnum)
 			aip->hitter_objnum = -1;
 	}
+
+	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object])
+		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, shipnum);
+
 }
 
 /**
