@@ -184,7 +184,7 @@ BOOL wing_editor::Create()
 
 	box = (CComboBox *)GetDlgItem(IDC_WING_FORMATION);
 	box->ResetContent();
-	box->AddString("Retail");
+	box->AddString("Default");
 	for (auto &f : Wing_formations)
 		box->AddString(f.name);
 
