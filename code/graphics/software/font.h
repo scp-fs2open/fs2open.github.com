@@ -104,4 +104,12 @@ namespace font
 	* @return The font pointer or NULL if no font with that name could be found
 	*/
 	FSFont *get_font(const SCP_string& name);
+
+	/**
+	* @brief Retrieves a font by filename 
+	*
+	* @param filename The filename which should be searched
+	* @return The font pointer or nullptr if no font with that filename could be found
+	*/
+	FSFont *get_font_by_filename(const SCP_string& filename);
 }

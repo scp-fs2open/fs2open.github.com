@@ -37,6 +37,12 @@ namespace
 
 	bool font_initialized = false;
 
+	constexpr ubyte DEFAULT_SPECIAL_CHAR_INDEX = 0;
+
+	// max allowed special char index; i.e. 7 special chars in retail fonts 1 & 3
+	const int MAX_SPECIAL_CHAR_IDX = UCHAR_MAX - 6;
+
+
 	bool parse_type(FontType &type, SCP_string &fileName)
 	{
 		int num = optional_string_either("$TrueType:", "$Font:");
@@ -172,6 +178,7 @@ namespace
 		}
 
 		if (!Unicode_text_mode) {
+			int special_char_index = DEFAULT_SPECIAL_CHAR_INDEX;
 			// Special characters only exist in non-Unicode mode
 			if (optional_string("+Special Character Font:"))
 			{
@@ -188,6 +195,30 @@ namespace
 				{
 					nvgFont->setSpecialCharacterFont(fontData);
 				}
+
+				if (optional_string("+Special Character Index:")) {
+					stuff_int(&special_char_index);
+					if (special_char_index < 0 || special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+						Warning(LOCATION, "Special character index (%d) for font (%s) is invalid, must be 0 - %u. Defaulting to 0.",
+							special_char_index, fontName.c_str(), MAX_SPECIAL_CHAR_IDX);
+						special_char_index = DEFAULT_SPECIAL_CHAR_INDEX;
+					}
+				}
+				else {
+					auto old_entry = FontManager::getFontByFilename(fontName);
+					
+					if (old_entry != nullptr) {
+						int old_index = FontManager::getFontIndex(old_entry);
+						special_char_index = Lcl_languages[0].special_char_indexes[old_index];
+					} else {
+
+						Warning(LOCATION,
+							"A \"+Special Character Index:\" was not specified after the \"+Special Character Font:\" entry for the %s font. And a previous entry with a \"+Special Character Index:\" was not found."
+							"\n\n This entry must be specified directly or indirectly to avoid this warning.  Defaulting to 0.",
+							fontStr.c_str());
+					}
+				}
+
 			}
 			else
 			{
@@ -196,16 +227,44 @@ namespace
 				if (fontData == nullptr) {
 					error_display(0,
 								  "Failed to load default font \"%s\" for special characters of font \"%s\"! "
-									  "This font is required for rendering special characters and will cause an error later.",
+									  "This font is required for rendering special characters, if another font is not defined, and will cause an error later.",
 								  "font01.vf",
 								  fontFilename.c_str());
 				} else {
 					nvgFont->setSpecialCharacterFont(fontData);
 				}
 			}
+
+			auto font_id = FontManager::getFontIndex(nvgFont);
+
+			// add the index specified to all languages
+			for (auto & Lcl_language : Lcl_languages) {
+
+				// if there wasn't already something specified for this font.
+				if (font_id >= (int)Lcl_language.special_char_indexes.size()) {
+					
+					// if there were absolutely no special characters defined, put the default value as the language default.
+					if (Lcl_language.special_char_indexes.empty() == 0) {
+						Lcl_language.special_char_indexes.push_back(DEFAULT_SPECIAL_CHAR_INDEX);
+					}
+
+					// if somehow a lot of indexes were missing, add the language default to fill in the gaps until ...
+					while (font_id > (int)Lcl_language.special_char_indexes.size()) {
+							Lcl_language.special_char_indexes.push_back(Lcl_language.special_char_indexes[0]);
+					}
+
+					// we're at just the right place in the vector to add the index we just read from the table.
+					Lcl_language.special_char_indexes.push_back((ubyte)special_char_index);
+
+				} // replace if there was something already specified, except if nothing was specified in the table
+				else if (special_char_index != DEFAULT_SPECIAL_CHAR_INDEX) {
+					Lcl_language.special_char_indexes[font_id] = (ubyte)special_char_index;
+				}
+			}
 		}
 
 		nvgFont->setName(fontStr);
+		nvgFont->setFilename(fontFilename);
 
 		// Make sure that the height is not invalid
 		nvgFont->computeFontMetrics();
@@ -233,24 +292,48 @@ namespace
 		}
 
 		font->setName(fontName);
-
-		// max allowed special char index; i.e. 7 special chars in retail fonts 1 & 3
-		static const int MAX_SPECIAL_CHAR_IDX = UCHAR_MAX - 6;
+		font->setFilename(fontFilename);
 
 		auto font_id = FontManager::getFontIndex(font);
 
+		int user_defined_default_special_char_index = (int)DEFAULT_SPECIAL_CHAR_INDEX;
 		// 'default' special char index for all languages using this font
-		int default_special_char_index = 0;
 		if (optional_string("+Default Special Character Index:")) {
-			stuff_int(&default_special_char_index);
+			stuff_int(&user_defined_default_special_char_index);
 
-			if (default_special_char_index < 0 || default_special_char_index >= MAX_SPECIAL_CHAR_IDX) {
-				Error(LOCATION, "Default special character index (%d) for font (%s), must be 0 - %u", default_special_char_index,
+			if (user_defined_default_special_char_index < 0 || user_defined_default_special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+				Warning(LOCATION, "Default special character index (%d) for font (%s), must be 0 - %u.  Defaulting to 0.", user_defined_default_special_char_index,
 					  fontName.c_str(), MAX_SPECIAL_CHAR_IDX);
 			}
 
-			for (auto i = 0; i < (int)Lcl_languages.size(); ++i) {
-				Lcl_languages[i].special_char_indexes[font_id] = (ubyte)default_special_char_index;
+		}
+
+		// add the index specified to all the languages 
+		for (auto & Lcl_language : Lcl_languages) {
+
+			// if there wasn't already something specified for this font.
+			if (font_id >= (int)Lcl_language.special_char_indexes.size()) {
+
+				// if the default for the language was not already specified, set that default to the general default
+				if (Lcl_language.special_char_indexes.empty()) {
+					Lcl_language.special_char_indexes.push_back(DEFAULT_SPECIAL_CHAR_INDEX);
+				}
+
+				// if a lot of indexes were missing, add some defaults to fill in the gaps until ...
+				while (font_id > (int)Lcl_language.special_char_indexes.size()) {
+					// take into account retail special character settings for font index 2 (size is 1 indexed)
+					if (Lcl_language.special_char_indexes.size() == FONT3 - 1) {
+						Lcl_language.special_char_indexes.push_back(176);
+					}
+					else {
+						Lcl_language.special_char_indexes.push_back(Lcl_language.special_char_indexes[0]);
+					}
+				}
+				// we're at just the right place in the vector to add the index we just read from the table.
+				Lcl_language.special_char_indexes.push_back((ubyte)DEFAULT_SPECIAL_CHAR_INDEX);
+			} // if there was something already specified that's being replaced.
+			else if (user_defined_default_special_char_index != DEFAULT_SPECIAL_CHAR_INDEX) {
+				Lcl_language.special_char_indexes[font_id] = (ubyte)user_defined_default_special_char_index;
 			}
 		}
 
@@ -503,6 +586,11 @@ namespace font
 	FSFont *get_font(const SCP_string& name)
 	{
 		return FontManager::getFont(name);
+	}
+
+	FSFont *get_font_by_filename(const SCP_string& name)
+	{
+		return FontManager::getFontByFilename(name);
 	}
 
 	
