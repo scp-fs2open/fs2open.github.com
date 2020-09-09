@@ -781,7 +781,8 @@ void beam_type_a_move(beam *b)
 }
 
 // move a type B beam weapon
-#define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
+//#define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
+#define BEAM_T(b)						( (b->life_total - b->life_left) / b->life_total)
 void beam_type_b_move(beam *b)
 {		
 	vec3d actual_dir;
@@ -933,6 +934,43 @@ void beam_type_e_move(beam *b)
 	Assert(is_valid_vec(&b->last_shot));
 }
 
+void beam_type_f_move(beam* b)
+{
+	vec3d actual_dir;
+	vec3d temp, temp2;
+	float dot_save;
+
+	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
+	// get the "originating point" of the beam for this frame. essentially bashes last_start
+	if (b->subsys != NULL)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+
+	// if the "warming up" timestamp has not expired
+	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {
+		return;
+	}
+
+	
+	vec3d newdir_a = b->binfo.dir_a;
+	vec3d newdir_b = b->binfo.dir_b;
+	//vec3d rot_center;
+	//vm_vec_avg(&rot_center, &b->binfo.dir_b, &b->binfo.dir_a);
+	//vec3d rot_axis = b->last_start - rot_center;
+	//vm_vec_normalize(&rot_axis);
+	//vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, (b->life_total - b->life_left) * 1.f, &rot_center, &rot_axis);
+	//vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, (b->life_total - b->life_left) * 1.f, &rot_center, &rot_axis);
+	vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+
+	// now recalculate shot_point to be shooting through our new point
+	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
+	bool is_valid = is_valid_vec(&b->last_shot);
+	Assert(is_valid);
+	if (!is_valid) {
+		actual_dir = b->binfo.dir_a;
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
+	}
+}
+
 // pre-move (before collision checking - but AFTER ALL OTHER OBJECTS HAVE BEEN MOVED)
 void beam_move_all_pre()
 {	
@@ -997,6 +1035,10 @@ void beam_move_all_pre()
 				// type E
 				case BEAM_TYPE_E:
 					beam_type_e_move(b);
+					break;
+
+				case BEAM_TYPE_F:
+					beam_type_f_move(b);
 					break;
 
 				// illegal beam type
@@ -1941,6 +1983,9 @@ int beam_start_firing(beam *b)
 	case BEAM_TYPE_E:
 		break;
 
+	case BEAM_TYPE_F:
+		break;
+
 	default:
 		Int3();
 	}
@@ -2037,7 +2082,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 {
 	vec3d p2;
 	int model_num, idx;
-	vec3d oct1, oct2;
+	vec3d pos1, pos2;
 	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
 	float miss_factor;
@@ -2110,18 +2155,18 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 	case BEAM_TYPE_B:
 		if (b->flags & BF_TARGETING_COORDS) {
 			// slash between the two
-			oct1 = b->target_pos1;
-			oct2 = b->target_pos2;
+			pos1 = b->target_pos1;
+			pos2 = b->target_pos2;
 		} else {
 			beam_get_octant_points(model_num, b->target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &oct1, &oct2);
 		}
 
 		// point 1
-		vm_vec_sub(&b->binfo.dir_a, &oct1, &turret_point);
+		vm_vec_sub(&b->binfo.dir_a, &pos1, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_a);
 
 		// point 2
-		vm_vec_sub(&b->binfo.dir_b, &oct2, &turret_point);
+		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
 
 		// delta angle
@@ -2153,6 +2198,108 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 		b->binfo.shot_count = 1;
 		b->binfo.dir_a = turret_norm;
 		b->binfo.dir_b = turret_norm;
+		break;
+
+	case BEAM_TYPE_F:
+		vm_vec_zero(&pos1);
+		vm_vec_zero(&pos2);
+
+		// Get our two starting points
+		// random on the ship if we need them
+		vec3d rand1, rand2;
+		if (b->target && (bwi->bpi.random_start_pos || bwi->bpi.random_end_pos)) {
+			submodel_get_two_random_points_better(model_num, 0, &rand1, &rand2);
+		}
+
+		if (b->target) {
+			if (bwi->bpi.random_start_pos) 
+				pos1 = rand1;
+			else 
+				pos1 = b->target->pos;
+
+			if (bwi->bpi.no_translate)
+				pos2 = pos1;
+			else if (bwi->bpi.random_end_pos)
+				pos2 = rand2;
+			else
+				pos2 = b->target->pos;
+
+		} // if we have no target let's act as though we're shooting at something with a 300m radius 500m away
+		else { 
+			if (bwi->bpi.random_start_pos)
+				static_randvec(rand32(), &pos1);
+
+			if (bwi->bpi.random_end_pos && !bwi->bpi.no_translate)
+				static_randvec(rand32(), &pos2);
+
+			pos1 *= 300.f;
+			pos2 *= 300.f;
+			vec3d move_forward;
+			vm_vec_make(&move_forward, 0, 0, 500);
+			pos1 += move_forward;
+			pos2 += move_forward;
+
+			if (b->objp) { // if we can, orient to the front of shooter
+				vec3d temp = pos1;
+				vm_vec_rotate(&pos1, &temp, &b->objp->orient);
+				temp = pos2;
+				vm_vec_rotate(&pos2, &temp, &b->objp->orient);
+			}
+		}
+
+		// now the offsets
+		float scale_factor = bwi->bpi.absolute_offset || !b->target ? 300.f : b->target->radius;
+		vec3d offset = bwi->bpi.start_pos_offset;
+		offset *= scale_factor;
+
+		matrix orient = bwi->bpi.shooter_orient_positions ?
+			(b->objp ? b->objp->orient : vmd_identity_matrix) :
+			(b->target ? b->target->orient : vmd_identity_matrix);
+
+		vec3d rotated_offset;
+		vm_vec_rotate(&rotated_offset, &offset, &orient);
+		pos1 +=rotated_offset;
+
+		// maybe add some random
+		vec3d random_offset;
+		static_randvec(rand32(), &random_offset);
+		random_offset *= scale_factor;
+		random_offset.xyz.x *= bwi->bpi.start_pos_rand.xyz.x;
+		random_offset.xyz.y *= bwi->bpi.start_pos_rand.xyz.y;
+		random_offset.xyz.z *= bwi->bpi.start_pos_rand.xyz.z;
+
+		pos1 += random_offset;
+
+		// end pos offset
+		if (bwi->bpi.no_translate) 
+			pos2 = pos1;
+		else {
+			offset = bwi->bpi.end_pos_offset;
+			offset *= scale_factor;
+
+			vm_vec_rotate(&rotated_offset, &offset, &orient);
+			pos2 += rotated_offset;
+
+			//randomness
+			static_randvec(rand32(), &random_offset);
+			random_offset *= scale_factor;
+			random_offset.xyz.x *= bwi->bpi.end_pos_rand.xyz.x;
+			random_offset.xyz.y *= bwi->bpi.end_pos_rand.xyz.y;
+			random_offset.xyz.z *= bwi->bpi.end_pos_rand.xyz.z;
+
+			pos1 += random_offset;
+		}
+
+		// now do per shot rotation
+
+		// point 1
+		vm_vec_sub(&b->binfo.dir_a, &pos1, &turret_point);
+		vm_vec_normalize(&b->binfo.dir_a);
+
+		// point 2
+		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
+		vm_vec_normalize(&b->binfo.dir_b);
+
 		break;
 
 	default:
@@ -2308,6 +2455,19 @@ void beam_aim(beam *b)
 	case BEAM_TYPE_E:
 		// point directly in the direction of the turret
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, b->range);
+		break;
+
+	case BEAM_TYPE_F:
+		if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
+			vm_vec_scale(&b->binfo.dir_a, b->range);
+			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->binfo.dir_a, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
+			vm_vec_add(&b->last_shot, &b->last_start, &temp);
+		}
+		else {
+			// set the shot point
+			vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
+		}
+		Assert(is_valid_vec(&b->last_shot));
 		break;
 
 	default:

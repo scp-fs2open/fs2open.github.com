@@ -34,6 +34,7 @@ struct vec3d;
 #define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
 #define BEAM_TYPE_D					3				// similar to the type A beams, but takes multiple shots and "chases" fighters around
 #define BEAM_TYPE_E					4				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
+#define BEAM_TYPE_F					5				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
@@ -45,9 +46,10 @@ struct vec3d;
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	
-	float				delta_ang;							// angle between dir_a and dir_b
-	ubyte				shot_count;							// # of shots	
-	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
+	float			delta_ang;							// angle between dir_a and dir_b
+	ubyte			shot_count;							// # of shots	
+	float			shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit
+	vec3d           rot_axis;
 } beam_info;
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
@@ -74,6 +76,7 @@ typedef struct beam_fire_info {
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
 	int burst_seed;								// used for sharing random targets if part of the same burst
+	float current_per_shot_rot;                         // for type 5 beams
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {

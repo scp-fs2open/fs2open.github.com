@@ -2473,6 +2473,108 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 		}
 
+		if (optional_string("$Type 5 Beam Options:")) {
+
+			char temp_type[NAME_LENGTH];
+			beam_pattern_info* bpi = &wip->b_info.bpi;
+
+			if (optional_string("+Start Position:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+					if (!stricmp(temp_type, NOX("RANDOM"))) {
+						bpi->random_start_pos = true;
+					}
+					else if (!stricmp(temp_type, NOX("CENTER"))) {
+						bpi->random_start_pos = false;
+					}
+					else {
+						// TODO safety
+					}
+			}
+
+			if (optional_string("+Start Position Offset:")) {
+				stuff_vec3d(&bpi->start_pos_offset);
+			}
+
+			if (optional_string("+Start Position Randomness:")) {
+				stuff_vec3d(&bpi->start_pos_rand);
+			}
+
+			if (optional_string("+End Position:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+				if (!stricmp(temp_type, NOX("RANDOM"))) {
+					bpi->random_end_pos = true;
+					bpi->no_translate = false;
+				}
+				else if (!stricmp(temp_type, NOX("CENTER"))) {
+					bpi->random_end_pos = false;
+					bpi->no_translate = false;
+				}
+				else {
+					// TODO safety
+				}
+			}
+
+			if (optional_string("+End Position Offset:")) {
+				stuff_vec3d(&bpi->end_pos_offset);
+			}
+
+			if (optional_string("+End Position Randomness:")) {
+				stuff_vec3d(&bpi->end_pos_rand);
+			}
+
+			if (optional_string("+Offsets Relative to Shooter:")) {
+				stuff_boolean(&bpi->shooter_orient_positions);
+			}
+
+			if (optional_string("+Offsets Not Relative to Size:")) {
+				stuff_boolean(&bpi->absolute_offset);
+			}
+
+			if (optional_string("+Rotation Per Shot:")) {
+				stuff_float(&bpi->per_slash_rot);
+				bpi->per_slash_rot *= (PI2 / 180);
+			}
+
+			if (optional_string("+Per Shot Rot Axis:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+				if (!stricmp(temp_type, NOX("CENTER"))) {
+					bpi->per_slash_rot_axis = AXIS_CENTER;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION"))) {
+					bpi->per_slash_rot_axis = AXIS_ENDPOS;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION"))) {
+					bpi->per_slash_rot_axis = AXIS_STARTPOS;
+				}
+				else {
+					// TODO safety
+				}
+			}
+
+			if (optional_string("+Rotation Per Second:")) {
+				stuff_float(&bpi->per_slash_rot);
+				bpi->per_sec_rot *= (PI2 / 180);
+			}
+
+			if (optional_string("+Per Second Rot Axis:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+				if (!stricmp(temp_type, NOX("CENTER"))) {
+					bpi->per_sec_rot_axis = AXIS_CENTER;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION"))) {
+					bpi->per_sec_rot_axis = AXIS_ENDPOS;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION"))) {
+					bpi->per_sec_rot_axis = AXIS_STARTPOS;
+				}
+				else {
+					// TODO safety
+				}
+			}
+
+			// rotation after offset
+		}
+
 		if (optional_string("+Beam Flags:")) {
 			parse_string_flag_list(wip->b_info.beam_flags, Beam_flags, Num_beam_flags, nullptr);
 		}
@@ -8059,6 +8161,22 @@ void weapon_info::reset()
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;
 	this->b_info.beam_flags.reset();
+
+	// type 5 beam stuff
+	this->b_info.bpi.no_translate = true;
+	this->b_info.bpi.random_start_pos = false;
+	this->b_info.bpi.random_end_pos = false;
+	vm_vec_zero(&this->b_info.bpi.start_pos_offset);
+	vm_vec_zero(&this->b_info.bpi.end_pos_offset);
+	vm_vec_zero(&this->b_info.bpi.start_pos_rand);
+	vm_vec_zero(&this->b_info.bpi.end_pos_rand);
+	this->b_info.bpi.shooter_orient_positions = false;
+	this->b_info.bpi.absolute_offset = false;
+	this->b_info.bpi.per_slash_rot = 0.f;
+	this->b_info.bpi.per_slash_rot_axis = AXIS_CENTER;
+	this->b_info.bpi.per_sec_rot = 0.f;
+	this->b_info.bpi.per_sec_rot_axis = AXIS_CENTER;
+	this->b_info.bpi.per_sec_rot_after_offset = false;
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);

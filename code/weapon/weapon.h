@@ -152,6 +152,8 @@ typedef struct weapon {
 	sound_handle hud_in_flight_snd_sig; // Signature of the sound played while the weapon is in flight
 
 	WeaponState weapon_state; // The current state of the weapon
+
+	float beam_per_shot_rot; // for type 5 beams
 } weapon;
 
 
@@ -165,6 +167,29 @@ typedef struct beam_weapon_section_info {
 	float translation;						// makes the beam texture move -Bobboau
 	generic_anim texture;					// texture anim/bitmap
 } beam_weapon_section_info;
+
+typedef enum beam_pattern_rot_axis {
+	AXIS_STARTPOS,
+	AXIS_ENDPOS,
+	AXIS_CENTER
+} beam_pattern_rot_axis;
+
+typedef struct beam_pattern_info {
+	bool no_translate;
+	bool random_start_pos;
+	bool random_end_pos;
+	vec3d start_pos_offset;
+	vec3d end_pos_offset;
+	vec3d start_pos_rand;
+	vec3d end_pos_rand;
+	bool shooter_orient_positions;
+	bool absolute_offset;
+	float per_slash_rot;
+	beam_pattern_rot_axis per_slash_rot_axis;
+	float per_sec_rot;
+	beam_pattern_rot_axis per_sec_rot_axis;
+	bool per_sec_rot_after_offset;
+} beam_pattern_info;
 
 typedef struct beam_weapon_info {
 	int beam_type;						// beam type
@@ -194,6 +219,7 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	beam_pattern_info bpi;
 	flagset<Weapon::Beam_Flags> beam_flags;
 } beam_weapon_info;
 
