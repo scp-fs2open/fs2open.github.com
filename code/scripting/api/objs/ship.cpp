@@ -273,6 +273,9 @@ ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The d
 
 	if(ADE_SETTING_VAR && s != nullptr) {
 		shipp->display_name = s;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name, s[0] != 0);
 	}
 
 	return ade_set_args(L, "s", shipp->display_name.c_str());

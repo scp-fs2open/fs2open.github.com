@@ -1851,7 +1851,7 @@ const char* ship_info::get_display_name()
 
 bool ship_info::has_display_name()
 {
-	return display_name[0] != '\0';
+	return flags[Ship::Info_Flags::Has_display_name];
 }
 
 
@@ -1960,6 +1960,7 @@ static void parse_ship(const char *filename, bool replace)
 		if (get_pointer_to_first_hash_symbol(sip->name)) {
 			strcpy_s(sip->display_name, sip->name);
 			end_string_at_first_hash_symbol(sip->display_name);
+			sip->flags.set(Ship::Info_Flags::Has_display_name);
 		}
 	}
 
@@ -2491,8 +2492,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		type_name = "$Template";
 	}
 	
-	if(optional_string("$Alt name:") || optional_string("$Display Name:"))
+	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
+	{
 		stuff_string(sip->display_name, F_NAME, NAME_LENGTH);
+		sip->flags.set(Ship::Info_Flags::Has_display_name);
+	}
 
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
@@ -6160,7 +6164,7 @@ void ship::clear()
 	autoaim_fov = 0.0f;
 }
 bool ship::has_display_name() {
-	return !display_name.empty();
+	return flags[Ship::Ship_Flags::Has_display_name];
 }
 const char* ship::get_display_name() {
 	if (has_display_name()) {

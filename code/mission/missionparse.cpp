@@ -2117,11 +2117,15 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
 		shipp->flags.set(Ship::Ship_Flags::Dock_leader);
 
-    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
+		shipp->flags.set(Ship::Ship_Flags::Warp_broken);
 
-    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
-        shipp->flags.set(Ship::Ship_Flags::Warp_never);
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
+		shipp->flags.set(Ship::Ship_Flags::Warp_never);
+
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Has_display_name])
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+
 ////////////////////////
 
 
@@ -2756,7 +2760,7 @@ const char* p_object::get_display_name() {
 	}
 }
 bool p_object::has_display_name() {
-	return !display_name.empty();
+	return flags[Mission::Parse_Object_Flags::SF_Has_display_name];
 }
 
 extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name);
@@ -2792,10 +2796,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (get_pointer_to_first_hash_symbol(p_objp->name)) {
 		p_objp->display_name = p_objp->name;
 		end_string_at_first_hash_symbol(p_objp->display_name);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 
 	if (optional_string("$Display Name:")) {
 		stuff_string(p_objp->display_name, F_NAME);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
