@@ -762,7 +762,13 @@ static void parse_wing_formation(bool replace)
 
 	if (stuff_vec3d_list(position_list) != MAX_SHIPS_PER_WING - 1)
 	{
-		Warning(LOCATION, "Wing formation %s did not have " SIZE_T_ARG " positions.  Ignoring.", name, (size_t)(MAX_SHIPS_PER_WING - 1));
+		error_display(0, "Wing formation %s did not have " SIZE_T_ARG " positions.  Ignoring.", name, (size_t)(MAX_SHIPS_PER_WING - 1));
+		return;
+	}
+
+	if (!stricmp(name, "Retail") || !stricmp(name, "Default"))
+	{
+		error_display(0, "A wing formation cannot be named \"Retail\" or \"Default\".  Overriding the default formation is not currently supported.");
 		return;
 	}
 
