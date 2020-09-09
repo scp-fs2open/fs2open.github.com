@@ -1101,8 +1101,9 @@ float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, cons
 	if (viewer_obj == nullptr)
 		return preferred_distance;
 
-	// radius should be the maximal extent of the bbox from the center, so if its at least that plus the padding its guaranteed to be good
-	if (preferred_distance > viewer_obj->radius * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING) 
+	// radius is the maximal extent of the ship's bbox from the center, so if its at least that plus the padding its guaranteed to be good
+	// plus a little fudge factor at the end because shields count against the bounding box, but not the radius
+	if (preferred_distance > (viewer_obj->radius * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING) * 1.5f) 
 		return preferred_distance;
 	
 	int modelnum = object_get_model(viewer_obj);
