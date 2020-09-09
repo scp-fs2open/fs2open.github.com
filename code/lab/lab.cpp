@@ -461,7 +461,9 @@ void labviewer_render_model(float frametime)
 		}
 
 		obj_move_all(frametime);
-		process_subobjects(Lab_selected_object);
+		if (obj->type == OBJ_SHIP) {
+			process_subobjects(Lab_selected_object);
+		}
 		particle::move_all(frametime);
 		particle::ParticleManager::get()->doFrame(frametime);
 		shockwave_move_all(frametime);
