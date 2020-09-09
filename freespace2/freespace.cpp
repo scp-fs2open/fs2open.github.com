@@ -3210,8 +3210,7 @@ camid game_render_frame_setup()
 					observer_get_eye( &eye_pos, &eye_orient, Viewer_obj );					
 					break;
 				default :
-					mprintf(("Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type));
-					Int3();
+					Error(LOCATION, "Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type);
 				}
 			}
 		}
@@ -3629,16 +3628,12 @@ void game_maybe_do_dead_popup(float frametime)
 				break;
 
 			// this should only happen during a red alert mission
-			case 3:				
+			case 3:			
+				Assertion(The_mission.flags[Mission::Mission_Flags::Red_alert], "FSO tried to replay the previous mission without first being in a Red_alert mission.");
 				if (The_mission.flags[Mission::Mission_Flags::Red_alert])
 				{
 					// choose the previous mission
 					mission_campaign_previous_mission();
-				}
-				else
-				{
-					// bogus?
-					Int3();
 				}
 
 				gameseq_post_event(GS_EVENT_START_GAME);
@@ -4653,7 +4648,7 @@ void game_process_event( int current_state, int event )
 					gameseq_set_state(GS_STATE_MAIN_MENU);
 
 			} else
-				Int3();
+				Error(LOCATION,"FSO reached an end game state from an invalid state: %d", current_state);
 
 			break;
 
@@ -4920,7 +4915,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		default:
-			Int3();
+			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
 	}
 }
