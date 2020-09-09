@@ -1705,7 +1705,7 @@ void ai_big_strafe()
 		break;
 	default:
 
-		Int3();		//	Illegal submode for AIM_STRAFE
+		Error(LOCATION, "Ai_big_strafe() just tried to use an illegal submode. Go tell a coder!");		
 		break;
 	}
 
