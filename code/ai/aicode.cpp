@@ -3389,9 +3389,9 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 
 /**
  * Redistributes slotnums to all ships flying off a given formation object
- * In the case this is needed because a ship is dying, its objnum is needed to explicitly exclude it
+ * In the case this is needed because it has left the field or died, its objnum is needed to explicitly exclude it
  */
-void ai_formation_object_recalculate_slotnums(int form_objnum, int dying_objnum)
+void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum)
 {
 	Assertion(form_objnum >= 0, "Invalid object number in ai_formation_object_recalculate_slotnums!");
 	int	slotnum = 1;			//	Note: Slot #0 means leader, which isn't someone who was told to form-on-wing.
@@ -3399,7 +3399,7 @@ void ai_formation_object_recalculate_slotnums(int form_objnum, int dying_objnum)
 	for (ship_obj* ship = GET_FIRST(&Ship_obj_list); ship != END_OF_LIST(&Ship_obj_list); ship = GET_NEXT(ship) ) {
 		ai_info* aip = &Ai_info[Ships[Objects[ship->objnum].instance].ai_index];
 
-		if (ship->objnum == dying_objnum)
+		if (ship->objnum == exiting_objnum)
 			continue;
 
 		if (aip->ai_flags[AI::AI_Flags::Formation_object]) {
@@ -15215,7 +15215,7 @@ void ai_ship_destroy(int shipnum)
 	}
 
 	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object])
-		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, shipnum);
+		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, objnum);
 
 }
 
