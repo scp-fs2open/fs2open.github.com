@@ -14396,6 +14396,8 @@ void init_ai_object(int objnum)
 	aip->lethality = 0.0f;
 	aip->ai_override_flags.reset();
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
+
+	aip->form_obj_slotnum = -1;
 }
 
 void init_ai_system()

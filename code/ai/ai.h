@@ -665,6 +665,6 @@ void ai_update_aim(ai_info *aip);
 //SUSHI: Random evasive sidethrust
 void do_random_sidethrust(ai_info *aip, ship_info *sip);
 
-void ai_formation_object_recalculate_slotnums(int form_objnum, int dying_objnum = -1);
+void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum = -1);
 
 #endif
