@@ -217,9 +217,6 @@ void beam_start_warmdown(beam *b);
 // add a collision to the beam for this frame (to be evaluated later)
 void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad = -1, bool exit_flag = false);
 
-// get the width of the widest section of the beam
-float beam_get_widest(beam *b);
-
 // mark an object as being lit
 void beam_add_light(beam *b, int objnum, int source, vec3d *c_point);
 
@@ -393,6 +390,21 @@ int beam_fire(beam_fire_info *fire_info)
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_section_frame[i] = 0.0f;
+
+	// beam width
+	if (wip->b_info.beam_width > 0.0f) {
+		new_item->beam_width = wip->b_info.beam_width;
+	}
+	else {
+		// lookup
+		float widest = -1.0f;
+		for (int idx = 0; idx < Weapon_info[new_item->weapon_info_index].b_info.beam_num_sections; idx++) {
+			if (Weapon_info[new_item->weapon_info_index].b_info.sections[idx].width > widest) {
+				widest = Weapon_info[new_item->weapon_info_index].b_info.sections[idx].width;
+			}
+		}
+		new_item->beam_width = widest;
+	}
 	
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		new_item->type = BEAM_TYPE_C;
@@ -1649,8 +1661,8 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	else
 		noise = 1.0f;
 
-	// widest part of the beam
-	float light_rad = beam_get_widest(bm) * blight * noise;	
+	// get the width of the beam
+	float light_rad = bm->beam_width * bm->shrink * blight * noise;	
 
 	// nearest point on the beam, and its distance to the ship
 	vec3d near_pt;
@@ -1716,8 +1728,8 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	// some noise
 	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
 
-	// widest part of the beam
-	float light_rad = beam_get_widest(bm) * blight * noise;		
+	// width of the beam
+	float light_rad = bm->beam_width * bm->shrink * blight * noise;		
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
@@ -2371,7 +2383,7 @@ int beam_collide_ship(obj_pair *pair)
 	weapon_info *bwi;
 	mc_info mc, mc_shield, mc_hull_enter, mc_hull_exit;
 	int model_num;
-	float widest;
+	float width;
 
 	// bogus
 	if (pair == NULL) {
@@ -2436,8 +2448,8 @@ int beam_collide_ship(obj_pair *pair)
 
 	polymodel *pm = model_get(model_num);
 
-	// get the widest portion of the beam
-	widest = beam_get_widest(b);
+	// get the width of the beam
+	width = b->beam_width * b->shrink;
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
@@ -2453,8 +2465,8 @@ int beam_collide_ship(obj_pair *pair)
 	mc.p1 = &b->last_shot;
 
 	// maybe do a sphereline
-	if (widest > ship_objp->radius * BEAM_AREA_PERCENT) {
-		mc.radius = widest * 0.5f;
+	if (width > ship_objp->radius * BEAM_AREA_PERCENT) {
+		mc.radius = width * 0.5f;
 		mc.flags = MC_CHECK_SPHERELINE;
 	} else {
 		mc.flags = MC_CHECK_RAY;
@@ -2912,7 +2924,6 @@ int beam_collide_early_out(object *a, object *b)
 {
 	beam *bm;
 	weapon_info *bwi;
-	float cull_dist, cull_dot;
 	vec3d dot_test, dot_test2, dist_test;	
 		
 	// get the beam
@@ -3050,7 +3061,7 @@ void beam_handle_collisions(beam *b)
 	beam_collision r_coll[MAX_FRAME_COLLISIONS];
 	int r_coll_count = 0;
 	weapon_info *wi;
-	float widest;	
+	float width;	
 
 	// early out if we had no collisions
 	if(b->f_collision_count <= 0){
@@ -3064,8 +3075,8 @@ void beam_handle_collisions(beam *b)
 	}
 	wi = &Weapon_info[b->weapon_info_index];
 
-	// get the widest part of the beam
-	widest = beam_get_widest(b);
+	// get the width of the beam
+	width = b->beam_width * b->shrink;
 
 	// the first thing we need to do is sort the collisions, from closest to farthest
 	std::sort(b->f_collisions, b->f_collisions + b->f_collision_count, beam_sort_collisions_func);
@@ -3252,7 +3263,7 @@ void beam_handle_collisions(beam *b)
 						vm_vec_normalize_quick(&fvec);
 						
 						// stream of fire for big ships
-						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
+						if (width <= Objects[target].radius * BEAM_AREA_PERCENT) {
 							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
 							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
 							particleSource.setOrientationFromNormalizedVec(&fvec);
@@ -3374,7 +3385,7 @@ void beam_handle_collisions(beam *b)
 
 		// if the radius of the target is somewhat close to the radius of the beam, "stop" the beam here
 		// for now : if its smaller than about 1/3 the radius of the ship
-		if(widest <= (Objects[target].radius * BEAM_AREA_PERCENT) && !beam_will_tool_target(b, &Objects[target])){	
+		if(width <= (Objects[target].radius * BEAM_AREA_PERCENT) && !beam_will_tool_target(b, &Objects[target])){
 			// set last_shot so we know where to properly draw the beam		
 			b->last_shot = b->f_collisions[idx].cinfo.hit_point_world;
 			Assert(is_valid_vec(&b->last_shot));		
@@ -3537,33 +3548,6 @@ int beam_ok_to_fire(beam *b)
 	// ok to fire/continue firing
 	return 1;
 }
-
-// get the width of the widest section of the beam
-float beam_get_widest(beam *b)
-{
-	int idx;
-	float widest = -1.0f;
-
-	// sanity
-	Assert(b->weapon_info_index >= 0);
-	if(b->weapon_info_index < 0){
-		return -1.0f;
-	}
-
-	if (b->beam_width > 0.0f) {
-		widest = b->beam_width;
-	} else {
-		// lookup
-		for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++){
-			if(Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest){
-				widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
-			}
-		}
-	}
-
-	// return	
-	return widest * b->current_width_factor;
-}  
 
 // apply a whack to a ship
 void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
