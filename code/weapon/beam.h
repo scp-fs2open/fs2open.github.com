@@ -102,7 +102,7 @@ typedef struct beam_collision {
 	int				c_sig;							// object sig
 	int				c_stamp;							// when we should next apply damage	
 	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
+	bool			is_exit_collision;					//does this occur when the beam is exiting the ship
 } beam_collision;
 
 // beam flag defines
