@@ -96,7 +96,7 @@ typedef struct physics_info {
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
 	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
 
-	matrix ai_desired_orient;   // Asteroth - This is only set if Frametime_independent_turning is enabled, and only by the AI after calls to matrix/forward_interpolate
+	matrix ai_desired_orient;   // Asteroth - This is only set if Frametime_independent_turning is enabled, and only by the AI after calls to angular_move
 							// It is read and then discarded by physics_sim_rot
 } physics_info;
 

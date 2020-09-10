@@ -153,7 +153,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	angles	tangles = { 0,0,0 };
 	vec3d	new_vel;
 	matrix	tmp;
-	float		shock_amplitude;
+	float		shock_amplitude = 0.0f;
 	float		rotdamp;
 	float		shock_fraction_time_left;
 
@@ -161,19 +161,38 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	Assert(is_valid_vec(&pi->rotvel));
 	Assert(is_valid_vec(&pi->desired_rotvel));
 
+	// Handle special case of shockwave
+	if (pi->flags & PF_IN_SHOCKWAVE) {
+		if (timestamp_elapsed(pi->shockwave_decay)) {
+			pi->flags &= ~PF_IN_SHOCKWAVE;
+			rotdamp = pi->rotdamp;
+		}
+		else {
+			shock_fraction_time_left = timestamp_until(pi->shockwave_decay) / (float)SW_BLAST_DURATION;
+			rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
+			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
+		}
+	}
+	else if (pi->flags & PF_NO_DAMP) {
+		rotdamp = 0.0f;
+	}
+	else {
+		rotdamp = pi->rotdamp;
+	}
+
 	bool frit_ai_wants_to_move = Framerate_independent_turning && !IS_MAT_NULL(&pi->ai_desired_orient);
 	bool spinning_too_fast = vm_vec_mag(&pi->max_rotvel) > 0.001f &&
 		(pi->rotvel.xyz.x > pi->max_rotvel.xyz.x * 1.5f ||
 		pi->rotvel.xyz.y > pi->max_rotvel.xyz.y * 1.5f ||
 		pi->rotvel.xyz.z > pi->max_rotvel.xyz.z * 1.5f);
-	// In the case an ai entity used matrix or forward interpolate, we should use those calculations instead
+	// In the case an ai entity used angular_move, we should use those calculations instead
 	// Unless it's spinning too fast, in which case let the exponential damping handle it
 	if (frit_ai_wants_to_move && !(spinning_too_fast)){
 		Assert(is_valid_matrix(&pi->ai_desired_orient));
 
 		// AI simply get the rotvel they ask for, calculations were already done
 		pi->rotvel = pi->desired_rotvel;
-		// Zero it out because the same AI might not call an interpolate function again next time
+		// Zero it out because the same AI might not call angular_move again next time
 		// So we'll assume it's going to "go limp" unless it specifies otherwise next frame
 		vm_vec_zero(&pi->desired_rotvel);
 
@@ -181,33 +200,11 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		*orient = pi->ai_desired_orient;
 		vm_mat_zero(&pi->ai_desired_orient);
 
-		vm_orthogonalize_matrix(orient);
-
 	} else { // players and no framerate_independent_turning go here
 
 		if (frit_ai_wants_to_move) {
 			// Make sure its slowing down as much as possible by desiring 0 velocity
 			vm_vec_zero(&pi->desired_rotvel);
-		}
-
-		// Handle special case of shockwave
-		shock_amplitude = 0.0f;
-		if (pi->flags & PF_IN_SHOCKWAVE) {
-			if (timestamp_elapsed(pi->shockwave_decay)) {
-				pi->flags &= ~PF_IN_SHOCKWAVE;
-				rotdamp = pi->rotdamp;
-			}
-			else {
-				shock_fraction_time_left = timestamp_until(pi->shockwave_decay) / (float)SW_BLAST_DURATION;
-				rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
-				shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
-			}
-		}
-		else if (pi->flags & PF_NO_DAMP) {
-			rotdamp = 0.0f;
-		}
-		else {
-			rotdamp = pi->rotdamp;
 		}
 
 		// Do rotational physics with given damping
@@ -224,20 +221,6 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		tangles.b = pi->rotvel.xyz.z * sim_time;
 	
 	}
-	
-
-/*	//	Make ship shake due to afterburner.
-	if (pi->flags & PF_AFTERBURNER_ON || !timestamp_elapsed(pi->afterburner_decay) ) {
-		float	max_speed;
-
-		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
-		if ( pi->flags & PF_AFTERBURNER_ON ) {
-			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
-		}
-	}
-*/
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
