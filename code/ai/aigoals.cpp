@@ -2118,7 +2118,13 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so
 	// we are safe removing this bit here.
-	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
+	int old_form_objnum = -1;
+	if (aip->ai_flags[AI::AI_Flags::Formation_object]) {
+		// save who he was following so we can tell any others 
+		// who are following to re-organize
+		old_form_objnum = aip->goal_objnum;
+		aip->ai_flags.remove(AI::AI_Flags::Formation_object);
+	}
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
@@ -2384,6 +2390,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
+	if (old_form_objnum != -1)
+		ai_formation_object_recalculate_slotnums(old_form_objnum);
 }
 
 void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name)
