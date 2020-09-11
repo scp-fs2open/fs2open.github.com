@@ -15866,11 +15866,11 @@ void sexp_destroy_instantly(int n)
 		// if it's the player don't destroy
 		if (!get_player_from_ship_node(n))
 		{
-			ship_destroy_instantly(ship_entry->objp);
-
 			// multiplayer callback
 			if (MULTIPLAYER_MASTER)
 				Current_sexp_network_packet.send_ship(ship_entry->shipp);
+
+			ship_destroy_instantly(ship_entry->objp);
 		}
 	}
 
