@@ -24,6 +24,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "math/fvi.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -2924,7 +2925,6 @@ int beam_collide_early_out(object *a, object *b)
 {
 	beam *bm;
 	weapon_info *bwi;
-	vec3d dot_test, dot_test2, dist_test;	
 		
 	// get the beam
 	Assert(a->instance >= 0);
@@ -2993,17 +2993,9 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	}
 
-	// get full cull value
-	beam_get_cull_vals(b, bm, &cull_dot, &cull_dist);
-
-	// if the object fails these conditions, bail
-	vm_vec_sub(&dist_test, &b->pos, &bm->last_start);
-	dot_test = dist_test;
-	vm_vec_sub(&dot_test2, &bm->last_shot, &bm->last_start);
-	vm_vec_normalize_quick(&dot_test);
-	vm_vec_normalize_quick(&dot_test2);
-	// cull_dist == DIST SQUARED FOO!
-	if((vm_vec_dot(&dot_test, &dot_test2) < cull_dot) && (vm_vec_mag_squared(&dist_test) > cull_dist)){
+	// do a cylinder-sphere collision test
+	if (!fvi_cylinder_sphere_may_collide(&bm->last_start, &bm->last_shot,
+		bm->beam_width * bm->shrink * 0.5f, &b->pos, b->radius * 1.2f)) {
 		return 1;
 	}
 	
