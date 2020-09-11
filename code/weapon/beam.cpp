@@ -3003,7 +3003,7 @@ int beam_collide_early_out(object *a, object *b)
 // resulting in "tooled" ships taking twice as much damage (in a later function) as they should.
 void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quadrant_num, bool exit_flag)
 {
-	beam_collision *bc = NULL;
+	beam_collision *bc = nullptr;
 	int idx;
 
 	// if we haven't reached the limit for beam collisions, just add it
@@ -3014,12 +3014,12 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quadran
 	// I guess we can always just remove the farthest item
 	else {
 		for (idx = 0; idx < MAX_FRAME_COLLISIONS; idx++) {
-			if ((bc == NULL) || (b->f_collisions[idx].cinfo.hit_dist > bc->cinfo.hit_dist))
+			if ((bc == nullptr) || (b->f_collisions[idx].cinfo.hit_dist > bc->cinfo.hit_dist))
 				bc = &b->f_collisions[idx];
 		}
 	}
 
-	if (bc == NULL) {
+	if (bc == nullptr) {
 		Int3();
 		return;
 	}
