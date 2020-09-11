@@ -178,12 +178,6 @@ void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_a
 // given an object, return its model num
 int beam_get_model(object *objp);
 
-// for a given object, and a firing beam, determine its critical dot product and range
-void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist);
-
-// get the total possible cone for a given beam in radians
-float beam_get_cone_dot(beam *b);
-
 // for rendering the beam effect
 // output top and bottom vectors
 // fvec == forward vector (eye viewpoint basically. in world coords)
@@ -2993,9 +2987,10 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	}
 
+	float beam_radius = bm->beam_width * bm->shrink * 0.5f;
 	// do a cylinder-sphere collision test
 	if (!fvi_cylinder_sphere_may_collide(&bm->last_start, &bm->last_shot,
-		bm->beam_width * bm->shrink * 0.5f, &b->pos, b->radius * 1.2f)) {
+		beam_radius, &b->pos, b->radius * 1.2f)) {
 		return 1;
 	}
 	
@@ -3392,69 +3387,6 @@ void beam_handle_collisions(beam *b)
 		b->r_collisions[idx] = r_coll[idx];
 	}
 	b->r_collision_count = r_coll_count;
-}
-
-// for a given object, and a firing beam, determine its critical dot product and range
-void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist)
-{
-	switch(objp->type){
-	// debris and asteroids are classified as slow moving small objects
-	// use cull_dot == potential cone of beam + 10% and 50.0 meters
-	case OBJ_DEBRIS:
-	case OBJ_ASTEROID:
-		*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.10f);
-		*cull_dist = 50.0f * 50.0f;
-		return;
-
-	// treat missiles as fast-moving small objects
-	case OBJ_WEAPON:
-		*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.5f);
-		*cull_dist = 300.0f * 300.0f;
-		return;
-
-	case OBJ_SHIP:
-		// for large ships, cull at some multiple of the radius
-		if(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()){
-			*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.25f);
-			
-			*cull_dist = (objp->radius * 1.3f) * (objp->radius * 1.3f);
-			return;
-		}
-
-		// for everthing else, cull the same as missiles
-		*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.5f);
-		*cull_dist = 300.0f * 300.0f;
-		return;
-	}
-
-	// BAD BAD BAD - but this code will cause everything to cull properly
-	Int3();
-	*cull_dot = 1.0f;
-	*cull_dist = 0.0f;
-	return;
-}
-
-// FIXME - make sure we are truthfull representing the "cone" for all beam types
-// get the total possible cone for a given beam in radians
-float beam_get_cone_dot(beam *b)
-{
-	switch(b->type){
-	case BEAM_TYPE_A:
-	case BEAM_TYPE_C:
-	case BEAM_TYPE_D:
-	case BEAM_TYPE_E:
-		// even though these beams don't move, return a _very_ small value
-		return cosf(fl_radians(50.5f));
-		
-	case BEAM_TYPE_B:
-		return vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b);
-
-	default:
-		Int3();
-	}
-
-	Int3();
-	return 0.0f;
 }
 
 // if it is legal for the beam to fire, or continue firing
