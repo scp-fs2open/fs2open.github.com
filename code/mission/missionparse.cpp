@@ -2786,6 +2786,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	p_objp->created_object = NULL;
 	p_objp->next = NULL;
 	p_objp->prev = NULL;
+	p_objp->flags.reset();
 
 	required_string("$Name:");
 	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
@@ -3077,7 +3078,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	stuff_int(&dummy);
 
     // set flags
-    p_objp->flags.reset();
     if (optional_string("+Flags:"))
     {
         SCP_vector<SCP_string> unparsed;
