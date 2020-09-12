@@ -1823,7 +1823,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	if (!res.found)
 		return -1;
 
-	CFILE *test = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, dir_type);
+	CFILE *test = cfopen_special(real_filename, res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, dir_type);
 
 	if (test != NULL) {
 		if (img_cfp != NULL)
@@ -1833,7 +1833,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	}
 
 	// umm, that's not good...
-	Warning(LOCATION, "Could not open file %s!", res.full_name.c_str());
+	Warning(LOCATION, "Could not open file %s!", real_filename);
 	return -1;
 }
 

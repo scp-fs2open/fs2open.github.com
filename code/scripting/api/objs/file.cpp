@@ -62,7 +62,23 @@ ADE_FUNC(flush, l_File, NULL, "Flushes file buffer to disk.", "boolean", "True f
 	return ade_set_args(L, "b", cf_result ? false : true);
 }
 
-ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "Path string of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
+ADE_FUNC(getName, l_File, nullptr, "Returns the name of the given file", "string", "Name of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
+{
+	cfile_h* cfp = nullptr;
+	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
+		return ade_set_error(L, "s", "");
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "s", "");
+
+	auto filename = cf_get_filename(cfp->get());
+	if (filename != nullptr)
+		return ade_set_args(L, "s", filename);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(getPath, l_File, nullptr, "Determines path of the given file", "string", "Path string of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
 {
 	cfile_h* cfp = nullptr;
 	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
@@ -72,7 +88,9 @@ ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "
 		return ade_set_error(L, "s", "");
 
 	int id = cf_get_dir_type(cfp->get());
-	if (Pathtypes[id].path != NULL)
+	if (id == CF_TYPE_ANY)
+		return ade_set_args(L, "s", "<any path>");
+	else if (Pathtypes[id].path != nullptr)
 		return ade_set_args(L, "s", Pathtypes[id].path);
 	else
 		return ade_set_args(L, "s", "");

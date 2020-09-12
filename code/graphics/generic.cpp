@@ -169,7 +169,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		return -1;
 
 	//make sure we can open it
-	img_cfp = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
+	img_cfp = cfopen_special(ga->filename, res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
 
 	if (img_cfp == NULL) {
 		return -1;

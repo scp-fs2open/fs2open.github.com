@@ -13,7 +13,7 @@
 #define _CFILEARCHIVE_H
 
 #ifndef _CFILE_INTERNAL 
-#error This file should only be included internally in CFILE!!
+#pragma message("This file should only be included internally in CFILE!!")
 #endif
 
 // The following Cfile_block data is private to cfile.cpp
@@ -40,6 +40,7 @@ struct CFILE {
 
 	size_t max_read_len;    // max read offset, for special error handling
 
+	const char* original_filename;
 	const char* source_file;
 	int line_num;
 };
