@@ -8,13 +8,14 @@
 */ 
 
 
-
 #ifndef _CFILEARCHIVE_H
 #define _CFILEARCHIVE_H
 
 #ifndef _CFILE_INTERNAL 
 #pragma message("This file should only be included internally in CFILE!!")
 #endif
+
+#include "globalincs/pstypes.h"
 
 // The following Cfile_block data is private to cfile.cpp
 // DO NOT MOVE the Cfile_block* information to cfile.h / do not extern this data
@@ -40,7 +41,7 @@ struct CFILE {
 
 	size_t max_read_len;    // max read offset, for special error handling
 
-	char* original_filename;
+	SCP_string original_filename;
 	const char* source_file;
 	int line_num;
 };

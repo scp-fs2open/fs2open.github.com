@@ -935,9 +935,6 @@ int cfclose( CFILE * cfile )
 		// VP  do nothing
 	}
 
-	// free allocated string
-	vm_free(cfile->original_filename);
-
 	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
@@ -981,7 +978,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
-		cfp->original_filename = vm_strdup(original_filename);
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 		
@@ -1019,7 +1016,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
-		cfp->original_filename = vm_strdup(original_filename);
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1063,7 +1060,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const ch
 #endif
 		cfp->dir_type = type;
 
-		cfp->original_filename = vm_strdup(original_filename);
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1109,7 +1106,7 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const ch
 		cfp->mem_mapped = false;
 		cfp->dir_type = dir_type;
 
-		cfp->original_filename = vm_strdup(original_filename);
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1122,7 +1119,7 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const ch
 
 const char *cf_get_filename(const CFILE *cfile)
 {
-	return cfile->original_filename;
+	return cfile->original_filename.c_str();
 }
 
 int cf_get_dir_type(const CFILE *cfile)
