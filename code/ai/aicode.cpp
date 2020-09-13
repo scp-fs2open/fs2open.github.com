@@ -1140,9 +1140,9 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 
 // Asteroth - Manipulates retail inputs to produce the outputs that would match retail behavior
 // vel and acc_limit should already be sent in with retail values
-void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool weapon) {
+void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool is_weapon) {
 	
-	if (weapon) {
+	if (is_weapon) {
 		// Missiles accelerated instantly technically, but this should do.
 		*acc_limit = *vel_limit * 1000.f;
 		// Approximately what you'd get at 60fps
@@ -1252,7 +1252,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		acc_limit *= 8.0f;
 
 	if (Framerate_independent_turning) {
-		// handle modifications to rotdamp (and therefore acc_limit)
+		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
 		// handled in its entirety in physics_sim_rot 
 		float rotdamp = pip->rotdamp;
 		float shock_fraction_time_left = 0.f;
@@ -12025,6 +12025,7 @@ int ai_formation()
 		}
 
 	}
+
 	return 0;
 }
 
