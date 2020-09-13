@@ -208,9 +208,9 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		}
 
 		// Do rotational physics with given damping
-		apply_physics(rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, NULL);
-		apply_physics(rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL);
-		apply_physics(rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, nullptr);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, nullptr);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, nullptr);
 
 		Assert(is_valid_vec(&new_vel));
 
@@ -476,7 +476,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 	// If Framerate_independent_turning is on, AI don't use CI to turn
 	if (!Framerate_independent_turning || IS_MAT_NULL(&pi->ai_desired_orient)){
-		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
+		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == nullptr) || (Player_obj->type != OBJ_SHIP)) {
 			// Default behavior; eyepoint orientation has no effect on controls
 			pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
 			pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;

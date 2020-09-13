@@ -928,8 +928,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			// then reset the flag and don't move the object.
             if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
 				objp->flags.remove(Object::Object_Flags::Just_updated);
-			}
-			else {
+			} else {
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		// simulate the physics
 			}
 
