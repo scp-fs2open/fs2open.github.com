@@ -3529,20 +3529,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			const char *ship_type = ship_strings[i];
 			bool flag_found = false;
 
-			// Goober5000 - in retail FreeSpace, some ship classes were specified differently
-			// in ships.tbl and the ship type array; this patches those differences so that
-			// the ship type lookup will work properly
-			if (!stricmp(ship_type, "sentrygun"))
-				ship_type = "sentry gun";
-			else if (!stricmp(ship_type, "escapepod"))
-				ship_type = "escape pod";
-			else if (!stricmp(ship_type, "repair_rearm"))
-				ship_type = "support";
-			else if (!stricmp(ship_type, "supercap"))
-				ship_type = "super cap";
-			else if (!stricmp(ship_type, "knossos"))
-				ship_type = "knossos device";
-
 			// look it up in the object types table
 			ship_type_index = ship_type_name_lookup(ship_type);
 
@@ -13125,19 +13111,42 @@ int ship_name_lookup(const char *name, int inc_players)
 	return -1;
 }
 
-int ship_type_name_lookup(const char *name)
+int ship_type_name_lookup_sub(const char *name)
 {
 	Assertion(name != nullptr, "NULL name passed to ship_type_name_lookup");
 
 	//Look through Ship_types array
-	size_t max_size = Ship_types.size();
-	for(size_t idx=0; idx < max_size; idx++){
-		if(!stricmp(name, Ship_types[idx].name)){
+	for (size_t idx = 0; idx < Ship_types.size(); ++idx)
+		if (!stricmp(name, Ship_types[idx].name))
 			return (int)idx;
-		}
-	}
+
 	// couldn't find it
 	return -1;
+}
+
+int ship_type_name_lookup(const char *name)
+{
+	// try the normal lookup
+	auto idx = ship_type_name_lookup_sub(name);
+	if (idx >= 0)
+		return idx;
+
+	// Goober5000 - in retail FreeSpace, some ship classes were specified differently
+	// in ships.tbl and the ship type array; this patches those differences so that
+	// the ship type lookup will work properly
+	if (!stricmp(name, "sentrygun"))
+		name = "sentry gun";
+	else if (!stricmp(name, "escapepod"))
+		name = "escape pod";
+	else if (!stricmp(name, "repair_rearm"))
+		name = "support";
+	else if (!stricmp(name, "supercap"))
+		name = "super cap";
+	else if (!stricmp(name, "knossos"))
+		name = "knossos device";
+
+	// try it again
+	return ship_type_name_lookup_sub(name);
 }
 
 // Finds the world position of a subsystem.

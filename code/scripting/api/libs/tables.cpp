@@ -4,6 +4,7 @@
 #include "tables.h"
 
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/shiptype.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/intelentry.h"
 
@@ -59,6 +60,45 @@ ADE_FUNC(__len, l_Tables_ShipClasses, NULL, "Number of ship classes", "number", 
 		return ade_set_args(L, "i", 0);	//No ships loaded...should be 0
 
 	return ade_set_args(L, "i", Ship_info.size());
+}
+
+//*****SUBLIBRARY: Tables/ShipTypes
+ADE_LIB_DERIV(l_Tables_ShipTypes, "ShipTypes", nullptr, nullptr, l_Tables);
+ADE_INDEXER(l_Tables_ShipTypes, "number/string IndexOrName", "Array of ship types", "shiptype", "Ship type handle, or invalid handle if index is invalid")
+{
+	if (!Ships_inited)
+		return ade_set_error(L, "o", l_Shiptype.Set(-1));
+
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_Shiptype.Set(-1));
+
+	int idx = ship_type_name_lookup(name);
+
+	if (idx < 0) {
+		try {
+			idx = std::stoi(name);
+			idx--; // Lua->FS2
+		}
+		catch (const std::exception&) {
+			// Not a number
+			return ade_set_error(L, "o", l_Shiptype.Set(-1));
+		}
+
+		if (idx < 0 || idx >= (int)Ship_types.size()) {
+			return ade_set_error(L, "o", l_Shiptype.Set(-1));
+		}
+	}
+
+	return ade_set_args(L, "o", l_Shiptype.Set(idx));
+}
+
+ADE_FUNC(__len, l_Tables_ShipTypes, nullptr, "Number of ship types", "number", "Number of ship types, or 0 if ship types haven't been loaded yet")
+{
+	if (!Ships_inited)
+		return ade_set_args(L, "i", 0);	//No ship types loaded...should be 0
+
+	return ade_set_args(L, "i", Ship_types.size());
 }
 
 //*****SUBLIBRARY: Tables/WeaponClasses
