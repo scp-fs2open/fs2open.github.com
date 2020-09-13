@@ -675,13 +675,22 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		char longname[_MAX_PATH];
+		const char *separators, *last_separator = nullptr, *ch;
+
+#ifdef SCP_UNIX
+		separators = "/";
+#else
+		separators = "/\\:";
+#endif
+
+		// find the last separator (if any) in the path sequence
+		ch = file_path - 1;
+		while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
+			last_separator = ch;
+		}
 
 		// For write-only files, require a full path or a path type
-#ifdef SCP_UNIX
-		if ( strpbrk(file_path, "/") ) {
-#else
-		if ( strpbrk(file_path,"/\\:")  ) {
-#endif
+		if ( last_separator ) {
 			// Full path given?
 			strcpy_s(longname, file_path );
 		} else {
@@ -697,7 +706,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 		// JOHN: TODO, you should create the path if it doesn't exist.
 		
-		//WMC - For some godawful reason, fread does not return the correct number of bytes read
+		//WMC - For some reason, fread does not return the correct number of bytes read
 		//in text mode, which messes up FS2_Open's raw_position indicator in fgets. As a consequence, you
 		//_must_ open files that are gonna be read in binary mode.
 
@@ -732,7 +741,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 		FILE *fp = fopen(longname, happy_mode);
 		if (fp)	{
-			return cf_open_fill_cfblock(source, line, file_path, fp, dir_type);
+			return cf_open_fill_cfblock(source, line, last_separator ? (last_separator + 1) : file_path, fp, dir_type);
  		}
 		return NULL;
 	} 
@@ -926,6 +935,9 @@ int cfclose( CFILE * cfile )
 		// VP  do nothing
 	}
 
+	// free allocated string
+	vm_free(cfile->original_filename);
+
 	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
@@ -969,7 +981,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
-		cfp->original_filename = original_filename;
+		cfp->original_filename = vm_strdup(original_filename);
 		cfp->source_file = source;
 		cfp->line_num = line;
 		
@@ -1007,7 +1019,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
-		cfp->original_filename = original_filename;
+		cfp->original_filename = vm_strdup(original_filename);
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1051,7 +1063,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const ch
 #endif
 		cfp->dir_type = type;
 
-		cfp->original_filename = original_filename;
+		cfp->original_filename = vm_strdup(original_filename);
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1097,7 +1109,7 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const ch
 		cfp->mem_mapped = false;
 		cfp->dir_type = dir_type;
 
-		cfp->original_filename = original_filename;
+		cfp->original_filename = vm_strdup(original_filename);
 		cfp->source_file = source;
 		cfp->line_num = line;
 

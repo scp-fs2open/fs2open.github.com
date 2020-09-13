@@ -40,7 +40,7 @@ struct CFILE {
 
 	size_t max_read_len;    // max read offset, for special error handling
 
-	const char* original_filename;
+	char* original_filename;
 	const char* source_file;
 	int line_num;
 };
