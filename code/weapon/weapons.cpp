@@ -2309,10 +2309,43 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// shrinkage
 		if(optional_string("+ShrinkFactor:")) {
 			stuff_float(&wip->b_info.beam_shrink_factor);
+			if (wip->b_info.beam_shrink_factor > 1.f || wip->b_info.beam_shrink_factor < 0.f) {
+				Warning(LOCATION, "Beam '%s' ShrinkFactor must be between 0 and 1", wip->name);
+				CLAMP(wip->b_info.beam_shrink_factor, 0.f, 1.f);
+			}
 		}
 		
 		if(optional_string("+ShrinkPct:")) {
 			stuff_float(&wip->b_info.beam_shrink_pct);
+			if (wip->b_info.beam_shrink_pct < 0.f) {
+				Warning(LOCATION, "Beam '%s' ShrinkPct must be positive.", wip->name);
+				wip->b_info.beam_shrink_pct = 0.f;
+			}
+		}
+
+		// grow.. age?
+		if (optional_string("+GrowFactor:")) {
+			stuff_float(&wip->b_info.beam_grow_factor);
+			if (wip->b_info.beam_grow_factor > 1.f || wip->b_info.beam_grow_factor < 0.f) {
+				Warning(LOCATION, "Beam '%s' Initial Width Factor must be between 0 and 1", wip->name);
+				CLAMP(wip->b_info.beam_grow_factor, 0.f, 1.f);
+			}
+		}
+
+		if (optional_string("+GrowPct:")) {
+			stuff_float(&wip->b_info.beam_grow_pct);
+			if (wip->b_info.beam_grow_pct < 0.f) {
+				Warning(LOCATION, "Beam '%s' GrowPct must be positive.", wip->name);
+				wip->b_info.beam_grow_pct = 0.f;
+			}
+		}
+
+		if (optional_string("+Initial Width Factor:")) {
+			stuff_float(&wip->b_info.beam_initial_width);
+			if (wip->b_info.beam_initial_width > 1.f || wip->b_info.beam_initial_width < 0.f) {
+				Warning(LOCATION, "Beam '%s' Initial Width Factor must be between 0 and 1", wip->name);
+				CLAMP(wip->b_info.beam_initial_width, 0.f, 1.f);
+			}
 		}
 
 		if (optional_string("+Range:")) {
@@ -8002,6 +8035,9 @@ void weapon_info::reset()
 	this->b_info.beam_shots = 1;
 	this->b_info.beam_shrink_factor = 0.0f;
 	this->b_info.beam_shrink_pct = 0.0f;
+	this->b_info.beam_grow_factor = 0.0f;
+	this->b_info.beam_grow_pct = 0.0f;
+	this->b_info.beam_initial_width = 1.0f;
 	this->b_info.range = BEAM_FAR_LENGTH;
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;

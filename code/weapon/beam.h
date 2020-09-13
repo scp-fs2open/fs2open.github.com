@@ -107,11 +107,12 @@ typedef struct beam_collision {
 
 // beam flag defines
 #define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
-#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
+#define BF_SHRINK						(1<<1)		// if this is set, the beam is shrinking in width and approaching the warmdown phase
 #define BF_FORCE_FIRING					(1<<2)
 #define BF_IS_FIGHTER_BEAM				(1<<3)
 #define BF_TARGETING_COORDS				(1<<4)
 #define BF_FLOATING_BEAM				(1<<5)
+#define BF_GROW				            (1<<6)     // if this is set, the beam is growing in width
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -130,7 +131,7 @@ typedef struct beam {
 	vec3d	targeting_laser_offset;
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	
-	float		shrink;					// shrink factor	
+	float		current_width_factor;		// applied to width due to shrink or grow
 
 	// beam info	
 	int		warmup_stamp;			// timestamp for "warming up"
@@ -174,6 +175,7 @@ typedef struct beam {
 	int firingpoint;
 
 	float		beam_width;
+	bool finished_growing; // to stop grow from re-triggering
 } beam;
 
 extern beam Beams[MAX_BEAMS];				// all beams

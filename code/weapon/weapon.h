@@ -187,6 +187,9 @@ typedef struct beam_weapon_info {
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
+	float beam_initial_width;		    // what percentage of total beam width the beam has initially
+	float beam_grow_factor;			    // what percentage of total beam lifetime when the beam starts growing
+	float beam_grow_pct;				// what percent/second the beam grows at
 	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0

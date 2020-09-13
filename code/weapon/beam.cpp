@@ -363,7 +363,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->shrink = 1.0f;	
+	new_item->current_width_factor = wip->b_info.beam_initial_width;	
 	new_item->team = (firing_ship == NULL) ? fire_info->team : static_cast<char>(firing_ship->team);
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
@@ -549,7 +549,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->shrink = 1.0f;	
+	new_item->current_width_factor = wip->b_info.beam_initial_width;
 	new_item->team = (char)firing_ship->team;
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
@@ -1076,11 +1076,26 @@ void beam_move_all_post()
 
 		// if we're shrinking the beam
 		if(moveup->flags & BF_SHRINK){
-			moveup->shrink -= bwi->beam_shrink_pct * flFrametime;
-			if(moveup->shrink < 0.1f){
-				moveup->shrink = 0.1f;
+			moveup->current_width_factor -= bwi->beam_shrink_pct * flFrametime;
+			if(moveup->current_width_factor < 0.1f){
+				moveup->current_width_factor = 0.1f;
 			}
-		}		
+		}
+
+		// if we're past the grow point and haven't already finished growing, start growing the beam
+		if (moveup->life_left <= (moveup->life_total * bwi->beam_grow_factor) && !moveup->finished_growing) {
+			moveup->flags |= BF_GROW;
+		}
+
+		// if we're growing the beam (but not shrinking yet)
+		if ((moveup->flags & BF_GROW) && !(moveup->flags & BF_SHRINK)) {
+			moveup->current_width_factor += bwi->beam_grow_pct * flFrametime;
+			if (moveup->current_width_factor > 1.0f) { // We've finished growing!
+				moveup->current_width_factor = 1.0f;
+				moveup->flags &= ~BF_GROW;
+				moveup->finished_growing = true;
+			}
+		}
 
 		// add tube light for the beam
 		if(moveup->objp != NULL)
@@ -1198,8 +1213,8 @@ void beam_render(beam *b, float u_offset)
 
 		// calculate the beam points
 		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker);
-		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->shrink, bwsi->z_add);	
-		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->shrink, bwsi->z_add);
+		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->current_width_factor, bwsi->z_add);	
+		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->current_width_factor, bwsi->z_add);
 
 		g3_transfer_vertex(verts[0], &bottom1); 
 		g3_transfer_vertex(verts[1], &bottom2);	
@@ -3496,7 +3511,7 @@ float beam_get_widest(beam *b)
 	}
 
 	// return	
-	return widest * b->shrink;
+	return widest * b->current_width_factor;
 }  
 
 // apply a whack to a ship
