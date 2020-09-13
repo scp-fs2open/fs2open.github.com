@@ -10448,6 +10448,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
 		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
 		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
+		Objects[sp->objnum].phys_info.ai_desired_orient = ph_inf.ai_desired_orient;
 	}
 
 	ship_set_new_ai_class(sp, sip->ai_class);

@@ -1138,39 +1138,34 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	}
 }
 
-// Asteroth - figures out if we're turning in a frametime-independant way or not, and if so
-// ensures retail behavior is maintained (if the modder wants to).
+// Asteroth - Manipulates retail inputs to produce the outputs that would match retail behavior
 // vel and acc_limit should already be sent in with retail values
-void ai_get_vel_acc_limit_for_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool weapon) {
-
-	if (!Framerate_independent_turning)
-		return;
+void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool weapon) {
 	
 	if (weapon) {
 		// Missiles accelerated instantly technically, but this should do.
-		vm_vec_copy_scale(acc_limit, vel_limit, 1000.f);
+		*acc_limit = *vel_limit * 1000.f;
 		// Approximately what you'd get at 60fps
 		*vel_limit *= 0.128f;
 		return;
 	}
-	else { // If we're a ship instead things get a bit hairier
 
-		for (int i = 0; i < 3; i++) {
-			float& vel = vel_limit->a1d[i];
-			float& acc = acc_limit->a1d[i];
+	 // If we're a ship instead things get a bit hairier
+	for (int i = 0; i < 3; i++) {
+		float& vel = vel_limit->a1d[i];
+		float& acc = acc_limit->a1d[i];
 
-			float v1 = 2 * acc * rotdamp;
-			float v2 = 2 * vel;
-			if (v1 <= v2) {
-				vel = v1;
-			}
-			else {
-				vel = v2;
-				if (v1 == 0)
-					acc = 1000.f;
-				else
-					acc = acc * (2 - v2 / v1);
-			}
+		float v1 = 2 * acc * rotdamp;
+		float v2 = 2 * vel;
+		if (v1 <= v2) {
+			vel = v1;
+		}
+		else {
+			vel = v2;
+			if (v1 == 0)
+				acc = 1000.f;
+			else
+				acc = acc * (2 - v2 / v1);
 		}
 	}
 }
@@ -1254,10 +1249,22 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	//	For now, weapons just go much faster.
 	acc_limit = vel_limit;
 	if (objp->type == OBJ_WEAPON)
-		vm_vec_scale(&acc_limit, 8.0f);
+		acc_limit *= 8.0f;
 
-	//maybe change vel and acc based on framerate_independant_turning
-	ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, pip->rotdamp, objp->type == OBJ_WEAPON);
+	if (Framerate_independent_turning) {
+		// handle modifications to rotdamp (and therefore acc_limit)
+		// handled in its entirety in physics_sim_rot 
+		float rotdamp = pip->rotdamp;
+		float shock_fraction_time_left = 0.f;
+		if (pip->flags & PF_IN_SHOCKWAVE) {
+			shock_fraction_time_left = timestamp_until(pip->shockwave_decay) / (float)SW_BLAST_DURATION;
+			if (shock_fraction_time_left > 0)
+				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
+		}
+
+		// calculate the actual vel and acc values
+		ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+	}
 
 	// for formation flying
 	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
@@ -1297,22 +1304,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 			delta_bank = -delta_bank;
 	}
 
-	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
-	//	that is causing ships to inexplicably rotate very far.  If you see the message below in the log, set the next statement to be
-	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
-	//	This will allow you to rerun vm_angular_move_forward_vec() with the values that caused the error.
-#ifndef NDEBUG
-vec3d tvec = objp->orient.vec.fvec;
-vec3d	vel_in_copy;
-matrix	objp_orient_copy;
 
-vel_in_copy = vel_in;
-objp_orient_copy = objp->orient;
-
-vel_in = vel_in_copy;	//	HERE //-V587
-objp->orient = objp_orient_copy; //-V587
-#endif
-	
 	matrix out_orient;
 
 	if (rvec != NULL) {
@@ -1334,13 +1326,6 @@ objp->orient = objp_orient_copy; //-V587
 		objp->orient = out_orient;
 		pip->rotvel = vel_out;
 	}
-
-	#ifndef NDEBUG
-	if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
-		if (delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f)
-			mprintf(("A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name));
-	}
-	#endif
 
 }
 
@@ -9263,7 +9248,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		if (sip0->flags[Ship::Info_Flags::Support])
 			vm_vec_scale(&acc_limit, 2.0f);
 
-		ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
+		if(Framerate_independent_turning)
+			ai_compensate_for_retail_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
 
 		// true at end of line prevent overshoot
 		vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &out_orient, &omega_out, &vel_limit, &acc_limit, false, true);
@@ -9323,7 +9309,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			if (sip0->flags[Ship::Info_Flags::Support])
 				vm_vec_scale(&acc_limit, 2.0f);
 
-			ai_get_vel_acc_limit_for_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
+			if(Framerate_independent_turning)
+				ai_compensate_for_retail_turning(&vel_limit, &acc_limit, docker_objp->phys_info.rotdamp, false);
 
 			vm_angular_move_matrix(&dom, &docker_objp->orient, &omega_in, flFrametime, &out_orient, &omega_out, &vel_limit, &acc_limit, false);
 

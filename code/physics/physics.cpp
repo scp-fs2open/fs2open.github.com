@@ -34,8 +34,6 @@
 #define MAX_SHIP_SPEED		500		// Maximum speed allowed after whack or shockwave
 #define RESET_SHIP_SPEED	440		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
 
-#define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
-#define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
 #define	REDUCED_DAMP_FACTOR	10		// increase in side_slip and acceleration time constants (scaled according to reduced damp time)
 #define	REDUCED_DAMP_VEL		30		// change in velocity at which reduced_damp_time is 2000 ms
 #define	REDUCED_DAMP_TIME		2000	// ms (2.0 sec)
@@ -85,6 +83,8 @@ void physics_init( physics_info * pi )
 	vm_vec_make( &pi->I_body_inv.vec.rvec, 1e-5f, 0.0f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.uvec, 0.0f, 1e-5f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.fvec, 0.0f, 0.0f, 1e-5f );
+
+	pi->ai_desired_orient = vmd_zero_matrix; // Asteroth - initialize to the "invalid" orientation, which will be ignored by physics unless set otherwise
 
 }
 

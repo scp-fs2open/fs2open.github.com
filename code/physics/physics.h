@@ -96,14 +96,17 @@ typedef struct physics_info {
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
 	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
 
-	matrix ai_desired_orient;   // Asteroth - This is only set if Frametime_independent_turning is enabled, and only by the AI after calls to angular_move
-							// It is read and then discarded by physics_sim_rot
+	matrix ai_desired_orient;   // Asteroth - This is only set to something other than the zero matrix if Framerate_independent_turning is enabled, and 
+								// only by the AI after calls to angular_move. It is read and then zeroed out for the rest of the frame by physics_sim_rot
 } physics_info;
 
 
 #define CIF_DONT_BANK_WHEN_TURNING		(1 << 0)	// Goober5000 - changing heading does not change bank
 #define CIF_DONT_CLAMP_MAX_VELOCITY		(1 << 1)	// Goober5000 - maneuvers can exceed tabled max velocity
 #define CIF_INSTANTANEOUS_ACCELERATION	(1 << 2)	// Goober5000 - instantaneously jump to the goal velocity
+
+#define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
+#define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
 
 // All of these are numbers from -1.0 to 1.0 indicating
 // what percent of full velocity you want to go.
