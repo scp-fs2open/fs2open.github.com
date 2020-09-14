@@ -31,6 +31,16 @@ namespace font
 		return NULL;
 	}
 
+	FSFont* FontManager::getFontByFilename(const SCP_string& filename) 
+	{
+		for (auto & iter : fonts) 
+		{
+			if (iter->getFilename() == filename)
+				return iter.get();
+		}
+		return nullptr;
+	}
+
 	FSFont *FontManager::getCurrentFont()
 	{
 		return currentFont;

@@ -72,6 +72,17 @@ namespace font {
 		static FSFont *getFont(const SCP_string &name);
 
 		/**
+		* @brief Returns a pointer to the font with the specified filename
+		*
+		* Searches the internal list of fonts for the _first_ font with the filename and returns it to the caller.
+		* If the specified name could not be found then nullptr is returned instead.
+		*
+		* @param filename The filename that should be searched for
+		* @return The font pointer or nullptr when font could not be found.
+		*/
+		static FSFont* getFontByFilename(const SCP_string &filename);
+
+		/**
 		* @brief Returns a pointer to the font at the specified index
 		*
 		* Returns the font pointer which is located as the specified index or @c NULL when the specified index is invald
