@@ -166,7 +166,7 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 				throw FFmpegException("File not found.");
 			}
 
-			cfp = cfopen_special(filename, res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
+			cfp = cfopen_special(res, "rb", CF_TYPE_ANY);
 		} else {
 			// ... otherwise we just find the best match
 			auto res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, false);
@@ -175,16 +175,10 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 				throw FFmpegException("File not found with any known extension.");
 			}
 
-			// cf_find_file_location_ext already handles file names with extensions so we also need to handle that here
-			auto dot = strrchr(filename, '.');
-			if (dot && (strlen(dot) > 2)) {
-				(*dot) = 0;
-			}
-
 			// set proper filename for later use
-			strcat_s(filename, audio_ext_list[res.extension_index]);
+			strcpy_s(filename, res.name_ext.c_str());
 
-			cfp = cfopen_special(filename, res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
+			cfp = cfopen_special(res, "rb", CF_TYPE_ANY);
 		}
 
 		if (cfp == NULL) {

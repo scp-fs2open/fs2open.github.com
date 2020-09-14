@@ -675,19 +675,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		char longname[_MAX_PATH];
-		const char *separators, *last_separator = nullptr, *ch;
-
-#ifdef SCP_UNIX
-		separators = "/";
-#else
-		separators = "/\\:";
-#endif
-
-		// find the last separator (if any) in the path sequence
-		ch = file_path - 1;
-		while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
-			last_separator = ch;
-		}
+		auto last_separator = find_last_separator(file_path);
 
 		// For write-only files, require a full path or a path type
 		if ( last_separator ) {
@@ -781,8 +769,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 		} else {
 			// since cfopen_special already has all the code to handle the opening we can just use that here
-			return _cfopen_special(source, line, file_path, find_res.full_name.c_str(), mode, find_res.size, find_res.offset,
-			                       find_res.data_ptr, dir_type);
+			return _cfopen_special(source, line, find_res, mode, dir_type);
 		}
 
 	}
@@ -801,14 +788,14 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *_cfopen_special(const char* source, int line, const char* original_filename, const char* file_path, const char* mode, const size_t size, const size_t offset, const void* data, int dir_type)
+CFILE *_cfopen_special(const char* source, int line, const CFileLocation &res, const char* mode, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
 		return NULL;
 	}
 
-	Assert( file_path && strlen(file_path) );
+	Assert( !res.full_name.empty() );
 	Assert( mode != NULL );
 
 	// cfopen_special() only supports reading files, not creating them
@@ -818,21 +805,21 @@ CFILE *_cfopen_special(const char* source, int line, const char* original_filena
 	}
 
 	// In-Memory files are a bit different from normal files so we need to handle them separately
-	if (data != nullptr) {
-		return cf_open_memory_fill_cfblock(source, line, original_filename, data, size, dir_type);
+	if (res.data_ptr != nullptr) {
+		return cf_open_memory_fill_cfblock(source, line, res.name_ext.c_str(), res.data_ptr, res.size, dir_type);
 	}
 	else {
 		// "file_path" should already be a fully qualified path, so just try to open it
-		FILE *fp = fopen(file_path, "rb");
+		FILE *fp = fopen(res.full_name.c_str(), "rb");
 
 		if (fp) {
-			if (offset) {
+			if (res.offset) {
 				// Found it in a pack file
-				return cf_open_packed_cfblock(source, line, original_filename, fp, dir_type, offset, size);
+				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size);
 			}
 			else {
 				// Found it in a normal file
-				return cf_open_fill_cfblock(source, line, original_filename, fp, dir_type);
+				return cf_open_fill_cfblock(source, line, res.name_ext.c_str(), fp, dir_type);
 			}
 		}
 	}
@@ -1880,4 +1867,45 @@ int cfile_get_path_type(const SCP_string& dir)
 	}
 
 	return CF_TYPE_INVALID;
+}
+
+// find the last separator (if any) in the path sequence
+const char *find_last_separator(const char *path_str)
+{
+	const char *separators, *last_separator = nullptr, *ch;
+
+#ifdef SCP_UNIX
+	separators = "/";
+#else
+	separators = "/\\:";
+#endif
+
+	// find the last separator (if any) in the path sequence
+	ch = path_str - 1;
+	while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
+		last_separator = ch;
+	}
+
+	return last_separator;
+}
+
+// find the last separator (if any) in the path sequence
+char *find_last_separator(char *path_str)
+{
+	const char *separators;
+	char *last_separator = nullptr, *ch;
+
+#ifdef SCP_UNIX
+	separators = "/";
+#else
+	separators = "/\\:";
+#endif
+
+	// find the last separator (if any) in the path sequence
+	ch = path_str - 1;
+	while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
+		last_separator = ch;
+	}
+
+	return last_separator;
 }
