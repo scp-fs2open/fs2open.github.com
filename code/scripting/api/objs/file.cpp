@@ -1,8 +1,11 @@
 
 #include "file.h"
+
+#include "bytearray.h"
+
 #include "cfile/cfilesystem.h"
 
-extern int cfread_lua_number(double *buf, CFILE *cfile);
+extern int cfread_lua_number(double* buf, CFILE* cfile);
 namespace scripting {
 namespace api {
 
@@ -278,5 +281,49 @@ ADE_FUNC(write, l_File, "string or number, ...",
 	return ade_set_args(L, "i", num_successful);
 }
 
+ADE_FUNC(writeBytes,
+	l_File,
+	"bytearray bytes",
+	"Writes the specified data to the file",
+	"number",
+	"Number of bytes successfully written.")
+{
+	cfile_h* cfp = nullptr;
+	bytearray_h* array = nullptr;
+	if (!ade_get_args(L, "oo", l_File.GetPtr(&cfp), l_Bytearray.GetPtr(&array)))
+		return ade_set_error(L, "i", 0);
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "i", 0);
+
+	auto written = cfwrite(array->data().data(), 1, static_cast<int>(array->data().size()), cfp->get());
+
+	return ade_set_args(L, "i", written);
 }
+
+ADE_FUNC(readBytes,
+	l_File,
+	nullptr,
+	"Reads the entire contents of the file as a byte array.<br><b>Warning:</b> This may change the position inside the "
+	"file.",
+	"bytearray",
+	"The bytes read from the file or empty array on error")
+{
+	cfile_h* cfp = nullptr;
+	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
+		return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h()));
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h()));
+
+	cfseek(cfp->get(), 0, CF_SEEK_SET);
+	SCP_vector<uint8_t> data;
+	data.resize(cfilelength(cfp->get()));
+
+	cfread(data.data(), 1, cfilelength(cfp->get()), cfp->get());
+
+	return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h(std::move(data))));
 }
+
+} // namespace api
+} // namespace scripting

@@ -1,5 +1,9 @@
 local module = {}
 
+function module.__call(condition)
+    assert(condition)
+end
+
 function module.equals(expected, actual)
     if (expected == actual) then
         return
@@ -17,15 +21,15 @@ function module.tablesEqual(expected, actual)
         error("Actual value is not a table")
     end
 
-    if #expected ~= #actual then
-        error(string.format("Expected table length %d did not match actual %d.", #expected, #actual))
-    end
-
-    for i, expectedVal in ipairs(expected) do
+    for i, expectedVal in pairs(expected) do
         local actualVal = actual[i]
 
-        if expectedVal ~= actualVal then
-            error(string.format("Mismatch at index %d. Expected value of %q but was %q", i, tostring(expected), tostring(actual)))
+        if type(expectedVal) == "table" then
+            module.tablesEqual(expectedVal, actualVal)
+        else
+            if expectedVal ~= actualVal then
+                error(string.format("Mismatch at index %d. Expected value of %q but was %q", i, tostring(expected), tostring(actual)))
+            end
         end
     end
 end

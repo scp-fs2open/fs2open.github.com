@@ -1,23 +1,26 @@
 //
 //
 
-#include <freespace.h>
-#include <gamesequence/gamesequence.h>
-#include <globalincs/version.h>
-#include <network/multi.h>
-#include <parse/parselo.h>
-#include <pilotfile/pilotfile.h>
-#include <playerman/player.h>
-
 #include "base.h"
 
-#include "scripting/api/objs/vecmath.h"
+#include "globalincs/version.h"
+
+#include "freespace.h"
+
+#include "gamesequence/gamesequence.h"
+#include "network/multi.h"
+#include "parse/parselo.h"
+#include "pilotfile/pilotfile.h"
+#include "playerman/player.h"
+#include "scripting/api/objs/bytearray.h"
+#include "scripting/api/objs/control_info.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/gameevent.h"
 #include "scripting/api/objs/gamestate.h"
 #include "scripting/api/objs/player.h"
-#include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/control_info.h"
-#include "scripting/api/objs/gameevent.h"
-
+#include "scripting/api/objs/vecmath.h"
+#include "scripting/util/LuaValueDeserializer.h"
+#include "scripting/util/LuaValueSerializer.h"
 
 namespace scripting {
 namespace api {
@@ -529,6 +532,54 @@ ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is curre
 	} else if (Game_mode & GM_NORMAL) {
 		return ADE_RETURN_FALSE;
 	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(serializeValue,
+	l_Base,
+	"any value",
+	"Serializes the specified value so that it can be stored and restored consistently later. The actual format of the "
+	"returned data is implementation specific but will be deserializable by at least this engine version and following "
+	"versions.",
+	"bytearray",
+	"The serialized representation of the value or nil on error.")
+{
+	luacpp::LuaValue value;
+	if (!ade_get_args(L, "a", &value)) {
+		return ADE_RETURN_NIL;
+	}
+
+	try {
+		util::LuaValueSerializer serializer(std::move(value));
+		auto serialized = serializer.serialize();
+
+		return ade_set_args(L, "o", l_Bytearray.Set(bytearray_h(std::move(serialized))));
+	} catch (const std::exception& e) {
+		LuaError(L, "Failed to serialize value: %s", e.what());
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(deserializeValue,
+	l_Base,
+	"bytearray serialized",
+	"Deserializes a previously serialized Lua value.",
+	"any",
+	"The deserialized Lua value.")
+{
+	bytearray_h* array = nullptr;
+	if (!ade_get_args(L, "o", l_Bytearray.GetPtr(&array))) {
+		return ade_set_args(L, "o", l_Bytearray.Set(bytearray_h()));
+	}
+
+	try {
+		util::LuaValueDeserializer deserializer(L);
+		auto deserialized = deserializer.deserialize(array->data());
+
+		return ade_set_args(L, "a", deserialized);
+	} catch (const std::exception& e) {
+		LuaError(L, "Failed to deserialize value: %s", e.what());
 		return ADE_RETURN_NIL;
 	}
 }
