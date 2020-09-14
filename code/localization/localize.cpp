@@ -191,6 +191,7 @@ void parse_stringstbl_quick(const char *filename)
 				if (!Unicode_text_mode) {
 					required_string("+Special Character Index:");
 					stuff_ubyte(&language.special_char_indexes[0]);
+
 					for (i = 1; i < LCL_MIN_FONTS; ++i) {
 						// default to "none"/0 except for font03 which defaults to 176
 						// NOTE: fonts.tbl may override these values
@@ -201,6 +202,11 @@ void parse_stringstbl_quick(const char *filename)
 						}
 					}
 				} else {
+					if (optional_string("+Special Character Index:")) {
+						ubyte temp_index;
+						stuff_ubyte(&temp_index);
+					}
+
 					// Set all indices to valid values
 					for (i = 0; i < LCL_MIN_FONTS; ++i) {
 						language.special_char_indexes[i] = 0;
