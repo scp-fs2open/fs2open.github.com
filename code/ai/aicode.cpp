@@ -235,7 +235,7 @@ const char *Skill_level_names(int level, int translate)
 			str = XSTR("Insane", 473);
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("Unhandled difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	} else {
 		switch( level )	{
@@ -255,7 +255,7 @@ const char *Skill_level_names(int level, int translate)
 			str = NOX("Insane");
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("An invalid difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	}
 
@@ -941,7 +941,8 @@ float get_skill_stealth_dist_scaler()
 		return 1.3f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dist_scaler().", Game_skill_level);
+
 	}
 
 	return 1.0f;
@@ -969,7 +970,7 @@ float get_skill_stealth_dot_scaler()
 		return 0.7f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dot_scaler().", Game_skill_level);
 	}
 
 	return 1.0f;
@@ -1893,8 +1894,14 @@ float get_wing_lowest_av_ab_speed(object *objp)
  */
 int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 {
+	// Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
+	Assertion(((*ignore_objnum <= UNUSED_OBJNUM) || (*ignore_objnum >= 0)), "Unexpected value for ignore_objnum %d. This is a coder error, please report.", *ignore_objnum); 
+	if ((*ignore_objnum > UNUSED_OBJNUM) && (*ignore_objnum < 0)) {
+		return 0;
+	}
+
 	// Not ignoring anything.
-	if (*ignore_objnum == UNUSED_OBJNUM)
+	if (*ignore_objnum < 0) // includes
 	{
 		return 0;									
 	}
@@ -1914,12 +1921,6 @@ int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 			return 1;
 		}
 
-		return 0;
-	}
-	// Ignoring a wing.
-	else
-	{
-		Int3(); // Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
 		return 0;
 	}
 }
@@ -2325,9 +2326,12 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 	Assert(attacker->instance != -1);
 	Assert(Ships[attacker->instance].ai_index != -1);
 	//	Bogus!  Who tried to get me to attack myself!
-	Assertion(attacker != attacked, "%s was told to attack itself! This may be an error in the mission file.  If that checks out, please report to a coder!", Ships[attacker->instance].ship_name);
+	if (attacker == attacked) {
+		Warning(LOCATION, "%s was told to attack itself! This may be an error in the mission file.  If that checks out, please report to a coder!", Ships[attacker->instance].ship_name);
+		return;
+	}
 
-	if (attacker == nullptr || attacker->instance == -1 || attacker == attacked) {
+	if (attacker == nullptr || attacker->instance == -1) {
 		return;
 	}
 
