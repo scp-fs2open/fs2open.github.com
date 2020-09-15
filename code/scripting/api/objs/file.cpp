@@ -59,7 +59,7 @@ ADE_FUNC(flush, l_File, NULL, "Flushes file buffer to disk.", "boolean", "True f
 
 	//WMC - this looks reversed, yes, it's right. Look at cflush.
 	int cf_result = cflush(cfp->get());
-	return ade_set_args(L, "b", cf_result ? false : true);
+	return ade_set_args(L, "b", cf_result == 0);
 }
 
 ADE_FUNC(getName, l_File, nullptr, "Returns the name of the given file", "string", "Name of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
