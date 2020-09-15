@@ -2147,14 +2147,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 		//	Mike -- debug code!
 		//	If a ship has a subobject on it, attack that instead of the main ship!
-		ai_attack_object( objp, other_obj, NULL);
+		ai_attack_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_CHASE_WEAPON:
 		Assert( Weapons[current_goal->target_instance].objnum >= 0 );
 		other_obj = &Objects[Weapons[current_goal->target_instance].objnum];
 		Assert( other_obj->signature == current_goal->target_signature );
-		ai_attack_object( objp, other_obj, NULL );
+		ai_attack_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_GUARD:
@@ -2279,7 +2279,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_attack_object( objp, other_obj, NULL);
+		ai_attack_object( objp, other_obj);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
 			if (aip->target_objnum != -1) {
@@ -2301,14 +2301,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_CHASE_ANY:
-		ai_attack_object( objp, NULL, NULL );
+		ai_attack_object( objp, nullptr);
 		break;
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
 		shipnum = ship_info_lookup( current_goal->target_name );
 		Assertion( shipnum >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!" );
-		ai_attack_object( objp, NULL, NULL, shipnum );
+		ai_attack_object( objp, nullptr, shipnum );
 		break;
 
 	case AI_GOAL_WARP: {
