@@ -675,7 +675,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		char longname[_MAX_PATH];
-		auto last_separator = find_last_separator(file_path);
+		auto last_separator = strrchr(file_path, DIR_SEPARATOR_CHAR);
 
 		// For write-only files, require a full path or a path type
 		if ( last_separator ) {
@@ -1867,45 +1867,4 @@ int cfile_get_path_type(const SCP_string& dir)
 	}
 
 	return CF_TYPE_INVALID;
-}
-
-// find the last separator (if any) in the path sequence
-const char *find_last_separator(const char *path_str)
-{
-	const char *separators, *last_separator = nullptr, *ch;
-
-#ifdef SCP_UNIX
-	separators = "/";
-#else
-	separators = "/\\:";
-#endif
-
-	// find the last separator (if any) in the path sequence
-	ch = path_str - 1;
-	while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
-		last_separator = ch;
-	}
-
-	return last_separator;
-}
-
-// find the last separator (if any) in the path sequence
-char *find_last_separator(char *path_str)
-{
-	const char *separators;
-	char *last_separator = nullptr, *ch;
-
-#ifdef SCP_UNIX
-	separators = "/";
-#else
-	separators = "/\\:";
-#endif
-
-	// find the last separator (if any) in the path sequence
-	ch = path_str - 1;
-	while ((ch = strpbrk(ch + 1, separators)) != nullptr) {
-		last_separator = ch;
-	}
-
-	return last_separator;
 }

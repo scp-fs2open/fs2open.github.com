@@ -1034,7 +1034,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 	// of the file
 
 	// NOTE: full path should also include localization, if so desired
-	auto last_separator = find_last_separator(filespec);
+	auto last_separator = strrchr(filespec, DIR_SEPARATOR_CHAR);
 
 	// do we have a full path already?
 	if ( last_separator ) {
@@ -1243,7 +1243,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 													// then this is the wrong function to use
 
 	// if we have a full path already then fail.  this function if for searching via filter only!
-	if ( find_last_separator(filename) ) {		// do we have a full path already?
+	if ( strchr(filename, DIR_SEPARATOR_CHAR) ) {		// do we have a full path already?
 		Int3();
 		return CFileLocationExt();
 	}
@@ -2269,11 +2269,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, bool localize,
                                   uint32_t location_flags)
 {
-#ifdef SCP_UNIX
-	if ( filename && strpbrk(filename,"/")  ) {
-#else
-	if ( filename && strpbrk(filename,"/\\:")  ) {
-#endif
+	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		strncpy( path, filename, path_max );
 
@@ -2352,11 +2348,7 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, bool /*localize*/,
                                   uint32_t location_flags)
 {
-#ifdef SCP_UNIX
-	if ( filename && strpbrk(filename,"/")  ) {
-#else
-	if ( filename && strpbrk(filename,"/\\:")  ) {
-#endif
+	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		path.assign(filename);
 

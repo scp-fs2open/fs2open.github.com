@@ -434,10 +434,6 @@ int cfile_pop_dir();
 
 int cfile_get_path_type(const SCP_string& dir);
 
-// find a directory separator
-const char *find_last_separator(const char *path_str);
-char *find_last_separator(char *path_str);
-
 namespace cfile
 {
 	// exceptions and other errors
