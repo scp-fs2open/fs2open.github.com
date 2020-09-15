@@ -1034,18 +1034,21 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 	// of the file
 
 	// NOTE: full path should also include localization, if so desired
-#ifdef SCP_UNIX
-	if ( strpbrk(filespec, "/") ) {			// do we have a full path already?
-#else
-	if ( strpbrk(filespec,"/\\:")  ) {		// do we have a full path already?
-#endif
+	auto last_separator = strrchr(filespec, DIR_SEPARATOR_CHAR);
+
+	// do we have a full path already?
+	if ( last_separator ) {
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
 			CFileLocation res(true);
 			res.size = static_cast<size_t>(filelength(fileno(fp)));
+
+			fclose(fp);
+
 			res.offset = 0;
 			res.full_name = filespec;
-			fclose(fp);
+			res.name_ext = last_separator + 1;
+
 			return res;
 		}
 
@@ -1104,6 +1107,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 
 				res.offset = 0;
 				res.full_name = longname;
+				res.name_ext = filespec;
 
 				return res;
 			}
@@ -1119,6 +1123,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 
 					res.offset = 0;
 					res.full_name = longname;
+					res.name_ext = filespec;
 
 					return res;
 				}
@@ -1154,6 +1159,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 					res.size = static_cast<size_t>(f->size);
 					res.offset = (size_t)f->pack_offset;
 					res.data_ptr = f->data;
+					res.name_ext = f->name_ext;
 
 					if (f->data != nullptr) {
 						// This is an in-memory file so we just copy the pathtype name + file name
@@ -1181,6 +1187,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 			res.size = static_cast<size_t>(f->size);
 			res.offset = (size_t)f->pack_offset;
 			res.data_ptr = f->data;
+			res.name_ext = f->name_ext;
 
 			if (f->data != nullptr) {
 				// This is an in-memory file so we just copy the pathtype name + file name
@@ -1235,13 +1242,8 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 	Assert( (ext_list != NULL) && (ext_num > 1) );	// if we are searching for just one ext
 													// then this is the wrong function to use
 
-
 	// if we have a full path already then fail.  this function if for searching via filter only!
-#ifdef SCP_UNIX
-	if ( strpbrk(filename, "/") ) {			// do we have a full path already?
-#else
-	if ( strpbrk(filename,"/\\:")  ) {		// do we have a full path already?
-#endif
+	if ( strchr(filename, DIR_SEPARATOR_CHAR) ) {		// do we have a full path already?
 		Int3();
 		return CFileLocationExt();
 	}
@@ -1312,6 +1314,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 				res.offset = 0;
 				res.full_name = longname;
+				res.name_ext = filespec;
 
 				return res;
 			}
@@ -1328,6 +1331,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 					res.offset = 0;
 					res.full_name = longname;
+					res.name_ext = filespec;
 
 					return res;
 				}
@@ -1419,6 +1423,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 						res.size = static_cast<size_t>(f->size);
 						res.offset = (size_t)f->pack_offset;
 						res.data_ptr = f->data;
+						res.name_ext = f->name_ext;
 
 						if (f->data != nullptr) {
 							// This is an in-memory file so we just copy the pathtype name + file name
@@ -1450,6 +1455,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 				res.size = static_cast<size_t>(f->size);
 				res.offset = (size_t)f->pack_offset;
 				res.data_ptr = f->data;
+				res.name_ext = f->name_ext;
 
 				if (f->data != nullptr) {
 					// This is an in-memory file so we just copy the pathtype name + file name
@@ -2263,11 +2269,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, bool localize,
                                   uint32_t location_flags)
 {
-#ifdef SCP_UNIX
-	if ( filename && strpbrk(filename,"/")  ) {
-#else
-	if ( filename && strpbrk(filename,"/\\:")  ) {
-#endif
+	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		strncpy( path, filename, path_max );
 
@@ -2346,11 +2348,7 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, bool /*localize*/,
                                   uint32_t location_flags)
 {
-#ifdef SCP_UNIX
-	if ( filename && strpbrk(filename,"/")  ) {
-#else
-	if ( filename && strpbrk(filename,"/\\:")  ) {
-#endif
+	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		path.assign(filename);
 
