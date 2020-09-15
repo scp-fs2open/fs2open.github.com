@@ -150,10 +150,8 @@ void physics_set_viewer( physics_info * p, int dir )
 
 void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 {
-	angles	tangles = { 0,0,0 };
 	vec3d	new_vel;
 	matrix	tmp;
-	float		shock_amplitude = 0.0f;
 	float		rotdamp;
 	float		shock_fraction_time_left;
 
@@ -162,6 +160,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	Assert(is_valid_vec(&pi->desired_rotvel));
 
 	// Handle special case of shockwave
+	float		shock_amplitude = 0.0f;
 	if (pi->flags & PF_IN_SHOCKWAVE) {
 		if (timestamp_elapsed(pi->shockwave_decay)) {
 			pi->flags &= ~PF_IN_SHOCKWAVE;
@@ -180,6 +179,9 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		rotdamp = pi->rotdamp;
 	}
 
+	angles	tangles = vmd_zero_angles;
+
+	// "frit" here meaning Framerate_independent_turning
 	bool frit_ai_wants_to_move = Framerate_independent_turning && !IS_MAT_NULL(&pi->ai_desired_orient);
 	bool spinning_too_fast = vm_vec_mag(&pi->max_rotvel) > 0.001f &&
 		(pi->rotvel.xyz.x > pi->max_rotvel.xyz.x * 1.5f ||
