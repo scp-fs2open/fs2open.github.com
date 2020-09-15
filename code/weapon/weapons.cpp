@@ -2327,7 +2327,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+GrowFactor:")) {
 			stuff_float(&wip->b_info.beam_grow_factor);
 			if (wip->b_info.beam_grow_factor > 1.f || wip->b_info.beam_grow_factor < 0.f) {
-				Warning(LOCATION, "Beam '%s' Initial Width Factor must be between 0 and 1", wip->name);
+				Warning(LOCATION, "Beam '%s' GrowFactor must be between 0 and 1", wip->name);
 				CLAMP(wip->b_info.beam_grow_factor, 0.f, 1.f);
 			}
 		}
