@@ -1901,12 +1901,12 @@ int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 	}
 
 	// Not ignoring anything.
-	if (*ignore_objnum < 0) // includes
+	if (*ignore_objnum < 0)
 	{
 		return 0;									
 	}
 	// This means it's ignoring an object, not a wing.
-	else if (*ignore_objnum >= 0)
+	else
 	{
 		// see if this object became invalid
 		if (Objects[*ignore_objnum].signature != *ignore_signature)
@@ -11257,7 +11257,7 @@ void process_subobjects(int objnum)
 				//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 				//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
 				if ( aip->mode != AIM_BAY_DEPART ) {
-					ai_attack_object(objp, NULL);		//	Regardless of current mode, enter attack mode.
+					ai_attack_object(objp, nullptr);		//	Regardless of current mode, enter attack mode.
 					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 					aip->submode_start_time = Missiontime;
 				}
