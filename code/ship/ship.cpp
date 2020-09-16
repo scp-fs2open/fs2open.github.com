@@ -64,6 +64,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -552,6 +553,13 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 SCP_vector<ship_counts>	Ship_type_counts;
 
 SCP_vector<wing_formation> Wing_formations;
+
+const std::shared_ptr<scripting::Hook> OnCountermeasureFireHook = scripting::Hook::Factory("On Countermeasure Fire",
+	"Called when a ship fires a countermeasure.",
+	{
+		{"Ship", "ship", "The ship that has fired the countermeasure."},
+		{"CountermeasuresLeft", "number", "The number of countermeasures left for the ship."},
+	});
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
@@ -10635,6 +10643,10 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		if(Game_mode & GM_MULTIPLAYER){
 			send_NEW_countermeasure_fired_packet(objp, cmeasure_count, Objects[cobjnum].net_signature);
 		}
+
+		// add scripting hook for 'On Countermeasure Fire' --wookieejedi
+		OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp), 
+			scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count)));
 	}
 
 	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise
