@@ -558,7 +558,8 @@ const std::shared_ptr<scripting::Hook> OnCountermeasureFireHook = scripting::Hoo
 	"Called when a ship fires a countermeasure.",
 	{
 		{"Ship", "ship", "The ship that has fired the countermeasure."},
-		{"CountermeasuresLeft", "number", "The number of countermeasures left for the ship."},
+		{"CountermeasuresLeft", "number", "The number of countermeasures left on the ship after firing the current countermeasure."},
+		{"Countermeasure", "weapon", "The countermeasure object that was just fired."},
 	});
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
@@ -10646,7 +10647,8 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		// add scripting hook for 'On Countermeasure Fire' --wookieejedi
 		OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp), 
-			scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count)));
+			scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+			scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
 	}
 
 	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise
