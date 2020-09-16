@@ -1535,9 +1535,9 @@ void render_frame() {
 			a_deg.p = a.p * CONVERT_DEGREES;
 			a_deg.b = a.b * CONVERT_DEGREES;
 
-			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nHeading: %.2f\nPitch: %.2f\nBank: %.2f",
+			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nPitch: %.2f\nBank: %.2f\nHeading: %.2f",
 					Ships[inst].ship_name, Ship_info[Ships[inst].ship_info_index].short_name,
-					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.h, a_deg.p, a_deg.b);
+					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.p, a_deg.b, a_deg.h);
 
 		} else if (Objects[Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;

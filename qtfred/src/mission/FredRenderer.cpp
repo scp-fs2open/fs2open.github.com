@@ -1033,15 +1033,15 @@ void FredRenderer::render_frame(int cur_object_index,
 			a_deg.b = a.b * CONVERT_DEGREES;
 
 			sprintf(buf,
-					"%s\n%s\n( %.1f , %.1f , %.1f ) \nHeading: %.2f\nPitch: %.2f\nBank: %.2f",
+					"%s\n%s\n( %.1f , %.1f , %.1f ) \nPitch: %.2f\nBank: %.2f\nHeading: %.2f",
 					Ships[inst].ship_name,
 					Ship_info[Ships[inst].ship_info_index].short_name,
 					pos.xyz.x,
 					pos.xyz.y,
 					pos.xyz.z,
-					a_deg.h,
 					a_deg.p,
-					a_deg.b);
+					a_deg.b,
+					a_deg.h);
 		} else if (Objects[_viewport->Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
