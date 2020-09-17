@@ -190,16 +190,32 @@ void parse_stringstbl_quick(const char *filename)
 
 				if (!Unicode_text_mode) {
 					required_string("+Special Character Index:");
-					stuff_ubyte(&language.special_char_indexes[0]);
+					ubyte special_char;
+					stuff_ubyte(&special_char);
+
+					if (language.special_char_indexes.empty()){
+						language.special_char_indexes.push_back(special_char);
+					}
+					else {
+						language.special_char_indexes[0] = special_char;
+					}
 
 					for (i = 1; i < LCL_MIN_FONTS; ++i) {
 						// default to "none"/0 except for font03 which defaults to 176
 						// NOTE: fonts.tbl may override these values
 						if (i == font::FONT3) {
-							language.special_char_indexes[i] = 176;
+							special_char = 176;
 						} else {
-							language.special_char_indexes[i] = 0;
+							special_char = 0;
 						}
+
+						// if more than one language is defined, the vector may not be increased to this size already.
+						if (i < (int)language.special_char_indexes.size()) {
+							language.special_char_indexes[i] = special_char;
+						} else {
+							language.special_char_indexes.push_back(special_char);
+						}
+
 					}
 				} else {
 					if (optional_string("+Special Character Index:")) {
@@ -209,7 +225,11 @@ void parse_stringstbl_quick(const char *filename)
 
 					// Set all indices to valid values
 					for (i = 0; i < LCL_MIN_FONTS; ++i) {
-						language.special_char_indexes[i] = 0;
+						if (i >= (int)language.special_char_indexes.size()) {
+							language.special_char_indexes.push_back(0);
+						} else {
+							language.special_char_indexes[i] = 0;
+						}
 					}
 				}
 
