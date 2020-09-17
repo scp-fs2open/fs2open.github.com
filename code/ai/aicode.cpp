@@ -11457,8 +11457,10 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wingnum, 
 
 	if (wing_index == 0)
 		wing_delta = vmd_zero_vector;
-	else if ( formation_index != -1 && wing_index < MAX_SHIPS_PER_WING) 
+	else if (!Wing_formations.empty() && (formation_index >= 0) && (wing_index < MAX_SHIPS_PER_WING)) {
+		Assertion((int)Wing_formations.size() > formation_index, "%s wing's formation_index %d is higher than the Wing_formations size.  Something went very wrong, go tell a coder!", Wings[wingnum].name, formation_index);
 		wing_delta = Wing_formations[formation_index].positions[wing_index - 1]; //  custom desired location in leader's reference frame
+	}
 	else 
 		get_wing_delta(&wing_delta, wing_index);		//	default desired location in leader's reference frame
 	
