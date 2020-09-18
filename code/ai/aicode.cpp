@@ -1140,6 +1140,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 
 // Asteroth - Manipulates retail inputs to produce the outputs that would match retail behavior
 // vel and acc_limit should already be sent in with retail values
+// A more in-depth explanation can be found in the #2740 PR description
 void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float rotdamp, bool is_weapon) {
 	
 	if (is_weapon) {
@@ -1150,7 +1151,9 @@ void ai_compensate_for_retail_turning(vec3d* vel_limit, vec3d* acc_limit, float 
 		return;
 	}
 
-	 // If we're a ship instead things get a bit hairier
+	// If we're a ship instead things get a bit hairier
+	// This is the polynomial approximation of the 'combination' effects of
+	// angular_move and physics_sim_rot
 	for (int i = 0; i < 3; i++) {
 		float& vel = vel_limit->a1d[i];
 		float& acc = acc_limit->a1d[i];

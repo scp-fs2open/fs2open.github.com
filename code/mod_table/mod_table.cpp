@@ -59,7 +59,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
-bool Framerate_independent_turning;
+bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
