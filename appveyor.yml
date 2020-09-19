@@ -8,11 +8,11 @@ environment:
   matrix:
     - BuildID: 0
       CMAKE_GENERATOR: Visual Studio 14 2015
-      PlatformToolset: v140_xp
+      PlatformToolset: v140
       QT_DIR: C:\Qt\5.9\msvc2015
     - BuildID: 1
       CMAKE_GENERATOR: Visual Studio 14 2015 Win64
-      PlatformToolset: v140_xp
+      PlatformToolset: v140
       QT_DIR: C:\Qt\5.9\msvc2015_64
 before_build:
   - git submodule update --init --recursive
