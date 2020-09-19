@@ -23,11 +23,6 @@
 #include <netdb.h>
 #endif
 
-#ifdef __FreeBSD__
-#define IPV6_ADD_MEMBERSHIP		IPV6_JOIN_GROUP
-#define IPV6_DROP_MEMBERSHIP	IPV6_LEAVE_GROUP
-#endif
-
 #include <cstdio>
 #include <climits>
 #include <algorithm>
@@ -2346,7 +2341,7 @@ bool psnet_init_multicast()
 		memcpy(&mRequest.ipv6mr_multiaddr, &sa6->sin6_addr, sizeof(in6_addr));
 		mRequest.ipv6mr_interface = 0;	// any
 
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, reinterpret_cast<const char *>(&mRequest), sizeof(mRequest)) ) {
+		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, reinterpret_cast<const char *>(&mRequest), sizeof(mRequest)) ) {
 			ml_printf("Unable to set multicast membership option (%d)", WSAGetLastError());
 			return false;
 		}
