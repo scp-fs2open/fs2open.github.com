@@ -2868,7 +2868,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->collision_physics.friction);
 		}
 		if(optional_string("+Rotation Factor:")) {
-			stuff_float(&sip->collision_physics.friction);
+			stuff_float(&sip->collision_physics.rotation_factor);
 		}
 		if(optional_string("+Landing Max Forward Vel:")) {
 			stuff_float(&sip->collision_physics.landing_max_z);
