@@ -461,7 +461,7 @@ int find_player_no_port(net_addr *addr)
 			continue;
 		}
 
-		if ( memcmp(&addr->addr,&Net_players[i].p_info.addr.addr,IP_ADDRESS_LENGTH)== 0){
+		if ( memcmp(&addr->addr, &Net_players[i].p_info.addr.addr, sizeof(addr->addr)) == 0) {
 			return i;
 		}
 	}
@@ -790,7 +790,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 
 	// Net_players[net_player_num].respawn_count = 0;
 	Net_players[net_player_num].last_heard_time = timer_get_fixed_seconds();
-	Net_players[net_player_num].reliable_socket = INVALID_SOCKET;
+	Net_players[net_player_num].reliable_socket = PSNET_INVALID_SOCKET;
 	Net_players[net_player_num].s_info.kick_timestamp = -1;
 	Net_players[net_player_num].s_info.voice_token_timestamp = -1;
 	Net_players[net_player_num].s_info.tracker_security_last = -1;
@@ -878,7 +878,7 @@ void delete_player(int player_num,int kicked_reason)
 	// NETLOG
 	ml_printf(NOX("Deleting player %s"), Net_players[player_num].m_player->callsign);
 	
-	psnet_rel_close_socket( &(Net_players[player_num].reliable_socket) );					// close out the reliable socket	
+	psnet_rel_close_socket(Net_players[player_num].reliable_socket);					// close out the reliable socket
 
 	// if this guy was ingame joining, the remove my netgame flag so others may join
 	if ( Net_players[player_num].flags & NETINFO_FLAG_INGAME_JOIN ) {
@@ -999,7 +999,7 @@ void delete_player(int player_num,int kicked_reason)
 
 	// blast this memory clean
 	memset(&Net_players[player_num], 0, sizeof(net_player));
-	Net_players[player_num].reliable_socket = INVALID_SOCKET;
+	Net_players[player_num].reliable_socket = PSNET_INVALID_SOCKET;
 
 	extern int Multi_client_update_times[MAX_PLAYERS];
 	Multi_client_update_times[player_num] = -1;
@@ -1058,37 +1058,8 @@ void fill_net_addr(net_addr* addr, ubyte* address, ushort port)
 	Assertion(addr != nullptr, "Invalid net address struct was passed to fill_net_addr(). Code error, please report.");
 	Assertion(address != nullptr, "Invalid net address was passed to fill_net_addr()");
 
-	addr->type = Multi_options_g.protocol;
-	memset( addr->addr, 0x00, 6);
-	memcpy( addr->addr, address, ADDRESS_LENGTH);
+	memcpy(addr->addr, address, sizeof(addr->addr));
 	addr->port = port;
-}
-
-
-
-// -------------------------------------------------------------------------------------------------
-// get_text_address()
-//
-//
-
-char* get_text_address( char * text, ubyte * address )
-{
-
-	in_addr temp_addr;
-
-	switch ( Multi_options_g.protocol ) {
-		case NET_TCP:
-			memcpy(&temp_addr.s_addr, address, 4);
-			strcpy( text, inet_ntoa(temp_addr) );
-			break;
-
-		default:
-			Assert(0);
-			break;
-
-	} // end switch
-
-	return text;
 }
 
 // non-16byte version of matrix packing
@@ -1669,7 +1640,7 @@ active_game *multi_update_active_games(active_game *ag)
 			// gp->ping_time = -1.0f;			
 
 			// copy in the game information
-			memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
+			memcpy(&gp->server_addr, &ag->server_addr, sizeof(gp->server_addr));
 			strcpy_s(gp->name,ag->name);
 			strcpy_s(gp->mission_name,ag->mission_name);
 			strcpy_s(gp->title,ag->title);			
@@ -1701,7 +1672,7 @@ active_game *multi_update_active_games(active_game *ag)
 		// gp->ping_time = -1.0f;		
 
 		// copy in the game information	
-		memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
+		memcpy(&gp->server_addr, &ag->server_addr, sizeof(gp->server_addr));
 		strcpy_s(gp->name,ag->name);
 		strcpy_s(gp->mission_name,ag->mission_name);
 		strcpy_s(gp->title,ag->title);		
@@ -1944,10 +1915,10 @@ int multi_can_end_mission(net_player *p)
 	return 1;
 }
 
-int multi_eval_join_request(join_request *jr,net_addr *addr)
+int multi_eval_join_request(join_request *jr, net_addr *addr)
 {	
 	int team0_avail,team1_avail;
-	char knock_message[256], knock_callsign[CALLSIGN_LEN+1], jr_ip_string[16]; 
+	char knock_message[256], knock_callsign[CALLSIGN_LEN+1], jr_ip_string[INET6_ADDRSTRLEN];
 
 	// if the server versions are incompatible
 	if(jr->version < MULTI_FS_SERVER_COMPATIBLE_VERSION){
@@ -2071,7 +2042,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	// if the player was banned by the standalone
 	if ( (Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign) ) {
 		// maybe we should log this
-		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
+		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(addr, jr_ip_string, sizeof(jr_ip_string)));
 		ml_string(knock_message);
 		return JOIN_DENY_JR_BANNED;
 	}

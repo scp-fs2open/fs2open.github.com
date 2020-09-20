@@ -289,8 +289,8 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 				multi_display_chat_msg(XSTR("<The server has ended the game>",650),0,0);
 
 				// shut our reliable socket to the server down
-				psnet_rel_close_socket(&Net_player->reliable_socket);
-				Net_player->reliable_socket = INVALID_SOCKET;
+				psnet_rel_close_socket(Net_player->reliable_socket);
+				Net_player->reliable_socket = PSNET_INVALID_SOCKET;
 
 				// remove our do-networking flag
 				Net_player->flags &= ~(NETINFO_FLAG_DO_NETWORKING);
@@ -352,8 +352,8 @@ void multi_endgame_cleanup()
 
 	// 11/18/98 - DB, changed the above to kill all sockets. Its the safest thing to do
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
-		Net_players[idx].reliable_socket = INVALID_SOCKET;
+		psnet_rel_close_socket(Net_players[idx].reliable_socket);
+		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
 	// set the game quitting flag in our local netgame info - this will _insure_ that even if we miss a packet or
