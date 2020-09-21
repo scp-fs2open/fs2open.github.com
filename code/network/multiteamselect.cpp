@@ -2624,7 +2624,9 @@ void multi_ts_commit_pressed()
 {					
 	// if my team's slots are still not "locked", we cannot commit unless we're the only player in the game
 	if(!Multi_ts_team[Net_player->p_info.team].multi_players_locked){
-		if(multi_num_players() != 1){
+		extern int red_alert_mission();
+		// skip this for red-alert missions too since nothing is selectable
+		if ( !red_alert_mission() && (multi_num_players() != 1) ) {
 			popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("Players have not yet been assigned to their ships",751));
 			return;
 		} else {
