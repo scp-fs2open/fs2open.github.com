@@ -6061,10 +6061,10 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 
 			// primary weapon info
 		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[0] = (int)val;
+		shipp->weapons.primary_bank_weapons[0] = ((val == 255) ? -1 : static_cast<int>(val));
 
 		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[1] = (int)val;
+		shipp->weapons.primary_bank_weapons[1] = ((val == 255) ? -1 : static_cast<int>(val));
 
 		// secondary weapon info
 		GET_SHORT(val_short);
