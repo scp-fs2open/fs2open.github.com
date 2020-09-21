@@ -920,6 +920,25 @@ static void psnet_addr_to_sockaddr(const net_addr *addr, SOCKADDR_IN6 *sockaddr)
 }
 
 /**
+ * Convert from sockaddr_storage struct to sockaddr_in6
+ */
+static void psnet_sockaddr_storage_to_in6(const SOCKADDR_STORAGE *addr, SOCKADDR_IN6 *addr_in6)
+{
+	if (addr->ss_family == AF_INET6) {
+		memcpy(addr_in6, addr, sizeof(SOCKADDR_IN6));
+	} else {
+		Assertion(addr->ss_family == AF_INET, "Invalid sockaddr type (%d)!", addr->ss_family);
+		auto *in4 = reinterpret_cast<const SOCKADDR_IN *>(addr);
+
+		memset(addr_in6, 0, sizeof(*addr_in6));
+
+		addr_in6->sin6_family = AF_INET6;
+		addr_in6->sin6_port = in4->sin_port;
+		psnet_map4to6(&in4->sin_addr, &addr_in6->sin6_addr);
+	}
+}
+
+/**
  * Helper to map IPv4 to IPv6
  */
 void psnet_map4to6(const in_addr *in4, in6_addr *in6)
@@ -1512,7 +1531,7 @@ void psnet_rel_work()
 					// Add the new connection here.
 					rsocket = &Reliable_sockets[i];
 
-					memcpy(&Reliable_sockets[i].addr ,&rcv_addr, sizeof(rcv_addr));
+					psnet_sockaddr_storage_to_in6(&rcv_addr, &Reliable_sockets[i].addr);
 
 					rsocket->ping_pos = 0;
 					rsocket->num_ping_samples = 0;
@@ -1967,7 +1986,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 				memset(rsocket, 0, sizeof(reliable_socket));
 
 				rsocket->last_packet_received = psnet_get_time();
-				memcpy(&rsocket->addr, &rcv_addr, sizeof(rcv_addr));
+				psnet_sockaddr_storage_to_in6(&rcv_addr, &rsocket->addr);
 				rsocket->status = RNF_LIMBO;
 
 				ml_string("Successfully connected to server in psnet_rel_connect_to_server().");
