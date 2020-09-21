@@ -1002,6 +1002,22 @@ typedef struct path_metadata {
 	float depart_speed_mult;
 } path_metadata;
 
+class allowed_weapon_bank
+{
+public:
+	SCP_vector<std::pair<int, ubyte>> weapon_and_flags;
+
+	const ubyte find_flags(int weapon_info_index) const;
+	void set_flag(int weapon_info_index, ubyte flag);
+	void clear_flag(int weapon_info_index, ubyte flag);
+	void clear_flag(ubyte flag);
+
+	void clear();
+
+	const ubyte operator[](int index) const;
+	const ubyte operator[](size_t index) const;
+};
+
 // The real FreeSpace ship_info struct.
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship_info
@@ -1169,12 +1185,12 @@ public:
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
 
-	int		allowed_weapons[MAX_WEAPON_TYPES];	// array which specifies which weapons can be loaded out by the
-												// player during weapons loadout.
+	allowed_weapon_bank allowed_weapons;	// specifies which weapons can be loaded out by the
+											// player during weapons loadout.
 
 	// Goober5000 - fix for restricted banks mod
-	int restricted_loadout_flag[MAX_SHIP_WEAPONS];
-	int allowed_bank_restricted_weapons[MAX_SHIP_WEAPONS][MAX_WEAPON_TYPES];
+	SCP_vector<ubyte> restricted_loadout_flag;
+	SCP_vector<allowed_weapon_bank> allowed_bank_restricted_weapons;
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection

@@ -1015,10 +1015,10 @@ void ship_info::clone(const ship_info& other)
 	closeup_pos_targetbox = other.closeup_pos_targetbox;
 	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
 
-	memcpy(allowed_weapons, other.allowed_weapons, sizeof(int) * MAX_WEAPON_TYPES);
+	allowed_weapons = other.allowed_weapons;
 
-	memcpy(restricted_loadout_flag, other.restricted_loadout_flag, sizeof(int) * MAX_SHIP_WEAPONS);
-	memcpy(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons, sizeof(int) * MAX_SHIP_WEAPONS * MAX_WEAPON_TYPES);
+	restricted_loadout_flag = other.restricted_loadout_flag;
+	allowed_bank_restricted_weapons = other.allowed_bank_restricted_weapons;
 
 	shield_icon_index = other.shield_icon_index;
 	strcpy_s(icon_filename, other.icon_filename);
@@ -1308,7 +1308,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(allowed_weapons, other.allowed_weapons);
 
 	std::swap(restricted_loadout_flag, other.restricted_loadout_flag);
-	memcpy(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons, sizeof(int) * MAX_SHIP_WEAPONS * MAX_WEAPON_TYPES);
+	std::swap(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons);
 
 	shield_icon_index = other.shield_icon_index;
 	std::swap(icon_filename, other.icon_filename);
@@ -1698,10 +1698,10 @@ ship_info::ship_info()
 	vm_vec_zero(&closeup_pos_targetbox);
 	closeup_zoom_targetbox = 0.5f;
 
-	memset(allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
+	allowed_weapons.clear();
 
-	memset(restricted_loadout_flag, 0, sizeof(int) * MAX_SHIP_WEAPONS);
-	memset(allowed_bank_restricted_weapons, 0, sizeof(int) * MAX_SHIP_WEAPONS * MAX_WEAPON_TYPES);
+	restricted_loadout_flag.clear();
+	allowed_bank_restricted_weapons.clear();
 
 	shield_icon_index = 255;		// stored as ubyte
 	icon_filename[0] = '\0';
@@ -1867,6 +1867,67 @@ const char* ship_info::get_display_name()
 bool ship_info::has_display_name()
 {
 	return flags[Ship::Info_Flags::Has_display_name];
+}
+
+const ubyte allowed_weapon_bank::find_flags(int weapon_info_index) const
+{
+	for (auto &wf : weapon_and_flags)
+		if (wf.first == weapon_info_index)
+			return wf.second;
+	return 0;
+}
+
+void allowed_weapon_bank::set_flag(int weapon_info_index, ubyte flag)
+{
+	for (auto &wf : weapon_and_flags)
+	{
+		if (wf.first == weapon_info_index)
+		{
+			wf.second |= flag;
+			return;
+		}
+	}
+	// if we couldn't find it, add a new entry with that flag
+	weapon_and_flags.emplace_back(weapon_info_index, flag);
+}
+
+void allowed_weapon_bank::clear_flag(int weapon_info_index, ubyte flag)
+{
+	// clear the flag from all matching weapons, and remove any that end up with a flag of 0
+	weapon_and_flags.erase(
+		std::remove_if(weapon_and_flags.begin(), weapon_and_flags.end(), [weapon_info_index, flag](std::pair<int, ubyte> &wf)
+		{
+			if (weapon_info_index < 0 || weapon_info_index == wf.first)
+			{
+				wf.second &= ~flag;
+				return (wf.second == 0);
+			}
+			else
+				return false;
+		}),
+		weapon_and_flags.end()
+	);
+}
+
+void allowed_weapon_bank::clear_flag(ubyte flag)
+{
+	clear_flag(-1, flag);
+}
+
+void allowed_weapon_bank::clear()
+{
+	weapon_and_flags.clear();
+}
+
+// read-only!
+// (because we don't want to fill up our member vector with a bunch of zeros)
+const ubyte allowed_weapon_bank::operator[](int index) const
+{
+	return find_flags(index);
+}
+const ubyte allowed_weapon_bank::operator[](size_t index) const
+{
+	return find_flags(static_cast<int>(index));
 }
 
 
@@ -2205,7 +2266,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 	int i, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
 	const int max_banks = (is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS);
-	const int weapon_type = (is_dogfight ? DOGFIGHT_WEAPON : REGULAR_WEAPON);
+	const ubyte weapon_type = (is_dogfight ? DOGFIGHT_WEAPON : REGULAR_WEAPON);
 	const int offset = (is_primary ? 0 : MAX_SHIP_PRIMARY_BANKS);
 	const char *allowed_banks_str = is_primary ? (is_dogfight ? "$Allowed Dogfight PBanks:" : "$Allowed PBanks:")
 		: (is_dogfight ? "$Allowed Dogfight SBanks:" : "$Allowed SBanks:");
@@ -2214,16 +2275,20 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 	// Goober5000 - fixed Bobboau's implementation of restricted banks
 	int bank;
 
-	// Set the weapons filter used in weapons loadout (for primary weapons)
+	// Set the weapons filter used in weapons loadout
 	if (optional_string(allowed_banks_str))
 	{
+		// this ship has loadout stuff, so make room
+		if (sip->restricted_loadout_flag.empty())
+			sip->restricted_loadout_flag.resize(MAX_SHIP_WEAPONS);
+		if (sip->allowed_bank_restricted_weapons.empty())
+			sip->allowed_bank_restricted_weapons.resize(MAX_SHIP_WEAPONS);
+
 		// MageKing17 - We need to make modular tables replace bank restrictions by default, instead of adding to them.
 		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
 			// clear allowed weapons so the modular table can define new ones
 			for (bank = 0; bank < max_banks; bank++) {
-				for (i = 0; i < weapon_info_size(); i++) {
-					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
-				}
+				sip->allowed_bank_restricted_weapons[offset+bank].clear_flag(weapon_type);
 				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
 			}
 		}
@@ -2249,7 +2314,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 			{
 				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
 				{
-					sip->allowed_bank_restricted_weapons[offset+bank][allowed_weapons[i]] |= weapon_type;
+					sip->allowed_bank_restricted_weapons[offset+bank].set_flag(allowed_weapons[i], weapon_type);
 				}
 			}
 		}
@@ -3594,18 +3659,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		Error(LOCATION, "%s '%s' has too many primary banks (%d).  Maximum for ships is currently %d.\n", info_type_name, sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
 	}
 
-	memset(sip->allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
+	sip->allowed_weapons.clear();
 
 	// copy to regular allowed_weapons array
-	for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
+	if (!sip->allowed_bank_restricted_weapons.empty())
 	{
-		for (auto j = 0; j < weapon_info_size(); j++)
+		for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
 		{
-			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
-				sip->allowed_weapons[j] |= REGULAR_WEAPON;
+			for (auto &wf : sip->allowed_bank_restricted_weapons[i].weapon_and_flags)
+			{
+				if (wf.second & REGULAR_WEAPON)
+					sip->allowed_weapons.set_flag(wf.first, REGULAR_WEAPON);
 
-			if (sip->allowed_bank_restricted_weapons[i][j] & DOGFIGHT_WEAPON)
-				sip->allowed_weapons[j] |= DOGFIGHT_WEAPON;
+				if (wf.second & DOGFIGHT_WEAPON)
+					sip->allowed_weapons.set_flag(wf.first, DOGFIGHT_WEAPON);
+			}
 		}
 	}
 
@@ -5300,6 +5368,9 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
 static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
+	if (sip->allowed_bank_restricted_weapons.empty())
+		return false;
+
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
 		for (int j = 0; j < weapon_info_size(); ++j)
