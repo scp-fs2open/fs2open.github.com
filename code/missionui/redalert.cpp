@@ -1060,20 +1060,23 @@ void red_alert_start_mission()
 //		return;
 //	}
 
-	// check player health here.  
+	// check player health here, but only in single-player
 	// if we're dead (or about to die), don't start red alert mission.
-	if (Player_obj->type == OBJ_SHIP) {
-		if (Player_obj->hull_strength > 0) {
+	if ( (Game_mode & GM_MULTIPLAYER) ||
+		 ((Player_obj->type == OBJ_SHIP) && !Player_ship->flags[Ship::Ship_Flags::Dying] && (Player_obj->hull_strength > 0)) )
+	{
+		if (Player_obj->type == OBJ_SHIP)
+		{
 			// make sure we don't die
 			Player_ship->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-
-			// do normal red alert stuff
-			Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);
-
-			// throw down a sound here to make the warning seem ultra-important
-			// gamesnd_play_iface(SND_USER_SELECT);
-			snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 		}
+
+		// do normal red alert stuff
+		Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);
+
+		// throw down a sound here to make the warning seem ultra-important
+		// gamesnd_play_iface(SND_USER_SELECT);
+		snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 	}
 }
 

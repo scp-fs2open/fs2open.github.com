@@ -13922,6 +13922,20 @@ void sexp_change_team_score(int node)
 	}
 }
 
+void sexp_red_alert()
+{
+	// in the case of a red_alert mission, simply call the red alert function to close
+	// the current campaign's mission and move forward to the next mission
+	red_alert_start_mission();
+
+	Current_sexp_network_packet.do_callback();
+}
+
+void multi_sexp_red_alert()
+{
+	red_alert_start_mission();
+}
+
 void sexp_tech_add_ship(int node)
 {
 	// this function doesn't mean anything when not in campaign mode
@@ -24203,10 +24217,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-				// in the case of a red_alert mission, simply call the red alert function to close
-				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
-				red_alert_start_mission();
+				sexp_red_alert();
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25471,6 +25483,7 @@ void multi_sexp_eval()
 			case OP_SET_OBJECT_SPEED_Z:
 				multi_sexp_set_object_speed();
 				break;
+
 			case OP_SET_OBJECT_POSITION:
 				multi_sexp_set_object_position();
 				break;
@@ -25536,6 +25549,10 @@ void multi_sexp_eval()
 
 			case OP_DESTROY_SUBSYS_INSTANTLY:
 				multi_sexp_destroy_subsys_instantly();
+				break;
+
+			case OP_RED_ALERT:
+				multi_sexp_red_alert();
 				break;
 
 			// bad sexp in the packet
