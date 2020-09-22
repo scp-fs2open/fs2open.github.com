@@ -10,6 +10,7 @@
 
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -27,6 +28,7 @@
 #include "io/timer.h"
 #include "io/key.h"
 #include "mod_table/mod_table.h"
+#include "network/multi.h"
 
 extern int Game_mode;
 extern int Is_standalone;
@@ -215,6 +217,12 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 		}
 
 		processEvents();
+
+		if ( (Game_mode & GM_MULTIPLAYER) && Net_player && (Net_player->flags & NETINFO_FLAG_DO_NETWORKING) ) {
+			// consider movie playback a "paused" state and process network
+			// packets accordingly
+			multi_pause_do_frame();
+		}
 
 		if (passed < sleepTime) {
 			auto sleep = sleepTime - passed;
