@@ -1869,11 +1869,13 @@ bool ship_info::has_display_name()
 	return flags[Ship::Info_Flags::Has_display_name];
 }
 
-const ubyte allowed_weapon_bank::find_flags(int weapon_info_index) const
+ubyte allowed_weapon_bank::find_flags(int weapon_info_index) const
 {
 	for (auto &wf : weapon_and_flags)
 		if (wf.first == weapon_info_index)
 			return wf.second;
+
+	// since we can return 0 here, we can't make the return type 'const ubyte &'
 	return 0;
 }
 
@@ -1887,6 +1889,7 @@ void allowed_weapon_bank::set_flag(int weapon_info_index, ubyte flag)
 			return;
 		}
 	}
+
 	// if we couldn't find it, add a new entry with that flag
 	weapon_and_flags.emplace_back(weapon_info_index, flag);
 }
@@ -1921,11 +1924,11 @@ void allowed_weapon_bank::clear()
 
 // read-only!
 // (because we don't want to fill up our member vector with a bunch of zeros)
-const ubyte allowed_weapon_bank::operator[](int index) const
+ubyte allowed_weapon_bank::operator[](int index) const
 {
 	return find_flags(index);
 }
-const ubyte allowed_weapon_bank::operator[](size_t index) const
+ubyte allowed_weapon_bank::operator[](size_t index) const
 {
 	return find_flags(static_cast<int>(index));
 }

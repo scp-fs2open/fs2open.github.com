@@ -1007,15 +1007,15 @@ class allowed_weapon_bank
 public:
 	SCP_vector<std::pair<int, ubyte>> weapon_and_flags;
 
-	const ubyte find_flags(int weapon_info_index) const;
+	ubyte find_flags(int weapon_info_index) const;
 	void set_flag(int weapon_info_index, ubyte flag);
 	void clear_flag(int weapon_info_index, ubyte flag);
 	void clear_flag(ubyte flag);
 
 	void clear();
 
-	const ubyte operator[](int index) const;
-	const ubyte operator[](size_t index) const;
+	ubyte operator[](int index) const;
+	ubyte operator[](size_t index) const;
 };
 
 // The real FreeSpace ship_info struct.
