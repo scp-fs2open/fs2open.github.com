@@ -18,6 +18,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "network/multi_endgame.h"
 #include "parse/parselo.h"
 #include "sound/audiostr.h"
 #include "utils/encoding.h"
@@ -424,8 +425,13 @@ void fiction_viewer_do_frame(float frametime)
 	switch (k)
 	{
 		case KEY_ESC:
-			common_music_close();
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			if (Game_mode & GM_MULTIPLAYER) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_ALL);
+			} else {
+				common_music_close();
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 			return;
 	}
 
