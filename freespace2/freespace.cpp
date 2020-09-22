@@ -5011,10 +5011,14 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_CMD_BRIEF:
 			if (new_state == GS_STATE_OPTIONS_MENU) {
 				cmd_brief_hold();
-
 			} else {
 				cmd_brief_close();
-					common_select_close();
+				common_select_close();
+
+				if (new_state != GS_STATE_BRIEFING) {
+					common_music_close();
+				}
+
 				if (new_state == GS_STATE_MAIN_MENU) {
 					freespace_stop_mission();	
 				}
@@ -5343,6 +5347,11 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_FICTION_VIEWER:
 			fiction_viewer_close();
 			common_select_close();
+
+			if ( (new_state != GS_STATE_BRIEFING) && (new_state != GS_STATE_CMD_BRIEF) ) {
+				common_music_close();
+			}
+
 			if (new_state == GS_STATE_MAIN_MENU) {
 				freespace_stop_mission();
 			}
