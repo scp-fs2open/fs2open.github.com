@@ -6513,6 +6513,8 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		break;		
 
 	case STATS_DOGFIGHT_KILLS:
+		val = MAX_PLAYERS;
+		ADD_DATA(val);
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			u_tmp = (ushort)sc->m_dogfight_kills[idx];
 			ADD_USHORT(u_tmp);
@@ -6566,7 +6568,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 void process_player_stats_block_packet(ubyte *data, header *hinfo)
 {
-	ubyte val;
+	ubyte val, num_players;
 	int player_num,idx;
 	scoring_struct *sc,bogus;
 	short player_id;
@@ -6626,9 +6628,12 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		// read in the stats
 		GET_USHORT( num_medals );
 
-		for (idx=0; (idx < Num_medals) && (idx < num_medals); idx++) {
+		for (idx = 0; idx < num_medals; idx++) {
 			GET_INT(i_tmp);
-			sc->medal_counts[idx] = i_tmp;
+
+			if (idx < Num_medals) {
+				sc->medal_counts[idx] = i_tmp;
+			}
 		}
 
 		GET_INT(sc->score);
@@ -6681,11 +6686,18 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		if(player_num >= 0){
 			ml_printf("Dogfight stats for %s", Net_players[player_num].m_player->callsign);
 		}
-		for(idx=0; idx<MAX_PLAYERS; idx++){
+
+		GET_DATA(num_players);
+
+		for (idx = 0; idx < num_players; idx++) {
 			GET_USHORT(u_tmp);
-			sc->m_dogfight_kills[idx] = u_tmp;
-			if(player_num >= 0){				
-				ml_printf("%d", Net_players[player_num].m_player->stats.m_dogfight_kills[idx]);
+
+			if (idx < MAX_PLAYERS) {
+				sc->m_dogfight_kills[idx] = u_tmp;
+
+				if (player_num >= 0) {
+					ml_printf("%d", Net_players[player_num].m_player->stats.m_dogfight_kills[idx]);
+				}
 			}
 		}
 		GET_INT(sc->m_kill_count);
