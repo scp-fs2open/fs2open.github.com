@@ -439,7 +439,7 @@ void send_wss_slots_data_packet(int team_num, int final, net_player *p = NULL, i
 
 void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
-void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
+void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = nullptr, const int offset = 0, const int count = 0);
 
 void send_host_restr_packet(const char *callsign, int code, int mode);
 

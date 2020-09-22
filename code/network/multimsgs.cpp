@@ -6421,11 +6421,13 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 	}
 }
 
-void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target, short offset)
+#define MAX_SHIPS_PER_PACKET	((MAX_PACKET_SIZE-21)/static_cast<int>(sizeof(std::int32_t)))
+
+void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target, const int offset, const int count)
 {
 	scoring_struct *sc;
 	ubyte data[MAX_PACKET_SIZE], val;
-	int idx;		
+	int idx, len;
 	int packet_size = 0;
 
 	ushort u_tmp;
@@ -6447,12 +6449,10 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
-
-		idx = 0; 
-		while(idx<MAX_SHIP_CLASSES)
-		{
-			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, (short)idx);
-			idx += MAX_SHIPS_PER_PACKET; 
+		idx = 0;
+		while (idx < MAX_SHIP_CLASSES) {
+			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+			idx += MAX_SHIPS_PER_PACKET;
 		}
 
 		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
@@ -6485,12 +6485,10 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_MISSION:	
 		// mission OKkills	
-
-		idx = 0; 
-		while(idx<MAX_SHIP_CLASSES)
-		{
-			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, (short)idx);
-			idx += MAX_SHIPS_PER_PACKET; 
+		idx = 0;
+		while (idx < MAX_SHIP_CLASSES) {
+			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+			idx += MAX_SHIPS_PER_PACKET;
 		}
 	
 		ADD_INT(sc->m_score);
@@ -6525,18 +6523,24 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		break;
 	
 	case STATS_MISSION_CLASS_KILLS:
-		ADD_SHORT(offset);
-		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
-		{
-			ADD_INT(sc->m_okKills[idx]);			
+		len = std::min(count, MAX_SHIPS_PER_PACKET);
+
+		ADD_USHORT(static_cast<ushort>(offset));
+		ADD_USHORT(static_cast<ushort>(len));
+
+		for (idx = offset; idx < len; idx++) {
+			ADD_INT(sc->m_okKills[idx]);
 		}
 		break;
 		
 	case STATS_ALLTIME_KILLS:
-		ADD_SHORT(offset);
-		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
-		{
-			ADD_INT(sc->kills[idx]);			
+		len = std::min(count, MAX_SHIPS_PER_PACKET);
+
+		ADD_USHORT(static_cast<ushort>(offset));
+		ADD_USHORT(static_cast<ushort>(len));
+
+		for (idx = offset; idx < len; idx++) {
+			ADD_INT(sc->kills[idx]);
 		}
 		break;
 	}
@@ -6569,6 +6573,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	ushort u_tmp, num_medals;
 	int i_tmp;
+	ushort si_offset, si_count;
+
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -6588,23 +6594,29 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// get the stats code
 	GET_DATA(val);	
 	switch(val){
-	short si_offset;
-
 	case STATS_ALLTIME_KILLS:
-		GET_SHORT(si_offset);
-		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
-		{
+		GET_USHORT(si_offset);
+		GET_USHORT(si_count);
+
+		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
-			sc->kills[idx] = i_tmp;
+
+			if (idx < MAX_SHIP_CLASSES) {
+				sc->kills[idx] = i_tmp;
+			}
 		}
 		break;
 
 	case STATS_MISSION_CLASS_KILLS:
-		GET_SHORT(si_offset);
-		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
-		{
+		GET_USHORT(si_offset);
+		GET_USHORT(si_count);
+
+		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
-			sc->m_okKills[idx] = i_tmp;
+
+			if (idx < MAX_SHIP_CLASSES) {
+				sc->m_okKills[idx] = i_tmp;
+			}
 		}
 		break;
 
