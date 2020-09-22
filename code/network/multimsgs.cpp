@@ -2130,9 +2130,15 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 
 			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 
+			extern bool mission_has_fiction();
+			extern int mission_has_cmd_brief();
 			extern int red_alert_mission();
 
-			if ( red_alert_mission() ) {
+			if ( mission_has_fiction() ) {
+				gameseq_post_event(GS_EVENT_FICTION_VIEWER);
+			} else if ( mission_has_cmd_brief() ) {
+				gameseq_post_event(GS_EVENT_CMD_BRIEF);
+			} else if ( red_alert_mission() ) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
 			} else {
 				gameseq_post_event(GS_EVENT_START_BRIEFING);
