@@ -2161,7 +2161,7 @@ int multi_ts_get_dnd_type(int from_type,int  /*from_index*/,int to_type,int to_i
 void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int ship_class,int player_index)
 {
 	int size,update;
-	ubyte wss_data[MAX_PACKET_SIZE-20];	
+	ubyte wss_data[MAX_PACKET_SIZE];
 	net_player *pl;
 	
 	// determine what kind of operation this is
