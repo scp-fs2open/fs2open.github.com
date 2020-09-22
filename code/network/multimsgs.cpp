@@ -5501,7 +5501,7 @@ void send_wss_update_packet(int team_num,ubyte *wss_data,int size)
 	ADD_DATA(team);
 
 	// add the data block size
-	ADD_INT(size);
+	ADD_USHORT(static_cast<ushort>(size));
 	
 	// add the data itself
 	memcpy(data + packet_size,wss_data,size);
@@ -5520,14 +5520,15 @@ void send_wss_update_packet(int team_num,ubyte *wss_data,int size)
 void process_wss_update_packet(ubyte *data, header *hinfo)
 {		
 	ubyte team;
-	int size,player_index,idx;
+	ushort size;
+	int player_index, idx;
 	int offset = HEADER_LENGTH;
 
 	// get the team/pool #
 	GET_DATA(team);
 
 	// get the data size
-	GET_INT(size);		
+	GET_USHORT(size);
 
 	// if we're the standalone, then we should be routing this data to all the other clients
 	if(Game_mode & GM_STANDALONE_SERVER){
