@@ -62,6 +62,7 @@ bool Use_engine_wash_intensity;
 bool Ai_before_physics;
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
+float Weapon_SS_Threshold_Turret_Inaccuracy;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -556,6 +557,16 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Swarmers_lead_targets);
 		}
 
+		if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
+			float weapon_ss_threshold;
+			stuff_float(&weapon_ss_threshold);
+			if (0.0f <= weapon_ss_threshold <= 1.0f) {
+				Weapon_SS_Threshold_Turret_Inaccuracy = weapon_ss_threshold;
+			} else {
+				mprintf(("Game Settings Table: '$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:' value of %.6f is not between 0 and 1. Using default value of 0.70.\n", weapon_ss_threshold));
+			}
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -633,4 +644,5 @@ void mod_table_reset()
   Ai_before_physics = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
+	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7; // Defaults to retail value of 0.7 --wookieejedi
 }
