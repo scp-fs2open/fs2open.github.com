@@ -4196,7 +4196,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output)
         return 0;
     }
 
-    vm_vector_2_matrix(output, &fvec, NULL, NULL);
+	*output = objp->orient;
     return 1;
 }
 
