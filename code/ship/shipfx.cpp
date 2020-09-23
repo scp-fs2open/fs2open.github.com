@@ -3950,7 +3950,7 @@ WE_Homeworld::WE_Homeworld(object *n_objp, WarpDirection n_direction)
 	//Configure stage duration 3
 	stage_duration[3] = params->time - (stage_duration[1] + stage_duration[2] + stage_duration[4] + stage_duration[5]);
 	if (stage_duration[3] <= 0)
-		stage_duration[3] = 2400; // set for a 8 second total time
+		stage_duration[3] = 3400; // set for a 9 second total time
 
 	//Anim
 	anim = bm_load_either(params->anim, &anim_nframes, &anim_fps, nullptr, true);
