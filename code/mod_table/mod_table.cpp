@@ -644,5 +644,5 @@ void mod_table_reset()
   Ai_before_physics = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
-	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7; // Defaults to retail value of 0.7 --wookieejedi
+	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
 }
