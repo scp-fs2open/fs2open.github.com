@@ -3928,7 +3928,7 @@ int WE_BSG::getWarpOrientation(matrix* output)
 }
 
 //********************-----CLASS: WE_Homeworld-----********************//
-#define HOMEWORLD_SWEEPER_LINE_THICKNESS 0.002f // How tall the initial and final hyperspace "lines" are, factor of height
+const float HOMEWORLD_SWEEPER_LINE_THICKNESS = 0.002f; // How tall the initial and final hyperspace "lines" are, as a factor of height
 WE_Homeworld::WE_Homeworld(object *n_objp, WarpDirection n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
@@ -4124,7 +4124,7 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 			height = (height_full * visual_progress) + height_full * HOMEWORLD_SWEEPER_LINE_THICKNESS;
 			break;
 		case 3:
-			sweeper_z_position = z_offset_max - progress * (z_offset_max - z_offset_min);
+			sweeper_z_position = z_offset_max - adjusted_progress * (z_offset_max - z_offset_min);
 			break;
 		case 4:
 			sweeper_z_position = z_offset_min;
