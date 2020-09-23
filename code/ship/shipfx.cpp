@@ -3928,6 +3928,7 @@ int WE_BSG::getWarpOrientation(matrix* output)
 }
 
 //********************-----CLASS: WE_Homeworld-----********************//
+#define HOMEWORLD_SWEEPER_LINE_THICKNESS 0.002f // How tall the initial and final hyperspace "lines" are, factor of height
 WE_Homeworld::WE_Homeworld(object *n_objp, WarpDirection n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
@@ -3940,16 +3941,16 @@ WE_Homeworld::WE_Homeworld(object *n_objp, WarpDirection n_direction)
 
 	//Stage duration presets
 	stage_duration[0] = 0;
-	stage_duration[1] = 1000;
-	stage_duration[2] = 0;
+	stage_duration[1] = 1200;
+	stage_duration[2] = 1600;
 	stage_duration[3] = -1;
-	stage_duration[4] = 0;
-	stage_duration[5] = 1000;
+	stage_duration[4] = 1600;
+	stage_duration[5] = 1200;
 
 	//Configure stage duration 3
 	stage_duration[3] = params->time - (stage_duration[1] + stage_duration[2] + stage_duration[4] + stage_duration[5]);
 	if (stage_duration[3] <= 0)
-		stage_duration[3] = 3000;
+		stage_duration[3] = 2400; // set for a 8 second total time
 
 	//Anim
 	anim = bm_load_either(params->anim, &anim_nframes, &anim_fps, nullptr, true);
@@ -4028,8 +4029,8 @@ int WE_Homeworld::warpStart()
 	if(direction == WarpDirection::WARP_OUT)
 		vm_vec_negate(&fvec);
 
-	width = width_full;
-	height = 0.0f;
+	width = 0.f;
+	height = height_full * HOMEWORLD_SWEEPER_LINE_THICKNESS;
 
 	if(direction == WarpDirection::WARP_IN)
 	{
@@ -4105,26 +4106,41 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 	}
 
 	//Process stage
-	float progress = ((float)timestamp() - (float)stage_time_start)/((float)stage_time_end - (float)stage_time_start);
+	float sweeper_z_position;
+
+	float progress = ((float)timestamp() - (float)stage_time_start) / ((float)stage_time_end - (float)stage_time_start);
+	float adjusted_progress = progress * 1.2f - 0.1f;    // we'll let the progress "overflow" a bit and then clamp it, so the sweeper
+	CLAMP(adjusted_progress, 0.f, 1.f);                  // lingers for a moment at the beginning and end of the grow and shrink stages
+	float visual_progress = ((3.f - 2 * adjusted_progress) * adjusted_progress * adjusted_progress); // good ol' cubic easing function
+
 	switch(stage)
 	{
 		case 1:
-			height = height_full * progress;
+			sweeper_z_position = z_offset_max;
+			width = width_full * visual_progress;
 			break;
 		case 2:
+			sweeper_z_position = z_offset_max;
+			height = (height_full * visual_progress) + height_full * HOMEWORLD_SWEEPER_LINE_THICKNESS;
 			break;
 		case 3:
-			vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, z_offset_max - progress*(z_offset_max-z_offset_min));
+			sweeper_z_position = z_offset_max - progress * (z_offset_max - z_offset_min);
 			break;
 		case 4:
+			sweeper_z_position = z_offset_min;
+			height = (height_full * (1.f - visual_progress)) + height_full * HOMEWORLD_SWEEPER_LINE_THICKNESS;
 			break;
 		case 5:
-			height = height_full * (1.0f-progress);
+			sweeper_z_position = z_offset_min;
+			width = width_full * (1.f - visual_progress);
 			break;
 		default:
 			this->warpEnd();
 			return 0;
 	}
+
+	//update sweeper position
+	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, sweeper_z_position);
 
 	//Update sound
 	if (snd.isValid())

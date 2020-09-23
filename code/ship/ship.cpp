@@ -17559,7 +17559,8 @@ float ship_get_warpout_speed(object *objp, ship_info *sip, float half_length, fl
 	WarpParams *params = &Warp_params[Ships[objp->instance].warpout_params_index];
 
 	//WMC - Any speed is good for in place anims (aka BSG FTL effect)
-	if (params->warp_type == WT_IN_PLACE_ANIM && params->speed <= 0.0f)
+	//Asteroth - or for the sweeper (aka Homeworld FTL effect)
+	if ((params->warp_type == WT_IN_PLACE_ANIM || params->warp_type == WT_SWEEPER) && params->speed <= 0.0f)
 	{
 		return objp->phys_info.speed;
 	}
