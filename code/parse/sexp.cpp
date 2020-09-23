@@ -3193,6 +3193,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					// some SEXPs demand a number variable
 					case OP_ADD_BACKGROUND_BITMAP:
 					case OP_ADD_SUN_BITMAP:
+					case OP_PLAY_SOUND_FROM_FILE:
+					case OP_PAUSE_SOUND_FROM_FILE:
+					case OP_CLOSE_SOUND_FROM_FILE:
 						if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
 							return SEXP_CHECK_INVALID_VARIABLE_TYPE;
 						break;
@@ -31625,7 +31628,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Sound (file name)\r\n"
 		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
 		"\t3: Enter a non-zero number to use environment effects. default is off (optional).\r\n"
-		"\t4: Variable in which the music handle is to be stored (optional).  If no variable is specified, the 'default' handle is used.  "
+		"\t4: Numeric variable in which to store the music handle (optional).  If no variable is specified, the 'default' handle is used.  "
 		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.\r\n"
 	},
 
@@ -31633,14 +31636,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
 		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 0 to 2 arguments...\r\n"
 		"\t1: Fade (optional; default is true)\r\n"
-		"\t2: Variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+		"\t2: Numeric variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
 	},
 
 	// Goober5000
 	{ OP_PAUSE_SOUND_FROM_FILE, "pause-sound-from-file\r\n"
 		"\tPauses or unpauses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 or 2 arguments...\r\n"
 		"\t1: Boolean - True to pause, False to unpause\r\n"
-		"\t2: Variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+		"\t2: Numeric variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
 	},
 
 	// Taylor
@@ -34047,7 +34050,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
 		"\t7:\tX divisions.\r\n"
 		"\t8:\tY divisions.\r\n"
-		"\t9:\tVariable in which to store result (optional)\r\n"
+		"\t9:\tNumeric variable in which to store the result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -34065,7 +34068,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tBank\r\n"
 		"\t4:\tHeading\r\n"
 		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
-		"\t6:\tVariable in which to store result (optional)\r\n"
+		"\t6:\tNumeric variable in which to store the result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
@@ -34115,8 +34118,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
 		"\tEvaluates script to return a string\r\n\r\n"
 		"Takes a multiple of 2 arguments...\r\n"
-		"\t1:\tScript (Without a leading 'return')\r\n"
-		"\t2:\tDestination variable\r\n"
+		"\t1:\tScript (without a leading 'return')\r\n"
+		"\t2:\tString variable to hold the result\r\n"
 	},
 
 	{OP_SCRIPT_EVAL, "script-eval\r\n"
