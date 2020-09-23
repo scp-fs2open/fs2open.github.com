@@ -16,11 +16,11 @@ struct def_file
 	const size_t size;
 };
 
-#include "def_files/generated_def_files-generic.inc"
+#include "embedded_files.inc"
 
 default_file defaults_get_file(const char *filename)
 {
-	default_file def;
+	default_file def{};
 
 	auto endIter = std::end(Default_files);
 	for (auto iter = std::begin(Default_files); iter != endIter; ++iter)
@@ -44,7 +44,7 @@ default_file defaults_get_file(const char *filename)
 SCP_vector<default_file> defaults_get_all() {
 	SCP_vector<default_file> files;
 
-	for (auto& file : Default_files) {
+	for (const auto& file : Default_files) {
 		default_file def;
 		def.path_type = file.path_type;
 		def.filename = file.filename;

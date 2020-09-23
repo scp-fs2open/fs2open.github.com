@@ -171,7 +171,7 @@ void do_text_content(std::ifstream& file_in, std::ofstream& file_out,
 void write_header(std::ostream& out, const std::string& fieldName, bool text_content, bool wxWidgets_image) {
 	std::string headerDefine(fieldName);
 
-	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(), ::toupper);
+	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(), [](char c) { return (char)::toupper(c); });
 
 	headerDefine = "SCP_" + headerDefine + "_H";
 

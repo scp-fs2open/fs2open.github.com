@@ -8,6 +8,7 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 include(cmake/util.cmake)
+include(cmake/embed_file.cmake)
 
 # Set a few policies
 set_policy(CMP0051 NEW)

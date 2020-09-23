@@ -143,18 +143,9 @@ add_file_folder("Decals"
 
 add_file_folder("Default files"
 	def_files/def_files.h
+	def_files/def_files.cpp
+	${file_root_def_files}
 )
-if(MSVC)
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-win32.cpp
-	)
-else()
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-generic.cpp
-	)
-endif()
 
 add_file_folder("Default files\\\\data"
 )
