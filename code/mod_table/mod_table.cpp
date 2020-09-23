@@ -560,7 +560,7 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
 			float weapon_ss_threshold;
 			stuff_float(&weapon_ss_threshold);
-			if (0.0f <= weapon_ss_threshold <= 1.0f) {
+			if ( (weapon_ss_threshold >= 0.0f) && (weapon_ss_threshold <= 1.0f) ) {
 				Weapon_SS_Threshold_Turret_Inaccuracy = weapon_ss_threshold;
 			} else {
 				mprintf(("Game Settings Table: '$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:' value of %.6f is not between 0 and 1. Using default value of 0.70.\n", weapon_ss_threshold));
