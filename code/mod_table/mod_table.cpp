@@ -63,6 +63,7 @@ bool Framerate_independent_turning; // an in-depth explanation how this flag is 
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
+bool Render_player_mflash;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -372,6 +373,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Render player muzzle flashes in cockpit:")) {
+			stuff_boolean(&Render_player_mflash);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -645,4 +650,5 @@ void mod_table_reset()
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
+	Render_player_mflash = false;
 }

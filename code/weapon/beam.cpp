@@ -1396,10 +1396,10 @@ void beam_render_muzzle_glow(beam *b)
 	if (bwi->beam_glow.first_frame < 0)
 		return;
 
-	// don't show the muzzle glow for players in the cockpit unless show_ship_model is on
+	// don't show the muzzle glow for players in the cockpit unless show_ship_model is on, provided Render_player_mflash isn't on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
 	bool player_show_ship_model = b->objp == Player_obj && Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
-	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && in_cockpit_view && !player_show_ship_model)) {
+	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
 		return;
 	}
 
