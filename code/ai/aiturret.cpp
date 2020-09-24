@@ -1425,7 +1425,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
-		if (weapon_system_strength < 0.7f) {
+		if (weapon_system_strength < Weapon_SS_Threshold_Turret_Inaccuracy) {
 			vec3d	rand_vec;
 
 			static_randvec(Missiontime >> 18, &rand_vec);	//	Return same random number for two seconds.
