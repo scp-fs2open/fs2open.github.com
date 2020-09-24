@@ -1051,6 +1051,8 @@ add_file_folder("ScpUi"
 	scpui/rocket_ui.h
 	scpui/RocketFileInterface.cpp
 	scpui/RocketFileInterface.h
+	scpui/RocketLuaSystemInterface.cpp
+	scpui/RocketLuaSystemInterface.h
 	scpui/RocketRenderingInterface.cpp
 	scpui/RocketRenderingInterface.h
 	scpui/RocketSystemInterface.cpp

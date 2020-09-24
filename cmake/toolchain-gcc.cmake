@@ -9,6 +9,7 @@ option(GCC_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
 option(GCC_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 option(GCC_ENABLE_SANITIZE_UNDEFINED "Enable -fsanitize=undefined" OFF)
 option(GCC_USE_GOLD "Use the gold linker instead of the standard linker" OFF)
+option(GCC_GENERATE_GDB_INDEX "Adds linker option to generate the gdb index for debug builds" OFF)
 
 # These are the default values
 set(C_BASE_FLAGS "-march=native -pipe")
@@ -134,6 +135,12 @@ endif()
 
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-g")
+
+if (GCC_GENERATE_GDB_INDEX)
+	# For pure debug binaries, generate a gdb index for better debugging
+	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--gdb-index")
+endif()
+
 IF(NOT MINGW)
 	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -rdynamic")
 	# Allow the linker to perform dead code elimination; this is considered
