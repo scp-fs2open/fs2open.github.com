@@ -113,6 +113,7 @@ typedef struct beam_collision {
 #define BF_TARGETING_COORDS				(1<<4)
 #define BF_FLOATING_BEAM				(1<<5)
 #define BF_GROW				            (1<<6)     // if this is set, the beam is growing in width
+#define BF_FINISHED_GROWING				(1<<7)     // to stop grow from re-triggering
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -175,7 +176,6 @@ typedef struct beam {
 	int firingpoint;
 
 	float		beam_width;
-	bool finished_growing; // to stop grow from re-triggering
 } beam;
 
 extern beam Beams[MAX_BEAMS];				// all beams
