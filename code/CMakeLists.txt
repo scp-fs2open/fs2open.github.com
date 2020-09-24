@@ -7,8 +7,6 @@ ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
 target_compile_features(code PUBLIC cxx_std_11)
 
-INCLUDE(default_files.cmake)
-
 if (MSVC)
 	target_compile_definitions(code PUBLIC "PDB_DEBUGGING=1")
 endif(MSVC)
@@ -88,6 +86,10 @@ if (FSO_BUILD_WITH_VULKAN)
 endif()
 
 include(util)
+
+target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
+
+handle_embedded_files(code)
 
 set_precompiled_header(code "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")
 
