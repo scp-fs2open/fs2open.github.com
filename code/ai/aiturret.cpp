@@ -382,10 +382,16 @@ weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	Assert(weapon_num >= 0);
 
+	int wi_index;
 	if(weapon_num >= MAX_SHIP_PRIMARY_BANKS)
-		return &Weapon_info[swp->secondary_bank_weapons[weapon_num - MAX_SHIP_PRIMARY_BANKS]];
+		wi_index = swp->secondary_bank_weapons[weapon_num - MAX_SHIP_PRIMARY_BANKS];
 	else
-		return &Weapon_info[swp->primary_bank_weapons[weapon_num]];
+		wi_index = swp->primary_bank_weapons[weapon_num];
+
+	if (wi_index < 0)
+		return nullptr;
+	else
+		return &Weapon_info[wi_index];
 }
 
 int get_turret_weapon_next_fire_stamp(ship_weapon *swp, int weapon_num)
@@ -1787,11 +1793,15 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	ai_info	*parent_aip;
 	ship		*parent_ship;
 	float flak_range = 0.0f;
-	weapon_info *wip;
 	weapon *wp;
 	object *objp;
-	bool last_shot_in_salvo = true;
 
+	// make sure we actually have a valid weapon
+	auto wip = get_turret_weapon_wip(&turret->weapons, weapon_num);
+	if (!wip)
+		return false;
+
+	bool last_shot_in_salvo = true;
 	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_salvo])
 	{
 		if ((turret->turret_next_fire_pos + 1) == (turret->system_info->turret_num_firing_points))
@@ -1810,7 +1820,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
-	wip = get_turret_weapon_wip(&turret->weapons, weapon_num);
 	int turret_weapon_class = weapon_info_get_index(wip);
 
 #ifndef NDEBUG
