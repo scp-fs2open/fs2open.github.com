@@ -839,6 +839,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			if (engine_strength == 0.0f) {	//	All this is necessary to make ship gradually come to a stop after engines are blown.
 				vm_vec_zero(&objp->phys_info.desired_vel);
 				vm_vec_zero(&objp->phys_info.desired_rotvel);
+				vm_mat_zero(&objp->phys_info.ai_desired_orient);
 				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
 			}
@@ -927,15 +928,13 @@ void obj_move_call_physics(object *objp, float frametime)
 			// then reset the flag and don't move the object.
             if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
 				objp->flags.remove(Object::Object_Flags::Just_updated);
-				goto obj_maybe_fire;
+			} else {
+				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		// simulate the physics
 			}
-
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
 			// or multiplayer.  We must find the player object to get to the control info field
-obj_maybe_fire:
 			if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp->type != OBJ_OBSERVER) && (objp == Player_obj)) {
 				player *pp;
 				if(Player != NULL){

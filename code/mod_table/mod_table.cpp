@@ -59,7 +59,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
-bool Ai_before_physics;
+bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
@@ -114,10 +114,6 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
 			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
-		}
-
-		if (optional_string("$Process AI before physics:")) {
-			stuff_boolean(&Ai_before_physics);
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
@@ -567,6 +563,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$AI use framerate independent turning:")) {
+			stuff_boolean(&Framerate_independent_turning);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -641,7 +641,7 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
-  Ai_before_physics = false;
+	Framerate_independent_turning = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
