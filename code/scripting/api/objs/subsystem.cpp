@@ -593,6 +593,12 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	if (!sso->isSubsystemValid())
 		return ADE_RETURN_NIL;
 
+	// no place to fire a weapon; this may not actually be a turret
+	if (sso->ss->system_info->turret_num_firing_points <= 0)
+	{
+		return ADE_RETURN_NIL;
+	}
+
 	if (sso->ss->current_hits <= 0)
 	{
 		return ADE_RETURN_FALSE;
