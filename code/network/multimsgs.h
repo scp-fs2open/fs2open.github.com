@@ -37,6 +37,7 @@ struct beam_fire_info;
 
 #define BUILD_HEADER(t) do { data[0]=t; packet_size = HEADER_LENGTH; } while(false)
 #define ADD_DATA(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); memcpy(data+packet_size, &d, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define ADD_DATA_BLOCK(d, len) do { static_assert(std::is_integral<decltype(len)>::value, "ADD_DATA_BLOCK() len is invalid type!"); Assert(len > 0); Assert((packet_size + len) < MAX_PACKET_SIZE); memcpy(data+packet_size, d, static_cast<size_t>(len)); packet_size += len; } while (false)
 #define ADD_SHORT(d) do { static_assert(sizeof(d) == sizeof(std::int16_t), "Size of short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); short swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define ADD_USHORT(d) do { static_assert(sizeof(d) == sizeof(std::uint16_t), "Size of unsigned short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define ADD_INT(d) do { static_assert(sizeof(d) == sizeof(std::int32_t), "Size of int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
@@ -50,6 +51,7 @@ struct beam_fire_info;
 #define ADD_VECTOR(d) do { vec3d tmpvec = ZERO_VECTOR; tmpvec.xyz.x = INTEL_FLOAT(&d.xyz.x); tmpvec.xyz.y = INTEL_FLOAT(&d.xyz.y); tmpvec.xyz.z = INTEL_FLOAT(&d.xyz.z); ADD_DATA(tmpvec); } while(false)
 
 #define GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(false)
+#define GET_DATA_BLOCK(d, len) do { static_assert(std::is_array<decltype(d)>::value, "GET_DATA_BLOCK() must point to an array!"); static_assert(std::is_integral<decltype(len)>::value, "GET_DATA_BLOCK() len is invalid type!"); Assert(len > 0); const auto d_len = std::min(static_cast<size_t>(len), sizeof(d)); memcpy(d, data+offset, d_len); offset += len; } while (false)
 #define GET_SHORT(d) do { std::int16_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define GET_USHORT(d) do { std::uint16_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define GET_INT(d) do { std::int32_t swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
