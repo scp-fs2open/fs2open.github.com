@@ -8819,26 +8819,26 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
-	int i;
-	ushort val; 
 
 	Assert (MULTIPLAYER_MASTER);
+
 	// must have a bare minimum of OP, COUNT and TERMINATOR
-	if (num_ubytes < 9) {
+	if (num_ubytes < MIN_SEXP_PACKET_SIZE) {
 		Warning(LOCATION, "Invalid call to send_sexp_packet. Not enough data included!"); 
 		return; 
 	}
-	
+
+	const int max_size = MAX_PACKET_SIZE - HEADER_LENGTH - static_cast<int>(sizeof(ushort));
+
+	if (num_ubytes > max_size) {
+		Warning(LOCATION, "Invalid call to send_sexp_packet. Too much data included!");
+		return;
+	}
+
 	BUILD_HEADER(SEXP);
 
-	val = (ushort)num_ubytes;
-	ADD_USHORT(val);
-
-	for (i =0; i < num_ubytes; i++) {
-		Assert (packet_size < MAX_PACKET_SIZE); 
-		data[packet_size] = sexp_packet[i]; 
-		packet_size++; 
-	}
+	ADD_USHORT(static_cast<ushort>(num_ubytes));
+	ADD_DATA_BLOCK(sexp_packet, num_ubytes);
 
 	// send to all
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8847,16 +8847,11 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 void process_sexp_packet(ubyte *data, header *hinfo)
 {
 	int offset = HEADER_LENGTH;
-	int i;
 	ushort num_ubytes;
 	ubyte received_packet[MAX_PACKET_SIZE]; 
 
-	// get the number of bytes of data in the packet
 	GET_USHORT(num_ubytes);
-
-	for (i=0; i < num_ubytes; i++) {
-		GET_DATA(received_packet[i]); 
-	}
+	GET_DATA_BLOCK(received_packet, num_ubytes);
 
 	PACKET_SET_SIZE();
 
