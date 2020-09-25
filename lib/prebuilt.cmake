@@ -55,7 +55,7 @@ function(get_prebuilt_path OUT_VAR)
     endforeach()
 
     if (NOT (DOWNLOAD_STATUS EQUAL 0))
-        message(FATAL_ERROR "${MAX_RETRIES} download attemps failed!")
+        message(FATAL_ERROR "${MAX_RETRIES} download attempts failed!")
         return()
     endif()
 
@@ -79,7 +79,7 @@ function(get_prebuilt_path OUT_VAR)
     )
     
     if (NOT (EXTRACT_RESULT EQUAL 0))
-        message(FATAL_ERROR "Extracing prebuilt libraries failed! Error message: ${ERROR_TEXT}")
+        message(FATAL_ERROR "Extracting prebuilt libraries failed! Error message: ${ERROR_TEXT}")
         return()
     endif()
     

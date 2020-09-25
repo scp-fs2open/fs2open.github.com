@@ -12,7 +12,7 @@ cd "$TRAVIS_BUILD_DIR"
 echo "Running clang-tidy on changed files"
 git diff -U0 --no-color $TRAVIS_COMMIT_RANGE | \
     $TRAVIS_BUILD_DIR/ci/travis/clang-tidy-diff.py -path "$TRAVIS_BUILD_DIR/build" -p1 \
-    -regex '(code|freespace2|qtfred|testsrc|build|tools)\/.*\.(cpp|h)' \
+    -regex '(code(?!\/graphics\/shaders\/compiled)|freespace2|qtfred|test|build|tools)\/.*\.(cpp|h)' \
     -clang-tidy-binary /usr/bin/clang-tidy-9 -j$(nproc) -quiet 2>/dev/null | \
     tee clang-tidy-output.txt
 

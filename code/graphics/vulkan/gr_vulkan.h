@@ -9,5 +9,5 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 
 void cleanup();
 
-}
+} // namespace vulkan
 } // namespace graphics

@@ -1,13 +1,14 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
 #include "gamma.sdr"
 
-in vec4 fragTexCoord;
-in vec4 fragColor;
-out vec4 fragOut0;
+layout (location = 0) in vec4 fragTexCoord;
+layout (location = 1) in vec4 fragColor;
 
-uniform sampler2DArray baseMap;
+layout (location = 0) out vec4 fragOut0;
 
-layout (std140) uniform genericData {
+layout (binding = 1, std140) uniform genericData {
 	mat4 modelMatrix;
 
 	vec4 color;
@@ -23,6 +24,8 @@ layout (std140) uniform genericData {
 	float alphaThreshold;
 	bool clipEnabled;
 };
+
+layout(binding = 2) uniform sampler2DArray baseMap;
 
 void main()
 {

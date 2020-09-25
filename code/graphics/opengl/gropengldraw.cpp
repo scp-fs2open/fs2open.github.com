@@ -7,24 +7,26 @@
  *
 */
 
-#include "globalincs/pstypes.h"
-#include "cmdline/cmdline.h"
-#include "freespace.h"
-#include "graphics/matrix.h"
-#include "gropengl.h"
 #include "gropengldraw.h"
+
+#include "globalincs/pstypes.h"
+
+#include "ShaderProgram.h"
+#include "freespace.h"
+#include "gropengl.h"
+#include "gropengldeferred.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglshader.h"
 #include "gropengltexture.h"
-#include "gropengldeferred.h"
 #include "gropengltnl.h"
-#include "graphics/paths/PathRenderer.h"
-#include "graphics/light.h"
-#include "tracing/tracing.h"
-#include "render/3d.h"
-#include "ShaderProgram.h"
 
-#include <algorithm>
+#include "cmdline/cmdline.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/paths/PathRenderer.h"
+#include "graphics/util/uniform_structs.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
 GLuint Scene_framebuffer;
 GLuint Scene_ldr_texture;

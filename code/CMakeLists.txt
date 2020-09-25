@@ -1,6 +1,7 @@
 
-INCLUDE(source_groups.cmake)
+include(util)
 
+INCLUDE(source_groups.cmake)
 INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
@@ -85,7 +86,7 @@ if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN)
 endif()
 
-include(util)
+include(shaders.cmake)
 
 target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
 
