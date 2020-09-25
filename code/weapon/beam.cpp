@@ -1084,7 +1084,7 @@ void beam_move_all_post()
 		}
 
 		// if we're past the grow point and haven't already finished growing, start growing the beam
-		if (moveup->life_left <= (moveup->life_total * bwi->beam_grow_factor) && !moveup->finished_growing) {
+		if (moveup->life_left <= (moveup->life_total * bwi->beam_grow_factor) && !(moveup->flags & BF_FINISHED_GROWING)) {
 			moveup->flags |= BF_GROW;
 		}
 
@@ -1094,7 +1094,7 @@ void beam_move_all_post()
 			if (moveup->current_width_factor > 1.0f) { // We've finished growing!
 				moveup->current_width_factor = 1.0f;
 				moveup->flags &= ~BF_GROW;
-				moveup->finished_growing = true;
+				moveup->flags |= BF_FINISHED_GROWING;
 			}
 		}
 
