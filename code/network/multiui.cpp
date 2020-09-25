@@ -824,8 +824,6 @@ void multi_join_game_init()
 	Assert( Game_mode & GM_MULTIPLAYER );
 	Assert( Net_player != NULL );
 
-	HEADER_LENGTH = 1;
-
 	memset( &Netgame, 0, sizeof(Netgame) );
 
 	multi_level_init();		
