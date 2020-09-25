@@ -268,6 +268,29 @@ void beam_level_close()
 	list_init( &Beam_used_list );
 }
 
+// get the width of the widest section of the beam
+float beam_get_widest(beam* b)
+{
+	int idx;
+	float widest = -1.0f;
+
+	// sanity
+	Assert(b->weapon_info_index >= 0);
+	if (b->weapon_info_index < 0) {
+		return -1.0f;
+	}
+
+	// lookup
+	for (idx = 0; idx < Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++) {
+		if (Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest) {
+			widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
+		}
+	}
+
+	// return	
+	return widest;
+}
+
 // fire a beam, returns nonzero on success. the innards of the code handle all the rest, foo
 int beam_fire(beam_fire_info *fire_info)
 {
@@ -386,20 +409,9 @@ int beam_fire(beam_fire_info *fire_info)
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_section_frame[i] = 0.0f;
 
-	// beam width
-	if (wip->b_info.beam_width > 0.0f) {
-		new_item->beam_width = wip->b_info.beam_width;
-	}
-	else {
-		// lookup
-		float widest = -1.0f;
-		for (int idx = 0; idx < Weapon_info[new_item->weapon_info_index].b_info.beam_num_sections; idx++) {
-			if (Weapon_info[new_item->weapon_info_index].b_info.sections[idx].width > widest) {
-				widest = Weapon_info[new_item->weapon_info_index].b_info.sections[idx].width;
-			}
-		}
-		new_item->beam_width = widest;
-	}
+	// beam width, if it wasn't already set above
+	if (new_item->beam_width <= 0.f)
+		new_item->beam_width = beam_get_widest(new_item);
 	
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		new_item->type = BEAM_TYPE_C;
