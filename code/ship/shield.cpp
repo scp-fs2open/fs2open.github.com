@@ -655,7 +655,9 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 			Shield_hits[shnum].tri_list[count++] = gi;
 
 			if (count >= MAX_TRIS_PER_HIT) {
-				mprintf(("Warning: Too many triangles in shield hit.\n"));
+				if (Detail.shield_effects < 4) {
+					mprintf(("Warning: Too many triangles in shield hit.\n"));
+				}
 				break;
 			}
 		}
