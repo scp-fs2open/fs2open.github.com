@@ -1669,7 +1669,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 		noise = 1.0f;
 
 	// get the width of the beam
-	float light_rad = bm->beam_width * bm->shrink * blight * noise;	
+	float light_rad = bm->beam_width * bm->current_width_factor * blight * noise;	
 
 	// nearest point on the beam, and its distance to the ship
 	vec3d near_pt;
@@ -1736,7 +1736,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
 
 	// width of the beam
-	float light_rad = bm->beam_width * bm->shrink * blight * noise;		
+	float light_rad = bm->beam_width * bm->current_width_factor * blight * noise;
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
@@ -2456,7 +2456,7 @@ int beam_collide_ship(obj_pair *pair)
 	polymodel *pm = model_get(model_num);
 
 	// get the width of the beam
-	width = b->beam_width * b->shrink;
+	width = b->beam_width * b->current_width_factor;
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
@@ -2999,7 +2999,7 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	}
 
-	float beam_radius = bm->beam_width * bm->shrink * 0.5f;
+	float beam_radius = bm->beam_width * bm->current_width_factor * 0.5f;
 	// do a cylinder-sphere collision test
 	if (!fvi_cylinder_sphere_may_collide(&bm->last_start, &bm->last_shot,
 		beam_radius, &b->pos, b->radius * 1.2f)) {
@@ -3075,7 +3075,7 @@ void beam_handle_collisions(beam *b)
 	wi = &Weapon_info[b->weapon_info_index];
 
 	// get the width of the beam
-	width = b->beam_width * b->shrink;
+	width = b->beam_width * b->current_width_factor;
 
 	// the first thing we need to do is sort the collisions, from closest to farthest
 	std::sort(b->f_collisions, b->f_collisions + b->f_collision_count, beam_sort_collisions_func);
