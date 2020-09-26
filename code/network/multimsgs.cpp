@@ -1980,6 +1980,10 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 
 	// if this is a compatible version, and our modes are compatible, register it
 	if ( (ag.version == MULTI_FS_SERVER_VERSION) && modes_compatible ) {
+		if (gameseq_get_state() == GS_STATE_MULTI_JOIN_GAME) {
+			multi_join_maybe_update_selected(&ag);
+		}
+
 		multi_update_active_games(&ag);
 	}
 }
@@ -2192,76 +2196,98 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 
 */
 // send a request or a reply for mission description, if code == 0, request, if code == 1, reply
+// Cyborg17 - Now recursive for longer descriptions!
 void send_netgame_descript_packet(net_addr *addr, int code)
 {
-	ubyte data[MAX_PACKET_SIZE],val;
-	uint16_t desc_len;
+	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
 
-	// build the header
-	BUILD_HEADER(UPDATE_DESCRIPT);
+	// Get this out of the way, because we don't want to waste our time if the addr is bad.
+	Assert(addr != nullptr);
+	if (addr == nullptr) {
+		return;
+	}
 
-	val = (ubyte)code;
-	ADD_DATA(val);	
+	// if we are the client requesting, just send
+	if ( !code ) {
+		// build the header
+		BUILD_HEADER(UPDATE_DESCRIPT);
 
-	if(code == 1){
-		// add as much of the description as we dare
-		desc_len = static_cast<uint16_t>(strlen(The_mission.mission_desc));
-		if(desc_len > MAX_PACKET_SIZE - 10){
-			desc_len = MAX_PACKET_SIZE - 10;
-			ADD_USHORT(desc_len);
-			memcpy(data+packet_size, The_mission.mission_desc, desc_len);
-			packet_size += desc_len;
-		} else {
-			ADD_STRING_16(The_mission.mission_desc);
-		}
-	} 
-	
-	Assert(addr != NULL);
-	if(addr != NULL){
+		ubyte val = 0;
+		ADD_DATA(val);
+
 		psnet_send(addr, data, packet_size);
+	}
+	// otherwise, break up description string if necessary and send to client
+	else {
+		extern SCP_string Multi_netgame_common_description;
+
+		SCP_string message;
+		const size_t MAX_LEN = MAX_PACKET_SIZE - HEADER_LENGTH - 10;
+		const size_t desc_len = Multi_netgame_common_description.length();
+		size_t desc_offset = 0;
+
+		ubyte index = 1;	// to indicate which message index this is for concatenation - 1, 2, ...
+
+		do {
+			message = Multi_netgame_common_description.substr(desc_offset, std::min(desc_len, MAX_LEN));
+
+			BUILD_HEADER(UPDATE_DESCRIPT);
+
+			ADD_DATA(index);
+			ADD_STRING_16(message.c_str());
+
+			psnet_send(addr, data, packet_size);
+
+			++index;
+			desc_offset += message.length();
+		} while (desc_offset < desc_len);
 	}
 }
 
 // process an incoming netgame description packet
 void process_netgame_descript_packet( ubyte *data, header *hinfo )
 {
-	int offset,state;
-	ubyte code;	
-	char mission_desc[MISSION_DESC_LENGTH+2];
+	int offset, state;
+	ubyte code;
 	net_addr addr;
 
 	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 
 	// read this game into a temporary structure
 	offset = HEADER_LENGTH;
-	GET_DATA(code);	
-	
+	GET_DATA(code);
+
 	// if this is a request for mission description
 	if(code == 0){
 		if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 			PACKET_SET_SIZE();
 			return;
-		}		
+		}
 
 		// send an update to this guy
 		send_netgame_descript_packet(&addr, 1);
-	} else {	
-		memset(mission_desc,0,MISSION_DESC_LENGTH+2);		
-		GET_STRING_16(mission_desc);
+	}
+	// otherwise 'code' will be an index indicating the message number - 1, 2, ...
+	else {
+		char message[MAX_PACKET_SIZE];
 
-		// only display if we're in the proper state
+		GET_STRING_16(message);
+
+		// only display if we're in the proper state, since the client doesn't
+		// decide when this packet arrives
 		state = gameseq_get_state();
-		switch(state){
-		case GS_STATE_MULTI_JOIN_GAME:
-		case GS_STATE_MULTI_CLIENT_SETUP:			
-		case GS_STATE_MULTI_HOST_SETUP:
-			multi_common_set_text(mission_desc);
-			break;
+
+		switch (state) {
+			case GS_STATE_MULTI_JOIN_GAME:
+			case GS_STATE_MULTI_CLIENT_SETUP:
+			case GS_STATE_MULTI_HOST_SETUP:
+				multi_mission_desciption_set(message, code);
+				break;
 		}
 	}
 
-	PACKET_SET_SIZE();	
+	PACKET_SET_SIZE();
 }
 
 // broadcast a query for active games. TCP will either request from the MT or from the specified list

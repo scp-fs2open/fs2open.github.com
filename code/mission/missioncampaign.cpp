@@ -97,7 +97,7 @@ campaign Campaign;
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc, char **first_mission)
 {
 	int i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
@@ -154,6 +154,11 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			if ((*type) != CAMPAIGN_TYPE_SINGLE) {
 				skip_to_string("+Num Players:");
 				stuff_int(max_players);
+				// Cyborg17 - and the first mission name if we want it, too
+				if (first_mission) {
+					skip_to_string("$Mission:");
+					*first_mission = stuff_and_malloc_string(F_NAME, nullptr);
+				}
 			}
 
 			// if we found a valid campaign type

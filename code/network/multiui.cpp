@@ -109,6 +109,14 @@ const int MULTI_PING_MIN_ONE_SECOND = 1000;
 char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
 char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_LENGTH];
 
+// Labels for Mission description
+static const char* PRE_CAMPAIGN_DESC =	"Campaign Description:\n";
+static const char* PRE_MISSION_DESC  =	"First Mission:\n";
+static const char* DOUBLE_NEW_LINE   =  "\n\n";
+
+SCP_string Multi_netgame_common_description;
+static SCP_vector<SCP_string> Multi_received_mission_description;
+
 int Multi_common_top_text_line = -1;		// where to start displaying from
 int Multi_common_num_text_lines = 0;		// how many lines we have
 
@@ -193,6 +201,32 @@ void multi_common_add_text(const char *str,int auto_scroll)
 		multi_common_move_to_bottom();
 	}
 }
+
+void multi_mission_desciption_set(const char* str_in, int msg_index)
+{
+	if ( !str_in || (msg_index < 1) ) {
+		return;
+	}
+
+	while (static_cast<size_t>(msg_index) > Multi_received_mission_description.size()) {
+		Multi_received_mission_description.push_back("");
+	}
+
+	auto index = static_cast<size_t>(msg_index - 1);
+
+	Multi_received_mission_description[index] = str_in;
+
+	// who cares if we don't *yet* have everything for a split second and will look weird
+	// for that tiny period of time, just "KISS"
+	SCP_string text;
+
+	for (const auto &msg : Multi_received_mission_description) {
+		text += msg;
+	}
+
+	multi_common_set_text(text.c_str());
+}
+
 
 void multi_common_split_text()
 {
@@ -1112,6 +1146,10 @@ void multi_join_game_close()
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_join_bitmap_fname[gr_screen.res]));
 	}
 
+	// clear descriptions
+	Multi_netgame_common_description.clear();
+	Multi_received_mission_description.clear();
+
 	// free up the active game list
 	multi_free_active_games();
 
@@ -1618,6 +1656,27 @@ void multi_join_process_select()
 			multi_join_button_pressed(MJ_ACCEPT);
 		}
 	}
+}
+
+// maybe update selected game's description
+void multi_join_maybe_update_selected(active_game *game)
+{
+	if ( !game || !Multi_join_selected_item ) {
+		return;
+	}
+
+	// if not our selected game, bail
+	if( !psnet_same(&Multi_join_selected_item->server_addr, &game->server_addr) ) {
+		return;
+	}
+
+	// if the mission hasn't changed, bail
+	if ( !strcmp(Multi_join_selected_item->mission_name, game->mission_name) ) {
+		return;
+	}
+
+	// send a mission description request to this guy
+	send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0);
 }
 
 // return game n (0 based index)
@@ -4760,12 +4819,13 @@ void multi_create_list_select_item(int n)
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-				
+
 				Assert(ng->max_players > 0);
 				strcpy_s(ng->title,The_mission.name);								
 
 				// set the information area text
-				multi_common_set_text(The_mission.mission_desc);
+				Multi_netgame_common_description = The_mission.mission_desc;
+				multi_common_set_text(Multi_netgame_common_description.c_str());
 			}
 			// if we're on the standalone, send a request for the description
 			else {
@@ -4785,15 +4845,18 @@ void multi_create_list_select_item(int n)
 			}
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
+			char* first_mission = nullptr;
+			mission* mp = &The_mission;
+
 			// if not on the standalone server
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				// get the campaign info				
-				memset(title,0,NAME_LENGTH+1);
-				if(!mission_campaign_get_info(ng->campaign_name,title,&campaign_type,&max_players, &campaign_desc)) {
-					memset(ng->campaign_name,0,NAME_LENGTH+1);
+				memset(title, 0, sizeof(title));
+				// get the campaign info
+				if ( !mission_campaign_get_info(ng->campaign_name, title, &campaign_type, &max_players, &campaign_desc, &first_mission) ) {
+					memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
 					ng->max_players = 0;
 				}
-				// if we successfully got the # of players
+				// if we successfully got the info
 				else {
 					memset(ng->title,0,NAME_LENGTH+1);
 					strcpy_s(ng->title,title);
@@ -4803,19 +4866,41 @@ void multi_create_list_select_item(int n)
 				nprintf(("Network","MC MAX PLAYERS : %d\n",ng->max_players));
 
 				// set the information area text
-				// multi_common_set_text(ng->title);
-				if (campaign_desc != NULL)
-				{
-					multi_common_set_text(campaign_desc);
+				// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
+				Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
+
+				if (campaign_desc) {
+					Multi_netgame_common_description += campaign_desc;
+				} else {
+					Multi_netgame_common_description += "No description available.";
 				}
-				else 
-				{
-					multi_common_set_text("");
+
+				Multi_netgame_common_description += DOUBLE_NEW_LINE;
+				Multi_netgame_common_description += PRE_MISSION_DESC;
+
+				int rc = get_mission_info(first_mission, mp, true);
+
+				if ( !rc && strlen(mp->mission_desc) ) {
+					Multi_netgame_common_description += mp->mission_desc;
+				} else {
+					Multi_netgame_common_description += "No description available.";
 				}
-			}
-			// if on the standalone server, send a request for the description
-			else {
-				// no descriptions currently kept for campaigns
+
+				multi_common_set_text(Multi_netgame_common_description.c_str());
+
+				// free the malloc'ed strings from mission_campaign_get_info()
+				if (campaign_desc != nullptr) {
+					vm_free(campaign_desc);
+				}
+
+				if (first_mission != nullptr) {
+					vm_free(first_mission);
+				}
+
+			// standalones should now be able to request the info.
+			} else {
+				send_netgame_descript_packet(&Netgame.server_addr, 0);
+				multi_common_set_text("");
 			}
 
 			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
@@ -6636,7 +6721,11 @@ void multi_game_client_setup_init()
 	multi_common_notify_init();
 
 	// initialize the common mission info display area.
-	multi_common_set_text("");	
+	multi_common_set_text("");
+
+	// reset the multi description
+	Multi_netgame_common_description.clear();
+	Multi_received_mission_description.clear();
 
 	// use the common interface palette
 	multi_common_set_palette();	
