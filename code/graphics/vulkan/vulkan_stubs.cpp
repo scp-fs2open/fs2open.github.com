@@ -26,8 +26,6 @@ void gr_set_fill_mode_stub(int /*mode*/) {}
 
 void stub_clear() {}
 
-void stub_flip() {}
-
 void stub_free_screen(int /*id*/) {}
 
 void stub_get_region(int /*front*/, int /*w*/, int /*h*/, ubyte* /*data*/) {}
@@ -227,7 +225,6 @@ void stub_delete_query_object(int /*obj*/) {}
 void init_stub_pointers()
 {
 	// function pointers...
-	gr_screen.gf_flip = stub_flip;
 	gr_screen.gf_set_clip = stub_set_clip;
 	gr_screen.gf_reset_clip = stub_reset_clip;
 
