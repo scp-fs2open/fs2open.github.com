@@ -32,6 +32,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
+#include "object/objectdock.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -6201,6 +6202,11 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 	Assert ( pm != NULL );
 
 	if (make_shockwave) {
+		if (object_is_docked(ship_objp)) {
+			// TODO: this sales down the effect properly but physics_apply_shock will apply
+			// forces based on this ship's bbox, rather than the whole assembly's bbox like it should
+			blast *= ship_objp->phys_info.mass / dock_calc_total_docked_mass(ship_objp);
+		}
 		physics_apply_shock (&force, blast, &ship_objp->phys_info, &ship_objp->orient, &pm->mins, &pm->maxs, pm->rad);
 		if (ship_objp == Player_obj) {
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
