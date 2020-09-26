@@ -1007,7 +1007,11 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// ALWAYS do this - since this is called once per firing
 	// if this is a cannon type weapon, create a muzzle flash
 	// HACK - let the flak guns do this on their own since they fire so quickly
-	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak])) {
+	// Also don't create if its the player in the cockpit unless he's also got show_ship_model, provided render_player_mflash isnt on
+	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
+	bool player_show_ship_model = objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
+	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
 		vec3d real_dir;
 		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
 		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
