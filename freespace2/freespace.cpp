@@ -5488,7 +5488,12 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_BRIEFING:
-			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 
+			if ( (old_state != GS_STATE_TEAM_SELECT) && (old_state != GS_STATE_SHIP_SELECT) &&
+				 (old_state != GS_STATE_WEAPON_SELECT) && (old_state != GS_STATE_OPTIONS_MENU) &&
+				 (old_state != GS_STATE_GAMEPLAY_HELP) )
+			{
+				common_maybe_play_cutscene(MOVIE_PRE_BRIEF);
+			}
 			brief_init();
 			break;
 
