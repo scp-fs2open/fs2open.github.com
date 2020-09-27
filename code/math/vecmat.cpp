@@ -2763,7 +2763,7 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	  // pitch
 	  // if start and end are basically the same, assume we can basically jump to the end.
 	if ( (fabs(arc_measures.p) < 0.00001f) ) {
-			arc_measures.p = 0.0f;
+		arc_measures.p = 0.0f;
 	} // Test for positive difference
 	else if (arc_measures.p > 0.0f)  {
 

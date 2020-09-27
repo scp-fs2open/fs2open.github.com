@@ -225,6 +225,7 @@ void multi_set_network_signature( ushort signature, int what_kind )
 		Next_asteroid_signature = signature;
 	} else if ( what_kind == MULTI_SIG_WAYPOINT ) {
 		Assert( (signature >= WAYPOINT_SIG_MIN) && (signature <= WAYPOINT_SIG_MAX) );
+		Next_waypoint_signature = signature;
 	} else if (what_kind == MULTI_SIG_NON_PERMANENT) {
 		// Cyborg17 - spawn weapons can set this past the max and overflow the short
 		if (signature >= NPERM_SIG_MIN) {
@@ -3591,7 +3592,7 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, physics_info *pi)
 	}
 }
 
-ubyte multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physics, ubyte *data, physics_info *pi, vec3d* local_desired_vel)
+int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physics, ubyte *data, physics_info *pi, vec3d* local_desired_vel)
 {
 	bitbuffer buf;
 
@@ -3644,7 +3645,7 @@ ubyte multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_phy
 		bitbuffer_put( &buf, (uint)e,4);
 		bitbuffer_put( &buf, (uint)f,9);
 
-		return (ubyte)bitbuffer_write_flush(&buf);
+		return bitbuffer_write_flush(&buf);
 
 	} else {
 
@@ -3668,7 +3669,7 @@ ubyte multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_phy
 		local_desired_vel->xyz.z = pi->afterburner_max_vel.xyz.z * i2fl(f)/255.0f;
 
 
-		return (ubyte)bitbuffer_read_flush(&buf);
+		return bitbuffer_read_flush(&buf);
 	}
 }
 
@@ -3678,7 +3679,7 @@ ubyte multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_phy
 #define SUBSYSTEM_PACKER_FALSE 0
 
 // Cyborg17 - A packing function to manage subsystem info.
-ubyte multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data)
+int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data)
 {
 
 	bitbuffer buf;
@@ -3896,7 +3897,7 @@ ubyte multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte
 			// reset skipping rotation flag
 			done = false;
 		}
-		return (ubyte)bitbuffer_write_flush(&buf);
+		return bitbuffer_write_flush(&buf);
 	}
 	else {
 	Assertion(flags->empty(), "The flags vector was not empty before being sent to multi_pack_unpack_subsystem_list. This is a coder mistake, please report!");
@@ -3982,7 +3983,7 @@ ubyte multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte
 			a = bitbuffer_get_unsigned(&buf, 1);
 		} while (a == SUBSYSTEM_PACKER_TRUE);
 		
-		return (ubyte)bitbuffer_read_flush(&buf);
+		return bitbuffer_read_flush(&buf);
 	}
 }
 

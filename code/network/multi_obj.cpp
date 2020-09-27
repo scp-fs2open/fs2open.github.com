@@ -211,9 +211,6 @@ void multi_oo_maybe_update_interp_info(int player_id, object* objp, vec3d* new_p
 float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 
 
-// how much data we're willing to put into a given oo packet
-#define OO_MAX_SIZE					480
-
 // tolerance for bashing position
 #define OO_POS_UPDATE_TOLERANCE	150.0f
 
@@ -837,14 +834,13 @@ constexpr int OO_MAX_DATA_SIZE = MAX_PACKET_SIZE - OO_MAIN_HEADER_SIZE - OO_SERV
 
 // whatever crazy thing happens, keep the buffer from overflowing because we can just "erase" the part that overflowed it
 constexpr int OO_SAFE_BUFFER_SIZE = 10000; 
-constexpr int OO_LOCK_SIZE = 3;
+constexpr int OO_LOCK_SIZE = 4; // from the 
 
 // pack information for a client (myself), return bytes added
 int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 {
 	ubyte out_flags;
 	ushort tnet_signature;
-	char t_subsys, l_subsys;
 	int packet_size = 0;
 
 	// get our firing stuff. Cyborg17 - This line is only for secondary fire, not other controls.
@@ -881,8 +877,8 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	ADD_DATA( out_flags );
 
 	// client targeting information	
-	t_subsys = -1;
-	l_subsys = -1;
+	ushort t_subsys = -1;
+	ushort l_subsys = -1;
 
 	// if nothing targeted
 	if(Player_ai->target_objnum == -1){
@@ -906,13 +902,13 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 
 	// add them all
 	ADD_USHORT( tnet_signature );
-	ADD_DATA( t_subsys );
-	ADD_DATA( l_subsys );
+	ADD_USHORT( t_subsys );
+	ADD_USHORT( l_subsys );
 	
 	// multilock object update patch
 	ushort count = 0;
 	SCP_vector<ushort> lock_list;
-	SCP_vector<ubyte> subsystems;
+	SCP_vector<ushort> subsystems;
 
 	// look for locked slots
 	for (auto & lock : shipp->missile_locks) {
@@ -928,8 +924,8 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 				
 			count++;
 
-			// Check to see if the next lock will force us over the max.
-			if ((count + 1) * OO_LOCK_SIZE >= OO_MAX_CLIENT_DATA_SIZE) {
+			// Check to see if the *next* lock will force us over the max.
+			if (((count + 1) * OO_LOCK_SIZE + 1) >= OO_MAX_CLIENT_DATA_SIZE) {
 				break;
 			}
 		}
@@ -940,7 +936,7 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 
 	for (int i = 0; i < (int)lock_list.size(); i++) {
 		ADD_USHORT(lock_list[i]);
-		ADD_DATA(subsystems[i]);
+		ADD_USHORT(subsystems[i]);
 	}
 
 	return packet_size;
@@ -1343,13 +1339,13 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 
 	// client targeting information	
 	ushort tnet_sig;
-	char t_subsys, l_subsys;
+	ushort t_subsys, l_subsys;
 	object* tobj;
 
 	// get the data
 	GET_USHORT(tnet_sig);
-	GET_DATA(t_subsys);
-	GET_DATA(l_subsys);
+	GET_USHORT(t_subsys);
+	GET_USHORT(l_subsys);
 
 	// try and find the targeted object
 	tobj = nullptr;
@@ -1680,20 +1676,26 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 		SCP_vector<ubyte> flags;  flags.reserve(MAX_MODEL_SUBSYSTEMS);
 		SCP_vector<float> subsys_data;  subsys_data.reserve(MAX_MODEL_SUBSYSTEMS); // couldn't think of a better constant to put here
 		
-		ubyte ret7 = multi_pack_unpack_subsystem_list(false, data + offset, &flags, &subsys_data);
+		int ret7 = multi_pack_unpack_subsystem_list(false, data + offset, &flags, &subsys_data);
 		offset += ret7;
 
-		// Before we start the loop, we need to get the first subsystem, to make sure that it's set up to avoid issues.
-		ship_subsys* subsysp = GET_FIRST(&shipp->subsys_list);
+		if (NOT_EMPTY(&shipp->subsys_list)) {
 
-		// and the index to use in the subsys_data vector
-		int data_idx = 0;
+			// Before we start the loop, we need to get the first subsystem, to make sure that it's set up to avoid issues.
+			ship_subsys* subsysp = GET_FIRST(&shipp->subsys_list);
 
-		if (subsysp != nullptr) {
+			// and the index to use in the subsys_data vector
+			int data_idx = 0;
+
 			// look for a match, in order to set values.
 			for (int i = 0; i < (int)flags.size(); i++) {
-				// the current subsystem had no info, or was somehow a nullptr, so try the next subsystem.
-				if (flags[i] == 0 || subsysp == nullptr) {
+
+				if (subsysp == END_OF_LIST(&shipp->subsys_list)) {
+					break;
+				}
+
+				// the current subsystem had no info, so try the next subsystem.
+				if (flags[i] == 0) {
 					subsysp = GET_NEXT(subsysp);
 					continue;
 				}
@@ -2280,6 +2282,10 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 // initialize all object update info (call whenever entering gameplay state)
 void multi_init_oo_and_ship_tracker()
 {
+
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		return;
+	}
 	// setup initial object update info	
 	// Part 1: Get the non-repeating parts of the struct set.
 

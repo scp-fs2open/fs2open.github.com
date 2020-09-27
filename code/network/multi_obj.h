@@ -35,16 +35,12 @@ struct weapon;
 #define OOC_AFTERBURNER_ON			(1<<5)
 // two spots now left for more OOC flags
 
-// what we are setting the subsystem "index" to if there was no subsystem.
-#define OOC_INDEX_NULLPTR_SUBSYSEM 255
-
-// Cyborg17, Server will be tracking only the last second of frames
+// Cyborg17, Server will be tracking only the last 0.5-1.0 second of frames
 #define MAX_FRAMES_RECORDED		30
 #define PRIMARY_PACKET_CUTOFF			2000
 
-// and two special values to help with multilock
-#define OOC_INDEX_NULLPTR_SUBSYSEM 255
-#define OOC_MAX_LOCKS			   128  // Probably *could* be up to 140, but this is safer
+// one special value to help with multilock
+#define OOC_INDEX_NULLPTR_SUBSYSEM USHRT_MAX
 
 // some values for subsystem packing
 #define OO_SUBSYS_HEALTH			(1<<0)		// Did this subsystem's health change
