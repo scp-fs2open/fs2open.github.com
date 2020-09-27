@@ -349,6 +349,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-type",					OP_FOR_SHIP_TYPE,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -10024,6 +10025,42 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		return SEXP_FALSE;
 }
 
+// Goober5000
+int eval_for_players(int arg_handler_node, int condition_node)
+{
+	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<char*, int>> argument_vector;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	if (Game_mode & GM_MULTIPLAYER)
+	{
+		// this operator has no parameters, so just generate a vector of players
+		for (int i = 0; i < MAX_PLAYERS; ++i)
+		{
+			int shipnum = multi_get_player_ship(i);
+			if (shipnum >= 0)
+				argument_vector.emplace_back(vm_strdup(Ships[shipnum].ship_name), -1);
+		}
+	}
+	else
+	{
+		// in single-player it's just one ship
+		if (Player_ship)
+			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+	}
+
+	// test the whole argument vector
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
 void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
@@ -10036,7 +10073,8 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
+		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
 		return;
 		
 	while (n != -1)
@@ -10092,9 +10130,10 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	if (arg_handler < 0)
 		return;
 
-	// can't change validity of for-counter
+	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
+		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
 		return;
 		
 	// loop through arguments
@@ -10214,6 +10253,7 @@ bool is_blank_of_op(int op_const)
 		case OP_FOR_SHIP_TYPE:
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
+		case OP_FOR_PLAYERS:
 			return true;
 
 		default:
@@ -23568,6 +23608,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_for_ship_collection( cur_node, referenced_node, op_num );
 				break;
 
+			// Goober5000
+			case OP_FOR_PLAYERS:
+				sexp_val = eval_for_players( cur_node, referenced_node );
+				break;
+
 			// Karajorma
 			case OP_INVALIDATE_ALL_ARGUMENTS:
 			case OP_VALIDATE_ALL_ARGUMENTS:
@@ -26277,6 +26322,7 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TYPE:
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
+		case OP_FOR_PLAYERS:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default: {
@@ -26341,6 +26387,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNSELECT:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_RESET_POST_EFFECTS:
+		case OP_FOR_PLAYERS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -31310,6 +31357,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tSpecies from which to list ships\r\n" },
+
+	// Goober5000
+	{ OP_FOR_PLAYERS, "For-Players (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
+		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
+		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
