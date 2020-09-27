@@ -232,6 +232,9 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	}
 
 	os::events::removeEventListener(key_handle);
+
+	// flush keys so we don't pass anything to the current state
+	key_flush();
 }
 
 }
