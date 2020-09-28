@@ -3951,7 +3951,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// by extracting them from the of_dst vector.
 	// Call this the desired_angles
 	angles desired_angles;
-//	vm_extract_angles_vector(&desired_angles, &of_dst);
+	//vm_extract_angles_vector(&desired_angles, &of_dst);
 	
 	if (reset == false) {
 		desired_angles.p = acosf(of_dst.xyz.z);

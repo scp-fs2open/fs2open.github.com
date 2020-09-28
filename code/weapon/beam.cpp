@@ -950,25 +950,19 @@ void beam_type_f_move(beam* b)
 		return;
 	}
 
-	
 	vec3d newdir_a = b->binfo.dir_a;
 	vec3d newdir_b = b->binfo.dir_b;
-	//vec3d rot_center;
-	//vm_vec_avg(&rot_center, &b->binfo.dir_b, &b->binfo.dir_a);
-	//vec3d rot_axis = b->last_start - rot_center;
-	//vm_vec_normalize(&rot_axis);
-	//vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, (b->life_total - b->life_left) * 1.f, &rot_center, &rot_axis);
-	//vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, (b->life_total - b->life_left) * 1.f, &rot_center, &rot_axis);
-	vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+	vec3d zero_vec = vmd_zero_vector;
+	vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, (b->life_total - b->life_left) * b->binfo.rot_speed, &zero_vec, &b->binfo.rot_axis);
+	if (vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b) < 0.9999f) {
+		vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, (b->life_total - b->life_left) * b->binfo.rot_speed, &zero_vec, &b->binfo.rot_axis);
+		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+	} else {
+		actual_dir = newdir_a;
+	}
 
 	// now recalculate shot_point to be shooting through our new point
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
-	bool is_valid = is_valid_vec(&b->last_shot);
-	Assert(is_valid);
-	if (!is_valid) {
-		actual_dir = b->binfo.dir_a;
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
-	}
 }
 
 // pre-move (before collision checking - but AFTER ALL OTHER OBJECTS HAVE BEEN MOVED)
@@ -2201,64 +2195,127 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 		break;
 
 	case BEAM_TYPE_F:
+	{
 		vm_vec_zero(&pos1);
 		vm_vec_zero(&pos2);
+		vec3d rot_axis;
+
+		object* usable_target = nullptr;
+		// don't use the target if this is a fighter beam
+		if (!(b->flags & BF_IS_FIGHTER_BEAM) && b->target)
+			usable_target = b->target;
+
+		// set up shooter orient now
+		matrix orient = vmd_identity_matrix;
+		if (b->flags & BF_IS_FIGHTER_BEAM) {
+			orient = b->objp->orient;
+		} else if (b->subsys) {
+			vec3d fvec, uvec;
+			vm_vec_sub(&fvec, &b->target->pos, &turret_point);
+			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
+			vm_vector_2_matrix(&orient, &fvec, &uvec);
+		} else if (b->flags & BF_TARGETING_COORDS){
+			vm_vector_2_matrix(&orient, &b->target_pos1);
+		} 
 
 		// Get our two starting points
-		// random on the ship if we need them
-		vec3d rand1, rand2;
-		if (b->target && (bwi->bpi.random_start_pos || bwi->bpi.random_end_pos)) {
-			submodel_get_two_random_points_better(model_num, 0, &rand1, &rand2);
-		}
+		vec3d rand1_on, rand2_on;
+		vec3d rand1_off, rand2_off;
+		if (usable_target) {
+			// set up our two kinds of random points if needed
+			if (bwi->bpi.start_pos == POS_RANDOM_INSIDE || bwi->bpi.end_pos == POS_RANDOM_INSIDE) {
+				vec3d temp1, temp2;
+				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2);
+				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
+				vm_vec_rotate(&rand2_on, &temp2, &b->target->orient);
+				rand1_on += b->target->pos;
+				rand2_on += b->target->pos;
+			}
+			if (bwi->bpi.start_pos == POS_RANDOM_OUTSIDE || bwi->bpi.end_pos == POS_RANDOM_OUTSIDE)
+				beam_get_octant_points(model_num, usable_target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &rand1_off, &rand2_off);
 
-		if (b->target) {
-			if (bwi->bpi.random_start_pos) 
-				pos1 = rand1;
-			else 
-				pos1 = b->target->pos;
+			// get start and end points
+			switch (bwi->bpi.start_pos) {
+				case POS_CENTER:
+					pos1 = b->target->pos;
+					break;
+				case POS_RANDOM_INSIDE:
+					pos1 = rand1_on;
+					break;
+				case POS_RANDOM_OUTSIDE:
+					pos1 = rand1_off;
+			}
 
 			if (bwi->bpi.no_translate)
 				pos2 = pos1;
-			else if (bwi->bpi.random_end_pos)
-				pos2 = rand2;
-			else
-				pos2 = b->target->pos;
+			else {
+				switch (bwi->bpi.end_pos) {
+					case POS_CENTER:
+						pos2 = b->target->pos;
+						break;
+					case POS_RANDOM_INSIDE:
+						pos2 = rand2_on;
+						break;
+					case POS_RANDOM_OUTSIDE:
+						pos2 = rand2_off;
+				}
+			}
 
-		} // if we have no target let's act as though we're shooting at something with a 300m radius 500m away
-		else { 
-			if (bwi->bpi.random_start_pos)
+			// set rot_axis if its center
+			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
+				rot_axis = b->target->pos;
+			}
+		} else { 
+			// if we have no target let's act as though we're shooting at something with a 300m radius 800m away
+			if (bwi->bpi.start_pos != POS_CENTER)
 				static_randvec(rand32(), &pos1);
 
-			if (bwi->bpi.random_end_pos && !bwi->bpi.no_translate)
+			if (bwi->bpi.end_pos != POS_CENTER)
 				static_randvec(rand32(), &pos2);
+
+			if (bwi->bpi.no_translate)
+				pos2 = pos1;
 
 			pos1 *= 300.f;
 			pos2 *= 300.f;
 			vec3d move_forward;
-			vm_vec_make(&move_forward, 0, 0, 500);
+			vm_vec_make(&move_forward, 0.f, 0.f, 800.f);
 			pos1 += move_forward;
 			pos2 += move_forward;
 
-			if (b->objp) { // if we can, orient to the front of shooter
-				vec3d temp = pos1;
-				vm_vec_rotate(&pos1, &temp, &b->objp->orient);
-				temp = pos2;
-				vm_vec_rotate(&pos2, &temp, &b->objp->orient);
+
+			vec3d temp;
+			vm_vec_unrotate(&pos1, &temp, &orient);
+			temp = pos2;
+			vm_vec_unrotate(&pos2, &temp, &orient);
+			// set rot_axis if its center
+			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
+				rot_axis = move_forward;
+				temp = rot_axis;
+				vm_vec_unrotate(&rot_axis, &temp, &orient);
 			}
+
 		}
 
+		// set rot_axis if its one of the before offset points
+		if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_NO_OFFSET)
+			rot_axis = pos1;
+		else if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_NO_OFFSET)
+			rot_axis = pos2;
+
 		// now the offsets
-		float scale_factor = bwi->bpi.absolute_offset || !b->target ? 300.f : b->target->radius;
+		float scale_factor = (bwi->bpi.absolute_offset || !b->target) ? 300.f : b->target->radius;
 		vec3d offset = bwi->bpi.start_pos_offset;
 		offset *= scale_factor;
 
-		matrix orient = bwi->bpi.shooter_orient_positions ?
-			(b->objp ? b->objp->orient : vmd_identity_matrix) :
-			(b->target ? b->target->orient : vmd_identity_matrix);
+		// switch to the target's orient if applicable
+		if (bwi->bpi.target_orient_positions && b->target != nullptr)
+			orient = b->target->orient;
 
+		// then unrotate by it to get the world orientation
 		vec3d rotated_offset;
-		vm_vec_rotate(&rotated_offset, &offset, &orient);
-		pos1 +=rotated_offset;
+		vm_vec_unrotate(&rotated_offset, &offset, &orient);
+		pos1 += rotated_offset;
 
 		// maybe add some random
 		vec3d random_offset;
@@ -2271,13 +2328,14 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 		pos1 += random_offset;
 
 		// end pos offset
-		if (bwi->bpi.no_translate) 
+		if (bwi->bpi.no_translate)
 			pos2 = pos1;
 		else {
 			offset = bwi->bpi.end_pos_offset;
 			offset *= scale_factor;
 
-			vm_vec_rotate(&rotated_offset, &offset, &orient);
+			// rotate
+			vm_vec_unrotate(&rotated_offset, &offset, &orient);
 			pos2 += rotated_offset;
 
 			//randomness
@@ -2290,18 +2348,26 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 			pos1 += random_offset;
 		}
 
-		// now do per shot rotation
+		// finally grab the last cases for rot_axis
+		if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_OFFSET)
+			rot_axis = pos1;
+		else if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_OFFSET)
+			rot_axis = pos2;
 
-		// point 1
+		b->binfo.rot_speed = bwi->bpi.continuous_rot;
+
+		// normalize the vectors and ship it!
+		vm_vec_sub(&b->binfo.rot_axis, &rot_axis, &turret_point);
+		vm_vec_normalize(&b->binfo.rot_axis);
+
 		vm_vec_sub(&b->binfo.dir_a, &pos1, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_a);
 
-		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
 
 		break;
-
+	}
 	default:
 		break;
 	}

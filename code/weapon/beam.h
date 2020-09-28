@@ -50,6 +50,7 @@ typedef struct beam_info {
 	ubyte			shot_count;							// # of shots	
 	float			shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit
 	vec3d           rot_axis;
+	float			rot_speed;
 } beam_info;
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)

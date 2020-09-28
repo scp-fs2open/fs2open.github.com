@@ -169,26 +169,31 @@ typedef struct beam_weapon_section_info {
 } beam_weapon_section_info;
 
 typedef enum beam_pattern_rot_axis {
-	AXIS_STARTPOS,
-	AXIS_ENDPOS,
+	AXIS_STARTPOS_OFFSET,
+	AXIS_ENDPOS_OFFSET, 
+	AXIS_STARTPOS_NO_OFFSET,
+	AXIS_ENDPOS_NO_OFFSET,
 	AXIS_CENTER
 } beam_pattern_rot_axis;
 
+typedef enum beam_pattern_position {
+	POS_RANDOM_OUTSIDE,
+	POS_RANDOM_INSIDE,
+	POS_CENTER
+} beam_pattern_position;
+
 typedef struct beam_pattern_info {
 	bool no_translate;
-	bool random_start_pos;
-	bool random_end_pos;
+	beam_pattern_position start_pos;
+	beam_pattern_position end_pos;
 	vec3d start_pos_offset;
 	vec3d end_pos_offset;
 	vec3d start_pos_rand;
 	vec3d end_pos_rand;
-	bool shooter_orient_positions;
+	bool target_orient_positions;
 	bool absolute_offset;
-	float per_slash_rot;
-	beam_pattern_rot_axis per_slash_rot_axis;
-	float per_sec_rot;
-	beam_pattern_rot_axis per_sec_rot_axis;
-	bool per_sec_rot_after_offset;
+	float continuous_rot;
+	beam_pattern_rot_axis continuous_rot_axis;
 } beam_pattern_info;
 
 typedef struct beam_weapon_info {
