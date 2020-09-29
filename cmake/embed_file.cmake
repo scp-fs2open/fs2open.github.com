@@ -3,7 +3,7 @@ set(_EMBEDD_FILE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 function(target_embed_files _target)
     set(options)
-    set(oneValueArgs RELATIVE_TO)
+    set(oneValueArgs RELATIVE_TO PATH_TYPE_PREFIX)
     set(multiValueArgs FILES)
     cmake_parse_arguments(EMBED "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -16,14 +16,34 @@ function(target_embed_files _target)
 
     foreach (file ${EMBED_FILES})
         get_filename_component(_absoluteFile "${file}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+        file(RELATIVE_PATH _pathType "${EMBED_RELATIVE_TO}" "${_absoluteFile}")
+        get_filename_component(_pathType ${_pathType} DIRECTORY)
+        if (DEFINED EMBED_PATH_TYPE_PREFIX)
+            if (_pathType)
+                set(_pathType "${EMBED_PATH_TYPE_PREFIX}/${_pathType}")
+            else()
+                # Avoid trailing / when we are in the same directory
+                set(_pathType "${EMBED_PATH_TYPE_PREFIX}")
+            endif()
+        endif()
+
+        if (NOT _pathType)
+            # If it is still empty then we need to work around yet another annoying CMake behavior where it ignores
+            # "empty" property strings
+            set(_pathType ".")
+        endif()
+
         set_property(TARGET ${_target} APPEND PROPERTY EMBEDDED_FILES "${_absoluteFile}")
         set_property(TARGET ${_target} APPEND PROPERTY EMBEDDED_FILES_BASE_DIR "${EMBED_RELATIVE_TO}")
+        set_property(TARGET ${_target} APPEND PROPERTY EMBEDDED_FILES_PATH_TYPE "${_pathType}")
     endforeach()
 endfunction()
 
 function(handle_embedded_files _target)
     get_target_property(_filesToEmbed ${_target} EMBEDDED_FILES)
     get_target_property(_baseDirs ${_target} EMBEDDED_FILES_BASE_DIR)
+    get_target_property(_pathTypes ${_target} EMBEDDED_FILES_PATH_TYPE)
 
     SET(DEF_OUT_FILES)
 
@@ -41,16 +61,21 @@ function(handle_embedded_files _target)
 
         list(GET _filesToEmbed ${i} _filePath)
         list(GET _baseDirs ${i} _baseDir)
+        list(GET _pathTypes ${i} _pathType)
+
+        if (_pathType STREQUAL ".")
+            # Handle the workaround we had to do for empty path types
+            set(_pathType "")
+        endif()
 
         file(RELATIVE_PATH _relativeFilePath "${_baseDir}" "${_filePath}")
         SET(_outputBasePath "${CMAKE_CURRENT_BINARY_DIR}/embedded_files/${_relativeFilePath}")
 
         # For some reason this is needed...
         get_filename_component(_outputDirectory ${_outputBasePath} DIRECTORY)
-        FILE(MAKE_DIRECTORY ${_outputDirectory})
+        file(MAKE_DIRECTORY ${_outputDirectory})
 
         # Retrieve the path type name from the relative path
-        get_filename_component(_pathType "${_relativeFilePath}" DIRECTORY)
         file(TO_NATIVE_PATH "${_pathType}" _pathType)
         if (MINGW)
             # There is a bug in CMake where it thinks MinGW uses forward slashes for paths but we need backslashes for Windows builds

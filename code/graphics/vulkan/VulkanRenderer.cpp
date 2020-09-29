@@ -269,6 +269,8 @@ bool VulkanRenderer::initialize()
 		return false;
 	}
 
+	createFrameBuffers();
+
 	return true;
 }
 
@@ -590,6 +592,9 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 	}
 
 	return true;
+}
+void VulkanRenderer::createFrameBuffers() {
+	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 }
 
 } // namespace vulkan

@@ -12,6 +12,9 @@
 #include <windows.h>
 #endif
 
+#include "globalincs/alphacolors.h"
+#include "globalincs/systemvars.h"
+
 #include "ShaderProgram.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
@@ -19,16 +22,16 @@
 #include "gropenglstate.h"
 #include "gropengltexture.h"
 #include "gropengltnl.h"
+
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
-#include "globalincs/alphacolors.h"
-#include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "graphics/light.h"
 #include "graphics/material.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
+#include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "options/Option.h"

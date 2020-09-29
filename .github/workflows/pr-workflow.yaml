@@ -21,7 +21,7 @@ jobs:
             compiler: gcc-9
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     steps:
       - name: Prepare Environment
         working-directory: /tmp
@@ -29,9 +29,14 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
+
+          # Repository for the Vulkan SDK so that we have the glslc compiler
+          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.148-bionic.list https://packages.lunarg.com/vulkan/1.2.148/lunarg-vulkan-1.2.148-bionic.list
+
           sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-9
+          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng-dev libjpeg62-dev \
+            liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-9 vulkan-sdk
 
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh

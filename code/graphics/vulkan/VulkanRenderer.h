@@ -55,6 +55,8 @@ class VulkanRenderer {
 
 	bool createSwapChain(PhysicalDeviceValues& deviceValues);
 
+	void createFrameBuffers();
+
 	std::unique_ptr<os::GraphicsOperations> m_graphicsOps;
 
 	vk::UniqueInstance m_vkInstance;
