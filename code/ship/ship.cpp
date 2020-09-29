@@ -6353,6 +6353,8 @@ void ship_weapon::clear()
 
     last_fired_weapon_index = -1;
     last_fired_weapon_signature = -1;
+
+	per_burst_rot = 0.f;
 }
 
 ship_weapon::ship_weapon() {
@@ -11387,6 +11389,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				fbfire_info.turret = &shipp->fighter_beam_turret_data;
 				fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
 				fbfire_info.bank = bank_to_fire;
+				fbfire_info.burst_index = 0;
 
 				for ( v = 0; v < points; v++ ){
 					if(winfo_p->b_info.beam_shots){
@@ -11405,6 +11408,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					beam_fire(&fbfire_info);
 					has_fired = true;
 					num_fired++;
+					swp->per_burst_rot += winfo_p->b_info.bpi.per_burst_rot;
+					if (swp->per_burst_rot > PI2)
+						swp->per_burst_rot -= PI2;
 				}
 			}
 			else	//if this isn't a fighter beam, do it normally -Bobboau

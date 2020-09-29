@@ -17875,6 +17875,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
+	fire_info.burst_index = 0;
 
 	// get the firing ship
 	auto shooter = eval_ship(n);
@@ -17977,6 +17978,7 @@ void sexp_beam_floating_fire(int n)
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
 	fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
 	fire_info.turret = nullptr;		// A free-floating beam isn't fired from a subsystem.
+	fire_info.burst_index = 0;
 
 	fire_info.beam_info_index = weapon_info_lookup(CTEXT(n));
 	n = CDR(n);

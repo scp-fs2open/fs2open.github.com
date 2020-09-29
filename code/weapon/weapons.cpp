@@ -2539,7 +2539,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (optional_string("+Continuous Rotation:")) {
 				stuff_float(&bpi->continuous_rot);
-				bpi->continuous_rot *= (PI2 / 180);
+				bpi->continuous_rot *= (PI / 180.f);
 			}
 
 			if (optional_string("+Continuous Rotation Axis:")) {
@@ -2558,6 +2558,62 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
 					bpi->continuous_rot_axis = AXIS_STARTPOS_OFFSET;
+				}
+				else {
+					// TODO safety
+				}
+			}
+
+			if (optional_string("+Burst Rotation Pattern:")) {
+				stuff_float_list(bpi->burst_rot_pattern);
+				for (int i = 0; i < bpi->burst_rot_pattern.size(); i++) {
+					bpi->burst_rot_pattern[i] *= (PI / 180.f);
+				}
+			}
+
+			if (optional_string("+Burst Rotation Axis:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+				if (!stricmp(temp_type, NOX("CENTER"))) {
+					bpi->burst_rot_axis = AXIS_CENTER;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION BEFORE OFFSET"))) {
+					bpi->burst_rot_axis = AXIS_ENDPOS_NO_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION BEFORE OFFSET"))) {
+					bpi->burst_rot_axis = AXIS_STARTPOS_NO_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION AFTER OFFSET"))) {
+					bpi->burst_rot_axis = AXIS_ENDPOS_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
+					bpi->burst_rot_axis = AXIS_STARTPOS_OFFSET;
+				}
+				else {
+					// TODO safety
+				}
+			}
+
+			if (optional_string("+Per Burst Rotation:")) {
+				stuff_float(&bpi->per_burst_rot);
+				bpi->per_burst_rot *= (PI / 180.f);
+			}
+
+			if (optional_string("+Per Burst Rotation Axis:")) {
+				stuff_string(temp_type, F_NAME, NAME_LENGTH);
+				if (!stricmp(temp_type, NOX("CENTER"))) {
+					bpi->per_burst_rot_axis = AXIS_CENTER;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION BEFORE OFFSET"))) {
+					bpi->per_burst_rot_axis = AXIS_ENDPOS_NO_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION BEFORE OFFSET"))) {
+					bpi->per_burst_rot_axis = AXIS_STARTPOS_NO_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("END POSITION AFTER OFFSET"))) {
+					bpi->per_burst_rot_axis = AXIS_ENDPOS_OFFSET;
+				}
+				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
+					bpi->per_burst_rot_axis = AXIS_STARTPOS_OFFSET;
 				}
 				else {
 					// TODO safety
@@ -5973,6 +6029,7 @@ void spawn_child_weapons(object *objp)
 				fire_info.starting_pos = *opos;
 				fire_info.beam_info_index = child_id;
 				fire_info.team = static_cast<char>(obj_team(&Objects[parent_num]));
+				fire_info.burst_index = 0;
 
 				// fire the beam
 				beam_fire(&fire_info);
@@ -8165,7 +8222,11 @@ void weapon_info::reset()
 	this->b_info.bpi.target_orient_positions = false;
 	this->b_info.bpi.absolute_offset = false;
 	this->b_info.bpi.continuous_rot = 0.f;
-	this->b_info.bpi.continuous_rot_axis = AXIS_CENTER;
+	this->b_info.bpi.continuous_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.bpi.per_burst_rot = 0.f;
+	this->b_info.bpi.per_burst_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.bpi.burst_rot_pattern.clear();
+	this->b_info.bpi.burst_rot_axis = AXIS_UNSPECIFIED;
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);

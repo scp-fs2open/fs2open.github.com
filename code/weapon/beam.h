@@ -26,9 +26,6 @@ struct beam_weapon_info;
 struct vec3d;
 
 // beam types
-// REMINDER : if you change the behavior of any of these beam types, make sure to update their "cones" of possible
-// movement inside of the function beam_get_cone_dot(...) in beam.cpp  Otherwise it could cause collisions to not
-// function properly!!!!!!
 #define BEAM_TYPE_A					0				// unidirectional beam
 #define BEAM_TYPE_B					1				// "slash" in one direction
 #define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
@@ -50,7 +47,6 @@ typedef struct beam_info {
 	ubyte			shot_count;							// # of shots	
 	float			shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit
 	vec3d           rot_axis;
-	float			rot_speed;
 } beam_info;
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
@@ -78,6 +74,8 @@ typedef struct beam_fire_info {
 	char team;									// for floating beams, determines which team the beam is on
 	int burst_seed;								// used for sharing random targets if part of the same burst
 	float current_per_shot_rot;                         // for type 5 beams
+	float per_burst_rotation;                         // for type 5 beams
+	float burst_index;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
@@ -181,6 +179,9 @@ typedef struct beam {
 	int firingpoint;
 
 	float		beam_width;
+
+	float type5_rot_speed;
+	bool rotates;
 } beam;
 
 extern beam Beams[MAX_BEAMS];				// all beams
@@ -196,7 +197,7 @@ extern int Beam_count;
 // the next functions are probably the only ones anyone should care about calling. the rest require somewhat detailed knowledge of beam weapons
 
 // fire a beam, returns objnum on success. the innards of the code handle all the rest, foo
-int beam_fire(beam_fire_info *fire_info);
+SCP_vector<int> beam_fire(beam_fire_info *fire_info);
 
 // fire a targeting beam, returns objnum on success. a much much simplified version of a beam weapon
 // targeting lasers last _one_ frame. For a continuous stream - they must be created every frame.

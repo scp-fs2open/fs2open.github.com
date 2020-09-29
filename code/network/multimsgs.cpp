@@ -7800,6 +7800,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
+	fire_info.burst_index = 0;
 
 	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance >= MAX_SHIPS)){
 		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));

@@ -173,7 +173,8 @@ typedef enum beam_pattern_rot_axis {
 	AXIS_ENDPOS_OFFSET, 
 	AXIS_STARTPOS_NO_OFFSET,
 	AXIS_ENDPOS_NO_OFFSET,
-	AXIS_CENTER
+	AXIS_CENTER,
+	AXIS_UNSPECIFIED
 } beam_pattern_rot_axis;
 
 typedef enum beam_pattern_position {
@@ -194,6 +195,10 @@ typedef struct beam_pattern_info {
 	bool absolute_offset;
 	float continuous_rot;
 	beam_pattern_rot_axis continuous_rot_axis;
+	SCP_vector<float> burst_rot_pattern;
+	beam_pattern_rot_axis burst_rot_axis;
+	float per_burst_rot;
+	beam_pattern_rot_axis per_burst_rot_axis;
 } beam_pattern_info;
 
 typedef struct beam_weapon_info {

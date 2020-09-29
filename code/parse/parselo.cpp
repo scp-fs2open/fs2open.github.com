@@ -3132,6 +3132,30 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 }
 
 //Stuffs an integer list like stuff_int_list.
+size_t stuff_float_list(SCP_vector<float>& flp)
+{
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
+		throw parse::ParseException("Syntax error");
+	}
+
+	Mp++;
+	ignore_white_space();
+	while (*Mp != ')')
+	{
+		flp.emplace_back();
+		stuff_float(&flp.back());
+		ignore_white_space();
+	}
+
+	Mp++;
+
+	return flp.size();
+}
+
+//Stuffs an integer list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	size_t count = 0;
