@@ -10,6 +10,8 @@ add_file_folder(""
 add_file_folder("AI"
 	ai/ai.cpp
 	ai/ai.h
+	ai/ai_class_info.cpp
+	ai/ai_class_info.h
 	ai/ai_flags.h
 	ai/ai_profiles.cpp
 	ai/ai_profiles.h
@@ -34,6 +36,8 @@ add_file_folder("Anim"
 add_file_folder("Asteroid"
 	asteroid/asteroid.cpp
 	asteroid/asteroid.h
+	asteroid/asteroid_info.cpp
+	asteroid/asteroid_info.h
 )
 
 # Autopilot files
@@ -950,6 +954,8 @@ add_file_folder("Parse"
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
+	parse/parse_manager.h
+	parse/parse_manager.cpp
 	parse/parselo.cpp
 	parse/parselo.h
 	parse/sexp.cpp
@@ -1334,6 +1340,8 @@ add_file_folder("Ship"
 	ship/shield.cpp
 	ship/ship.cpp
 	ship/ship.h
+	ship/ship_info.cpp
+	ship/ship_info.h
 	ship/shipcontrails.cpp
 	ship/shipcontrails.h
 	ship/shipfx.cpp
