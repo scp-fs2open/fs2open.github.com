@@ -968,6 +968,21 @@ void beam_type_f_move(beam* b)
 	if (b->subsys != NULL)
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
+	// keep this updated even if still warming up 
+	if (b->flags & BF_IS_FIGHTER_BEAM) {
+		// compute the change in orientation the fighter went through
+		matrix inv_new_orient, transform_matrix;
+		vm_copy_transpose(&inv_new_orient, &b->objp->orient);
+		vm_matrix_x_matrix(&transform_matrix, &b->objp->last_orient, &inv_new_orient);
+		// and put the beam vectors through the same change
+		vec3d old_dirA = b->binfo.dir_a;
+		vec3d old_dirB = b->binfo.dir_b;
+		vec3d old_rot_axis = b->binfo.rot_axis;
+		vm_vec_rotate(&b->binfo.dir_a, &old_dirA, &transform_matrix);
+		vm_vec_rotate(&b->binfo.dir_b, &old_dirB, &transform_matrix);
+		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
+	}
+
 	// if the "warming up" timestamp has not expired
 	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {
 		return;
@@ -2318,10 +2333,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 			pos2 += move_forward;
 
 
-			vec3d temp;
+			vec3d temp = pos1;
 			vm_vec_unrotate(&pos1, &temp, &orient);
 			temp = pos2;
 			vm_vec_unrotate(&pos2, &temp, &orient);
+			pos1 += b->objp->pos;
+			pos2 += b->objp->pos;
 
 			// set rot_axis if its center
 			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
@@ -2329,15 +2346,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 				temp = rot_axis;
 				vm_vec_unrotate(&rot_axis, &temp, &orient);
 			}
-			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
-				rot_axis = move_forward;
-				temp = rot_axis;
-				vm_vec_unrotate(&rot_axis, &temp, &orient);
+			if (bwi->bpi.per_burst_rot_axis == AXIS_CENTER) {
+				per_burst_rot_axis = move_forward;
+				temp = per_burst_rot_axis;
+				vm_vec_unrotate(&per_burst_rot_axis, &temp, &orient);
 			}
-			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
-				rot_axis = move_forward;
-				temp = rot_axis;
-				vm_vec_unrotate(&rot_axis, &temp, &orient);
+			if (bwi->bpi.burst_rot_axis == AXIS_CENTER) {
+				burst_rot_axis = move_forward;
+				temp = burst_rot_axis;
+				vm_vec_unrotate(&burst_rot_axis, &temp, &orient);
 			}
 
 		}
