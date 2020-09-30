@@ -249,8 +249,8 @@ float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, a
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -301,8 +301,8 @@ float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type ax
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -728,7 +728,7 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// calculate square of distance to line
@@ -777,7 +777,7 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// find the nearest point along the line
