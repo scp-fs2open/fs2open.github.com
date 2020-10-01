@@ -517,11 +517,11 @@ void control_config_list_prepare()
 	while (z < CCFG_MAX) {
 		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
 			if (Control_config[z].indexXSTR > 1) {
-				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, Control_config[z].indexXSTR, true);
+				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text.c_str, Control_config[z].indexXSTR, true);
 			} else if (Control_config[z].indexXSTR == 1) {
-				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z, true);
+				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text.c_str, CONTROL_CONFIG_XSTR + z, true);
 			} else {
-				Cc_lines[Num_cc_lines].label = Control_config[z].text;
+				Cc_lines[Num_cc_lines].label = Control_config[z].text.c_str;
 			}
 
 			Cc_lines[Num_cc_lines].cc_index = z;
@@ -1985,11 +1985,11 @@ void control_config_do_frame(float frametime)
 		gr_printf_menu(x - w / 2, y - font_height, "%s", str);
 
 		if (Control_config[i].indexXSTR > 1) {
-			strcpy_s(buf, XSTR(Control_config[i].text, Control_config[i].indexXSTR, true));
+			strcpy_s(buf, XSTR(Control_config[i].text.c_str, Control_config[i].indexXSTR, true));
 		} else if (Control_config[i].indexXSTR == 1) {
-			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i, true));
+			strcpy_s(buf, XSTR(Control_config[i].text.c_str, CONTROL_CONFIG_XSTR + i, true));
 		} else {
-			strcpy_s(buf, Control_config[i].text);
+			strcpy_s(buf, Control_config[i].text.c_str);
 		}
 
 		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
