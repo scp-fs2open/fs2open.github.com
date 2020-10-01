@@ -28,16 +28,32 @@ enum Joy_axis_index {
 	JOY_RZ_AXIS
 };
 
+/*!
+ * Controller index enumeration
+ * @details For use with hardcoded bindings and scripting API to allow human-readable translation
+ * @note These enums are hardcoded so that an int value of 0 would be JOY0
+ */
+enum CID {
+	CID_NONE     = -3,	// No device bound
+	CID_KEYBOARD = -2,	// button belongs to keyboard
+	CID_MOUSE    = -1,  // to mouse
+	CID_JOY0     =  0,  // to Joy0
+	CID_JOY1     =  1,  // to Joy1 (Throttle?)
+	CID_JOY2     =  2,  // to Joy2 (Pedals?)
+	CID_JOY3     =  3   // to Joy3 (Head tracker?)
+	                    // Any additional joystick is an int >3
+};
 
 /*!
  * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
  */
 enum Joy_axis_action_index {
-	JOY_HEADING_AXIS	=0,
+	JOY_HEADING_AXIS	=0,	//
 	JOY_PITCH_AXIS,
 	JOY_BANK_AXIS,
-	JOY_ABS_THROTTLE_AXIS,
-	JOY_REL_THROTTLE_AXIS,
+	JOY_THROTTLE_AXIS,
+	JOY_LATERAL_AXIS,       //!< Left/Right thrust axis
+	JOY_VERTICAL_AXIS,      //!< Up/Down thrust axis
 
 	/*!
 	 * This must always be below the last defined item
@@ -45,6 +61,16 @@ enum Joy_axis_action_index {
 	NUM_JOY_AXIS_ACTIONS			//!< The total number of actions an axis may map to
 };
 
+/*!
+ * Joystick action modes
+ * note: should this be in joy.h?
+ */
+enum Joy_axis_action_mode {
+	JAAM_ABS,       //!< Absolute mode.  Axis position = output value
+	JAAM_REL,       //!< Relative mode.  Axis postion away from its center adds or subtracts an output value register.
+	JAAM_BTN_NEG,   //!< Button mode, negative side.  Axis position in the negative side will trigger a button action
+	JAAM_BTN_POS,   //!< Button mode, positive side.  Axis position in the positive side will trigger a button action
+};
 
 
 /*!
@@ -55,28 +81,83 @@ enum CC_type {
 	CC_TYPE_CONTINUOUS				//!< A continous control that is activated as long as the key or button is held down
 };
 
+SCP_vector<SCP_string> Joy_table;	//!< Table of all bound joystick GUID's;  Index in this vector is ordered and uses the CID
+
+/*!
+ *  A singular button binding
+ */
+struct CC_bind {
+	CID cid = CID_NONE; //!< Which controller this belongs to
+	short btn =     -1; //!< Which button to index
+};
+
 /*!
  * Control configuration item type.
+ * @detail Contains binding info, documentation, behavior, etc. for a single control
  */
-typedef struct config_item {
-	short key_default;		//!< default key bound to action
-	short joy_default;		//!< default joystick button bound to action
-	char tab;				//!< what tab (category) it belongs in
-	int indexXSTR;			//!< what string index we should use to translate this with an XSTR
-	const char *text;		//!< describes the action in the config screen
-	char type;				//!< manner control should be checked in
-	short key_id;			//!< actual key bound to action
-	short joy_id;			//!< joystick button bound to action
-	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
-	bool disabled;			//!< whether this action should be available at all
-	bool continuous_ongoing;//!< whether this action is a continuous one and is currently ongoing
-} config_item;
+struct CCI {
+// Items Set in menu
+	short joy_default;
+	short key_default;
+	short joy_id;
+	short key_id;
+
+	char tab;               //!< what tab (category) it belongs in
+	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR
+	SCP_string text;        //!< describes the action in the config screen
+
+	CC_type type;           //!< manner control should be checked in
+
+// Items used during gameplay
+	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
+	bool disabled;              //!< whether this action should be available at all
+	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
+
+	// default const.
+	CCI() : disabled(true){};
+};
+
+enum IoActionId;
+
+/*!
+ * Builder predicate to populate a ControlConfig vector with hardcoded default bindings.
+ */
+class CCI_builder {
+public:
+	/*!
+	 * Initilizes the given ControlConfig vector
+	 */
+	CCI_builder(SCP_vector<CCI>& _ControlConfig);
+
+	/*!
+	 * Start a chain of factory methods. If there are any pre-init work to be done, that's done here.
+	 */
+	CCI_builder& start();
+
+	/*!
+	 * End a chain of factory methods.  If there any post-init work to be done, that's done here.
+	 */
+	CCI_builder& end();
+
+	/*!
+	 * Assigns the hardcoded binding to the given action
+	 * @note This differs from the original hardcode from :V: in the hopes of it being more intuitive to future IoAction additions
+	 */
+	CCI_builder& operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
+
+private:
+	CCI_builder();	// Only one builder per Control Config, so a default constructor is useless
+	SCP_vector<CCI>& ControlConfig;
+};
 
 /*!
  * All available actions
  * This is the value of the id field in config_item
  * The first group of items are ship targeting.
  */
+//...no its not!
+// screw these hardcoded numbers, it makes re-organizing and adding new Id's next to impossible
+// Since we're upgrading the Control_config array into a proper vector, and since we're using contructor predicates we can organize these to however we like and pass the IoActionId to the constructor to ensure the correct placement
 enum IoActionId  {
 	TARGET_NEXT										=0,		//!< target next
 	TARGET_PREV										=1,		//!< target previous
@@ -252,7 +333,7 @@ enum IoActionId  {
 	DOWN_SLIDE_THRUST								=111,	//!< DOWN_SLIDE_THRUST
 	HUD_TARGETBOX_TOGGLE_WIREFRAME					=112,	//!< HUD_TARGETBOX_TOGGLE_WIREFRAME
 	VIEW_TOPDOWN									=113,	//!< VIEW_TOPDOWN
-	VIEW_TRACK_TARGET								=114,	//!< VIEW_TRACK_TARGET
+	VIEW_TRACK_TARGET								=114,	//!< VIEW_TRACK_TARGET (Switfty) Toggle for VM_Track
 
 	//!< @n
 	//!< AutoPilot - Kazan
@@ -296,8 +377,8 @@ extern int Joy_sensitivity;
 
 extern int Control_config_overlay_id;
 
-extern config_item Control_config[];		//!< Stores the keyboard configuration
-extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
+extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
+extern SCP_vector<CCI*> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
