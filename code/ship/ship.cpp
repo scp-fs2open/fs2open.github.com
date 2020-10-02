@@ -3595,9 +3595,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			// clear only those which are actually set in the flags
 			bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
 			bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
+			bool has_display_name = sip->flags[Ship::Info_Flags::Has_display_name];
 			sip->flags.reset();
 			sip->flags.set(Ship::Info_Flags::Afterburner, has_afterburner);
 			sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
+			sip->flags.set(Ship::Info_Flags::Has_display_name, has_display_name);
 		}
 
 		for (auto i = 0; i < num_strings; i++)
