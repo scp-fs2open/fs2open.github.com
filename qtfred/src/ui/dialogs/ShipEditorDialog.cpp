@@ -8,6 +8,8 @@
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 
+#include "mission/object.h"
+
 #include <QCloseEvent>
 
 namespace fso {
@@ -325,7 +327,7 @@ void ShipEditorDialog::updateArrival()
 		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				!(objp->flags[Object::Object_Flags::Marked])) {
-				auto ship = _model->get_ship_from_obj(objp);
+				auto ship = get_ship_from_obj(objp);
 				ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
@@ -339,7 +341,7 @@ void ShipEditorDialog::updateArrival()
 				pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 				Assert(pm);
 				if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-					auto ship = _model->get_ship_from_obj(objp);
+					auto ship = get_ship_from_obj(objp);
 					ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 				}
 			}
@@ -396,7 +398,7 @@ void ShipEditorDialog::updateDeparture()
 			pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 			Assert(pm);
 			if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-				auto ship = _model->get_ship_from_obj(objp);
+				auto ship = get_ship_from_obj(objp);
 				ui->departureTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
