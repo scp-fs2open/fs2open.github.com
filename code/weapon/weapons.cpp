@@ -546,7 +546,7 @@ int weapon_info_get_index(weapon_info *wip)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
+void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> internal_wi_flags)
 {
     const char *spawn_str = NOX("Spawn");
     const size_t spawn_str_len = strlen(spawn_str);
@@ -561,8 +561,8 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
     parse_string_flag_list(parsed_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 
     if (optional_string("+override")) {
-        // reseting the flag values if set to override the existing flags
-        weaponp->wi_flags = wi_flags;
+        // resetting the flag values if set to override the existing flags
+        weaponp->wi_flags = internal_wi_flags;
     }
 	// Now add the parsed flags to the weapon flags
 	weaponp->wi_flags |= parsed_flags;
@@ -785,7 +785,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	bool first_time = false;
 	bool create_if_not_found = true;
 	bool remove_weapon = false;
-    flagset<Weapon::Info_Flags> wi_flags;
+	// be careful to keep this up to date because modular tables can clear flags
+    flagset<Weapon::Info_Flags> preset_wi_flags;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -882,6 +883,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			strcpy_s(wip->display_name, wip->name);
 			end_string_at_first_hash_symbol(wip->display_name);
 			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
+			preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 		}
 
 		// do German translation
@@ -897,6 +899,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	{
 		stuff_string(wip->display_name, F_NAME, NAME_LENGTH);
 		wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
+		preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 	}
 
 	//Set subtype
@@ -1295,10 +1298,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_aspect);
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
 
-                wip->wi_flags.set(Weapon::Info_Flags::Homing_heat); 
-                wi_flags.set(Weapon::Info_Flags::Homing_heat);
-                
-				
+                wip->wi_flags.set(Weapon::Info_Flags::Homing_heat);
+                preset_wi_flags.set(Weapon::Info_Flags::Homing_heat);
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
 			{
@@ -1306,7 +1307,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
 
                 wip->wi_flags.set(Weapon::Info_Flags::Homing_aspect);
-                wi_flags.set(Weapon::Info_Flags::Homing_aspect);
+                preset_wi_flags.set(Weapon::Info_Flags::Homing_aspect);
 			}
 			else if (!stricmp(temp_type, NOX("JAVELIN")))
 			{
@@ -1314,11 +1315,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_aspect);
 
                 wip->wi_flags.set(Weapon::Info_Flags::Homing_javelin);
-                wi_flags.set(Weapon::Info_Flags::Homing_javelin);
+                preset_wi_flags.set(Weapon::Info_Flags::Homing_javelin);
 			}
 
             wip->wi_flags.set(Weapon::Info_Flags::Turns);
-            wi_flags.set(Weapon::Info_Flags::Turns);
+            preset_wi_flags.set(Weapon::Info_Flags::Turns);
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
 		}
@@ -1340,12 +1341,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				//heat default seeker strength is 3
 				stuff_float(&wip->seeker_strength);
-                wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
-				if (wip->seeker_strength <= 0)
+				if (wip->seeker_strength > 0)
+				{
+					wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
+					preset_wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
+				}
+				else
 				{
 					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
 					wip->seeker_strength = 3.0f;
-                    wip->wi_flags.remove(Weapon::Info_Flags::Custom_seeker_str);
 				}
 			}
 			else
@@ -1361,7 +1365,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                     wip->wi_flags.remove(Weapon::Info_Flags::Variable_lead_homing);
 				else {
                     wip->wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
-                    wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
+                    preset_wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 				}
 			}
 		}
@@ -1398,12 +1402,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				//aspect default seeker strength is 2
 				stuff_float(&wip->seeker_strength);
-                wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
-				if (wip->seeker_strength <= 0)
+				if (wip->seeker_strength > 0)
+				{
+					wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
+					preset_wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
+				}
+				else
 				{
 					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
 					wip->seeker_strength = 2.0f;
-					wip->wi_flags.remove(Weapon::Info_Flags::Custom_seeker_str);
 				}
 			} 
 			else
@@ -1411,6 +1418,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				if(!(wip->wi_flags[Weapon::Info_Flags::Custom_seeker_str]))
 					wip->seeker_strength = 2.0f;
 			}
+
 			if (optional_string("+Target Lead Scaler:"))
 			{
 				stuff_float(&wip->target_lead_scaler);
@@ -1418,7 +1426,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->wi_flags.remove(Weapon::Info_Flags::Variable_lead_homing);
 				else {
 					wip->wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
-					wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
+					preset_wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 				}
 			}
 
@@ -1509,7 +1517,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// flag as being a swarm weapon
 		wip->wi_flags.set(Weapon::Info_Flags::Swarm);
-		wi_flags.set(Weapon::Info_Flags::Swarm);
+		preset_wi_flags.set(Weapon::Info_Flags::Swarm);
 	}
 
 	// *Swarm wait token    -Et1
@@ -1675,7 +1683,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	parse_wi_flags(wip, wi_flags);
+	parse_wi_flags(wip, preset_wi_flags);
+
+	// preset_wi_flags does not need to be maintained after the above function is called
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
