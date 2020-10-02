@@ -1139,14 +1139,6 @@ void ShipEditorDialogModel::stuff_special_arrival_anchor_name(char* buf,
 	strlwr(buf);
 }
 
-int ShipEditorDialogModel::get_ship_from_obj(object* objp)
-{
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
-		return objp->instance;
-
-	Int3();
-	return 0;
-}
 
 void ShipEditorDialogModel::set_modified()
 {
