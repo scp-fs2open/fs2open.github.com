@@ -1117,12 +1117,12 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			if ( Player_ai->targeted_subsys ) {
 				vec3d subobj_pos;
 
-				vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &lock_slot->obj->orient);
+				vm_vec_unrotate(&subobj_pos, &Player_ai->targeted_subsys->system_info->pnt, &lock_slot->obj->orient);
 				vm_vec_add2(&subobj_pos, &lock_slot->obj->pos);
 
 				int target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
 
-				if ( !target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
+				if ( !target_subsys_in_sight || Player_ai->targeted_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
 					lock_slot->subsys = ship_get_closest_subsys_in_sight(&Ships[lock_slot->obj->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
 				}
 			} else {
