@@ -60,7 +60,7 @@
 
 #define TOOLTIME						1500.0f
 
-beam Beams[MAX_BEAMS];				// all beams
+std::array<beam, MAX_BEAMS> Beams;				// all beams
 beam Beam_free_list;					// free beams
 beam Beam_used_list;					// used beams
 int Beam_count = 0;					// how many beams are in use
@@ -249,7 +249,7 @@ void beam_level_init()
 	Beam_count = 0;
 	list_init( &Beam_free_list );
 	list_init( &Beam_used_list );
-	memset(Beams, 0, sizeof(beam) * MAX_BEAMS);
+	Beams.fill({});
 
 	// Link all object slots into the free list
 	for (idx=0; idx<MAX_BEAMS; idx++)	{
