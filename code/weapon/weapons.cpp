@@ -2474,7 +2474,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		if (optional_string("+Beam Flags:")) {
-			parse_string_flag_list(wip->b_info.beam_flags, Beam_flags, Num_beam_flags, NULL);
+			parse_string_flag_list(wip->b_info.beam_flags, Beam_flags, Num_beam_flags, nullptr);
 		}
 
 		// beam sections
