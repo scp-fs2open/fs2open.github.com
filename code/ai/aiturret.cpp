@@ -1691,8 +1691,10 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		}
 		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 			turret->weapons.burst_counter[weapon_num] = (myrand() % wip->burst_shots);
+			turret->weapons.burst_seed[weapon_num] = rand32();
 		} else {
 			turret->weapons.burst_counter[weapon_num] = 0;
+			turret->weapons.burst_seed[weapon_num] = rand32();
 		}
 	}
 
@@ -1852,9 +1854,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip)) {
 		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
+		ship_weapon* swp = &turret->weapons;
 		turret->turret_last_fire_direction = *turret_fvec;
 
 		// set next fire timestamp for the turret
+		int old_burst_seed = swp->burst_seed[weapon_num];
 		if (last_shot_in_salvo)
 			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
@@ -1878,6 +1882,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			else
 				fire_info.target_subsys = NULL;
 			fire_info.turret = turret;
+			fire_info.burst_seed = old_burst_seed;
 
 			// fire a beam weapon
 			weapon_objnum = beam_fire(&fire_info);
@@ -1898,7 +1903,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// don't fire swam, but set up swarm info instead
 		else if ((wip->wi_flags[Weapon::Info_Flags::Swarm]) || (wip->wi_flags[Weapon::Info_Flags::Corkscrew])) {
-			ship_weapon *swp = &turret->weapons;
 			if (swp->current_secondary_bank < 0) {
 				swp->current_secondary_bank = 0;
 			}
@@ -1924,8 +1928,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		else {
 			for (int i = 0; i < wip->shots; i++) {
 				if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
-					ship_weapon *swp;
-					swp = &turret->weapons;
 					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
 					if (wip->subtype == WP_LASER) {
 						int points;

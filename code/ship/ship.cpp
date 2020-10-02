@@ -6316,6 +6316,7 @@ void ship_weapon::clear()
         primary_bank_pattern_index[i] = 0;
 
         burst_counter[i] = 0;
+		burst_seed[i] = rand32();
         external_model_fp_counter[i] = 0;
     }
 
@@ -9454,6 +9455,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_primary_fire_stamp[i] = timestamp(0);
 		swp->last_primary_fire_stamp[i] = -1;
 		swp->burst_counter[i] = 0;
+		swp->burst_seed[i] = rand32();
 		swp->last_primary_fire_sound_stamp[i] = timestamp(0);
 	}
 
@@ -9461,6 +9463,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
 		swp->last_secondary_fire_stamp[i] = -1;
 		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
+		swp->burst_seed[i + MAX_SHIP_PRIMARY_BANKS] = rand32();
 	}
 
 	//Countermeasures
@@ -11207,8 +11210,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		} else {
 			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
+			swp->burst_seed[bank_to_fire] = rand32();
 		}
-		if (!((obj->flags[Object::Object_Flags::Player_ship]) || (fast_firing))) {
+		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+		if (!(obj->flags[Object::Object_Flags::Player_ship] || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			if (shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
@@ -11332,16 +11337,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 			
 			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
-				float t;
-				if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-					t = winfo_p->burst_delay;
-					swp->burst_counter[bank_to_fire]++;
-				} else {
-					t = winfo_p->fire_wait;//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
-					swp->burst_counter[bank_to_fire] = 0;
-				}
-				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int) (t * 1000.0f));
-				swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 				beam_fire_info fbfire_info;				
 
 				int points;
@@ -12233,6 +12228,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	} else {
 		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
+		swp->burst_seed[bank_adjusted] = rand32();
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int)(t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();

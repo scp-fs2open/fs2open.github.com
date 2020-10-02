@@ -109,6 +109,12 @@ namespace Weapon {
 
 		NUM_VALUES
 	};
+
+	FLAG_LIST(Beam_Flags) {
+		Burst_share_random,
+
+		NUM_VALUES
+	};
 }
 
 #endif

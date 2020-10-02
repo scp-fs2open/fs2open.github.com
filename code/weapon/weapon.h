@@ -194,6 +194,7 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	flagset<Weapon::Beam_Flags> beam_flags;
 } beam_weapon_info;
 
 typedef struct particle_spew_info {	//this will be used for multi spews

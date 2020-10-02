@@ -8917,6 +8917,7 @@ void ai_chase()
 													} else {
 														swp->burst_counter[current_bank_adjusted] = 0;
 													}
+													swp->burst_seed[current_bank_adjusted] = rand32();
 												}
 											} else {
 												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
@@ -8929,6 +8930,7 @@ void ai_chase()
 													} else {
 														swp->burst_counter[current_bank_adjusted] = 0;
 													}
+													swp->burst_seed[current_bank_adjusted] = rand32();
 												}
 											}
 											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
