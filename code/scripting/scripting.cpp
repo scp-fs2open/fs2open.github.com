@@ -609,7 +609,7 @@ void script_state::SetHookObjects(int num, ...)
 		auto reference = luacpp::UniqueLuaReference::create(LuaState);
 		lua_pop(LuaState, 1); // Remove object value from the stack
 
-		HookVariableValues.emplace(name, std::move(reference));
+		HookVariableValues[name].push_back(std::move(reference));
 	}
 
 	va_end(vl);
@@ -624,11 +624,14 @@ void script_state::RemHookVars(std::initializer_list<SCP_string> names)
 {
 	if (LuaState != nullptr) {
 		for (const auto& hookVar : names) {
-			HookVariableValues.erase(hookVar);
+			Assertion(!HookVariableValues[hookVar].empty(),
+				"Tried to remove uninitialized hook variable '%s'",
+				hookVar.c_str());
+			HookVariableValues[hookVar].pop_back();
 		}
 	}
 }
-const SCP_unordered_map<SCP_string, luacpp::LuaReference>& script_state::GetHookVariableReferences()
+const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& script_state::GetHookVariableReferences()
 {
 	return HookVariableValues;
 }

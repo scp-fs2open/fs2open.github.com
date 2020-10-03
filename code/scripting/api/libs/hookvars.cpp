@@ -29,8 +29,13 @@ ADE_INDEXER(l_HookVar,
 	if (iter == hookVars.end()) {
 		return ADE_RETURN_NIL;
 	}
+	if (iter->second.empty()) {
+		// Hook variable existed at some point but was removed again
+		return ADE_RETURN_NIL;
+	}
 
-	iter->second->pushValue(L);
+	// Use the value on top of the stack
+	iter->second.back()->pushValue(L);
 	return 1;
 }
 
@@ -59,6 +64,11 @@ ADE_INDEXER(l_HookVar_Globals,
 	// List 'em
 	int count = 1;
 	for (const auto& pair : hookVars) {
+		if (pair.second.empty()) {
+			// Skip empty value stacks
+			continue;
+		}
+
 		if (count == idx) {
 			return ade_set_args(L, "s", pair.first);
 		}
@@ -74,8 +84,12 @@ ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of HookVariables", "number", "N
 
 	const auto& hookVars = scriptSystem->GetHookVariableReferences();
 
-	// WMC - Return length, minus the 'Globals' library
-	return ade_set_args(L, "i", hookVars.size());
+	// Since the values are on a stack, it is possible to have entries in the map that have no values at the moment
+	auto validHookVars = std::count_if(hookVars.cbegin(),
+		hookVars.cend(),
+		[](const std::pair<SCP_string, SCP_vector<luacpp::LuaReference>>& values) { return !values.second.empty(); });
+
+	return ade_set_args(L, "i", validHookVars);
 }
 
 } // namespace api
