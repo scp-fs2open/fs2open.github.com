@@ -173,8 +173,9 @@ private:
 
 	// Stores references to the Lua values for the hook variables. Uses a raw reference since we do not need the more
 	// advanced features of LuaValue
-	SCP_unordered_map<SCP_string, luacpp::LuaReference> HookVariableValues;
-private:
+	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
+	// hook is called from within another script (e.g. calls to createShip)
+	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
@@ -221,7 +222,7 @@ public:
 	void RemHookVar(const char *name);
 	void RemHookVars(std::initializer_list<SCP_string> names);
 
-	const SCP_unordered_map<SCP_string, luacpp::LuaReference>& GetHookVariableReferences();
+	const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& GetHookVariableReferences();
 
 	//***Hook creation functions
 	template <typename T>
@@ -266,7 +267,7 @@ void script_state::SetHookVar(const char *name, char format, T&& value)
 		auto reference = luacpp::UniqueLuaReference::create(LuaState);
 		lua_pop(LuaState, 1); // Remove object value from the stack
 
-		HookVariableValues[name] = std::move(reference);
+		HookVariableValues[name].push_back(std::move(reference));
 	}
 }
 

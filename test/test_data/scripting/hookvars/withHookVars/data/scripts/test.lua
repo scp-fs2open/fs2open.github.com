@@ -19,6 +19,18 @@ if invocation == 1 then
     assert.equals("Hello World", hv.Test)
     assert.equals(1234, hv.Value)
 elseif invocation == 2 then
+    assert.equals(2, #hv.Globals)
+    local varNames = {}
+    for i=1, #hv.Globals do
+        table.insert(varNames, hv.Globals[i])
+    end
+    table.sort(varNames)
+
+    assert.tablesEqual({ "Test", "Value" }, varNames)
+
+    assert.equals("Something else", hv.Test)
+    assert.equals(1234, hv.Value)
+elseif invocation == 3 then
     assert.equals(1, #hv.Globals)
     local varNames = {}
     for i=1, #hv.Globals do
@@ -26,7 +38,8 @@ elseif invocation == 2 then
     end
     table.sort(varNames)
 
-    assert.tablesEqual({ "Test" }, varNames)
+    assert.tablesEqual({ "Value" }, varNames)
 
-    assert.equals("Hello World", hv.Test)
+    assert.equals(nil, hv.Test)
+    assert.equals(1234, hv.Value)
 end

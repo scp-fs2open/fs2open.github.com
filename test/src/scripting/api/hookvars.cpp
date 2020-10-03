@@ -28,7 +28,13 @@ TEST_F(HookVarsTest, withHookVars)
 
 	this->EvalTestScript();
 
-	_state->RemHookVar("Value");
+	// Now check that the stack mechanism works. This should result in the old "Test" value
+	_state->RemHookVar("Test");
+
+	this->EvalTestScript();
+
+	// And then check if clearing the stacked value works
+	_state->RemHookVar("Test");
 
 	this->EvalTestScript();
 }
