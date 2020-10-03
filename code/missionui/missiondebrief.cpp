@@ -910,16 +910,18 @@ int debrief_find_persona_index()
 // Goober5000
 // V sez: "defaults to number 9 (Petrarch) for non-volition missions
 // this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point"
-void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index, int default_to_base = 0)
+void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, int persona_index, int default_to_base = 0)
 {
 	if (persona_index >= 0)
 	{
-		// get voice file
-		sprintf(voice_dest, NOX("%d_%s"), persona_index, voice_base);
+		// get voice file, also check for too long base file names via the return value of snprintf
+		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
+		{
+			// if it exists, we're done
+			if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
+				return;
+		}
 
-		// if it exists, we're done
-		if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
-			return;
 	}
 
 	// that didn't work, so use the default
@@ -927,14 +929,16 @@ void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index,
 	// use the base file; don't prepend anything to it
 	if (default_to_base)
 	{
-		strcpy(voice_dest, voice_base);
+		strncpy(voice_dest, voice_base, buf_size);
 	}
 	// default to Petrarch
 	else
 	{
-		strcpy(voice_dest, "9_");
-		strcpy(voice_dest + 2, voice_base);
+		strncpy(voice_dest, "9_", buf_size);
+		strncat(voice_dest, voice_base, buf_size);
 	}
+	// Ensure null terminator
+	voice_dest[buf_size] = '\0';
 }
 
 void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)
@@ -1005,7 +1009,7 @@ void debrief_award_init()
 		Promotion_stage.recommendation_text = "";
 
 		// choose appropriate promotion voice for this mission
-		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base, persona_index);
+		debrief_choose_voice(Promotion_stage.voice, sizeof(Promotion_stage.voice), Ranks[Promoted].promotion_voice_base, persona_index);
 
 		debrief_add_award_text(Ranks[Promoted].name);
 	}
@@ -1028,7 +1032,7 @@ void debrief_award_init()
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, sizeof(Badge_stage.voice), Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
 		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_name());
 	}
@@ -1063,7 +1067,7 @@ void debrief_traitor_init()
 			stagep->text = Traitor.debriefing_text[-1];
 
 		// choose appropriate traitor voice for this mission
-		debrief_choose_voice(stagep->voice, Traitor.traitor_voice_base, persona_index, 1);
+		debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
 
 		stagep->recommendation_text = Traitor.recommendation_text;
 	}

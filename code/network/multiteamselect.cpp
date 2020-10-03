@@ -160,7 +160,7 @@ int Multi_ts_inited = 0;
 int Multi_ts_snazzy_regions;
 ubyte *Multi_ts_mask_data;	
 int Multi_ts_mask_w, Multi_ts_mask_h;
-MENU_REGION	Multi_ts_region[MULTI_TS_NUM_SNAZZY_REGIONS];
+std::array<MENU_REGION, MULTI_TS_NUM_SNAZZY_REGIONS> Multi_ts_region;
 UI_WINDOW Multi_ts_window;
 
 // ship slot data
@@ -1328,7 +1328,7 @@ void multi_ts_init_snazzy()
 
 	// blast the data
 	Multi_ts_snazzy_regions = 0;
-	memset(Multi_ts_region,0,sizeof(MENU_REGION) * MULTI_TS_NUM_SNAZZY_REGIONS);	
+	Multi_ts_region.fill({});
 
 	// get a pointer to the mask bitmap data
 	Multi_ts_mask_data = Multi_ts_window.get_mask_data(&Multi_ts_mask_w, &Multi_ts_mask_h);
@@ -1783,7 +1783,7 @@ void multi_ts_handle_mouse()
 	mouse_get_pos_unscaled(&mouse_x,&mouse_y);
 
 	// do frame for the snazzy menu
-	snazzy_region = snazzy_menu_do(Multi_ts_mask_data, Multi_ts_mask_w, Multi_ts_mask_h, Multi_ts_snazzy_regions, Multi_ts_region, &snazzy_action, 0);
+	snazzy_region = snazzy_menu_do(Multi_ts_mask_data, Multi_ts_mask_w, Multi_ts_mask_h, Multi_ts_snazzy_regions, Multi_ts_region.data(), &snazzy_action, 0);
 
 	region_type = -1;
 	region_index = -1;

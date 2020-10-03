@@ -178,10 +178,10 @@ typedef struct beam {
 	float		beam_width;
 } beam;
 
-extern beam Beams[MAX_BEAMS];				// all beams
+extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
-#define BEAM_INDEX(beam)			(int)((beam) - Beams)
+#define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS

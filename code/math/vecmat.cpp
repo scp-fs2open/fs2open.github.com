@@ -734,7 +734,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	matrix temp = *m;
+	matrix temp = vmd_identity_matrix;
 
 	vec3d *xvec=&temp.vec.rvec;
 	vec3d *yvec=&temp.vec.uvec;

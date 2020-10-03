@@ -10,15 +10,15 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-9, clang-9]
+        compiler: [gcc-5, gcc-10, clang-9]
         cmake_options: [""]
         include:
           # Also include configurations that check if the code compiles without the graphics backends
           - configuration: Debug
-            compiler: gcc-9
+            compiler: gcc-10
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
           - configuration: Release
-            compiler: gcc-9
+            compiler: gcc-10
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-18.04
@@ -36,7 +36,7 @@ jobs:
 
           sudo apt-get -yq update
           sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng-dev libjpeg62-dev \
-            liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-9 vulkan-sdk
+            liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-10 vulkan-sdk
 
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
@@ -69,9 +69,9 @@ jobs:
             export CC=gcc-5
             export CXX=g++-5
           fi
-          if [ "$COMPILER" = "gcc-9" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
+          if [ "$COMPILER" = "gcc-10" ]; then
+            export CC=gcc-10
+            export CXX=g++-10
           fi
           if [ "$COMPILER" = "clang-9" ]; then
             export CC=clang-9
