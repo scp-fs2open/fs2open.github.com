@@ -83,6 +83,7 @@ namespace Weapon {
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
 		Has_display_name,					// Goober5000
+		No_impact_spew,						// Goober5000
 
         NUM_VALUES
 	};
