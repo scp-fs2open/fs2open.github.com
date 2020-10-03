@@ -171,6 +171,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "apply recoil",                   Weapon::Info_Flags::Apply_Recoil,                       true, false },
     { "don't spawn if shot",            Weapon::Info_Flags::Dont_spawn_if_shot,                 true, false },
     { "die on lost lock",               Weapon::Info_Flags::Die_on_lost_lock,                   true, true  }, //special case
+	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -546,7 +547,7 @@ int weapon_info_get_index(weapon_info *wip)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> internal_wi_flags)
+void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_flags)
 {
     const char *spawn_str = NOX("Spawn");
     const size_t spawn_str_len = strlen(spawn_str);
@@ -562,7 +563,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> internal_w
 
     if (optional_string("+override")) {
         // resetting the flag values if set to override the existing flags
-        weaponp->wi_flags = internal_wi_flags;
+        weaponp->wi_flags = preset_wi_flags;
     }
 	// Now add the parsed flags to the weapon flags
 	weaponp->wi_flags |= parsed_flags;

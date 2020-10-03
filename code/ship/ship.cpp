@@ -517,6 +517,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "apply recoil",				Weapon::Info_Flags::Apply_Recoil,						true, false },
     { "don't spawn if shot",		Weapon::Info_Flags::Dont_spawn_if_shot,				    true, false },
     { "die on lost lock",			Weapon::Info_Flags::Die_on_lost_lock,					true, false },
+	{ "no impact spew",				Weapon::Info_Flags::No_impact_spew,						true, false },
 };
 
 const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);

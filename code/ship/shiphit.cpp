@@ -2525,7 +2525,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 				Assert(wip != NULL);
 
-				if (wip->wi_flags[Weapon::Info_Flags::Training]) {
+				if (wip->wi_flags[Weapon::Info_Flags::Training] || wip->wi_flags[Weapon::Info_Flags::No_impact_spew]) {
 					create_sparks = false;
 				}
 			}
