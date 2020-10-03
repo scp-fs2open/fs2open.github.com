@@ -1002,7 +1002,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 		percent_killed = 1.0f;
 	}
 
-	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig) ? 1 : 0);
 
 	return ADE_RETURN_TRUE;
 }
