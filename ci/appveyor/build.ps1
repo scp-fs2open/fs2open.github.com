@@ -12,7 +12,7 @@ $NightlyConfigurations = @(
 	[BuildConfig]@{ 
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="SSE2";
 		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
@@ -20,7 +20,7 @@ $NightlyConfigurations = @(
 	[BuildConfig]@{ 
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="SSE2";
 		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$false;
@@ -30,7 +30,7 @@ $ReleaseConfigurations = @(
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="SSE2";
 		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$true;
@@ -38,7 +38,7 @@ $ReleaseConfigurations = @(
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32-AVX";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="AVX";
 		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$false;
@@ -46,7 +46,7 @@ $ReleaseConfigurations = @(
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="SSE2";
 		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
@@ -54,7 +54,7 @@ $ReleaseConfigurations = @(
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64-AVX";
-		Toolset="v140_xp";
+		Toolset="v140";
 		SimdType="AVX";
 		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
