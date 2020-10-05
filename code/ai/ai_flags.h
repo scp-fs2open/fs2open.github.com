@@ -128,6 +128,7 @@ namespace AI {
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
+		nonshielded_ships_can_manage_ets,
 
 		NUM_VALUES
 	};

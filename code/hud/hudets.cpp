@@ -202,6 +202,7 @@ void ai_manage_ets(object* obj)
 {
 	ship* ship_p = &Ships[obj->instance];
 	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
+	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	if ( ship_info_p->power_output == 0 )
 		return;
@@ -209,30 +210,36 @@ void ai_manage_ets(object* obj)
 	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	// check if any of the three systems are not being used.  If so, don't allow energy management.
-	if ( !ship_p->ship_max_shield_strength || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
-		return;
+	// check if weapons or engines are not being used. If so, don't allow energy management.
+	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
+	if ( !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve || 
+		(!ship_p->ship_max_shield_strength && !aip->ai_profile_flags[AI::Profile_Flags::nonshielded_ships_can_manage_ets]) ) {
+			return;
+	}
 
-	float shield_left_percent = get_shield_pct(obj);
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
-	// maximum level check
+	// maximum level check for weapons
 	//	MK, changed these, might as well let them go up to 100% if nothing else needs the recharge ability.
 	if ( weapon_left_percent == 1.0f) {
 		decrease_recharge_rate(obj, WEAPONS);
 	}
 
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent == 1.0f)) {
-		decrease_recharge_rate(obj, SHIELDS);
+	bool has_shields = !ship_p->ship_max_shield_strength && !(obj->flags[Object::Object_Flags::No_shields]);
+	if (has_shields) {
+		float shield_left_percent = get_shield_pct(obj);
+		// maximum level check for shields
+		if (shield_left_percent == 1.0f) {
+			decrease_recharge_rate(obj, SHIELDS);
+		}
+		// minimum check for shields
+		if (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT) {
+			if (weapon_left_percent > WEAPONS_MIN_LEVEL_PERCENT)
+				increase_recharge_rate(obj, SHIELDS);
+		}
 	}
 
-	// minimum check
-
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT)) {
-		if ( weapon_left_percent > WEAPONS_MIN_LEVEL_PERCENT )
-			increase_recharge_rate(obj, SHIELDS);
-	}
-
+	// minimum check for weapons and engines
 	if ( weapon_left_percent < WEAPONS_MIN_LEVEL_PERCENT ) {
 		increase_recharge_rate(obj, WEAPONS);
 	}
@@ -241,8 +248,9 @@ void ai_manage_ets(object* obj)
 		increase_recharge_rate(obj, ENGINES);
 	}
 
-	// emergency check
-	if (!(obj->flags[Object::Object_Flags::No_shields])) {
+	// emergency check for ships with shields
+	if (has_shields) {
+		float shield_left_percent = get_shield_pct(obj);
 		if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
 			if (ship_p->target_shields_delta == 0.0f)
 				transfer_energy_to_shields(obj);
@@ -250,7 +258,6 @@ void ai_manage_ets(object* obj)
 			if ( shield_left_percent > SHIELDS_MIN_LEVEL_PERCENT || weapon_left_percent <= 0.01 )	// dampen ai enthusiasm for sucking energy to weapons
 				transfer_energy_to_weapons(obj);
 		}
-
 	
 		// check for return to normal values
 		if ( fl_abs( shield_left_percent - 0.5f ) < NORMAL_TOLERANCE_PERCENT ) {
@@ -260,7 +267,6 @@ void ai_manage_ets(object* obj)
 				increase_recharge_rate(obj, SHIELDS);
 		}
 	}
-
 
 	if ( fl_abs( weapon_left_percent - 0.5f ) < NORMAL_TOLERANCE_PERCENT ) {
 		if ( ship_p->weapon_recharge_index > DEFAULT_CHARGE_INDEX )
@@ -276,10 +282,10 @@ void ai_manage_ets(object* obj)
 void set_default_recharge_rates(object* obj)
 {
 	int ship_properties;
-
+	
 	ship* ship_p = &Ships[obj->instance];
 	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
-
+	mprintf(("settig up ETS for ship %s ...\n", ship_p->ship_name));
 	if ( ship_info_p->power_output == 0 )
 		return;
 
@@ -287,9 +293,10 @@ void set_default_recharge_rates(object* obj)
 	if (ship_has_energy_weapons(ship_p))
 		ship_properties |= HAS_WEAPONS;
 	
-	if (!(obj->flags[Object::Object_Flags::No_shields]))
+	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		ship_properties |= HAS_SHIELDS;
-
+		mprintf(("following ship has sheilds %s ...\n", ship_p->ship_name));
+	}
 	if (ship_has_engine_power(ship_p))
 		ship_properties |= HAS_ENGINES;
 
@@ -317,6 +324,7 @@ void set_default_recharge_rates(object* obj)
 			ship_p->shield_recharge_index = ZERO_INDEX;
 			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
 			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			mprintf(("settig shield to 0 for ship %s ...\n", ship_p->ship_name));
 			break;
 
 		case HAS_SHIELDS:
