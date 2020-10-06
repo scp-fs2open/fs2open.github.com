@@ -23,7 +23,7 @@ void training_mission_shutdown();
 void training_check_objectives();
 void message_training_queue(const char *text, int timestamp, int length = -1);
 void message_training_setup(int num, int length = -1);
-void message_translate_tokens(char *buf, const char *text);
+void message_translate_tokens(SCP_string &buf, const char *text);
 void training_fail();
 void message_training_update_frame();
 

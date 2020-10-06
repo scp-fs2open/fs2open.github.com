@@ -8148,7 +8148,7 @@ void weapon_info::reset()
 	this->impact_decal = decals::creation_info();
 }
 
-const char* weapon_info::get_display_name()
+const char* weapon_info::get_display_name() const
 {
 	if (has_display_name())
 		return display_name;
@@ -8156,7 +8156,7 @@ const char* weapon_info::get_display_name()
 		return name;
 }
 
-bool weapon_info::has_display_name()
+bool weapon_info::has_display_name() const
 {
 	return wi_flags[Weapon::Info_Flags::Has_display_name];
 }

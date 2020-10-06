@@ -761,8 +761,8 @@ public:
 	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
 	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
-	const char* get_display_name();
-	bool has_display_name();
+	const char* get_display_name() const;
+	bool has_display_name() const;
 
 	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
 };
@@ -1338,8 +1338,8 @@ public:
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
 
-	const char* get_display_name();
-	bool has_display_name();
+	const char* get_display_name() const;
+	bool has_display_name() const;
 
 private:
 	void move(ship_info&& other);

@@ -1857,7 +1857,7 @@ ship_info::~ship_info()
 	free_strings();
 }
 
-const char* ship_info::get_display_name()
+const char* ship_info::get_display_name() const
 {
 	if (has_display_name())
 		return display_name;
@@ -1865,7 +1865,7 @@ const char* ship_info::get_display_name()
 		return name;
 }
 
-bool ship_info::has_display_name()
+bool ship_info::has_display_name() const
 {
 	return flags[Ship::Info_Flags::Has_display_name];
 }
@@ -6241,10 +6241,10 @@ void ship::clear()
 
 	autoaim_fov = 0.0f;
 }
-bool ship::has_display_name() {
+bool ship::has_display_name() const {
 	return flags[Ship::Ship_Flags::Has_display_name];
 }
-const char* ship::get_display_name() {
+const char* ship::get_display_name() const {
 	if (has_display_name()) {
 		return display_name.c_str();
 	} else {

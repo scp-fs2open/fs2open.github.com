@@ -5238,27 +5238,41 @@ void hudtarget_page_in()
 	}
 }
 
-void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
+void hud_stuff_ship_name(char *ship_name_text, const ship *shipp)
+{
+	strcpy(ship_name_text, hud_get_ship_name(shipp).c_str());
+}
+
+SCP_string hud_get_ship_name(const ship *shipp)
 {
 	// print ship name
 	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
-		*ship_name_text = 0;
+		return "";
+	} else if (Disable_built_in_translations) {
+		return shipp->get_display_name();
 	} else {
-		strcpy(ship_name_text, shipp->get_display_name());
-
-		if (!Disable_built_in_translations) {
-			// handle translation
-			if (Lcl_gr) {
-				lcl_translate_targetbox_name_gr(ship_name_text);
-			} else if (Lcl_pl) {
-				lcl_translate_targetbox_name_pl(ship_name_text);
-			}
+		// handle translation
+		if (Lcl_gr) {
+			char buf[128];
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
+		} else if (Lcl_pl) {
+			char buf[128];
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
+		} else {
+			return shipp->get_display_name();
 		}
 	}
 }
 
+void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp)
+{
+	strcpy(ship_callsign_text, hud_get_ship_callsign(shipp).c_str());
+}
+
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
+SCP_string hud_get_ship_callsign(const ship *shipp)
 {
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -5266,57 +5280,79 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 		int pn = multi_find_player_by_object( &Objects[shipp->objnum] );
 
 		if (pn >= 0) {
-			strcpy(ship_callsign_text, Net_players[pn].m_player->short_callsign);
-			return;
+			return Net_players[pn].m_player->short_callsign;
 		}
 	}
 
+	SCP_string ship_callsign_text;
+
 	// try to get callsign
 	if (Fred_running) {
-		strcpy(ship_callsign_text, Fred_callsigns[shipp-Ships]);
+		ship_callsign_text = Fred_callsigns[shipp-Ships];
 	} else {
-		*ship_callsign_text = 0;
 		if (shipp->callsign_index >= 0) {
-			strcpy(ship_callsign_text, mission_parse_lookup_callsign_index(shipp->callsign_index));
+			ship_callsign_text = mission_parse_lookup_callsign_index(shipp->callsign_index);
 		}
 	}
 
 	if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_callsign_text);
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
 		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_callsign_text);
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return ship_callsign_text;
 }
 
-extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
+void hud_stuff_ship_class(char *ship_class_text, const ship *shipp)
 {
+	strcpy(ship_class_text, hud_get_ship_class(shipp).c_str());
+}
+
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
+SCP_string hud_get_ship_class(const ship *shipp)
+{
+	SCP_string ship_class_text;
+
 	// try to get alt name
 	if (Fred_running) {
-		strcpy(ship_class_text, Fred_alt_names[shipp-Ships]);
+		ship_class_text = Fred_alt_names[shipp-Ships];
 	} else {
-		*ship_class_text = 0;
 		if (shipp->alt_type_index >= 0) {
-			strcpy(ship_class_text, mission_parse_lookup_alt_index(shipp->alt_type_index));
+			ship_class_text = mission_parse_lookup_alt_index(shipp->alt_type_index);
 		}
 	}
 
 	// maybe get ship class
-	if (!*ship_class_text) {
-		strcpy(ship_class_text, Ship_info[shipp->ship_info_index].get_display_name());
+	if (ship_class_text.empty()) {
+		ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
 	}
 
 	if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_class_text);
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
 		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_class_text);
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return ship_class_text;
 }
 
 HudGaugeCmeasures::HudGaugeCmeasures():
