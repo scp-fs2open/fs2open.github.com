@@ -523,7 +523,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
-				set_flag(profile, "$Ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
