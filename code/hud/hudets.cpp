@@ -225,7 +225,7 @@ void ai_manage_ets(object* obj)
 		decrease_recharge_rate(obj, WEAPONS);
 	}
 
-	if (obj->flags[Object::Object_Flags::No_shields]) {
+	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		float shield_left_percent = get_shield_pct(obj);
 		// maximum level check for shields
 		if (shield_left_percent == 1.0f) {
@@ -248,7 +248,7 @@ void ai_manage_ets(object* obj)
 	}
 
 	// emergency check for ships with shields
-	if (obj->flags[Object::Object_Flags::No_shields]) {
+	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		float shield_left_percent = get_shield_pct(obj);
 		if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
 			if (ship_p->target_shields_delta == 0.0f)
