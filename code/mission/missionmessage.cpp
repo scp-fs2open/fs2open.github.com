@@ -233,7 +233,7 @@ const auto OnMessageReceivedHook = scripting::Hook::Factory(
 	});
 
 // forward declarations
-void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream);
+void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_scream);
 int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
@@ -1292,8 +1292,8 @@ void message_play_anim( message_q *q )
  */
 void message_queue_process()
 {	
-	char	buf[MESSAGE_LENGTH];
-	char who_from[NAME_LENGTH];	
+	SCP_string buf;
+	SCP_string who_from;
 	message_q *q;
 	int i;
 	MissionMessage *m;
@@ -1575,16 +1575,13 @@ void message_queue_process()
 	Message_wave_duration = 0;
 
 	// translate tokens in message to the real things
-	if (q->special_message == NULL)
-		message_translate_tokens(buf, m->message);
-	else
-		message_translate_tokens(buf, q->special_message);
+	buf = message_translate_tokens(q->special_message ? q->special_message : m->message);
 
-	Message_expire = timestamp(static_cast<int>(42 * strlen(buf)));
+	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
-		fsspeech_play(FSSPEECH_FROM_INGAME, buf);
+		fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
 	}
 
 	// play animation for head
@@ -1596,7 +1593,7 @@ void message_queue_process()
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
 	if (Sound_enabled && !Playing_messages[Num_messages_playing].wave.isValid()) {
-		strcat_s( buf, NOX("..(no wavefile for voice)"));
+		buf += NOX("..(no wavefile for voice)");
 		snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 	}
 #endif
@@ -1605,19 +1602,21 @@ void message_queue_process()
 	if ( Message_shipnum >= 0 ) {
 		ship *shipp = &Ships[Message_shipnum];
 		if ( shipp->callsign_index >= 0 ) {
-			hud_stuff_ship_callsign( who_from, shipp );
+			who_from = hud_get_ship_callsign( shipp );
 		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
-			hud_stuff_ship_class( who_from, shipp );
+			who_from = hud_get_ship_class( shipp );
 		} else {
-			strcpy_s( who_from, shipp->get_display_name() );
+			who_from = shipp->get_display_name();
 		}
 	} else {
-		strcpy_s( who_from, q->who_from );
+		who_from = q->who_from;
 	}
 
-	if ( !stricmp(who_from, "<none>") ) {
-		HUD_sourced_printf( q->source, NOX("%s"), buf );
-	} else HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
+	if ( !stricmp(who_from.c_str(), "<none>") ) {
+		HUD_sourced_printf( q->source, NOX("%s"), buf.c_str() );
+	} else {
+		HUD_sourced_printf( q->source, NOX("%s: %s"), who_from.c_str(), buf.c_str() );
+	}
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
@@ -2240,7 +2239,7 @@ void message_maybe_distort()
 //					 Blank out portions of the sound based on Distort_num, this this is that same
 //					 data that will be used to blank out portions of the audio playback
 //
-void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
+void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_scream)
 {
 	int voice_duration;
 
@@ -2248,15 +2247,14 @@ void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 		return;
 	}
 
-	auto buffer_size = strlen(text);
-	auto len         = unicode::num_codepoints(text, text + buffer_size);
+	auto len         = unicode::num_codepoints(text.begin(), text.end());
 	if (Message_wave_duration == 0) {
 		SCP_string result_str;
 
 		size_t next_distort = 5 + myrand() % 5;
 		size_t i            = 0;
 		size_t run = 0;
-		for (auto cp : unicode::codepoint_range(text)) {
+		for (auto cp : unicode::codepoint_range(text.c_str())) {
 			if (i == next_distort) {
 				run = 3 + myrand() % 5;
 				if (i + run > len)
@@ -2276,8 +2274,7 @@ void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 
 			++i;
 		}
-		Assertion(result_str.size() <= buffer_size, "Buffer after scrambling message is bigger than before!");
-		strcpy(text, result_str.c_str());
+		text = std::move(result_str);
 		return;
 	}
 
@@ -2286,7 +2283,7 @@ void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 	// distort text
 	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
 	Distort_next = 0;
-	unicode::codepoint_range range(text);
+	unicode::codepoint_range range(text.c_str());
 	auto curr_iter = range.begin();
 	size_t curr_offset = 0;
 	SCP_string result_str;
@@ -2319,8 +2316,7 @@ void message_maybe_distort_text(char *text, int shipnum, bool for_death_scream)
 		if ( Distort_next >= MAX_DISTORT_LEVELS )
 			Distort_next = 0;
 	}
-	Assertion(result_str.size() <= buffer_size, "Buffer after scrambling message is bigger than before!");
-	strcpy(text, result_str.c_str());
+	text = std::move(result_str);
 	
 	Distort_next = 0;
 }
