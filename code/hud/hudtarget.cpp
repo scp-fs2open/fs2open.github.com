@@ -5248,22 +5248,22 @@ SCP_string hud_get_ship_name(const ship *shipp)
 	// print ship name
 	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
 		return "";
-	} else if (Disable_built_in_translations) {
-		return shipp->get_display_name();
-	} else {
+	} else if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
 			char buf[128];
+			strcpy(buf, shipp->get_display_name());
 			lcl_translate_targetbox_name_gr(buf);
 			return buf;
 		} else if (Lcl_pl) {
 			char buf[128];
+			strcpy(buf, shipp->get_display_name());
 			lcl_translate_targetbox_name_pl(buf);
 			return buf;
-		} else {
-			return shipp->get_display_name();
 		}
 	}
+
+	return shipp->get_display_name();
 }
 
 void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp)
