@@ -655,7 +655,7 @@ SCP_string message_translate_tokens(const char *text)
 
 							if (r) {  // do they want to abort the mission?
 								gameseq_post_event(GS_EVENT_END_GAME);
-								return;
+								return buf;
 							}
 
 							gameseq_post_event(GS_EVENT_CONTROL_CONFIG);  // goto control config screen to bind the control
@@ -1034,7 +1034,7 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 		y = position[1] + i * height + height / 2 + 1;
 
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
-			if ((count < MAX_TRAINING_MESSAGE_MODS) && ((str - Training_lines[i]) == Training_message_mods[count].pos)) {
+			if ((count < MAX_TRAINING_MESSAGE_MODS) && (static_cast<size_t>(str - Training_lines[i]) == Training_message_mods[count].pos)) {
 				buf[z] = 0;
 				renderPrintf(x, y, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);

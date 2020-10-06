@@ -2274,7 +2274,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 
 			++i;
 		}
-		text = result_str;
+		text = std::move(result_str);
 		return;
 	}
 
@@ -2316,7 +2316,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 		if ( Distort_next >= MAX_DISTORT_LEVELS )
 			Distort_next = 0;
 	}
-	text = result_str;
+	text = std::move(result_str);
 	
 	Distort_next = 0;
 }
