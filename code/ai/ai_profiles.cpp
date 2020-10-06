@@ -523,6 +523,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
+				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{
@@ -670,6 +672,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+		flags.set(AI::Profile_Flags::nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
