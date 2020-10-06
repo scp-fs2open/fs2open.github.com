@@ -1575,10 +1575,7 @@ void message_queue_process()
 	Message_wave_duration = 0;
 
 	// translate tokens in message to the real things
-	if (q->special_message == NULL)
-		message_translate_tokens(buf, m->message);
-	else
-		message_translate_tokens(buf, q->special_message);
+	buf = message_translate_tokens(q->special_message ? q->special_message : m->message);
 
 	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
 

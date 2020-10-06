@@ -247,8 +247,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			SCP_string temp_buf;
-			message_translate_tokens(temp_buf, Mission_events[z].objective_key_text);  // remap keys
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text);  // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
 		} else {
@@ -622,13 +621,13 @@ char *translate_message_token(char *str)
 /**
  * Translates all special tokens in a message, producing the new finalized message to be displayed
  */
-void message_translate_tokens(SCP_string &buf, const char *text)
+SCP_string message_translate_tokens(const char *text)
 {
 	char temp[40], *ptr;
 	const char *toke1, *toke2;
 	int r;
+	SCP_string buf;
 
-	buf.clear();
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
 	while (toke1 || toke2) {  // is either token types present?
@@ -696,7 +695,7 @@ void message_translate_tokens(SCP_string &buf, const char *text)
 	}
 
 	buf += text;
-	return;
+	return buf;
 }
 
 /**
@@ -804,10 +803,7 @@ void message_training_setup(int m, int length, char *special_message)
 	}
 
 	// translate tokens in message to the real things
-	if (special_message == NULL)
-		message_translate_tokens(Training_buf, Messages[m].message);
-	else
-		message_translate_tokens(Training_buf, special_message);
+	Training_buf = message_translate_tokens(special_message ? special_message : Messages[m].message);
 
 	HUD_add_to_scrollback(Training_buf.c_str(), HUD_SOURCE_TRAINING);
 
@@ -1100,7 +1096,7 @@ void training_process_message()
 	}
 
 	if (count < MAX_TRAINING_MESSAGE_MODS)
-		Training_message_mods[count].pos = NULL;
+		Training_message_mods[count].pos = 0;
 }
 
 void training_fail()
