@@ -1229,10 +1229,10 @@ void multi_do_frame()
 				}
 			} else if ( !(Player_ship->is_departing() ) ){
 				// if the rate limiting system says its ok
-//				if(multi_oo_cirate_can_send()){
+				if(multi_oo_cirate_can_send()){
 					// use the new method
-					multi_oo_send_control_info(); // Cyborg17 - Don't limit clients updating themselves.
-//				}				
+					multi_oo_send_control_info();
+				}				
 			}
 
 			// bytes received info
