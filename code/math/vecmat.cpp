@@ -2753,7 +2753,6 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	
 	Assertion((interp_perc >= 0.0f) && (interp_perc <= 1.0f), "Interpolation percentage, %f, sent to vm_interpolate_angles is invalid. The valid range is [0,1], go find a coder!", interp_perc);
 
-
 	angles arc_measures;
 
 	arc_measures.p = src1->p - src0->p;	
@@ -2764,69 +2763,42 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	  // if start and end are basically the same, assume we can basically jump to the end.
 	if ( (fabs(arc_measures.p) < 0.00001f) ) {
 		arc_measures.p = 0.0f;
-	} // Test for positive difference
-	else if (arc_measures.p > 0.0f)  {
 
-		// do we actually need to go in the other direction
-		if (arc_measures.p > (PI*1.5f)) {
-			arc_measures.p = PI2 - arc_measures.p;
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.p > (PI*1.5f)) {
+		arc_measures.p = PI2 - arc_measures.p;
 
-		}
-
-	} // Negative difference then.
-	else {
-
-		// do we actually need to go in the other direction
-		if (arc_measures.p < -PI_2) {
-			arc_measures.p = -PI2 - arc_measures.p;
-
-		}
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.p < -PI_2) {
+		arc_measures.p = -PI2 - arc_measures.p;
 	}
 
-	// heading
-	// if start and end are basically the same, assume we can basically jump to the end.
+	  // heading
+	  // if start and end are basically the same, assume we can basically jump to the end.
 	if ( (fabs(arc_measures.h) < 0.00001f) ) {
 		arc_measures.h = 0.0f;
-	} // Test for positive difference
-	else if (arc_measures.h > 0.0f)  {
 
-		// do we actually need to go in the other direction
-		if (arc_measures.h > (PI*1.5f)) {
-			arc_measures.h = PI2 - arc_measures.h;
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.h > (PI*1.5f)) {
+		arc_measures.h = PI2 - arc_measures.h;
 
-		}
-
-	} // Negative difference then.
-	else {
-
-		// do we actually need to go in the other direction
-		if (arc_measures.h < -PI_2) {
-			arc_measures.h = -PI2 - arc_measures.h;
-
-		}
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.h < -PI_2) {
+		arc_measures.h = -PI2 - arc_measures.h;
 	}
 
 	// bank
 	// if start and end are basically the same, assume we can basically jump to the end.
 	if ( (fabs(arc_measures.b) < 0.00001f) ) {
 		arc_measures.b = 0.0f;
-	} // Test for positive difference
-	else if (arc_measures.b > 0.0f)  {
 
-		// do we actually need to go in the other direction
-		if (arc_measures.b > (PI*1.5f)) {
-			arc_measures.b = PI2 - arc_measures.b;
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.b > (PI*1.5f)) {
+		arc_measures.b = PI2 - arc_measures.b;
 
-		}
-
-	} // Negative difference then.
-	else {
-
-		// do we actually need to go in the other direction
-		if (arc_measures.b < -PI_2) {
-			arc_measures.b = -PI2 - arc_measures.b;
-
-		}
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.b < -PI_2) {
+		arc_measures.b = -PI2 - arc_measures.b;
 	}
 
 	// Now just multiply the difference in angles by the given percentage, and then subtract it from the destination angles.
