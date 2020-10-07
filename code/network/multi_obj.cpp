@@ -188,9 +188,6 @@ oo_general_info Oo_info;
 // flags
 bool Afterburn_hack = false;			// HACK!!!
 
-// for multilock
-#define OOC_INDEX_NULLPTR_SUBSYSEM			255			// If a lock has a nullptr subsystem, send this as the invalid index.
-
 // returns the last frame's index.
 int multi_find_prev_frame_idx();
 
