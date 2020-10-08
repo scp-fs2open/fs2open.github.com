@@ -1543,7 +1543,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 
 		vec3d local_desired_vel = vmd_zero_vector;
 		
-		bool full_physics = (oo_flags & OO_FULL_PHYSICS);
+		bool full_physics = (oo_flags & OO_FULL_PHYSICS) ? true : false;
 
 		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
 		offset += r5;
@@ -2289,7 +2289,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.ref_timestamp = -1;
 	Oo_info.most_recent_updated_net_signature = 0;
 	Oo_info.most_recent_frame = 0;
-	for (int i = 0; i < MAX_PLAYERS; i++) {
+	for (int i = 0; i < MAX_PLAYERS; i++) { // NOLINT
 		Oo_info.received_frametimes[i].clear();
 		Oo_info.received_frametimes[i].reserve(36000); // enough memory for 10 minutes worth of frame time.
 	}
@@ -2298,7 +2298,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.wrap_count = 0;
 	Oo_info.larger_wrap_count = 0;
 	Oo_info.cur_frame_index = 0;
-	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) {
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
 
@@ -2306,7 +2306,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.rollback_wobjp.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
-	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) {
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.rollback_shots_to_be_fired[i].clear();
 		Oo_info.rollback_shots_to_be_fired[i].reserve(20);
 	}
@@ -2415,7 +2415,7 @@ void multi_init_oo_and_ship_tracker()
 
 	// reset datarate stamp now
 	extern int OO_gran;
-	for(int i=0; i<MAX_PLAYERS; i++){
+	for(int i=0; i<MAX_PLAYERS; i++){ // NOLINT
 		Net_players[i].s_info.rate_stamp = timestamp( (int)(1000.0f / (float)OO_gran) );
 	}
 }
