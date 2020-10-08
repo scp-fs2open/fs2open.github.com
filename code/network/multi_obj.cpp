@@ -874,8 +874,8 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	ADD_DATA( out_flags );
 
 	// client targeting information	
-	ushort t_subsys = -1;
-	ushort l_subsys = -1;
+	ushort t_subsys = OOC_INDEX_NULLPTR_SUBSYSEM;
+	ushort l_subsys = OOC_INDEX_NULLPTR_SUBSYSEM;
 
 	// if nothing targeted
 	if(Player_ai->target_objnum == -1){
@@ -1360,14 +1360,14 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 		// assign subsystems if possible					
 		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
 			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = nullptr;
-			if ((t_subsys != -1) && (tobj->type == OBJ_SHIP)) {
+			if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
 				Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
 			}
 		}
 
 		pl->m_player->locking_subsys = nullptr;
 		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
-			if ((l_subsys != -1) && (tobj->type == OBJ_SHIP)) {
+			if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
 				pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
 			}
 		}
@@ -1385,7 +1385,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 	temp_lock_info.locked = true;
 
 	ushort multilock_target_net_signature;
-	ubyte subsystem_index;
+	ushort subsystem_index;
 
 	// clear whatever we had before, because we're getting brand new info straight from the client.
 	if (shipp != nullptr) {
@@ -1395,7 +1395,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 	// add each lock, one at a time.
 	for (int i = 0; i < count; i++) {
 		GET_USHORT(multilock_target_net_signature);
-		GET_DATA(subsystem_index);
+		GET_USHORT(subsystem_index);
 		temp_lock_info.obj = multi_get_network_object(multilock_target_net_signature);
 
 		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
