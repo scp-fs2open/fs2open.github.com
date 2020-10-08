@@ -1543,7 +1543,11 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 
 		vec3d local_desired_vel = vmd_zero_vector;
 		
-		bool full_physics = (oo_flags & OO_FULL_PHYSICS) ? true : false;
+		bool full_physics = false;
+
+		if (oo_flags & OO_FULL_PHYSICS) {
+			full_physics = true;
+		}
 
 		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
 		offset += r5;
