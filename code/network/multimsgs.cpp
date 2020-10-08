@@ -39,10 +39,12 @@
 #include "network/multi_ingame.h"
 #include "network/multiteamselect.h"
 #include "ai/aigoals.h"
+#include "ai/ai.h"
 #include "network/multi_campaign.h"
 #include "network/multi_team.h"
 #include "network/multi_respawn.h"
 #include "network/multi_observer.h"
+#include "network/multi_obj.h"
 #include "asteroid/asteroid.h"
 #include "network/multi_pmsg.h"
 #include "object/object.h"
@@ -3956,7 +3958,12 @@ void send_observer_update_packet()
 
 	ret = multi_pack_unpack_position( 1, data + packet_size, &Player_obj->pos );
 	packet_size += ret;
-	ret = multi_pack_unpack_orient( 1, data + packet_size, &Player_obj->orient );
+	
+	angles temp_angles;
+
+	vm_extract_angles_matrix_alternate(&temp_angles, &Player_obj->orient);
+	ret = multi_pack_unpack_orient( 1, data + packet_size, &temp_angles);
+
 	packet_size += ret;
 
 	// add targeting infomation
@@ -3976,6 +3983,7 @@ void process_observer_update_packet(ubyte *data, header *hinfo)
 	int offset,ret;
 	int obs_num;
 	vec3d g_vec;
+	angles temp_angles;
 	matrix g_mat;
 	physics_info bogus_pi;	
 	ushort target_sig;
@@ -3987,7 +3995,9 @@ void process_observer_update_packet(ubyte *data, header *hinfo)
 	memset(&bogus_pi,0,sizeof(physics_info));
 	ret = multi_pack_unpack_position( 0, data + offset, &g_vec );
 	offset += ret;
-	ret = multi_pack_unpack_orient( 0, data + offset, &g_mat );
+
+	ret = multi_pack_unpack_orient( 0, data + offset, &temp_angles );
+	vm_angles_2_matrix(&g_mat, &temp_angles);
 	offset += ret;
 
 	// targeting information

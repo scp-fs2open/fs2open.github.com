@@ -2449,6 +2449,8 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
 		}
+		// also add this ship to the multi ship tracking and interpolation struct
+		multi_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead

@@ -6156,16 +6156,6 @@ void ship::clear()
 	level2_tag_total = 0.0f;
 	level2_tag_left = -1.0f;
 
-	for (i = 0; i < MAX_PLAYERS; i++ )
-	{
-		np_updates[i].seq = 0;
-		np_updates[i].update_stamp = -1;
-		np_updates[i].status_update_stamp = -1;
-		np_updates[i].subsys_update_stamp = -1;
-		np_updates[i].pos_chksum = 0;
-		np_updates[i].orient_chksum = 0;
-	}
-
 	lightning_stamp = timestamp(-1);
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
@@ -6370,11 +6360,6 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	ship_info	*sip = &(Ship_info[ship_type]);
 	ship_weapon	*swp = &shipp->weapons;
 	polymodel *pm = model_get(sip->model_num);
-
-	extern int oo_arrive_time_count[MAX_SHIPS];		
-	extern int oo_interp_count[MAX_SHIPS];	
-	oo_arrive_time_count[shipp - Ships] = 0;
-	oo_interp_count[shipp - Ships] = 0;
 
 	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
 	shipp->ship_info_index = ship_type;

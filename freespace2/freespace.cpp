@@ -947,6 +947,7 @@ void game_level_init()
 	NavSystem_Init();				// zero out the nav system
 
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
+	multi_init_oo_and_ship_tracker();	// Inits/resets multiplayer ship tracking system.  Has to be done before creating any ships.
 	ship_level_init();
 	player_level_init();
 	shipfx_flash_init();			// Init the ship gun flash system.
@@ -5648,11 +5649,6 @@ void mouse_force_pos(int x, int y);
 			// when coming from the multi paused state, reset the timestamps
 			if ( (Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MULTI_PAUSED) ){
 				multi_reset_timestamps();
-			}
-
-			if ((Game_mode & GM_MULTIPLAYER) && (old_state != GS_STATE_DEATH_BLEW_UP) ) {
-				// initialize all object update details
-				multi_oo_gameplay_init();
 			}
 	
 			// under certain circumstances, the server should reset the object update rate limiting stuff

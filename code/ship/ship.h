@@ -657,9 +657,6 @@ public:
 	float level2_tag_total;							// total tag time
 	float level2_tag_left;							// total tag remaining	
 
-	// old-style object update stuff
-	np_update		np_updates[MAX_PLAYERS];	// for both server and client
-
 	// lightning timestamp
 	int lightning_stamp;
 

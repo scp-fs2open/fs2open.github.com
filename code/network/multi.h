@@ -63,9 +63,10 @@ class player;
 // version 48 - 8/15/2016 Multiple changes to the packet format for multi sexps
 // version 49 - 7/26/2020 Addition of multilock
 // version 50 - 7/27/2020 IPv6
+// version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							50
+#define MULTI_FS_SERVER_VERSION							51
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -190,9 +191,10 @@ class player;
 #define OPTIONS_UPDATE				0x28		// options (netgame or local) update packet
 #define CLIENT_UPDATE				0x29		// sent from server to client periodically to update important info (pause status, etc)
 #define CD_VERIFY						0x2A		// cd verification update
-#define PRIMARY_FIRED_NEW			0x2B		// for client-side firing - highly streamlined
+#define PRIMARY_FIRED_NEW			0x2B		// For ships on the server, and client-side firing on LINEAR_WEAPON_FIRED fail
 #define COUNTERMEASURE_NEW			0x2C		// for client-side firing
 #define EVENT_UPDATE					0x2D		// event change
+#define LINEAR_WEAPON_FIRED			0x2E		//  Cyborg17 - for firing of non-homing weapons from the player on a client to send to the server
 
 #define SECONDARY_FIRED_AI			0xA0		// fired a secondary weapon (ai ship)
 #define SECONDARY_FIRED_PLR		0xA1		// fired a secondary weapon (player ship)
@@ -723,24 +725,28 @@ extern net_player *Net_player;										// pointer to console's net_player entry
 
 // network object management
 #define SHIP_SIG_MIN				1
-#define SHIP_SIG_MAX				(0x2fff)
+#define SHIP_SIG_MAX				(0x1fef)		// Cyborg17 - 8000 ships ought to be enough.
 
 #define STANDALONE_SHIP_SIG	(SHIP_SIG_MAX+1)
-#define REAL_SHIP_SIG_MAX		(0x3fff)
+#define REAL_SHIP_SIG_MAX		(0x1fff)			 
 
 #define DEBRIS_SIG_MIN			(REAL_SHIP_SIG_MAX+1)
-#define DEBRIS_SIG_MAX			(0x5fff)
+#define DEBRIS_SIG_MAX			(0x3fff)			// allows for 1000 ships to be destroyed and for ~8 debris chunks to be generated for each.
 
 #define ASTEROID_SIG_MIN		(DEBRIS_SIG_MAX+1)
-#define ASTEROID_SIG_MAX		(0x7fff)
+#define ASTEROID_SIG_MAX		(0x6fff)			
 
-#define NPERM_SIG_MIN			(ASTEROID_SIG_MAX+1)
-#define NPERM_SIG_MAX			(0xffff)
+#define WAYPOINT_SIG_MIN		(ASTEROID_SIG_MAX+1)
+#define WAYPOINT_SIG_MAX		(0x7fff)			// required for dynamic waypoints.
+
+#define NPERM_SIG_MIN			(WAYPOINT_SIG_MAX+1)
+#define NPERM_SIG_MAX			(0xffff)			// Allows us to have ~ 30K weapons simultaneously in a mission.
 
 extern ushort Next_ship_signature;									// next network signature to assign to an object
 extern ushort Next_asteroid_signature;								// next asteroid signature
 extern ushort Next_non_perm_signature;								// next non-permanent signature
 extern ushort Next_debris_signature;								// next debris signature
+extern ushort Next_waypoint_signature;								// next waypoint signature for dynamic waypoints in multi missions
 
 // netgame vars
 extern netgame_info Netgame;											// netgame information

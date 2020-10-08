@@ -2744,3 +2744,66 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 	vm_vec_rotate(&temp, &match_orient->vec.rvec, &source_frame);
 	vm_vec_unrotate(out_rvec, &temp, &dest_frame);
 }
+
+// Cyborg17 - Rotational interpolation between two angle structs in radians.  Assumes that the rotation direction is the smaller arc difference.
+// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f inclusive.
+// rot_vel is only used to determine the rotation direction. This functions assumes a <= 2PI rotation in any axis.  
+// You will get inaccurate results otherwise.
+void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, float interp_perc) {
+	
+	Assertion((interp_perc >= 0.0f) && (interp_perc <= 1.0f), "Interpolation percentage, %f, sent to vm_interpolate_angles is invalid. The valid range is [0,1], go find a coder!", interp_perc);
+
+	angles arc_measures;
+
+	arc_measures.p = src1->p - src0->p;	
+	arc_measures.h = src1->h - src0->h;	
+	arc_measures.b = src1->b - src0->b;
+
+	  // pitch
+	  // if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.p) < 0.00001f) ) {
+		arc_measures.p = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.p > (PI*1.5f)) {
+		arc_measures.p = PI2 - arc_measures.p;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.p < -PI_2) {
+		arc_measures.p = -PI2 - arc_measures.p;
+	}
+
+	  // heading
+	  // if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.h) < 0.00001f) ) {
+		arc_measures.h = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.h > (PI*1.5f)) {
+		arc_measures.h = PI2 - arc_measures.h;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.h < -PI_2) {
+		arc_measures.h = -PI2 - arc_measures.h;
+	}
+
+	// bank
+	// if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.b) < 0.00001f) ) {
+		arc_measures.b = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.b > (PI*1.5f)) {
+		arc_measures.b = PI2 - arc_measures.b;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.b < -PI_2) {
+		arc_measures.b = -PI2 - arc_measures.b;
+	}
+
+	// Now just multiply the difference in angles by the given percentage, and then subtract it from the destination angles.
+	// If arc_measures is 0.0f, then we are basically bashing to the ending orientation without worrying about the inbetween.
+	dest0->p = src0->p + (arc_measures.p * interp_perc);
+	dest0->h = src0->h + (arc_measures.h * interp_perc);
+	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
