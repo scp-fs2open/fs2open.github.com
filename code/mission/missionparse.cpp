@@ -4190,7 +4190,18 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+			bool needs_display_name;
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
+
+			// set up display name if we need to
+			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+			if (needs_display_name)
+			{
+				p_objp->display_name = p_objp->name;
+				end_string_at_first_hash_symbol(p_objp->display_name);
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
 			if (!ship_registry_get(p_objp->name))

@@ -12945,8 +12945,11 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	return count;
 }
 
-void wing_bash_ship_name(char *ship_name, const char *wing_name, int index)
+void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name)
 {
+	if (needs_display_name)
+		*needs_display_name = false;
+
 	// if wing name has a hash symbol, create the ship name a particular way
 	// (but don't do this for names that have the hash as the first or last character)
 	const char *p = get_pointer_to_first_hash_symbol(wing_name);
@@ -12956,6 +12959,9 @@ void wing_bash_ship_name(char *ship_name, const char *wing_name, int index)
 		strncpy(ship_name, wing_name, len);
 		sprintf(ship_name + len, NOX(" %d"), index);
 		strcat(ship_name, p);
+
+		if (needs_display_name)
+			*needs_display_name = true;
 	}
 	// most of the time we should create the name the standard retail way
 	else
