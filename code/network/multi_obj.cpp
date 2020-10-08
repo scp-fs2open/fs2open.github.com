@@ -948,13 +948,13 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 #define PACK_ULONG(v) { std::uint64_t swap = INTEL_LONG(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(std::uint64_t) ); packet_size += sizeof(std::uint64_t); }
 int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *data_out)
 {
-	ubyte data[OO_SAFE_BUFFER_SIZE], ret = 0;
+	ubyte data[OO_SAFE_BUFFER_SIZE];
 	ushort data_size = 0;	// now a ushort because of IPv6 size extensions
 	ship *shipp;	
 	ship_info *sip;
 	float temp_float;	
 	int header_bytes;
-	int packet_size = 0;
+	int packet_size = 0, ret = 0;
 
 	// make sure we have a valid ship
 	Assert(objp->type == OBJ_SHIP);
@@ -999,7 +999,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	// position - Now includes, position, orientation, velocity, rotational velocity, desired velocity and desired rotational velocity.
 	// this should always be sent when it is determined to be needed.
 	if ( oo_flags & OO_POS_AND_ORIENT_NEW ) {	
-		ret = (ubyte)multi_pack_unpack_position( 1, data + packet_size + header_bytes, &objp->pos ); // 10 bytes
+		ret = multi_pack_unpack_position( 1, data + packet_size + header_bytes, &objp->pos ); // 10 bytes
 		packet_size += ret;
 
 		// datarate tracking.
@@ -1010,21 +1010,21 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		vm_extract_angles_matrix_alternate(&temp_angles, &objp->orient);	
 
 		// actual packing function, 6 bytes
-		ret = (ubyte)multi_pack_unpack_orient( 1, data + packet_size + header_bytes, &temp_angles); 
+		ret = multi_pack_unpack_orient( 1, data + packet_size + header_bytes, &temp_angles); 
 
 		packet_size += ret;
 		// datarate tracking.
 		multi_rate_add(NET_PLAYER_NUM(pl), "ori", ret);	
 
 		// velocity, 4 bytes-- Tried to do this by calculation instead but kept running into issues. 
-		ret = (ubyte)multi_pack_unpack_vel(1, data + packet_size + header_bytes, &objp->orient, &objp->phys_info);
+		ret = multi_pack_unpack_vel(1, data + packet_size + header_bytes, &objp->orient, &objp->phys_info);
 
 		packet_size += ret;
 		// datarate tracking.
 		multi_rate_add(NET_PLAYER_NUM(pl), "pos", ret);	
 
 		// Rotational Velocity, 4 bytes
-		ret = (ubyte)multi_pack_unpack_rotvel( 1, data + packet_size + header_bytes, &objp->phys_info );
+		ret = multi_pack_unpack_rotvel( 1, data + packet_size + header_bytes, &objp->phys_info );
 
 		packet_size += ret;	
 
@@ -1545,7 +1545,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 		
 		bool full_physics = (oo_flags & OO_FULL_PHYSICS);
 
-		ubyte r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
+		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
 		offset += r5;
 		// change it back to global coordinates.
 		vm_vec_unrotate(&new_phys_info.desired_vel, &local_desired_vel, &new_orient);
