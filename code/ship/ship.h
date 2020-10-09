@@ -1568,8 +1568,7 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
 // for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
-
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.
