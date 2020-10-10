@@ -1302,7 +1302,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		delta_bank = bank_override;
 	} else {
 		delta_bank = vm_vec_dot(&curr_orient.vec.rvec, &objp->last_orient.vec.rvec);
-		delta_bank = 100.0f * (1.0f - delta_bank);
+		delta_bank = 100.0f * (1.0f - delta_bank) * pip->delta_bank_const;
 		if (vm_vec_dot(&objp->last_orient.vec.fvec, &objp->orient.vec.rvec) < 0.0f)
 			delta_bank = -delta_bank;
 	}
