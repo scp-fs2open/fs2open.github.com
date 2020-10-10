@@ -1254,6 +1254,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	if (objp->type == OBJ_WEAPON)
 		acc_limit *= 8.0f;
 
+	// do _proper_ handling of acc_limit and vel_limit if this flag is set
 	if (Framerate_independent_turning) {
 		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
 		// handled in its entirety in physics_sim_rot 
@@ -1265,8 +1266,19 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
 		}
 
-		// calculate the actual vel and acc values
-		ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+		if (Ai_respect_tabled_turntime_rotdamp) {
+			// We're assuming the turn rate here is accurate so leave it as is
+			// but we'll use the ship's rotdamp to modify acc_limit
+			// (this is the polynomial approximation of the exponential effect rotdamp has on players)
+			if (rotdamp == 0.f)
+				acc_limit *= 1000.f;
+			else
+				acc_limit = vel_limit * (0.5f / rotdamp);
+		}
+		else { 
+			// else, calculate the retail-friendly vel and acc values
+			ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+		}
 	}
 
 	// for formation flying
