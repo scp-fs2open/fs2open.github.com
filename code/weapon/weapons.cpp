@@ -1333,6 +1333,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_float(&wip->turn_time);
 			}
 
+			if (optional_string("+Turning Acceleration Time:")) {
+				stuff_float(&wip->turn_accel_time);
+				if (!Framerate_independent_turning) {
+					Warning(LOCATION, "Turning Acceleration Time for weapon %s requires \"AI use framerate independent turning\" in game_settings.tbl ", wip->name);
+					wip->turn_accel_time = 0.f;
+				}
+			}
+
 			if(optional_string("+View Cone:")) {
 				stuff_float(&view_cone_angle);
 				wip->fov = cosf(fl_radians(view_cone_angle * 0.5f));
@@ -1374,6 +1382,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		{
 			if(optional_string("+Turn Time:")) {
 				stuff_float(&wip->turn_time);
+			}
+
+			if (optional_string("+Turning Acceleration Time:")) {
+				stuff_float(&wip->turn_accel_time);
+				if (!Framerate_independent_turning) {
+					Warning(LOCATION, "Turning Acceleration Time for weapon %s requires \"AI use framerate independent turning\" in game_settings.tbl ", wip->name);
+					wip->turn_accel_time = 0.f;
+				}
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -5599,7 +5615,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	objp->phys_info.mass = wip->mass;
 	objp->phys_info.side_slip_time_const = 0.0f;
-	objp->phys_info.rotdamp = 0.0f;
+	objp->phys_info.rotdamp = wip->turn_accel_time ? wip->turn_accel_time / 2.f : 0.0f;
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
@@ -7914,6 +7930,7 @@ void weapon_info::reset()
 	this->wi_flags.reset();
 
 	this->turn_time = 1.0f;
+	this->turn_accel_time = 0.f;
 	this->cargo_size = 1.0f;
 	this->rearm_rate = 1.0f;
 	this->reloaded_per_batch = -1;
