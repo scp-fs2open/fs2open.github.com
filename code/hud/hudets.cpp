@@ -202,7 +202,7 @@ void ai_manage_ets(object* obj)
 {
 	ship* ship_p = &Ships[obj->instance];
 	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
-	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
 
 	if ( ship_info_p->power_output == 0 )
 		return;
