@@ -1336,7 +1336,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turning Acceleration Time:")) {
 				stuff_float(&wip->turn_accel_time);
 				if (!Framerate_independent_turning) {
-					Warning(LOCATION, "Turning Acceleration Time for weapon %s requires \"AI use framerate independent turning\" in game_settings.tbl ", wip->name);
+					static bool No_flag_turn_accel_warned = false;
+					if (!No_flag_turn_accel_warned) {
+						No_flag_turn_accel_warned = true;
+						Warning(LOCATION, "One or more weapons are using Turning Acceleration Time; this requires \"AI use framerate independent turning\" in game_settings.tbl ");
+					}
 					wip->turn_accel_time = 0.f;
 				}
 			}
@@ -1387,7 +1391,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turning Acceleration Time:")) {
 				stuff_float(&wip->turn_accel_time);
 				if (!Framerate_independent_turning) {
-					Warning(LOCATION, "Turning Acceleration Time for weapon %s requires \"AI use framerate independent turning\" in game_settings.tbl ", wip->name);
+					static bool No_flag_turn_accel_warned = false;
+					if (!No_flag_turn_accel_warned) {
+						No_flag_turn_accel_warned = true;
+						Warning(LOCATION, "One or more weapons are using Turning Acceleration Time; this requires \"AI use framerate independent turning\" in game_settings.tbl ");
+					}
 					wip->turn_accel_time = 0.f;
 				}
 			}
