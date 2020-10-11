@@ -173,7 +173,7 @@ ADE_FUNC(createSurfaceNormal,
 
 ADE_FUNC(findIntersection,
 	l_Base,
-	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
 	ade_type_info({ "vector", "number" }),
 	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
@@ -205,7 +205,7 @@ ADE_FUNC(findIntersection,
 
 ADE_FUNC(findPointOnLineNearestSkewLine,
 	l_Base,
-	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space).  (The lines are assumed to extend infinitely in both directions; the point will not necessarily be between the other points.)",
 	"vector",
 	"The closest point, or NIL if a handle is invalid")
