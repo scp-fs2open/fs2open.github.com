@@ -5,6 +5,7 @@
 #include "globalincs/pstypes.h"
 
 #include "graphics/2d.h"
+#include "scripting/ade.h"
 #include "scripting/ade_args.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
@@ -158,7 +159,7 @@ public:
 //**********Main script_state function
 class script_state
 {
-private:
+  private:
 	char StateName[32];
 
 	int Langs;
@@ -181,7 +182,8 @@ private:
 
 	void SetLuaSession(struct lua_State *L);
 
-	void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc);
+	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
+		const scripting::DocumentationErrorReporter& errorReporter);
 
 	//Internal Lua helper functions
 	void EndLuaFrame();
@@ -210,7 +212,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	scripting::ScriptingDocumentation OutputDocumentation();
+	scripting::ScriptingDocumentation OutputDocumentation(const scripting::DocumentationErrorReporter& errorReporter);
 
 	//***Moves data
 	//void MoveData(script_state &in);

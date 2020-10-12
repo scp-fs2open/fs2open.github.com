@@ -132,7 +132,7 @@ ADE_FUNC(promise,
 
 ADE_FUNC(resolved,
 	l_Async,
-	"...",
+	"any... resolveValues",
 	"Creates a resolved promise with the values passed to this function.",
 	"promise",
 	"Resolved promise")
@@ -152,7 +152,7 @@ ADE_FUNC(resolved,
 
 ADE_FUNC(errored,
 	l_Async,
-	"...",
+	"any... errorValues",
 	"Creates an errored promise with the values passed to this function.",
 	"promise",
 	"Errored promise")
@@ -291,7 +291,7 @@ ADE_FUNC(yield,
 
 ADE_FUNC(error,
 	l_Async,
-	"...",
+	"any... errorValues",
 	"Causes the currently running coroutine to fail with an error with the specified values.",
 	nullptr,
 	"Does not return")

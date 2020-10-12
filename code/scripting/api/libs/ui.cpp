@@ -50,8 +50,12 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(enableInput, l_UserInterface, "Rocket::Context context", "Enables input for the specified libRocket context",
-         "boolean", "true if successfull")
+ADE_FUNC(enableInput,
+	l_UserInterface,
+	"any context /* A libRocket Context value */",
+	"Enables input for the specified libRocket context",
+	"boolean",
+	"true if successfull")
 {
 	using namespace Rocket::Core;
 
@@ -79,11 +83,12 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(playElementSound, l_UserInterface,
-         "Rocket::Element element, string event, string state = \"\""
-         "",
-         "Plays an element specific sound with an optional state for differentiating different UI states.", "boolean",
-         "true if a sound was played, false otherwise")
+ADE_FUNC(playElementSound,
+	l_UserInterface,
+	"any element /* A libRocket element */, string event, string state = \"\"",
+	"Plays an element specific sound with an optional state for differentiating different UI states.",
+	"boolean",
+	"true if a sound was played, false otherwise")
 {
 	using namespace Rocket::Core;
 	const char* event;

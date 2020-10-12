@@ -497,7 +497,8 @@ size_t ade_table_entry::AddSubentry(ade_table_entry& n_ate) {
 	return new_idx;
 }
 
-std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
+std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
 	using namespace scripting;
 
@@ -562,6 +563,10 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 					overloadArgList.arguments.push_back(std::move(argCopy));
 				}
 			} else {
+				if (errorReporter) {
+					errorReporter(arg_parser.getErrorMessage());
+				}
+
 				overloadArgList.simple.assign(overload);
 			}
 
@@ -620,7 +625,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 	}
 
 	for (uint32_t i = 0; i < Num_subentries; i++) {
-		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement());
+		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement(errorReporter));
 	}
 
 	return element;
