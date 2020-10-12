@@ -42,7 +42,9 @@ typedef struct physics_info {
 	vec3d		center_of_mass;		// Goober5000 - this is never ever used by physics; currently physics assumes the center of an object is the center of mass
 	matrix	I_body_inv;		// inverse moment of inertia tensor (used to calculate rotational effects)
 
-	float		rotdamp;			//rotational velocity damping
+	float		rotdamp;			// for players, the exponential time constant applied to rotational velocity changes
+									// for AI ships and missiles, the polynomial approximation of the same, 
+									// such that rotdamp * 2 is the total acceleration time
 	float		side_slip_time_const;	// time const for achieving desired velocity in the local sideways direction
 												//   value should be zero for no sideslip and increase depending on desired slip
 

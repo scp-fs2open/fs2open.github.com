@@ -1278,6 +1278,11 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		else { 
 			// else, calculate the retail-friendly vel and acc values
 			ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+
+			// handle missile turning accel (which is bundled into rotdamp)
+			if (objp->type == OBJ_WEAPON && rotdamp != 0.f) {
+				acc_limit = vel_limit * (0.5f / rotdamp);
+			}
 		}
 	}
 
