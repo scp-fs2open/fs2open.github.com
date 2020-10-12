@@ -37,7 +37,7 @@ void WeaponClasses::open(Button* /*caller*/) {
 		else
 			header = typeHeaders[wip.subtype];
 
-		tree->AddItem(header, wip.get_display_string(), idx, false, changeWeapon);
+		tree->AddItem(header, wip.get_display_name(), idx, false, changeWeapon);
 		++idx;
 	}
 }

@@ -34,7 +34,7 @@ void Descriptions::update(LabMode newLabMode, int classIndex) {
 			}
 			break;
 		case LabMode::Weapon:
-			dialogWindow->SetCaption(Weapon_info[classIndex].get_display_string());
+			dialogWindow->SetCaption(Weapon_info[classIndex].get_display_name());
 
 			if (Weapon_info[classIndex].tech_desc != nullptr) {
 				descriptionText->SetText(Weapon_info[classIndex].tech_desc);
