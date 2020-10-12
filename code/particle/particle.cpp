@@ -440,7 +440,7 @@ namespace particle
 
 			Assert( cur_frame < part->nframes );
 
-			if (part->length) {
+			if (part->length != 0.0f) {
 				vec3d p0 = part->pos;
 
 				vec3d p1;
