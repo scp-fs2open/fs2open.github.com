@@ -140,6 +140,7 @@ namespace particle
 		part->reverse = info->reverse;
 		part->particle_index = (int) Persistent_particles.size();
 		part->looping = false;
+		part->length = info->length;
 
 		switch (info->type)
 		{
@@ -439,7 +440,20 @@ namespace particle
 
 			Assert( cur_frame < part->nframes );
 
-			batching_add_volume_bitmap(framenum + cur_frame, &pos, part->particle_index % 8, part->radius, alpha);
+			if (part->length) {
+				vec3d p0 = part->pos;
+
+				vec3d p1;
+				vm_vec_copy_normalize(&p1, &part->velocity);
+				p1 *= part->length;
+				p1 += part->pos;
+
+				batching_add_laser(framenum + cur_frame, &p0, part->radius, &p1, part->radius);
+			}
+			else {
+				batching_add_volume_bitmap(framenum + cur_frame, &pos, part->particle_index % 8, part->radius, alpha);
+			}
+
 
 			return true;
 		}
