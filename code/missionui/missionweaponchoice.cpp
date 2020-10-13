@@ -1638,6 +1638,12 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
  */
 void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 {
+	auto sip = &Ship_info[ship_class];
+
+	// if we have *no* allowed weapon list, weapons are unrestricted
+	if (sip->allowed_weapons.weapon_and_flags.empty())
+		return;
+
 	int i, check_flag;
 	for ( i=0; i < MAX_SHIP_WEAPONS; i++ )
 	{
@@ -1645,12 +1651,12 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-		check_flag = Ship_info[ship_class].allowed_weapons[wep[i]];
+		check_flag = sip->allowed_weapons[wep[i]];
 
 		// possibly change flag if it's restricted
-		if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i]))
+		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[i]))
 		{
-			check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i][wep[i]];
+			check_flag = sip->allowed_bank_restricted_weapons[i][wep[i]];
 		}
 
 
