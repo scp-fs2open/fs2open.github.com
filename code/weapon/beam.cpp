@@ -152,7 +152,7 @@ void beam_delete(beam *b);
 void beam_handle_collisions(beam *b);
 
 // fills in binfo
-void beam_get_binfo(beam* b, float accuracy, int num_shots, float burst_shot_rotation, float per_burst_shot_rotation);
+void beam_get_binfo(beam* b, float accuracy, int num_shots, int burst_seed, float burst_shot_rotation, float per_burst_shot_rotation);
 
 // aim the beam (setup last_start and last_shot - the endpoints). also recalculates object collision info
 void beam_aim(beam *b);
@@ -293,25 +293,22 @@ float beam_get_widest(beam* b)
 }
 
 // fire a beam, returns nonzero on success. the innards of the code handle all the rest, foo
-SCP_vector<int> beam_fire(beam_fire_info *fire_info)
+int beam_fire(beam_fire_info *fire_info)
 {
 	beam *new_item;
 	weapon_info *wip;
 	ship *firing_ship = NULL;
 	int objnum;		
-	SCP_vector<int> ret_objnums;
 
 	// sanity check
 	if(fire_info == NULL){
 		Int3();
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 
 	// if we're out of beams, bail
 	if(Beam_count >= MAX_BEAMS){
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 
 	// for now, only allow ship targets
@@ -320,24 +317,21 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 			((fire_info->target == NULL) && !(fire_info->bfi_flags & BFIF_TARGETING_COORDS)) ||
 			((fire_info->target != NULL) && (fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))
 		) {
-			ret_objnums.push_back(-1);
-			return ret_objnums;
+			return -1;
 		}
 	}
 
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
 		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) && ((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS)) ) {
 		UNREACHABLE("Fixed beam fired without a valid ship!\n");
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 	if (fire_info->shooter != NULL) {
 		firing_ship = &Ships[fire_info->shooter->instance];
@@ -347,8 +341,7 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 	new_item = GET_FIRST(&Beam_free_list);
 	Assert( new_item != &Beam_free_list );		// shouldn't have the dummy element
 	if(new_item == &Beam_free_list){
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 
 	// make sure that our textures are loaded as well
@@ -456,7 +449,7 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 		if (new_item->type == BEAM_TYPE_F) {
 			burst_rot = wip->b_info.bpi.burst_rot_pattern[fire_info->burst_index];
 		}
-		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
+		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
 	}	
 
     flagset<Object::Object_Flags> default_flags;
@@ -467,8 +460,7 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
 		Int3();
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 	new_item->objnum = objnum;
 
@@ -483,8 +475,7 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 	if (beam_ok_to_fire(new_item) != 1) {
 		beam_delete(new_item);
 		mprintf(("Killing beam at initial fire because of illegal targeting!!!\n"));
-		ret_objnums.push_back(-1);
-		return ret_objnums;
+		return -1;
 	}
 
 	// if we're a multiplayer master - send a packet
@@ -505,15 +496,7 @@ SCP_vector<int> beam_fire(beam_fire_info *fire_info)
 	// start the warmup phase
 	beam_start_warmup(new_item);
 
-	if (new_item->type == BEAM_TYPE_F) {
-		if (fire_info->burst_index < ((int)wip->b_info.bpi.burst_rot_pattern.size()) - 1) {
-			fire_info->burst_index++;
-			ret_objnums = beam_fire(fire_info);
-		}
-	}
-	ret_objnums.push_back(objnum);
-
-	return ret_objnums;
+	return objnum;
 }
 
 // fire a targeting beam, returns objnum on success. a much much simplified version of a beam weapon
@@ -962,14 +945,12 @@ void beam_type_f_move(beam* b)
 	vec3d actual_dir;
 	vec3d temp, temp2;
 	float dot_save;
-
-	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
-	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	if (b->subsys != NULL)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
-
+	
 	// keep this updated even if still warming up 
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
+		vm_vec_unrotate(&b->last_start, &b->targeting_laser_offset, &b->objp->orient);
+		vm_vec_add2(&b->last_start, &b->objp->pos);
+
 		// compute the change in orientation the fighter went through
 		matrix inv_new_orient, transform_matrix;
 		vm_copy_transpose(&inv_new_orient, &b->objp->orient);
@@ -982,6 +963,8 @@ void beam_type_f_move(beam* b)
 		vm_vec_rotate(&b->binfo.dir_b, &old_dirB, &transform_matrix);
 		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
 	}
+	else if (b->subsys != NULL)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, false);
 
 	// if the "warming up" timestamp has not expired
 	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {
@@ -2117,7 +2100,7 @@ void beam_recalc_sounds(beam *b)
 // -----------------------------===========================------------------------------
 
 // fills in binfo
-void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rotation, float per_burst_shot_rotation)
+void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, float burst_shot_rotation, float per_burst_shot_rotation)
 {
 	vec3d p2;
 	int model_num, idx;
@@ -2126,11 +2109,13 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 	beam_weapon_info *bwi;
 	float miss_factor;
 
-	if (b->subsys != NULL) {
+	if (b->flags & BF_IS_FIGHTER_BEAM) {
+		vm_vec_unrotate(&turret_point, &b->targeting_laser_offset, &b->objp->orient);
+		turret_point += b->objp->pos;
+	} else if (b->subsys != NULL) {
 		int temp = b->subsys->turret_next_fire_pos;
 
-		if (!(b->flags & BF_IS_FIGHTER_BEAM))
-			b->subsys->turret_next_fire_pos = b->firingpoint;
+		b->subsys->turret_next_fire_pos = b->firingpoint;
 
 		// where the shot is originating from (b->last_start gets filled in)
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
@@ -2164,6 +2149,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
+	if (bwi->beam_flags[Weapon::Beam_Flags::Burst_share_random])
+		printf("");
 
 	int seed = bwi->beam_flags[Weapon::Beam_Flags::Burst_share_random] ? burst_seed : rand32();
 
@@ -2197,7 +2184,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 			pos1 = b->target_pos1;
 			pos2 = b->target_pos2;
 		} else {
-			beam_get_octant_points(model_num, b->target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &oct1, &oct2);
+			beam_get_octant_points(model_num, b->target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &pos1, &pos2);
 		}
 
 		// point 1
@@ -2270,14 +2257,14 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 			// set up our two kinds of random points if needed
 			if (bwi->bpi.start_pos == POS_RANDOM_INSIDE || bwi->bpi.end_pos == POS_RANDOM_INSIDE) {
 				vec3d temp1, temp2;
-				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2);
+				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2, seed);
 				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
 				vm_vec_rotate(&rand2_on, &temp2, &b->target->orient);
 				rand1_on += b->target->pos;
 				rand2_on += b->target->pos;
 			}
 			if (bwi->bpi.start_pos == POS_RANDOM_OUTSIDE || bwi->bpi.end_pos == POS_RANDOM_OUTSIDE)
-				beam_get_octant_points(model_num, usable_target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &rand1_off, &rand2_off);
+				beam_get_octant_points(model_num, usable_target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &rand1_off, &rand2_off);
 
 			// get start and end points
 			switch (bwi->bpi.start_pos) {
@@ -2291,7 +2278,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 					pos1 = rand1_off;
 			}
 
-			if (bwi->bpi.no_translate)
+
+			if (bwi->bpi.no_translate || bwi->bpi.end_pos == POS_SAME_RANDOM)
 				pos2 = pos1;
 			else {
 				switch (bwi->bpi.end_pos) {
@@ -2315,6 +2303,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 				burst_rot_axis = b->target->pos;
 			
 		} else { 
+			vec3d center;
+			vm_vec_zero(&center);
 			// if we have no target let's act as though we're shooting at something with a 300m radius 800m away
 			if (bwi->bpi.start_pos != POS_CENTER)
 				static_randvec(rand32(), &pos1);
@@ -2329,33 +2319,25 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 			pos2 *= 300.f;
 			vec3d move_forward;
 			vm_vec_make(&move_forward, 0.f, 0.f, 800.f);
+			center += move_forward;
 			pos1 += move_forward;
 			pos2 += move_forward;
 
 
-			vec3d temp = pos1;
-			vm_vec_unrotate(&pos1, &temp, &orient);
-			temp = pos2;
-			vm_vec_unrotate(&pos2, &temp, &orient);
+			vec3d temp = pos1; vm_vec_unrotate(&pos1, &temp, &orient);
+			temp = pos2; vm_vec_unrotate(&pos2, &temp, &orient);
+			temp = center; vm_vec_unrotate(&center, &temp, &orient);
 			pos1 += b->objp->pos;
 			pos2 += b->objp->pos;
+			center += b->objp->pos;
 
 			// set rot_axis if its center
-			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) {
-				rot_axis = move_forward;
-				temp = rot_axis;
-				vm_vec_unrotate(&rot_axis, &temp, &orient);
-			}
-			if (bwi->bpi.per_burst_rot_axis == AXIS_CENTER) {
-				per_burst_rot_axis = move_forward;
-				temp = per_burst_rot_axis;
-				vm_vec_unrotate(&per_burst_rot_axis, &temp, &orient);
-			}
-			if (bwi->bpi.burst_rot_axis == AXIS_CENTER) {
-				burst_rot_axis = move_forward;
-				temp = burst_rot_axis;
-				vm_vec_unrotate(&burst_rot_axis, &temp, &orient);
-			}
+			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) 
+				rot_axis = center;
+			if (bwi->bpi.per_burst_rot_axis == AXIS_CENTER) 
+				per_burst_rot_axis = center;
+			if (bwi->bpi.burst_rot_axis == AXIS_CENTER) 
+				burst_rot_axis = center;
 
 		}
 		// OKAY DONE WITH THE INITIAL SET UP
@@ -2369,7 +2351,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, float burst_shot_rot
 			burst_rot_axis = bwi->bpi.burst_rot_axis == AXIS_STARTPOS_NO_OFFSET ? pos1 : pos2;
 
 		// now the offsets
-		float scale_factor = (bwi->bpi.absolute_offset || !b->target) ? 300.f : b->target->radius;
+		float scale_factor = (bwi->bpi.target_scale_positions && b->target != nullptr) ? b->target->radius : 300.f;
 		vec3d offset = bwi->bpi.start_pos_offset;
 		offset *= scale_factor;
 

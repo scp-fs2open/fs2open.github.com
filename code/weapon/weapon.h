@@ -180,7 +180,9 @@ typedef enum beam_pattern_rot_axis {
 typedef enum beam_pattern_position {
 	POS_RANDOM_OUTSIDE,
 	POS_RANDOM_INSIDE,
-	POS_CENTER
+	POS_CENTER,
+	POS_STARTPOS,
+	POS_SAME_RANDOM
 } beam_pattern_position;
 
 typedef struct beam_pattern_info {
@@ -192,7 +194,7 @@ typedef struct beam_pattern_info {
 	vec3d start_pos_rand;
 	vec3d end_pos_rand;
 	bool target_orient_positions;
-	bool absolute_offset;
+	bool target_scale_positions;
 	float continuous_rot;
 	beam_pattern_rot_axis continuous_rot_axis;
 	SCP_vector<float> burst_rot_pattern;

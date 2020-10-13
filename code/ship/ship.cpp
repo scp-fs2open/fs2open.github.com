@@ -11202,18 +11202,30 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;
+		int old_burst_counter = swp->burst_counter[bank_to_fire];
+		int old_burst_seed = swp->burst_seed[bank_to_fire];
+
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
 			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags[Weapon::Burst_Flags::Fast_firing])
 				fast_firing = true;
-		} else if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) {			// Random fire delay (DahBlount)
-			next_fire_delay = frand_range(winfo_p->min_delay, winfo_p->max_delay) * 1000.0f;
 		} else {
-			next_fire_delay = winfo_p->fire_wait * 1000.0f;
+			if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) // Random fire delay (DahBlount)
+				next_fire_delay = frand_range(winfo_p->min_delay, winfo_p->max_delay) * 1000.0f;
+			else
+				next_fire_delay = winfo_p->fire_wait * 1000.0f;
+
 			swp->burst_counter[bank_to_fire] = 0;
 			swp->burst_seed[bank_to_fire] = rand32();
+			// only used by type 5 beams
+			if (swp->burst_counter[bank_to_fire] == 0) {
+				swp->per_burst_rot += winfo_p->b_info.bpi.per_burst_rot;
+				if (swp->per_burst_rot > PI2)
+					swp->per_burst_rot -= PI2;
+			}
 		}
+
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 		if (!(obj->flags[Object::Object_Flags::Player_ship] || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			if (shipp->team == Ships[Player_obj->instance].team){
@@ -11286,6 +11298,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
+
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
 		// Note that we can have partial bank firing, if the weapons subsystem is partially
 		// functional, which should be cool.  		
@@ -11345,10 +11358,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if (winfo_p->b_info.beam_shots){
 					if (winfo_p->b_info.beam_shots > num_slots){
 						points = num_slots;
-					}else{
+					} else {
 						points = winfo_p->b_info.beam_shots;
 					}
-				}else{
+				} else if (winfo_p->wi_flags[Weapon::Info_Flags::Cycle]) {
+					points = 1;
+				} else {
 					points = num_slots;
 				}
 
@@ -11389,10 +11404,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				fbfire_info.turret = &shipp->fighter_beam_turret_data;
 				fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
 				fbfire_info.bank = bank_to_fire;
-				fbfire_info.burst_index = 0;
+				fbfire_info.burst_index = old_burst_counter;
+				fbfire_info.burst_seed = old_burst_seed;
 
 				for ( v = 0; v < points; v++ ){
-					if(winfo_p->b_info.beam_shots){
+					if(winfo_p->b_info.beam_shots || winfo_p->wi_flags[Weapon::Info_Flags::Cycle]){
 						j = (shipp->last_fired_point[bank_to_fire]+1)%num_slots;
 						shipp->last_fired_point[bank_to_fire] = j;
 					}else{
@@ -11408,9 +11424,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					beam_fire(&fbfire_info);
 					has_fired = true;
 					num_fired++;
-					swp->per_burst_rot += winfo_p->b_info.bpi.per_burst_rot;
-					if (swp->per_burst_rot > PI2)
-						swp->per_burst_rot -= PI2;
 				}
 			}
 			else	//if this isn't a fighter beam, do it normally -Bobboau

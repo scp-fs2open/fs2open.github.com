@@ -2516,6 +2516,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					bpi->end_pos = POS_CENTER;
 					bpi->no_translate = false;
 				}
+				else if (!stricmp(temp_type, NOX("SAME RANDOM"))) {
+					bpi->end_pos = POS_SAME_RANDOM;
+					// offset could still be different so this counts as translating
+					bpi->no_translate = false;
+				}
 				else {
 					// TODO safety
 				}
@@ -2529,12 +2534,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_vec3d(&bpi->end_pos_rand);
 			}
 
-			if (optional_string("+Offsets Relative to Target:")) {
+			if (optional_string("+Orient Offsets to Target:")) {
 				stuff_boolean(&bpi->target_orient_positions);
 			}
 
-			if (optional_string("+Offsets Not Relative to Size:")) {
-				stuff_boolean(&bpi->absolute_offset);
+			if (optional_string("+Scale Offsets to Target:")) {
+				stuff_boolean(&bpi->target_scale_positions);
 			}
 
 			if (optional_string("+Continuous Rotation:")) {
@@ -6022,7 +6027,10 @@ void spawn_child_weapons(object *objp)
 				fire_info.accuracy = 0.000001f;		// this will guarantee a hit
 				fire_info.shooter = &Objects[parent_num];
 				fire_info.turret = NULL;
-				fire_info.target = NULL;
+				if (child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && wp->homing_object != &obj_used_list)
+					fire_info.target = wp->homing_object;
+				else
+					fire_info.target =  nullptr;
 				fire_info.target_subsys = NULL;
 				fire_info.target_pos1 = fire_info.target_pos2 = pos;
 				fire_info.bfi_flags |= BFIF_FLOATING_BEAM | BFIF_TARGETING_COORDS;
@@ -8220,7 +8228,7 @@ void weapon_info::reset()
 	vm_vec_zero(&this->b_info.bpi.start_pos_rand);
 	vm_vec_zero(&this->b_info.bpi.end_pos_rand);
 	this->b_info.bpi.target_orient_positions = false;
-	this->b_info.bpi.absolute_offset = false;
+	this->b_info.bpi.target_scale_positions = false;
 	this->b_info.bpi.continuous_rot = 0.f;
 	this->b_info.bpi.continuous_rot_axis = AXIS_UNSPECIFIED;
 	this->b_info.bpi.per_burst_rot = 0.f;

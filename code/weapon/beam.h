@@ -197,7 +197,7 @@ extern int Beam_count;
 // the next functions are probably the only ones anyone should care about calling. the rest require somewhat detailed knowledge of beam weapons
 
 // fire a beam, returns objnum on success. the innards of the code handle all the rest, foo
-SCP_vector<int> beam_fire(beam_fire_info *fire_info);
+int beam_fire(beam_fire_info *fire_info);
 
 // fire a targeting beam, returns objnum on success. a much much simplified version of a beam weapon
 // targeting lasers last _one_ frame. For a continuous stream - they must be created every frame.

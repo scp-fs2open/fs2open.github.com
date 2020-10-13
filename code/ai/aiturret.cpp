@@ -1857,12 +1857,20 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		ship_weapon* swp = &turret->weapons;
 		turret->turret_last_fire_direction = *turret_fvec;
 
-		// set next fire timestamp for the turret
+		// grab and set some burst data before turret_set_next_fire_timestamp wipes it
 		int old_burst_seed = swp->burst_seed[weapon_num];
+		int old_burst_counter = swp->burst_counter[weapon_num];
+		// only used by type 5 beams
+		if (turret->weapons.burst_counter[weapon_num] == 0) {
+			swp->per_burst_rot += wip->b_info.bpi.per_burst_rot;
+			if (swp->per_burst_rot > PI2)
+				swp->per_burst_rot -= PI2;
+		}
+
+		// set next fire timestamp for the turret
 		if (last_shot_in_salvo)
 			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
-		ship_weapon* swp = &turret->weapons;
 		// if this weapon is a beam weapon, handle it specially
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
 			// if this beam isn't free to fire
@@ -1885,20 +1893,16 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.turret = turret;
 			fire_info.burst_seed = old_burst_seed;
 			fire_info.per_burst_rotation = swp->per_burst_rot;
-			fire_info.burst_index = 0;
+			fire_info.burst_index = old_burst_counter;
 
-			SCP_vector<int> weapon_objnums;
 			// fire a beam weapon
-			weapon_objnums = beam_fire(&fire_info);
+			weapon_objnum = beam_fire(&fire_info);
 
-			if (weapon_objnums[0] != -1) {
-				objp = &Objects[weapon_objnums[0]];
+			if (weapon_objnum != -1) {
+				objp = &Objects[weapon_objnum];
 
 				parent_ship->last_fired_turret = turret;
 				turret->last_fired_weapon_info_index = turret_weapon_class;
-				swp->per_burst_rot += wip->b_info.bpi.per_burst_rot;
-				if (swp->per_burst_rot > PI2)
-					swp->per_burst_rot -= PI2;
 
 				Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", &Objects[turret->turret_enemy_objnum]);
 				Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
