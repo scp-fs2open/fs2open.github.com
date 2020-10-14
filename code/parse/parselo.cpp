@@ -3474,36 +3474,45 @@ void display_parse_diagnostics()
 // NULL is returned.
 char *split_str_once(char *src, int max_pixel_w)
 {
-	char *brk = NULL;
-	int i, w, len, last_was_white = 0;
+	char *brk = nullptr;
+	int i, w, len;
+	bool last_was_white = false;
 
 	Assert(src);
 	Assert(max_pixel_w > 0);
 
-	gr_get_string_size(&w, NULL, src);
+	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
-		return NULL;  // string doesn't require a cut
+		return nullptr;  // string doesn't require a cut
 	}
 
 	len = (int)strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, NULL, src, i);
-		if ( w > max_pixel_w )
-			break;
+		gr_get_string_size(&w, nullptr, src, i);
 
-		if (src[i] == '\n') {  // reached natural end of line
-			src[i] = 0;
-			return src + i + 1;
+		if (w <= max_pixel_w) {
+			if (src[i] == '\n') {  // reached natural end of line
+				src[i] = 0;
+				return src + i + 1;
+			}
 		}
 
 		if (is_white_space(src[i])) {
-			if (!last_was_white)
-				brk = src + i;
+			if (!last_was_white) {
+				// only update the line break if:
+				// a) we don't have a line break yet;
+				// b) we're still within the required real estate
+				// (basically we want the latest line break that doesn't go off the edge of the screen,
+				// but if the *first* line break is off the end of the screen, we want that)
+				if (brk == nullptr || w <= max_pixel_w) {
+					brk = src + i;
+				}
+			}
 
-			last_was_white = 1;
+			last_was_white = true;
 
 		} else {
-			last_was_white = 0;
+			last_was_white = false;
 		}
 	}
 
@@ -3524,7 +3533,7 @@ char *split_str_once(char *src, int max_pixel_w)
 		src++;
 
 	if (!*src)
-		return NULL;  // end of the string anyway
+		return nullptr;  // end of the string anyway
 
 	if (*src == '\n')
 		src++;
