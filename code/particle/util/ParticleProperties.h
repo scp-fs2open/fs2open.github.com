@@ -19,6 +19,7 @@ class ParticleProperties {
 
 	bool m_hasLifetime = false;
 	::util::UniformFloatRange m_lifetime;
+	::util::UniformFloatRange m_length;
 
 	ParticleProperties();
 
