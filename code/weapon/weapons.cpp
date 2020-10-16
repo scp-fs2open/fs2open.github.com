@@ -5664,12 +5664,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
 	} else {		
-		//	For weapons that home, set velocity to sum of forward component of parent's velocity and freeflight speed factor(default 1/4)
+		//	For weapons that home, set velocity to sum of the component of parent's velocity in the fire direction and freeflight speed factor(default 1/4)
 		//	Note that it is important to extract the forward component of the parent's velocity to factor out sliding, else
 		//	the missile will not be moving forward.
 		if(parent_objp != NULL){
 			if (wip->free_flight_time > 0.0)
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z * wip->free_flight_speed_factor);
+				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z * wip->free_flight_speed_factor);
 			else
 				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z*wip->free_flight_speed_factor );
 		} else {
@@ -5690,7 +5690,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
-	if ((parent_objp != NULL) && (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])) {
+	if ((parent_objp != NULL) && (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) && !(wip->is_homing() && wip->free_flight_time > 0.0)) {
 		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
 		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
 		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
