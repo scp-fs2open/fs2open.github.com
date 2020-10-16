@@ -12255,6 +12255,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
 				lock_info lock_data = shipp->missile_locks_firing.back();
+
+				/* The conditional here might seem complicated but it is required to ensure that each use case is handled correctly.
+				 * While all missiles need to have their locks cleared, swarms and corkscrews need them cleared only after the last missile is going to be
+				 * or has been fired. (DahBlount)
+				**/
 				if ( wip->multi_lock || 
 					 !(wip->wi_flags[Weapon::Info_Flags::Corkscrew] || wip->wi_flags[Weapon::Info_Flags::Swarm]) ||
 					 (shipp->num_corkscrew_to_fire <= 1 && shipp->num_swarm_missiles_to_fire <= 1) ) {
