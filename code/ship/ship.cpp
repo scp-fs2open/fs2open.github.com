@@ -5999,10 +5999,10 @@ void ship::clear()
 	memset(sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
 
 	use_special_explosion = false;
-	special_exp_damage = 0;
-	special_exp_blast = 0;
-	special_exp_inner = 0;
-	special_exp_outer = 0;
+	special_exp_damage = -1;
+	special_exp_blast = -1;
+	special_exp_inner = -1;
+	special_exp_outer = -1;
 	use_shockwave = false;
 	special_exp_shockwave_speed = 0;
 	special_exp_deathroll_time = 0;
