@@ -289,7 +289,11 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		// maybe split the directives line
 		second_line = split_str_once(buf, max_line_width);
-		Assert( second_line != buf );
+
+		// if we are unable to split the line, just print it once
+		if (second_line == buf) {
+			second_line = nullptr;
+		}
 
 		// blit the background frames
 		setGaugeColor();
