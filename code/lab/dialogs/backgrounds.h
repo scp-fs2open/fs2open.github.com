@@ -14,13 +14,13 @@ class BackgroundDialog : public LabDialog {
 	}
 
 	// Called when the global state changes (e.g. other ship/weapon being selected)
-	void update(LabMode /*newLabMode*/, int /*classIndex*/) { /*do nothing*/ }
+	void update(LabMode /*newLabMode*/, int /*classIndex*/) override { /*do nothing*/ }
 
 	// Returns the string to use for the top nav bar
-	SCP_string getTitle() { return "Backgrounds"; }
+	SCP_string getTitle() override { return "Backgrounds"; }
 
 	// Returns true if it is safe to open this dialog
-	bool safeToOpen(LabMode /*labMode*/) { return true; }
+	bool safeToOpen(LabMode /*labMode*/) override { return true; }
 
 private:
 	DialogWindow* dialogWindow = nullptr;

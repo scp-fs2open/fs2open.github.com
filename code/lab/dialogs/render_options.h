@@ -16,10 +16,10 @@ class RenderOptions : public LabDialog {
 	}
 
 	// Returns the string to use for the top nav bar
-	SCP_string getTitle() { return "Render Options"; }
+	SCP_string getTitle() override { return "Render Options"; }
 
 	// Returns true if it is safe to open this dialog
-	bool safeToOpen(LabMode /*labMode*/) { return true; }
+	bool safeToOpen(LabMode /*labMode*/) override { return true; }
 
 private:
 	DialogWindow* dialogWindow = nullptr;

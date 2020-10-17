@@ -15,9 +15,9 @@ class MaterialOverrides : public LabDialog {
 
 	void update(LabMode /*newLabMode*/, int /*classIndex*/) override { /* Do Nothing */ }
 
-	SCP_string getTitle() { return "Material Overrides"; }
+	SCP_string getTitle() override { return "Material Overrides"; }
 
-	bool safeToOpen(LabMode /*labMode*/) { return true; }
+	bool safeToOpen(LabMode /*labMode*/) override { return true; }
 
 private:
 	DialogWindow* dialogWindow = nullptr;
