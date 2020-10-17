@@ -2181,7 +2181,7 @@ void multi_oo_process_all(net_player *pl)
 		add_size = multi_oo_maybe_update(pl, moveup, data_add);
 
 		// if this data is too much for the packet, send off what we currently have and start over
-		if(packet_size + add_size > MAX_PACKET_SIZE - 1){
+		if(packet_size + add_size > MAX_PACKET_SIZE - 3){
 			stop = 0x00;			
 			multi_rate_add(NET_PLAYER_NUM(pl), "stp", 1);
 			ADD_DATA(stop);
