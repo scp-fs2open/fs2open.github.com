@@ -6,6 +6,7 @@
 #include "lab/renderer/lab_renderer.h"
 #include "lab/labv2_internal.h"
 #include <initializer_list>
+#include <gamesequence/gamesequence.h>
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
 
@@ -29,6 +30,11 @@ public:
 	void close() {
 		if (CurrentObject != -1)
 			obj_delete(CurrentObject);
+		CurrentObject = -1;
+
+		for (auto d : Dialogs) {
+			d->close();
+		}
 
 		Renderer->close();
 
@@ -38,6 +44,8 @@ public:
 		Game_mode &= ~GM_LAB;
 
 		ai_paused = 0;
+
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
 	GUIScreen* Screen;
