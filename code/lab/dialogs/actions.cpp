@@ -61,7 +61,7 @@ std::map<AnimationTriggerType, bool> manual_animations = {};
 bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
 bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
 
-void reset_animations(Tree* caller) {
+void reset_animations(Tree*) {
 	if (LMGR->isSafeForShips()) {
 		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
 
@@ -205,7 +205,7 @@ void DestroySubsystems::open(Button* /*caller*/) {
 	update(LMGR->CurrentMode, LMGR->CurrentClass);
 }
 
-void DestroySubsystems::update(LabMode newLabMode, int classIndex) {
+void DestroySubsystems::update(LabMode, int) {
 	if (dialogWindow == nullptr)
 		return;
 
@@ -235,7 +235,7 @@ void ChangeLoadout::open(Button* /*caller*/) {
 	update(LMGR->CurrentMode, LMGR->CurrentClass);
 }
 
-void ChangeLoadout::update(LabMode newLabMode, int classIndex) {
+void ChangeLoadout::update(LabMode, int) {
 	if (dialogWindow == nullptr)
 		return;
 
@@ -350,7 +350,7 @@ void WeaponFire::open(Button* /*caller*/) {
 	update(LMGR->CurrentMode, LMGR->CurrentClass);
 }
 
-void WeaponFire::update(LabMode newLabMode, int classIndex) {
+void WeaponFire::update(LabMode, int) {
 	if (dialogWindow == nullptr) return;
 
 	if (LMGR->isSafeForShips()) {
@@ -388,7 +388,7 @@ void AnimationTrigger::open(Button* /*caller*/) {
 	update(LMGR->CurrentMode, LMGR->CurrentClass);
 }
 
-void AnimationTrigger::update(LabMode newLabMode, int classIndex) {
+void AnimationTrigger::update(LabMode, int) {
 	if (dialogWindow == nullptr)
 		return;
 

@@ -122,8 +122,8 @@ public:
 		currentTeamColor = color_itr->first;
 	}
 
-	void setTeamColor(SCP_string color) {
-		currentTeamColor = color;
+	void setTeamColor(SCP_string teamColor) {
+		currentTeamColor = teamColor;
 	}
 
 	void resetView() {}
@@ -150,9 +150,9 @@ public:
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
 
-	void setTextureOverride(TextureOverride texture, bool value) {};
+	void setTextureOverride(TextureOverride, bool) {};
 
-	void setTextureChannelValue(TextureChannel channel, float value) {};
+	void setTextureChannelValue(TextureChannel, float) {};
 
 	void resetTextureOverride() {};
 
@@ -172,7 +172,7 @@ private:
 
 	float cameraDistance;
 
-	void renderHud(float frametime);
+	void renderHud(float);
 	void renderModel(float frametime);
 
 };

@@ -8,7 +8,7 @@ class RenderOptions : public LabDialog {
 	void open(Button* /*caller*/) override;
 
 	// Called when the global state changes (e.g. other ship/weapon being selected)
-	void update(LabMode newLabMode, int classIndex) override { /* Do nothing */ };
+	void update(LabMode, int) override { /* Do nothing */ };
 
 	void close() override { 
 		dialogWindow->DeleteChildren(); 

@@ -63,7 +63,7 @@ public:
 		return ss.str();
 	}
 
-	void handleInput(int dx, int dy, bool lmbDown, bool rmbDown, int modifierKeys) override;
+	void handleInput(int dx, int dy, bool /*lmbDown*/, bool rmbDown, int modifierKeys) override;
 
 	void displayedObjectChanged() override;
 

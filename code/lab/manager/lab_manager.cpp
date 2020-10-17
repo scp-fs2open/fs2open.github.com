@@ -294,6 +294,8 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	case LabMode::Weapon:
 		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
 		break;
+	default:
+		break;
 	}
 	
 	for (auto const& dialog : Dialogs) {

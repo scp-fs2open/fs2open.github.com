@@ -8,7 +8,7 @@ LabCamera::~LabCamera() {
 	cam_delete(FS_camera);
 }
 
-void OrbitCamera::handleInput(int dx, int dy, bool lmbDown, bool rmbDown, int modifierKeys) {
+void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKeys) {
 	if (dx == 0 && dy == 0)
 		return;
 

@@ -163,7 +163,7 @@ SCP_string get_rot_speed_string(float speed_divisor)
 	}
 }
 
-void LabRenderer::renderHud(float frametime) {
+void LabRenderer::renderHud(float) {
 	GR_DEBUG_SCOPE("Lab Render HUD");
 
 	// print FPS at bottom left, might be helpful
