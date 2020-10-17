@@ -383,7 +383,7 @@ cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdlin
 cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
-cmdline_parm no_screenshake("-no_screenshake", NULL, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
