@@ -525,6 +525,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
 
+				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{

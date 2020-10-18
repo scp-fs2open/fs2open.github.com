@@ -471,8 +471,8 @@ typedef struct ai_info {
 	fix		avoid_check_timestamp;			//	timestamp at which to next check for having to avoid ship
 
 	vec3d	big_collision_normal;			// Global normal of collision with big ship.  Helps find direction to fly away from big ship.  Set for each collision.
-	vec3d	big_recover_pos_1;				//	Global point to fly towards when recovering from collision with a big ship, stage 1.
-	vec3d	big_recover_pos_2;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
+	vec3d	big_recover_1_direction;		//	A relative direction to fly towards when recovering from collision with a big ship, stage 1.
+	vec3d	big_recover_2_pos;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
 	int		big_recover_timestamp;			//	timestamp at which it's OK to re-enter stage 1.
 
 	int		abort_rearm_timestamp;			//	time at which this rearm should be aborted in a multiplayer game.

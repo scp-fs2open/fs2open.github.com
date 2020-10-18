@@ -7056,22 +7056,25 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 /**
  * Return true if a large ship is being ignored.
  */
-int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time)
+int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f)
 {
 	if (timestamp_elapsed(aip->avoid_check_timestamp)) {
 		float		distance;
 		vec3d	collision_point;
 		int		ship_num;
+		int next_check_time;
 		if ((ship_num = will_collide_with_big_ship_all(Pl_objp, ignore_objp, goal_point, &collision_point, &distance, delta_time)) != -1) {
 			aip->ai_flags.set(AI::AI_Flags::Avoiding_big_ship);
 			mabs_pick_goal_point(objp, &Objects[ship_num], &collision_point, &aip->avoid_goal_point);
 			float dist = vm_vec_dist_quick(&aip->avoid_goal_point, &objp->pos);
-			aip->avoid_check_timestamp = timestamp(2000 + MIN(1000, (int) (dist * 2.0f)));	//	Delay until check again is based on distance to avoid point.
+			next_check_time = (int) (2000 + MIN(1000, (dist * 2.0f)) * time_scale); // Delay until check again is based on distance to avoid point.
+			aip->avoid_check_timestamp = timestamp(next_check_time);	
 			aip->avoid_ship_num = ship_num;
 		} else {
 			aip->ai_flags.remove(AI::AI_Flags::Avoiding_big_ship);
 			aip->ai_flags.remove(AI::AI_Flags::Avoiding_small_ship);
 			aip->avoid_ship_num = -1;
+			next_check_time = (int) (1500 * time_scale);
 			aip->avoid_check_timestamp = timestamp(1500);
 		}
 	}
@@ -8279,19 +8282,36 @@ void ai_chase()
         enemy_shipp_flags.reset();
 	}
 
-	if ( enemy_sip_flags.any_set() ) {
-		if (Ship_info[Ships[En_objp->instance].ship_info_index].is_big_or_huge()) {
-			ai_big_chase();
-			return;
-		}
-	}
-
 	//	If collided with target_objnum last frame, avoid that ship.
 	//	This should prevent the embarrassing behavior of ships getting stuck on each other
 	//	as if they were magnetically attracted. -- MK, 11/13/97.
 	if ((aip->ai_flags[AI::AI_Flags::Target_collision]) || (aip->submode == SM_FLY_AWAY)) {
 		ai_chase_fly_away(Pl_objp, aip);
 		return;
+	}
+
+	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance]) && sip->is_small_ship()) {
+		// velocity / turn rate gives us a vector which represents the minimum 'bug out' distance
+		// however this will be a significant underestimate, it doesn't take into account acceleration 
+		// with regards to its turn speed, nor already existing rotvel, nor the angular distance 
+		// to the particular avoidance vector it comes up with
+		// These would significantly complicate the calculation, so for now, it is all bundled into this magic number
+		const float collision_avoidance_aggression = 3.5f;
+
+		vec3d collide_vec = Pl_objp->phys_info.vel * (collision_avoidance_aggression / (PI2 / sip->srotation_time));
+		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
+		collide_vec *= radius_contribution;
+
+		collide_vec += Pl_objp->pos;
+		if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &collide_vec, 0.f, 0.1f))
+			return;
+	}
+
+	if (enemy_sip_flags.any_set()) {
+		if (enemy_sip->is_big_or_huge()) {
+			ai_big_chase();
+			return;
+		}
 	}
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
@@ -13892,29 +13912,41 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 {
 	float	dot, dist;
 	vec3d	v2g;
+
+	bool better_collision_avoid_and_fighting = The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance] && aip->mode == AIM_CHASE;
+
+	// if this guy's in battle he doesn't have the time to spend up to 35 seconds recovering!
+	int phase1_time = better_collision_avoid_and_fighting ? 2 : 5;
+	int phase2_time = 30;
 	
 	if (aip->ai_flags[AI::AI_Flags::Big_ship_collide_recover_1]) {
-		ai_turn_towards_vector(&aip->big_recover_pos_1, objp, nullptr, nullptr, 0.0f, 0, nullptr);
-		dist = vm_vec_normalized_dir(&v2g, &aip->big_recover_pos_1, &objp->pos);
+		vec3d global_recover_pos = aip->big_recover_1_direction + objp->pos;
+		ai_turn_towards_vector(&global_recover_pos, objp, nullptr, nullptr, 0.0f, 0, nullptr);
+		dist = vm_vec_normalized_dir(&v2g, &global_recover_pos, &objp->pos);
 		dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		accelerate_ship(aip, dot);
 
-		//	If close to desired point, or 15+ seconds since entered this mode, continue to next mode.
-		if ((timestamp_until(aip->big_recover_timestamp) < -15*1000) || (dist < (0.5f + flFrametime) * objp->phys_info.speed)) {
+		//	If close to desired point, or long enough since entered this mode, continue to next mode.
+		if ((timestamp_until(aip->big_recover_timestamp) < -phase1_time * 1000) || (dist < (0.5f + flFrametime) * objp->phys_info.speed)) {
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_1);
-			aip->ai_flags.set(AI::AI_Flags::Big_ship_collide_recover_2);
+			if (better_collision_avoid_and_fighting) // if true, bug out here 2 seconds should be enough
+				aip->ai_flags.remove(AI::AI_Flags::Target_collision); 
+			else
+				aip->ai_flags.set(AI::AI_Flags::Big_ship_collide_recover_2);
 		}
 
 		return 1;
 
 	} else if (aip->ai_flags[AI::AI_Flags::Big_ship_collide_recover_2]) {
-		ai_turn_towards_vector(&aip->big_recover_pos_2, objp, nullptr, nullptr, 0.0f, 0, nullptr);
-		dist = vm_vec_normalized_dir(&v2g, &aip->big_recover_pos_2, &objp->pos);
+		ai_turn_towards_vector(&aip->big_recover_2_pos, objp, nullptr, nullptr, 0.0f, 0, nullptr);
+		dist = vm_vec_normalized_dir(&v2g, &aip->big_recover_2_pos, &objp->pos);
 		dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		accelerate_ship(aip, dot);
 
 		//	If close to desired point, or 30+ seconds since started avoiding collision, done avoiding.
-		if ((timestamp_until(aip->big_recover_timestamp) < -30*1000) || (dist < (0.5f + flFrametime) * objp->phys_info.speed)) {
+		//  TODO: below comment (this never gets tripped because this is like one of the first things AI do, so it won't be following any dynamic goals yet)
+		//  also done avoiding if you're using better collision avoid and youve starting fighting
+		if ((timestamp_until(aip->big_recover_timestamp) < -phase2_time * 1000) || (dist < (0.5f + flFrametime) * objp->phys_info.speed) || better_collision_avoid_and_fighting) {
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_2);
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
 		}
@@ -14864,17 +14896,16 @@ void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *colli
 	aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_2);
 	aip->ai_flags.set(AI::AI_Flags::Big_ship_collide_recover_1);
 
-	// big_recover_pos_1 is 100 m out along normal
-	vec3d direction;
+	// big_recover_1_direction is 100 m out along normal
 	if (collision_normal) {
-		direction = *collision_normal;
+		aip->big_recover_1_direction = *collision_normal * 100.f;
 	} else {
-		vm_vec_copy_scale(&direction, &objp->orient.vec.fvec, -1.0f);
+		aip->big_recover_1_direction = objp->orient.vec.fvec * -100.0f;
 	}
-	vm_vec_scale_add(&aip->big_recover_pos_1, &objp->pos, &direction, 100.0f);
 
+	vec3d global_recover_pos_1 = aip->big_recover_1_direction + objp->pos;
 	// go out 200 m from box closest box point
-	get_world_closest_box_point_with_delta(&aip->big_recover_pos_2, big_objp, &aip->big_recover_pos_1, NULL, 300.0f);
+	get_world_closest_box_point_with_delta(&aip->big_recover_2_pos, big_objp, &global_recover_pos_1, NULL, 300.0f);
 
 	accelerate_ship(aip, 0.0f);
 }
