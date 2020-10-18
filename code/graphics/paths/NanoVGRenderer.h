@@ -68,7 +68,7 @@ class NanoVGRenderer {
 		uint32_t strokeOffset;
 		uint32_t strokeCount;
 	};
-	int _vertexBuffer = -1;
+	gr_buffer_handle _vertexBuffer;
 	vertex_layout _vertexLayout;
 
 	util::UniformBuffer _uniformBuffer;

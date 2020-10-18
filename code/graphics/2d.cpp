@@ -2858,7 +2858,7 @@ static graphics::util::GPUMemoryHeap* get_gpu_heap(GpuHeap heap_type) {
 	return gpu_heaps[static_cast<size_t>(heap_type)].get();
 }
 
-void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out) {
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, gr_buffer_handle& handle_out) {
 	TRACE_SCOPE(tracing::GpuHeapAllocate);
 
 	auto gpuHeap = get_gpu_heap(heap_type);

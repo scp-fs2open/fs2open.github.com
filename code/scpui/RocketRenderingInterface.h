@@ -29,9 +29,9 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 	};
 
 	struct CompiledGeometry {
-		int vertex_buffer = -1;
-		int index_buffer  = -1;
-		int num_elements  = -1;
+		gr_buffer_handle vertex_buffer;
+		gr_buffer_handle index_buffer;
+		int num_elements = -1;
 
 		Texture* texture = nullptr;
 	};
@@ -44,11 +44,14 @@ class RocketRenderingInterface : public Rocket::Core::RenderInterface {
 
 	static Rocket::Core::TextureHandle get_texture_handle(Texture* bitmap);
 
-	void renderGeometry(int vertex_buffer, int index_buffer, int num_elements, int bitmap,
-	                    const Rocket::Core::Vector2f& translation);
+	void renderGeometry(gr_buffer_handle vertex_buffer,
+		gr_buffer_handle index_buffer,
+		int num_elements,
+		int bitmap,
+		const Rocket::Core::Vector2f& translation);
 
-	int vertex_stream_buffer = -1;
-	int index_stream_buffer  = -1;
+	gr_buffer_handle vertex_stream_buffer;
+	gr_buffer_handle index_stream_buffer;
 
 	vertex_layout layout;
 

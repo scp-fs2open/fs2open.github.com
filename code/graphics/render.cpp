@@ -1092,7 +1092,7 @@ void gr_2d_stop_buffer() {
 	path->endFrame();
 }
 
-int gr_immediate_buffer_handle = -1;
+gr_buffer_handle gr_immediate_buffer_handle;
 static size_t immediate_buffer_offset = 0;
 static size_t immediate_buffer_size = 0;
 static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
@@ -1100,7 +1100,7 @@ static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	GR_DEBUG_SCOPE("Add data to immediate buffer");
 
-	if ( gr_immediate_buffer_handle < 0 ) {
+	if (!gr_immediate_buffer_handle.isValid()) {
 		gr_immediate_buffer_handle = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Dynamic);
 	}
 
@@ -1124,7 +1124,7 @@ size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	return old_offset;
 }
 void gr_reset_immediate_buffer() {
-	if ( gr_immediate_buffer_handle < 0 ) {
+	if (!gr_immediate_buffer_handle.isValid()) {
 		// we haven't used the immediate buffer yet
 		return;
 	}

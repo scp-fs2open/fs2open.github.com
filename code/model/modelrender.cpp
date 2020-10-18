@@ -742,11 +742,11 @@ bool model_draw_list::sort_draw_pair(model_draw_list* target, const int a, const
 	}
 
 	if ( draw_call_a->vert_src->Vbuffer_handle != draw_call_b->vert_src->Vbuffer_handle ) {
-		return draw_call_a->vert_src->Vbuffer_handle < draw_call_b->vert_src->Vbuffer_handle;
+		return draw_call_a->vert_src->Vbuffer_handle.value() < draw_call_b->vert_src->Vbuffer_handle.value();
 	}
 
 	if ( draw_call_a->vert_src->Ibuffer_handle != draw_call_b->vert_src->Ibuffer_handle ) {
-		return draw_call_a->vert_src->Ibuffer_handle < draw_call_b->vert_src->Ibuffer_handle;
+		return draw_call_a->vert_src->Ibuffer_handle.value() < draw_call_b->vert_src->Ibuffer_handle.value();
 	}
 
 	if ( draw_call_a->render_material.get_texture_map(TM_BASE_TYPE) != draw_call_b->render_material.get_texture_map(TM_BASE_TYPE) ) {
