@@ -2854,8 +2854,8 @@ void apply_view_shake(matrix *eye_orient)
 	tangles.h = 0.0f;
 	tangles.b = 0.0f;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline)
-	if (Viewer_obj == Player_obj && !Cmdline_no_screenshake) {
+	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer)
+	if (Viewer_obj == Player_obj && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
