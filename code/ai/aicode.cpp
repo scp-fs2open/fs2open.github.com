@@ -14905,7 +14905,7 @@ void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *colli
 
 	vec3d global_recover_pos_1 = aip->big_recover_1_direction + objp->pos;
 	// go out 200 m from box closest box point
-	get_world_closest_box_point_with_delta(&aip->big_recover_2_pos, big_objp, &global_recover_pos_1, NULL, 300.0f);
+	get_world_closest_box_point_with_delta(&aip->big_recover_2_pos, big_objp, &global_recover_pos_1, nullptr, 300.0f);
 
 	accelerate_ship(aip, 0.0f);
 }
