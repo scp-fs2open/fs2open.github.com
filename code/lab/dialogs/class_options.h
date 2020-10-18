@@ -34,5 +34,5 @@ private:
 	SCP_vector<lab_flag<Weapon::Info_Flags>> Weapon_Class_Flags;
 
 	template <class T>
-	void addFlags(int* X, int* Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list);
+	void addFlags(int* const X, int* const Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list);
 };

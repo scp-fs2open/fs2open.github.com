@@ -219,11 +219,12 @@ void LabRenderer::renderHud(float) {
 	}
 
 	//Print current Team Color setting, if any
-	if (currentTeamColor != "<none>")
+	if (currentTeamColor != "<none>") {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
 			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,
 			"Use T and Y to cycle through available Team Color settings. Current: %s",
 			currentTeamColor.c_str());
+	}
 
 	// Camera usage info
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
@@ -239,7 +240,7 @@ void LabRenderer::renderHud(float) {
 		get_rot_speed_string(LMGR->RotationSpeedDivisor).c_str());
 }
 
-void LabRenderer::useBackground(SCP_string mission_name) {
+void LabRenderer::useBackground(const SCP_string& mission_name) {
 	matrix skybox_orientation;
 	char skybox_model[MAX_FILENAME_LEN];
 	int skybox_flags;

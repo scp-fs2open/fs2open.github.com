@@ -21,5 +21,5 @@ private:
 	template<typename T>
 	void addVariable(int* Y, const char* var_name, T& value);
 
-	Text* addHeader(int& y, SCP_string text);
+	Text* addHeader(int& y, const SCP_string& text);
 };

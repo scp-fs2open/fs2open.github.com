@@ -30,7 +30,7 @@ public:
 		Window(in_caption, x_coord, y_coord, x_width, y_height, in_style) {
 	}
 
-	~DialogWindow() {
+	~DialogWindow() override {
 		if (Owner != nullptr)
 			Owner->close();
 	}

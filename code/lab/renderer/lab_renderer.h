@@ -88,13 +88,13 @@ public:
 
 	void onFrame(float frametime);
 
-	void close() {
+	static void close() {
 		Viewer_mode &= ~VM_FREECAMERA;
 	}
 
-	void useBackground(SCP_string mission_name);
+	void useBackground(const SCP_string& mission_name);
 
-	void setAAMode(AntiAliasMode mode) {
+	static void setAAMode(AntiAliasMode mode) {
 		Gr_aa_mode = mode;
 
 		Motion_debris_override = false;
@@ -123,7 +123,7 @@ public:
 	}
 
 	void setTeamColor(SCP_string teamColor) {
-		currentTeamColor = teamColor;
+		currentTeamColor = std::move(teamColor);
 	}
 
 	void resetView() {}

@@ -76,6 +76,8 @@ LabManager::LabManager() {
 		strcpy_s(teamp->weaponry_pool_variable[i], "");
 	}
 	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
+
+	Game_mode |= GM_LAB;
 }
 
 void LabManager::onFrame(float frametime) {

@@ -9,8 +9,6 @@ void lab_init() {
 	gr_set_clear_color(0, 0, 0);
 
 	LMGR = new LabManager();
-
-	Game_mode |= GM_LAB;
 }
 
 void lab_close() {

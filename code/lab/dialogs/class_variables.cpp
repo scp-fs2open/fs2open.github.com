@@ -142,7 +142,7 @@ void Variables::addVariable(int* Y, const char* var_name, T &value) {
 	}
 }
 
-Text* Variables::addHeader(int& y, SCP_string text) {
+Text* Variables::addHeader(int& y, const SCP_string& text) {
 	auto retval = (Text*)dialogWindow->AddChild(new Text(text, text, 80, y + 8, 100));
 	y += retval->GetHeight() + 10;
 

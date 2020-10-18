@@ -465,7 +465,7 @@ protected:
 	void DoDraw(float frametime) override;
 	int DoRefreshSize() override;
 	int DoMouseDown(float frametime) override;
-	virtual int DoMouseUp(float frametime) override;
+	int DoMouseUp(float frametime) override;
 	int DoMouseOut(float frametime) override;
 public:
 	Button(const SCP_string &in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
