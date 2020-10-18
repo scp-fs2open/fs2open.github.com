@@ -90,7 +90,7 @@ void LabManager::onFrame(float frametime) {
 
 		int dx, dy;
 		mouse_get_delta(&dx, &dy);
-		Renderer->getCurrentCamera()->handleInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON), mouse_down(MOUSE_RIGHT_BUTTON), key_get_shift_status());
+		Renderer->getCurrentCamera()->handleInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
 
 		if (!Renderer->getCurrentCamera()->handlesObjectPlacement()) {
 			if (mouse_down(MOUSE_LEFT_BUTTON)) {
