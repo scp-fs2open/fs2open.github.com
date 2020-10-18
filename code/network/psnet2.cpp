@@ -423,7 +423,7 @@ void psnet_init(uint16_t port_num)
 
 	Psnet_connection = NETWORK_CONNECTION_LAN;
 
-	Network_status = NETWORK_STATUS_NO_WINSOCK;
+	Network_status = NETWORK_STATUS_NO_PROTOCOL;
 
 #ifdef _WIN32
 	WSADATA wsa_data;
@@ -441,6 +441,11 @@ void psnet_init(uint16_t port_num)
 
 	if (port_num > 1023) {
 		Psnet_default_port = port_num;
+	}
+
+	// initialize all packet type buffers
+	for (idx = 0; idx < PSNET_NUM_TYPES; idx++) {
+		psnet_buffer_init(&Psnet_top_buffers[idx]);
 	}
 
 	// do this before socket init
@@ -470,15 +475,7 @@ void psnet_init(uint16_t port_num)
 		Nettimeout = Cmdline_timeout;
 	}
 
-	if (Network_status != NETWORK_STATUS_NO_PROTOCOL) {
-		// set network to be running
-		Network_status = NETWORK_STATUS_RUNNING;
-
-		// initialize all packet type buffers
-		for (idx = 0; idx < PSNET_NUM_TYPES; idx++) {
-			psnet_buffer_init(&Psnet_top_buffers[idx]);
-		}
-	}
+	Network_status = NETWORK_STATUS_RUNNING;
 }
 
 /**
@@ -506,6 +503,7 @@ void psnet_close()
 
 	Psnet_active = false;
 	Network_status = NETWORK_STATUS_NOT_INITIALIZED;
+	Can_broadcast = false;
 
 #ifdef _WIN32
 	WSACleanup();
@@ -856,6 +854,10 @@ int psnet_get(void *data, net_addr *addr)
 	SSIZE_T buffer_size;
 	SOCKADDR_IN6 from_addr;
 
+	if ( !Psnet_active ) {
+		return 0;
+	}
+
 	// try and get a free buffer and return its size
 	if ( psnet_buffer_get_next(&Psnet_top_buffers[PSNET_TYPE_UNRELIABLE], reinterpret_cast<ubyte *>(data), &buffer_size, &from_addr) ) {
 		psnet_sockaddr_to_addr(&from_addr, addr);
@@ -893,6 +895,10 @@ void psnet_flush()
 {
 	ubyte data[MAX_TOP_LAYER_PACKET_SIZE];
 	net_addr from_addr;
+
+	if ( !Psnet_active ) {
+		return;
+	}
 
 	while ( psnet_get(data, &from_addr) > 0 );
 }
@@ -1434,6 +1440,10 @@ void psnet_rel_work()
 	SOCKADDR_STORAGE rcv_addr;
 	auto *addr6 = reinterpret_cast<SOCKADDR_IN6 *>(&rcv_addr);
 	char addr_string[INET6_ADDRSTRLEN];
+
+	if ( !Psnet_active ) {
+		return;
+	}
 
 	PSNET_TOP_LAYER_PROCESS();
 
