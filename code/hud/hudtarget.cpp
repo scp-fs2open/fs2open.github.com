@@ -3203,9 +3203,6 @@ void hud_process_remote_detonate_missile()
 						Int3();	// should never happen
 						return;
 					}
-
-					// do only for the first remote detonate missile
-					break;
 				}
 			}
 		}

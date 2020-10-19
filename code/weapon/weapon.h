@@ -60,6 +60,9 @@ extern int Num_weapon_subtypes;
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
 
+// default amount of time to wait after firing before a remote detonated missile can be detonated
+#define DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT  0.5f
+
 enum class WeaponState : uint32_t
 {
 	INVALID,
