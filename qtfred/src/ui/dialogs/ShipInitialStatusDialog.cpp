@@ -118,7 +118,7 @@ void ShipInitialStatusDialog::updateUI()
 	}
 	value = _model->getHasShield();
 	ui->hasShieldCheckBox->setCheckState(Qt::CheckState(value));
-	if (!_model->getHasShield()) {
+	if (_model->getHasShield()) {
 		ui->shieldHullSpinBox->setEnabled(true);
 	} else {
 		ui->shieldHullSpinBox->setEnabled(false);
@@ -205,6 +205,10 @@ void ShipInitialStatusDialog::updateDockee()
 	} else {
 		// populate with dockee points
 		list_dockee_points(cur_dockee);
+		if (_model->getdockpoint_array()[cur_docker_point].dockee_point < 0) {
+			// select the dockpoint
+			dockeePointChanged(0);
+		}
 
 		// see if there's a dockpoint here
 		if (_model->getdockpoint_array()[cur_docker_point].dockee_point >= 0) {
@@ -395,15 +399,18 @@ void ShipInitialStatusDialog::afterburnerLockChanged(int state)
 void ShipInitialStatusDialog::dockChanged(QListWidgetItem* current)
 {
 	cur_docker_point = current->data(Qt::UserRole).value<int>();
+	updateUI();
 }
 void ShipInitialStatusDialog::dockeeComboChanged(int index)
 {
 	auto dockeeData = ui->dockeeComboBox->itemData(index).value<int>();
+	cur_dockee = dockeeData;
 	_model->setDockee(cur_docker_point, dockeeData);
 }
 void ShipInitialStatusDialog::dockeePointChanged(int index)
 {
 	auto dockeeData = ui->dockeePointComboBox->itemData(index).value<int>();
+	cur_dockee_point = dockeeData;
 	_model->setDockeePoint(cur_docker_point, dockeeData);
 }
 void ShipInitialStatusDialog::subsystemChanged(int index)

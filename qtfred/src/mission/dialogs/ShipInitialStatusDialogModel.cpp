@@ -699,7 +699,7 @@ void ShipInitialStatusDialogModel::setColour(const SCP_string& text)
 	modify(m_team_color_setting, text);
 }
 
-void ShipInitialStatusDialogModel::change_subsys(int new_subsys = 0)
+void ShipInitialStatusDialogModel::change_subsys(int new_subsys)
 {
 	int z, cargo_index;
 	ship_subsys* ptr;
@@ -716,7 +716,7 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys = 0)
 			ptr = GET_NEXT(ptr);
 		}
 
-		modify(ptr->current_hits, 100.0f - (float)m_damage);
+		ptr->current_hits = 100.0f - (float)m_damage;
 
 		// update cargo name
 		if (!m_cargo_name.empty()) { //-V805
@@ -738,12 +738,11 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys = 0)
 			} else {
 				ptr->subsys_cargo_name = cargo_index;
 			}
-			set_modified();
 		}
 	}
 
 	cur_subsys = z = new_subsys;
-	if (z == LB_ERR) {
+	if (z == -1) {
 		m_damage = 100;
 
 	} else {
@@ -764,6 +763,8 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys = 0)
 			m_cargo_name = "";
 		}
 	}
+	set_modified();
+	modelChanged();
 }
 
 const int ShipInitialStatusDialogModel::getShip()
