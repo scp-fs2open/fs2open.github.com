@@ -11415,7 +11415,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						j=v;
 					}
 
-					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];
+					fbfire_info.local_fire_postion = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
 
@@ -11912,7 +11912,7 @@ void ship_process_targeting_lasers()
 			fire_info.target = NULL;
 			fire_info.target_subsys = NULL;
 			fire_info.turret = NULL;
-			fire_info.targeting_laser_offset = m->gun_banks[shipp->targeting_laser_bank].pnt[0];			
+			fire_info.local_fire_postion = m->gun_banks[shipp->targeting_laser_bank].pnt[0];			
 			shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 
 			// hmm, why didn't it fire?

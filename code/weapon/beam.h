@@ -58,7 +58,7 @@ typedef struct beam_info {
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			local_fire_postion;		// offset from the center of the object (for targeting lasers only)
 	ship_subsys		*turret;						// where he's shooting from
 	float			accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// who's getting shot
@@ -75,13 +75,13 @@ typedef struct beam_fire_info {
 	int burst_seed;								// used for sharing random targets if part of the same burst
 	float current_per_shot_rot;                         // for type 5 beams
 	float per_burst_rotation;                         // for type 5 beams
-	float burst_index;
+	int burst_index;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	ship_subsys		*turret;							// where he's shooting from
 	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// whos getting shot
@@ -132,7 +132,7 @@ typedef struct beam {
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
 	beam		*next, *prev;			// link list stuff
-	vec3d	targeting_laser_offset;
+	vec3d	local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	
 	float		current_width_factor;		// applied to width due to shrink or grow

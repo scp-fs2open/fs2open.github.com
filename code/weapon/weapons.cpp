@@ -6037,7 +6037,7 @@ void spawn_child_weapons(object *objp)
 				fire_info.starting_pos = *opos;
 				fire_info.beam_info_index = child_id;
 				fire_info.team = static_cast<char>(obj_team(&Objects[parent_num]));
-				fire_info.burst_index = 0;
+				fire_info.burst_index = j;
 
 				// fire the beam
 				beam_fire(&fire_info);

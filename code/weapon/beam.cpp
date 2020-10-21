@@ -376,7 +376,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->target_sig = (fire_info->target != NULL) ? fire_info->target->signature : 0;
 	new_item->beam_sound_loop        = sound_handle::invalid();
 	new_item->type = wip->b_info.beam_type;
-	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
+	new_item->local_fire_postion = fire_info->local_fire_postion;
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
@@ -446,7 +446,7 @@ int beam_fire(beam_fire_info *fire_info)
 		new_item->binfo = *fire_info->beam_info_override;
 	} else {
 		float burst_rot = 0.0f;
-		if (new_item->type == BEAM_TYPE_F) {
+		if (new_item->type == BEAM_TYPE_F && !wip->b_info.bpi.burst_rot_pattern.empty()) {
 			burst_rot = wip->b_info.bpi.burst_rot_pattern[fire_info->burst_index];
 		}
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
@@ -572,7 +572,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->target_sig = 0;
 	new_item->beam_sound_loop        = sound_handle::invalid();
 	new_item->type = BEAM_TYPE_C;	
-	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
+	new_item->local_fire_postion = fire_info->local_fire_postion;
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
@@ -839,7 +839,7 @@ void beam_type_c_move(beam *b)
 	}
 
 	// type c beams only last one frame so we never have to "move" them.			
-	temp = b->targeting_laser_offset;
+	temp = b->local_fire_postion;
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
@@ -948,7 +948,7 @@ void beam_type_f_move(beam* b)
 	
 	// keep this updated even if still warming up 
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
-		vm_vec_unrotate(&b->last_start, &b->targeting_laser_offset, &b->objp->orient);
+		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
 
 		// compute the change in orientation the fighter went through
@@ -2110,7 +2110,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	float miss_factor;
 
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
-		vm_vec_unrotate(&turret_point, &b->targeting_laser_offset, &b->objp->orient);
+		vm_vec_unrotate(&turret_point, &b->local_fire_postion, &b->objp->orient);
 		turret_point += b->objp->pos;
 	} else if (b->subsys != NULL) {
 		int temp = b->subsys->turret_next_fire_pos;
@@ -2149,8 +2149,6 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
-	if (bwi->beam_flags[Weapon::Beam_Flags::Burst_share_random])
-		printf("");
 
 	int seed = bwi->beam_flags[Weapon::Beam_Flags::Burst_share_random] ? burst_seed : rand32();
 
@@ -2246,8 +2244,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vec_sub(&fvec, &b->target->pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			vm_vector_2_matrix(&orient, &fvec, &uvec);
-		} else if (b->flags & BF_TARGETING_COORDS){
-			vm_vector_2_matrix(&orient, &b->target_pos1);
+		} else if (b->flags & BF_TARGETING_COORDS) {
+			// targeting coords already set up turret_norm with target_pos above
+			vm_vector_2_matrix(&orient, &turret_norm);
 		} 
 
 		// Get our two starting points
@@ -2421,6 +2420,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
 
+
+
 		vec3d zero_vec = vmd_zero_vector;
 		// and finally rotate around the per_burst and burst rot_axes
 		if (bwi->bpi.per_burst_rot_axis != AXIS_UNSPECIFIED) {
@@ -2557,7 +2558,7 @@ void beam_aim(beam *b)
 
 	case BEAM_TYPE_C:
 		// start point
-		temp = b->targeting_laser_offset;
+		temp = b->local_fire_postion;
 		vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);

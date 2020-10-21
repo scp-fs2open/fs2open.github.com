@@ -7831,7 +7831,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		int bank = (ubyte)subsys_index % 10;
 		int point = (ubyte)subsys_index / 10;
 
-		fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+		fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
 
 		shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 		shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
@@ -7840,8 +7840,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 		shipp->beam_sys_info.turret_num_firing_points = 1;
 		shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
-		shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
-		shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+		shipp->beam_sys_info.pnt = fire_info.local_fire_postion;
+		shipp->beam_sys_info.turret_firing_point[0] = fire_info.local_fire_postion;
 
 		shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 		shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
