@@ -153,6 +153,8 @@ const char *Submode_text[] = {
 "BIG_APPR",
 "BIG_CIRC",
 "BIG_PARL"
+"GLIDE_ATK"
+"CIR_STRAFE"
 };
 
 const char *Strafe_submode_text[5] = {

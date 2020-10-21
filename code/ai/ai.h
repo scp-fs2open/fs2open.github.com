@@ -183,6 +183,7 @@ typedef struct ai_class {
 
 //	Submode definitions.
 //	Note: These need to be renamed to be of the form: AIS_mode_xxxx
+// Cyborg17 -- If you add submodes for AI_CHASE, you *have to* add entries to Submode_text[] in aicode.cpp
 #define	SM_CONTINUOUS_TURN	1	// takes parm: vector_id {0..3 = right, -right, up, -up}
 #define	SM_ATTACK				2
 #define	SM_EVADE_SQUIGGLE		3
