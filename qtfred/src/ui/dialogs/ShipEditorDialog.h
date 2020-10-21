@@ -6,6 +6,7 @@
 #include <ui/FredView.h>
 
 #include "ShipFlagsDialog.h"
+#include "ShipInitialStatusDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>

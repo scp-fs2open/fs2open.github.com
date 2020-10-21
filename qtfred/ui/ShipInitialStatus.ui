@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::ShipInitialStatusDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ShipInitialStatusDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>319</width>
+    <height>544</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Initial Status Editor</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QGridLayout" name="topGrid">
+     <item row="0" column="0" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="velocityLabel">
+       <property name="minimumSize">
+        <size>
+         <width>75</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Velocity</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="hullSpinBox">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="3">
+      <widget class="QPushButton" name="cancelPushButton">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <spacer name="horizontalSpacer_4">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="1">
+      <widget class="QSpinBox" name="velocitySpinBox">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="3">
+      <widget class="QPushButton" name="okPushButton">
+       <property name="text">
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="hullLabel">
+       <property name="minimumSize">
+        <size>
+         <width>75</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Hull Integrity</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="shieldFlagsLayout">
+     <item>
+      <widget class="fso::fred::ShipFlagCheckbox" name="hasShieldCheckBox">
+       <property name="text">
+        <string>Has Shield System</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="fso::fred::ShipFlagCheckbox" name="forceShieldsCheckBox">
+       <property name="text">
+        <string>Force Shields On</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="shieldLayout">
+     <item alignment="Qt::AlignRight">
+      <widget class="QLabel" name="shieldHullLabel">
+       <property name="text">
+        <string>Shield Integrity</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="shieldHullSpinBox">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="shieldSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="lockLayout">
+     <item row="1" column="1">
+      <widget class="fso::fred::ShipFlagCheckbox" name="secondaryLockCheckBox">
+       <property name="text">
+        <string>Secondaries Won't Fire</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="fso::fred::ShipFlagCheckbox" name="weaponLockCheckBox">
+       <property name="text">
+        <string>Weapon Locked</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="fso::fred::ShipFlagCheckbox" name="shipLockCheckBox">
+       <property name="text">
+        <string>Ship Locked</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="fso::fred::ShipFlagCheckbox" name="primaryLockCheckBox">
+       <property name="text">
+        <string>Primaries Won't Fire</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="fso::fred::ShipFlagCheckbox" name="turretLockCheckBox">
+       <property name="text">
+        <string>Turrets Won't Fire</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="fso::fred::ShipFlagCheckbox" name="afterburnerLockCheckBox">
+       <property name="text">
+        <string>Afterburner Disabled</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="dockpointGroupBox">
+     <property name="title">
+      <string>Dockpoints</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <widget class="QListWidget" name="dockpointList">
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="dockpointVerticalLayout">
+        <item>
+         <widget class="QLabel" name="dockeeLabel">
+          <property name="text">
+           <string>Occupied by</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="dockeeComboBox"/>
+        </item>
+        <item>
+         <widget class="QComboBox" name="dockeePointComboBox"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="subsystemGroupBox">
+     <property name="title">
+      <string>Subsystems</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <layout class="QHBoxLayout" name="subsytemTopLayout">
+        <item>
+         <widget class="QListWidget" name="subsystemList"/>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="subsytemTopLeftLayout">
+          <item>
+           <widget class="QLabel" name="integrityLabel">
+            <property name="text">
+             <string>Integrity</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="subIntegritySpinBox">
+            <property name="maximum">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="cargoLayout">
+        <item>
+         <widget class="QLabel" name="cargoLabel">
+          <property name="text">
+           <string>Cargo</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="cargoEdit"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="colourLayout">
+     <item>
+      <widget class="QLabel" name="colourLabel">
+       <property name="text">
+        <string>Team Colour Setting</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="colourComboBox"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::ShipFlagCheckbox</class>
+   <extends>QCheckBox</extends>
+   <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
