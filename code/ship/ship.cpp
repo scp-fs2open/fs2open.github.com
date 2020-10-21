@@ -6343,8 +6343,7 @@ void ship_weapon::clear()
     detonate_weapon_time = 0;
     ai_class = 0;
 
-    last_fired_weapon_index = -1;
-    last_fired_weapon_signature = -1;
+	remote_detonaters_active = 0;
 }
 
 ship_weapon::ship_weapon() {
@@ -6969,8 +6968,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			}
 		}
 
-		ship_system->weapons.last_fired_weapon_index = -1;
-		ship_system->weapons.last_fired_weapon_signature = -1;
+		ship_system->weapons.remote_detonaters_active = 0;
 		ship_system->weapons.detonate_weapon_time = -1;
 		ship_system->weapons.ai_class = sinfo->ai_class;  // assume ai class of ship for turret
 
@@ -11898,91 +11896,34 @@ void ship_process_targeting_lasers()
 	}}
 
 /**
- * Attempt to detonate weapon last fired by *src.
- * Only used for weapons that support remote detonation.
- * 
- * @param swp	Ship weapon
- * @param src	Source of weapon
- * @return true if detonated, else return false.
- * 
- *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
- *	If it's a weapon that spawns particles, those will be released.
- */
-static int maybe_detonate_weapon(ship_weapon *swp, object* /*src*/)
-{
-	int			objnum = swp->last_fired_weapon_index;
-	object		*objp;
-	weapon_info	*wip;
-
-	if ((objnum < 0) || (objnum >= MAX_OBJECTS)) {
-		return 0;
-	}
-	
-	objp = &Objects[objnum];
-
-	if (objp->type != OBJ_WEAPON){
-		return 0;
-	}
-
-	if ((objp->instance < 0) || (objp->instance >= MAX_WEAPONS)){
-		return 0;
-	}
-
-	// check to make sure that the weapon to detonate still exists
-	if ( swp->last_fired_weapon_signature != objp->signature ){
-		return 0;
-	}
-
-	Assert(Weapons[objp->instance].weapon_info_index != -1);
-	wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-	if (wip->wi_flags[Weapon::Info_Flags::Remote]) {
-
-		int	weapon_sig;
-
-		weapon_sig = objp->signature;
-
-		if (swp->last_fired_weapon_signature == weapon_sig) {
-			weapon_detonate(objp);
-			swp->last_fired_weapon_index = -1;
-
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-/**
  * Maybe detonate secondary weapon that's already out.
  * @return Return true if we detonate it, false if not.
  */
-static int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
+static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 {
-	if (swp->last_fired_weapon_index != -1)
+	if (swp->remote_detonaters_active > 0) {
 		if (timestamp_elapsed(swp->detonate_weapon_time)) {
-			object	*first_objp = &Objects[swp->last_fired_weapon_index];
-			if (maybe_detonate_weapon(swp, obj)) {
-				//	If dual fire was set, there could be another weapon to detonate.  Scan all weapons.
-				missile_obj	*mo;
+			missile_obj	*mo;
 
-				// check for currently locked missiles (highest precedence)
-				for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-					object	*mobjp;
-					Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-					mobjp = &Objects[mo->objnum];
-					if ((mobjp != first_objp) && (mobjp->parent_sig == obj->parent_sig)) {
-						if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
-							weapon_detonate(mobjp);
-						}
+			// check for currently locked missiles (highest precedence)
+			for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+				object	*mobjp;
+				Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
+				mobjp = &Objects[mo->objnum];
+				if (mobjp->parent_sig == obj->parent_sig && Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
+					// dont detonate if this guy just spawned i.e. we just spawned him in a previous iteration of this loop
+					if (Missiontime - Weapons[mobjp->instance].creation_time > fl2f(0.01)) {
+						weapon_detonate(mobjp);
+						swp->remote_detonaters_active--;
 					}
 				}
-				
-				return 1;
 			}
-		}
 
-	return 0;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
@@ -12419,9 +12360,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				}
 
 				num_fired++;
-				swp->last_fired_weapon_index = weapon_num;
-				swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
-				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
+				swp->detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));;		//	Can detonate 1/2 second later.
+				if (Weapon_info[weapon_idx].wi_flags[Weapon::Info_Flags::Remote])
+					swp->remote_detonaters_active++;
 
 				// subtract the number of missiles fired
 				if ( !Weapon_energy_cheat ){

@@ -141,8 +141,7 @@ public:
 	int tertiary_bank_capacity;		// Max number of shots in bank
 	int tertiary_bank_rearm_time;	// timestamp which indicates when bank can get new something (used for ammopod or boostpod)
 
-	int last_fired_weapon_index;		//	Index of last fired secondary weapon.  Used for remote detonates.
-	int last_fired_weapon_signature;	//	Signature of last fired weapon.
+	int remote_detonaters_active;
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
 

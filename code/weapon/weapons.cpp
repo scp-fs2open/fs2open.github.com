@@ -5850,6 +5850,8 @@ void spawn_child_weapons(object *objp)
 		}
 	}
 
+	ship* parent_shipp;
+	parent_shipp = &Ships[Objects[objp->parent].instance];
 	starting_sig = 0;
 
 	if ( Game_mode & GM_MULTIPLAYER ) {		
@@ -5936,6 +5938,10 @@ void spawn_child_weapons(object *objp)
 					}
 
 					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
+					if (child_wip->wi_flags[Weapon::Info_Flags::Remote]) {
+						parent_shipp->weapons.detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));
+						parent_shipp->weapons.remote_detonaters_active++;
+					}
 				}
 			}
 		}
