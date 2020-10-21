@@ -39,8 +39,8 @@ class ShipInitialStatusDialog : public QDialog {
 	void updateSubsystems();
 
 	int cur_docker_point = -1;
-	int cur_dockee;
-	int cur_dockee_point;
+	int cur_dockee = -1;
+	int cur_dockee_point = -1;
 
 	void velocityChanged(int);
 	void hullChanged(int);

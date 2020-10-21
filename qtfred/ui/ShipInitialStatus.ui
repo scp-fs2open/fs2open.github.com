@@ -219,7 +219,7 @@
      <property name="title">
       <string>Dockpoints</string>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,1">
       <item>
        <widget class="QListWidget" name="dockpointList">
         <property name="editTriggers">
@@ -228,7 +228,7 @@
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="dockpointVerticalLayout">
+       <layout class="QVBoxLayout" name="dockpointVerticalLayout" stretch="0,1,1,0">
         <item>
          <widget class="QLabel" name="dockeeLabel">
           <property name="text">
@@ -237,10 +237,43 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="dockeeComboBox"/>
+         <widget class="QComboBox" name="dockeeComboBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>0</height>
+           </size>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="dockeePointComboBox"/>
+         <widget class="QComboBox" name="dockeePointComboBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="dockSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
@@ -269,10 +302,35 @@
           </item>
           <item>
            <widget class="QSpinBox" name="subIntegritySpinBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>65</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="maximum">
              <number>100</number>
             </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="SubsystemSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -321,5 +379,38 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>okPushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>fso::fred::dialogs::ShipInitialStatusDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>278</x>
+     <y>565</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>251</x>
+     <y>509</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cancelPushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>fso::fred::dialogs::ShipInitialStatusDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>389</x>
+     <y>563</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>375</x>
+     <y>515</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
