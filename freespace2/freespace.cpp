@@ -6413,6 +6413,13 @@ int game_main(int argc, char *argv[])
 
 	game_init();
 
+	// if networking is unavailable then standalone is useless, so just fail
+	if (Is_standalone && !psnet_is_active()) {
+		ml_string("Failed to initialize networking! Aborting...");
+		game_shutdown();
+		return 1;
+	}
+
 	if (!headtracking::init())
 	{
 		mprintf(("Headtracking is not enabled...\n"));
