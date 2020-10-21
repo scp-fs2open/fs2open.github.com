@@ -548,9 +548,6 @@ void multi_ts_common_init()
 		Multi_ts_locked_bitmaps[idx] = bm_load(Multi_ts_bmap_names[gr_screen.res][idx]);
 	}	
 
-	// blast the team data clean
-	memset(Multi_ts_team,0,sizeof(ts_team_data) * MULTI_TS_MAX_TVT_TEAMS);	
-
 	// assign the correct players to the correct slots
 	multi_ts_init_players();
 
@@ -559,6 +556,12 @@ void multi_ts_common_init()
 
 	// sync the interface as normal
 	multi_ts_sync_interface();	
+}
+
+void multi_ts_common_level_init()
+{
+	// blast the team data clean
+	memset(Multi_ts_team,0,sizeof(ts_team_data) * MULTI_TS_MAX_TVT_TEAMS);
 }
 
 // do frame for team select

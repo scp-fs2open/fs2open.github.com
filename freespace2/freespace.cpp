@@ -1394,6 +1394,11 @@ bool game_start_mission()
 
 	bm_print_bitmaps();
 
+	// init some common team select stuff now
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_ts_common_level_init();
+	}
+
 	int e1 __UNUSED = timer_get_milliseconds();
 
 	mprintf(("Level load took %f seconds.\n", (e1 - s1) / 1000.0f ));

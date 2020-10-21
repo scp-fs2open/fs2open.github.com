@@ -23,8 +23,11 @@
 #include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "network/multi_endgame.h"
+#include "network/multiteamselect.h"
 #include "playerman/player.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -618,6 +621,14 @@ void cmd_brief_init(int team)
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
+
+	// we have to reset/setup the shipselect and weaponselect pointers before moving on
+	ship_select_common_init();
+	weapon_select_common_init();
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_ts_common_init();
+	}
 
 	cmd_brief_init_voice();
 	cmd_brief_new_stage(0);
