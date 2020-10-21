@@ -134,31 +134,31 @@ void LabManager::onFrame(float frametime) {
 		// Adjust AA presets
 		case KEY_0:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::FXAA_Low);
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_Low);
 			break;
 		case KEY_1:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::FXAA_Medium);
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_Medium);
 			break;
 		case KEY_2:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::FXAA_High);
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_High);
 			break;
 		case KEY_3:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::SMAA_Low);
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Low);
 			break;
 		case KEY_4:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::SMAA_Medium);
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Medium);
 			break;
 		case KEY_5:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::SMAA_High);
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_High);
 			break;
 		case KEY_6:
 			if (!PostProcessing_override)
-				Renderer->setAAMode(AntiAliasMode::SMAA_Ultra);
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Ultra);
 			break;
 
 		case KEY_T:

@@ -61,7 +61,7 @@ void BackgroundDialog::open(Button* /*caller*/) {
 	missiontree->AddItem(nullptr, "None", 0, true, labviewer_change_background);
 
 	int i = 0;
-	for (auto directory : directories) {
+	for (auto const &directory : directories) {
 		auto directoryItem = Mission_directories[i];
 		directoryItem = missiontree->AddItem(nullptr, directory.first);
 

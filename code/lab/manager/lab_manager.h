@@ -36,7 +36,7 @@ public:
 			d->close();
 		}
 
-		Renderer->close();
+		LabRenderer::close();
 
 		delete Screen;
 		Screen = nullptr;

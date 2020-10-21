@@ -156,7 +156,7 @@ void change_detail_texture(Tree* caller) {
 void change_aa_setting(Tree* caller) {
 	auto setting = (AntiAliasMode)caller->GetSelectedItem()->GetData();
 
-	LMGR->Renderer->setAAMode(setting);
+	LabRenderer::setAAMode(setting);
 }
 
 void RenderOptions::open(Button* /*caller*/) {

@@ -57,7 +57,7 @@ void Options::update(LabMode newLabMode, int classIndex) {
 }
 
 template <class T>
-void Options::addFlags(int* X, int* Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
+void Options::addFlags(int* const X, int* const Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
 {
 	int x = 0, y = 0;
 
