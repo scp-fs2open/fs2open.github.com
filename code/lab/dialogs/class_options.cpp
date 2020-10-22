@@ -5,11 +5,11 @@
 
 void Options::open(Button* /*caller*/) {
 	if (dialogWindow == nullptr) {
-		dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow(
+		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow(
 			"Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
 		dialogWindow->SetOwner(this);
 	}
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void Options::update(LabMode newLabMode, int classIndex) {

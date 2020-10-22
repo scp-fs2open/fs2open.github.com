@@ -7,8 +7,8 @@
 void destroy_subsystem(Tree* caller) {
 	auto selected_subsys_index = caller->GetSelectedItem()->GetData();
 
-	if (LMGR->isSafeForShips()) {
-		auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto ssp = GET_FIRST(&sp->subsys_list);
 		auto subsys_index = 0;
 		while (ssp != END_OF_LIST(&sp->subsys_list)) {
@@ -28,7 +28,7 @@ void change_primary(Tree* caller) {
 
 	auto weapon_index = weapon_info_lookup(weapon_name.c_str());
 
-	auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 	sp->weapons.primary_bank_weapons[bank_num] = weapon_index;
 
 	if (Weapon_info[weapon_index].wi_flags[Weapon::Info_Flags::Ballistic]) {
@@ -42,13 +42,13 @@ void change_secondary(Tree* caller) {
 
 	auto weapon_index = weapon_info_lookup(weapon_name.c_str());
 
-	auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 	sp->weapons.secondary_bank_weapons[bank_num] = weapon_index;
 }
 
 void destroy_ship(Button* /*caller*/) {
-	if (LMGR->isSafeForShips()) {
-		auto obj = &Objects[LMGR->CurrentObject];
+	if (getLabManager()->isSafeForShips()) {
+		auto obj = &Objects[getLabManager()->CurrentObject];
 
 		obj->flags.remove(Object::Object_Flags::Player_ship);
 		ship_self_destruct(obj);
@@ -62,8 +62,8 @@ bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
 bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
 
 void reset_animations(Tree*) {
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
 		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
 			if (triggered_primary_banks[i]) {
@@ -100,8 +100,8 @@ void reset_animations(Tree*) {
 }
 
 void trigger_primary_bank(Tree* caller) {
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
 		model_anim_start_type(shipp, AnimationTriggerType::PrimaryBank, bank, triggered_primary_banks[bank] ? -1 : 1, false);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
@@ -109,8 +109,8 @@ void trigger_primary_bank(Tree* caller) {
 }
 
 void trigger_secondary_bank(Tree* caller) {
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
 		model_anim_start_type(shipp, AnimationTriggerType::SecondaryBank, bank, triggered_primary_banks[bank] ? -1 : 1, false);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
@@ -118,15 +118,15 @@ void trigger_secondary_bank(Tree* caller) {
 }
 
 void labviewer_actions_do_triggered_anim(AnimationTriggerType type, int subobj_num, int direction) {
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		model_anim_start_type(shipp, type, subobj_num, direction);
 	}
 }
 
 void trigger_animation(Tree* caller) {
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
 		auto anim_type = static_cast<AnimationTriggerType>(caller->GetSelectedItem()->GetData());
 
@@ -169,9 +169,9 @@ void Actions::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 	
-	LMGR->loadWeapons();
+	getLabManager()->loadWeapons();
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
 
 	int y = 0;
@@ -186,7 +186,7 @@ void Actions::open(Button* /*caller*/) {
 		y += dgo->GetHeight();
 	}
 
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void Actions::update(LabMode newLabMode, int classIndex) {
@@ -199,10 +199,10 @@ void DestroySubsystems::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
 
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void DestroySubsystems::update(LabMode, int) {
@@ -213,8 +213,8 @@ void DestroySubsystems::update(LabMode, int) {
 
 	auto subsys_tree = (Tree*)dialogWindow->AddChild(new Tree("Subsystem List", 0, 0));
 
-	if (LMGR->isSafeForShips()) {
-		auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto ssp = GET_FIRST(&sp->subsys_list);
 		auto subsys_index = 0;
 		while (ssp != END_OF_LIST(&sp->subsys_list)) {
@@ -229,10 +229,10 @@ void ChangeLoadout::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
 
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void ChangeLoadout::update(LabMode, int) {
@@ -243,8 +243,8 @@ void ChangeLoadout::update(LabMode, int) {
 
 	auto weapons_tree = (Tree*)dialogWindow->AddChild(new Tree("Weapons stuff", 0, 0));
 
-	if (LMGR->isSafeForShips()) {
-		auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto sip = &Ship_info[sp->ship_info_index];
 
 		if (sip->is_flyable()) {
@@ -342,19 +342,19 @@ void WeaponFire::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
 		new DialogWindow("Fire weapons", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
 	dialogWindow->SetOwner(this);
 
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void WeaponFire::update(LabMode, int) {
 	if (dialogWindow == nullptr) return;
 
-	if (LMGR->isSafeForShips()) {
-		auto sp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto sp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
 		int y = 0;
 
@@ -362,7 +362,7 @@ void WeaponFire::update(LabMode, int) {
 			SCP_string bank_string;
 			sprintf(bank_string, "Primary bank %i", i);
 			auto cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox((bank_string), 2, y));
-			cbp->SetFlag(&LMGR->FirePrimaries, 1 << i);
+			cbp->SetFlag(&getLabManager()->FirePrimaries, 1 << i);
 			y += cbp->GetHeight() + 1;
 		}
 
@@ -370,7 +370,7 @@ void WeaponFire::update(LabMode, int) {
 			SCP_string bank_string;
 			sprintf(bank_string, "Secondary bank %i", i);
 			auto cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox((bank_string), 2, y));
-			cbp->SetFlag(&LMGR->FireSecondaries, 1 << i);
+			cbp->SetFlag(&getLabManager()->FireSecondaries, 1 << i);
 			y += cbp->GetHeight() + 1;
 		}
 	}
@@ -380,20 +380,20 @@ void AnimationTrigger::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
 		new DialogWindow("Trigger animations", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
 	dialogWindow->SetOwner(this);
 
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void AnimationTrigger::update(LabMode, int) {
 	if (dialogWindow == nullptr)
 		return;
 
-	if (LMGR->isSafeForShips()) {
-		auto shipp = &Ships[Objects[LMGR->CurrentObject].instance];
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
 		auto animations_tree = (Tree*)dialogWindow->AddChild(new Tree("Animations stuff", 0, 0));
 

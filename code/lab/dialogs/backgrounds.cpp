@@ -28,14 +28,14 @@ SCP_string get_directory_or_vp(const char* path)
 }
 
 void labviewer_change_background(Tree* caller) {
-	LMGR->Renderer->useBackground(caller->GetSelectedItem()->Name);
+	getLabManager()->Renderer->useBackground(caller->GetSelectedItem()->Name);
 }
 
 void BackgroundDialog::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
 
 	SCP_vector<SCP_string> missions;

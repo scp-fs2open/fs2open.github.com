@@ -4,86 +4,86 @@
 void labviewer_set_material_override_diffuse_red(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::DiffuseRed, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::DiffuseRed, value);
 }
 
 void labviewer_set_material_override_diffuse_green(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::DiffuseGreen, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::DiffuseGreen, value);
 }
 
 void labviewer_set_material_override_diffuse_blue(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::DiffuseBlue, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::DiffuseBlue, value);
 }
 
 void labviewer_set_material_override_glow_red(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::GlowRed, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::GlowRed, value);
 }
 
 void labviewer_set_material_override_glow_green(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::GlowGreen, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::GlowGreen, value);
 }
 
 void labviewer_set_material_override_glow_blue(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::GlowBlue, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::GlowBlue, value);
 }
 
 void labviewer_set_material_override_specular_red(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::SpecularRed, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::SpecularRed, value);
 }
 
 void labviewer_set_material_override_specular_green(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::SpecularGreen, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::SpecularGreen, value);
 }
 
 void labviewer_set_material_override_specular_blue(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::SpecularBlue, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::SpecularBlue, value);
 }
 
 void labviewer_set_material_override_specular_gloss(Slider* caller) {
 	auto value = caller->GetSliderValue() / 255.0f;
 
-	LMGR->Renderer->setTextureChannelValue(TextureChannel::SpecularGloss, value);
+	getLabManager()->Renderer->setTextureChannelValue(TextureChannel::SpecularGloss, value);
 }
 
 void set_diffuse_override(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setTextureOverride(TextureOverride::Diffuse, value);
+	getLabManager()->Renderer->setTextureOverride(TextureOverride::Diffuse, value);
 }
 
 void set_glow_override(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setTextureOverride(TextureOverride::Glow, value);
+	getLabManager()->Renderer->setTextureOverride(TextureOverride::Glow, value);
 }
 
 void set_spec_override(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setTextureOverride(TextureOverride::Specular, value);
+	getLabManager()->Renderer->setTextureOverride(TextureOverride::Specular, value);
 }
 
 void MaterialOverrides::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Material Overrides", gr_screen.max_w - 300, 200));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Material Overrides", gr_screen.max_w - 300, 200));
 	dialogWindow->SetOwner(this);
 
 	dialogWindow->DeleteChildren();

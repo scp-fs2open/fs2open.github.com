@@ -19,16 +19,16 @@ void LabRenderer::onFrame(float frametime) {
 		Missiontime += Frametime;
 	
 	// render our particular thing
-	if (LMGR->CurrentObject >= 0) {
+	if (getLabManager()->CurrentObject >= 0) {
 		int w, h;
 		renderModel(frametime);
 
 		// print out the current pof filename, to help with... something
-		if (strlen(LMGR->ModelFilename.c_str())) {
-			gr_get_string_size(&w, &h, LMGR->ModelFilename.c_str());
+		if (strlen(getLabManager()->ModelFilename.c_str())) {
+			gr_get_string_size(&w, &h, getLabManager()->ModelFilename.c_str());
 			gr_set_color_fast(&Color_white);
 			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w,
-				gr_screen.center_offset_y + gr_screen.center_h - h, LMGR->ModelFilename.c_str(), GR_RESIZE_NONE);
+				gr_screen.center_offset_y + gr_screen.center_h - h, getLabManager()->ModelFilename.c_str(), GR_RESIZE_NONE);
 		}
 	}
 
@@ -49,10 +49,10 @@ void LabRenderer::renderModel(float frametime) {
 
 	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
 
-	object* obj = &Objects[LMGR->CurrentObject];
+	object* obj = &Objects[getLabManager()->CurrentObject];
 
-	obj->pos = LMGR->CurrentPosition;
-	obj->orient = LMGR->CurrentOrientation;
+	obj->pos = getLabManager()->CurrentPosition;
+	obj->orient = getLabManager()->CurrentOrientation;
 
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
 	Glowpoint_override = renderFlags[LabRenderFlag::NoGlowpoints];
@@ -108,8 +108,8 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	obj_move_all(frametime);
-	if (LMGR->CurrentMode == LabMode::Ship)
-		process_subobjects(LMGR->CurrentObject);
+	if (getLabManager()->CurrentMode == LabMode::Ship)
+		process_subobjects(getLabManager()->CurrentObject);
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
@@ -233,11 +233,11 @@ void LabRenderer::renderHud(float) {
 		"modes, S to cycle model rotation speeds, V to reset view.", labCamera->getUsageInfo().c_str());
 
 	// Rotation mode
-	SCP_string text = get_rot_mode_string(LMGR->RotationMode);
+	SCP_string text = get_rot_mode_string(getLabManager()->RotationMode);
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-		"%s Rotation speed: %s", get_rot_mode_string(LMGR->RotationMode).c_str(),
-		get_rot_speed_string(LMGR->RotationSpeedDivisor).c_str());
+		"%s Rotation speed: %s", get_rot_mode_string(getLabManager()->RotationMode).c_str(),
+		get_rot_speed_string(getLabManager()->RotationSpeedDivisor).c_str());
 }
 
 void LabRenderer::useBackground(const SCP_string& mission_name) {

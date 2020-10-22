@@ -4,14 +4,14 @@
 void changeShip(Tree* caller) {
 	auto class_index = caller->GetSelectedItem()->GetData();
 
-	LMGR->changeDisplayedObject(LabMode::Ship, class_index);
+	getLabManager()->changeDisplayedObject(LabMode::Ship, class_index);
 }
 
 void ShipClasses::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Ship Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Ship Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
 	dialogWindow->SetOwner(this);
 	auto tree = (Tree*)dialogWindow->AddChild(new Tree("Ship Tree", 0, 0));
 
@@ -47,8 +47,8 @@ void ShipClasses::update(LabMode newLabMode, int classIndex) {
 	}
 
 	if (Class_toolbar == nullptr) {
-		Class_toolbar = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Class Toolbar", gr_screen.center_offset_x + 0,
-			gr_screen.center_offset_y + LMGR->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+		Class_toolbar = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Class Toolbar", gr_screen.center_offset_x + 0,
+			gr_screen.center_offset_y + getLabManager()->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 		Class_toolbar->SetOwner(this);
 	}
 	Class_toolbar->DeleteChildren();

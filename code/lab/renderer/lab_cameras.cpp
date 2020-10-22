@@ -30,8 +30,8 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 }
 
 void OrbitCamera::displayedObjectChanged() {
-	if (LMGR->CurrentObject != -1) {
-		distance = Objects[LMGR->CurrentObject].radius * 1.6f;
+	if (getLabManager()->CurrentObject != -1) {
+		distance = Objects[getLabManager()->CurrentObject].radius * 1.6f;
 	}
 
 	updateCamera();
@@ -47,5 +47,5 @@ void OrbitCamera::updateCamera() {
 	vm_vec_scale(&new_position, distance);
 
 	cam->set_position(&new_position);
-	cam->set_rotation_facing(&LMGR->CurrentPosition);
+	cam->set_rotation_facing(&getLabManager()->CurrentPosition);
 }

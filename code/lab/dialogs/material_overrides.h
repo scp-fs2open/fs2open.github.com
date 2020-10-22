@@ -10,7 +10,7 @@ class MaterialOverrides : public LabDialog {
 		dialogWindow->DeleteChildren();
 		dialogWindow = nullptr;
 
-		LMGR->Renderer->resetTextureOverride();
+		getLabManager()->Renderer->resetTextureOverride();
 	}
 
 	void update(LabMode /*newLabMode*/, int /*classIndex*/) override { /* Do Nothing */ }

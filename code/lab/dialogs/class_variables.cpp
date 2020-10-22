@@ -6,11 +6,11 @@
 
 void Variables::open(Button* /*caller*/) {
 	if (dialogWindow == nullptr) {
-		dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - 285,
+		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - 285,
 			gr_screen.center_offset_y + 200));
 		dialogWindow->SetOwner(this);
 	}
-	update(LMGR->CurrentMode, LMGR->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void Variables::update(LabMode newLabMode, int classIndex) {

@@ -4,153 +4,153 @@
 void set_model_rotation_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Flags.set(ManagerFlags::ModelRotationEnabled, !value);
+	getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, !value);
 }
 
 void set_show_insignia_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, !value);
 }
 
 void set_show_damage_lightning_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, !value);
 }
 
 void set_rotate_subsys_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::RotateSubsystems, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::RotateSubsystems, !value);
 }
 
 void set_post_proc_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, !value);
 }
 
 void set_diffuse_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, !value);
 }
 
 void set_glow_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !value);
 }
 
 void set_spec_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
 }
 
 void set_env_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !value);
 }
 
 void set_norm_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !value);
 }
 
 void set_height_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !value);
 }
 
 void set_misc_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, !value);
 }
 
 void set_ao_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, !value);
 }
 
 void set_glowpoint_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, !value);
 }
 
 void set_wireframe_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, !value);
 }
 
 void set_renderlight_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::NoLighting, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoLighting, !value);
 }
 
 void set_fulldetail_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, !value);
 }
 
 void set_thrusters_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, !value);
 }
 
 void set_afterburner_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, !value);
 }
 
 void set_weapons_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->loadWeapons();
+	getLabManager()->loadWeapons();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, !value);
 }
 
 void set_emissive_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	LMGR->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, !value);
 }
 
 void set_ambient_factor(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	LMGR->Renderer->setAmbientFactor(fl2i(value));
+	getLabManager()->Renderer->setAmbientFactor(fl2i(value));
 }
 
 void set_static_light_factor(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	LMGR->Renderer->setDirectionalFactor(value);
+	getLabManager()->Renderer->setDirectionalFactor(value);
 }
 
 void set_bloom(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	LMGR->Renderer->setBloomLevel(fl2i(value));
+	getLabManager()->Renderer->setBloomLevel(fl2i(value));
 }
 
 void change_detail_texture(Tree* caller) {
 	auto detail = (TextureQuality)caller->GetSelectedItem()->GetData();
 
-	LMGR->Renderer->setTextureQuality(detail);
+	getLabManager()->Renderer->setTextureQuality(detail);
 }
 
 void change_aa_setting(Tree* caller) {
@@ -163,7 +163,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
-	dialogWindow = (DialogWindow*)LMGR->Screen->Add(new DialogWindow("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
+	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
 	dialogWindow->SetOwner(this);
 
 	dialogWindow->DeleteChildren();

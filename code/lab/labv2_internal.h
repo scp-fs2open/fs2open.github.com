@@ -3,7 +3,7 @@
 #include "lab/manager/lab_manager.h"
 
 
-extern LabManager* LMGR;
+LabManager* getLabManager();
 
 class DialogOpener : public Button {
 public:
@@ -13,7 +13,7 @@ public:
 	}
 
 	int DoMouseUp(float frametime) override {
-		if (Dialog != nullptr && Dialog->safeToOpen(LMGR->CurrentMode))
+		if (Dialog != nullptr && Dialog->safeToOpen(getLabManager()->CurrentMode))
 			Dialog->open(this);
 
 		return Button::DoMouseUp(frametime);
