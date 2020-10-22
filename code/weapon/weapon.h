@@ -626,7 +626,7 @@ void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
-void spawn_child_weapons( object *objp, int spawn_index_override = -1, int spawn_count_override = -1 );
+void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);

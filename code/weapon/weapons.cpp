@@ -4959,20 +4959,7 @@ void weapon_process_post(object * obj, float frame_time)
 				// continuously advance next_spawn_time and spawn weapons until the time goes into the future
 				// incase we've passed multiple spawn events in the frame
 				while (timestamp_elapsed(wp->next_spawn_time[i])) {
-					// maybe roll for spawning
-					int spawn_num;
-					if (wip->spawn_info[i].spawn_chance < 1.f) {
-						spawn_num = 0;
-						for (int j = 0; j < wip->spawn_info[i].spawn_count; j++) {
-							if (frand() < wip->spawn_info[i].spawn_chance)
-								spawn_num++;
-						}
-					}
-					else {
-						spawn_num = wip->spawn_info[i].spawn_count;
-					}
-
-					spawn_child_weapons(obj, i, spawn_num);
+					spawn_child_weapons(obj, i);
 
 					// do the spawn effect
 					if (wip->spawn_info[i].spawn_effect.isValid()) {
@@ -5899,7 +5886,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
  * Spawns all non-continuous spawn weapons when the overrides are -1 (on detonation)
  * When they are provided it is for continuous spawn weapons 
  */
-void spawn_child_weapons(object *objp, int spawn_index_override, int spawn_count_override)
+void spawn_child_weapons(object *objp, int spawn_index_override)
 {
 	int	i, j;
 	int	child_id;
@@ -5964,7 +5951,19 @@ void spawn_child_weapons(object *objp, int spawn_index_override, int spawn_count
 		if (detonate_spawn && wip->spawn_info[i].spawn_interval > 0.f)
 			continue;
 
-		int spawn_count = spawn_count_override >= 0 ? spawn_count_override : wip->spawn_info[i].spawn_count;
+		// maybe roll for spawning
+		int spawn_count;
+		if (wip->spawn_info[i].spawn_chance < 1.f) {
+			spawn_count = 0;
+			for (int j = 0; j < wip->spawn_info[i].spawn_count; j++) {
+				if (frand() < wip->spawn_info[i].spawn_chance)
+					spawn_count++;
+			}
+		}
+		else {
+			spawn_count = wip->spawn_info[i].spawn_count;
+		}
+
 		for (j = 0; j < spawn_count; j++)
 		{
 			int		weapon_objnum;
