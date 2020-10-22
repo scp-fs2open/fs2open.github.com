@@ -1238,7 +1238,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	int res = GR_1024;
 	bool rc = false;
 
-	memset(&gr_screen, 0, sizeof(screen));
+	gr_screen = {};
 
 	float aspect_ratio = (float)width / (float)height;
 
