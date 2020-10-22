@@ -395,100 +395,99 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
-	if (Player->target_is_dying > 0 && targetp == &Objects[Player_ai->target_objnum])
-		return;
-	
-	int modelnum;
+	if ( Player->target_is_dying <= 0 || targetp != &Objects[Player_ai->target_objnum]) {
+		int modelnum;
 
-	switch ( targetp->type ) {
-	case OBJ_SHIP:
-		modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
-		bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-		if ( bound_rc != 0 ) {
-			draw_box = false;
-		}
-		break;
-
-	case OBJ_DEBRIS:
-		modelnum = Debris[targetp->instance].model_num;
-		bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-		if ( bound_rc != 0 ) {
-			draw_box = false;
-		}
-		break;
-
-	case OBJ_WEAPON:
-		modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-		if (modelnum != -1)
+		switch ( targetp->type ) {
+		case OBJ_SHIP:
+			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-		else {
-			vertex vtx;
-			g3_rotate_vertex(&vtx,&targetp->pos);
-			g3_project_vertex(&vtx);
-			x1 = x2 = (int) vtx.screen.xyw.x;
-			y1 = y2 = (int) vtx.screen.xyw.y;
-		}
+			if ( bound_rc != 0 ) {
+				draw_box = false;
+			}
+			break;
 
-		break;
+		case OBJ_DEBRIS:
+			modelnum = Debris[targetp->instance].model_num;
+			bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if ( bound_rc != 0 ) {
+				draw_box = false;
+			}
+			break;
 
-	case OBJ_ASTEROID:
-		{
-		int pof = 0;
-		pof = Asteroids[targetp->instance].asteroid_subtype;
-		modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
-		bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-		}
-		break;
+		case OBJ_WEAPON:
+			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx,&targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int) vtx.screen.xyw.x;
+				y1 = y2 = (int) vtx.screen.xyw.y;
+			}
 
-	case OBJ_JUMP_NODE:
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == targetp)
-				break;
-		}	
+			break;
+
+		case OBJ_ASTEROID:
+			{
+			int pof = 0;
+			pof = Asteroids[targetp->instance].asteroid_subtype;
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			}
+			break;
+
+		case OBJ_JUMP_NODE:
+			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+				if(jnp->GetSCPObject() == targetp)
+					break;
+			}	
 				
-		modelnum = jnp->GetModelNumber();
-		bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
-		break;
+			modelnum = jnp->GetModelNumber();
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
 
-	default:
-		Int3();	// should never happen
-		return;
-	}
-
-	Hud_target_w = x2-x1+1;
-	if ( Hud_target_w > gr_screen.clip_width ) {
-		Hud_target_w = gr_screen.clip_width;
-	}
-
-	Hud_target_h = y2-y1+1;
-	if ( Hud_target_h > gr_screen.clip_height ) {
-		Hud_target_h = gr_screen.clip_height;
-	}
-
-	if(clr->red && clr->green && clr->blue ) {
-		gr_set_color_fast(clr);
-	} else {
-		// if no specific color defined, use the IFF color.
-		hud_set_iff_color(targetp, 1);
-	}
-
-	if ( draw_box ) {
-		float distance = 0.0f; // init to 0 if we don't have to display distance
-		int target_objnum = -1;
-
-		if(flags & TARGET_DISPLAY_DIST) {
-			distance = hud_find_target_distance(targetp, Player_obj);
+		default:
+			Int3();	// should never happen
+			return;
 		}
 
-		if(flags & TARGET_DISPLAY_DOTS) {
-			target_objnum = OBJ_INDEX(targetp);
+		Hud_target_w = x2-x1+1;
+		if ( Hud_target_w > gr_screen.clip_width ) {
+			Hud_target_w = gr_screen.clip_width;
 		}
 
-		renderBoundingBrackets(x1-5, y1-5, x2+5, y2+5, w_correction, h_correction, distance, target_objnum, flags);
-	}
+		Hud_target_h = y2-y1+1;
+		if ( Hud_target_h > gr_screen.clip_height ) {
+			Hud_target_h = gr_screen.clip_height;
+		}
 
-	if ( (targetp->type == OBJ_SHIP) && (flags & TARGET_DISPLAY_SUBSYS) ) {
-		renderBoundingBracketsSubobject();
+		if(clr->red && clr->green && clr->blue ) {
+			gr_set_color_fast(clr);
+		} else {
+			// if no specific color defined, use the IFF color.
+			hud_set_iff_color(targetp, 1);
+		}
+
+		if ( draw_box ) {
+			float distance = 0.0f; // init to 0 if we don't have to display distance
+			int target_objnum = -1;
+
+			if(flags & TARGET_DISPLAY_DIST) {
+				distance = hud_find_target_distance(targetp, Player_obj);
+			}
+
+			if(flags & TARGET_DISPLAY_DOTS) {
+				target_objnum = OBJ_INDEX(targetp);
+			}
+
+			renderBoundingBrackets(x1-5, y1-5, x2+5, y2+5, w_correction, h_correction, distance, target_objnum, flags);
+		}
+
+		if ( (targetp->type == OBJ_SHIP) && (flags & TARGET_DISPLAY_SUBSYS) ) {
+			renderBoundingBracketsSubobject();
+		}
 	}
 }
 
