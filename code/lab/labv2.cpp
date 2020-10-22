@@ -3,7 +3,7 @@
 #include "lab/manager/lab_manager.h"
 #include "gamesequence/gamesequence.h"
 
-LabManager* LMGR;
+LabManager* LMGR = nullptr;
 
 void lab_init() {
 	gr_set_clear_color(0, 0, 0);
