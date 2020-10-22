@@ -2186,6 +2186,43 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	int num_spawn_intervals_defined = 0;
+
+	while (optional_string("$Spawn Interval:"))
+	{
+		stuff_float(&dum_float);
+
+		if (num_spawn_intervals_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+		{
+			wip->spawn_info[num_spawn_intervals_defined].spawn_interval = dum_float;
+			num_spawn_intervals_defined++;
+		}
+	}
+
+	int num_spawn_chances_defined = 0;
+
+	while (optional_string("$Spawn Chance:"))
+	{
+		stuff_float(&dum_float);
+
+		if (num_spawn_chances_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+		{
+			wip->spawn_info[num_spawn_chances_defined].spawn_chance = dum_float;
+			num_spawn_chances_defined++;
+		}
+	}
+
+	int num_spawn_effects_defined = 0;
+
+	while (optional_string("$Spawn Effect:"))
+	{
+		if (num_spawn_chances_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+		{
+			wip->spawn_info[num_spawn_effects_defined].spawn_effect = particle::util::parseEffect(wip->name);
+			num_spawn_chances_defined++;
+		}
+	}
+
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
 	{
 		if(optional_string("+Warpout Delay:")) {
@@ -4913,6 +4950,41 @@ void weapon_process_post(object * obj, float frame_time)
 
 	wip = &Weapon_info[wp->weapon_info_index];
 
+	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
+		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
+			if (wip->spawn_info[i].spawn_interval > 0.f) {
+				// continuously advance next_spawn_time and spawn weapons until the time goes into the future
+				// incase we've passed multiple spawn events in the frame
+				while (timestamp_elapsed(wp->next_spawn_time[i])) {
+					// maybe roll for spawning
+					int spawn_num;
+					if (wip->spawn_info[i].spawn_chance < 1.f) {
+						spawn_num = 0;
+						for (int j = 0; j < wip->spawn_info[i].spawn_count; j++) {
+							if (frand() < wip->spawn_info[i].spawn_chance)
+								spawn_num++;
+						}
+					}
+					else {
+						spawn_num = wip->spawn_info[i].spawn_count;
+					}
+
+					spawn_child_weapons(obj, i, spawn_num);
+
+					// do the spawn effect
+					if (wip->spawn_info[i].spawn_effect.isValid()) {
+						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
+						particleSource.moveTo(&obj->pos);
+						particleSource.setOrientationFromVec(&obj->phys_info.vel);
+						particleSource.finish();
+					}
+
+					// advance the time and maybe go again
+					wp->next_spawn_time[i] += (int)(wip->spawn_info[i].spawn_interval * 1000.f);
+				}
+			}
+		}
+	}
 	
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 	{
@@ -5579,7 +5651,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			// to reserve N signatures for the spawned weapons
 			if ( wip->wi_flags[Weapon::Info_Flags::Spawn] ){
                 multi_set_network_signature( (ushort)(Objects[objnum].net_signature + wip->total_children_spawned), MULTI_SIG_NON_PERMANENT );
-			}
+			} 
 		} else {
 			Objects[objnum].net_signature = multi_assign_network_signature( MULTI_SIG_NON_PERMANENT );
 		}
@@ -5755,6 +5827,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	wp->pick_big_attack_point_timestamp = timestamp(1);
 
+	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
+		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
+			if (wip->spawn_info[i].spawn_interval > 0)
+				wp->next_spawn_time[i] = timestamp((int)(wip->spawn_info[i].spawn_interval * 1000.f));
+			else
+				wp->next_spawn_time[i] = INT_MAX; // basically never expire
+		}
+	}
+
 	//	Set detail levels for POF-type weapons.
 	if (Weapon_info[wp->weapon_info_index].model_num != -1) {
 		polymodel * pm;
@@ -5812,8 +5893,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 /**
  * Spawn child weapons from object *objp.
+ * Spawns all non-continuous spawn weapons when the overrides are -1 (on detonation)
+ * When they are provided it is for continuous spawn weapons 
  */
-void spawn_child_weapons(object *objp)
+void spawn_child_weapons(object *objp, int spawn_index_override, int spawn_count_override)
 {
 	int	i, j;
 	int	child_id;
@@ -5854,20 +5937,32 @@ void spawn_child_weapons(object *objp)
 	parent_shipp = &Ships[Objects[objp->parent].instance];
 	starting_sig = 0;
 
-	if ( Game_mode & GM_MULTIPLAYER ) {		
+	if ( Game_mode & GM_MULTIPLAYER ) {	 	
 		// get the next network signature and save it.  Set the next usable network signature to be
 		// the passed in objects signature + 1.  We "reserved" N of these slots when we created objp
 		// for it's spawned children.
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
-	}
+	} 
 
 	opos = &objp->pos;
 	fvec = &objp->orient.vec.fvec;
 
-	for (i = 0; i < wip->num_spawn_weapons_defined; i++)
+	// as opposed to continuous spawn
+	bool detonate_spawn = spawn_index_override == -1;
+
+	// 2 here is just to make it run one loop
+	int num_spawn_weapons = detonate_spawn ? wip->num_spawn_weapons_defined : 2 ;
+	int start_index = detonate_spawn ? 0 : spawn_index_override;
+
+	for (i = start_index; i < num_spawn_weapons; i++)
 	{
-		for (j = 0; j < wip->spawn_info[i].spawn_count; j++)
+		// don't spawn continuous spawning weapons on detonation
+		if (detonate_spawn && wip->spawn_info[i].spawn_interval > 0.f)
+			continue;
+
+		int spawn_count = spawn_count_override >= 0 ? spawn_count_override : wip->spawn_info[i].spawn_count;
+		for (j = 0; j < spawn_count; j++)
 		{
 			int		weapon_objnum;
 			vec3d	tvec, pos;
@@ -5949,9 +6044,9 @@ void spawn_child_weapons(object *objp)
 	}
 
 	// in multiplayer, reset the next network signature to the one that was saved.
-	if ( Game_mode & GM_MULTIPLAYER ){
+	if ( Game_mode & GM_MULTIPLAYER ){ 
 		multi_set_network_signature( starting_sig, MULTI_SIG_NON_PERMANENT );
-	}
+	} 
 }
 
 /**
@@ -7960,6 +8055,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_angle = 180;
 		this->spawn_info[i].spawn_min_angle = 0;
 		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+		this->spawn_info[i].spawn_interval = -1.f;
+		this->spawn_info[i].spawn_chance = 1.f;
 	}
 
 	this->swarm_count = -1;

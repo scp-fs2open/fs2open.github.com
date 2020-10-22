@@ -63,6 +63,8 @@ extern int Num_weapon_subtypes;
 // default amount of time to wait after firing before a remote detonated missile can be detonated
 #define DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT  0.5f
 
+#define MAX_SPAWN_TYPES_PER_WEAPON 5
+
 enum class WeaponState : uint32_t
 {
 	INVALID,
@@ -150,6 +152,8 @@ typedef struct weapon {
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
 								// currently only gets set when weapon_info->acceleration_time is used
 
+	int next_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
+
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
 	sound_handle hud_in_flight_snd_sig; // Signature of the sound played while the weapon is in flight
@@ -221,9 +225,10 @@ typedef struct spawn_weapon_info
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
+	float	spawn_interval;						//  How often to do continuous spawn, negative is no continuous spawn
+	float   spawn_chance;						//  Liklihood of spawning on every spawn interval
+	particle::ParticleEffectHandle spawn_effect; // Effect for continuous spawnings
 } spawn_weapon_info;
-
-#define MAX_SPAWN_TYPES_PER_WEAPON 5
 
 // use this to extend a beam to "infinity"
 #define BEAM_FAR_LENGTH				30000.0f
@@ -621,7 +626,7 @@ void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
-void spawn_child_weapons( object *objp );
+void spawn_child_weapons( object *objp, int spawn_index_override = -1, int spawn_count_override = -1 );
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
