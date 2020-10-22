@@ -601,7 +601,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
                     name_length = num_start - temp_string.get() - skip_length;
                 }
 
-                weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
+                weaponp->total_detonation_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
 
                 Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
                 Num_spawn_types++;
@@ -2195,6 +2195,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (num_spawn_intervals_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
 			wip->spawn_info[num_spawn_intervals_defined].spawn_interval = dum_float;
+			// continuous spawn weapons dont count towards total_detonation_children_spawned
+			if (dum_float > 0)
+				wip->total_detonation_children_spawned -= wip->spawn_info[num_spawn_intervals_defined].spawn_count;
 			num_spawn_intervals_defined++;
 		}
 	}
@@ -5650,7 +5653,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			// for weapons that respawn, add the number of respawnable weapons to the net signature pool
 			// to reserve N signatures for the spawned weapons
 			if ( wip->wi_flags[Weapon::Info_Flags::Spawn] ){
-                multi_set_network_signature( (ushort)(Objects[objnum].net_signature + wip->total_children_spawned), MULTI_SIG_NON_PERMANENT );
+                multi_set_network_signature( (ushort)(Objects[objnum].net_signature + wip->total_detonation_children_spawned), MULTI_SIG_NON_PERMANENT );
 			} 
 		} else {
 			Objects[objnum].net_signature = multi_assign_network_signature( MULTI_SIG_NON_PERMANENT );
@@ -8048,7 +8051,7 @@ void weapon_info::reset()
 	this->WeaponMinRange = 0.0f;
 
 	this->num_spawn_weapons_defined = 0;
-	this->total_children_spawned = 0;
+	this->total_detonation_children_spawned = 0;
 	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
 	{
 		this->spawn_info[i].spawn_type = -1;

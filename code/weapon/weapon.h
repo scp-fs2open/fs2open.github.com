@@ -338,7 +338,7 @@ struct weapon_info
 
     // spawn weapons
     int num_spawn_weapons_defined;
-    int total_children_spawned;
+    int total_detonation_children_spawned;
     spawn_weapon_info spawn_info[MAX_SPAWN_TYPES_PER_WEAPON];
 
 	// swarm count
