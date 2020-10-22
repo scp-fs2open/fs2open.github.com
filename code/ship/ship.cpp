@@ -11406,6 +11406,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				fbfire_info.bank = bank_to_fire;
 				fbfire_info.burst_index = old_burst_counter;
 				fbfire_info.burst_seed = old_burst_seed;
+				fbfire_info.per_burst_rotation = swp->per_burst_rot;
 
 				for ( v = 0; v < points; v++ ){
 					if(winfo_p->b_info.beam_shots || winfo_p->wi_flags[Weapon::Info_Flags::Cycle]){

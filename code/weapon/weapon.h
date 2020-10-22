@@ -186,21 +186,23 @@ typedef enum beam_pattern_position {
 } beam_pattern_position;
 
 typedef struct beam_pattern_info {
-	bool no_translate;
-	beam_pattern_position start_pos;
-	beam_pattern_position end_pos;
-	vec3d start_pos_offset;
-	vec3d end_pos_offset;
-	vec3d start_pos_rand;
+	bool no_translate;                           // true if the end pos parameters were left unspecified
+	beam_pattern_position start_pos;             // whether it starts from the center or a type 0 or 1 beam kind of random
+	beam_pattern_position end_pos;               // same as above but but with an extra 'same random as start' option
+	vec3d start_pos_offset;                      // position simply added to start pos (possibly manipulated by the bools below)
+	vec3d end_pos_offset;                        // position simply added to end pos (possibly manipulated by the bools below)
+	vec3d start_pos_rand;                        // same as above but a randomly chosen between defined value for each axis and its negative
 	vec3d end_pos_rand;
-	bool target_orient_positions;
-	bool target_scale_positions;
-	float continuous_rot;
-	beam_pattern_rot_axis continuous_rot_axis;
-	SCP_vector<float> burst_rot_pattern;
-	beam_pattern_rot_axis burst_rot_axis;
-	float per_burst_rot;
-	beam_pattern_rot_axis per_burst_rot_axis;
+	bool target_orient_positions;                // if true, offsets are oriented relative to the target, else the shooter's pov
+	bool target_scale_positions;                 // if true, offsets are scaled by target radius, else its a fixed span from the shooters pov
+	                                             // regardless of distance
+	float continuous_rot;                        // radians per sec rotation over beam lifetime
+	beam_pattern_rot_axis continuous_rot_axis;   // axis to do ^^ on
+	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire 
+	                                             // this many beams simultaneously with the defined rotations
+	beam_pattern_rot_axis burst_rot_axis;        // axis to do ^^ on
+	float per_burst_rot;                         // radians to rotate for each burst, or each shot if no burst
+	beam_pattern_rot_axis per_burst_rot_axis;    // axis to do ^^ on
 } beam_pattern_info;
 
 typedef struct beam_weapon_info {
@@ -231,7 +233,7 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
-	beam_pattern_info bpi;
+	beam_pattern_info bpi;              // type 5 beams only
 	flagset<Weapon::Beam_Flags> beam_flags;
 } beam_weapon_info;
 

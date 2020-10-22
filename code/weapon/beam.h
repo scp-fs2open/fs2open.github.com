@@ -42,11 +42,11 @@ struct vec3d;
 
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
-	vec3d			dir_a, dir_b;						// direction vectors for beams	
-	float			delta_ang;							// angle between dir_a and dir_b
-	ubyte			shot_count;							// # of shots	
+	vec3d			dir_a, dir_b;					// direction vectors for beams	
+	float			delta_ang;						// angle between dir_a and dir_b
+	ubyte			shot_count;						// # of shots	
 	float			shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit
-	vec3d           rot_axis;
+	vec3d           rot_axis;                       // only used by type 5 beams, dir_a and dir_b may be rotated on this axis continuously
 } beam_info;
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
@@ -73,7 +73,6 @@ typedef struct beam_fire_info {
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
 	int burst_seed;								// used for sharing random targets if part of the same burst
-	float current_per_shot_rot;                         // for type 5 beams
 	float per_burst_rotation;                         // for type 5 beams
 	int burst_index;
 } beam_fire_info;

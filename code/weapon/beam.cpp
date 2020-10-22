@@ -787,8 +787,7 @@ void beam_type_a_move(beam *b)
 }
 
 // move a type B beam weapon
-//#define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
-#define BEAM_T(b)						( (b->life_total - b->life_left) / b->life_total)
+#define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
 void beam_type_b_move(beam *b)
 {		
 	vec3d actual_dir;
@@ -942,9 +941,6 @@ void beam_type_e_move(beam *b)
 
 void beam_type_f_move(beam* b)
 {
-	vec3d actual_dir;
-	vec3d temp, temp2;
-	float dot_save;
 	
 	// keep this updated even if still warming up 
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
@@ -963,8 +959,10 @@ void beam_type_f_move(beam* b)
 		vm_vec_rotate(&b->binfo.dir_b, &old_dirB, &transform_matrix);
 		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
 	}
-	else if (b->subsys != NULL)
+	else if (b->subsys != NULL) {
+		vec3d temp, temp2;
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, false);
+	}
 
 	// if the "warming up" timestamp has not expired
 	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {
@@ -974,6 +972,7 @@ void beam_type_f_move(beam* b)
 	vec3d newdir_a = b->binfo.dir_a;
 	vec3d newdir_b = b->binfo.dir_b;
 	vec3d zero_vec = vmd_zero_vector;
+	vec3d actual_dir;
 	bool no_sweep = vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b) > 0.9999f;
 
 	if (b->rotates) {
@@ -2112,6 +2111,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	if (b->flags & BF_IS_FIGHTER_BEAM) {
 		vm_vec_unrotate(&turret_point, &b->local_fire_postion, &b->objp->orient);
 		turret_point += b->objp->pos;
+		turret_norm = b->objp->orient.vec.fvec;
 	} else if (b->subsys != NULL) {
 		int temp = b->subsys->turret_next_fire_pos;
 
@@ -2249,9 +2249,10 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vector_2_matrix(&orient, &turret_norm);
 		} 
 
+		vec3d rand1_on, rand2_on;      vm_vec_zero(&rand1_on);  vm_vec_zero(&rand2_on);
+		vec3d rand1_off, rand2_off;    vm_vec_zero(&rand1_off); vm_vec_zero(&rand2_off);
+
 		// Get our two starting points
-		vec3d rand1_on, rand2_on;
-		vec3d rand1_off, rand2_off;
 		if (usable_target) {
 			// set up our two kinds of random points if needed
 			if (bwi->bpi.start_pos == POS_RANDOM_INSIDE || bwi->bpi.end_pos == POS_RANDOM_INSIDE) {
@@ -2321,7 +2322,6 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			center += move_forward;
 			pos1 += move_forward;
 			pos2 += move_forward;
-
 
 			vec3d temp = pos1; vm_vec_unrotate(&pos1, &temp, &orient);
 			temp = pos2; vm_vec_unrotate(&pos2, &temp, &orient);
@@ -2420,20 +2420,24 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
 
-
-
 		vec3d zero_vec = vmd_zero_vector;
 		// and finally rotate around the per_burst and burst rot_axes
 		if (bwi->bpi.per_burst_rot_axis != AXIS_UNSPECIFIED) {
-			vm_rot_point_around_line(&b->binfo.dir_a, &b->binfo.dir_a, per_burst_shot_rotation, &zero_vec, &per_burst_rot_axis_direction);
-			vm_rot_point_around_line(&b->binfo.dir_b, &b->binfo.dir_b, per_burst_shot_rotation, &zero_vec, &per_burst_rot_axis_direction);
-			vm_rot_point_around_line(&b->binfo.rot_axis, & b->binfo.rot_axis, per_burst_shot_rotation, &zero_vec, &per_burst_rot_axis_direction);
+			// negative means random
+			float per_burst_rot = per_burst_shot_rotation < 0 ? frand_range(0.f, PI2) : per_burst_shot_rotation;
+
+			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
+			vm_rot_point_around_line(&b->binfo.dir_b,    &b->binfo.dir_b,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
+			vm_rot_point_around_line(&b->binfo.rot_axis, &b->binfo.rot_axis, per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
 		}
 
 		if (bwi->bpi.burst_rot_axis != AXIS_UNSPECIFIED) {
-			vm_rot_point_around_line(&b->binfo.dir_a, &b->binfo.dir_a, burst_shot_rotation, &zero_vec, &burst_rot_axis_direction);
-			vm_rot_point_around_line(&b->binfo.dir_b, &b->binfo.dir_b, burst_shot_rotation, &zero_vec, &burst_rot_axis_direction);
-			vm_rot_point_around_line(&b->binfo.rot_axis, &b->binfo.rot_axis, burst_shot_rotation, &zero_vec, &burst_rot_axis_direction);
+			// negative means random
+			float burst_rot = burst_shot_rotation < 0 ? frand_range(0.f, PI2) : burst_shot_rotation;
+
+			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    burst_rot, &zero_vec, &burst_rot_axis_direction);
+			vm_rot_point_around_line(&b->binfo.dir_b,    &b->binfo.dir_b,    burst_rot, &zero_vec, &burst_rot_axis_direction);
+			vm_rot_point_around_line(&b->binfo.rot_axis, &b->binfo.rot_axis, burst_rot, &zero_vec, &burst_rot_axis_direction);
 		}
 
 		break;

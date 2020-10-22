@@ -6038,6 +6038,9 @@ void spawn_child_weapons(object *objp)
 				fire_info.beam_info_index = child_id;
 				fire_info.team = static_cast<char>(obj_team(&Objects[parent_num]));
 				fire_info.burst_index = j;
+				// we would normally accumulate this per burst rotation, which we can't do
+				// but we still need to do this once for the beam because it could be a negative, randomizing rotation
+				fire_info.per_burst_rotation = child_wip->b_info.bpi.per_burst_rot;
 
 				// fire the beam
 				beam_fire(&fire_info);
