@@ -3655,7 +3655,13 @@ void game_maybe_do_dead_popup(float frametime)
 			switch( choice ) {
 
 			case POPUPDEAD_DO_MAIN_HALL:
-				multi_quit_game(PROMPT_NONE,-1);
+				if ( !multi_quit_game(PROMPT_ALL) ) {
+					leave_popup = 0;
+
+					// reset the previous choice so this bit isn't called again next frame
+					extern int Popupdead_choice;
+					Popupdead_choice = -1;
+				}
 				break;
 
 			case POPUPDEAD_DO_RESPAWN:				

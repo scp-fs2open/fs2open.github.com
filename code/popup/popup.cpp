@@ -23,6 +23,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "popup/popupdead.h"
 #include "ui/ui.h"
 
 
@@ -811,13 +812,15 @@ void popup_force_draw_buttons(popup_info *pi)
 //			0..nchoices-1		=> choice
 int popup_do(popup_info *pi, int flags)
 {
-	int screen_id, choice = -1, done = 0;
+	int screen_id = -1, choice = -1, done = 0;
 
 	if ( popup_init(pi, flags) == -1 ){
 		return -1;
 	}
 
-	screen_id = gr_save_screen();
+	if ( !(flags & PF_RUN_STATE) ) {
+		screen_id = gr_save_screen();
+	}
 
 	int old_max_w_unscaled = gr_screen.max_w_unscaled;
 	int old_max_h_unscaled = gr_screen.max_h_unscaled;
@@ -861,7 +864,7 @@ int popup_do(popup_info *pi, int flags)
 		}
 
 		// don't draw anything 
-		if(!(flags & PF_RUN_STATE)){
+		if ( !(flags & PF_RUN_STATE) ) {
 			//gr_clear();
 			gr_restore_screen(screen_id);
 		}
