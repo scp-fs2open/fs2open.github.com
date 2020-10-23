@@ -4,7 +4,6 @@
 #include "globalincs/vmallocator.h"
 #include "lab/dialogs/lab_dialog.h"
 #include "lab/renderer/lab_renderer.h"
-#include "lab/labv2_internal.h"
 #include <initializer_list>
 #include <gamesequence/gamesequence.h>
 
