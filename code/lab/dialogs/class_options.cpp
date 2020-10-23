@@ -56,8 +56,10 @@ void Options::update(LabMode newLabMode, int classIndex) {
 	}
 }
 
+
+// The readability-non-const-parameter check is disabled here since it apparently gets confused by int* const -- The E, 23/10/2020
 template <class T>
-void Options::addFlags(int* const X, int* const Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
+void Options::addFlags(int* const X, int* const Y, const char* flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)  // NOLINT(readability-non-const-parameter)
 {
 	int x = 0, y = 0;
 
