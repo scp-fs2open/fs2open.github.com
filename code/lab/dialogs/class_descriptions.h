@@ -1,0 +1,22 @@
+#pragma once
+
+#include "lab/dialogs/lab_dialog.h"
+
+class Descriptions : public LabDialog {
+	void open(Button* caller) override;
+
+	void close() override {
+		dialogWindow->DeleteChildren();
+		dialogWindow = nullptr;
+	}
+
+	void update(LabMode newLabMode, int classIndex) override;
+
+	SCP_string getTitle() override { return "Class Description"; }
+
+	bool safeToOpen(LabMode labMode) override { return labMode == LabMode::Ship || labMode == LabMode::Weapon; }
+
+private:
+	DialogWindow* dialogWindow = nullptr;
+	Text* descriptionText = nullptr;
+};

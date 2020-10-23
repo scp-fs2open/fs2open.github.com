@@ -19429,6 +19429,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		debug_flags |= MR_DEBUG_NO_NORMAL;
 	}
 
+	if (shipp->flags[Ship_Flags::Render_without_ambientmap]) {
+		debug_flags |= MR_DEBUG_NO_AMBIENT;
+	}
+
 	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
 		debug_flags |= MR_DEBUG_NO_SPEC;
 	}

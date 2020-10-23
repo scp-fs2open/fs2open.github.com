@@ -81,7 +81,7 @@
 #include "io/mouse.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
-#include "lab/lab.h"
+#include "lab/labv2.h"
 #include "lab/wmcgui.h" //So that GUI_System can be initialized
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
@@ -3273,9 +3273,11 @@ void game_render_frame( camid cid )
 		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, VIEWER_ZOOM_DEFAULT);
 	}
 
-	// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
-	int dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-	HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
+	if (!(Game_mode & GM_LAB)) {
+		// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
+		int dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
+		HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
+	}
 
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
