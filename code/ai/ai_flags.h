@@ -129,6 +129,7 @@ namespace AI {
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
 		nonshielded_ships_can_manage_ets,
+		Better_collision_avoidance,
 
 		NUM_VALUES
 	};
