@@ -5888,7 +5888,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
  */
 void spawn_child_weapons(object *objp, int spawn_index_override)
 {
-	int	i, j;
 	int	child_id;
 	int	parent_num;
 	ushort starting_sig;
@@ -5945,7 +5944,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 	int num_spawn_weapons = detonate_spawn ? wip->num_spawn_weapons_defined : 2 ;
 	int start_index = detonate_spawn ? 0 : spawn_index_override;
 
-	for (i = start_index; i < num_spawn_weapons; i++)
+	for (int i = start_index; i < num_spawn_weapons; i++)
 	{
 		// don't spawn continuous spawning weapons on detonation
 		if (detonate_spawn && wip->spawn_info[i].spawn_interval > 0.f)
@@ -5964,7 +5963,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
 
-		for (j = 0; j < spawn_count; j++)
+		for (int j = 0; j < spawn_count; j++)
 		{
 			int		weapon_objnum;
 			vec3d	tvec, pos;
