@@ -2307,12 +2307,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vec_zero(&center);
 			// if we have no target let's act as though we're shooting at something with a 300m radius 800m away
 			if (bwi->bpi.start_pos != POS_CENTER)
-				static_randvec(rand32(), &pos1);
+				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
 
 			if (bwi->bpi.end_pos != POS_CENTER)
-				static_randvec(rand32(), &pos2);
+				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
 
-			if (bwi->bpi.no_translate)
+			if (bwi->bpi.no_translate || bwi->bpi.end_pos == POS_SAME_RANDOM)
 				pos2 = pos1;
 
 			pos1 *= 300.f;
@@ -2324,8 +2324,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			pos2 += move_forward;
 
 			vec3d temp = pos1; vm_vec_unrotate(&pos1, &temp, &orient);
-			temp = pos2; vm_vec_unrotate(&pos2, &temp, &orient);
-			temp = center; vm_vec_unrotate(&center, &temp, &orient);
+			temp = pos2;       vm_vec_unrotate(&pos2, &temp, &orient);
+			temp = center;     vm_vec_unrotate(&center, &temp, &orient);
 			pos1 += b->objp->pos;
 			pos2 += b->objp->pos;
 			center += b->objp->pos;
@@ -2360,7 +2360,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 		// maybe add some random
 		vec3d random_offset;
-		static_randvec(rand32(), &random_offset);
+		// the "cone" its producing here is actually a sphere with these values fyi
+		static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
+		random_offset *= static_randf_range(rand32(), 0.f, 1.f); // to get the inside of the sphere too
 		random_offset *= scale_factor;
 		random_offset.xyz.x *= bwi->bpi.start_pos_rand.xyz.x;
 		random_offset.xyz.y *= bwi->bpi.start_pos_rand.xyz.y;
@@ -2380,7 +2382,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			offset *= scale_factor;
 
 			// randomness
-			static_randvec(rand32(), &random_offset);
+			static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
+			random_offset *= static_randf_range(rand32(), 0.f, 1.f);
 			random_offset *= scale_factor;
 			random_offset.xyz.x *= bwi->bpi.start_pos_rand.xyz.x;
 			random_offset.xyz.y *= bwi->bpi.start_pos_rand.xyz.y;
@@ -2424,7 +2427,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		// and finally rotate around the per_burst and burst rot_axes
 		if (bwi->bpi.per_burst_rot_axis != AXIS_UNSPECIFIED) {
 			// negative means random
-			float per_burst_rot = per_burst_shot_rotation < 0 ? frand_range(0.f, PI2) : per_burst_shot_rotation;
+			float per_burst_rot = per_burst_shot_rotation;
+			if (per_burst_shot_rotation < 0)
+				per_burst_rot = static_randf_range(seed, 0.f, PI2);
 
 			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
 			vm_rot_point_around_line(&b->binfo.dir_b,    &b->binfo.dir_b,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
