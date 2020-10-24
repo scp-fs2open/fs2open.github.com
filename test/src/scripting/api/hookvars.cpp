@@ -38,3 +38,9 @@ TEST_F(HookVarsTest, withHookVars)
 
 	this->EvalTestScript();
 }
+
+TEST_F(HookVarsTest, removeNonExistent)
+{
+	// Should not cause any errors
+	_state->RemHookVar("Test");
+}

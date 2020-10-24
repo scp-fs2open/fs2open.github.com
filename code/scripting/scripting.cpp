@@ -627,9 +627,10 @@ void script_state::RemHookVars(std::initializer_list<SCP_string> names)
 {
 	if (LuaState != nullptr) {
 		for (const auto& hookVar : names) {
-			Assertion(!HookVariableValues[hookVar].empty(),
-				"Tried to remove uninitialized hook variable '%s'",
-				hookVar.c_str());
+			if (HookVariableValues[hookVar].empty()) {
+				// Nothing to do
+				continue;
+			}
 			HookVariableValues[hookVar].pop_back();
 		}
 	}
