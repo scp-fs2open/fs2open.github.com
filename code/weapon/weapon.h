@@ -338,7 +338,7 @@ struct weapon_info
 
     // spawn weapons
     int num_spawn_weapons_defined;
-    int total_detonation_children_spawned;
+    int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi
     spawn_weapon_info spawn_info[MAX_SPAWN_TYPES_PER_WEAPON];
 
 	// swarm count
