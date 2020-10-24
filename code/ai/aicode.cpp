@@ -11343,20 +11343,22 @@ void process_subobjects(int objnum)
 		ship_do_submodel_rotation(shipp, psub, pss);
 	}
 
-	//	Deal with a ship with blown out engines.
-	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
-		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
-		// aren't under AI control here
-		if ( (!(objp->flags[Object::Object_Flags::Player_ship]) ) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying]) ) {
-			// Goober5000 - don't do anything if docked
-			if (!object_is_docked(objp)) {
-				// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
-				//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
-				//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
-				if ( aip->mode != AIM_BAY_DEPART ) {
-					ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
-					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
-					aip->submode_start_time = Missiontime;
+	if (!(Game_mode & GM_LAB)) {
+		//	Deal with a ship with blown out engines.
+		if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
+			// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
+			// aren't under AI control here
+			if ((!(objp->flags[Object::Object_Flags::Player_ship])) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying])) {
+				// Goober5000 - don't do anything if docked
+				if (!object_is_docked(objp)) {
+					// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
+					//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
+					//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
+					if (aip->mode != AIM_BAY_DEPART) {
+						ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
+						aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
+						aip->submode_start_time = Missiontime;
+					}
 				}
 			}
 		}

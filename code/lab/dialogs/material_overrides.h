@@ -7,8 +7,10 @@ class MaterialOverrides : public LabDialog {
 	void open(Button* /*caller*/) override;
 
 	void close() override {
-		dialogWindow->DeleteChildren();
-		dialogWindow = nullptr;
+		if (dialogWindow != nullptr) {
+			dialogWindow->DeleteChildren();
+			dialogWindow = nullptr;
+		}
 
 		getLabManager()->Renderer->resetTextureOverride();
 	}

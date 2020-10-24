@@ -10,9 +10,11 @@ class RenderOptions : public LabDialog {
 	// Called when the global state changes (e.g. other ship/weapon being selected)
 	void update(LabMode, int) override { /* Do nothing */ };
 
-	void close() override { 
-		dialogWindow->DeleteChildren(); 
-		dialogWindow = nullptr; 
+	void close() override {
+		if (dialogWindow != nullptr) {
+			dialogWindow->DeleteChildren();
+			dialogWindow = nullptr;
+		}
 	}
 
 	// Returns the string to use for the top nav bar

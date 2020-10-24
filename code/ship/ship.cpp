@@ -11195,7 +11195,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			swp->burst_counter[bank_to_fire] = 0;
 		}
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || (fast_firing))) {
-			if (shipp->team == Ships[Player_obj->instance].team){
+			// When testing weapons fire in the lab, we do not have a player object available.
+			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;

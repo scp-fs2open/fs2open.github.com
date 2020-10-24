@@ -9,8 +9,10 @@ class BackgroundDialog : public LabDialog {
 
 	// Called when the dialog is closed
 	void close() override {
-		dialogWindow->DeleteChildren();
-		dialogWindow = nullptr;
+		if (dialogWindow != nullptr) {
+			dialogWindow->DeleteChildren();
+			dialogWindow = nullptr;
+		}
 	}
 
 	// Called when the global state changes (e.g. other ship/weapon being selected)

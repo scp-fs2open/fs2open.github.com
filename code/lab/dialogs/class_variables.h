@@ -6,8 +6,10 @@ class Variables : public LabDialog {
 	void open(Button* caller) override;
 
 	void close() override {
-		dialogWindow->DeleteChildren();
-		dialogWindow = nullptr;
+		if (dialogWindow != nullptr) {
+			dialogWindow->DeleteChildren();
+			dialogWindow = nullptr;
+		}
 	}
 	void update(LabMode newLabMode, int classIndex) override;
 

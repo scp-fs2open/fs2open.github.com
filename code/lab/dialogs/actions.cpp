@@ -496,9 +496,10 @@ void AnimationTrigger::update(LabMode, int) {
 }
 
 void AnimationTrigger::close() {
-	dialogWindow->DeleteChildren();
-	dialogWindow = nullptr;
-
+	if (dialogWindow != nullptr) {
+		dialogWindow->DeleteChildren();
+		dialogWindow = nullptr;
+	}
 	manual_animation_triggers.clear();
 	manual_animations.clear();
 
