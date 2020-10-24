@@ -1593,6 +1593,8 @@ void hud_do_lock_indicators(float frametime)
 
 		if ( !lock_slot->locked ) {
 			num_active_seekers++;
+		} else {
+			player_has_lock = true;
 		}
 
 		if ( !current_lock_status && lock_slot->locked ) {
@@ -1611,8 +1613,6 @@ void hud_do_lock_indicators(float frametime)
 			}
 
 			lock_slot->locked_timestamp = timestamp();
-
-			player_has_lock = true;
 		} else if ( !lock_slot->locked ) {
 			if (Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop)) {
 				snd_stop(Missile_lock_loop);
