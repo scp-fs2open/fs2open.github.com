@@ -6603,7 +6603,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
 			spawn_child_weapons(weapon_obj);
 		}
-	}	
+	}
+
+	// decrement parent's number of active remote detonators if applicable
+	if (wip->wi_flags[Weapon::Info_Flags::Remote] && weapon_obj->parent >= 0 && (weapon_obj->parent < MAX_OBJECTS)) {
+		object* parent = &Objects[weapon_obj->parent];
+		if ( parent->type == OBJ_SHIP && parent->signature == weapon_obj->parent_sig)
+			Ships[Objects[weapon_obj->parent].instance].weapons.remote_detonaters_active--;
+	}
 }
 
 void weapon_detonate(object *objp)
