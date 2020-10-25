@@ -614,8 +614,6 @@ add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/class_variables.cpp
 	lab/dialogs/render_options.h
 	lab/dialogs/render_options.cpp
-	lab/dialogs/material_overrides.h
-	lab/dialogs/material_overrides.cpp
 	lab/dialogs/backgrounds.h
 	lab/dialogs/backgrounds.cpp
 	lab/dialogs/actions.h
