@@ -152,8 +152,6 @@ public:
 
 	void setTextureOverride(TextureOverride, bool) {};
 
-	void setTextureChannelValue(TextureChannel, float) {};
-
 	void resetTextureOverride() {};
 
 	LabCamera* getCurrentCamera();

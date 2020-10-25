@@ -75,6 +75,11 @@ public:
 		}
 	}
 
+	// Call this function from outside LabManager::onFrame to signal that the lab should close.
+	void notify_close() {
+		CloseThis = true;
+	}
+
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;
 
@@ -88,6 +93,7 @@ private:
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;
+	bool CloseThis = false;
 
 	void changeShipInternal();
 };
