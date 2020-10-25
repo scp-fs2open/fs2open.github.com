@@ -226,6 +226,7 @@ typedef struct spawn_weapon_info
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
 	float	spawn_interval;						//  How often to do continuous spawn, negative is no continuous spawn
+	float   spawn_interval_delay;               //  A delay before starting continuous spawn
 	float   spawn_chance;						//  Liklihood of spawning on every spawn interval
 	particle::ParticleEffectHandle spawn_effect; // Effect for continuous spawnings
 } spawn_weapon_info;
