@@ -11,10 +11,6 @@ ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f
 
 void ParticleProperties::parse(bool nocreate) {
 	if (internal::required_string_if_new("+Filename:", nocreate)) {
-		m_bitmap = internal::parseAnimation(true);
-	}
-
-	if (optional_string("+Filenames:")) {
 		m_bitmap_list = internal::parseAnimationList(true);
 	}
 
@@ -40,26 +36,26 @@ void ParticleProperties::parse(bool nocreate) {
 
 int ParticleProperties::chooseBitmap()
 {
-	// if list is empty that means the optional string to add multiple bitmaps was not used
-	// thus choose the necessary bitmap specified "+Filename:"
+	// failsafe check, though we should not have been able to get to this point
 	if (m_bitmap_list.empty())
-		return m_bitmap;
+		return -1;
 
-	int bitmap_index = -1;
+	int bitmap_index;
 	int num_bitmaps = (int)m_bitmap_list.size();
 
-	if (num_bitmaps > 0) {
-		bitmap_index = m_bitmap_list[rand() % num_bitmaps];
-		return bitmap_index;
+	if (num_bitmaps == 1) {
+		bitmap_index = 0;
+	} else if (num_bitmaps > 1) {
+		bitmap_index = m_bitmap_list[rand() % num_bitmaps];		
 	} else {
-		return m_bitmap;
+		bitmap_index = -1;
 	}
-	
+
+	return bitmap_index;
 }
 
 void ParticleProperties::createParticle(particle_info& info) {
-	m_bitmap = ParticleProperties::chooseBitmap();
-	info.optional_data = m_bitmap;
+	info.optional_data = ParticleProperties::chooseBitmap();
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 	info.length = m_length.next();
@@ -72,8 +68,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 }
 
 WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
-	m_bitmap = ParticleProperties::chooseBitmap();
-	info.optional_data = m_bitmap;
+	info.optional_data = ParticleProperties::chooseBitmap();
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 	info.length = m_length.next();
@@ -88,9 +83,14 @@ WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info
 }
 
 void ParticleProperties::pageIn() {
-	if (m_bitmap >= 0) {
-		bm_page_in_aabitmap(m_bitmap, -1);
+	
+	int num_bitmaps = m_bitmap_list.size();
+	if (num_bitmaps > 0 ) {
+		for (auto i = 0; i < num_bitmaps; i++) {
+			bm_page_in_aabitmap(m_bitmap_list[i], -1);
+		}
 	}
+
 }
 }
 }

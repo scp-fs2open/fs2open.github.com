@@ -343,28 +343,26 @@ bool required_string_if_new(const char* token, bool no_create) {
 	return true;
 }
 
-int parseAnimation(bool critical) {
-	SCP_string name;
-	stuff_string(name, F_FILESPEC);
-
-	auto handle = bm_load_animation(name.c_str());
-
-	if (handle < 0) {
-		int level = critical ? 1 : 0;
-		error_display(level, "Failed to load effect %s!", name.c_str());
-	}
-
-	return handle;
-}
-
 SCP_vector<int> parseAnimationList(bool critical) {
 
 	SCP_vector<SCP_string> bitmap_strings;
-	int num_bitmaps = stuff_string_list(bitmap_strings);
+	
+	// check to see if we are parsing a single value or list
+	ignore_white_space();
+	if (*Mp == '(') {
+		// list of names case
+		stuff_string_list(bitmap_strings);
+	}
+	else {
+		// single name case
+		SCP_string name;
+		stuff_string(name, F_FILESPEC);
+		bitmap_strings.push_back(name);
+	}
+	
 	SCP_vector<int> handles;
-	size_t tbl_idx;
 
-	for (auto i = 0; i < num_bitmaps; i++) {
+	for (auto i = 0; i < bitmap_strings.size(); i++) {
 		SCP_string name = bitmap_strings[i];
 		auto handle = bm_load_animation(name.c_str());
 		if (handle < 0) {

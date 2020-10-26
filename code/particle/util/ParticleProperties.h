@@ -14,7 +14,7 @@ namespace util {
  */
 class ParticleProperties {
  public:
-	int m_bitmap = -1;
+
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformFloatRange m_radius;
 
