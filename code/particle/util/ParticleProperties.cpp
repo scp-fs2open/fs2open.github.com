@@ -44,7 +44,7 @@ int ParticleProperties::chooseBitmap()
 	int num_bitmaps = (int)m_bitmap_list.size();
 
 	if (num_bitmaps == 1) {
-		bitmap_index = 0;
+		bitmap_index = m_bitmap_list[0];
 	} else if (num_bitmaps > 1) {
 		bitmap_index = m_bitmap_list[rand() % num_bitmaps];		
 	} else {

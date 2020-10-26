@@ -172,7 +172,6 @@ bool required_string_if_new(const char* token, bool no_create);
 SCP_vector<int> parseAnimationList(bool critical = true);
 }
 
-
 namespace util {
 /**
  * @brief Parses an effect name
