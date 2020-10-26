@@ -225,7 +225,8 @@ const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 #define REARM_NUM_MISSILES_PER_BATCH 4              
 #define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
 
-const float minimum_spawn_interval = 0.1f;
+// most frequently a continuous spawn weapon is allowed to spawn
+static const float MINIMUM_SPAWN_INTERVAL = 0.1f;
 
 extern int compute_num_homing_objects(object *target_objp);
 
@@ -2208,14 +2209,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			float adjusted_lifetime = wip->lifetime - wip->spawn_info[spawn_weap].spawn_interval_delay;
 
-			if (temp_interval >= minimum_spawn_interval) {
+			if (temp_interval >= MINIMUM_SPAWN_INTERVAL) {
 				wip->spawn_info[spawn_weap].spawn_interval = temp_interval;
 				wip->maximum_children_spawned +=
 					(int)(wip->spawn_info[spawn_weap].spawn_count *
 						(adjusted_lifetime / wip->spawn_info[spawn_weap].spawn_interval));
 			}
 			else {
-				Warning(LOCATION, "Weapon \'%s\' spawn interval must be greater than %1.1f seconds.\n", wip->name, minimum_spawn_interval);
+				Warning(LOCATION, "Weapon \'%s\' spawn interval must be greater than %1.1f seconds.\n", wip->name, MINIMUM_SPAWN_INTERVAL);
 			}
 			spawn_weap++;
 		}
@@ -4978,7 +4979,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
-			if (wip->spawn_info[i].spawn_interval >= minimum_spawn_interval) {
+			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
 				// continuously advance next_spawn_time and spawn weapons until the time goes into the future
 				// incase we've passed multiple spawn events in the frame
 				for (int j = 0; j < 3; j++) {
@@ -5846,7 +5847,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
-			if (wip->spawn_info[i].spawn_interval >= minimum_spawn_interval)
+			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL)
 				wp->next_spawn_time[i] = timestamp((int)((wip->spawn_info[i].spawn_interval + wip->spawn_info[i].spawn_interval_delay) * 1000.f));
 			else
 				wp->next_spawn_time[i] = INT_MAX; // basically never expire
@@ -5972,7 +5973,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 	for (int i = start_index; i < wip->num_spawn_weapons_defined; i++)
 	{
 		// don't spawn continuous spawning weapons on detonation
-		if (detonate_spawn && wip->spawn_info[i].spawn_interval >= minimum_spawn_interval)
+		if (detonate_spawn && wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL)
 			continue;
 
 		// maybe roll for spawning
