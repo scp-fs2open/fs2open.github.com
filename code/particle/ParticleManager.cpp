@@ -371,7 +371,7 @@ SCP_vector<int> parseAnimationList(bool critical) {
 			int level = critical ? 1 : 0;
 			error_display(level, "Failed to load effect %s!", name.c_str());
 		}
-		handles[i] = handle;
+		handles.push_back(handle);
 	}
 
 	return handles;
