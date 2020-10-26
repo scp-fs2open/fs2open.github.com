@@ -11915,7 +11915,6 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 					// dont detonate if this guy just spawned i.e. we just spawned him in a previous iteration of this loop
 					if (Missiontime - Weapons[mobjp->instance].creation_time > fl2f(0.01)) {
 						weapon_detonate(mobjp);
-						swp->remote_detonaters_active--;
 					}
 				}
 			}
