@@ -169,7 +169,10 @@ bool required_string_if_new(const char* token, bool no_create);
  * @return The animation handle
  */
 int parseAnimation(bool critical = true);
+
+SCP_vector<int> parseAnimationList(bool critical = true);
 }
+
 
 namespace util {
 /**

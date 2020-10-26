@@ -15,6 +15,7 @@ namespace util {
 class ParticleProperties {
  public:
 	int m_bitmap = -1;
+	SCP_vector<int> m_bitmap_list;
 	::util::UniformFloatRange m_radius;
 
 	bool m_hasLifetime = false;
@@ -28,6 +29,11 @@ class ParticleProperties {
 	 * @param nocreate @c true if +nocreate was found
 	 */
 	void parse(bool nocreate);
+
+	/**
+	 * @brief Choose particle from bitmap list
+	 */
+	int chooseBitmap();
 
 	/**
 	 * @brief Creates a particle with the stored values

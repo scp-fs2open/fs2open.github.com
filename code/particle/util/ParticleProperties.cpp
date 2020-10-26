@@ -14,6 +14,10 @@ void ParticleProperties::parse(bool nocreate) {
 		m_bitmap = internal::parseAnimation(true);
 	}
 
+	if (optional_string("+Filenames:")) {
+		m_bitmap_list = internal::parseAnimationList(true);
+	}
+
 	if (internal::required_string_if_new("+Size:", nocreate)) {
 		m_radius = ::util::parseUniformRange<float>();
 	}
@@ -34,7 +38,27 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 }
 
+int ParticleProperties::chooseBitmap()
+{
+	// if list is empty that means the optional string to add multiple bitmaps was not used
+	// thus choose the necessary bitmap specified "+Filename:"
+	if (m_bitmap_list.empty())
+		return m_bitmap;
+
+	int bitmap_index = -1;
+	int num_bitmaps = (int)m_bitmap_list.size();
+
+	if (num_bitmaps > 0) {
+		bitmap_index = m_bitmap_list[rand() % num_bitmaps];
+		return bitmap_index;
+	} else {
+		return m_bitmap;
+	}
+	
+}
+
 void ParticleProperties::createParticle(particle_info& info) {
+	m_bitmap = ParticleProperties::chooseBitmap();
 	info.optional_data = m_bitmap;
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
@@ -48,6 +72,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 }
 
 WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
+	m_bitmap = ParticleProperties::chooseBitmap();
 	info.optional_data = m_bitmap;
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();

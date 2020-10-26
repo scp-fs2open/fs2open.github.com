@@ -356,5 +356,26 @@ int parseAnimation(bool critical) {
 
 	return handle;
 }
+
+SCP_vector<int> parseAnimationList(bool critical) {
+
+	SCP_vector<SCP_string> bitmap_strings;
+	int num_bitmaps = stuff_string_list(bitmap_strings);
+	SCP_vector<int> handles;
+	size_t tbl_idx;
+
+	for (auto i = 0; i < num_bitmaps; i++) {
+		SCP_string name = bitmap_strings[i];
+		auto handle = bm_load_animation(name.c_str());
+		if (handle < 0) {
+			int level = critical ? 1 : 0;
+			error_display(level, "Failed to load effect %s!", name.c_str());
+		}
+		handles[i] = handle;
+	}
+
+	return handles;
+}
+
 }
 }
