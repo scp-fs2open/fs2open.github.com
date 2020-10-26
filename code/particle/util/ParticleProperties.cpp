@@ -84,9 +84,9 @@ WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info
 
 void ParticleProperties::pageIn() {
 	
-	int num_bitmaps = m_bitmap_list.size();
+	size_t num_bitmaps = m_bitmap_list.size();
 	if (num_bitmaps > 0 ) {
-		for (auto i = 0; i < num_bitmaps; i++) {
+		for (size_t i = 0; i < num_bitmaps; i++) {
 			bm_page_in_aabitmap(m_bitmap_list[i], -1);
 		}
 	}
