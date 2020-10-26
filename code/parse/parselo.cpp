@@ -3089,6 +3089,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 			clean_loadout_list_entry();
 			continue;
 		}
+		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[index].maximum_children_spawned > 300)){
+			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[index].name);
+		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
 		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
