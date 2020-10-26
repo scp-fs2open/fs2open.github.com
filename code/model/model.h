@@ -528,7 +528,7 @@ struct shield_info {
 	shield_vertex	*verts;
 	shield_tri		*tris;
 
-	int buffer_id;
+	gr_buffer_handle buffer_id;
 	int buffer_n_verts;
 	vertex_layout layout;
 

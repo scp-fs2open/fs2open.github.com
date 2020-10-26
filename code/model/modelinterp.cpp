@@ -2485,7 +2485,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
 		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
 	} else {
-		pm->shield.buffer_id = -1;
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
 	}
 }
 

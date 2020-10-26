@@ -187,7 +187,7 @@ void gr_2d_stop_buffer();
 /**
  * @brief The buffer object holding the data for immediate draws
  */
-extern int gr_immediate_buffer_handle;
+extern gr_buffer_handle gr_immediate_buffer_handle;
 
 /**
  * @brief Adds data to the immediate buffer for use by draw operations

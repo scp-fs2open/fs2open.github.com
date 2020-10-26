@@ -296,15 +296,15 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield_collision_tree);
 	}
 
-	if ( pm->shield.buffer_id > -1 ) {
+	if (pm->shield.buffer_id.isValid()) {
 		gr_delete_buffer(pm->shield.buffer_id);
-		pm->shield.buffer_id = -1;
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
 		pm->shield.buffer_n_verts = 0;
 	}
 
-	if ( pm->vert_source.Vbuffer_handle > -1 ) {
+	if (pm->vert_source.Vbuffer_handle.isValid()) {
 		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
-		pm->vert_source.Vbuffer_handle = -1;
+		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
 
 		pm->vert_source.Vertex_offset = 0;
 		pm->vert_source.Base_vertex_offset = 0;
@@ -315,10 +315,10 @@ void model_unload(int modelnum, int force)
 		pm->vert_source.Vertex_list = NULL;
 	}
 
-	if ( pm->vert_source.Ibuffer_handle > -1 ) {
+	if (pm->vert_source.Ibuffer_handle.isValid()) {
 		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
 
-		pm->vert_source.Ibuffer_handle = -1;
+		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
 		pm->vert_source.Index_offset = 0;
 	}
 

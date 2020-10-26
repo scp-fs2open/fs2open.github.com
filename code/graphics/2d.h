@@ -20,6 +20,7 @@
 #include "io/cursor.h"
 #include "math/vecmat.h"
 #include "osapi/osapi.h"
+#include "utils/id.h"
 
 // Forward definition
 namespace graphics {
@@ -333,11 +334,16 @@ typedef enum gr_capability {
 	CAPABILITY_BPTC
 } gr_capability;
 
-enum class gr_property {
+enum class gr_property
+{
 	UNIFORM_BUFFER_OFFSET_ALIGNMENT,
 	UNIFORM_BUFFER_MAX_SIZE,
 	MAX_ANISOTROPY
 };
+
+struct gr_buffer_handle_tag {
+};
+using gr_buffer_handle = ::util::ID<gr_buffer_handle_tag, int, -1>;
 
 // stencil buffering stuff
 extern int gr_stencil_mode;
@@ -347,9 +353,9 @@ extern int gr_stencil_mode;
  * of the values you want to use in the shade primitive.
  */
 typedef struct shader {
-	uint	screen_sig;					// current mode this is in
-	ubyte	r,g,b,c;						// factors and constant
-	ubyte	lookup[256];
+	uint screen_sig;  // current mode this is in
+	ubyte r, g, b, c; // factors and constant
+	ubyte lookup[256];
 } shader;
 
 #define AC_TYPE_NONE		0		// Not an alphacolor
@@ -595,14 +601,14 @@ public:
 };
 
 struct indexed_vertex_source {
-	void *Vertex_list = nullptr;
-	void *Index_list = nullptr;
+	void* Vertex_list = nullptr;
+	void* Index_list = nullptr;
 
-	int Vbuffer_handle = -1;
+	gr_buffer_handle Vbuffer_handle;
 	size_t Vertex_offset = 0;
 	size_t Base_vertex_offset = 0;
 
-	int Ibuffer_handle = -1;
+	gr_buffer_handle Ibuffer_handle;
 	size_t Index_offset = 0;
 
 	uint Vertex_list_size = 0;
@@ -759,13 +765,14 @@ typedef struct screen {
 
 	std::function<void(int)> gf_set_texture_addressing;
 
-	std::function<int(BufferType type, BufferUsageHint usage)> gf_create_buffer;
-	std::function<void(int handle)> gf_delete_buffer;
+	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage)> gf_create_buffer;
+	std::function<void(gr_buffer_handle handle)> gf_delete_buffer;
 
-	std::function<void(int handle, size_t size, const void* data)> gf_update_buffer_data;
-	std::function<void(int handle, size_t offset, size_t size, const void* data)> gf_update_buffer_data_offset;
-	void* (*gf_map_buffer)(int handle);
-	std::function<void(int handle, size_t offset, size_t size)> gf_flush_mapped_buffer;
+	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
+	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
+		gf_update_buffer_data_offset;
+	std::function<void*(gr_buffer_handle handle)> gf_map_buffer;
+	std::function<void(gr_buffer_handle handle, size_t offset, size_t size)> gf_flush_mapped_buffer;
 	std::function<void(void* data, size_t size)> gf_update_transform_buffer;
 
 	// postprocessing effects
@@ -814,7 +821,7 @@ typedef struct screen {
 	std::function<void(shield_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
-		int buffer_handle,
+		gr_buffer_handle buffer_handle,
 		int n_verts)>
 		gf_render_shield_impact;
 	std::function<void(material* material_info,
@@ -822,7 +829,7 @@ typedef struct screen {
 		vertex_layout* layout,
 		int offset,
 		int n_verts,
-		int buffer_handle,
+		gr_buffer_handle buffer_handle,
 		size_t buffer_offset)>
 		gf_render_primitives;
 	std::function<void(particle_material* material_info,
@@ -830,20 +837,20 @@ typedef struct screen {
 		vertex_layout* layout,
 		int offset,
 		int n_verts,
-		int buffer_handle)>
+		gr_buffer_handle buffer_handle)>
 		gf_render_primitives_particle;
 	std::function<void(distortion_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int offset,
 		int n_verts,
-		int buffer_handle)>
+		gr_buffer_handle buffer_handle)>
 		gf_render_primitives_distortion;
 	std::function<void(movie_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int n_verts,
-		int buffer,
+		gr_buffer_handle buffer,
 		size_t buffer_offset)>
 		gf_render_movie;
 	std::function<void(batched_bitmap_material* material_info,
@@ -851,14 +858,14 @@ typedef struct screen {
 		vertex_layout* layout,
 		int offset,
 		int n_verts,
-		int buffer_handle)>
+		gr_buffer_handle buffer_handle)>
 		gf_render_primitives_batched;
 	std::function<void(nanovg_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int offset,
 		int n_verts,
-		int buffer_handle)>
+		gr_buffer_handle buffer_handle)>
 		gf_render_nanovg;
 	std::function<void(decal_material* material_info,
 		primitive_type prim_type,
@@ -870,8 +877,8 @@ typedef struct screen {
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int n_indices,
-		int vertex_buffer,
-		int index_buffer);
+		gr_buffer_handle vertex_buffer,
+		gr_buffer_handle index_buffer);
 
 	std::function<bool(gr_capability capability)> gf_is_capable;
 	std::function<bool(gr_property property, void* destination)> gf_get_property;
@@ -888,7 +895,8 @@ typedef struct screen {
 	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
 	std::function<void(os::Viewport* view)> gf_use_viewport;
 
-	std::function<void(uniform_block_type bind_point, size_t offset, size_t size, int buffer)> gf_bind_uniform_buffer;
+	std::function<void(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)>
+		gf_bind_uniform_buffer;
 
 	std::function<gr_sync()> gf_sync_fence;
 	std::function<bool(gr_sync sync, uint64_t timeoutns)> gf_sync_wait;
@@ -990,7 +998,7 @@ extern void gr_activate(int active);
 void gr_flip(bool execute_scripting = true);
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
-__inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
+inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
 {
 	gr_screen.gf_set_clip(x, y, w, h, resize_mode);
 }
@@ -1032,38 +1040,42 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_bm_make_render_target					GR_CALL(gr_screen.gf_bm_make_render_target)
 
-__inline int gr_bm_set_render_target(int n, int face = -1)
+inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return gr_screen.gf_bm_set_render_target(n, face);
 }
 
-#define gr_set_texture_addressing					 GR_CALL(gr_screen.gf_set_texture_addressing)
+#define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)
 
-inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
+inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage)
 {
 	return gr_screen.gf_create_buffer(type, usage);
 }
 
-#define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
-#define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
-#define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
-inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
-inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+#define gr_delete_buffer GR_CALL(gr_screen.gf_delete_buffer)
+#define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
+#define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
+inline void* gr_map_buffer(gr_buffer_handle handle)
+{
+	return gr_screen.gf_map_buffer(handle);
+}
+inline void gr_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size)
 {
 	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
 }
-#define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
+#define gr_update_transform_buffer GR_CALL(gr_screen.gf_update_transform_buffer)
 
-#define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
-#define gr_scene_texture_end			GR_CALL(gr_screen.gf_scene_texture_end)
-#define gr_copy_effect_texture			GR_CALL(gr_screen.gf_copy_effect_texture)
+#define gr_scene_texture_begin GR_CALL(gr_screen.gf_scene_texture_begin)
+#define gr_scene_texture_end GR_CALL(gr_screen.gf_scene_texture_end)
+#define gr_copy_effect_texture GR_CALL(gr_screen.gf_copy_effect_texture)
 
-#define gr_post_process_set_effect		GR_CALL(gr_screen.gf_post_process_set_effect)
-#define gr_post_process_set_defaults	GR_CALL(gr_screen.gf_post_process_set_defaults)
-#define gr_post_process_begin			GR_CALL(gr_screen.gf_post_process_begin)
-#define gr_post_process_end				GR_CALL(gr_screen.gf_post_process_end)
-#define gr_post_process_save_zbuffer	GR_CALL(gr_screen.gf_post_process_save_zbuffer)
-inline void gr_post_process_restore_zbuffer() {
+#define gr_post_process_set_effect GR_CALL(gr_screen.gf_post_process_set_effect)
+#define gr_post_process_set_defaults GR_CALL(gr_screen.gf_post_process_set_defaults)
+#define gr_post_process_begin GR_CALL(gr_screen.gf_post_process_begin)
+#define gr_post_process_end GR_CALL(gr_screen.gf_post_process_end)
+#define gr_post_process_save_zbuffer GR_CALL(gr_screen.gf_post_process_save_zbuffer)
+inline void gr_post_process_restore_zbuffer()
+{
 	gr_screen.gf_post_process_restore_zbuffer();
 }
 
@@ -1090,48 +1102,84 @@ inline void gr_post_process_restore_zbuffer() {
 #define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
-__inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int vert_offset, int n_verts, int buffer_handle = -1, size_t buffer_offset = 0)
+inline void gr_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int vert_offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle(),
+	size_t buffer_offset = 0)
 {
-	gr_screen.gf_render_primitives(material_info, prim_type, layout, vert_offset, n_verts, buffer_handle, buffer_offset);
+	gr_screen
+		.gf_render_primitives(material_info, prim_type, layout, vert_offset, n_verts, buffer_handle, buffer_offset);
 }
 
-__inline void gr_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_particle(particle_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
 	gr_screen.gf_render_primitives_particle(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_batched(batched_bitmap_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
 	gr_screen.gf_render_primitives_batched(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_nanovg(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+inline void gr_render_nanovg(nanovg_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
 	gr_screen.gf_render_nanovg(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_distortion(distortion_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
 	gr_screen.gf_render_primitives_distortion(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-inline void gr_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer, size_t buffer_offset = 0)
+inline void gr_render_movie(movie_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset = 0)
 {
 	gr_screen.gf_render_movie(material_info, prim_type, layout, n_verts, buffer, buffer_offset);
 }
 
-__inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
+inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	gr_screen.gf_render_model(material_info, vert_source, bufferp, texi);
 }
 
-__inline void gr_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
-                                          vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+inline void gr_render_rocket_primitives(interface_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer)
 {
 	gr_screen.gf_render_rocket_primitives(material_info, prim_type, layout, n_indices, vertex_buffer, index_buffer);
 }
 
-__inline bool gr_is_capable(gr_capability capability)
+inline bool gr_is_capable(gr_capability capability)
 {
 	return gr_screen.gf_is_capable(capability);
 }
@@ -1189,7 +1237,7 @@ inline void gr_set_viewport(int x, int y, int width, int height)
 	gr_screen.gf_set_viewport(x, y, width, height);
 }
 
-inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer)
+inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)
 {
 	gr_screen.gf_bind_uniform_buffer(bind_point, offset, size, buffer);
 }
@@ -1323,7 +1371,7 @@ enum class GpuHeap {
  * @param[out] offset_out The offset at which the data is stored in the buffer
  * @param[out] handle_out The handle of the buffer object this data is stored in
  */
-void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out);
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, gr_buffer_handle& handle_out);
 
 /**
  * @brief Deallocates memory previously allocated with gr_heap_allocate.

@@ -27,8 +27,8 @@ uint32_t BOX_FACES[] =
 
 const size_t BOX_NUM_FACES = sizeof(BOX_FACES) / sizeof(BOX_FACES[0]);
 
-int box_vertex_buffer = -1;
-int box_index_buffer = -1;
+gr_buffer_handle box_vertex_buffer;
+gr_buffer_handle box_index_buffer;
 
 void init_buffers() {
 	box_vertex_buffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);

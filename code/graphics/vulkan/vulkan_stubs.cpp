@@ -10,9 +10,12 @@ namespace vulkan {
 
 namespace {
 
-int stub_create_buffer(BufferType, BufferUsageHint) { return -1; }
+gr_buffer_handle stub_create_buffer(BufferType, BufferUsageHint)
+{
+	return gr_buffer_handle::invalid();
+}
 
-void stub_delete_buffer(int /*handle*/) {}
+void stub_delete_buffer(gr_buffer_handle /*handle*/) {}
 
 int stub_preload(int /*bitmap_num*/, int /*is_aabitmap*/) { return 0; }
 
@@ -36,9 +39,14 @@ void stub_reset_clip() {}
 
 void stub_restore_screen(int /*id*/) {}
 
-void stub_update_buffer_data(int /*handle*/, size_t /*size*/, const void* /*data*/) {}
+void stub_update_buffer_data(gr_buffer_handle /*handle*/, size_t /*size*/, const void* /*data*/) {}
 
-void stub_update_buffer_data_offset(int /*handle*/, size_t /*offset*/, size_t /*size*/, const void* /*data*/) {}
+void stub_update_buffer_data_offset(gr_buffer_handle /*handle*/,
+	size_t /*offset*/,
+	size_t /*size*/,
+	const void* /*data*/)
+{
+}
 
 void stub_update_transform_buffer(void* /*data*/, size_t /*size*/) {}
 
@@ -120,7 +128,7 @@ void stub_shadow_map_end() {}
 void stub_render_shield_impact(shield_material* /*material_info*/,
 	primitive_type /*prim_type*/,
 	vertex_layout* /*layout*/,
-	int /*buffer_handle*/,
+	gr_buffer_handle /*buffer_handle*/,
 	int /*n_verts*/)
 {
 }
@@ -137,7 +145,7 @@ void stub_render_primitives(material* /*material_info*/,
 	vertex_layout* /*layout*/,
 	int /*offset*/,
 	int /*n_verts*/,
-	int /*buffer_handle*/,
+	gr_buffer_handle /*buffer_handle*/,
 	size_t /*buffer_offset*/)
 {
 }
@@ -147,7 +155,7 @@ void stub_render_primitives_particle(particle_material* /*material_info*/,
 	vertex_layout* /*layout*/,
 	int /*offset*/,
 	int /*n_verts*/,
-	int /*buffer_handle*/)
+	gr_buffer_handle /*buffer_handle*/)
 {
 }
 
@@ -156,14 +164,14 @@ void stub_render_primitives_distortion(distortion_material* /*material_info*/,
 	vertex_layout* /*layout*/,
 	int /*offset*/,
 	int /*n_verts*/,
-	int /*buffer_handle*/)
+	gr_buffer_handle /*buffer_handle*/)
 {
 }
 void stub_render_movie(movie_material* /*material_info*/,
 	primitive_type /*prim_type*/,
 	vertex_layout* /*layout*/,
 	int /*n_verts*/,
-	int /*buffer*/,
+	gr_buffer_handle /*buffer*/,
 	size_t /*buffer_offset*/)
 {
 }
@@ -173,7 +181,7 @@ void stub_render_nanovg(nanovg_material* /*material_info*/,
 	vertex_layout* /*layout*/,
 	int /*offset*/,
 	int /*n_verts*/,
-	int /*buffer_handle*/)
+	gr_buffer_handle /*buffer_handle*/)
 {
 }
 
@@ -182,7 +190,7 @@ void stub_render_primitives_batched(batched_bitmap_material* /*material_info*/,
 	vertex_layout* /*layout*/,
 	int /*offset*/,
 	int /*n_verts*/,
-	int /*buffer_handle*/)
+	gr_buffer_handle /*buffer_handle*/)
 {
 }
 
@@ -190,8 +198,8 @@ void stub_render_rocket_primitives(interface_material* /*material_info*/,
 	primitive_type /*prim_type*/,
 	vertex_layout* /*layout*/,
 	int /*n_indices*/,
-	int /*vertex_buffer*/,
-	int /*index_buffer*/)
+	gr_buffer_handle /*vertex_buffer*/,
+	gr_buffer_handle /*index_buffer*/)
 {
 }
 
@@ -273,8 +281,8 @@ void init_stub_pointers()
 	gr_screen.gf_update_transform_buffer = stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data = stub_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = stub_update_buffer_data_offset;
-	gr_screen.gf_map_buffer = [](int) -> void* { return nullptr; };
-	gr_screen.gf_flush_mapped_buffer = [](int, size_t, size_t) {};
+	gr_screen.gf_map_buffer = [](gr_buffer_handle) -> void* { return nullptr; };
+	gr_screen.gf_flush_mapped_buffer = [](gr_buffer_handle, size_t, size_t) {};
 
 	gr_screen.gf_post_process_set_effect = stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults = stub_post_process_set_defaults;
@@ -332,7 +340,7 @@ void init_stub_pointers()
 	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) { return std::unique_ptr<os::Viewport>(); };
 	gr_screen.gf_use_viewport = [](os::Viewport*) {};
 
-	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
+	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, gr_buffer_handle) {};
 
 	gr_screen.gf_sync_fence = []() -> gr_sync { return nullptr; };
 	gr_screen.gf_sync_wait = [](gr_sync /*sync*/, uint64_t /*timeoutns*/) { return true; };

@@ -390,7 +390,7 @@ void shield_render_triangle(int texture, float alpha, gshield_tri *trip, matrix 
 
 void shield_render_decal(polymodel *pm, matrix *orient, vec3d *pos, matrix* hit_orient, vec3d *hit_pos, float hit_radius, int bitmap_id, color *clr)
 {
-	if ( pm->shield.buffer_id < 0 || pm->shield.buffer_n_verts < 3 ) {
+	if (!pm->shield.buffer_id.isValid() || pm->shield.buffer_n_verts < 3) {
 		return;
 	}
 

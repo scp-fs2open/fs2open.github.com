@@ -63,9 +63,9 @@ UniformBufferManager::UniformBufferManager()
 }
 UniformBufferManager::~UniformBufferManager()
 {
-	if (_active_uniform_buffer >= 0) {
+	if (_active_uniform_buffer.isValid()) {
 		gr_delete_buffer(_active_uniform_buffer);
-		_active_uniform_buffer = -1;
+		_active_uniform_buffer = gr_buffer_handle();
 	}
 	for (auto& fence : _segment_fences) {
 		if (fence != nullptr) {
@@ -165,7 +165,7 @@ UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, si
 }
 void UniformBufferManager::changeSegmentSize(size_t new_size)
 {
-	if (_active_uniform_buffer >= 0) {
+	if (_active_uniform_buffer.isValid()) {
 		// Retire the old buffer first
 		_retired_buffers.emplace_back(gr_sync_fence(), _active_uniform_buffer, std::move(_shadow_uniform_buffer));
 	}
@@ -203,7 +203,7 @@ void UniformBufferManager::submitData(void* buffer, size_t data_size, size_t off
 		gr_update_buffer_data_offset(_active_uniform_buffer, offset, data_size, buffer);
 	}
 }
-int UniformBufferManager::getActiveBufferHandle() { return _active_uniform_buffer; }
+gr_buffer_handle UniformBufferManager::getActiveBufferHandle() { return _active_uniform_buffer; }
 size_t UniformBufferManager::getBufferSize() { return _active_buffer_size; }
 size_t UniformBufferManager::getCurrentlyUsedSize() { return _segment_offset; }
 } // namespace util

@@ -44,10 +44,10 @@ RocketRenderingInterface::RocketRenderingInterface()
 
 RocketRenderingInterface::~RocketRenderingInterface()
 {
-	if (vertex_stream_buffer >= 0) {
+	if (vertex_stream_buffer.isValid()) {
 		gr_delete_buffer(vertex_stream_buffer);
 	}
-	if (index_stream_buffer >= 0) {
+	if (index_stream_buffer.isValid()) {
 		gr_delete_buffer(index_stream_buffer);
 	}
 }
@@ -252,8 +252,11 @@ float RocketRenderingInterface::GetPixelsPerInch()
 #endif
 }
 
-void RocketRenderingInterface::renderGeometry(int vertex_buffer, int index_buffer, int num_elements, int bitmap,
-                                              const Rocket::Core::Vector2f& translation)
+void RocketRenderingInterface::renderGeometry(gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer,
+	int num_elements,
+	int bitmap,
+	const Rocket::Core::Vector2f& translation)
 {
 	interface_material material;
 
