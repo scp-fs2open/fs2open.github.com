@@ -41,7 +41,7 @@ int ParticleProperties::chooseBitmap()
 
 	size_t index = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1).next();
 
-	return m_bitmap_list[(int)index];
+	return m_bitmap_list[index];
 }
 
 void ParticleProperties::createParticle(particle_info& info) {
