@@ -31260,9 +31260,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Karajorma
 	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"
-		"\tPerforms specified actions once for each valid " SEXP_ARGUMENT_STRING " in the parent conditional.\r\n"
-		"\tMust not be used for any SEXP that actually contains " SEXP_ARGUMENT_STRING " as these are already being executed\r\n"
-		"\tmultiple times without using Do-for-valid-arguments. Any use of "  SEXP_ARGUMENT_STRING " and will \r\n" 
+		"\tPerforms specified actions once for each valid " SEXP_ARGUMENT_STRING " in the parent conditional. For example, a FREDder may use (do-for-valid-arguments (modify-variable @var (+ @var 1))) to count the number of valid arguments.\r\n\r\n"
+		"\tThis operator must not be used to execute any SEXP that actually contains " SEXP_ARGUMENT_STRING ", as these are already being executed\r\n"
+		"\tmultiple times without using Do-for-valid-arguments. Any use of "  SEXP_ARGUMENT_STRING " will \r\n" 
 		"\tprevent execution of the entire SEXP unless it is nested inside another when(or every-time)-argument SEXP.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tActions to take." },
