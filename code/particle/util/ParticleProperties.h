@@ -22,6 +22,7 @@ private:
  public:
 
 	SCP_vector<int> m_bitmap_list;
+	::util::UniformRange<size_t> m_bitmap_range;
 	::util::UniformFloatRange m_radius;
 
 	bool m_hasLifetime = false;

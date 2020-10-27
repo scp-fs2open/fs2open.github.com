@@ -12,6 +12,7 @@ ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f
 void ParticleProperties::parse(bool nocreate) {
 	if (internal::required_string_if_new("+Filename:", nocreate)) {
 		m_bitmap_list = internal::parseAnimationList(true);
+		m_bitmap_range = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1);
 	}
 
 	if (internal::required_string_if_new("+Size:", nocreate)) {
@@ -39,9 +40,7 @@ int ParticleProperties::chooseBitmap()
 	// failsafe check, though we should not have been able to get to this point
 	Assertion(!m_bitmap_list.empty(), "No bitmaps found!");
 
-	size_t index = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1).next();
-
-	return m_bitmap_list[index];
+	return m_bitmap_list[m_bitmap_range.next()];
 }
 
 void ParticleProperties::createParticle(particle_info& info) {
