@@ -362,7 +362,7 @@ SCP_vector<int> parseAnimationList(bool critical) {
 	
 	SCP_vector<int> handles;
 
-	for (auto name: bitmap_strings) {
+	for (auto const &name: bitmap_strings) {
 		auto handle = bm_load_animation(name.c_str());
 		if (handle >= 0) {
 			handles.push_back(handle);
