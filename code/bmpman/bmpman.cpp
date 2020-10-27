@@ -81,6 +81,8 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
+SCP_map<int,ubyte*> bm_lookup_cache;
+
 /**
  * How much RAM bmpman can use for textures.
  *
@@ -155,16 +157,20 @@ bitmap_lookup::bitmap_lookup(int bitmap_num):
 	Width = be->bm.w;
 	Height = be->bm.h;
 
-	Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
 
-	gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+	auto cache_search = bm_lookup_cache.find(bitmap_num);
+	if (cache_search == bm_lookup_cache.end()) {
+		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+
+		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+	} else {
+		Bitmap_data = cache_search->second;
+	}
 }
 
 bitmap_lookup::~bitmap_lookup()
 {
-	if ( Bitmap_data != NULL ) {
-		vm_free(Bitmap_data);
-	}
 }
 
 bool bitmap_lookup::valid()
@@ -186,6 +192,13 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 3]) / 255.0f;
+}
+
+void clear_bm_lookup_cache() {
+	for(auto &iter: bm_lookup_cache) {
+		free(iter.second);
+	}
+	bm_lookup_cache.clear();
 }
 
 /**
