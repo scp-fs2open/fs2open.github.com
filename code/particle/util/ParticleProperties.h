@@ -13,6 +13,12 @@ namespace util {
  * @ingroup particleUtils
  */
 class ParticleProperties {
+private:
+	/**
+	 * @brief Choose particle from bitmap list
+	 */
+	int chooseBitmap();
+
  public:
 
 	SCP_vector<int> m_bitmap_list;
@@ -29,11 +35,6 @@ class ParticleProperties {
 	 * @param nocreate @c true if +nocreate was found
 	 */
 	void parse(bool nocreate);
-
-	/**
-	 * @brief Choose particle from bitmap list
-	 */
-	int chooseBitmap();
 
 	/**
 	 * @brief Creates a particle with the stored values

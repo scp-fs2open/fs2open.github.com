@@ -37,21 +37,11 @@ void ParticleProperties::parse(bool nocreate) {
 int ParticleProperties::chooseBitmap()
 {
 	// failsafe check, though we should not have been able to get to this point
-	if (m_bitmap_list.empty())
-		return -1;
+	Assertion(!m_bitmap_list.empty(), "No bitmaps found!");
 
-	int bitmap_index;
-	int num_bitmaps = (int)m_bitmap_list.size();
+	size_t index = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1).next();
 
-	if (num_bitmaps == 1) {
-		bitmap_index = m_bitmap_list[0];
-	} else if (num_bitmaps > 1) {
-		bitmap_index = m_bitmap_list[rand() % num_bitmaps];		
-	} else {
-		bitmap_index = -1;
-	}
-
-	return bitmap_index;
+	return m_bitmap_list[(int)index];
 }
 
 void ParticleProperties::createParticle(particle_info& info) {
@@ -83,12 +73,9 @@ WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info
 }
 
 void ParticleProperties::pageIn() {
-	
-	size_t num_bitmaps = m_bitmap_list.size();
-	if (num_bitmaps > 0 ) {
-		for (size_t i = 0; i < num_bitmaps; i++) {
-			bm_page_in_aabitmap(m_bitmap_list[i], -1);
-		}
+
+	for (size_t bitmap: m_bitmap_list) {
+		bm_page_in_aabitmap(bitmap, -1);
 	}
 
 }

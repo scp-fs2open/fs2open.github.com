@@ -166,7 +166,7 @@ bool required_string_if_new(const char* token, bool no_create);
  * an error. Otherwise it will be cause a warning.
  *
  * @param critical @c true if a failure is critical
- * @return The vecotr of animation handles
+ * @return The vector of animation handles
  */
 
 SCP_vector<int> parseAnimationList(bool critical = true);

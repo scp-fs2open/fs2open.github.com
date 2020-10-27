@@ -362,14 +362,15 @@ SCP_vector<int> parseAnimationList(bool critical) {
 	
 	SCP_vector<int> handles;
 
-	for (size_t i = 0; i < bitmap_strings.size(); i++) {
-		SCP_string name = bitmap_strings[i];
+	for (SCP_string name: bitmap_strings) {
 		auto handle = bm_load_animation(name.c_str());
-		if (handle < 0) {
+		if (handle >= 0) {
+			handles.push_back(handle);
+		}
+		else {
 			int level = critical ? 1 : 0;
 			error_display(level, "Failed to load effect %s!", name.c_str());
 		}
-		handles.push_back(handle);
 	}
 
 	return handles;
