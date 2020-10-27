@@ -310,7 +310,8 @@ typedef struct lock_info {
 	bool need_new_start_pos;
 	bool target_in_lock_cone;
 
-	int locked_timestamp;
+	float lock_gauge_time_elapsed;
+	float lock_anim_time_elapsed;
 } lock_info;
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
