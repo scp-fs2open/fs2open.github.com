@@ -107,6 +107,7 @@ namespace Weapon {
 	FLAG_LIST(Burst_Flags) {
 		Fast_firing,
 		Random_length,
+		Resets,
 
 		NUM_VALUES
 	};

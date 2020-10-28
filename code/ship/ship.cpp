@@ -11183,6 +11183,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;
+		// reset the burst if applicable
+		if (winfo_p->burst_flags[Weapon::Burst_Flags::Resets]) {
+			// a bit of an oversimplification but the reset time doesnt have to be super accurate
+			int reset_time = (int)(swp->last_primary_fire_stamp[bank_to_fire] + (winfo_p->fire_wait * 1000.f));
+			if (timestamp_elapsed(reset_time)) {
+				swp->burst_counter[bank_to_fire] = 0;
+			}
+		}
+
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
 			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
