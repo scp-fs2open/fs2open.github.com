@@ -11,7 +11,8 @@ ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f
 
 void ParticleProperties::parse(bool nocreate) {
 	if (internal::required_string_if_new("+Filename:", nocreate)) {
-		m_bitmap = internal::parseAnimation(true);
+		m_bitmap_list = internal::parseAnimationList(true);
+		m_bitmap_range = ::util::UniformRange<size_t>(0, m_bitmap_list.size() - 1);
 	}
 
 	if (internal::required_string_if_new("+Size:", nocreate)) {
@@ -34,8 +35,16 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 }
 
+int ParticleProperties::chooseBitmap()
+{
+	// failsafe check, though we should not have been able to get to this point
+	Assertion(!m_bitmap_list.empty(), "No bitmaps found!");
+
+	return m_bitmap_list[m_bitmap_range.next()];
+}
+
 void ParticleProperties::createParticle(particle_info& info) {
-	info.optional_data = m_bitmap;
+	info.optional_data = ParticleProperties::chooseBitmap();
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 	info.length = m_length.next();
@@ -48,7 +57,7 @@ void ParticleProperties::createParticle(particle_info& info) {
 }
 
 WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
-	info.optional_data = m_bitmap;
+	info.optional_data = ParticleProperties::chooseBitmap();
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 	info.length = m_length.next();
@@ -63,9 +72,11 @@ WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info
 }
 
 void ParticleProperties::pageIn() {
-	if (m_bitmap >= 0) {
-		bm_page_in_aabitmap(m_bitmap, -1);
+
+	for (int bitmap: m_bitmap_list) {
+		bm_page_in_aabitmap(bitmap, -1);
 	}
+
 }
 }
 }
