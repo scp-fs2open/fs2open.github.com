@@ -250,8 +250,9 @@ void debris_process_post(object * obj, float frame_time)
 	}
 
 	if (!db->flags[Debris_Flags::DoNotExpire]) {
-		db->lifeleft -= frame_time;
+		Assertion(db->lifeleft >= 0.0f, "A ship with a negative lifeleft should also have the DoNotExpire flag!");
 
+		db->lifeleft -= frame_time;
 		if (db->lifeleft < 0.0f) {
 			debris_start_death_roll(obj, db);
 		}
@@ -467,8 +468,10 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		if ( hull_flag ) {
 			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
 				db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
-			else
+			else {
+				db->flags.set(Debris_Flags::DoNotExpire);
 				db->lifeleft = -1.0f;		// large hull pieces stay around forever
+			}
 		} else {
 			db->lifeleft = (myrand() * RAND_MAX_1f) * 2.0f + 0.1f;
 		}
