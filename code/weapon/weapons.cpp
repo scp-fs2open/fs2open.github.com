@@ -2201,10 +2201,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			// Get delay out of the way before handling interval so we can do adjusted lifetime 
 			if (optional_string("+Delay:")) {
 				stuff_float(&wip->spawn_info[spawn_weap].spawn_interval_delay);
-				if (wip->spawn_info[spawn_weap].spawn_interval_delay < 0) {
-					Warning(LOCATION, "Weapon \'%s\' spawn interval delay must be positive\n", wip->name);
-					wip->spawn_info[spawn_weap].spawn_interval_delay = 0;
-				}
 			}
 
 			float adjusted_lifetime = wip->lifetime - wip->spawn_info[spawn_weap].spawn_interval_delay;
@@ -2215,7 +2211,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					(int)(wip->spawn_info[spawn_weap].spawn_count *
 						(adjusted_lifetime / wip->spawn_info[spawn_weap].spawn_interval));
 			}
-			else {
+			else if (temp_interval > 0.f) {
+				// only warn if they tried to put it in between 0 and minimum, to make it clear that it won't be used despite being positive
 				Warning(LOCATION, "Weapon \'%s\' spawn interval must be greater than %1.1f seconds.\n", wip->name, MINIMUM_SPAWN_INTERVAL);
 			}
 			spawn_weap++;
@@ -4977,28 +4974,23 @@ void weapon_process_post(object * obj, float frame_time)
 
 	wip = &Weapon_info[wp->weapon_info_index];
 
+	// do continuous spawns
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
 			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
-				// continuously advance next_spawn_time and spawn weapons until the time goes into the future
-				// incase we've passed multiple spawn events in the frame
-				for (int j = 0; j < 3; j++) {
-					if (timestamp_elapsed(wp->next_spawn_time[i])) {
-						spawn_child_weapons(obj, i);
+				if (timestamp_elapsed(wp->next_spawn_time[i])) {
+					spawn_child_weapons(obj, i);
 
-						// do the spawn effect
-						if (wip->spawn_info[i].spawn_effect.isValid()) {
-							auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
-							particleSource.moveTo(&obj->pos);
-							particleSource.setOrientationFromVec(&obj->phys_info.vel);
-							particleSource.finish();
-						}
-
-						// advance the time and maybe go again
-						wp->next_spawn_time[i] += (int)(wip->spawn_info[i].spawn_interval * 1000.f);
+					// do the spawn effect
+					if (wip->spawn_info[i].spawn_effect.isValid()) {
+						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
+						particleSource.moveTo(&obj->pos);
+						particleSource.setOrientationFromVec(&obj->phys_info.vel);
+						particleSource.finish();
 					}
-					else
-						break;
+
+					// update next_spawn_time
+					wp->next_spawn_time[i] = timestamp() + (int)(wip->spawn_info[i].spawn_interval * 1000.f);
 				}
 			}
 		}
@@ -5847,8 +5839,17 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
-			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL)
-				wp->next_spawn_time[i] = timestamp((int)((wip->spawn_info[i].spawn_interval + wip->spawn_info[i].spawn_interval_delay) * 1000.f));
+			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
+				int delay;
+				if (wip->spawn_info[i].spawn_interval_delay < 0.f)
+					delay = (int)(wip->spawn_info[i].spawn_interval * 1000);
+				else
+					delay = (int)(wip->spawn_info[i].spawn_interval_delay * 1000);
+
+				if (delay < 10)
+					delay = 10; // cap at 10 ms
+				wp->next_spawn_time[i] = timestamp(delay);
+			}
 			else
 				wp->next_spawn_time[i] = INT_MAX; // basically never expire
 		}
@@ -8086,7 +8087,7 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_min_angle = 0;
 		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
 		this->spawn_info[i].spawn_interval = -1.f;
-		this->spawn_info[i].spawn_interval_delay = 0.f;
+		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
 	}
 
