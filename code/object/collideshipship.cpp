@@ -28,6 +28,7 @@
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 
 
@@ -131,7 +132,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( heavy_shipp->is_arriving(ship::warpstage::STAGE1, false) ) {
+	if ( heavy_shipp->is_arriving(ship::warpstage::STAGE1, false) ||
+		 light_shipp->is_arriving(ship::warpstage::STAGE1, false)) {
 		return 0;
 	}
 
@@ -347,6 +349,38 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 				vm_vec_scale_add(&ship_ship_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 			}
 		}
+	}
+	
+	// check if the hit point is beyond the clip plane if one of the ships is warping in or out.
+	if (valid_hit_occured) {
+		WarpEffect* warp_effect = nullptr;
+		bool hv_warp, li_warp;
+		hv_warp = li_warp = false;
+
+		// this is extremely confusing but mc.hit_point_world isn't actually in world coords
+		// everything above was calculated relative to the heavy's position
+		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
+
+		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect)
+			warp_effect = heavy_shipp->warpout_effect;
+		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect)
+			warp_effect = heavy_shipp->warpout_effect;
+
+		if (warp_effect != nullptr)
+			hv_warp = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+
+		warp_effect = nullptr;
+		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect)
+			warp_effect = light_shipp->warpout_effect;
+		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect)
+			warp_effect = light_shipp->warpout_effect;
+
+		if (warp_effect != nullptr)
+			li_warp = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+
+		
+		if (hv_warp || li_warp)
+			valid_hit_occured = 0;
 	}
 
 	if (valid_hit_occured) {

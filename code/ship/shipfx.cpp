@@ -1230,33 +1230,16 @@ void shipfx_emit_spark( int n, int sn )
 		vm_vec_add2(&outpnt,&obj->pos);
 	}
 
-	//WMC - I have two options here:
-	//(A)	Break backwards compatibility and nobody will ever notice (but for this comment)
-	//(B)	implement some hackish workaround with the new warpeffect system just for this
-	//		utterly minor and trivial optimization/graphical thing
-	//(C)	Contact me if (A) is REALLY necessary
-    //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
-	
-	if ((shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
-    {
-        vec3d warp_pnt, tmp;
-        matrix warp_orient;
+	WarpEffect* warp_effect = nullptr;
 
-        shipp->warpout_effect->getWarpPosition(&warp_pnt);
-        shipp->warpout_effect->getWarpOrientation(&warp_orient);
+	if ((shipp->is_arriving()) && (shipp->warpin_effect))
+		warp_effect = shipp->warpin_effect;
+	else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
+		warp_effect = shipp->warpout_effect;
 
-        vm_vec_sub( &tmp, &outpnt, &warp_pnt );
-        
-        if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
-        {
-            if (shipp->is_arriving())// if in front of warp plane, don't create.
-				create_spark = 0;
-		} else {
-			if (shipp->flags[Ship::Ship_Flags::Depart_warp])
-				create_spark = 0;
-		}
-	}
+	if (warp_effect != nullptr && point_is_clipped_by_warp(&outpnt, warp_effect))
+		return;
 
 	if ( create_spark )	{
 
@@ -3183,6 +3166,24 @@ void ship_set_warp_effects(object *objp)
 	}
 }
 
+// returns true if a point is on the "wrong side" of a portal effect i.e. the unrendered side
+bool point_is_clipped_by_warp(const vec3d* point, WarpEffect* warp_effect) {
+	if (warp_effect == nullptr)
+		return false;
+
+	vec3d warp_pnt, relative_direction;
+	matrix warp_orient;
+
+	warp_effect->getWarpPosition(&warp_pnt);
+	warp_effect->getWarpOrientation(&warp_orient);
+
+	vm_vec_sub(&relative_direction, point, &warp_pnt);
+	if (vm_vec_dot(&relative_direction, &warp_orient.vec.fvec) < 0.0f)
+		return true;
+	else
+		return false;
+}
+
 
 //********************-----CLASS: WarpEffect-----********************//
 WarpEffect::WarpEffect()
@@ -3593,12 +3594,16 @@ int WE_Default::getWarpPosition(vec3d *output)
 
 int WE_Default::getWarpOrientation(matrix* output)
 {
-    if (!this->isValid())
-    {
-        return 0;
-    }
+	if (!this->isValid())
+		return 0;
 
-    vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	if (this->direction == WarpDirection::WARP_IN)
+		vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	else {
+		vec3d backwards = objp->orient.vec.fvec;
+		vm_vec_negate(&backwards);
+		vm_vector_2_matrix(output, &backwards, NULL, NULL);
+	}
     return 1;
 }
 
@@ -4200,7 +4205,14 @@ int WE_Homeworld::getWarpOrientation(matrix* output)
         return 0;
     }
 
-	*output = objp->orient;
+	if (this->direction == WarpDirection::WARP_IN)
+		*output = objp->orient;
+	else {
+		vec3d backwards = objp->orient.vec.fvec;
+		vm_vec_negate(&backwards);
+		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, NULL);
+	}
+
     return 1;
 }
 

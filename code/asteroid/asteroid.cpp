@@ -36,6 +36,7 @@
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "species_defs/species_defs.h"
 #include "stats/scoring.h"
@@ -1136,6 +1137,23 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 			vm_vec_scale_add(&asteroid_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 
 		}
+	}
+
+	// check if the hit point is beyond the clip plane if the ship is warping.
+	if (mc_ret_val) {
+		WarpEffect* warp_effect = nullptr;
+		ship* shipp = &Ships[pship_obj->instance];
+
+		// this is extremely confusing but mc.hit_point_world isn't actually in world coords
+		// everything above was calculated relative to the heavy's position
+		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
+		if ((shipp->is_arriving()) && (shipp->warpin_effect))
+			warp_effect = shipp->warpin_effect;
+		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]))
+			warp_effect = shipp->warpout_effect;
+
+		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
+			mc_ret_val = 0;
 	}
 	
 

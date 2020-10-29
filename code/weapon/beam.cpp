@@ -38,6 +38,7 @@
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
@@ -2475,6 +2476,9 @@ int beam_collide_ship(obj_pair *pair)
 	if (reject_due_collision_groups(weapon_objp, ship_objp))
 		return 0;
 
+	if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1])
+		return 0;
+
 	int quadrant_num = -1;
 	bool valid_hit_occurred = false;
 	sip = &Ship_info[shipp->ship_info_index];
@@ -2548,6 +2552,28 @@ int beam_collide_ship(obj_pair *pair)
             hull_exit_collision = 0;
         }
     }
+
+	
+	if (hull_enter_collision || hull_exit_collision || shield_collision) {
+		WarpEffect* warp_effect = nullptr;
+		bool hull_no_collide, shield_no_collide;
+		hull_no_collide = shield_no_collide = false;
+
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect)
+			warp_effect = shipp->warpout_effect;
+		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect)
+			warp_effect = shipp->warpout_effect;
+
+		if (warp_effect != nullptr) {
+			hull_no_collide = point_is_clipped_by_warp(&mc_hull_enter.hit_point_world, warp_effect);
+			shield_no_collide = point_is_clipped_by_warp(&mc_shield.hit_point_world, warp_effect);
+		}
+
+		if (hull_no_collide)
+			hull_enter_collision = hull_exit_collision = 0;
+		if (shield_no_collide)
+			shield_collision = 0;
+	}
 
 	// check shields for impact
 	// (tooled ships are probably not going to be maintaining a shield over their exit hole,
