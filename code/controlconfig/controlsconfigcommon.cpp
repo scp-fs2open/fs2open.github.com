@@ -70,7 +70,10 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 //XSTR:OFF
 SCP_vector<CCI> Control_config;
 
-void controls_config_init_bindings() {
+/**
+ * Initializes the Control_config vector and the hardcoded defaults preset
+ */
+void control_config_init_bindings() {
 	Control_config.clear();	// Clear exisitng vectory, just in case init is run more than once for whatever reason
 
 	CCI_builder Builder(Control_config);
@@ -239,6 +242,16 @@ void controls_config_init_bindings() {
 	(CUSTOM_CONTROL_4,                  KEY_ALTED | KEY_SHIFTED | KEY_4, -1, COMPUTER_TAB, 0, "Custom Control 4", CC_TYPE_TRIGGER, true)
 	(CUSTOM_CONTROL_5,                  KEY_ALTED | KEY_SHIFTED | KEY_5, -1, COMPUTER_TAB, 0, "Custom Control 5", CC_TYPE_TRIGGER, true)
 	.end();	// Builder
+
+	// init default preset
+	SCP_vector<CCBs> preset;
+	preset.resize(Control_config.size());
+
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		std::copy(Control_config[i].default.begin(), Control_config[i].default.end(), preset[i]);
+	}
+	Control_config_presets.push_back(preset);
+	Control_config_preset_names.push_back("FS Default");
 };
 
 // Map used to convert strings in the Controlconfigdefaults.tbl into their respective IoActionId
@@ -785,7 +798,7 @@ void control_config_common_init()
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
-
+	control_config_init_bindings();
 	control_config_common_load_overrides();
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
@@ -1175,12 +1188,14 @@ void control_config_common_load_overrides()
 		// Presets currently disabled.  Reads the first override directly into main defaults for now
 		if(optional_string("#ControlConfigOverride")) {
 			/* Make new preset
-			config_item *cfg_preset = new config_item[CCFG_MAX + 1];
-			std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
-			Control_config_presets.push_back(cfg_preset);
-			
-
+			SCP_vector<CCBs> new_preset;
 			SCP_string preset_name;
+
+			// Init the new preset with the hardcoded default (which should be the 0th element Control_config_preset vector
+			std::copy(Control_config_presets[0].begin(),
+				Control_config_presets[0].end(),
+				new_preset);
+
 			if (optional_string("$Name:")) {
 				stuff_string_line(preset_name);
 			} else {
