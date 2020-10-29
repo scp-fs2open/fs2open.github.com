@@ -3598,11 +3598,11 @@ int WE_Default::getWarpOrientation(matrix* output)
 		return 0;
 
 	if (this->direction == WarpDirection::WARP_IN)
-		vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+		vm_vector_2_matrix(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, NULL, NULL);
+		vm_vector_2_matrix(output, &backwards, nullptr, nullptr);
 	}
     return 1;
 }
@@ -4210,7 +4210,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output)
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, NULL);
+		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, nullptr);
 	}
 
     return 1;
