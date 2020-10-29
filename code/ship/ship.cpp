@@ -19590,7 +19590,8 @@ void ship_clear_lock(lock_info *slot) {
 
 	slot->last_dist_to_target = 0.0f;
 
-	slot->locked_timestamp = 0;
+	slot->lock_anim_time_elapsed = 0.0f;
+	slot->lock_gauge_time_elapsed = 0.0f;
 
 	slot->maintain_lock_count = 0;
 
