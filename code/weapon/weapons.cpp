@@ -5639,7 +5639,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->hull_strength = 0.0f;
 	}
 
-	if (wip->collision_radius_override > 0.f)
+	if (wip->collision_radius_override > 0.0f)
 		objp->radius = wip->collision_radius_override;
 	else if ( wip->render_type == WRT_POF ) {
 		// this should have been checked above, but let's be extra sure
