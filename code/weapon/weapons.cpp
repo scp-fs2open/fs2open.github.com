@@ -1110,6 +1110,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_tail_radius );
 	}
 
+	if (optional_string("$Collision Radius Override:")) {
+		stuff_float(&wip->collision_radius_override);
+	}
+
 	if(optional_string("$Mass:")) {
 		stuff_float( &(wip->mass) );
 
@@ -5635,7 +5639,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->hull_strength = 0.0f;
 	}
 
-	if ( wip->render_type == WRT_POF ) {
+	if (wip->collision_radius_override > 0.f)
+		objp->radius = wip->collision_radius_override;
+	else if ( wip->render_type == WRT_POF ) {
 		// this should have been checked above, but let's be extra sure
 		Assert(wip->model_num >= 0);
 
