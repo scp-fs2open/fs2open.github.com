@@ -3178,10 +3178,7 @@ bool point_is_clipped_by_warp(const vec3d* point, WarpEffect* warp_effect) {
 	warp_effect->getWarpOrientation(&warp_orient);
 
 	vm_vec_sub(&relative_direction, point, &warp_pnt);
-	if (vm_vec_dot(&relative_direction, &warp_orient.vec.fvec) < 0.0f)
-		return true;
-	else
-		return false;
+	return vm_vec_dot(&relative_direction, &warp_orient.vec.fvec) < 0.0f;
 }
 
 
