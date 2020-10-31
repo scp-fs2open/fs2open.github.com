@@ -889,7 +889,7 @@ void obj_collide_pair(object *A, object *B)
         collision_info->next_check_time = timestamp(0);
     }
 
-    if ( valid &&  A->type != OBJ_BEAM ) {
+    if ( valid ) {
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
             return;

@@ -2382,7 +2382,7 @@ void beam_jitter_aim(beam *b, float aim)
 // collide a beam with a ship, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_ship(obj_pair *pair)
 {
-	beam *b;
+	beam * a_beam;
 	object *weapon_objp;
 	object *ship_objp;
 	ship *shipp;
@@ -2402,7 +2402,7 @@ int beam_collide_ship(obj_pair *pair)
 	Assert(pair->a->type == OBJ_BEAM);
 	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
 	weapon_objp = pair->a;
-	b = &Beams[pair->a->instance];
+	a_beam = &Beams[pair->a->instance];
 
 	// Don't check collisions for warping out player if past stage 1.
 	if (Player->control_mode >= PCM_WARPOUT_STAGE1) {
@@ -2411,17 +2411,17 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// if the "warming up" timestamp has not expired
-	if ((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)) {		
+	if ((a_beam->warmup_stamp != -1) || (a_beam->warmdown_stamp != -1)) {
 		return 0;
 	}
 
 	// if the beam is on "safety", don't collide with anything
-	if (b->flags & BF_SAFETY) {
+	if (a_beam->flags & BF_SAFETY) {
 		return 0;
 	}
 	
 	// if the colliding object is the shooting object, return 1 so this is culled
-	if (pair->b == b->objp) {
+	if (pair->b == a_beam->objp) {
 		return 1;
 	}	
 
@@ -2451,12 +2451,12 @@ int beam_collide_ship(obj_pair *pair)
 	int quadrant_num = -1;
 	bool valid_hit_occurred = false;
 	sip = &Ship_info[shipp->ship_info_index];
-	bwi = &Weapon_info[b->weapon_info_index];
+	bwi = &Weapon_info[a_beam->weapon_info_index];
 
 	polymodel *pm = model_get(model_num);
 
 	// get the width of the beam
-	width = b->beam_width * b->current_width_factor;
+	width = a_beam->beam_width * a_beam->current_width_factor;
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
@@ -2468,8 +2468,8 @@ int beam_collide_ship(obj_pair *pair)
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
 	mc.pos = &ship_objp->pos;
-	mc.p0 = &b->last_start;
-	mc.p1 = &b->last_shot;
+	mc.p0 = &a_beam->last_start;
+	mc.p1 = &a_beam->last_shot;
 
 	// maybe do a sphereline
 	if (width > ship_objp->radius * BEAM_AREA_PERCENT) {
@@ -2485,8 +2485,8 @@ int beam_collide_ship(obj_pair *pair)
 	memcpy(&mc_hull_exit, &mc, sizeof(mc_info));
 	
 	// reverse this vector so that we check for exit holes as opposed to entrance holes
-	mc_hull_exit.p1 = &b->last_start;
-	mc_hull_exit.p0 = &b->last_shot;
+	mc_hull_exit.p1 = &a_beam->last_start;
+	mc_hull_exit.p0 = &a_beam->last_shot;
 
 	// set flags
 	mc_shield.flags |= MC_CHECK_SHIELD;
@@ -2496,27 +2496,27 @@ int beam_collide_ship(obj_pair *pair)
 	// check all three kinds of collisions
 	int shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
 	int hull_enter_collision = model_collide(&mc_hull_enter);
-	int hull_exit_collision = (beam_will_tool_target(b, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
+	int hull_exit_collision = (beam_will_tool_target(a_beam, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
 
     // If we have a range less than the "far" range, check if the ray actually hit within the range
-    if (b->range < BEAM_FAR_LENGTH
+    if (a_beam->range < BEAM_FAR_LENGTH
         && (shield_collision || hull_enter_collision || hull_exit_collision))
     {
         // We can't use hit_dist as "1" is the distance between p0 and p1
-        float rangeSq = b->range * b->range;
+        float rangeSq = a_beam->range * a_beam->range;
 
         // actually make sure that the collision points are within range of our beam
-        if (shield_collision && vm_vec_dist_squared(&b->last_start, &mc_shield.hit_point_world) > rangeSq)
+        if (shield_collision && vm_vec_dist_squared(&a_beam->last_start, &mc_shield.hit_point_world) > rangeSq)
         {
             shield_collision = 0;
         }
 
-        if (hull_enter_collision && vm_vec_dist_squared(&b->last_start, &mc_hull_enter.hit_point_world) > rangeSq)
+        if (hull_enter_collision && vm_vec_dist_squared(&a_beam->last_start, &mc_hull_enter.hit_point_world) > rangeSq)
         {
             hull_enter_collision = 0;
         }
 
-        if (hull_exit_collision && vm_vec_dist_squared(&mc_hull_exit.hit_point_world, &b->last_start) > rangeSq)
+        if (hull_exit_collision && vm_vec_dist_squared(&mc_hull_exit.hit_point_world, &a_beam->last_start) > rangeSq)
         {
             hull_exit_collision = 0;
         }
@@ -2599,7 +2599,7 @@ int beam_collide_ship(obj_pair *pair)
 			{
 				// add to the collision_list
 				// if we got "tooled", add an exit hole too
-				beam_add_collision(b, ship_objp, mc_array[i], quadrant_num, i != 0);
+				beam_add_collision(a_beam, ship_objp, mc_array[i], quadrant_num, i != 0);
 			}
 
 			if (!(weapon_override && !ship_override))
@@ -2630,7 +2630,7 @@ int beam_collide_ship(obj_pair *pair)
 // collide a beam with an asteroid, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_asteroid(obj_pair *pair)
 {
-	beam *b;		
+	beam * a_beam;
 	mc_info test_collide;		
 	int model_num;
 
@@ -2643,20 +2643,20 @@ int beam_collide_asteroid(obj_pair *pair)
 	Assert(pair->a->instance >= 0);
 	Assert(pair->a->type == OBJ_BEAM);
 	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
-	b = &Beams[pair->a->instance];
+	a_beam = &Beams[pair->a->instance];
 
 	// if the "warming up" timestamp has not expired
-	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
+	if((a_beam->warmup_stamp != -1) || (a_beam->warmdown_stamp != -1)){
 		return 0;
 	}
 
 	// if the beam is on "safety", don't collide with anything
-	if(b->flags & BF_SAFETY){
+	if(a_beam->flags & BF_SAFETY){
 		return 0;
 	}
 	
 	// if the colliding object is the shooting object, return 1 so this is culled
-	if(pair->b == b->objp){
+	if(pair->b == a_beam->objp){
 		return 1;
 	}	
 
@@ -2679,8 +2679,8 @@ int beam_collide_asteroid(obj_pair *pair)
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
 	test_collide.pos = &pair->b->pos;
-	test_collide.p0 = &b->last_start;
-	test_collide.p1 = &b->last_shot;	
+	test_collide.p0 = &a_beam->last_start;
+	test_collide.p1 = &a_beam->last_shot;
 	test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
 	model_collide(&test_collide);
 
@@ -2701,7 +2701,7 @@ int beam_collide_asteroid(obj_pair *pair)
 
 		if (!weapon_override && !asteroid_override)
 		{
-			beam_add_collision(b, pair->b, &test_collide);
+			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
 		if (!(asteroid_override && !weapon_override))
@@ -2732,7 +2732,7 @@ int beam_collide_asteroid(obj_pair *pair)
 // collide a beam with a missile, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_missile(obj_pair *pair)
 {
-	beam *b;	
+	beam *a_beam;	
 	mc_info test_collide;		
 	int model_num;
 
@@ -2745,22 +2745,22 @@ int beam_collide_missile(obj_pair *pair)
 	Assert(pair->a->instance >= 0);
 	Assert(pair->a->type == OBJ_BEAM);
 	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
-	b = &Beams[pair->a->instance];
+	a_beam = &Beams[pair->a->instance];
 
 	// if the "warming up" timestamp has not expired
-	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
+	if((a_beam->warmup_stamp != -1) || (a_beam->warmdown_stamp != -1)){
 		return 0;
 	}
 
 	// if the beam is on "safety", don't collide with anything
-	if(b->flags & BF_SAFETY){
+	if(a_beam->flags & BF_SAFETY){
 		return 0;
 	}
 	
-	// if the colliding object is the shooting object, return 1 so this is culled
-	if(pair->b == b->objp){
+	// don't collide if the beam and missile share their parent
+	if (pair->b->parent_sig >= 0 && a_beam->objp && pair->b->parent_sig == a_beam->objp->signature) {
 		return 1;
-	}	
+	}
 
 	// try and get a model
 	model_num = beam_get_model(pair->b);
@@ -2779,8 +2779,8 @@ int beam_collide_missile(obj_pair *pair)
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
 	test_collide.pos = &pair->b->pos;
-	test_collide.p0 = &b->last_start;
-	test_collide.p1 = &b->last_shot;
+	test_collide.p0 = &a_beam->last_start;
+	test_collide.p1 = &a_beam->last_shot;
 	test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
 	model_collide(&test_collide);
 
@@ -2802,7 +2802,7 @@ int beam_collide_missile(obj_pair *pair)
 
 		if(!a_override && !b_override)
 		{
-			beam_add_collision(b, pair->b, &test_collide);
+			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
 		if(!(b_override && !a_override))
@@ -2832,7 +2832,7 @@ int beam_collide_missile(obj_pair *pair)
 // collide a beam with debris, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_debris(obj_pair *pair)
 {	
-	beam *b;	
+	beam * a_beam;
 	mc_info test_collide;		
 	int model_num;
 
@@ -2845,20 +2845,20 @@ int beam_collide_debris(obj_pair *pair)
 	Assert(pair->a->instance >= 0);
 	Assert(pair->a->type == OBJ_BEAM);
 	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
-	b = &Beams[pair->a->instance];
+	a_beam = &Beams[pair->a->instance];
 
 	// if the "warming up" timestamp has not expired
-	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
+	if((a_beam->warmup_stamp != -1) || (a_beam->warmdown_stamp != -1)){
 		return 0;
 	}
 
 	// if the beam is on "safety", don't collide with anything
-	if(b->flags & BF_SAFETY){
+	if(a_beam->flags & BF_SAFETY){
 		return 0;
 	}
 	
 	// if the colliding object is the shooting object, return 1 so this is culled
-	if(pair->b == b->objp){
+	if(pair->b == a_beam->objp){
 		return 1;
 	}	
 
@@ -2879,8 +2879,8 @@ int beam_collide_debris(obj_pair *pair)
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
 	test_collide.pos = &pair->b->pos;
-	test_collide.p0 = &b->last_start;
-	test_collide.p1 = &b->last_shot;
+	test_collide.p0 = &a_beam->last_start;
+	test_collide.p1 = &a_beam->last_shot;
 	test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
 	model_collide(&test_collide);
 
@@ -2900,7 +2900,7 @@ int beam_collide_debris(obj_pair *pair)
 		if(!weapon_override && !debris_override)
 		{
 			// add to the collision list
-			beam_add_collision(b, pair->b, &test_collide);
+			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
 		if (!(debris_override && !weapon_override))
