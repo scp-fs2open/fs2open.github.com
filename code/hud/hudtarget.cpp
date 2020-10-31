@@ -3725,10 +3725,12 @@ int hud_get_best_primary_bank(float *range)
 //
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps)
+void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_object)
 {
+	Assertion(reference_object != nullptr, "polish_predicted_target_pos received a nullptr for its reference ship, this is a coder mistake, please report!");
+
 	int	iteration;
-	vec3d	player_pos = Player_obj->pos;
+	vec3d	reference_pos = reference_object->pos;
 	float		time_to_enemy;
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
@@ -3747,11 +3749,11 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	// additive velocity stuff
 	// not just the player's main target
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
-		vm_vec_scale_sub2( &enemy_vel, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2( &enemy_vel, &reference_object->phys_info.vel, wip->vel_inherit_amount);
 	}
 
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
-		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
+		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &reference_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
 		if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
