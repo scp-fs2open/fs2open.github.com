@@ -26,6 +26,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
 #include "playerman/player.h"
@@ -567,6 +568,11 @@ void cmd_brief_init(int team)
 
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
+
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+	}
 
 	gr_reset_clip();
 	gr_clear();

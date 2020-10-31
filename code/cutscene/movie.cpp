@@ -218,10 +218,9 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 
 		processEvents();
 
+		// maybe do multi processing
 		if ( (Game_mode & GM_MULTIPLAYER) && Net_player && (Net_player->flags & NETINFO_FLAG_DO_NETWORKING) ) {
-			// consider movie playback a "paused" state and process network
-			// packets accordingly
-			multi_pause_do_frame();
+			multi_do_frame();
 		}
 
 		if (passed < sleepTime) {
@@ -251,6 +250,11 @@ bool play(const char* name) {
 
 	if (Cmdline_nomovies || Is_standalone) {
 		return false;
+	}
+
+	// for multiplayer, change the state in my netplayer structure
+	if ( (Game_mode & GM_MULTIPLAYER) && Net_player ) {
+		Net_player->state = NETPLAYER_STATE_CUTSCENE;
 	}
 
 	// clear the screen and hide the mouse cursor

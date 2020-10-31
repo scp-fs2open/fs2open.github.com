@@ -7736,6 +7736,18 @@ void multi_sync_blit_screen_all()
 				// display the text
 				multi_sync_display_status(txt,count);
 				break;
+			case NETPLAYER_STATE_FICTION_VIEWER:
+				multi_sync_display_status(XSTR("Fiction Viewer", -1), count);
+				break;
+			case NETPLAYER_STATE_CUTSCENE:
+				multi_sync_display_status(XSTR("Cutscene", -1), count);
+				break;
+			case NETPLAYER_STATE_CMD_BRIEFING:
+				multi_sync_display_status(XSTR("Command Briefing", -1), count);
+				break;
+			case NETPLAYER_STATE_RED_ALERT:
+				multi_sync_display_status(XSTR("Red Alert", -1), count);
+				break;
 			default :
 				nprintf(("Network","Unhandled player state : %d !\n",Net_players[idx].state));
 				break;

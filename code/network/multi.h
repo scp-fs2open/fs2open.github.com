@@ -697,6 +697,10 @@ typedef struct network_buffer {
 #define NETPLAYER_STATE_DEBRIEF_REPLAY		28				// set on the host instead of NETPLAYER_STATE_DEBRIEF_ACCEPT to indicate he wants to replay the mission
 #define NETPLAYER_STATE_CPOOL_ACK			29				// player has acked all campaign pool status data
 #define NETPLAYER_STATE_INGAME_CINFO		30				// player has received campaign information (ingame join only)
+#define NETPLAYER_STATE_CUTSCENE			31				// watching a custscene
+#define NETPLAYER_STATE_FICTION_VIEWER		32				// in the fiction viewer screen
+#define NETPLAYER_STATE_CMD_BRIEFING		33				// in the command briefing
+#define NETPLAYER_STATE_RED_ALERT			34				// in the red alert screen
 
 // defines for connection speed
 #define CONNECTION_SPEED_NONE					-1				// not really used except for error checking

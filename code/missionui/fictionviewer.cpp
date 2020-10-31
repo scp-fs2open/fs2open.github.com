@@ -19,6 +19,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "mod_table/mod_table.h"
 #include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
@@ -284,6 +285,11 @@ void fiction_viewer_init()
 	// no fiction document?
 	if (!mission_has_fiction())
 		return;
+
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+	}
 
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
