@@ -167,6 +167,8 @@ public:
 	float get_channel_alpha(float u, float v);
 };
 
+void clear_bm_lookup_cache();
+
 /**
  * @brief Loads a bitmap so we can draw with it later.
  *

@@ -899,6 +899,7 @@ void create_vertex_buffer(polymodel *pm)
 			interp_create_transparency_index_buffer(pm, i);
 		}
 	}
+	clear_bm_lookup_cache();
 
 	size_t stride = 0;
 	// Determine the global stride of this model (should be the same for every submodel)
