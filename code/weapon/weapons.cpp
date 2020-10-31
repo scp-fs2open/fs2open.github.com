@@ -146,7 +146,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "inherit parent target",			Weapon::Info_Flags::Inherit_parent_target,				true, false },
     { "no emp kill",					Weapon::Info_Flags::No_emp_kill,						true, false },
     { "untargeted heat seeker",			Weapon::Info_Flags::Untargeted_heat_seeker,				true, false },
-    { "no radius doubling",				Weapon::Info_Flags::Hard_target_bomb,					true, false },
+    { "no radius doubling",				Weapon::Info_Flags::No_radius_doubling,					true, false },
     { "no subsystem homing",			Weapon::Info_Flags::Non_subsys_homing,					true, false },
     { "no lifeleft penalty",			Weapon::Info_Flags::No_life_lost_if_missed,				true, false },
     { "can be targeted",				Weapon::Info_Flags::Can_be_targeted,					true, false },
@@ -641,11 +641,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
         
 	if (set_nopierce)
         weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
-
-    if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
-        weaponp->wi_flags.remove(Weapon::Info_Flags::Hard_target_bomb);
-        Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
-    }
 
     if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
         weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
@@ -2873,6 +2868,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	// making sure bombs get their hitpoints assigned
 	if ((wip->wi_flags[Weapon::Info_Flags::Bomb]) && (wip->weapon_hitpoints == 0)) {
 		wip->weapon_hitpoints = 50;
+	}
+
+	if (wip->weapon_hitpoints <= 0.0f && (wip->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
+		Warning(LOCATION, "Weapon \'%s\' is not interceptable but has \"no radius doubling\" set. Ignoring the flag", wip->name);
+		wip->wi_flags.set(Weapon::Info_Flags::No_radius_doubling, false);
 	}
 
 	if(optional_string("$Armor Type:")) {
