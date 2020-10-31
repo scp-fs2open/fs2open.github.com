@@ -285,6 +285,7 @@ struct weapon_info
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
+	float	collision_radius_override;          // overrides the radius for the purposes of collision
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
