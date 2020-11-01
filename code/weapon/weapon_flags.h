@@ -55,7 +55,7 @@ namespace Weapon {
 		No_emp_kill,						// though weapon has hitpoints it can not be disabled by EMP
 		Variable_lead_homing,				// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 		Untargeted_heat_seeker,				// forces heat seeker to lose target immeadiately (and acquire a random new one)
-		Hard_target_bomb,					// removes the radius doubling effect bombs have for collisions
+		No_radius_doubling,					// removes the radius doubling effect bombs have for collisions
 		Non_subsys_homing,					// spreads fired missiles around the target ships hull
 		No_life_lost_if_missed,				// prevents game from shortening the lifeleft of the missed but still homing missiles
 		Custom_seeker_str,					// sets the game to use custom seeker strengths instead of default values

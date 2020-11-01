@@ -491,7 +491,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "no emp kill",				Weapon::Info_Flags::No_emp_kill,						true, false },
     { "variable lead homing",		Weapon::Info_Flags::Variable_lead_homing,				true, false },
     { "untargeted heat seeker",		Weapon::Info_Flags::Untargeted_heat_seeker,			    true, false },
-    { "no radius doubling",			Weapon::Info_Flags::Hard_target_bomb,					true, false },
+    { "no radius doubling",			Weapon::Info_Flags::No_radius_doubling,					true, false },
     { "no subsystem homing",		Weapon::Info_Flags::Non_subsys_homing,					true, false },
     { "no lifeleft penalty",		Weapon::Info_Flags::No_life_lost_if_missed,			    true, false },
     { "custom seeker str",			Weapon::Info_Flags::Custom_seeker_str,					true, false },
