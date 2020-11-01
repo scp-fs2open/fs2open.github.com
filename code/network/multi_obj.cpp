@@ -130,7 +130,7 @@ struct oo_packet_and_interp_tracking {
 
 // Keep track of the ships we'll need to restore later after rollback is done.
 struct oo_rollback_restore_record {
-	object* roll_objp;		// object pointer to the ship we need to restore. 
+	int roll_objnum;		// object pointer to the ship we need to restore. 
 	vec3d position;			// position to restore to
 	matrix orientation;		// orientation to restore to
 	vec3d velocity;			// velocity to restore to
@@ -172,10 +172,10 @@ struct oo_general_info {
 	SCP_vector<oo_packet_and_interp_tracking> interp;		// Tracking received info and interpolation timing per ship, uses net_signature as its index.
 	// rollback info
 	bool rollback_mode;										// are we currently creating and moving weapons from the client primary fire packets
-	SCP_vector<object*> rollback_wobjp_created_this_frame;	// the weapons created this rollback frame.
-	SCP_vector<object*> rollback_wobjp;						// a list of the weapons that were created, so that we can roll them into the current simulation
+	SCP_vector<int> rollback_weapon_numbers_created_this_frame;	// the weapons created this rollback frame.
+	SCP_vector<int> rollback_weapon_number;						// a list of the weapons that were created, so that we can roll them into the current simulation
 
-	SCP_vector<object*> rollback_ships;						// a list of ships that take part in roll back, no quick index, must be iterated through.
+	SCP_vector<int> rollback_ships;						// a list of ships that take part in roll back, no quick index, must be iterated through.
 	SCP_vector<oo_rollback_restore_record> restore_points;	// where to move ships back to when done with rollback. no quick index, must be iterated through.
 	SCP_vector<oo_unsimulated_shots> 
 		rollback_shots_to_be_fired[MAX_FRAMES_RECORDED];				// the shots we will need to fire and simulate during rollback, organized into the frames they will be fired
@@ -594,16 +594,14 @@ bool multi_ship_record_get_rollback_wep_mode()
 // Adds an object pointer to the list of weapons that needs to be simulated as part of rollback.
 void multi_ship_record_add_rollback_wep(int wep_objnum) 
 {
-	object* wobjp = &Objects[wep_objnum];
-
 	// check for valid pointer
-	if (wobjp == nullptr){
-		mprintf(("Nullptr when trying to add weapons to the weapon rollback tracker.\n"));
+	if (wep_objnum > -1 && wep_objnum < MAX_WEAPONS){
+		mprintf(("Invalid weapon number passed when trying to add weapons to the weapon rollback tracker.\n"));
 		return;
 	}
 	
 	// add it to the list of weapons we'll need to add to the simulation.
-	Oo_info.rollback_wobjp_created_this_frame.push_back(wobjp);
+	Oo_info.rollback_weapon_numbers_created_this_frame.push_back(wep_objnum);
 }
 
 // This stores the information we got from the client to create later.
@@ -658,11 +656,11 @@ void multi_ship_record_do_rollback()
 			continue;
 		}
 
-		Oo_info.rollback_ships.push_back(objp);
+		Oo_info.rollback_ships.push_back(cur_ship.objnum);
 
 		oo_rollback_restore_record restore_point;
 
-		restore_point.roll_objp = objp;
+		restore_point.roll_objnum = cur_ship.objnum;
 		restore_point.position = objp->pos;
 		restore_point.orientation = objp->orient;
 		restore_point.velocity = objp->phys_info.vel;
@@ -670,7 +668,7 @@ void multi_ship_record_do_rollback()
 
 		Oo_info.restore_points.push_back(restore_point);
 		// Also take this opportunity to set up their collision 
-		Oo_info.rollback_collide_list.push_back(OBJ_INDEX(objp));
+		Oo_info.rollback_collide_list.push_back(cur_ship.objnum);
 	}
 
 	// now we need to figure out which frame will start the rollback simulation
@@ -708,7 +706,7 @@ void multi_ship_record_do_rollback()
 		multi_oo_fire_rollback_shots(frame_idx);
 
 		// perform collision detection for that frame.
-		obj_sort_and_collide(Oo_info.rollback_collide_list);
+		obj_sort_and_collide(&Oo_info.rollback_collide_list);
 
 		//increment the frame
 		frame_idx++;
@@ -728,7 +726,7 @@ void multi_ship_record_do_rollback()
 	for (auto & shots_to_be_fired : Oo_info.rollback_shots_to_be_fired) {
 		shots_to_be_fired.clear();
 	}
-	Oo_info.rollback_wobjp.clear();
+	Oo_info.rollback_weapon_number.clear();
 }
 
 // fires the rollback weapons that are in the rollback struct
@@ -746,19 +744,19 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 	}
 
 	// add the newly created shots to the collision list.
-	for (auto& wobjp : Oo_info.rollback_wobjp_created_this_frame) {
-		Oo_info.rollback_wobjp.push_back(wobjp);
-		Assertion(wobjp != nullptr, "Somehow FSO added a nullptr to a list of weapons it is supposed to rollback.");
-		Oo_info.rollback_collide_list.push_back(OBJ_INDEX(wobjp));
+	for (auto& wep_number : Oo_info.rollback_weapon_numbers_created_this_frame) {
+		Oo_info.rollback_weapon_number.push_back(wep_number);
+		Oo_info.rollback_collide_list.push_back(Weapons[wep_number].objnum);
 	}
-	Oo_info.rollback_wobjp_created_this_frame.clear();
+	Oo_info.rollback_weapon_numbers_created_this_frame.clear();
 }
 
 // moves all rollbacked ships back to the original frame
 void multi_oo_restore_frame(int frame_idx)
 {
 	// set the position, orientation, and velocity for each object
-	for (auto& objp : Oo_info.rollback_ships) {
+	for (auto& objnum : Oo_info.rollback_ships) {
+		object* objp = &Objects[objnum];
 		Assertion(objp != nullptr, "Nullptr somehow got into the rollback ship vector, please report!");
 		objp->pos = Oo_info.frame_info[objp->net_signature].positions[frame_idx];
 		objp->orient = Oo_info.frame_info[objp->net_signature].orientations[frame_idx];
@@ -779,8 +777,8 @@ void multi_oo_simulate_rollback_shots(int frame_idx)
 	float frametime = (float)multi_ship_record_get_time_elapsed(prev_frame, frame_idx) / (float)TIMESTAMP_FREQUENCY;
 
 	// push the weapons forward.
-	for (auto& objp : Oo_info.rollback_wobjp) {
-		Assertion(objp != nullptr, "Nullptr somehow got into the rollback weapon vector, please report!");
+	for (auto& weap_num : Oo_info.rollback_weapon_number) {
+		object* objp = &Objects[Weapons[weap_num].objnum];
 		vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
 		Weapons[objp->instance].lifeleft -= frametime;
 	}
@@ -791,7 +789,7 @@ void multi_record_restore_positions()
 {
 	for (auto restore_point : Oo_info.restore_points) {
 
-		object* objp = restore_point.roll_objp;
+		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object
 		objp->pos = restore_point.position;
 		objp->orient = restore_point.orientation;
@@ -2506,7 +2504,7 @@ void multi_init_oo_and_ship_tracker()
 	}
 
 	Oo_info.rollback_mode = false;
-	Oo_info.rollback_wobjp.clear();
+	Oo_info.rollback_weapon_number.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
