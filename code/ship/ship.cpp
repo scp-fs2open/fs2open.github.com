@@ -11306,8 +11306,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					time_to_target = dist_to_target / winfo_p->max_speed;
 				}
 
+				// This is to circumvent a nine-year-old bug that prevents autoaim from working in multi. In most cases polish_predicted_target_pos needs
+				// the Player object, but in multi it needs the shooting object.  Also, additional conditions would need to be added in the future if you 
+				// want to apply autoaim to AI, for whatever reason.
+				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship]) ? obj : Player_obj;
+
 				vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
-				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
+				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1, object_to_send);
 				vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
 
 				if (has_autoaim) {
