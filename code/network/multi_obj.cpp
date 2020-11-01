@@ -1649,8 +1649,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 	GET_USHORT(data_size);
 	if (MULTIPLAYER_MASTER) {
 		// client cannot send these types because the server is in charge of all of these things.
-		Assertion(!(oo_flags & (OO_AI_NEW | OO_SHIELDS_NEW | OO_HULL_NEW | OO_SUBSYSTEMS_NEW | OO_SUPPORT_SHIP)), "Invalid flag from client, please report! oo_flags value: %d\n", oo_flags);
-		if (oo_flags & (OO_AI_NEW | OO_SHIELDS_NEW | OO_HULL_NEW | OO_SUBSYSTEMS_NEW | OO_SUPPORT_SHIP)) {
+		Assertion(!(oo_flags & (OO_AI_NEW | OO_SHIELDS_NEW | OO_HULL_NEW | OO_SUPPORT_SHIP)), "Invalid flag from client, please report! oo_flags value: %d\n", oo_flags);
+		if (oo_flags & (OO_AI_NEW | OO_SHIELDS_NEW | OO_HULL_NEW | OO_SUPPORT_SHIP)) {
 			offset += data_size;
 			return offset;
 		}
