@@ -7920,6 +7920,7 @@ void weapon_info::reset()
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
 
+	this->collision_radius_override = -1.0f;
 	this->max_speed = 10.0f;
 	this->acceleration_time = 0.0f;
 	this->vel_inherit_amount = 1.0f;
