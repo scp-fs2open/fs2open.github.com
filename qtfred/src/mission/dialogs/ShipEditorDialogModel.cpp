@@ -12,7 +12,6 @@
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionmessage.h"
-#include "ui/dialogs/ShipEditorDialog.h"
 
 #include <globalincs/linklist.h>
 #include <mission/object.h>
@@ -548,7 +547,10 @@ bool ShipEditorDialogModel::apply()
 
 void ShipEditorDialogModel::reject() {}
 
-void ShipEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) { initializeData(); }
+void ShipEditorDialogModel::onSelectedObjectMarkingChanged(int, bool)
+{
+	initializeData();
+}
 
 bool ShipEditorDialogModel::update_ship(int ship)
 {
@@ -563,7 +565,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		set_modified();
 	}
 	if (_m_team != -1)
-		modify(Ships[ship].team, _m_team);
+		Ships[ship].team = _m_team;
 
 	if (Objects[Ships[ship].objnum].type != OBJ_SHIP) {
 		if (mission_type || (Objects[Ships[ship].objnum].type != OBJ_START)) {
@@ -572,7 +574,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 	}
 
 	if (_m_ai_class != -1) {
-		modify(Ships[ship].weapons.ai_class, _m_ai_class);
+		Ships[ship].weapons.ai_class = _m_ai_class;
 	}
 	if (!_m_cargo1.empty()) {
 		z = string_lookup(_m_cargo1.c_str(), Cargo_names, Num_cargo);
@@ -590,10 +592,10 @@ bool ShipEditorDialogModel::update_ship(int ship)
 				_m_cargo1 = Cargo_names[z];
 			}
 		}
-		modify(Ships[ship].cargo1, (char)z);
+		Ships[ship].cargo1 = (char)z;
 	}
 
-	modify(Ships[ship].score, _m_score);
+	Ships[ship].score = _m_score;
 	if (_m_assist_score == -1) {
 		Ships[ship].assist_score_pct = ((float)_m_assist_score) / 100;
 		if (Ships[ship].assist_score_pct < 0) {
@@ -612,14 +614,14 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		set_modified();
 	}
 
-	modify(Ships[ship].persona_index, _m_persona);
+	Ships[ship].persona_index = _m_persona;
 
 	if (Ships[ship].wingnum < 0) {
 
 		if (_m_arrival_location != -1)
-			modify(Ships[ship].arrival_location, _m_arrival_location);
+			Ships[ship].arrival_location = _m_arrival_location;
 		if (_m_departure_location != -1)
-			modify(Ships[ship].departure_location, _m_departure_location);
+			Ships[ship].departure_location = _m_departure_location;
 
 		if (!multi_edit || _m_update_arrival) { // should we update the arrival cue?
 			if (Ships[ship].arrival_cue >= 0)
@@ -634,11 +636,11 @@ bool ShipEditorDialogModel::update_ship(int ship)
 
 			Ships[ship].departure_cue = _m_departure_tree_formula;
 		}
-		modify(Ships[ship].arrival_distance, _m_arrival_dist);
-		modify(Ships[ship].arrival_delay, _m_arrival_delay);
-		modify(Ships[ship].departure_delay, _m_departure_delay);
+		Ships[ship].arrival_distance = _m_arrival_dist;
+		Ships[ship].arrival_delay = _m_arrival_delay;
+		Ships[ship].departure_delay = _m_departure_delay;
 		if (_m_arrival_target >= 0) {
-			modify(Ships[ship].arrival_anchor, _m_arrival_target);
+			Ships[ship].arrival_anchor = _m_arrival_target;
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
@@ -666,12 +668,12 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		}
 		if (_m_departure_target >= 0) {
 
-			modify(Ships[ship].departure_anchor, _m_departure_target);
+			Ships[ship].departure_anchor = _m_departure_target;
 		}
 	}
 
 	if (_m_hotkey != -1)
-		modify(Ships[ship].hotkey, _m_hotkey - 1);
+		Ships[ship].hotkey = _m_hotkey - 1;
 
 	if (_m_no_arrival_warp) {
 
@@ -810,8 +812,14 @@ void ShipEditorDialogModel::ship_callsign_close(int ship)
 		"Couldn't add new Callsign. Already using too many!",
 		{DialogButton::Ok});
 }
-void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name) { modify(_m_ship_name, m_ship_name); }
-SCP_string ShipEditorDialogModel::getShipName() { return _m_ship_name; }
+void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
+{
+	modify(_m_ship_name, m_ship_name);
+}
+SCP_string ShipEditorDialogModel::getShipName()
+{
+	return _m_ship_name;
+}
 
 void ShipEditorDialogModel::setShipClass(int m_ship_class)
 {
@@ -829,7 +837,10 @@ void ShipEditorDialogModel::setShipClass(int m_ship_class)
 	_editor->missionChanged();
 }
 
-int ShipEditorDialogModel::getShipClass() { return _m_ship_class; }
+int ShipEditorDialogModel::getShipClass()
+{
+	return _m_ship_class;
+}
 
 void ShipEditorDialogModel::setAIClass(int m_ai_class)
 {
@@ -837,7 +848,10 @@ void ShipEditorDialogModel::setAIClass(int m_ai_class)
 	modelChanged();
 }
 
-int ShipEditorDialogModel::getAIClass() { return _m_ai_class; }
+int ShipEditorDialogModel::getAIClass()
+{
+	return _m_ai_class;
+}
 
 void ShipEditorDialogModel::setTeam(int m_team)
 {
@@ -845,61 +859,145 @@ void ShipEditorDialogModel::setTeam(int m_team)
 	modelChanged();
 }
 
-int ShipEditorDialogModel::getTeam() { return _m_team; }
+int ShipEditorDialogModel::getTeam()
+{
+	return _m_team;
+}
 
-void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo) { modify(_m_cargo1, m_cargo); }
+void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
+{
+	modify(_m_cargo1, m_cargo);
+}
 
-SCP_string ShipEditorDialogModel::getCargo() { return _m_cargo1; }
+SCP_string ShipEditorDialogModel::getCargo()
+{
+	return _m_cargo1;
+}
 
-void ShipEditorDialogModel::setAltName(const SCP_string& m_altName) { modify(_m_alt_name, m_altName); }
+void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
+{
+	modify(_m_alt_name, m_altName);
+}
 
-SCP_string ShipEditorDialogModel::getAltName() { return _m_alt_name; }
+SCP_string ShipEditorDialogModel::getAltName()
+{
+	return _m_alt_name;
+}
 
-void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign) { modify(_m_callsign, m_callsign); }
+void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
+{
+	modify(_m_callsign, m_callsign);
+}
 
-SCP_string ShipEditorDialogModel::getCallsign() { return _m_callsign; }
+SCP_string ShipEditorDialogModel::getCallsign()
+{
+	return _m_callsign;
+}
 
-SCP_string ShipEditorDialogModel::getWing() { return m_wing; }
+SCP_string ShipEditorDialogModel::getWing()
+{
+	return m_wing;
+}
 
-void ShipEditorDialogModel::setHotkey(int m_hotkey) { modify(_m_hotkey, m_hotkey); }
+void ShipEditorDialogModel::setHotkey(int m_hotkey)
+{
+	modify(_m_hotkey, m_hotkey);
+}
 
-int ShipEditorDialogModel::getHotkey() { return _m_hotkey; }
+int ShipEditorDialogModel::getHotkey()
+{
+	return _m_hotkey;
+}
 
-void ShipEditorDialogModel::setPersona(int m_persona) { modify(_m_persona, m_persona); }
+void ShipEditorDialogModel::setPersona(int m_persona)
+{
+	modify(_m_persona, m_persona);
+}
 
-int ShipEditorDialogModel::getPersona() { return _m_persona; }
+int ShipEditorDialogModel::getPersona()
+{
+	return _m_persona;
+}
 
-void ShipEditorDialogModel::setScore(int m_score) { modify(_m_score, m_score); }
+void ShipEditorDialogModel::setScore(int m_score)
+{
+	modify(_m_score, m_score);
+}
 
-int ShipEditorDialogModel::getScore() { return _m_score; }
+int ShipEditorDialogModel::getScore()
+{
+	return _m_score;
+}
 
-void ShipEditorDialogModel::setAssist(int m_assist_score) { modify(_m_assist_score, m_assist_score); }
+void ShipEditorDialogModel::setAssist(int m_assist_score)
+{
+	modify(_m_assist_score, m_assist_score);
+}
 
-int ShipEditorDialogModel::getAssist() { return _m_assist_score; }
+int ShipEditorDialogModel::getAssist()
+{
+	return _m_assist_score;
+}
 
-void ShipEditorDialogModel::setPlayer(bool m_player) { modify(_m_player_ship, m_player); }
+void ShipEditorDialogModel::setPlayer(bool m_player)
+{
+	modify(_m_player_ship, m_player);
+}
 
-bool ShipEditorDialogModel::getPlayer() { return _m_player_ship; }
+bool ShipEditorDialogModel::getPlayer()
+{
+	return _m_player_ship;
+}
 
-void ShipEditorDialogModel::setArrivalLocation(int value) { modify(_m_arrival_location, value); }
+void ShipEditorDialogModel::setArrivalLocation(int value)
+{
+	modify(_m_arrival_location, value);
+}
 
-int ShipEditorDialogModel::getArrivalLocation() { return _m_arrival_location; }
+int ShipEditorDialogModel::getArrivalLocation()
+{
+	return _m_arrival_location;
+}
 
-void ShipEditorDialogModel::setArrivalTarget(int value) { modify(_m_arrival_target, value); }
+void ShipEditorDialogModel::setArrivalTarget(int value)
+{
+	modify(_m_arrival_target, value);
+}
 
-int ShipEditorDialogModel::getArrivalTarget() { return _m_arrival_target; }
+int ShipEditorDialogModel::getArrivalTarget()
+{
+	return _m_arrival_target;
+}
 
-void ShipEditorDialogModel::setArrivalDistance(int value) { modify(_m_arrival_dist, value); }
+void ShipEditorDialogModel::setArrivalDistance(int value)
+{
+	modify(_m_arrival_dist, value);
+}
 
-int ShipEditorDialogModel::getArrivalDistance() { return _m_arrival_dist; }
+int ShipEditorDialogModel::getArrivalDistance()
+{
+	return _m_arrival_dist;
+}
 
-void ShipEditorDialogModel::setArrivalDelay(int value) { modify(_m_arrival_delay, value); }
+void ShipEditorDialogModel::setArrivalDelay(int value)
+{
+	modify(_m_arrival_delay, value);
+}
 
-int ShipEditorDialogModel::getArrivalDelay() { return _m_arrival_delay; }
+int ShipEditorDialogModel::getArrivalDelay()
+{
+	return _m_arrival_delay;
+}
 
-void ShipEditorDialogModel::setArrivalCue(bool value) { modify(_m_update_arrival, value); }
+void ShipEditorDialogModel::setArrivalCue(bool value)
+{
+	modify(_m_update_arrival, value);
+}
 
-bool ShipEditorDialogModel::getArrivalCue() { return _m_update_arrival; }
+bool ShipEditorDialogModel::getArrivalCue()
+{
+	return _m_update_arrival;
+}
 
 void ShipEditorDialogModel::setArrivalFormula(int old_form, int new_form)
 {
@@ -907,27 +1005,60 @@ void ShipEditorDialogModel::setArrivalFormula(int old_form, int new_form)
 		modify(_m_arrival_tree_formula, new_form);
 }
 
-int ShipEditorDialogModel::getArrivalFormula() { return _m_arrival_tree_formula; }
+int ShipEditorDialogModel::getArrivalFormula()
+{
+	return _m_arrival_tree_formula;
+}
 
-void ShipEditorDialogModel::setNoArrivalWarp(bool value) { modify(_m_no_arrival_warp, value); }
+void ShipEditorDialogModel::setNoArrivalWarp(bool value)
+{
+	modify(_m_no_arrival_warp, value);
+}
 
-bool ShipEditorDialogModel::getNoArrivalWarp() { return _m_no_arrival_warp; }
+bool ShipEditorDialogModel::getNoArrivalWarp()
+{
+	return _m_no_arrival_warp;
+}
 
-void ShipEditorDialogModel::setDepartureLocation(int value) { modify(_m_departure_location, value); }
+void ShipEditorDialogModel::setDepartureLocation(int value)
+{
+	modify(_m_departure_location, value);
+}
 
-int ShipEditorDialogModel::getDepartureLocation() { return _m_departure_location; }
+int ShipEditorDialogModel::getDepartureLocation()
+{
+	return _m_departure_location;
+}
 
-void ShipEditorDialogModel::setDepartureTarget(int value) { modify(_m_departure_target, value); }
+void ShipEditorDialogModel::setDepartureTarget(int value)
+{
+	modify(_m_departure_target, value);
+}
 
-int ShipEditorDialogModel::getDepartureTarget() { return _m_departure_target; }
+int ShipEditorDialogModel::getDepartureTarget()
+{
+	return _m_departure_target;
+}
 
-void ShipEditorDialogModel::setDepartureDelay(int value) { modify(_m_departure_delay, value); }
+void ShipEditorDialogModel::setDepartureDelay(int value)
+{
+	modify(_m_departure_delay, value);
+}
 
-int ShipEditorDialogModel::getDepartureDelay() { return _m_departure_delay; }
+int ShipEditorDialogModel::getDepartureDelay()
+{
+	return _m_departure_delay;
+}
 
-void ShipEditorDialogModel::setDepartureCue(bool value) { modify(_m_update_departure, value); }
+void ShipEditorDialogModel::setDepartureCue(bool value)
+{
+	modify(_m_update_departure, value);
+}
 
-bool ShipEditorDialogModel::getDepartureCue() { return _m_update_departure; }
+bool ShipEditorDialogModel::getDepartureCue()
+{
+	return _m_update_departure;
+}
 
 void ShipEditorDialogModel::setDepartureFormula(int old_form, int new_form)
 {
@@ -935,11 +1066,20 @@ void ShipEditorDialogModel::setDepartureFormula(int old_form, int new_form)
 		modify(_m_departure_tree_formula, new_form);
 }
 
-int ShipEditorDialogModel::getDepartureFormula() { return _m_departure_tree_formula; }
+int ShipEditorDialogModel::getDepartureFormula()
+{
+	return _m_departure_tree_formula;
+}
 
-void ShipEditorDialogModel::setNoDepartureWarp(bool value) { modify(_m_no_departure_warp, value); }
+void ShipEditorDialogModel::setNoDepartureWarp(bool value)
+{
+	modify(_m_no_departure_warp, value);
+}
 
-bool ShipEditorDialogModel::getNoDepartureWarp() { return _m_no_departure_warp; }
+bool ShipEditorDialogModel::getNoDepartureWarp()
+{
+	return _m_no_departure_warp;
+}
 
 void ShipEditorDialogModel::OnPrevious()
 {
@@ -1101,7 +1241,10 @@ void ShipEditorDialogModel::OnShipReset()
 	}
 }
 
-bool ShipEditorDialogModel::wing_is_player_wing(int wing) { return Editor::wing_is_player_wing(wing); }
+bool ShipEditorDialogModel::wing_is_player_wing(int wing)
+{
+	return Editor::wing_is_player_wing(wing);
+}
 
 int ShipEditorDialogModel::make_ship_list(int* arr)
 {
@@ -1119,26 +1262,6 @@ int ShipEditorDialogModel::make_ship_list(int* arr)
 
 	return n;
 }
-
-void ShipEditorDialogModel::stuff_special_arrival_anchor_name(char* buf,
-	int iff_index,
-	int restrict_to_players,
-	int retail_format)
-{
-	char* iff_name = Iff_info[iff_index].iff_name;
-
-	// stupid retail hack
-	if (retail_format && !stricmp(iff_name, "hostile") && !restrict_to_players)
-		iff_name = (char*)"enemy";
-
-	if (restrict_to_players)
-		sprintf(buf, "<any %s player>", iff_name);
-	else
-		sprintf(buf, "<any %s>", iff_name);
-
-	strlwr(buf);
-}
-
 
 void ShipEditorDialogModel::set_modified()
 {
