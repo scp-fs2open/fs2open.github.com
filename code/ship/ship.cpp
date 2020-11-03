@@ -1947,6 +1947,7 @@ static void parse_ship(const char *filename, bool replace)
 	bool first_time = false;
 	bool create_if_not_found = true;
 	bool remove_ship = false;
+	bool new_name = false;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -2035,13 +2036,7 @@ static void parse_ship(const char *filename, bool replace)
 		first_time = true;
 
 		strcpy_s(sip->name, fname);
-
-		// if this name has a hash, create a default display name
-		if (get_pointer_to_first_hash_symbol(sip->name)) {
-			strcpy_s(sip->display_name, sip->name);
-			end_string_at_first_hash_symbol(sip->display_name);
-			sip->flags.set(Ship::Info_Flags::Has_display_name);
-		}
+		new_name = true;
 	}
 
 	// Use a template for this ship.
@@ -2057,10 +2052,20 @@ static void parse_ship(const char *filename, bool replace)
 				first_time = false;
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, fname);
+				new_name = true;
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, fname);
 			}
+		}
+	}
+
+	if (new_name && !sip->flags[Ship::Info_Flags::Has_display_name]) {
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(sip->name)) {
+			strcpy_s(sip->display_name, sip->name);
+			end_string_at_first_hash_symbol(sip->display_name);
+			sip->flags.set(Ship::Info_Flags::Has_display_name);
 		}
 	}
 
