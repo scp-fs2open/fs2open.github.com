@@ -1031,6 +1031,12 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
 
+	// the main use case is to go through the main Collision detection list, so use that if
+	// nothing is defined.
+	if (Collision_list == nullptr) {
+		Collision_list = &Collision_sort_list;
+	}
+
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);

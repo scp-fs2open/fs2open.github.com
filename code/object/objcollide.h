@@ -68,7 +68,7 @@ void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_r
 void obj_add_collider(int obj_index);
 void obj_remove_collider(int obj_index);
 void obj_reset_colliders();
-void obj_sort_and_collide(SCP_vector<int>* Collision_list = &Collision_sort_list);
+void obj_sort_and_collide(SCP_vector<int>* Collision_list = nullptr);
 
 // retimes all collision pairs to be checked (in 25ms by default)
 void obj_collide_retime_cached_pairs(int checkdly=25);
