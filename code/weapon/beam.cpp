@@ -291,6 +291,44 @@ float beam_get_widest(beam* b)
 	return widest;
 }
 
+// return false if the particular beam fire method doesn't have all the required, and specific to its fire method, info
+bool beam_has_valid_params(beam_fire_info* fire_info) {
+	switch (fire_info->fire_method) {
+		case BFM_TURRET_FIRED:
+			if (fire_info->shooter == nullptr || fire_info->turret == nullptr || fire_info->target == nullptr)
+				return false;
+			break;
+		case BFM_TURRET_FORCE_FIRED:
+			if (fire_info->shooter == nullptr || fire_info->turret == nullptr || (fire_info->target == nullptr && !(fire_info->bfi_flags & BFIF_TARGETING_COORDS)))
+				return false;
+			break;
+		case BFM_FIGHTER_FIRED:
+			if (fire_info->shooter == nullptr || fire_info->turret == nullptr)
+				return false;
+			break;
+		case BFM_SPAWNED:
+		case BFM_SEXP_FLOATING_FIRED:
+			if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) || (fire_info->target == nullptr && !(fire_info->bfi_flags & BFIF_TARGETING_COORDS)))
+				return false;
+			break;
+		case BFM_SUBSPACE_STRIKE:
+			if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) || (fire_info->target == nullptr))
+				return false;
+			break;		
+		default:
+			Assertion(false, "Unrecognized beam fire method in beam_has_valid_params");
+			return false;
+	}
+
+	// let's also validate the type of target, if applicable
+	if (fire_info->target != nullptr) {
+		if ((fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))
+			return false;
+	}
+
+	return true;
+}
+
 // fire a beam, returns nonzero on success. the innards of the code handle all the rest, foo
 int beam_fire(beam_fire_info *fire_info)
 {
@@ -310,15 +348,8 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
-	// for now, only allow ship targets
-	if (!(fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
-		if (
-			((fire_info->target == NULL) && !(fire_info->bfi_flags & BFIF_TARGETING_COORDS)) ||
-			((fire_info->target != NULL) && (fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))
-		) {
-			return -1;
-		}
-	}
+	if (!beam_has_valid_params(fire_info))
+		return -1;
 
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
@@ -327,11 +358,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
-	// make sure a ship is firing this
-	if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) && ((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS)) ) {
-		UNREACHABLE("Fixed beam fired without a valid ship!\n");
-		return -1;
-	}
+
 	if (fire_info->shooter != NULL) {
 		firing_ship = &Ships[fire_info->shooter->instance];
 	}

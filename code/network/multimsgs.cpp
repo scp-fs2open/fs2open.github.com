@@ -7859,8 +7859,10 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 
 		fire_info.turret = &shipp->fighter_beam_turret_data;
 		fire_info.bank = bank;
+		fire_info.fire_method = BFM_FIGHTER_FIRED;
 	} else {
 		fire_info.turret = ship_get_indexed_subsys(shipp, (int)subsys_index);
+		fire_info.fire_method = BFM_TURRET_FIRED;
 
 		if (fire_info.turret == NULL) {
 			nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
