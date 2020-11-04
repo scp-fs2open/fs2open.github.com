@@ -1,8 +1,5 @@
 /*
 * z64555's Undo system, created for the FreeSpace Source Code project
-*
-* Released under Creative Commons Attribution-ShareAlike 4.0 International
-* https://creativecommons.org/licenses/by-sa/4.0/
 */
 
 #include "globalincs/pstypes.h"
