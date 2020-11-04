@@ -9844,6 +9844,11 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		entry->objp = &Objects[objnum];
 		entry->shipp = shipp;
 	}
+	
+	// Start up stracking for this ship in multi.
+	if (Game_mode & (GM_MULTIPLAYER)) {
+		multi_ship_record_add_ship(objnum);
+	}
 
 	// Set time when ship is created
 	shipp->create_time = timer_get_milliseconds();
@@ -11003,7 +11008,7 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 // the function.  The check_energy parameter (defaults to 1) tells us whether or not
 // we should check the energy.  It will be 0 when a multiplayer client is firing an AI
 // primary.
-int ship_fire_primary(object * obj, int stream_weapons, int force)
+int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback_shot)
 {
 	vec3d		gun_point, pnt, firing_pos, target_position, target_velocity_vec;
 	int			n = obj->instance;
@@ -11166,18 +11171,20 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			continue;
 		}
 
-		// if we're firing stream weapons and this is a non stream weapon, skip it
-		if(stream_weapons && !(winfo_p->wi_flags[Weapon::Info_Flags::Stream])){
-			continue;
-		}
-		// if we're firing non stream weapons and this is a stream weapon, skip it
-		if(!stream_weapons && (winfo_p->wi_flags[Weapon::Info_Flags::Stream])){
-			continue;
-		}
-
-		// only non-multiplayer clients (single, multi-host) need to do timestamp checking
-		if ( !timestamp_elapsed(swp->next_primary_fire_stamp[bank_to_fire]) ) {
-			continue;
+		// Cyborg17 - In rollback mode we don't need to worry about stream weapons or timestamps, because we are recreating an exact shot, anywway.
+		if (!rollback_shot) {
+			// if we're firing stream weapons and this is a non stream weapon, skip it
+			if (stream_weapons && !(winfo_p->wi_flags[Weapon::Info_Flags::Stream])) {
+				continue;
+			}
+			// if we're firing non stream weapons and this is a stream weapon, skip it
+			if (!stream_weapons && (winfo_p->wi_flags[Weapon::Info_Flags::Stream])) {
+				continue;
+			}
+			// only non-multiplayer clients (single, multi-host) need to do timestamp checking
+			if ( !timestamp_elapsed(swp->next_primary_fire_stamp[bank_to_fire]) ) {
+				continue;
+			}
 		}
 
 		// if weapons are linked and this is a nolink weapon, skip it
@@ -11690,7 +11697,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 
 							num_fired++;
-							shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
+							shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;				
+
+							// maybe add this weapon to the list of those we need to roll forward
+							if ((Game_mode & (GM_MULTIPLAYER | GM_STANDALONE_SERVER )) && rollback_shot) {
+								multi_ship_record_add_rollback_wep(weapon_objnum);
+							}
 						}
 					}
 					swp->external_model_fp_counter[bank_to_fire]++;
@@ -11770,10 +11782,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 	// if multiplayer and we're client-side firing, send the packet
 	if(Game_mode & GM_MULTIPLAYER){
-		// if i'm a client, and this is not me, don't send
-		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
-			send_NEW_primary_fired_packet( shipp, banks_fired );
-		}
+		// if I'm a Host send a primary fired packet packet if it's brand new
+		if(MULTIPLAYER_MASTER && !rollback_shot) {
+			send_NEW_primary_fired_packet(shipp, banks_fired);
+		// or if I'm a client, and it is my ship send it for rollback on the server.
+		} else if (MULTIPLAYER_CLIENT && (shipp == Player_ship)) {
+				send_non_homing_fired_packet(shipp, banks_fired);
+		}		 
 	}
 
    // STATS
@@ -11955,7 +11970,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //	code comes aruond and fires it.
 // allow_swarm -> default value is 0... since swarm missiles are fired over several frames,
 //                need to avoid firing when normally called
-int ship_fire_secondary( object *obj, int allow_swarm )
+int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 {
 	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
 	ushort		starting_sig = 0;
@@ -12121,7 +12136,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	{
 		if (!ship_is_tagged(&Objects[aip->target_objnum]))
 		{
-			if (obj==Player_obj)
+			if (obj==Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
 			{
 				if ( !Weapon_energy_cheat )
 				{
@@ -12383,6 +12398,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				if (Weapon_info[weapon_idx].wi_flags[Weapon::Info_Flags::Remote])
 					swp->remote_detonaters_active++;
 
+				// possibly add this to the rollback vector
+				if ((Game_mode & (GM_MULTIPLAYER | GM_STANDALONE_SERVER)) && rollback_shot){
+					multi_ship_record_add_rollback_wep(weapon_num);
+				}
+
 				// subtract the number of missiles fired
 				if ( !Weapon_energy_cheat ){
 					swp->secondary_bank_ammo[bank]--;
@@ -12415,14 +12435,14 @@ done_secondary:
 
 	if(num_fired > 0){
 		// if I am the master of a multiplayer game, send a secondary fired packet along with the
-		// first network signatures for the newly created weapons.  if nothing got fired, send a failed
-		// packet if 
+		// first network signatures for the newly created weapons.
+		// Cyborg17 - If this is a rollback shot, the server will let the player know within the packet.
 		if ( MULTIPLAYER_MASTER ) {			
 			Assert(starting_sig != 0);
 			send_secondary_fired_packet( shipp, starting_sig, starting_bank_count, num_fired, allow_swarm );			
 		}
 
-		// STATS
+		// Handle Player only stuff, including stats and client secondary packets
 		if (obj->flags[Object::Object_Flags::Player_ship]) {
 			// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 			// function to find the player given the object *.  It had better return a valid player
@@ -12435,7 +12455,10 @@ done_secondary:
 					Assert ( player_num != -1 );
 
 					Net_players[player_num].m_player->stats.ms_shots_fired += num_fired;
-				}				
+				} else if (MULTIPLAYER_CLIENT) {
+					if (!wip->is_homing())
+					send_non_homing_fired_packet(shipp, num_fired, true);
+				}
 			} else {
 				Player->stats.ms_shots_fired += num_fired;
 			}

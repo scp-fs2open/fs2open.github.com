@@ -497,6 +497,11 @@ int collide_ship_weapon( obj_pair * pair )
 
 	ship_info *sip = &Ship_info[Ships[ship->instance].ship_info_index];
 
+	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
+	if ( (Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(ship)) ) {
+		return 0;
+	}
+
 	// Don't check collisions for player if past first warpout stage.
 	if ( Player->control_mode > PCM_WARPOUT_STAGE1)	{
 		if ( ship == Player_obj )

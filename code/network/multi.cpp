@@ -856,6 +856,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_NEW_primary_fired_packet(data, header_info);
 			break;
 
+		case LINEAR_WEAPON_FIRED:
+			process_non_homing_fired_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -1247,7 +1251,11 @@ void multi_do_frame()
 				// reset timestamp
 				Next_bytes_time = (int) time(NULL);				
 			}
-		} else {			
+		} else {
+
+			// right before sending new positions, we should do any rollback shots and resimulation
+			multi_ship_record_do_rollback();
+
 			// sending new objects from here is dependent on having objects only created after
 			// the game is done moving the objects.  I think that I can enforce this.				
 			multi_oo_process();			
