@@ -9,7 +9,7 @@
 Undo_system::Undo_system()
 	: max_undos(10) {};
 
-Undo_system::Undo_system(uint _undos)
+Undo_system::Undo_system(size_t _undos)
 	: max_undos(_undos) {};
 
 void Undo_system::clear() {

@@ -116,14 +116,12 @@ public:
 	 * @brief Restores the saved data
 	 *
 	 * @returns A pair of const void* referencing the affected item and its container (if it was provided)
-	 * @details If successful, the data at dest has been swapped. So if this was an undo item, it's now a redo item
+	 * @details swaps the data with the destination's, effectively making an undo item into a redo item, and vice versa
 	 */
 	std::pair<const void*, const void*> restore() {
 		Assert((dest != nullptr) && (data != nullptr));
 
-		T copy = *static_cast<T*>(dest);
-		*static_cast<T*>(dest) = *static_cast<T*>(data);
-		*static_cast<T*>(data) = copy;
+		std::swap(*static_cast<T*>(dest),*static_cast<T*>(data));
 
 		return std::pair<const void*, const void*>(dest, container);
 	};
@@ -136,7 +134,6 @@ public:
 	 * @details The explicit definition is here to ensure type safety
 	 */
 	void save(T& _data, T* _cont = nullptr) {
-		Assert(_data != nullptr);
 
 		dest = *_data;
 		data = new T(_data);
@@ -201,7 +198,7 @@ class Undo_system
 public:
 	Undo_system();
 
-	Undo_system(uint _undos);
+	Undo_system(size_t _undos);
 
 	/*!
 	 * @brief Deletes all undo and redo data
@@ -248,7 +245,7 @@ public:
 	size_t size_redo();
 
 private:
-	uint max_undos;	//!< Max number of Undo's available
+	size_t max_undos;	//!< Max number of Undo's available
 
 	/*! 
 	 * @brief The undo and redo stacks. These are containers of pointers, because we can't simply store the base class.
