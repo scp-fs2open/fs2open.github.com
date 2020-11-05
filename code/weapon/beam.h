@@ -99,7 +99,6 @@ typedef struct fighter_beam_fire_info {
 	int warmdown_stamp;
 	float life_left;	
 	float life_total;
-	int  fire_method;
 } fighter_beam_fire_info;
 
 // max # of collisions we'll allow per frame
