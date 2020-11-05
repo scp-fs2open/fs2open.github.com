@@ -57,6 +57,9 @@ auto SensitivityOption =
         .importance(2)
         .finish();
 
+// Containers for axis binding and defaults
+int Axis_map_to[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
+int Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
 int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 
@@ -237,8 +240,9 @@ void controls_config_init_bindings() {
 };
 
 // Map used to convert strings in the Controlconfigdefaults.tbl into their respective IoActionId
+// This might also be used to save old pilotfiles, but the order will be important.
 // The new .tbl shall use the IoActionId's themselves.
-SCP_map<SCP_string, IoActionId> old_text = {
+SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Target Next Ship",                        TARGET_NEXT},
 	{"Target Previous Ship",                    TARGET_PREV},
 	{"Target Next Closest Hostile Ship",        TARGET_NEXT_CLOSEST_HOSTILE},
@@ -592,9 +596,6 @@ const char *Joy_button_text_english[] = {
 const char **Scan_code_text = Scan_code_text_english;
 const char **Joy_button_text = Joy_button_text_english;
 
-SCP_vector< CCI* > Control_config_presets;
-SCP_vector<SCP_string> Control_config_preset_names;
-
 // If find_override is set to true, then this returns the index of the action
 // which has been bound to the given key. Otherwise, the index of the action
 // which has the given key as its default key will be returned.
@@ -802,16 +803,18 @@ void control_config_common_init()
  */
 void control_config_common_close()
 {
+	/*
 	// only need to worry control presets for now
 	for (auto ii = Control_config_presets.cbegin(); ii != Control_config_presets.cend(); ++ii) {
 		delete[] * ii;
 	}
+	*/
 }
 
 
 #include <map>
 #include <string>
-SCP_map<SCP_string, int> mKeyNameToVal;
+SCP_map<SCP_string, short> mKeyNameToVal;
 SCP_map<SCP_string, CC_type> mCCTypeNameToVal;
 SCP_map<SCP_string, char> mCCTabNameToVal;
 SCP_map<SCP_string, IoActionId> mActionToVal;
@@ -1165,10 +1168,13 @@ void control_config_common_load_overrides()
 
 		// start parsing
 		// TODO: Split this out into more helps. Too many tabs!
-		while(optional_string("#ControlConfigOverride")) {
+		// Presets currently disabled.  Reads the first override directly into main defaults for now
+		if(optional_string("#ControlConfigOverride")) {
+			/* Make new preset
 			config_item *cfg_preset = new config_item[CCFG_MAX + 1];
 			std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
 			Control_config_presets.push_back(cfg_preset);
+			
 
 			SCP_string preset_name;
 			if (optional_string("$Name:")) {
@@ -1177,7 +1183,7 @@ void control_config_common_load_overrides()
 				preset_name = "<unnamed preset>";
 			}
 			Control_config_preset_names.push_back(preset_name);
-
+			*/
 			while (required_string_either("#End","$Bind Name:")) {
 				const int iBufferLength = 64;
 				char szTempBuffer[iBufferLength];
@@ -1185,11 +1191,10 @@ void control_config_common_load_overrides()
 				required_string("$Bind Name:");
 				stuff_string(szTempBuffer, F_NAME, iBufferLength);
 
-				const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
-				for (size_t i = 0; i < cCntrlAryLength; ++i) {
-					config_item& r_ccConfig = cfg_preset[i];
+				for (size_t i = 0; i < Control_config.size(); ++i) {
+					CCI& r_ccConfig = Control_config[i];	//TODO
 
-					if (!strcmp(szTempBuffer, r_ccConfig.text)) {
+					if (!strcmp(szTempBuffer, r_ccConfig.text.c_str())) {
 						/**
                         * short key_default;
                         * short joy_default;
@@ -1205,7 +1210,7 @@ void control_config_common_load_overrides()
 								r_ccConfig.key_default = (short)-1;
 							} else {
 								stuff_string(szTempBuffer, F_NAME, iBufferLength);
-								r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+								r_ccConfig.key_default = mKeyNameToVal[szTempBuffer];
 							}
 						}
 
@@ -1231,7 +1236,7 @@ void control_config_common_load_overrides()
 
 						if (optional_string("$Category:")) {
 							stuff_string(szTempBuffer, F_NAME, iBufferLength);
-							r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
+							r_ccConfig.tab = mCCTabNameToVal[szTempBuffer];
 						}
 
 						if (optional_string("$Has XStr:")) {
@@ -1241,7 +1246,7 @@ void control_config_common_load_overrides()
 
 						if (optional_string("$Type:")) {
 							stuff_string(szTempBuffer, F_NAME, iBufferLength);
-							r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
+							r_ccConfig.type = mCCTypeNameToVal[szTempBuffer];
 						}
 
 						if (optional_string("+Disable")) {
@@ -1253,7 +1258,7 @@ void control_config_common_load_overrides()
 
 						// Nerf the buffer now.
 						szTempBuffer[0] = '\0';
-					} else if ((i + 1) == cCntrlAryLength) {
+					} else if ((i + 1) == Control_config.size()) {
 						error_display(1, "Bind Name not found: %s\n", szTempBuffer);
 						advance_to_eoln(NULL);
 						ignore_white_space();
@@ -1272,9 +1277,11 @@ void control_config_common_load_overrides()
 	}
 
 	// Overwrite the control config with the first preset that was found
+	/*
 	if (!Control_config_presets.empty()) {
-		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);
+		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config.begin());
 	}
+	*/
 }
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
@@ -1285,9 +1292,9 @@ CCI_builder& CCI_builder::start() {
 	return *this;
 };
 
-CCI_builder& CCI_builder::end() {};
+void CCI_builder::end() {};
 
-CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false) {
+CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
 	assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 

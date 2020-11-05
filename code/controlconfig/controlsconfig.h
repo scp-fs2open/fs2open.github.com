@@ -51,9 +51,8 @@ enum Joy_axis_action_index {
 	JOY_HEADING_AXIS	=0,	//
 	JOY_PITCH_AXIS,
 	JOY_BANK_AXIS,
-	JOY_THROTTLE_AXIS,
-	JOY_LATERAL_AXIS,       //!< Left/Right thrust axis
-	JOY_VERTICAL_AXIS,      //!< Up/Down thrust axis
+	JOY_ABS_THROTTLE_AXIS,
+	JOY_REL_THROTTLE_AXIS,
 
 	/*!
 	 * This must always be below the last defined item
@@ -95,7 +94,8 @@ struct CC_bind {
  * Control configuration item type.
  * @detail Contains binding info, documentation, behavior, etc. for a single control
  */
-struct CCI {
+class CCI {
+public:
 // Items Set in menu
 	short joy_default;
 	short key_default;
@@ -113,8 +113,7 @@ struct CCI {
 	bool disabled;              //!< whether this action should be available at all
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
-	// default const.
-	CCI() : disabled(true){};
+	CCI() : disabled(true) {};
 };
 
 enum IoActionId;
@@ -137,7 +136,7 @@ public:
 	/*!
 	 * End a chain of factory methods.  If there any post-init work to be done, that's done here.
 	 */
-	CCI_builder& end();
+	void end();
 
 	/*!
 	 * Assigns the hardcoded binding to the given action
@@ -155,8 +154,7 @@ private:
  * This is the value of the id field in config_item
  * The first group of items are ship targeting.
  */
-//...no its not!
-// screw these hardcoded numbers, it makes re-organizing and adding new Id's next to impossible
+
 // Since we're upgrading the Control_config array into a proper vector, and since we're using contructor predicates we can organize these to however we like and pass the IoActionId to the constructor to ensure the correct placement
 enum IoActionId  {
 	TARGET_NEXT										=0,		//!< target next
@@ -369,6 +367,7 @@ enum IoActionId  {
 extern int Failed_key_index;
 
 extern int Axis_map_to[];
+extern int Axis_map_to_defaults[];
 extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
@@ -378,8 +377,8 @@ extern int Joy_sensitivity;
 extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
-extern SCP_vector<CCI*> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
+//extern SCP_vector<CCI*> Control_config_presets; // tabled control presets; pointers to config_item arrays
+//extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 

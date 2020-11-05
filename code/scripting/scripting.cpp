@@ -509,7 +509,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 
 					int action_index = more_data;
 
-					if (action_index <= 0 || stricmp(scp->condition_string.c_str(), Control_config[action_index].text) != 0)
+					if (action_index <= 0 || stricmp(scp->condition_string.c_str(), Control_config[action_index].text.c_str()) != 0)
 						return false;
 					break;
 				}

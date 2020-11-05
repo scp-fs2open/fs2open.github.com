@@ -126,7 +126,7 @@ plr_data::~plr_data()
 void pilotfile_convert::plr_import_controls()
 {
 	int idx;
-	config_item con;
+	CCI con;
 
 	unsigned char num_controls = cfread_ubyte(cfp);
 
@@ -134,8 +134,8 @@ void pilotfile_convert::plr_import_controls()
 		return;
 	}
 
-	// it may be less than 118, but it shouldn't be more than 118
-	if (num_controls > 118) {
+	// TODO: Currently only checks for hardcoded control bindings. Scripted controls will be sliced out in the pilot file
+	if (num_controls > CCFG_MAX) {
 		throw "Data check failure in controls!";
 	}
 
