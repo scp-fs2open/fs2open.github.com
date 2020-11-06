@@ -123,7 +123,7 @@ int Conflict_bright = 0;
 #define LIST_BUTTONS_MAX	42
 #define JOY_AXIS			0x80000
 
-static int Num_cc_lines;
+static int Num_cc_lines;	// Number of Cc_lines to display on the current page. Is, at worse, CCFG_MAX + NUM_JOY_AXIS_ACTIONS
 
 /**
  * @struct cc_line
@@ -506,30 +506,34 @@ void control_config_conflict_check()
 // do list setup required prior to rendering and checking for the controls listing.  Called when list changes
 void control_config_list_prepare()
 {
-	int j, y, z;
+	int y;	// Offset, in pixels, the Cc_line has from the top
+	int z;	// index into Control_config[]
 	int font_height = gr_get_font_height();
 
 	Num_cc_lines = y = z = 0;
-	while (z < CCFG_MAX) {
-		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
-			if (Control_config[z].indexXSTR > 1) {
-				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text.c_str(), Control_config[z].indexXSTR, true);
-			} else if (Control_config[z].indexXSTR == 1) {
-				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text.c_str(), CONTROL_CONFIG_XSTR + z, true);
+
+	// Populate the digital controls
+	for (const auto &item : Control_config) {
+		if (item.tab == Tab && !item.disabled) {
+			if (item.indexXSTR > 1) {
+				Cc_lines[Num_cc_lines].label = XSTR(item.text.c_str(), item.indexXSTR, true);
+			} else if (item.indexXSTR == 1) {
+				Cc_lines[Num_cc_lines].label = XSTR(item.text.c_str(), CONTROL_CONFIG_XSTR + z, true);
 			} else {
-				Cc_lines[Num_cc_lines].label = Control_config[z].text.c_str();
+				Cc_lines[Num_cc_lines].label = item.text.c_str();
 			}
 
 			Cc_lines[Num_cc_lines].cc_index = z;
 			Cc_lines[Num_cc_lines++].y = y;
 			y += font_height + 2;
-		}
+		} // Else, Ignore and hide items
 
-		z++;
+		z++;	// z is the index position in Control_config[]
 	}
 
+	// Populate the analog controls.
 	if (Tab == SHIP_TAB) {
-		for (j=0; j<NUM_JOY_AXIS_ACTIONS; j++) {
+		for (int j = 0; j < NUM_JOY_AXIS_ACTIONS; j++) {
 			Cc_lines[Num_cc_lines].label = Joy_axis_action_text[j];
 			Cc_lines[Num_cc_lines].cc_index = j | JOY_AXIS;
 			Cc_lines[Num_cc_lines++].y = y;
@@ -1194,7 +1198,7 @@ void control_config_init()
 
 	// Init Cc_lines
 	Cc_lines.clear();
-	Cc_lines.resize(Control_config.size());	// Can't use CCFG_MAX here, since scripts or might add controls
+	Cc_lines.resize(Control_config.size() + NUM_JOY_AXIS_ACTIONS);	// Can't use CCFG_MAX here, since scripts or might add controls
 
 	Defaults_cycle_pos = 0;
 
