@@ -134,8 +134,9 @@ void pilotfile_convert::plr_import_controls()
 		return;
 	}
 
-	// TODO: Currently only checks for hardcoded control bindings. Scripted controls will be sliced out in the pilot file
-	if (num_controls > CCFG_MAX) {
+	// it may be less than 118, but it shouldn't be more than 118
+	// Don't touch this magic number! This is for old playerfiles. See banner at top of this file.
+	if (num_controls > 118) {
 		throw "Data check failure in controls!";
 	}
 
