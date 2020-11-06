@@ -80,8 +80,6 @@ enum CC_type {
 	CC_TYPE_CONTINUOUS				//!< A continous control that is activated as long as the key or button is held down
 };
 
-SCP_vector<SCP_string> Joy_table;	//!< Table of all bound joystick GUID's;  Index in this vector is ordered and uses the CID
-
 /*!
  *  A singular button binding
  */
