@@ -2998,7 +2998,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
 	object *objp;
 	ushort target_net_signature;
-	char t_subsys;
+	int s_index;
 	ai_info *aip;
 
 	// Assert ( starting_count < UCHAR_MAX );
@@ -3042,15 +3042,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 
 	// add the ship's target and any targeted subsystem
 	target_net_signature = 0;
-	t_subsys = -1;
+	s_index = -1;
 	if ( aip->target_objnum != -1) {
 		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			int s_index;
-
 			s_index = ship_get_index_from_subsys( aip->targeted_subsys, aip->target_objnum );
-			Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-			t_subsys = (char)s_index;
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
@@ -3060,7 +3056,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	}
 
 	ADD_USHORT( target_net_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 
 	// just send this packet to everyone, then bail if an AI ship fired.
 	if ( !(objp->flags[Object::Object_Flags::Player_ship]) ) {		
@@ -3100,7 +3096,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	// add the targeting information so that the player's weapons will always home on the correct
 	// ship
 	ADD_USHORT( target_net_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 	
 	multi_io_send_reliable(&Net_players[net_player_num], data, packet_size);
 }
@@ -3113,7 +3109,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	ubyte sinfo, current_bank;
 	object* objp, *target_objp;
 	ship *shipp;
-	char t_subsys;
+	short t_subsys;
 	ai_info *aip;
 	ship_subsys *targeted_subsys_save;
 
@@ -3128,7 +3124,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_DATA( sinfo );			// includes flags and the secondary bank.
 
 		GET_USHORT( target_net_signature );
-		GET_DATA( t_subsys );
+		GET_SHORT( t_subsys );
 
 		PACKET_SET_SIZE();
 
@@ -3148,7 +3144,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_DATA( sinfo );
 
 		GET_USHORT( target_net_signature );
-		GET_DATA( t_subsys );
+		GET_SHORT( t_subsys );
 
 		PACKET_SET_SIZE();
 
@@ -3271,7 +3267,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 {
 	int packet_size;
 	ushort pnet_signature;
-	ubyte data[MAX_PACKET_SIZE], cindex;
+	ubyte data[MAX_PACKET_SIZE];
 	object *objp;
 	ubyte has_sig = 0;
 	ship_subsys *ssp;
@@ -3291,9 +3287,6 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	Assert( subsys_index < UCHAR_MAX );
-	cindex = (ubyte)subsys_index;
-
 	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
 	if(ssp == NULL){
 		return;
@@ -3307,7 +3300,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	if(has_sig){		
 		ADD_USHORT( objp->net_signature );
 	}
-	ADD_DATA( cindex );
+	ADD_SHORT( static_cast<short>(subsys_index) );
 	val = (short)ssp->submodel_instance_1->angs.h;
 	ADD_SHORT( val );
 	val = (short)ssp->submodel_instance_2->angs.p;
@@ -3326,7 +3319,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	vec3d pos, temp;
 	matrix orient;
 	vec3d o_fvec;
-	ubyte turret_index;
+	short turret_index;
 	object *objp;
 	ship_subsys *ssp;
 	ubyte has_sig = 0;
@@ -3343,7 +3336,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	} else {
 		wnet_signature = 0;
 	}
-	GET_DATA( turret_index );
+	GET_SHORT( turret_index );
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
@@ -4338,7 +4331,7 @@ void send_player_order_packet(int type, int index, int cmd)
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte val;
 	ushort target_net_signature;
-	char t_subsys;
+	int s_index = -1;
 	int packet_size = 0;
 
 	BUILD_HEADER(PLAYER_ORDER_PACKET);
@@ -4361,16 +4354,12 @@ void send_player_order_packet(int type, int index, int cmd)
 
 	ADD_USHORT( target_net_signature );
 
-	t_subsys = -1;
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
-		int s_index;
-
 		s_index = ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
-		Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-		t_subsys = (char)s_index;
 	}
-	ADD_DATA(t_subsys);
-   
+
+	ADD_SHORT(static_cast<short>(s_index));
+
 	multi_io_send_reliable(Net_player, data, packet_size);
 }
 
@@ -4383,7 +4372,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 {
 	int offset, player_num, command, index = 0, tobjnum_save;	
 	ushort target_net_signature;
-	char t_subsys, type;
+	char type;
+	short t_subsys;
 	object *objp, *target_objp;
 	ai_info *aip;
 	ship *shipp;
@@ -4402,7 +4392,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	GET_INT( command );
 	GET_USHORT( target_net_signature );
-	GET_DATA( t_subsys );
+	GET_SHORT( t_subsys );
 
 	PACKET_SET_SIZE();	
 
@@ -7411,7 +7401,7 @@ void process_debrief_info( ubyte *data, header *hinfo )
 void send_homing_weapon_info( int weapon_num )
 {
 	ubyte data[MAX_PACKET_SIZE];
-	char t_subsys;
+	int s_index;
 	int packet_size;
 	object *homing_object;
 	ushort homing_signature;
@@ -7424,7 +7414,7 @@ void send_homing_weapon_info( int weapon_num )
 		return;
 
 	// default the subsystem
-	t_subsys = -1;
+	s_index = -1;
 
 	// get the homing signature.  If this weapon isn't homing on anything, then sent 0 as the
 	// homing signature.
@@ -7435,18 +7425,14 @@ void send_homing_weapon_info( int weapon_num )
 
 		// get the subsystem index.
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
-			int s_index;
-
 			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
-			Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-			t_subsys = (char)s_index;
 		}
 	}
 
 	BUILD_HEADER(HOMING_WEAPON_UPDATE);
 	ADD_USHORT( Objects[wp->objnum].net_signature );
 	ADD_USHORT( homing_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 	
 	multi_io_send_to_all(data, packet_size);
 }
@@ -7457,7 +7443,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 {
 	int offset;
 	ushort weapon_signature, homing_signature;
-	char h_subsys;
+	short h_subsys;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
 
@@ -7466,7 +7452,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	// get the data for the packet
 	GET_USHORT( weapon_signature );
 	GET_USHORT( homing_signature );
-	GET_DATA( h_subsys );
+	GET_SHORT( h_subsys );
 	PACKET_SET_SIZE();
 
 	// deal with changing this weapons homing information
@@ -8412,7 +8398,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 {
 	int packet_size;
 	ushort pnet_signature;
-	ubyte data[MAX_PACKET_SIZE], cindex;
+	ubyte data[MAX_PACKET_SIZE];
 	object *objp;	
 	ship_subsys *ssp;
 	short val;
@@ -8427,9 +8413,6 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	Assert( subsys_index < UCHAR_MAX );
-	cindex = (ubyte)subsys_index;
-
 	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
 	if(ssp == NULL){
 		return;
@@ -8439,7 +8422,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	BUILD_HEADER(FLAK_FIRED);	
 	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);	
 	ADD_USHORT( pnet_signature );		
-	ADD_DATA( cindex );
+	ADD_SHORT( static_cast<short>(subsys_index) );
 	val = (short)ssp->submodel_instance_1->angs.h;
 	ADD_SHORT( val );
 	val = (short)ssp->submodel_instance_2->angs.p;
@@ -8458,7 +8441,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	vec3d pos, dir;
 	matrix orient;
 	vec3d o_fvec;
-	ubyte turret_index;
+	short turret_index;
 	object *objp;
 	ship_subsys *ssp;	
 	ship *shipp;
@@ -8469,7 +8452,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;		
 	offset += multi_pack_unpack_position(0, data + offset, &o_fvec);
 	GET_USHORT( pnet_signature );
-	GET_DATA( turret_index );
+	GET_SHORT( turret_index );
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
 	GET_FLOAT( flak_range );
