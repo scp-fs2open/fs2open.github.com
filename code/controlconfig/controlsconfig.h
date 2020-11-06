@@ -101,7 +101,7 @@ public:
 	short key_id;
 
 	char tab;               //!< what tab (category) it belongs in
-	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR
+	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR 0 = None, 1= Use item index + CONTROL_CONFIG_XSTR, 2 <= use CCI::indexXSTR directly
 	SCP_string text;        //!< describes the action in the config screen
 
 	CC_type type;           //!< manner control should be checked in
