@@ -1184,13 +1184,17 @@ void control_config_init()
 	int i;
 	ui_button_info *b;
 
-	// Free up data from any previous backups.  Not needed but is insurance
+	// Init the backup vectors
 	Control_config_backup.clear();
-
-	// make backup of all controls
+	Control_config_backup.reserve(Control_config.size());
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(Control_config_backup));
-	std::copy(Axis_map_to, Axis_map_to + JOY_NUM_AXES, Axis_map_to_backup);
+
+	std::copy(Axis_map_to, Axis_map_to + NUM_JOY_AXIS_ACTIONS, Axis_map_to_backup);
 	std::copy(Invert_axis, Invert_axis + JOY_NUM_AXES, Invert_axis_backup);
+
+	// Init Cc_lines
+	Cc_lines.clear();
+	Cc_lines.resize(Control_config.size());	// Can't use CCFG_MAX here, since scripts or might add controls
 
 	Defaults_cycle_pos = 0;
 
@@ -1333,6 +1337,10 @@ void control_config_close()
 			Invert_text[idx] = NULL;
 		}
 	}
+
+	// Free up memory from dynamic containers
+	Control_config_backup.resize(0);
+	Cc_lines.resize(0);
 }
 
 void control_config_do_frame(float frametime)

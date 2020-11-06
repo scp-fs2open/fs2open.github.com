@@ -364,9 +364,9 @@ enum IoActionId  {
 
 extern int Failed_key_index;
 
-extern int Axis_map_to[];
+extern int Axis_map_to[];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
 extern int Axis_map_to_defaults[];
-extern int Invert_axis[];
+extern int Invert_axis[];           // Array to hold inversion bools for a joy axis. size() = JOY_NUM_AXES
 extern int Invert_axis_defaults[];
 
 extern int Joy_dead_zone_size;
