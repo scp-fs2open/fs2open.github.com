@@ -7084,13 +7084,13 @@ void send_client_update_packet(net_player *pl)
 	// if paused, add the net address of the guy who paused
 	if(val & UPDATE_IS_PAUSED){
 		Assert(Multi_pause_pauser != NULL);
-		ADD_DATA(Multi_pause_pauser->player_id);
+		ADD_SHORT(Multi_pause_pauser->player_id);
 	}
 
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats, n_quadrants;
+		ubyte percent, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7126,8 +7126,7 @@ void send_client_update_packet(net_player *pl)
 
 		// also write out the number of subsystems.  We do this because the client might not know
 		// about the object he is getting data for.  (i.e. he killed the object already).
-		ns = (ubyte)sip->n_subsystems;
-		ADD_DATA( ns );
+		ADD_USHORT(static_cast<ushort>(sip->n_subsystems));
 
 		// now the subsystems.
 		for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
@@ -7145,9 +7144,11 @@ void send_client_update_packet(net_player *pl)
 		ADD_FLOAT(shipp->weapon_energy);
 
 		// add his secondary bank ammo
-		ADD_INT(shipp->weapons.num_secondary_banks);
+		val = static_cast<ubyte>(shipp->weapons.num_secondary_banks);
+		ADD_DATA(val);
+
 		for(i=0; i<shipp->weapons.num_secondary_banks; i++){
-			ADD_INT(shipp->weapons.secondary_bank_ammo[i]);
+			ADD_SHORT(static_cast<short>(shipp->weapons.secondary_bank_ammo[i]));
 		}
 	}
 
@@ -7164,8 +7165,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 	short pauser;
 	int player_index;
 	int is_paused, have_hull_info;
-	int ammo_count;
-	int ammo[10];
+	ubyte ammo_count;
+	short ammo[MAX_SHIP_SECONDARY_BANKS];
 	float weapon_energy;
 	int offset = HEADER_LENGTH;
 
@@ -7191,12 +7192,14 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
 		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
 		int i;
+		ushort n_subsystems;
+		short s_val;
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
@@ -7210,7 +7213,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		}
 
 		// get the data for the subsystems
-		GET_DATA( n_subsystems );
+		GET_USHORT( n_subsystems );
 		for ( i = 0; i < n_subsystems; i++ ){
 			GET_DATA(ub_tmp);
 			subsystem_percent[i] = ub_tmp;
@@ -7222,9 +7225,17 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		GET_FLOAT(weapon_energy);
 		
 		// add his secondary bank ammo
-		GET_INT(ammo_count);
+		GET_DATA(ammo_count);
 		for(i=0; i<ammo_count; i++){
-			GET_INT(ammo[i]);
+			GET_SHORT(s_val);
+
+			if (i < MAX_SHIP_SECONDARY_BANKS) {
+				ammo[i] = s_val;
+			}
+		}
+
+		if (ammo_count > MAX_SHIP_SECONDARY_BANKS) {
+			ammo_count = MAX_SHIP_SECONDARY_BANKS;
 		}
 
 		// assign the above information to my ship, assuming that I can find it!  Ingame joiners might get this
