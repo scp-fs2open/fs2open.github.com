@@ -71,6 +71,8 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 SCP_vector<CCI> Control_config;
 
 void controls_config_init_bindings() {
+	Control_config.clear();	// Clear exisitng vectory, just in case init is run more than once for whatever reason
+
 	CCI_builder Builder(Control_config);
 	Builder.start()
 	// Note: when adding new controls, group them according to the tab they would show up on.
@@ -778,6 +780,8 @@ void control_config_common_load_overrides();
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
+	controls_config_init_bindings();
+
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
