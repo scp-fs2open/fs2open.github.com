@@ -14,6 +14,7 @@
 #include <windows.h>
 #endif
 
+#include "freespace.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
@@ -200,6 +201,10 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	// Use a dedicated listener here since we want to listen for the KEYUP event
 	auto key_handle = os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT - 10, listener);
 
+	// slight hack to make sure that game_set_frametime() doesn't also try to cap the framerate
+	auto fpsCapSave = Cmdline_NoFPSCap;
+	Cmdline_NoFPSCap = 1;
+
 	auto lastDisplayTimestamp = timer_get_microseconds();
 	while (state->playing) {
 		TRACE_SCOPE(tracing::CutsceneStep);
@@ -218,6 +223,11 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 
 		processEvents();
 
+		// NOTE: This does not update mission time! If movies get enabled in places
+		//       other than through cutscenes then some refactoring should be done
+		//       to account for normal time progression rather than just timestamps
+		game_set_frametime(-1);
+
 		// maybe do multi processing
 		if ( (Game_mode & GM_MULTIPLAYER) && Net_player && (Net_player->flags & NETINFO_FLAG_DO_NETWORKING) ) {
 			multi_do_frame();
@@ -229,6 +239,8 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 			os_sleep(static_cast<uint>(sleep));
 		}
 	}
+
+	Cmdline_NoFPSCap = fpsCapSave;
 
 	os::events::removeEventListener(key_handle);
 
