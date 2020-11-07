@@ -1363,8 +1363,8 @@ int collide_ship_ship( obj_pair * pair )
         // if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
 
         // if ship is huge and warping in or out
-        if (((Ships[A->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
-			|| ((Ships[B->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
+        if (((Ships[A->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[A->instance].ship_info_index].is_big_or_huge()))
+			|| ((Ships[B->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[B->instance].ship_info_index].is_big_or_huge())) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}
