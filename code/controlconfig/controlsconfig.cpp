@@ -169,7 +169,7 @@ static int Background_bitmap;
 static int Conflicts_tabs[NUM_TABS];
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 static UI_WINDOW Ui_window;
-static unsigned int Defaults_cycle_pos; // the controls preset that was last selected
+static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last selected
 
 int Control_config_overlay_id;
 
@@ -781,14 +781,11 @@ int control_config_axis_default(int axis)
 }
 
 /**
- * @brief Reverts all bindings to their defaults
- * @note: used to do presets.  This function has been moved elsewhere
- * TODO: undo
+ * @brief Reverts all bindings to their preset. If already default, cycle to the next presets.
  */
 int control_config_do_reset()
 {
 	int i, total = 0;
-	bool cycling_presets = false;
 	
 	// first, determine how many bindings need to be changed
 	for (auto &item : Control_config) {
@@ -803,39 +800,23 @@ int control_config_do_reset()
 		}
 	}
 
-	if (!total && !cycling_presets) {
+	if ((total == 0) && (Control_config_presets.size() == 1)) {
+		// Nothing to reset, no other presets besides default
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
-	// now, back up the old bindings so we can undo if we want to
-	/*
-	for (i=j=0; i<CCFG_MAX; i++) {
-		if ((Control_config[i].key_id != preset[i].key_default) || (Control_config[i].joy_id != preset[i].joy_default)) {
-			ptr->index[j] = i;
-			ptr->list[j] = Control_config[i];
-			j++;
+	if (total == 0) {
+		// Cycle to next preset
+		Defaults_cycle_pos++;
+		if (Defaults_cycle_pos >= Control_config_presets.size()) {
+			Defaults_cycle_pos = 0;
 		}
-	}
+	} // Else, reset to current preset
 
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i])) {
-			memset( &item, 0, sizeof(config_item) );
+	// Todo: Save current bindings to undo stack
 
-			item.joy_id = (short) Axis_map_to[i];
-			item.used = Invert_axis[i];
-
-			ptr->index[j] = i | JOY_AXIS;
-			ptr->list[j] = item;
-			j++;
-		}
-	}
-	*/
-
-	if (cycling_presets)
-		control_config_reset_defaults(Defaults_cycle_pos);
-	else
-		control_config_reset_defaults();
+	control_config_reset_defaults();
 
 	control_config_conflict_check();
 	control_config_list_prepare();
@@ -844,25 +825,20 @@ int control_config_do_reset()
 }
 
 /**
- * @brief Resets all controls to default values
+ * @brief Resets all controls to values within the currently selected preset
  */
-void control_config_reset_defaults(int presetnum)
+void control_config_reset_defaults()
 {
 	int i;
 
 	// Reset keyboard defaults
-	for (auto &item : Control_config) {
-		// Note that key_default and joy_default are NOT overwritten here;
-		// they should retain the values of the first preset because
-		// for example the key-pressed SEXP works off the defaults of the first preset
-		item.key_id =    item.key_default;
-		item.joy_id =    item.joy_default;
-		item.tab =       item.tab;
-		item.indexXSTR = item.indexXSTR;
-		item.type =      item.type;
-		item.disabled =  item.disabled;
+	const CC_preset &preset = Control_config_presets[Defaults_cycle_pos];
+	for (auto i = 0; i < Control_config.size(); ++i) {
+		Control_config[i].key_id = preset.bindings[i].first.btn;
+		Control_config[i].joy_id = preset.bindings[i].second.btn;
 	}
 
+	// Reset joy defaults.  No presets for joysticks currently
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		Axis_map_to[i] = control_config_axis_default(i);
 		Invert_axis[i] = Invert_axis_defaults[i];
@@ -1199,8 +1175,6 @@ void control_config_init()
 	// Init Cc_lines
 	Cc_lines.clear();
 	Cc_lines.resize(Control_config.size() + NUM_JOY_AXIS_ACTIONS);	// Can't use CCFG_MAX here, since scripts or might add controls
-
-	Defaults_cycle_pos = 0;
 
 	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);

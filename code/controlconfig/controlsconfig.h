@@ -85,7 +85,21 @@ enum CC_type {
  */
 struct CC_bind {
 	CID cid = CID_NONE; //!< Which controller this belongs to
-	short btn =     -1; //!< Which button to index
+	short btn =     -1; //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+};
+
+/*!
+ * A pair of bindings. Primary = first, Secondary = second
+ */
+typedef std::pair<CC_bind, CC_bind> CCB;
+
+/*!
+ * A preset, a collection of bindings for use in Control_config with an associated name
+ */
+class CC_preset {
+public:
+	SCP_vector<CCB> bindings;
+	SCP_string name;
 };
 
 /*!
@@ -375,8 +389,7 @@ extern int Joy_sensitivity;
 extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
-//extern SCP_vector<CCI*> Control_config_presets; // tabled control presets; pointers to config_item arrays
-//extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
+extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 
@@ -389,7 +402,7 @@ void control_config_close();
 
 void control_config_cancel_exit();
 
-void control_config_reset_defaults(int presetnum=-1);
+void control_config_reset_defaults();
 int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
 

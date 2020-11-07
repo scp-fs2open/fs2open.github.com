@@ -70,10 +70,13 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 //XSTR:OFF
 SCP_vector<CCI> Control_config;
 
+//! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings
+SCP_vector<CC_preset> Control_config_presets;
+
 /**
  * Initializes the Control_config vector and the hardcoded defaults preset
  */
-void control_config_init_bindings() {
+void control_config_common_init_bindings() {
 	Control_config.clear();	// Clear exisitng vectory, just in case init is run more than once for whatever reason
 
 	CCI_builder Builder(Control_config);
@@ -244,14 +247,25 @@ void control_config_init_bindings() {
 	.end();	// Builder
 
 	// init default preset
-	SCP_vector<CCBs> preset;
-	preset.resize(Control_config.size());
+	Control_config_presets.clear();
 
-	for (size_t i = 0; i < Control_config.size(); ++i) {
-		std::copy(Control_config[i].default.begin(), Control_config[i].default.end(), preset[i]);
+	CC_preset preset;
+	preset.bindings.reserve(Control_config.size());
+	preset.name = "default";
+
+	for (auto &item : Control_config) {
+		CCB bind;
+
+		bind.first.cid = CID_KEYBOARD;
+		bind.first.btn = item.key_id;
+
+		bind.second.cid = CID_JOY0;
+		bind.second.btn = item.joy_id;
+
+		preset.bindings.push_back(bind);
 	}
+
 	Control_config_presets.push_back(preset);
-	Control_config_preset_names.push_back("FS Default");
 };
 
 // Map used to convert strings in the Controlconfigdefaults.tbl into their respective IoActionId
@@ -793,12 +807,12 @@ void control_config_common_load_overrides();
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
-	controls_config_init_bindings();
+	control_config_common_init_bindings();
 
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
-	control_config_init_bindings();
+
 	control_config_common_load_overrides();
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
