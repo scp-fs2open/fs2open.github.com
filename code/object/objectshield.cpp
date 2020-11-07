@@ -144,6 +144,41 @@ void shield_add_strength(object *objp, float delta) {
 	}
 }
 
+// strengthens the weakest quadrant first, then spreads it out equally
+void shield_apply_healing(object* objp, float healing) {
+	Assert(objp);
+
+	// multiplayer clients bail here if nodamage
+	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
+	if (MULTIPLAYER_CLIENT)
+		return;
+
+	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
+		return;
+
+	// find the current strongest and weakest shield quads
+	float min_shield = 999999999.0f;
+	int min_shield_index = 0;
+	float max_shield = 0.0f;
+	for (int i = 0; i < objp->n_quadrants; i++) {
+		if (objp->shield_quadrant[i] < min_shield) {
+			min_shield = objp->shield_quadrant[i];
+			min_shield_index = i;
+		}
+		if (objp->shield_quadrant[i] > max_shield)
+			max_shield = objp->shield_quadrant[i];
+	}
+
+	// if the shields are approximately equal give to all quads equally
+	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
+		for (int i = 0; i < objp->n_quadrants; i++)
+			shield_add_quad(objp, i, healing / objp->n_quadrants);
+	}
+	else { // else give to weakest
+		shield_add_quad(objp, min_shield_index, healing);
+	}
+}
+
 float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 	float remaining_damage;
 

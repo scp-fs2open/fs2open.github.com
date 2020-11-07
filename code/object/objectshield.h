@@ -117,6 +117,11 @@ void shield_set_max_strength(object *objp, float newmax);
 float shield_get_max_quad(object *objp);
 
 /**
+ * @brief Strengthens the weakest quadrant first, then spreads it out
+ */
+void shield_apply_healing(object* objp, float healing);
+
+/**
  * @brief Applies damage to the given shield quandrant/sector of the given object.
  *
  * @returns Any remaining damage after being absorbed by the shield.

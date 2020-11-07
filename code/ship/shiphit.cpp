@@ -488,6 +488,259 @@ typedef struct {
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
+void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, int submodel_num, float healing)
+{
+	vec3d			g_subobj_pos;
+	float			healing_left;
+	int				weapon_info_index;
+	ship* ship_p;
+	sublist			subsys_list[MAX_SUBSYS_LIST];
+	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
+	vec3d			hitpos2;
+
+	Assert(ship_objp);	// Goober5000 (but other_obj might be NULL via sexp)
+	Assert(hitpos);		// Goober5000
+
+	ship_p = &Ships[ship_objp->instance];
+
+	//	Shockwave damage is applied like weapon damage.  It gets consumed.
+	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
+	{
+		healing_left = shockwave_get_damage(other_obj->instance) / 4.0f;
+		hitpos2 = other_obj->pos;
+	}
+	else {
+		healing_left = healing;
+		hitpos2 = *hitpos;
+	}
+
+	//	First, create a list of the N subsystems within range.
+	//	Then, one at a time, process them in order.
+	int	count = 0;
+	for (auto subsys = GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys))
+	{
+		model_subsystem* mss = subsys->system_info;
+
+		if (subsys->current_hits > 0.0f) {
+			float	dist, range;
+
+			if (Fixed_turret_collisions && submodel_num != -1 && submodel_num == mss->turret_gun_sobj) {
+				// Special case:
+				// if the subsystem is a turret and the hit submodel is its barrel,
+				// get the distance between the hit and the turret barrel center
+				find_submodel_instance_world_point(&g_subobj_pos, ship_p->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
+
+				// Damage attenuation range of barrel radius * 2 makes full damage
+				// be taken regardless of where the barrel is hit
+				range = submodel_get_radius(Ship_info[ship_p->ship_info_index].model_num, submodel_num) * 2;
+			}
+			else {
+				// Default behavior:
+				// get the distance between the hit and the subsystem center
+				get_subsystem_world_pos(ship_objp, subsys, &g_subobj_pos);
+				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
+
+				range = subsys_get_range(other_obj, subsys);
+			}
+
+			if (dist < range) {
+				if (Damage_impacted_subsystem_first && submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
+					// If the hit impacted this subsystem's submodel, then make sure this subsys
+					// gets dealt damage first, even if another subsystem is closer to the hit location
+					subsys_hit_first = count;
+				}
+
+				if (mss->flags[Model::Subsystem_Flags::Collide_submodel]) {
+					if (submodel_num != -1 && submodel_num != mss->subobj_num && submodel_num != mss->turret_gun_sobj) {
+						// If this subsystem only wants to take damage when its submodel receives
+						// a direct hit and the current hit did not do so, skip it.
+						continue;
+					}
+				}
+
+				subsys_list[count].dist = dist;
+				subsys_list[count].range = range;
+				subsys_list[count].ptr = subsys;
+				count++;
+
+				if (count >= MAX_SUBSYS_LIST) {
+					break;
+				}
+			}
+		}
+	}
+
+	int dmg_type_idx = -1;
+	int parent_armor_flags = 0;
+
+	if (ship_p->armor_type_idx > -1)
+		parent_armor_flags = Armor_types[ship_p->armor_type_idx].flags;
+
+	if (other_obj)
+	{
+		if (other_obj->type == OBJ_SHOCKWAVE) {
+			dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+		}
+		else if (other_obj->type == OBJ_WEAPON) {
+			dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+		}
+		else if (other_obj->type == OBJ_BEAM) {
+			dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+		}
+	}
+
+	//	Now scan the sorted list of subsystems in range.
+	//	Apply damage to the nearest one first (exception: subsys_hit_first),
+	//	subtracting off damage as we go.
+	int	i, j;
+	for (j = 0; j < count; j++)
+	{
+		float	dist, range;
+		ship_subsys* subsystem;
+
+		int	min_index = -1;
+
+		if (Damage_impacted_subsystem_first && subsys_hit_first > -1) {
+			min_index = subsys_hit_first;
+
+			subsys_hit_first = -1;
+		}
+		else {
+			float	min_dist = 9999999.9f;
+
+			for (i = 0; i < count; i++) {
+				if (subsys_list[i].dist < min_dist) {
+					min_dist = subsys_list[i].dist;
+					min_index = i;
+				}
+			}
+			Assert(min_index != -1);
+		}
+
+		float	damage_to_apply = 0.0f;
+		subsystem = subsys_list[min_index].ptr;
+		range = subsys_list[min_index].range;
+		dist = subsys_list[min_index].dist;
+		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
+
+		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
+
+		// Make sure this subsystem still has hitpoints.  If it's a child of a parent that was destroyed, it will have been destroyed already.
+		if (subsystem->current_hits <= 0.0f) {
+			continue;
+		}
+
+		// only do this for the closest affected subsystem
+		if ((j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
+			if (subsystem->armor_type_idx > -1)
+			{
+				healing_left = Armor_types[subsystem->armor_type_idx].GetDamage(healing_left, dmg_type_idx, 1.0f); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
+			}
+		}
+
+		// scale subsystem damage if appropriate
+		float ss_factor = 1.0f;
+		float hull_factor = 1.f;
+		weapon_info_index = shiphit_get_damage_weapon(other_obj);
+		if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
+			(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
+			ss_factor = Weapon_info[weapon_info_index].subsystem_factor;
+			hull_factor = Weapon_info[weapon_info_index].armor_factor;
+		}
+
+		float heal_to_apply = 0.0f;
+		if (dist < range / 2.0f) {
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
+				heal_to_apply = healing_left * hull_factor;
+			else
+				heal_to_apply = healing_left * ss_factor;
+		}
+		else if (dist < range) {
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
+				heal_to_apply = healing_left * hull_factor * (1.0f - dist / range);
+			else
+				heal_to_apply = healing_left * ss_factor * (1.0f - dist / range);
+		}
+
+		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
+		if ((heal_to_apply > 0.1f) && !(MULTIPLAYER_CLIENT))
+		{
+			
+			// decrease the damage left to apply to the ship subsystems
+			// WMC - since armor aborbs damage, subtract the amount of damage before we apply armor
+			healing_left -= (heal_to_apply);
+
+			//Apply armor to damage
+			if (subsystem->armor_type_idx >= 0) {
+				// Nuke: this will finally factor it in to damage_to_apply and i wont need to factor it in anywhere after this
+				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, 1.0f);
+			}
+
+			subsystem->current_hits += heal_to_apply;
+
+			float* agg_hits = &ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits;
+			float agg_max_hits = ship_p->subsys_info[subsystem->system_info->type].aggregate_max_hits;
+			if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
+				*agg_hits += damage_to_apply;
+			}
+
+			if (subsystem->current_hits > subsystem->max_hits) {
+				healing_left += subsystem->current_hits - subsystem->max_hits;
+				if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
+					*agg_hits += subsystem->current_hits - subsystem->max_hits;
+				}
+				subsystem->current_hits = subsystem->max_hits;					
+			}
+			
+			if (*agg_hits > agg_max_hits) {
+				*agg_hits = agg_max_hits;
+			}
+
+
+			if (healing_left <= 0) { // no more damage to distribute, so stop checking
+				break;
+			}
+		}
+	}
+
+	return;
+}
+
+// do_subobj_hit_stuff() is called when a collision is detected between a ship and something
+// else.  This is where we see if any sub-objects on the ship should take damage.
+//
+//	Depending on where the collision occurs, the sub-system and surrounding hull will take 
+// different amounts of damage.  The amount of damage a sub-object takes depending on how
+// close the colliding object is to the center of the sub-object.  The remaining hull damage
+// will be returned to the caller via the damage parameter.
+//
+//
+// 0   -> 0.5 radius   : 100% subobject    0%  hull
+// 0.5 -> 1.0 radius   :  50% subobject   50%  hull
+// 1.0 -> 2.0 radius   :  25% subobject   75%  hull
+//     >  2.0 radius   :   0% subobject  100%  hull
+//
+//
+// The weapon damage is not neccesarily distributed evently between sub-systems when more than
+// one sub-system is to take damage.  Whenever damage is to be assigned to a sub-system, the above
+// percentages are used.  So, if more than one sub-object is taking damage, the second sub-system
+// to be assigned damage will take less damage.  Eg. weapon hits in the 25% damage range of two
+// subsytems, and the weapon damage is 12.  First subsystem takes 3 points damage.  Second subsystem
+// will take 0.25*9 = 2.25 damage.  Should be close enough for most cases, and hull would receive 
+// 0.75 * 9 = 6.75 damage.
+//
+//	Used to use the following constants, but now damage is linearly scaled up to 2x the subsystem
+//	radius.  Same damage applied as defined by constants below.
+//
+//	Returns unapplied damage, which will probably be applied to the hull.
+//
+// Shockwave damage is handled here.  If other_obj->type == OBJ_SHOCKWAVE, it's a shockwave.
+// apply the same damage to all subsystems.
+//	Note: A negative damage number means to destroy the corresponding subsystem.  For example, call with -SUBSYSTEM_ENGINE to destroy engine.
+//
+//WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
+
 float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor)
 {
 	vec3d			g_subobj_pos;
@@ -1927,28 +2180,32 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 	if ((wp_index >= 0) && Weapon_shockwaves_respect_huge) {
 		wip = &Weapon_info[wp_index];
 
-		float hull_pct = get_hull_pct(ship_objp);
+		if (!(wip->wi_flags[Weapon::Info_Flags::Heals])) {
+			float hull_pct = get_hull_pct(ship_objp);
 
-		// First handle Supercap ships.
-		if ((sip->flags[Ship::Info_Flags::Supercap]) && !(wip->wi_flags[Weapon::Info_Flags::Supercap])) {
-			if (hull_pct <= 0.75f) {
-				*damage = 0.0f;
-				return 1;
-			} else {
-				// If hull isn't below 3/4, then allow damage to be applied just like in weapon_get_damage_scale.
-				// SUPERCAP_DAMAGE_SCALE is defined in weapon.h.
-				max_damage *= SUPERCAP_DAMAGE_SCALE;
+			// First handle Supercap ships.
+			if ((sip->flags[Ship::Info_Flags::Supercap]) && !(wip->wi_flags[Weapon::Info_Flags::Supercap])) {
+				if (hull_pct <= 0.75f) {
+					*damage = 0.0f;
+					return 1;
+				}
+				else {
+					// If hull isn't below 3/4, then allow damage to be applied just like in weapon_get_damage_scale.
+					// SUPERCAP_DAMAGE_SCALE is defined in weapon.h.
+					max_damage *= SUPERCAP_DAMAGE_SCALE;
+				}
 			}
-		}
 
-		// Next handle big damage ships.
-		bool is_big_damage_ship = (sip->flags[Ship::Info_Flags::Big_damage]);
-		if (is_big_damage_ship && !(wip->hurts_big_ships())) {
-			if (hull_pct > 0.1f) {
-				max_damage *= hull_pct;
-			} else {
-				*damage = 0.0f;
-				return 1;
+			// Next handle big damage ships.
+			bool is_big_damage_ship = (sip->flags[Ship::Info_Flags::Big_damage]);
+			if (is_big_damage_ship && !(wip->hurts_big_ships())) {
+				if (hull_pct > 0.1f) {
+					max_damage *= hull_pct;
+				}
+				else {
+					*damage = 0.0f;
+					return 1;
+				}
 			}
 		}
 	}
@@ -2393,6 +2650,127 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 }
 
+static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos, float healing, int quadrant, int submodel_num)
+{
+	//	mprintf(("doing damage\n"));
+
+	ship* shipp;
+	bool other_obj_is_weapon;
+	bool other_obj_is_beam;
+	bool other_obj_is_shockwave;
+
+	Assert(ship_objp);	// Goober5000
+	Assert(other_obj);
+	Assert(hitpos);		// Goober5000
+
+	Assert(ship_objp->instance >= 0);
+	Assert(ship_objp->type == OBJ_SHIP);
+	shipp = &Ships[ship_objp->instance];
+
+	Assert(other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM || other_obj->type == OBJ_SHOCKWAVE);
+
+	// maybe adjust "damage" done by shockwave for BIG|HUGE
+	maybe_shockwave_damage_adjust(ship_objp, other_obj, &healing);
+
+	other_obj_is_weapon = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
+	other_obj_is_beam = ((other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
+	other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
+	
+	MONITOR_INC(ShipHits, 1);
+
+	//	Don't heal player ship in the process of warping out.
+	if (Player->control_mode >= PCM_WARPOUT_STAGE2) {
+		if (ship_objp == Player_obj) {
+			return;
+		}
+	}
+
+	int wip_index = -1;
+	if (other_obj_is_weapon)
+		wip_index = Weapons[other_obj->instance].weapon_info_index;
+	else if (other_obj_is_beam)
+		wip_index = Beams[other_obj->instance].weapon_info_index;
+	else if (other_obj_is_shockwave)
+		wip_index = shockwave_get_weapon_index(other_obj->instance);
+
+	if (wip_index < 0)
+		return;
+	weapon_info* wip = &Weapon_info[wip_index];
+
+	//	If we hit the shield, reduce it's strength and found
+	// out how much damage is left over.
+	if (!(ship_objp->flags[Object::Object_Flags::No_shields])) {
+		float shield_healing = healing * wip->shield_factor;
+
+		if (shield_healing > 0.0f) {
+
+			int dmg_type_idx = -1;
+
+			//get the ''''damage'''' type
+			if (other_obj_is_weapon || other_obj_is_beam) 
+				dmg_type_idx = wip->damage_type_idx;
+			else if (other_obj_is_shockwave) 
+				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+
+			if (shipp->shield_armor_type_idx != -1)
+				shield_healing = Armor_types[shipp->shield_armor_type_idx].GetDamage(shield_healing, dmg_type_idx, 1.0f, other_obj_is_beam);
+
+			shield_apply_healing(ship_objp, shield_healing);
+		}
+	}
+
+	// Apply leftover damage to the ship's subsystem and hull.
+	if ((healing > 0.0f)) {
+		int	weapon_info_index;
+
+		do_subobj_heal_stuff(ship_objp, other_obj, hitpos, submodel_num, healing);
+
+		//Do armor stuff
+		int dmg_type_idx = -1;
+		if (other_obj_is_weapon || other_obj_is_beam)
+			dmg_type_idx = wip->damage_type_idx;
+		else if (other_obj_is_shockwave)
+			dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+
+		if (shipp->armor_type_idx != -1)
+			healing = Armor_types[shipp->armor_type_idx].GetDamage(healing, dmg_type_idx, 1.0f, other_obj_is_beam);
+		
+		if (wip->wi_flags[Weapon::Info_Flags::Puncture])
+			healing /= 4;
+
+		healing *= wip->armor_factor;
+
+		// multiplayer clients don't do healing
+		if (MULTIPLAYER_CLIENT) {
+		}
+		else {
+			ship_objp->hull_strength += healing;
+			if (ship_objp->hull_strength > shipp->ship_max_hull_strength)
+				ship_objp->hull_strength = shipp->ship_max_hull_strength;
+		}
+	}
+
+	// fix up the ship's sparks :)
+	// turn off a random spark, if its a beam, do this on average twice a second
+	if(!other_obj_is_beam || frand() > flFrametime * 2.0f )
+		shipp->sparks[rand32() % 8].end_time = timestamp(0);
+
+	// if the hitting object is a weapon, maybe do some fun stuff here
+	if (other_obj_is_weapon)
+	{
+		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
+		if (wip->wi_flags[Weapon::Info_Flags::Energy_suck]) {
+			// reduce afterburner fuel
+			shipp->afterburner_fuel -= wip->afterburner_reduce;
+			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;
+
+			// reduce weapon energy
+			shipp->weapon_energy -= wip->weapon_reduce;
+			shipp->weapon_energy = (shipp->weapon_energy < 0.0f) ? 0.0f : shipp->weapon_energy;
+		}
+	}
+}
+
 // Goober5000
 void ship_apply_tag(ship *shipp, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
 {
@@ -2507,7 +2885,17 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 	scoring_eval_hit(ship_objp,other_obj);
 
 	global_damage = false;
-	ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num );
+	if (other_obj->type == OBJ_SHOCKWAVE && 
+			Weapon_info[shockwave_get_weapon_index(other_obj->instance)].wi_flags[Weapon::Info_Flags::Heals]  ||
+		other_obj->type == OBJ_BEAM && 
+			Weapon_info[beam_get_weapon_info_index(other_obj)].wi_flags[Weapon::Info_Flags::Heals] ||
+		other_obj->type == OBJ_WEAPON &&
+			Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Heals]) {
+		ship_do_healing(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num);
+		create_sparks = false;
+	}
+	else
+		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num );
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks
@@ -2576,8 +2964,11 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 		// shield_quad = quadrant facing the force_center
 		shield_quad = get_quadrant(&local_hitpos, ship_objp);
 
-		// Do damage on local point		
-		ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 );
+		if (Weapon_info[shiphit_get_damage_weapon(other_obj)].wi_flags[Weapon::Info_Flags::Heals])
+			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1);
+		else
+			// Do damage on local point		
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 );
 	} else {
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
