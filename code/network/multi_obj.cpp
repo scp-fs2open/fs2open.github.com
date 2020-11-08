@@ -594,7 +594,7 @@ bool multi_ship_record_get_rollback_wep_mode()
 // Adds an object pointer to the list of weapons that needs to be simulated as part of rollback.
 void multi_ship_record_add_rollback_wep(int wep_objnum) 
 {
-	// check for valid pointer
+	// check for valid weapon
 	if (wep_objnum < 0 || wep_objnum >= MAX_OBJECTS){
 		mprintf(("Invalid object number passed when trying to add weapons to the weapon rollback tracker.\n"));
 		return;
