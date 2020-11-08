@@ -663,8 +663,6 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 				break;
 		}
 	}
-
-	return;
 }
 
 // do_subobj_hit_stuff() is called when a collision is detected between a ship and something
@@ -2709,8 +2707,8 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 
 	// if we brought it to full health, fix ALL sparks
 	if (ship_objp->hull_strength == shipp->ship_max_hull_strength) {
-		for(int i = 0; i < MAX_SHIP_HITS; i++)
-			shipp->sparks[i].end_time = timestamp(0);
+		for(auto & spark : shipp->sparks )
+			spark.end_time = timestamp(0);
 	}
 
 	// if the hitting object is a weapon, maybe do some fun stuff here

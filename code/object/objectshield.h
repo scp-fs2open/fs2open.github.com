@@ -33,7 +33,7 @@
  *
  * @TODO Verify operation with model point shields
  */
-void shield_balance(object *objp, float rate, float penalty);
+void shield_balance(object* objp, float rate, float penalty);
 
 /**
  * @brief Transfers energy to the given quadrant from the other quadrants
@@ -46,25 +46,25 @@ void shield_balance(object *objp, float rate, float penalty);
  * @details The transfer sips a percentage of each quadrant, taking more energy from stronger quadrants and less from
  *   weaker ones.
  */
-void shield_transfer(object *objp, int quadrant, float rate);
+void shield_transfer(object* objp, int quadrant, float rate);
 
 /**
  * @brief Gets the shield strength (in HP) of the given object
  */
-float shield_get_strength(object *objp);
+float shield_get_strength(object* objp);
 
 /**
  * @brief Sets the shield strength (in HP) of the given object.
  * @note All quadrants are set to an equal strength
  */
-void shield_set_strength(object *objp, float strength);
+void shield_set_strength(object* objp, float strength);
 
 /**
  * @brief Adds the given delta to the given object's shield.
  *
  * @param[in] delta HP to add (or subtract if negative) to the object's shield
  */
-void shield_add_strength(object *objp, float delta);
+void shield_add_strength(object* objp, float delta);
 
 /**
  * @brief Gets the strength (in HP) of a shield quadrant/sector
@@ -73,7 +73,7 @@ void shield_add_strength(object *objp, float delta);
  *
  * @author Goober5000
  */
-float shield_get_quad(object *objp, int quadrant_num);
+float shield_get_quad(object* objp, int quadrant_num);
 
 /**
  * @brief Sets the strength (in HP) of a shield quadrant/sector
@@ -83,7 +83,7 @@ float shield_get_quad(object *objp, int quadrant_num);
  *
  * @author Goober5000
  */
-void shield_set_quad(object *objp, int quadrant_num, float strength);
+void shield_set_quad(object* objp, int quadrant_num, float strength);
 
 /**
  * @brief Sets the strength (in HP) of a shield quadrant/sector
@@ -93,7 +93,7 @@ void shield_set_quad(object *objp, int quadrant_num, float strength);
  *
  * @author Goober5000
  */
-void shield_add_quad(object *objp, int quadrant_num, float strength);
+void shield_add_quad(object* objp, int quadrant_num, float strength);
 
 /**
  * @brief Gets the max shield HP of the given object
@@ -102,19 +102,19 @@ void shield_add_quad(object *objp, int quadrant_num, float strength);
  *
  * @author Goober5000
  */
-float shield_get_max_strength(object *objp, bool no_msr = false);
+float shield_get_max_strength(object* objp, bool no_msr = false);
 
 /**
  * @brief Sets the max shield HP of the given object. Use this to init or override a ship's default shield HP
  */
-void shield_set_max_strength(object *objp, float newmax);
+void shield_set_max_strength(object* objp, float newmax);
 
 /**
  * @brief Gets the max shield HP that a quadrant/sector may have
  *
  * @author Goober5000
  */
-float shield_get_max_quad(object *objp);
+float shield_get_max_quad(object* objp);
 
 /**
  * @brief Strengthens the weakest quadrant first, then spreads it out
@@ -135,6 +135,6 @@ void shield_apply_healing(object* objp, float healing);
  *     return 0.0f;
  *   }
  */
-float shield_apply_damage(object *objp, int quadrant, float damage);
+float shield_apply_damage(object* objp, int quadrant, float damage);
 
 #endif //_OBJECTSHIELD_H
