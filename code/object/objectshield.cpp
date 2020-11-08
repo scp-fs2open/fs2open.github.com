@@ -147,9 +147,9 @@ void shield_add_strength(object *objp, float delta) {
 // strengthens the weakest quadrant first, then spreads it out equally
 void shield_apply_healing(object* objp, float healing) {
 	Assert(objp);
+	if (objp == nullptr)
+		return;
 
-	// multiplayer clients bail here if nodamage
-	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
 	if (MULTIPLAYER_CLIENT)
 		return;
 
