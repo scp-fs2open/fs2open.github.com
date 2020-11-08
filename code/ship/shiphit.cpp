@@ -2610,7 +2610,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 }
 
-static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos, float healing, int quadrant, int submodel_num)
+static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos, float healing, int submodel_num)
 {
 	ship* shipp;
 	bool other_obj_is_weapon, other_obj_is_beam, other_obj_is_shockwave;
@@ -2852,7 +2852,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 	global_damage = false;
 	if (wip_index >= 0 && Weapon_info[wip_index].wi_flags[Weapon::Info_Flags::Heals]) {
-		ship_do_healing(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num);
+		ship_do_healing(ship_objp, other_obj, hitpos, damage, submodel_num);
 		create_sparks = false;
 	}
 	else
@@ -2931,7 +2931,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 
 		// the healing case should only ever be true for shockwaves
 		if (wip_index >= 0 && Weapon_info[wip_index].wi_flags[Weapon::Info_Flags::Heals])
-			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1);
+			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, -1);
 		else
 			// Do damage on local point		
 			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 );
