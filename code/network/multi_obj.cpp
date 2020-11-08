@@ -595,7 +595,7 @@ bool multi_ship_record_get_rollback_wep_mode()
 void multi_ship_record_add_rollback_wep(int wep_objnum) 
 {
 	// check for valid pointer
-	if (wep_objnum < 0 && wep_objnum >= MAX_OBJECTS){
+	if (wep_objnum < 0 || wep_objnum >= MAX_OBJECTS){
 		mprintf(("Invalid object number passed when trying to add weapons to the weapon rollback tracker.\n"));
 		return;
 	}
