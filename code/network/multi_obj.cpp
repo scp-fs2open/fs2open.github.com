@@ -173,7 +173,7 @@ struct oo_general_info {
 	// rollback info
 	bool rollback_mode;										// are we currently creating and moving weapons from the client primary fire packets
 	SCP_vector<int> rollback_weapon_numbers_created_this_frame;	// the weapons created this rollback frame.
-	SCP_vector<int> rollback_weapon_number;						// a list of the weapons that were created, so that we can roll them into the current simulation
+	SCP_vector<int> rollback_weapon_object_number;						// a list of the weapons that were created, so that we can roll them into the current simulation
 
 	SCP_vector<int> rollback_ships;						// a list of ships that take part in roll back, no quick index, must be iterated through.
 	SCP_vector<oo_rollback_restore_record> restore_points;	// where to move ships back to when done with rollback. no quick index, must be iterated through.
@@ -595,7 +595,7 @@ bool multi_ship_record_get_rollback_wep_mode()
 void multi_ship_record_add_rollback_wep(int wep_objnum) 
 {
 	// check for valid pointer
-	if (wep_objnum > -1 && wep_objnum < MAX_OBJECTS){
+	if (wep_objnum < 0 && wep_objnum >= MAX_OBJECTS){
 		mprintf(("Invalid object number passed when trying to add weapons to the weapon rollback tracker.\n"));
 		return;
 	}
@@ -726,7 +726,7 @@ void multi_ship_record_do_rollback()
 	for (auto & shots_to_be_fired : Oo_info.rollback_shots_to_be_fired) {
 		shots_to_be_fired.clear();
 	}
-	Oo_info.rollback_weapon_number.clear();
+	Oo_info.rollback_weapon_object_number.clear();
 }
 
 // fires the rollback weapons that are in the rollback struct
@@ -744,9 +744,9 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 	}
 
 	// add the newly created shots to the collision list.
-	for (auto& wep_number : Oo_info.rollback_weapon_numbers_created_this_frame) {
-		Oo_info.rollback_weapon_number.push_back(wep_number);
-		Oo_info.rollback_collide_list.push_back(Weapons[wep_number].objnum);
+	for (auto& wep_obj_number : Oo_info.rollback_weapon_numbers_created_this_frame) {
+		Oo_info.rollback_weapon_object_number.push_back(wep_obj_number);
+		Oo_info.rollback_collide_list.push_back(wep_obj_number);
 	}
 	Oo_info.rollback_weapon_numbers_created_this_frame.clear();
 }
@@ -777,8 +777,8 @@ void multi_oo_simulate_rollback_shots(int frame_idx)
 	float frametime = (float)multi_ship_record_get_time_elapsed(prev_frame, frame_idx) / (float)TIMESTAMP_FREQUENCY;
 
 	// push the weapons forward.
-	for (auto& weap_num : Oo_info.rollback_weapon_number) {
-		object* objp = &Objects[Weapons[weap_num].objnum];
+	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
+		object* objp = &Objects[weap_objnum];
 		vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
 		Weapons[objp->instance].lifeleft -= frametime;
 	}
@@ -2504,7 +2504,7 @@ void multi_init_oo_and_ship_tracker()
 	}
 
 	Oo_info.rollback_mode = false;
-	Oo_info.rollback_weapon_number.clear();
+	Oo_info.rollback_weapon_object_number.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
