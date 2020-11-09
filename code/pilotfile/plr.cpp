@@ -723,22 +723,24 @@ void pilotfile::plr_reset_data(bool reset_all)
 
 	m_data_invalid = false;
 
-	// set all the entries in the control config arrays to -1 (undefined)
-	// Cyborg17 - clear_all is false when we are just trying to verify the file, but true when we load the whole thing.
-	// Otherwise, we can end up getting rid of a pilot's controls by accident.
-	if (reset_all) {
-		control_config_clear();
+	// if we aren't reloading all data (such as just a verify) then skip the rest
+	if ( !reset_all ) {
+		return;
 	}
+
+	Assertion(p != nullptr, "player pointer is null during data reset!");
+
+	// set all the entries in the control config arrays to -1 (undefined)
+	control_config_clear();
 
 	// init stats
 	p->stats.init();
 
 	// reset scoring lists
-	all_time_stats.ship_kills.clear();
-	all_time_stats.medals_earned.clear();
+	scoring_special_t blank_score;
 
-	multi_stats.ship_kills.clear();
-	multi_stats.medals_earned.clear();
+	all_time_stats = blank_score;
+	multi_stats = blank_score;
 
 	// clear variables
 	p->variables.clear();
