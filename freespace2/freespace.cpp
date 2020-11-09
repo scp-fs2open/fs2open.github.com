@@ -3966,6 +3966,7 @@ void game_frame(bool paused)
 
 			Scripting_didnt_draw_hud = 1;
 			Script_system.SetHookObject("Self", Viewer_obj);
+			Script_system.SetHookObject("Player", Player_obj);
 			if(Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
 				Scripting_didnt_draw_hud = 0;
 			}
@@ -3989,6 +3990,7 @@ void game_frame(bool paused)
 				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
+			Script_system.RemHookVar("Player");
 			
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
