@@ -540,8 +540,10 @@ void pilotfile::plr_write_stats_multi()
 	// medals earned (contains medals across all mods, not just current)
 	handler->startArrayWrite("medals", multi_stats.medals_earned.size());
 	for (auto& medal : multi_stats.medals_earned) {
+		handler->startSectionWrite(Section::Unnamed);
 		handler->writeString("name", medal.name.c_str());
 		handler->writeInt("val", medal.val);
+		handler->endSectionWrite();
 	}
 	handler->endArrayWrite();
 
