@@ -55,6 +55,14 @@ typedef struct beam_info {
 #define BFIF_TARGETING_COORDS	(1<<2)
 #define BFIF_FLOATING_BEAM		(1<<3)
 
+// to ensure validity of fire_info, the related fields MUST be provided
+#define BFM_TURRET_FIRED         0   // objp, subsys, target
+#define BFM_TURRET_FORCE_FIRED   1   // objp, subsys, target OR target_pos
+#define BFM_FIGHTER_FIRED        2   // objp, subsys
+#define BFM_SPAWNED              3   // starting pos, target OR target_pos
+#define BFM_SEXP_FLOATING_FIRED  4   // starting pos, target OR target_pos
+#define BFM_SUBSPACE_STRIKE      5   // starting pos, target
+
 // pass to beam fire 
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
@@ -73,6 +81,7 @@ typedef struct beam_fire_info {
 	int point;									// for fighters, which point on the bank it is from
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
+	int  fire_method;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {

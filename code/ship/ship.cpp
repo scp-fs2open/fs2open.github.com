@@ -11417,8 +11417,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
-
 					fbfire_info.point = j;
+					fbfire_info.fire_method = BFM_FIGHTER_FIRED;
 
 					beam_fire(&fbfire_info);
 					has_fired = true;

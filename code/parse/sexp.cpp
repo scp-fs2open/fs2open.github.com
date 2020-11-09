@@ -17960,6 +17960,8 @@ void sexp_beam_fire(int node, bool at_coords)
 
 	// fire the beam
 	if (fire_info.beam_info_index != -1) {
+		fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
+
 		beam_fire(&fire_info);
 	} else {
 		// it would appear the turret doesn't have any beam weapons
@@ -18045,6 +18047,8 @@ void sexp_beam_floating_fire(int n)
 		return;
 	if (count == 0)
 		fire_info.target_pos2 = fire_info.target_pos1;
+
+	fire_info.fire_method = BFM_SEXP_FLOATING_FIRED;
 
 	beam_fire(&fire_info);
 }

@@ -1878,6 +1878,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			else
 				fire_info.target_subsys = NULL;
 			fire_info.turret = turret;
+			fire_info.fire_method = BFM_TURRET_FIRED;
 
 			// fire a beam weapon
 			weapon_objnum = beam_fire(&fire_info);
