@@ -229,17 +229,22 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getTimeCompressedFrametime, l_Base, NULL, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
+ADE_FUNC(getTimeCompressedFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
 {
 	return ade_set_args(L, "f", flFrametime);
 }
 
-ADE_FUNC(getRealFrametime, l_Base, NULL, "Gets how long this frame is calculated to take in real time. Not affected by time compression.", "number", "Frame time (seconds)")
+ADE_FUNC(getRealFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take in real time. Not affected by time compression.", "number", "Frame time (seconds)")
 {
 	return ade_set_args(L, "f", flRealframetime);
 }
 
-ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. DEPRECATED, due a mistake in the documentaion.", "number", "Frame time (seconds)")
+ADE_FUNC_DEPRECATED(getFrametime, l_Base, 
+	"[boolean adjustForTimeCompression]", 
+	"Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", 
+	"number", "Frame time (seconds)", 
+	gameversion::version(20, 2, 0, 0),
+	"Please use getRealFrametime() or getTimeCompressedFrametime() instead.")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);
