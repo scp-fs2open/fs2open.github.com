@@ -155,6 +155,7 @@ void	mission_show_goals_init();
 void	mission_show_goals_close();
 void	mission_show_goals_do_frame(float frametime);	// displays goals on screen
 void	mission_eval_goals();									// evaluate player goals
+void	mission_evaluate_all_directives_client();							// do a few directives things for multiplayer clients only.
 int	mission_evaluate_primary_goals(void);	// determine if the primary goals for the mission are complete -- returns one of the above defines
 int	mission_goals_met();
 
@@ -180,6 +181,13 @@ void mission_goal_validation_change( int goal_num, bool valid );
 // mark an event as directive special
 void mission_event_set_directive_special(int event);
 void mission_event_unset_directive_special(int event);
+
+// Cyborg - set the directive completion sound timestamp
+void mission_event_set_completion_sound_timestamp();
+
+// Maybe play a directive success sound... need to poll since the sound is delayed from when
+// the directive is actually satisfied.
+void mission_maybe_play_directive_success_sound();
 
 void mission_goal_exit();
 

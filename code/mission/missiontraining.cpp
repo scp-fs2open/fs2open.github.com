@@ -575,6 +575,14 @@ void training_check_objectives()
 	// now sort list of events
 	// sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
 	sort_training_objectives();
+
+	// Cyborg - Multiplayer clients will not run the other directive functions, so just run this quick check to see
+	// if the directive success sound should be played.
+	if (MULTIPLAYER_CLIENT) {
+		if ( !hud_disabled() && hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
+			mission_maybe_play_directive_success_sound();
+		}
+	}
 }
 
 /**

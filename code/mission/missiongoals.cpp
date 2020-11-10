@@ -888,6 +888,11 @@ void mission_event_unset_directive_special(int event)
 	Mission_directive_special_timestamp = timestamp(-1);
 }
 
+void mission_event_set_completion_sound_timestamp()
+{
+	Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+}
+
 // function which evaluates and processes the given event
 void mission_process_event( int event )
 {
@@ -995,7 +1000,7 @@ void mission_process_event( int event )
 	if (result && !Mission_events[event].satisfied_time) {
 		Mission_events[event].satisfied_time = Missiontime;
 		if ( Mission_events[event].objective_text ) {
-			Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+			mission_event_set_completion_sound_timestamp();
 		}
 	}
 
