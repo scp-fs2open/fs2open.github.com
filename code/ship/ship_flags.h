@@ -121,6 +121,7 @@ namespace Ship {
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
 		Has_display_name,			// Goober5000
+		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 
 		NUM_VALUES
 

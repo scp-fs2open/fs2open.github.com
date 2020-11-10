@@ -574,7 +574,9 @@ public:
 	int	reinforcement_index;				// index into reinforcement struct or -1
 	
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
-													// as afterburner_fuel_capacity in ship_info).
+												// as afterburner_fuel_capacity in ship_info).
+	float   afterburner_last_engage_fuel;      // the fuel level when the afterburners were last engaged
+	int   afterburner_last_end_time;         // timestamp when the ship last stopped its afterburner
 
 	int cmeasure_count;						//	Number of charges of countermeasures this ship can hold.
 	int current_cmeasure;					//	Currently selected countermeasure.
@@ -1135,6 +1137,9 @@ public:
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
+	float       afterburner_min_fuel_to_start;  // must have at least this much fuel to start
+	float       afterburner_min_fuel_to_consume;// consumes at least this much fuel before allowing to stop
+	float       afterburner_min_time_to_restart;// minimum time between last afterburner finish and next start
 	//SparK: reverse afterburner
 	float		afterburner_max_reverse_vel;
 	float		afterburner_reverse_accel;

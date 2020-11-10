@@ -116,6 +116,10 @@ extern int splodeingtexture;
 
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
+// The minimum required fuel to engage afterburners
+static const float DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE = 10.0f;
+
+
 int	Ai_render_debug_flag=0;
 #ifndef NDEBUG
 int	Ship_auto_repair = 1;		// flag to indicate auto-repair of subsystem should occur
@@ -975,6 +979,9 @@ void ship_info::clone(const ship_info& other)
 	afterburner_recover_rate = other.afterburner_recover_rate;
 	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
 	afterburner_reverse_accel = other.afterburner_reverse_accel;
+	afterburner_min_fuel_to_start = other.afterburner_min_fuel_to_start;
+	afterburner_min_fuel_to_consume = other.afterburner_min_fuel_to_consume;
+	afterburner_min_time_to_restart = other.afterburner_min_time_to_restart;
 
 	cmeasure_type = other.cmeasure_type;
 	cmeasure_max = other.cmeasure_max;
@@ -1266,6 +1273,9 @@ void ship_info::move(ship_info&& other)
 	afterburner_recover_rate = other.afterburner_recover_rate;
 	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
 	afterburner_reverse_accel = other.afterburner_reverse_accel;
+	afterburner_min_fuel_to_start = other.afterburner_min_fuel_to_start;
+	afterburner_min_fuel_to_consume = other.afterburner_min_fuel_to_consume;
+	afterburner_min_time_to_restart = other.afterburner_min_time_to_restart;
 
 	cmeasure_type = other.cmeasure_type;
 	cmeasure_max = other.cmeasure_max;
@@ -1646,6 +1656,9 @@ ship_info::ship_info()
 	afterburner_recover_rate = 0.0f;
 	afterburner_max_reverse_vel = 0.0f;
 	afterburner_reverse_accel = 0.0f;
+	afterburner_min_fuel_to_start = DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE;
+	afterburner_min_fuel_to_consume = 0.0f;
+	afterburner_min_time_to_restart = 0.0f;
 
 	cmeasure_type = Default_cmeasure_index;
 	cmeasure_max = 0;
@@ -3727,6 +3740,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		if(optional_string("+Aburn Rec Rate:")) {
 			stuff_float(&sip->afterburner_recover_rate);
+		}
+
+		if (optional_string("+Aburn Min Fuel to Start:")) {
+			stuff_float(&sip->afterburner_min_fuel_to_start);
+		}
+
+		if (optional_string("+Aburn Min Fuel to Consume:")) {
+			stuff_float(&sip->afterburner_min_fuel_to_consume);
+		}
+
+		if (optional_string("+Aburn Min Time to Restart:")) {
+			stuff_float(&sip->afterburner_min_time_to_restart);
 		}
 
 		if (!(sip->afterburner_fuel_capacity) ) {
@@ -6066,6 +6091,8 @@ void ship::clear()
 	reinforcement_index = -1;
 	
 	afterburner_fuel = 0.0f;
+	afterburner_last_engage_fuel = 0.0f;
+	afterburner_last_end_time = 0;
 
 	cmeasure_count = 0;
 	current_cmeasure = -1;
