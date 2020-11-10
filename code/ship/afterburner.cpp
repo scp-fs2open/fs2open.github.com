@@ -85,7 +85,9 @@ void afterburners_start(object *objp)
 		return;
 	}
 
-	unsigned int now = timer_get_milliseconds();
+	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
+
+	int now = timer_get_milliseconds();
 
 	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_min_time_to_restart * 1000.0f)) {
 
@@ -128,7 +130,6 @@ void afterburners_start(object *objp)
 		return;
 	}
 
-	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 	shipp->afterburner_last_engage_fuel = shipp->afterburner_fuel;
 
 	objp->phys_info.flags |= PF_AFTERBURNER_ON;
