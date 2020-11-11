@@ -1196,7 +1196,18 @@ void control_config_common_read_section(int s) {
 	auto& default_bindings = default_preset.bindings;
 
 	new_preset.bindings.clear();
-	std::copy(default_bindings.begin(), default_bindings.end(), std::back_inserter(new_preset.bindings));
+
+	if (s == 0) {
+		// ControlConfigOverride
+		// Copy in defaults to have them overridden
+		std::copy(default_bindings.begin(), default_bindings.end(), std::back_inserter(new_preset.bindings));
+
+	} else {
+		// ControlConfigPreset
+		// Start with clean slate
+		new_preset.bindings.resize(default_bindings.size());
+	}
+	
 
 	// Assign name to the preset
 	if (optional_string("$Name:")) {
@@ -1222,30 +1233,26 @@ void control_config_common_read_section(int s) {
 		stuff_string(szTempBuffer, F_NAME);
 
 		// Find the control
-		auto item = Control_config.begin();
-		for (; item != Control_config.end(); ++item) {
-			if (szTempBuffer != item->text) {
-				// Found the item
-				break;
-			} // Else, keep looking
-		}
+		IoActionId item_id = CCFG_MAX;
+		try {
+			item_id = old_text.at(szTempBuffer);
 
-		if (item == Control_config.end()) {
-			// Warning: Not found.
+		} catch(const std::out_of_range& oor) {
+			// Warning: Not Found
 			error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
-			
+
 			// Try to resume
 			if (!skip_to_start_of_string_either("#End", "$Bind Name:")) {
 				// Couldn't find next binding or end. Fail
 				throw parse::ParseException("Could not find #End or $Bind Name");
 			}; // else, continue loop
 			continue;
-		} // Else, item found
+		}
 
 		// Assign the various attributes to this control
 		int iTemp;
-		size_t i = std::distance(Control_config.begin(), item);
-		auto& new_binding = new_preset.bindings[i];
+		auto  item = &Control_config[item_id];
+		auto& new_binding = new_preset.bindings[item_id];
 
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {
@@ -1285,6 +1292,10 @@ void control_config_common_read_section(int s) {
 			if (optional_string("$Category:")) {
 				stuff_string(szTempBuffer, F_NAME);
 				item->tab = mCCTabNameToVal[szTempBuffer];
+			}
+
+			if (optional_string("$Text:")) {
+				stuff_string(item->text, F_NAME);
 			}
 
 			if (optional_string("$Has XStr:")) {
