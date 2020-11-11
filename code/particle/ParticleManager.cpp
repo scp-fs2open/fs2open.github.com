@@ -9,6 +9,7 @@
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
 #include "particle/effects/GenericShapeEffect.h"
+#include "particle/effects/SpoutEffect.h"
 
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
@@ -25,7 +26,9 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Spout",
+	"SpoutSphere"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +62,16 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Spout: {
+			effect.reset(new SpoutEffect<ConeShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::SpoutSphere: {
+			effect.reset(new SpoutEffect<SphereShape>(name));
 			effect->parseValues(false);
 			break;
 		}

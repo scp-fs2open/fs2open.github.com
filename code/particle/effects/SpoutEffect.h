@@ -1,5 +1,5 @@
-#ifndef GENERIC_SHAPE_EFFECT_H
-#define GENERIC_SHAPE_EFFECT_H
+#ifndef WALKING_SHAPE_EFFECT_H
+#define WALKING_SHAPE_EFFECT_H
 #pragma once
 
 #include "globalincs/pstypes.h"
@@ -12,13 +12,13 @@ namespace particle {
 namespace effects {
 
 /**
- * @brief A generic particle effect with a customizable shape
- *
- * @ingroup particleEffects
- */
+	* @brief A walking particle effect with a customizable shape
+	*
+	* @ingroup particleEffects
+	*/
 template<typename TShape>
-class GenericShapeEffect : public ParticleEffect {
- private:
+class SpoutEffect : public ParticleEffect {
+private:
 	util::ParticleProperties m_particleProperties;
 
 	ConeDirection m_direction = ConeDirection::Incoming;
@@ -33,48 +33,48 @@ class GenericShapeEffect : public ParticleEffect {
 
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
-			case ConeDirection::Incoming:
+		case ConeDirection::Incoming:
+			return source->getOrientation()->getDirectionVector(source->getOrigin());
+		case ConeDirection::Normal: {
+			vec3d normal;
+			if (!source->getOrientation()->getNormal(&normal)) {
+				mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 				return source->getOrientation()->getDirectionVector(source->getOrigin());
-			case ConeDirection::Normal: {
-				vec3d normal;
-				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector(source->getOrigin());
-				}
-
-				return normal;
 			}
-			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
-				vec3d normal;
-				if (!source->getOrientation()->getNormal(&normal)) {
-					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return out;
-				}
 
-				// Compute reflect vector as R = V - 2*(V dot N)*N where N
-				// is the normal and V is the incoming direction
-
-				auto dot = 2 * vm_vec_dot(&out, &normal);
-
-				vm_vec_scale(&normal, dot);
-				vm_vec_sub(&out, &out, &normal);
-
+			return normal;
+		}
+		case ConeDirection::Reflected: {
+			vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+			vec3d normal;
+			if (!source->getOrientation()->getNormal(&normal)) {
+				mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
 				return out;
 			}
-			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
-				vm_vec_scale(&out, -1.0f);
-				return out;
-			}
-			default:
-				Error(LOCATION, "Unhandled direction value!");
-				return vmd_zero_vector;
+
+			// Compute reflect vector as R = V - 2*(V dot N)*N where N
+			// is the normal and V is the incoming direction
+
+			auto dot = 2 * vm_vec_dot(&out, &normal);
+
+			vm_vec_scale(&normal, dot);
+			vm_vec_sub(&out, &out, &normal);
+
+			return out;
+		}
+		case ConeDirection::Reverse: {
+			vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
+			vm_vec_scale(&out, -1.0f);
+			return out;
+		}
+		default:
+			Error(LOCATION, "Unhandled direction value!");
+			return vmd_zero_vector;
 		}
 	}
 
- public:
-	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
+public:
+	explicit SpoutEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
 	bool processSource(ParticleSource* source) override {
@@ -82,26 +82,47 @@ class GenericShapeEffect : public ParticleEffect {
 			return false;
 		}
 
-		// This uses the internal features of the timing class for determining if and how many effects should be
-		// triggered this frame
-		util::EffectTiming::TimingState time_state;
-		while (m_timing.shouldCreateEffect(source, time_state)) {
-			auto num = m_particleNum.next();
+		if (source->m_effectData == nullptr) {
+			auto spouts = std::make_shared<SCP_vector<vec3d>>();
 
+			spouts->reserve(m_particleNum.max());
 			vec3d dir = getNewDirection(source);
 			matrix dirMatrix;
 			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-			for (uint i = 0; i < num; ++i) {
+			for (uint i = 0; i < m_particleNum.max(); i++) {
 				matrix velRotation = m_shape.getDisplacementMatrix();
 
 				matrix rotatedVel;
 				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
+				spouts->push_back(rotatedVel.vec.fvec);
+			}
+
+			source->m_effectData = spouts;
+		}
+
+		SCP_vector<vec3d>& spouts = *std::static_pointer_cast<SCP_vector<vec3d>>(source->m_effectData);
+
+		// This uses the internal features of the timing class for determining if and how many effects should be
+		// triggered this frame
+		util::EffectTiming::TimingState time_state;
+		while (m_timing.shouldCreateEffect(source, time_state)) {
+			vec3d dir = getNewDirection(source);
+			for (vec3d &spout : spouts) {
+				vec3d rand;
+				float fufge = 0.1f;
+				vm_vec_rand_vec(&rand);
+				rand *= fufge; // strenght of the walk
+				
+				spout += rand;
+
+				m_shape.restoreForce(&spout, &dir, fufge);
+				vm_vec_normalize(&spout);
 
 				particle_info info;
 
 				source->getOrigin()->applyToParticleInfo(info);
 
-				info.vel = rotatedVel.vec.fvec;
+				info.vel = spout;
 				if (TShape::scale_velocity_deviation()) {
 					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
@@ -117,7 +138,8 @@ class GenericShapeEffect : public ParticleEffect {
 					trailSource.moveToParticle(part);
 
 					trailSource.finish();
-				} else {
+				}
+				else {
 					// We don't have a trail so we don't need a persistent particle
 					m_particleProperties.createParticle(info);
 				}
@@ -161,22 +183,11 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
-		bool saw_deprecated_effect_location = false;
-		if (optional_string("+Trail effect:")) {
-			// This is the deprecated location since this introduces ambiguities in the parsing process
-			m_particleTrail = internal::parseEffectElement();
-			saw_deprecated_effect_location = true;
-		}
-
 		m_timing = util::EffectTiming::parseTiming();
 
+
+
 		if (optional_string("+Trail effect:")) {
-			// This is the new and correct location. This might create duplicate effects but the warning should be clear
-			// enough to avoid that
-			if (saw_deprecated_effect_location) {
-				error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
-				                 "deprecated since that can cause issues with conflicting effect options.");
-			}
 			m_particleTrail = internal::parseEffectElement();
 		}
 	}
@@ -196,4 +207,4 @@ class GenericShapeEffect : public ParticleEffect {
 }
 }
 
-#endif // GENERIC_SHAPE_EFFECT_H
+#endif // WALKING_SHAPE_EFFECT_H

@@ -275,7 +275,7 @@ float SourceTiming::getLifeTimeProgress() const {
 bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
 void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
-ParticleSource::ParticleSource() : m_effect(nullptr), m_processingCount(0) {}
+ParticleSource::ParticleSource() : m_effect(nullptr), m_processingCount(0), m_effectData(nullptr) {}
 
 bool ParticleSource::isValid() const {
 	if (m_timing.isFinished()) {

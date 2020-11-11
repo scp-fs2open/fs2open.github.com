@@ -282,6 +282,9 @@ class ParticleSource {
 
 	void initializeThrusterOffset(weapon* wp, weapon_info* wip);
  public:
+	 
+	std::shared_ptr<void> m_effectData; //!< a pointer to a data record specific to the effect type
+
 	ParticleSource();
 
 	inline const ParticleEffect* getEffect() const { return m_effect; }

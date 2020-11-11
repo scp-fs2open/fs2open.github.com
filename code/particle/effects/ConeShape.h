@@ -31,6 +31,13 @@ class ConeShape {
 		return m;
 	}
 
+	void restoreForce(vec3d* dir, vec3d* walker, float fudge) {
+		if (m_normalDeviation.max() == 0.0f)
+			*walker = *dir;
+		else
+			vm_vec_scale_add(walker, walker, dir, fudge / sinf(m_normalDeviation.max()));
+	}
+
 	void parse(bool nocreate) {
 		if (internal::required_string_if_new("+Deviation:", nocreate)) {
 			float deviation;

@@ -19,9 +19,20 @@ enum class EffectType: int64_t {
 	Composite,
 	Cone,
 	Sphere,
+	Spout,
+	SpoutSphere,
 
 	MAX,
 };
+
+namespace effects {
+	enum class ConeDirection {
+		Incoming,
+		Normal,
+		Reflected,
+		Reverse
+	};
+}
 
 /**
  * @brief Defines a particle effect

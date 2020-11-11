@@ -38,6 +38,8 @@ class SphereShape {
 		return m;
 	}
 
+	void restoreForce(vec3d* dir, vec3d* walker, float fudge) {	}
+
 	void parse(bool  /*nocreate*/) {
 	}
 
