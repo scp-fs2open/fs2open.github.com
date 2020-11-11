@@ -36,7 +36,7 @@ typedef struct trail_info {
 typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	vec3d	vel[NUM_TRAIL_SECTIONS];	// positions of trail points
+	vec3d	vel[NUM_TRAIL_SECTIONS];	// velocities of trail points (only non-zero if spread is set)
 	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
 	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
