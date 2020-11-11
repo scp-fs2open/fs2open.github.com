@@ -1369,13 +1369,6 @@ void control_config_common_load_overrides()
 		mprintf(("TABLES: Unable to parse 'controlconfigdefaults.tbl'!  Error message = %s.\n", e.what()));
 		return;
 	}
-
-	// Overwrite the control config with the first preset that was found
-	/*
-	if (!Control_config_presets.empty()) {
-		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config.begin());
-	}
-	*/
 }
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
