@@ -4910,7 +4910,7 @@ static void weapon_update_state(weapon* wp)
 			weapon_set_state(wip, wp, WeaponState::FREEFLIGHT);
 			infree_flight = true;
 		}
-		else if (lifetime >= fl2f(wip->free_flight_time) &&
+		else if (lifetime >= fl2f(wip->free_flight_time) &&        // V indicates a valid homing_objp V
 			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && wp->homing_object != &obj_used_list)
 		{
 			weapon_set_state(wip, wp, WeaponState::IGNITION);
@@ -4919,7 +4919,7 @@ static void weapon_update_state(weapon* wp)
 	}
 
 	if (!infree_flight)
-	{
+	{    // V same here; means no homing_objp V
 		if (wp->homing_object == &obj_used_list)
 		{
 			weapon_set_state(wip, wp, WeaponState::UNHOMED_FLIGHT);
