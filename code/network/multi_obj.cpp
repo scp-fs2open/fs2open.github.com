@@ -1991,10 +1991,16 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 
 				// set this guy's target objnum, and other info
 				target_objp = multi_get_network_object( target_signature );
-				// if the info was bogus, set the target to an invalid object
-				if ( target_objp == nullptr ){
+
+				Ai_info[shipp->ai_index].mode = umode;
+				Ai_info[shipp->ai_index].submode = submode;		
+
+				// if the info was bogus, set the target to an invalid object, this is a general failure state
+				if ( umode == 255 || target_objp == nullptr ){
+					Ai_info[shipp->ai_index].mode = -1; 
+					Ai_info[shipp->ai_index].submode = -1;
 					Ai_info[shipp->ai_index].target_objnum = -1;
-					Ai_info[shipp->ai_index].goals[0].target_name = "";
+					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
 				// set their waypoints if in waypoint mode.
 				} else if (umode == AIM_WAYPOINTS) {
 					waypoint* destination = find_waypoint_with_instance(target_objp->instance);
