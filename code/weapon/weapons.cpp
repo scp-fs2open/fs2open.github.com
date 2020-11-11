@@ -4876,25 +4876,7 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		return;
 	}
 
-	auto current_state = wp->weapon_state;
-
 	wp->weapon_state = state;
-
-	if (current_state == WeaponState::INVALID)
-	{
-		// First weapon state, create the in-flight effect
-		auto map_entry = wip->state_effects.find(WeaponState::NORMAL);
-
-		if (map_entry != wip->state_effects.end())
-		{
-			auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-
-			source.moveToObject(&Objects[wp->objnum], &vmd_zero_vector);
-			source.setWeaponState(WeaponState::NORMAL);
-
-			source.finish();
-		}
-	}
 
 	auto map_entry = wip->state_effects.find(wp->weapon_state);
 
@@ -4929,7 +4911,7 @@ static void weapon_update_state(weapon* wp)
 			infree_flight = true;
 		}
 		else if (lifetime >= fl2f(wip->free_flight_time) &&
-			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && wp->homing_object != nullptr)
+			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && wp->homing_object != &obj_used_list)
 		{
 			weapon_set_state(wip, wp, WeaponState::IGNITION);
 			infree_flight = true;
@@ -4938,7 +4920,7 @@ static void weapon_update_state(weapon* wp)
 
 	if (!infree_flight)
 	{
-		if (wp->homing_object == nullptr)
+		if (wp->homing_object == &obj_used_list)
 		{
 			weapon_set_state(wip, wp, WeaponState::UNHOMED_FLIGHT);
 		}
