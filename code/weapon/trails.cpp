@@ -304,7 +304,7 @@ void trail_render( trail * trailp )
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
 }
 
-void trail_add_segment( trail *trailp, vec3d *pos )
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 {
 	int next = trailp->tail;
 	trailp->tail++;
@@ -320,6 +320,11 @@ void trail_add_segment( trail *trailp, vec3d *pos )
 	
 	trailp->pos[next] = *pos;
 	trailp->val[next] = 0.0f;
+
+	if (orient != nullptr && trailp->info.spread > 0.0f) {
+		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
+	} else 
+		vm_vec_make(&trailp->vel[next], 0, 0, 0);
 }		
 
 void trail_set_segment( trail *trailp, vec3d *pos )
@@ -358,6 +363,8 @@ void trail_move_all(float frametime)
 				if ( trailp->val[n] <= 1.0f ) {
 					num_alive_segments++;	// Record how many still alive.
 				}
+
+				trailp->pos[n] += trailp->vel[n] * frametime;
 
 			} while ( n != trailp->head );
 		}		

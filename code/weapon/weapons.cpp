@@ -1791,6 +1791,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
+		if (optional_string("+Spread:"))
+			stuff_float(&ti->spread);
+
 		if ( required_string("+Bitmap:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_bitmap_init(&ti->texture, fname);
@@ -5052,7 +5055,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_ptr, &pos );
+				trail_add_segment( wp->trail_ptr, &pos, &obj->orient);
 				
 				trail_set_stamp(wp->trail_ptr);
 			} else {
@@ -5830,8 +5833,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 		if ( wp->trail_ptr != NULL )	{
 			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_ptr, &objp->pos );
-			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
+			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
 		}
 	}
 	else
@@ -8154,6 +8157,7 @@ void weapon_info::reset()
 	this->tr_info.a_start = 1.0f;
 	this->tr_info.a_end = 1.0f;
 	this->tr_info.max_life = 1.0f;
+	this->tr_info.spread = 0.0f;
 	this->tr_info.stamp = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
