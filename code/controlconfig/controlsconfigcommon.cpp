@@ -1182,34 +1182,34 @@ void LoadEnumsIntoMaps() {
 }
 
 /**
- * @brief Reads controlconfigdefaults.tbl.  Adds a preset to Control_config_presets or overrides the hardcoded default preset
+ * @brief Reads a section in controlconfigdefaults.tbl.
+ *
+ * @param[in] s Value of a call to optional_string_either(); 0 = "ControlConfigOverride" 1 = "ControlConfigPreset"
+ *
+ * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification
  */
-void control_config_common_read_tbl() {
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
-		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
-	}
-
-	reset_parse();
-
-	// start parsing
-	if (optional_string("#ControlConfigOverride") == 0) {
-		// Not found
-		return;
-	} // else, found
-
+void control_config_common_read_section(int s) {
 	CC_preset new_preset;
 
-	// Init the new preset with the hardcoded default (which should be the 0th element Control_config_preset vector
+	// Init the new preset with the default (which is the 0th element Control_config_preset vector
 	auto& default_preset = Control_config_presets[0];
 	auto& default_bindings = default_preset.bindings;
 
+	new_preset.bindings.clear();
 	std::copy(default_bindings.begin(), default_bindings.end(), std::back_inserter(new_preset.bindings));
 
 	// Assign name to the preset
 	if (optional_string("$Name:")) {
-		stuff_string_line(new_preset.name);
+		SCP_string name;
+		stuff_string_line(name);
+		new_preset.name = name;
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [&name](CC_preset& S) {return S.name == name;});
+		if ((s != 0) && (it != Control_config_presets.end())) {
+			// Error: This isn't an override, and we found a preset with the same name
+			throw parse::ParseException("Preset group found with same name as existing group: " + name);
+		}
+
 	} else {
 		new_preset.name = "<unnamed preset>";
 	}
@@ -1231,11 +1231,15 @@ void control_config_common_read_tbl() {
 		}
 
 		if (item == Control_config.end()) {
-			// ERROR: Not found.
-			error_display(1, "Bind Name not found: %s\n", szTempBuffer.c_str());
-			advance_to_eoln(NULL);
-			ignore_white_space();
-			return;
+			// Warning: Not found.
+			error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
+			
+			// Try to resume
+			if (!skip_to_start_of_string_either("#End", "$Bind Name:")) {
+				// Couldn't find next binding or end. Fail
+				throw parse::ParseException("Could not find #End or $Bind Name");
+			}; // else, continue loop
+			continue;
 		} // Else, item found
 
 		// Assign the various attributes to this control
@@ -1247,8 +1251,7 @@ void control_config_common_read_tbl() {
 		if (optional_string("$Key Default:")) {
 			if (optional_string("NONE")) {
 				new_binding.first.btn = (short)-1;
-			}
-			else {
+			} else {
 				stuff_string(szTempBuffer, F_NAME);
 				new_binding.first.btn = mKeyNameToVal[szTempBuffer];
 			}
@@ -1275,44 +1278,69 @@ void control_config_common_read_tbl() {
 			new_binding.second.btn = (short)iTemp;
 		}
 
-		// Config menu options
-		if (optional_string("$Category:")) {
-			stuff_string(szTempBuffer, F_NAME);
-			item->tab = mCCTabNameToVal[szTempBuffer];
-		}
+		// Section is #ControlConfigOverride
+		// If the section is #ControlConfigPreset, then any of these options will throw an error
+		if (s == 0) {
+			// Config menu options
+			if (optional_string("$Category:")) {
+				stuff_string(szTempBuffer, F_NAME);
+				item->tab = mCCTabNameToVal[szTempBuffer];
+			}
 
-		if (optional_string("$Has XStr:")) {
-			stuff_int(&iTemp);
-			item->indexXSTR = iTemp;
-		}
+			if (optional_string("$Has XStr:")) {
+				stuff_int(&iTemp);
+				item->indexXSTR = iTemp;
+			}
 
-		if (optional_string("$Type:")) {
-			stuff_string(szTempBuffer, F_NAME);
-			item->type = mCCTypeNameToVal[szTempBuffer];
-		}
+			if (optional_string("$Type:")) {
+				stuff_string(szTempBuffer, F_NAME);
+				item->type = mCCTypeNameToVal[szTempBuffer];
+			}
 
-		// Gameplay options
-		if (optional_string("+Disable")) {
-			item->disabled = true;
-		}
+			// Gameplay options
+			if (optional_string("+Disable")) {
+				item->disabled = true;
+			}
 
-		if (optional_string("$Disable:")) {
-			stuff_boolean(&item->disabled);
+			if (optional_string("$Disable:")) {
+				stuff_boolean(&item->disabled);
+			}
 		}
 	}
 
 	required_string("#End");
 
-	if (new_preset.name == default_preset.name) {
-		// Override hardcoded defaults
+	if ((s == 0) && (new_preset.name == default_preset.name)) {
+		// If this is an override section, and the preset name is the same as the hardcoded defaults, override the defaults
 		auto& new_bindings = new_preset.bindings;
-		std::copy(new_bindings.begin(), new_bindings.end(), default_bindings);
+		std::copy(new_bindings.begin(), new_bindings.end(), default_bindings.begin());
 
 	} else {
 		// Add new preset
 		Control_config_presets.push_back(new_preset);
 	}
-	
+};
+
+/**
+ * @brief Reads controlconfigdefaults.tbl.  Adds a preset to Control_config_presets or overrides the hardcoded default preset
+ */
+void control_config_common_read_tbl() {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
+		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
+	} else {
+		read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
+	}
+
+	reset_parse();
+
+	// start parsing
+	int s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
+	while (s != -1) {
+		// Found section header, parse it
+		control_config_common_read_section(s);
+
+		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
+	}
 }
 
 /**
