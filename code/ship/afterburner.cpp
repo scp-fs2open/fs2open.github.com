@@ -89,7 +89,7 @@ void afterburners_start(object *objp)
 
 	int now = timer_get_milliseconds();
 
-	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_min_time_to_restart * 1000.0f)) {
+	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
 
 		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
 			snd_play(gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)));
@@ -123,7 +123,7 @@ void afterburners_start(object *objp)
 	}
 
 	// Check if there is enough afterburner fuel
-	if ( (shipp->afterburner_fuel < sip->afterburner_min_fuel_to_start) && !MULTIPLAYER_CLIENT ) {
+	if ( (shipp->afterburner_fuel < sip->afterburner_min_start_fuel) && !MULTIPLAYER_CLIENT ) {
 		if ( objp == Player_obj ) {
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 		}
@@ -246,8 +246,8 @@ void afterburners_update(object *objp, float fl_frametime)
 				afterburners_stop(objp);
 				return;
 			} // if the ship had to burn a certain amount of fuel, and it did so and isn't still trying to afterburn, stop it
-			else if (!(shipp->flags[Ship::Ship_Flags::Attempting_to_afterburn]) && sip->afterburner_min_fuel_to_consume > 0.0f &&
-				shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel > sip->afterburner_min_fuel_to_consume) {
+			else if (!(shipp->flags[Ship::Ship_Flags::Attempting_to_afterburn]) && sip->afterburner_min_fuel_to_burn > 0.0f &&
+				shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel > sip->afterburner_min_fuel_to_burn) {
 				afterburners_stop(objp);
 				return;
 			}
@@ -318,8 +318,8 @@ void afterburners_stop(object *objp, int key_released)
 
 	// if they need to burn a certain a amount of fuel but haven't done so, dont let them stop unless they have no fuel
 	// the removal of the above flag will turn it off later
-	if (shipp->afterburner_fuel > 0.0f && sip->afterburner_min_fuel_to_consume > 0.0f && 
-		shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel < sip->afterburner_min_fuel_to_consume)
+	if (shipp->afterburner_fuel > 0.0f && sip->afterburner_min_fuel_to_burn > 0.0f && 
+		shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel < sip->afterburner_min_fuel_to_burn)
 		return;
 
 	if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {

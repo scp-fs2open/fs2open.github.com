@@ -979,9 +979,9 @@ void ship_info::clone(const ship_info& other)
 	afterburner_recover_rate = other.afterburner_recover_rate;
 	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
 	afterburner_reverse_accel = other.afterburner_reverse_accel;
-	afterburner_min_fuel_to_start = other.afterburner_min_fuel_to_start;
-	afterburner_min_fuel_to_consume = other.afterburner_min_fuel_to_consume;
-	afterburner_min_time_to_restart = other.afterburner_min_time_to_restart;
+	afterburner_min_start_fuel = other.afterburner_min_start_fuel;
+	afterburner_min_fuel_to_burn = other.afterburner_min_fuel_to_burn;
+	afterburner_cooldown_time = other.afterburner_cooldown_time;
 
 	cmeasure_type = other.cmeasure_type;
 	cmeasure_max = other.cmeasure_max;
@@ -1273,9 +1273,9 @@ void ship_info::move(ship_info&& other)
 	afterburner_recover_rate = other.afterburner_recover_rate;
 	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
 	afterburner_reverse_accel = other.afterburner_reverse_accel;
-	afterburner_min_fuel_to_start = other.afterburner_min_fuel_to_start;
-	afterburner_min_fuel_to_consume = other.afterburner_min_fuel_to_consume;
-	afterburner_min_time_to_restart = other.afterburner_min_time_to_restart;
+	afterburner_min_start_fuel = other.afterburner_min_start_fuel;
+	afterburner_min_fuel_to_burn = other.afterburner_min_fuel_to_burn;
+	afterburner_cooldown_time = other.afterburner_cooldown_time;
 
 	cmeasure_type = other.cmeasure_type;
 	cmeasure_max = other.cmeasure_max;
@@ -1656,9 +1656,9 @@ ship_info::ship_info()
 	afterburner_recover_rate = 0.0f;
 	afterburner_max_reverse_vel = 0.0f;
 	afterburner_reverse_accel = 0.0f;
-	afterburner_min_fuel_to_start = DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE;
-	afterburner_min_fuel_to_consume = 0.0f;
-	afterburner_min_time_to_restart = 0.0f;
+	afterburner_min_start_fuel = DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE;
+	afterburner_min_fuel_to_burn = 0.0f;
+	afterburner_cooldown_time = 0.0f;
 
 	cmeasure_type = Default_cmeasure_index;
 	cmeasure_max = 0;
@@ -3742,16 +3742,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->afterburner_recover_rate);
 		}
 
-		if (optional_string("+Aburn Min Fuel to Start:")) {
-			stuff_float(&sip->afterburner_min_fuel_to_start);
+		if (optional_string("+Aburn Minimum Start Fuel:")) {
+			stuff_float(&sip->afterburner_min_start_fuel);
 		}
 
-		if (optional_string("+Aburn Min Fuel to Consume:")) {
-			stuff_float(&sip->afterburner_min_fuel_to_consume);
+		if (optional_string("+Aburn Minimum Fuel to Burn:")) {
+			stuff_float(&sip->afterburner_min_fuel_to_burn);
 		}
 
-		if (optional_string("+Aburn Min Time to Restart:")) {
-			stuff_float(&sip->afterburner_min_time_to_restart);
+		if (optional_string("+Aburn Cooldown Time:")) {
+			stuff_float(&sip->afterburner_cooldown_time);
 		}
 
 		if (!(sip->afterburner_fuel_capacity) ) {

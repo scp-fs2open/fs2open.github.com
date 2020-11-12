@@ -1137,9 +1137,9 @@ public:
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
-	float       afterburner_min_fuel_to_start;  // must have at least this much fuel to start
-	float       afterburner_min_fuel_to_consume;// consumes at least this much fuel before allowing to stop
-	float       afterburner_min_time_to_restart;// minimum time between last afterburner finish and next start
+	float       afterburner_min_start_fuel;     // must have at least this much fuel to start
+	float       afterburner_min_fuel_to_burn;   // consumes at least this much fuel before allowing to stop
+	float       afterburner_cooldown_time;      // minimum time between last afterburner finish and next start
 	//SparK: reverse afterburner
 	float		afterburner_max_reverse_vel;
 	float		afterburner_reverse_accel;
