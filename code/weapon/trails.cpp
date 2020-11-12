@@ -304,8 +304,10 @@ void trail_render( trail * trailp )
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
 }
 
-// Adds a new segment to trailp at pos, in order to do spread an orient is provided 
-// so it can drift away orthogonally from the direction of the trail
+// Adds a new segment to trailp at pos
+// In order for trailp's 'spread' field to have any effect, it must be nonzero and the orient must be non-null
+// If so, the orient's fvec is the treated as the direction of the trail, and the 
+// new trail point is given a random velocity orthogonal to the fvec (scaled by spread speed)
 void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 {
 	int next = trailp->tail;
