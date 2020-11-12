@@ -296,12 +296,6 @@ enum IoActionId  {
 
 
 /*!
- * A pair of bindings. Primary = first, Secondary = second
- */
-typedef std::pair<CC_bind, CC_bind> CCB;
-
-
-/*!
  *  A singular button binding
  */
 struct CC_bind {
@@ -309,6 +303,10 @@ struct CC_bind {
 	short btn = -1; //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
 };
 
+/*!
+ * A pair of bindings. Primary = first, Secondary = second
+ */
+typedef std::pair<CC_bind, CC_bind> CCB;
 
 /*!
  * A preset, a collection of bindings for use in Control_config with an associated name
