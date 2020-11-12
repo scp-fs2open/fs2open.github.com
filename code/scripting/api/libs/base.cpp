@@ -229,7 +229,22 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
+ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flFrametime);
+}
+
+ADE_FUNC(getRealFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take in real time. Not affected by time compression.", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flRealframetime);
+}
+
+ADE_FUNC_DEPRECATED(getFrametime, l_Base, 
+	"[boolean adjustForTimeCompression]", 
+	"Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", 
+	"number", "Frame time (seconds)", 
+	gameversion::version(20, 2, 0, 0),
+	"The parameter of this function is inverted from the naming (passing true returns non-adjusted time). Please use either getMissionFrametime() or getRealFrametime().")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);
