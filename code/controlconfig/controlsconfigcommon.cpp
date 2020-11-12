@@ -625,9 +625,6 @@ const char *Joy_button_text_english[] = {
 const char **Scan_code_text = Scan_code_text_english;
 const char **Joy_button_text = Joy_button_text_english;
 
-// If find_override is set to true, then this returns the index of the action
-// which has been bound to the given key. Otherwise, the index of the action
-// which has the given key as its default key will be returned.
 int translate_key_to_index(const char *key, bool find_override)
 {
 	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
@@ -692,11 +689,6 @@ int translate_key_to_index(const char *key, bool find_override)
 	return -1;
 }
 
-/*! Given the system default key 'key', return the current key that is bound to that function.
-* Both are 'key' and the return value are descriptive strings that can be displayed
-* directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
-* or there is no key currently bound to the function, NULL is returned.
-*/
 char *translate_key(char *key)
 {
 	int index = -1, key_code = -1, joy_code = -1;

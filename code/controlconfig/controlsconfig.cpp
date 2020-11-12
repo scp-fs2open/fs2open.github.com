@@ -824,22 +824,17 @@ int control_config_do_reset()
 	return 0;
 }
 
-/**
- * @brief Resets all controls to values within the currently selected preset
- */
 void control_config_reset_defaults()
 {
-	int i;
-
 	// Reset keyboard defaults
 	const CC_preset &preset = Control_config_presets[Defaults_cycle_pos];
-	for (auto i = 0; i < Control_config.size(); ++i) {
+	for (size_t i = 0; i < Control_config.size(); ++i) {
 		Control_config[i].key_id = preset.bindings[i].first.btn;
 		Control_config[i].joy_id = preset.bindings[i].second.btn;
 	}
 
 	// Reset joy defaults.  No presets for joysticks currently
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
+	for (size_t i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
 		Axis_map_to[i] = control_config_axis_default(i);
 		Invert_axis[i] = Invert_axis_defaults[i];
 	}
@@ -2160,9 +2155,6 @@ int check_control_used(int id, int key)
 	return 0;
 }
 
-/**
-* Wrapper for check_control_used. Allows the game to ignore the key if told to do so by the ignore-key SEXP.
-*/
 int check_control(int id, int key) 
 {
 	if (check_control_used(id, key)) {
@@ -2189,7 +2181,6 @@ int check_control(int id, int key)
 	return 0;
 }
 
-// get heading, pitch, bank, throttle abs. and throttle rel. values.
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 {
 	int axes_values[JOY_NUM_AXES];
@@ -2267,19 +2258,14 @@ void control_used(int id)
 
 void control_config_clear_used_status()
 {
-	int i;
-
-	for (i=0; i<CCFG_MAX; i++) {
-		Control_config[i].used = 0;
+	for (auto &item : Control_config) {
+		item.used = 0;
 	}
 }
 
 void control_config_clear()
 {
-	int i;
-
-	// Reset keyboard defaults
-	for (i=0; i<CCFG_MAX; i++) {
-		Control_config[i].key_id = Control_config[i].joy_id = -1;
+	for (auto &item : Control_config) {
+		item.key_id = item.joy_id = -1;
 	}
 }
