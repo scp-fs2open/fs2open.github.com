@@ -304,6 +304,8 @@ void trail_render( trail * trailp )
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
 }
 
+// Adds a new segment to trailp at pos, in order to do spread an orient is provided 
+// so it can drift away orthogonally from the direction of the trail
 void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 {
 	int next = trailp->tail;
@@ -324,7 +326,7 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 	if (orient != nullptr && trailp->info.spread > 0.0f) {
 		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
 	} else 
-		vm_vec_make(&trailp->vel[next], 0, 0, 0);
+		vm_vec_zero(&trailp->vel[next]);
 }		
 
 void trail_set_segment( trail *trailp, vec3d *pos )
