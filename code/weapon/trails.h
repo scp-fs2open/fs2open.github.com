@@ -66,7 +66,7 @@ void trail_render_all();
 
 // Returns -1 if failed
 trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient = nullptr );
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient );
 void trail_set_segment( trail *trailp, vec3d *pos );
 void trail_object_died( trail *trailp );
 int trail_stamp_elapsed( trail *trailp );
