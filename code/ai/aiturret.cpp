@@ -544,6 +544,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	if ( objp->type == OBJ_SHIP ) {
 		shipp = &Ships[objp->instance];
+		ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 		// check on enemy team
 		if ( !iff_matches_mask(shipp->team, eeo->enemy_team_mask) ) {
@@ -583,16 +584,18 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 
-		// don't shoot at small ships if we shouldn't
+		// don't shoot at big ships with huge weapons unless they have the flag
 		if (eeo->eeo_flags & EEOF_BIG_ONLY) {
-			if (!(Ship_info[shipp->ship_info_index].is_big_or_huge())) {
+			if (sip->class_type == -1 || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_weapons])) {
 				return;
 			}
 		}
+		//  ^ Note the difference between these checks
+		//  V   "small only" EXCLUDES only big ships, "huge" INCLUDES only big ships
 
-		// don't shoot at big ships if we shouldn't
+		// don't shoot at ships ignored by small weapons if this is a small weapon
 		if (eeo->eeo_flags & EEOF_SMALL_ONLY) {
-			if ((Ship_info[shipp->ship_info_index].is_big_or_huge())) {
+			if (sip->class_type >= 0 && (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Ignored_by_small_only_weapons])) {
 				return;
 			}
 		}
@@ -795,7 +798,8 @@ int is_target_beam_valid(ship_weapon *swp, object *objp)
 		}
 
 		if (all_turret_weapons_have_flags(swp, Weapon::Info_Flags::Huge)) {
-			if (objp->type == OBJ_SHIP && !(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) ) {
+			ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			if (objp->type == OBJ_SHIP && sip->class_type >= 0 && !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_weapons])) {
 				return 0;
 			}
 		}
@@ -1192,8 +1196,9 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 			if (!skip) {
 				if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
+					ship_info* esip = &Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index];
 					// check for huge weapon and huge ship
-					if ( !big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_or_huge()) ) {
+					if ( !big_only_flag || (esip->class_type >= 0 && Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_weapons]) ) {
 						// check for tagged only and tagged ship
 						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
@@ -2399,17 +2404,23 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		{
 			if( (dist_to_enemy <= weapon_firing_range) && (dist_to_enemy >= WeaponMinRange) )
 			{
+				ship_info* esip = &Ship_info[Ships[lep->instance].ship_info_index];
+
 				if ( wip->wi_flags[Weapon::Info_Flags::Huge] ) {
 					if ( lep->type != OBJ_SHIP ) {
 						continue;
 					}
-					if ( !(Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
+					if ( esip->class_type == -1 || !(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_weapons]) ) {
 						continue;
 					}
 				}
 
+				//  ^ Note the difference between these checks
+				//  V   "small only" EXCLUDES only big ships, "huge" INCLUDES only big ships
+
 				if ( wip->wi_flags[Weapon::Info_Flags::Small_only] ) {
-					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
+					if ( (lep->type == OBJ_SHIP) && esip->class_type >= 0 && 
+						(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Ignored_by_small_only_weapons])) {
 						continue;
 					}
 				}

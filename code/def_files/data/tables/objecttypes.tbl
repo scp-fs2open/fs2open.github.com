@@ -221,6 +221,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES
 $Vaporize Percent Chance: 0.0											
 $Name:					Freighter										
 $Counts for Alone:		YES												
@@ -250,6 +252,8 @@ $AI:
 	+Active docks:			( "cargo" )								
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					AWACS											
 $Counts for Alone:		YES												
@@ -277,6 +281,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Gas Miner										
 $Counts for Alone:		YES												
@@ -304,6 +310,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Cruiser											
 $Counts for Alone:		YES												
@@ -331,6 +339,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Corvette										
 $Counts for Alone:		YES												
@@ -358,6 +368,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Capital											
 $Counts for Alone:		YES												
@@ -386,6 +398,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Super Cap										
 $Counts for Alone:		YES												
@@ -412,6 +426,8 @@ $AI:
 	+Can Form Wing:			YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Drydock											
 $Counts for Alone:		YES												
@@ -436,6 +452,8 @@ $AI:
 	+Turrets attack this:	YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 $Name:					Knossos Device									
 $Counts for Alone:		YES												
@@ -458,5 +476,7 @@ $AI:
 	+Turrets attack this:	YES											
 	+Passive docks:			( "support" )								
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Targeted by 'Huge' weapons: YES
+	+Ignored by 'small only' weapons: YES	
 $Vaporize Percent Chance: 0.0											
 #End																	

@@ -5235,6 +5235,14 @@ static void parse_ship_type(const char *filename, const bool replace)
 		if(optional_string("+Ignored on cripple by:")) {
 			stuff_string_list(stp->ai_cripple_ignores_temp); 
 		}
+
+		if (optional_string("+Targeted by 'Huge' weapons:")) {
+			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Targeted_by_huge_weapons);
+		}
+
+		if (optional_string("+Ignored by 'small only' weapons:")) {
+			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Ignored_by_small_only_weapons);
+		}
 	}
 
 	if(optional_string("$Explosion Animations:"))
