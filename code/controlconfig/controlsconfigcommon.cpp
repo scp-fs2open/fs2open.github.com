@@ -1229,7 +1229,7 @@ void control_config_common_read_section(int s) {
 		try {
 			item_id = old_text.at(szTempBuffer);
 
-		} catch(const std::out_of_range& oor) {
+		} catch(const std::out_of_range) {
 			// Warning: Not Found
 			error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
 
