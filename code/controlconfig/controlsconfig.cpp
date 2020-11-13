@@ -1316,6 +1316,63 @@ void control_config_close()
 	Cc_lines.resize(0);
 }
 
+/**
+ * @brief Display the currently selected preset
+ */
+void control_config_draw_selected_preset() {
+	SCP_string preset_str;
+	auto preset_it = Control_config_presets.begin();
+
+	// Find the matching preset.
+	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
+	for (; preset_it != Control_config_presets.end(); ++preset_it) {
+		bool found_match = true;
+
+		// Check digital controls
+		for (size_t i = 0; i < Control_config.size(); ++i) {
+			if (Control_config[i].disabled) {
+				// Skip
+				continue;
+			}
+
+			// Check key
+			if (Control_config[i].key_id != preset_it->bindings[i].first.btn) {
+				found_match = false;
+				break;
+			}
+
+			// Check Joy
+			if (Control_config[i].joy_id != preset_it->bindings[i].second.btn) {
+				found_match = false;
+				break;
+			}
+		}
+
+
+		if (found_match) {
+			break;
+		}
+	}
+
+	if (preset_it != Control_config_presets.end()) {
+		sprintf(preset_str, "Controls: %s", preset_it->name.c_str());
+	} else {
+		sprintf(preset_str, "Controls: custom");
+	}
+
+	// Draw the string
+	int font_height = gr_get_font_height();
+	int w;
+	gr_get_string_size(&w, NULL, preset_str.c_str());
+	gr_set_color_fast(&Color_text_normal);
+
+	if (gr_screen.res == GR_640) {
+		gr_string(16, (24 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+	} else {
+		gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+	}
+}
+
 void control_config_do_frame(float frametime)
 {
 	const char *str;
@@ -1987,46 +2044,8 @@ void control_config_do_frame(float frametime)
 		List_buttons[i++].disable();
 	}
 
-	// If multiple controls presets are provided, display which one is in use
-	/* TODO
-	if (Control_config_presets.size() > 1) {
-		SCP_string preset_str;
-		int matching_preset = -1;
-
-		for (i=0; i<(int)Control_config_presets.size(); i++) {
-			bool this_preset_matches = true;
-			config_item *this_preset = Control_config_presets[i];
-
-			for (j=0; j<CCFG_MAX; j++) {
-				if (!Control_config[j].disabled && Control_config[j].key_id != this_preset[j].key_default) {
-					this_preset_matches = false;
-					break;
-				}
-			}
-
-			if (this_preset_matches) {
-				matching_preset = i;
-				break;
-			}
-		}
-
-		if (matching_preset >= 0) {
-			sprintf(preset_str, "Controls: %s", Control_config_preset_names[matching_preset].c_str());
-		} else {
-			sprintf(preset_str, "Controls: custom");
-			
-		}
-
-		gr_get_string_size(&w, NULL, preset_str.c_str());
-		gr_set_color_fast(&Color_text_normal);
-
-		if (gr_screen.res == GR_640) {
-			gr_string(16, (24 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
-		} else {
-			gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
-		}
-	}
-	*/
+	// Display preset in use
+	control_config_draw_selected_preset();
 
 	// blit help overlay if active
 	help_overlay_maybe_blit(Control_config_overlay_id, gr_screen.res);
