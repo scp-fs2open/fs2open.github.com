@@ -173,10 +173,14 @@ static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last
 
 int Control_config_overlay_id;
 
-static struct {
+struct conflict {
 	int key;  // index of other control in conflict with this one
 	int joy;  // index of other control in conflict with this one
-} Conflicts[CCFG_MAX];
+
+	conflict() : key(-1), joy(-1) {};
+};
+
+SCP_vector<conflict> Conflicts;
 
 int Conflicts_axes[NUM_JOY_AXIS_ACTIONS];
 
@@ -1167,6 +1171,10 @@ void control_config_init()
 	std::copy(Axis_map_to, Axis_map_to + NUM_JOY_AXIS_ACTIONS, Axis_map_to_backup);
 	std::copy(Invert_axis, Invert_axis + JOY_NUM_AXES, Invert_axis_backup);
 
+	// Init conflict vector
+	Conflicts.clear();
+	Conflicts.resize(Control_config.size());
+
 	// Init Cc_lines
 	Cc_lines.clear();
 	Cc_lines.resize(Control_config.size() + NUM_JOY_AXIS_ACTIONS);	// Can't use CCFG_MAX here, since scripts or might add controls
@@ -1314,6 +1322,7 @@ void control_config_close()
 	// Free up memory from dynamic containers
 	Control_config_backup.resize(0);
 	Cc_lines.resize(0);
+	Conflicts.resize(0);
 }
 
 /**
