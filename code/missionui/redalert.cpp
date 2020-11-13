@@ -27,6 +27,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "mod_table/mod_table.h"
@@ -303,6 +304,11 @@ void red_alert_init()
 
 	if ( Red_alert_inited ) {
 		return;
+	}
+
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
 	}
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);

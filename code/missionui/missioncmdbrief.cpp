@@ -23,7 +23,12 @@
 #include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
+#include "network/multi_endgame.h"
+#include "network/multiteamselect.h"
 #include "playerman/player.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -564,6 +569,11 @@ void cmd_brief_init(int team)
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
 
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+	}
+
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
@@ -617,6 +627,14 @@ void cmd_brief_init(int team)
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
+
+	// we have to reset/setup the shipselect and weaponselect pointers before moving on
+	ship_select_common_init();
+	weapon_select_common_init();
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_ts_common_init();
+	}
 
 	cmd_brief_init_voice();
 	cmd_brief_new_stage(0);
@@ -685,8 +703,13 @@ void cmd_brief_do_frame(float frametime)
 
 	switch (k) {
 	case KEY_ESC:
-		common_music_close();
-		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		if (Game_mode & GM_MULTIPLAYER) {
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			multi_quit_game(PROMPT_ALL);
+		} else {
+			common_music_close();
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		}
 		break;
 	}	// end switch
 

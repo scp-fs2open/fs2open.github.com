@@ -223,7 +223,7 @@ extern "C" {
 void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
-void game_do_frame();
+void game_do_frame(bool set_frametime = true);
 void game_update_missiontime();	// called from game_do_frame() and navmap_do_frame()
 void game_reset_time();
 void game_show_framerate();			// draws framerate in lower right corner
@@ -1393,6 +1393,11 @@ bool game_start_mission()
 #endif
 
 	bm_print_bitmaps();
+
+	// init some common team select stuff now
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_ts_common_level_init();
+	}
 
 	int e1 __UNUSED = timer_get_milliseconds();
 
@@ -3650,7 +3655,13 @@ void game_maybe_do_dead_popup(float frametime)
 			switch( choice ) {
 
 			case POPUPDEAD_DO_MAIN_HALL:
-				multi_quit_game(PROMPT_NONE,-1);
+				if ( !multi_quit_game(PROMPT_ALL) ) {
+					leave_popup = 0;
+
+					// reset the previous choice so this bit isn't called again next frame
+					extern int Popupdead_choice;
+					Popupdead_choice = -1;
+				}
 				break;
 
 			case POPUPDEAD_DO_RESPAWN:				
@@ -4274,9 +4285,12 @@ void game_update_missiontime()
 		Missiontime += Frametime;
 }
 
-void game_do_frame()
-{	
-	game_set_frametime(GS_STATE_GAME_PLAY);
+void game_do_frame(bool set_frametime)
+{
+	if (set_frametime) {
+		game_set_frametime(GS_STATE_GAME_PLAY);
+	}
+
 	game_update_missiontime();
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -4299,7 +4313,7 @@ void game_do_frame()
 void multi_maybe_do_frame()
 {
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) && !Multi_pause_status){
-		game_do_frame(); 
+		game_do_frame(false);
 	}
 }
 
@@ -5013,10 +5027,14 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_CMD_BRIEF:
 			if (new_state == GS_STATE_OPTIONS_MENU) {
 				cmd_brief_hold();
-
 			} else {
 				cmd_brief_close();
-					common_select_close();
+				common_select_close();
+
+				if (new_state != GS_STATE_BRIEFING) {
+					common_music_close();
+				}
+
 				if (new_state == GS_STATE_MAIN_MENU) {
 					freespace_stop_mission();	
 				}
@@ -5345,6 +5363,11 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_FICTION_VIEWER:
 			fiction_viewer_close();
 			common_select_close();
+
+			if ( (new_state != GS_STATE_BRIEFING) && (new_state != GS_STATE_CMD_BRIEF) ) {
+				common_music_close();
+			}
+
 			if (new_state == GS_STATE_MAIN_MENU) {
 				freespace_stop_mission();
 			}
@@ -5481,7 +5504,12 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_BRIEFING:
-			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 
+			if ( (old_state != GS_STATE_TEAM_SELECT) && (old_state != GS_STATE_SHIP_SELECT) &&
+				 (old_state != GS_STATE_WEAPON_SELECT) && (old_state != GS_STATE_OPTIONS_MENU) &&
+				 (old_state != GS_STATE_GAMEPLAY_HELP) )
+			{
+				common_maybe_play_cutscene(MOVIE_PRE_BRIEF);
+			}
 			brief_init();
 			break;
 
