@@ -1431,7 +1431,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			Assert(buf_str != "");
 		} else {
 			// Not bound
-			buf_str = "-1";
+			buf_str = "NONE";
 		}
 
 		cfputs(("$Bind Name: " + item.text + "\n").c_str(), cfile);
