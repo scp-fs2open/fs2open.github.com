@@ -1392,12 +1392,17 @@ void control_config_common_read_tbl() {
  * @returns 1 if not successful - nothing was saved
  */
 int control_config_common_write_tbl(bool overwrite = false) {
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && overwrite) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
 		// File exists, and we're told to not overwrite it. Bail
 		return 1;
 	}
 
 	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	if (cfile == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
 	cfputs("#ControlConfigOverride\n", cfile);
 	cfputs(("$Name: " + Control_config_presets[0].name + "\n").c_str(), cfile);
 
@@ -1476,8 +1481,11 @@ int control_config_common_write_tbl(bool overwrite = false) {
 }
 
 DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
-	control_config_common_write_tbl(true);
-	dc_printf("Default bindings saved to controlconfigdefaults.tbl");
+	if (!control_config_common_write_tbl(true)) {
+		dc_printf("Default bindings saved to controlconfigdefaults.tbl");
+	} else {
+		dc_printf("Error: Unable to save Control Configuration Defaults.");
+	}
 }
 
 DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
