@@ -9,9 +9,11 @@
 
 #include <cstdio>
 #include <cstdarg>
+#include <string>
 
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
+#include "debugconsole/console.h"
 #include "def_files/def_files.h"
 #include "globalincs/systemvars.h"
 #include "io/joy.h"
@@ -996,6 +998,7 @@ void LoadEnumsIntoCCTabMap(void) {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
 
+	ADD_ENUM_TO_CCTAB_MAP(NO_TAB)
 	ADD_ENUM_TO_CCTAB_MAP(TARGET_TAB)
 	ADD_ENUM_TO_CCTAB_MAP(SHIP_TAB)
 	ADD_ENUM_TO_CCTAB_MAP(WEAPON_TAB)
@@ -1173,6 +1176,40 @@ void LoadEnumsIntoMaps() {
 	LoadEnumsIntoActionMap();
 }
 
+
+/**
+ * @brief Searches Control_config for a control that has the given ::text
+ *
+ * @returns The IoActionId of the control if successful, or
+ * @returns Control_config.size() if unsuccessful
+ *
+ * @details This also checks the old hardcoded names for backward compat.  However, since the new ::text is overridable
+ * by controlconfigdefaults.tbl, any references to the new hardcoded names may fail after they've been changed in the
+ * default preset
+ */
+size_t find_control_by_text(SCP_string& text) {
+	size_t item_id;
+
+	// Search the current ::text
+	for (item_id = 0; item_id < Control_config.size(); ++item_id) {
+		if (text == Control_config[item_id].text) {
+			return item_id;
+		}
+	}
+
+	// Not found in new text, search old ::text
+	try {
+		item_id = old_text.at(text);
+
+	} catch (const std::out_of_range) {
+		// Couldn't find in old ::text
+		return Control_config.size();
+
+	} // else, Found in old ::text
+
+	return item_id;
+}
+
 /**
  * @brief Reads a section in controlconfigdefaults.tbl.
  *
@@ -1225,11 +1262,10 @@ void control_config_common_read_section(int s) {
 		stuff_string(szTempBuffer, F_NAME);
 
 		// Find the control
-		IoActionId item_id = CCFG_MAX;
-		try {
-			item_id = old_text.at(szTempBuffer);
+		size_t item_id = find_control_by_text(szTempBuffer);
 
-		} catch(const std::out_of_range) {
+		if (item_id == Control_config.size()) {
+			// Control wasn't found
 			// Warning: Not Found
 			error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
 
@@ -1237,7 +1273,8 @@ void control_config_common_read_section(int s) {
 			if (!skip_to_start_of_string_either("#End", "$Bind Name:")) {
 				// Couldn't find next binding or end. Fail
 				throw parse::ParseException("Could not find #End or $Bind Name");
-			}; // else, continue loop
+
+			}; // Found next binding or end, continue loop
 			continue;
 		}
 
@@ -1344,6 +1381,108 @@ void control_config_common_read_tbl() {
 
 		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	}
+}
+
+/**
+ * @brief Writes the default preset into controlconfigdefaults.tbl
+ *
+ * @param[in] overwrite If true, overwrite any existing .tbl
+ *
+ * @returns 0 if successful
+ * @returns 1 if not successful - nothing was saved
+ */
+int control_config_common_write_tbl(bool overwrite = false) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	cfputs("#ControlConfigOverride\n", cfile);
+	cfputs(("$Name: " + Control_config_presets[0].name + "\n").c_str(), cfile);
+
+	// Write bindings for all controls
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		auto& item = Control_config[i];
+		auto& bindings = Control_config_presets[0].bindings[i];
+
+		short key = -1;
+		int key_shift = 0;
+		int key_alt = 0;
+		int key_ctrl = 0;
+
+		short btn = bindings.second.btn;
+
+		SCP_string buf_str = "";
+		
+		if (bindings.first.btn != -1) {
+			// Translate the key into string form
+			key = bindings.first.btn & KEY_MASK;
+			key_shift = (bindings.first.btn & KEY_SHIFTED) ? 1 : 0;
+			key_alt = (bindings.first.btn & KEY_ALTED) ? 1 : 0;
+			key_ctrl = (bindings.first.btn & KEY_CTRLED) ? 1 : 0;
+
+			for (const auto& pair : mKeyNameToVal) {
+				if (pair.second == key) {
+					buf_str = pair.first;
+					break;
+				}
+			}
+			Assert(buf_str != "");
+		} else {
+			// Not bound
+			buf_str = "-1";
+		}
+
+		cfputs(("$Bind Name: " + item.text + "\n").c_str(), cfile);
+		
+		cfputs(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
+		cfputs(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
+		cfputs(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
+		cfputs(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
+
+		cfputs(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
+
+		// Config menu options
+		buf_str = "";
+		for (const auto& pair : mCCTabNameToVal) {
+			if (pair.second == item.tab) {
+				buf_str = pair.first;
+				break;
+			}
+		}
+		Assert(buf_str != "");
+		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
+
+		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
+		
+		cfputs(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
+		
+		buf_str = "";
+		for (const auto& pair : mCCTypeNameToVal) {
+			if (pair.second == item.type) {
+				buf_str = pair.first;
+				break;
+			}
+		}
+		Assert(buf_str != "");
+		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
+	}
+
+	cfputs("#End\n", cfile);
+	cfclose(cfile);
+
+	return 0;
+}
+
+DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
+	control_config_common_write_tbl(true);
+	dc_printf("Default bindings saved to controlconfigdefaults.tbl");
+}
+
+DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
+	control_config_common_read_tbl();
+	dc_printf("Default bindings and presets loaded.");
 }
 
 /**
