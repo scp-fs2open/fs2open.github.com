@@ -73,6 +73,7 @@
 #include "network/multi_fstracker.h"
 #include "network/multi_sw.h"
 #include "network/multi_sexp.h"
+#include "network/multi_mdns.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -2248,9 +2249,7 @@ void process_netgame_descript_packet( ubyte *data, header *hinfo )
 // broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query()
 {
-	int packet_size;
 	server_item *s_moveup;
-	ubyte data[MAX_PACKET_SIZE];
 
 	if (MULTI_IS_TRACKER_GAME) {
 		// check with MT
@@ -2269,8 +2268,7 @@ void broadcast_game_query()
 
 	// send out a broadcast if our options allow us
 	if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
-		BUILD_HEADER(GAME_QUERY);
-		psnet_broadcast(data, packet_size);
+		multi_mdns_query();
 	}
 }
 

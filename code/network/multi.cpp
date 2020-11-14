@@ -52,6 +52,7 @@
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
+#include "network/multi_mdns.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -1325,6 +1326,9 @@ void multi_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		multi_mdns_service_do();
 	}
 }
 
@@ -1425,6 +1429,9 @@ void multi_pause_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		multi_mdns_service_do();
 	}
 }
 
@@ -1554,6 +1561,9 @@ void standalone_main_init()
 	// setup port forwarding
 	multi_port_forward_init();
 
+	// setup mdns
+	multi_mdns_service_init();
+
 	// login to game tracker
 	std_tracker_login();
 
@@ -1593,6 +1603,9 @@ void standalone_main_do()
 
    // process/renew port mapping
    multi_port_forward_do();
+
+   // handle mdns messages
+   multi_mdns_service_do();
 }
 
 // --------------------------------------------------------------------------------
@@ -1608,6 +1621,9 @@ void standalone_main_close()
 
 	// remove port forwarding
 	multi_port_forward_close();
+
+	// stop mdns
+	multi_mdns_service_close();
 }
 
 void multi_standalone_reset_all()
