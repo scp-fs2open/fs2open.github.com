@@ -52,6 +52,8 @@ endif()
 
 target_link_libraries(code PUBLIC parsers)
 
+target_link_libraries(code PUBLIC mdns)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)
