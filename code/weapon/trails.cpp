@@ -368,7 +368,7 @@ void trail_move_all(float frametime)
 					num_alive_segments++;	// Record how many still alive.
 				}
 
-				trailp->pos[n] += trailp->vel[n] * frametime;
+				trailp->pos[n] += trailp->vel[n] * frametime; 
 
 			} while ( n != trailp->head );
 		}		
