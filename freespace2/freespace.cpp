@@ -4989,7 +4989,9 @@ void game_leave_state( int old_state, int new_state )
 				  && (new_state != GS_STATE_SHIP_SELECT) && (new_state != GS_STATE_HOTKEY_SCREEN)
 				  && (new_state != GS_STATE_TEAM_SELECT) && (new_state != GS_STATE_MULTI_MISSION_SYNC)){
 				common_select_close();
-				if ( new_state == GS_STATE_MAIN_MENU ) {
+				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+				{
 					freespace_stop_mission();	
 				}
 			}
@@ -5035,7 +5037,9 @@ void game_leave_state( int old_state, int new_state )
 					common_music_close();
 				}
 
-				if (new_state == GS_STATE_MAIN_MENU) {
+				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+				{
 					freespace_stop_mission();	
 				}
 			}
@@ -5044,7 +5048,9 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_RED_ALERT:
 			red_alert_close();
 			common_select_close();
-			if (new_state == GS_STATE_MAIN_MENU) {
+			if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+				 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+			{
 				freespace_stop_mission();
 			}
 			break;
@@ -5054,7 +5060,9 @@ void game_leave_state( int old_state, int new_state )
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
 				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT  && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
 				common_select_close();
-				if ( new_state == GS_STATE_MAIN_MENU ) {
+				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+				{
 					freespace_stop_mission();	
 				}
 			}
@@ -5065,7 +5073,9 @@ void game_leave_state( int old_state, int new_state )
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
 				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
 				common_select_close();
-				if ( new_state == GS_STATE_MAIN_MENU ) {
+				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+				{
 					freespace_stop_mission();	
 				}
 			}
@@ -5076,7 +5086,9 @@ void game_leave_state( int old_state, int new_state )
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
 				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_WEAPON_SELECT && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
 				common_select_close();
-				if ( new_state == GS_STATE_MAIN_MENU ) {
+				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+				{
 					freespace_stop_mission();	
 				}
 			}					
@@ -5368,7 +5380,9 @@ void game_leave_state( int old_state, int new_state )
 				common_music_close();
 			}
 
-			if (new_state == GS_STATE_MAIN_MENU) {
+			if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
+				 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
+			{
 				freespace_stop_mission();
 			}
 			break;
