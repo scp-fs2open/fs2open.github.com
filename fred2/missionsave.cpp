@@ -2439,7 +2439,7 @@ int CFred_mission_save::save_mission_info()
 		}
 
 		// We are now always writing multi squadron wings to avoid a multi bug where, if the mission designer skips one of the squadron wings
-		// it would disappear from the mission
+		// the wing after would disappear from the mission
 		if (The_mission.game_type & MISSION_TYPE_MULTI) {
 			fout("\n$Squadron wing names: ( ");
 
