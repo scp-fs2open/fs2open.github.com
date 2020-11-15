@@ -353,14 +353,6 @@ void red_alert_init()
 
 	red_alert_voice_load();
 
-	// we have to reset/setup the shipselect and weaponselect pointers before moving on
-	ship_select_common_init();
-	weapon_select_common_init();
-
-	if (Game_mode & GM_MULTIPLAYER) {
-		multi_ts_common_init();
-	}
-
 	Text_delay = timestamp(200);
 
 	Red_alert_voice_started = 0;

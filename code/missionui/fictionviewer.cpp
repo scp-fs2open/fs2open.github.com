@@ -384,14 +384,6 @@ void fiction_viewer_init()
 		audiostream_play(Fiction_viewer_voice, Master_voice_volume, 0);
 	}
 
-	// we have to reset/setup the shipselect and weaponselect pointers before moving on
-	ship_select_common_init();
-	weapon_select_common_init();
-
-	if (Game_mode & GM_MULTIPLAYER) {
-		multi_ts_common_init();
-	}
-
 	Fiction_viewer_inited = 1;
 }
 
