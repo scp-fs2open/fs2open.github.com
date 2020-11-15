@@ -6,13 +6,15 @@
 #include <arpa/inet.h>
 #endif
 
-#include "mdns.h"
-
 #include "globalincs/pstypes.h"
 #include "network/psnet2.h"
 #include "network/multimsgs.h"
 #include "network/multi_log.h"
 #include "network/multi_mdns.h"
+
+PUSH_SUPPRESS_WARNINGS
+#include "mdns.h"
+POP_SUPPRESS_WARNINGS
 
 
 static const SCP_string SERVICE_NAME = "_fso._hard-light._udp.local.";
@@ -73,13 +75,13 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 		// check for special discovery record and reply accordingly
 		const SCP_string dns_sd = "_services._dns-sd._udp.local.";
 
-		if ( (service.length == dns_sd.size()) && !dns_sd.compare(service.str) ) {
+		if ( (service.length == dns_sd.size()) && (dns_sd == service.str) ) {
 			mdns_discovery_answer(sock, from, addrlen, BUFFER.data(), BUFFER.size(), SERVICE_NAME.c_str(), SERVICE_NAME.size());
 			return 0;
 		}
 
 		// ignore anything not meant for us
-		if ( (service.length != SERVICE_NAME.size()) || SERVICE_NAME.compare(service.str) ) {
+		if ( (service.length != SERVICE_NAME.size()) || !(SERVICE_NAME == service.str) ) {
 			return 0;
 		}
 
@@ -198,7 +200,7 @@ void multi_mdns_query_do()
 			timeout.tv_usec = 0;
 
 			FD_ZERO(&read_fds);
-			FD_SET(sock, &read_fds);
+			FD_SET(static_cast<SOCKET>(sock), &read_fds);
 
 			if ( select(sock+1, &read_fds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
 				break;
@@ -284,7 +286,7 @@ void multi_mdns_service_do()
 			timeout.tv_usec = 0;
 
 			FD_ZERO(&read_fds);
-			FD_SET(sock, &read_fds);
+			FD_SET(static_cast<SOCKET>(sock), &read_fds);
 
 			if ( select(sock+1, &read_fds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
 				break;
