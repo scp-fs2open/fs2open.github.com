@@ -1055,6 +1055,7 @@ void ship_info::clone(const ship_info& other)
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
+	afterburner_trail_spread = other.afterburner_trail_spread;
 
 	normal_thruster_particles = other.normal_thruster_particles;
 	afterburner_thruster_particles = other.afterburner_thruster_particles;
@@ -1345,6 +1346,7 @@ void ship_info::move(ship_info&& other)
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
+	afterburner_trail_spread = other.afterburner_trail_spread;
 
 	std::swap(normal_thruster_particles, other.normal_thruster_particles);
 	std::swap(afterburner_thruster_particles, other.afterburner_thruster_particles);
@@ -1741,6 +1743,7 @@ ship_info::ship_info()
 	afterburner_trail_width_factor = 1.0f;
 	afterburner_trail_alpha_factor = 1.0f;
 	afterburner_trail_life = 5.0f;
+	afterburner_trail_spread = 0.0f;
 	afterburner_trail_faded_out_sections = 0;
 
 	normal_thruster_particles.clear();
@@ -3759,6 +3762,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->afterburner_trail_life);
 		}
 
+		if (optional_string("+Spread:")) {
+			trails_warning = false;
+			stuff_float(&sip->afterburner_trail_spread);
+		}
+
 		if ( optional_string("+Faded Out Sections:") ) {
 			trails_warning = false;
 			stuff_int(&sip->afterburner_trail_faded_out_sections);
@@ -4168,6 +4176,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
+
+		if (optional_string("+Spread:"))
+			stuff_float(&ci->spread);
 		
 		required_string("+Spew Time:");
 		stuff_int(&ci->stamp);		
@@ -9616,6 +9627,7 @@ static void ship_init_afterburners(ship *shipp)
 
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 			ci->stamp = 60;	//spew time???	
+			ci->spread = sip->afterburner_trail_spread; // table loaded spread speed
 
 			ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // initial fade out
 
@@ -10483,6 +10495,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ci->a_end = 0.0f;//end alpha
 	
 				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
+
+				ci->spread = sip->afterburner_trail_spread; // table loaded spread speed
 	
 				ci->stamp = 60;	//spew time???	
 

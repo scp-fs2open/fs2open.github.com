@@ -1226,6 +1226,7 @@ public:
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
 	float afterburner_trail_life;
+	float afterburner_trail_spread;
 	int afterburner_trail_faded_out_sections;
 
 	// thruster particles
