@@ -51,6 +51,9 @@
 
 #include <freespace.h>
 
+// quick helper function
+bool is_wing_defined(char* wing_name);
+
 int CFred_mission_save::autosave_mission_file(char *pathname)
 {
 	char backup_name[256], name2[256];
@@ -2435,16 +2438,24 @@ int CFred_mission_save::save_mission_info()
 			fout(")");
 		}
 
-		// squadron wings
-		if (strcmp(Squadron_wing_names[0], "Alpha") || strcmp(Squadron_wing_names[1], "Beta") || strcmp(Squadron_wing_names[2], "Gamma") || strcmp(Squadron_wing_names[3], "Delta") || strcmp(Squadron_wing_names[4], "Epsilon")) {
-			fout("\n$Squadron wing names: ( ");
+		// We are now always writing squadron wings to avoid a multi bug where, if the mission designer skips one of the squadron wings
+		// it would disappear from the mission
+		fout("\n$Squadron wing names: ( ");
 
-			for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		SCP_vector<int> undefined_wings;
+		for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
+			if (is_wing_defined(Squadron_wing_names[i])) {
 				fout("\"%s\" ", Squadron_wing_names[i]);
+			} else {
+				undefined_wings.push_back(i);
 			}
-
-			fout(")");
 		}
+
+		for (auto & undefined_wing : undefined_wings){
+			fout("\"%s\" ", Squadron_wing_names[undefined_wing]);
+		}
+
+		fout(")");
 
 		// tvt wings
 		if (strcmp(TVT_wing_names[0], "Alpha") || strcmp(TVT_wing_names[1], "Zeta")) {
@@ -4348,3 +4359,15 @@ int CFred_mission_save::save_wings()
 	Assert(count == Num_wings);
 	return err;
 }
+
+// quick helper function to check if a wing is currently defined.
+bool is_wing_defined(char* wing_name)
+{
+	for (auto& wing : Wings) {
+		if (!strcmp(wing_name, wing.name)) {
+			return true;
+		}
+	}
+	return false;
+}
+
