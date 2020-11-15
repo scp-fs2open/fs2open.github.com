@@ -2438,24 +2438,35 @@ int CFred_mission_save::save_mission_info()
 			fout(")");
 		}
 
-		// We are now always writing squadron wings to avoid a multi bug where, if the mission designer skips one of the squadron wings
+		// We are now always writing multi squadron wings to avoid a multi bug where, if the mission designer skips one of the squadron wings
 		// it would disappear from the mission
-		fout("\n$Squadron wing names: ( ");
+		if (The_mission.game_type & MISSION_TYPE_MULTI) {
+			fout("\n$Squadron wing names: ( ");
 
-		SCP_vector<int> undefined_wings;
-		for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-			if (is_wing_defined(Squadron_wing_names[i])) {
-				fout("\"%s\" ", Squadron_wing_names[i]);
-			} else {
-				undefined_wings.push_back(i);
+			SCP_vector<int> undefined_wings;
+			for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
+				if (is_wing_defined(Squadron_wing_names[i])) {
+					fout("\"%s\" ", Squadron_wing_names[i]);
+				} else {
+					undefined_wings.push_back(i);
+				}
+			}
+
+			for (auto & undefined_wing : undefined_wings){
+				fout("\"%s\" ", Squadron_wing_names[undefined_wing]);
+			}
+
+			fout(")");
+		} // otherwise, do what we always used to do, output only if they are not the default.
+		else if (strcmp(Squadron_wing_names[0], "Alpha") || strcmp(Squadron_wing_names[1], "Beta") || strcmp(Squadron_wing_names[2], "Gamma") || strcmp(Squadron_wing_names[3], "Delta") || strcmp(Squadron_wing_names[4], "Epsilon")) {
+			{
+				fout("\n$Squadron wing names: ( ");
+				for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
+					fout("\"%s\" ", Squadron_wing_names[i]);
+				}
+				fout(")");
 			}
 		}
-
-		for (auto & undefined_wing : undefined_wings){
-			fout("\"%s\" ", Squadron_wing_names[undefined_wing]);
-		}
-
-		fout(")");
 
 		// tvt wings
 		if (strcmp(TVT_wing_names[0], "Alpha") || strcmp(TVT_wing_names[1], "Zeta")) {
