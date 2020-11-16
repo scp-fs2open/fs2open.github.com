@@ -810,7 +810,7 @@ int model_anim_get_time_type(ship_subsys *pss, AnimationTriggerType animation_ty
 			} else {
 				// if it isn't moving then it's trivial.
 				// no currently playing animation
-				ani_time = 0;
+				ani_time = psub->triggers[i].end + psub->triggers[i].start;
 			}
 
 			if (ret < ani_time)
