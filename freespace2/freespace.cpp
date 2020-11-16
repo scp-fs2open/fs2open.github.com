@@ -5497,6 +5497,8 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_FICTION_VIEWER:
+			// init some elements common to ship/weapon select (to be done before cutscene)
+			common_select_init();
 			common_maybe_play_cutscene(MOVIE_PRE_FICTION); 	
 			fiction_viewer_init();
 			break;
@@ -5505,6 +5507,8 @@ void game_enter_state( int old_state, int new_state )
 			if (old_state == GS_STATE_OPTIONS_MENU) {
 				cmd_brief_unhold();
 			} else {
+				// init some elements common to ship/weapon select (to be done before cutscene)
+				common_select_init();
 				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF); 	
 				int team_num = 0;  // team number used as index for which cmd brief to use.
 				cmd_brief_init(team_num);
@@ -5513,11 +5517,16 @@ void game_enter_state( int old_state, int new_state )
 		}
 
 		case GS_STATE_RED_ALERT:
+			// init some elements common to ship/weapon select (to be done before cutscene)
+			common_select_init();
 			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 	
 			red_alert_init();
 			break;
 
 		case GS_STATE_BRIEFING:
+			// init some elements common to ship/weapon select (to be done before cutscene)
+			common_select_init();
+
 			if ( (old_state != GS_STATE_TEAM_SELECT) && (old_state != GS_STATE_SHIP_SELECT) &&
 				 (old_state != GS_STATE_WEAPON_SELECT) && (old_state != GS_STATE_OPTIONS_MENU) &&
 				 (old_state != GS_STATE_GAMEPLAY_HELP) )
