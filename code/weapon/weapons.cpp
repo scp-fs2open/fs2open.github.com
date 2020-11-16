@@ -5260,8 +5260,8 @@ void weapon_process_post(object * obj, float frame_time)
 
 				if (wp->trail_ptr != nullptr) {
 					// Add two segments.  One to stay at launch pos, one to move.
-					trail_add_segment(wp->trail_ptr, &obj->pos);
-					trail_add_segment(wp->trail_ptr, &obj->pos);
+					trail_add_segment(wp->trail_ptr, &obj->pos, &obj->orient);
+					trail_add_segment(wp->trail_ptr, &obj->pos, &obj->orient);
 				}
 			}
 		}
