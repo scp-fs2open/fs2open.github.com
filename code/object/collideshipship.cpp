@@ -354,32 +354,32 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	// check if the hit point is beyond the clip plane if one of the ships is warping in or out.
 	if (valid_hit_occured) {
 		WarpEffect* warp_effect = nullptr;
-		bool hv_warp, li_warp;
-		hv_warp = li_warp = false;
 
 		// this is extremely confusing but mc.hit_point_world isn't actually in world coords
 		// everything above was calculated relative to the heavy's position
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 
-		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect)
+		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect != nullptr)
 			warp_effect = heavy_shipp->warpout_effect;
-		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect)
-			warp_effect = heavy_shipp->warpout_effect;
+		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect != nullptr)
+			warp_effect = heavy_shipp->warpin_effect;
 
+		bool heavy_warp_no_collide = false;
 		if (warp_effect != nullptr)
-			hv_warp = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+			heavy_warp_no_collide = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
 
 		warp_effect = nullptr;
-		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect)
+		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect != nullptr)
 			warp_effect = light_shipp->warpout_effect;
-		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect)
-			warp_effect = light_shipp->warpout_effect;
+		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect != nullptr)
+			warp_effect = light_shipp->warpin_effect;
 
+		bool light_warp_no_collide = false;
 		if (warp_effect != nullptr)
-			li_warp = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+			light_warp_no_collide = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
 
 		
-		if (hv_warp || li_warp)
+		if (heavy_warp_no_collide || light_warp_no_collide)
 			valid_hit_occured = 0;
 	}
 

@@ -2556,14 +2556,15 @@ int beam_collide_ship(obj_pair *pair)
 	
 	if (hull_enter_collision || hull_exit_collision || shield_collision) {
 		WarpEffect* warp_effect = nullptr;
+
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr)
+			warp_effect = shipp->warpout_effect;
+		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
+			warp_effect = shipp->warpin_effect;
+
+
 		bool hull_no_collide, shield_no_collide;
 		hull_no_collide = shield_no_collide = false;
-
-		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect)
-			warp_effect = shipp->warpout_effect;
-		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect)
-			warp_effect = shipp->warpout_effect;
-
 		if (warp_effect != nullptr) {
 			hull_no_collide = point_is_clipped_by_warp(&mc_hull_enter.hit_point_world, warp_effect);
 			shield_no_collide = point_is_clipped_by_warp(&mc_shield.hit_point_world, warp_effect);

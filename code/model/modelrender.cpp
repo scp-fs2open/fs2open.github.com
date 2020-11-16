@@ -1666,14 +1666,18 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 
 	vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
-	if ( shipp != NULL ) {
+	if (shipp != NULL) {
 		// don't render if its on the wrong side of the portal
 		WarpEffect* warp_effect = nullptr;
 
-		if ((shipp->is_arriving()) && (shipp->warpin_effect) && Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE)
+		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
+			&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
 			warp_effect = shipp->warpin_effect;
-		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect) && Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE)
+		}
+		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr) 
+			&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
 			warp_effect = shipp->warpout_effect;
+		}
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
 			return;
@@ -2101,10 +2105,14 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				// if ship is warping out, check position of the engine glow to the warp plane
 				WarpEffect* warp_effect = nullptr;
 
-				if ((shipp->is_arriving()) && (shipp->warpin_effect) && Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE)
+				if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
+					&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
 					warp_effect = shipp->warpin_effect;
-				else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect) && Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE)
+				}
+				else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr)
+					&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
 					warp_effect = shipp->warpout_effect;
+				}
 
 				if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
 					continue;

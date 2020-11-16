@@ -357,14 +357,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	// check if the hit point is beyond the clip plane when warping out.
 	if (hull_collision || shield_collision) {
 		WarpEffect* warp_effect = nullptr;
+
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr)
+			warp_effect = shipp->warpout_effect;
+		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
+			warp_effect = shipp->warpin_effect;
+
 		bool hull_no_collide, shield_no_collide;
 		hull_no_collide = shield_no_collide = false;
-
-		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect)
-			warp_effect = shipp->warpout_effect;
-		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect)
-			warp_effect = shipp->warpout_effect;
-
 		if (warp_effect != nullptr) {
 			hull_no_collide = point_is_clipped_by_warp(&mc_hull.hit_point_world, warp_effect);
 			shield_no_collide = point_is_clipped_by_warp(&mc_shield.hit_point_world, warp_effect);
