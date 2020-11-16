@@ -5107,7 +5107,7 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 	}
 
-	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew]){
+	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3 ){
 		weapon_maybe_spew_particle(obj);
 	}
 
@@ -5140,8 +5140,13 @@ void weapon_process_post(object * obj, float frame_time)
 			//create a warp effect
 			vm_vec_copy_scale(&warpout,&obj->phys_info.vel,3.0f);
 
+			//get the size of the warp, directly using the model if possible
+			float warp_size = obj->radius;
+			if (wip->model_num >= 0)
+				warp_size = model_get_radius(wip->model_num);
+
 			//set the time the warphole stays open, minimum of 7 seconds
-			wp->lssm_warp_time = ((obj->radius * 2) / (obj->phys_info.speed)) +1.5f;
+			wp->lssm_warp_time = ((warp_size * 2) / (obj->phys_info.speed)) +1.5f;
 			wp->lssm_warp_time = MAX(wp->lssm_warp_time,7.0f);
 
 			//calculate the percerentage of the warpholes life at which the missile is fully in subspace.
@@ -5149,7 +5154,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
-			wp->lssm_warp_idx = fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, obj->radius*1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
+			wp->lssm_warp_idx = fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
 
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -5169,6 +5174,12 @@ void weapon_process_post(object * obj, float frame_time)
 
 			obj_set_flags(obj, flags);
 		
+			// stop its trail here
+			if (wp->trail_ptr != nullptr) {
+				trail_object_died(wp->trail_ptr);
+				wp->trail_ptr = nullptr;
+			}
+
 			//get the position of the target, and estimate its position when it warps out
 			//so we have an idea of where it will be.
 			auto target_objp = wp->homing_object;
@@ -5206,8 +5217,13 @@ void weapon_process_post(object * obj, float frame_time)
 			vm_vec_sub(&fvec,&wp->lssm_target_pos, &warpin);
 			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
 
+			//get the size of the warp, directly using the model if possible
+			float warp_size = obj->radius;
+			if (wip->model_num >= 0)
+				warp_size = model_get_radius(wip->model_num);
+
 			//create a warpin effect
-			wp->lssm_warp_idx = fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, obj->radius*1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
+			wp->lssm_warp_idx = fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
 			
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -5237,6 +5253,17 @@ void weapon_process_post(object * obj, float frame_time)
             flags.set(Object::Object_Flags::Collides);
 
 			obj_set_flags(obj,flags);
+
+			// start the trail back up if applicable
+			if (wip->wi_flags[Weapon::Info_Flags::Trail]) {
+				wp->trail_ptr = trail_create(&wip->tr_info);
+
+				if (wp->trail_ptr != nullptr) {
+					// Add two segments.  One to stay at launch pos, one to move.
+					trail_add_segment(wp->trail_ptr, &obj->pos);
+					trail_add_segment(wp->trail_ptr, &obj->pos);
+				}
+			}
 		}
 	}
 
