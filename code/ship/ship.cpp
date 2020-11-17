@@ -6089,8 +6089,6 @@ void ship::clear()
 
 	memset(last_targeted_subobject, 0, MAX_PLAYERS * sizeof(ship_subsys *));
 
-	shield_integrity = NULL;
-
 	shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
 	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
 	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
@@ -7483,11 +7481,6 @@ void ship_delete( object * obj )
 	// on ship back to the free list for other ships to use.
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
-
-	if (shipp->shield_integrity != NULL) {
-		vm_free(shipp->shield_integrity);
-		shipp->shield_integrity = NULL;
-	}
 
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);
@@ -9789,14 +9782,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	init_ai_object(objnum);
 	ai_clear_ship_goals( &Ai_info[Ships[n].ai_index] );		// only do this one here.  Can't do it in init_ai because it might wipe out goals in mission file
 
-	//	Allocate shield and initialize it.
-	if (pm->shield.ntris) {
-		shipp->shield_integrity = (float *) vm_malloc(sizeof(float) * pm->shield.ntris);
-		for (i=0; i<pm->shield.ntris; i++)
-			shipp->shield_integrity[i] = 1.0f;
-	} else
-		shipp->shield_integrity = NULL;
-
 	// Bump the object radius to ensure that collision detection works right
 	// even when spread shields extend outside the model's natural radius
 	if (sip->flags[Ship::Info_Flags::Auto_spread_shields]) {
@@ -9971,22 +9956,6 @@ static void ship_model_change(int n, int ship_type)
 		objp->n_quadrants = DEFAULT_SHIELD_SECTIONS;
 	}
 	objp->shield_quadrant.resize(objp->n_quadrants);
-
-	if (sp->shield_integrity != NULL) {
-		vm_free(sp->shield_integrity);
-		sp->shield_integrity = NULL;
-	}
-
-	//	Allocate shield and initialize it.
-	if (pm->shield.ntris) {
-		sp->shield_integrity = (float *) vm_malloc(sizeof(float) * pm->shield.ntris);
-
-		for (i = 0; i < pm->shield.ntris; i++) {
-			sp->shield_integrity[i] = 1.0f;
-		}
-	} else {
-		sp->shield_integrity = NULL;
-	}
 
 	// reset texture animations
 	sp->base_texture_anim_frametime = game_get_overall_frametime();
@@ -14438,11 +14407,6 @@ void ship_close()
 
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		ship *shipp = &Ships[i];
-
-		if (shipp->shield_integrity != NULL) {
-			vm_free(shipp->shield_integrity);
-			shipp->shield_integrity = NULL;
-		}
 
 		if (shipp->ship_replacement_textures != NULL) {
 			vm_free(shipp->ship_replacement_textures);
