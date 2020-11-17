@@ -1684,7 +1684,8 @@ void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_inde
 		return;
 	}
 
-	*team_index = ship_regp->p_objp->team;
+	// this should send the original team, in case the team changes via sexp or scripting
+	*team_index = ship_regp->p_objp->loadout_team;
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
