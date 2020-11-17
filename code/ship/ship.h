@@ -560,8 +560,6 @@ public:
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
-	float	*shield_integrity;					//	Integrity at each triangle in shield mesh.
-
 	// ETS fields
 	int	shield_recharge_index;			// index into array holding the shield recharge rate
 	int	weapon_recharge_index;			// index into array holding the weapon recharge rate
