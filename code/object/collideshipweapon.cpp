@@ -358,7 +358,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	if (hull_collision || shield_collision) {
 		WarpEffect* warp_effect = nullptr;
 
-		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr)
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr) 
 			warp_effect = shipp->warpout_effect;
 		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
 			warp_effect = shipp->warpin_effect;
