@@ -1666,7 +1666,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 
 	vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
-	if (shipp != NULL) {
+	if (shipp != nullptr) {
 		// don't render if its on the wrong side of the portal
 		WarpEffect* warp_effect = nullptr;
 
