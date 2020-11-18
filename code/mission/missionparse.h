@@ -336,6 +336,7 @@ public:
 	matrix	orient;
 	int	ship_class;
 	int	team;
+	int loadout_team;						// original team, should never be changed after being set!!
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do
 	char	cargo1;

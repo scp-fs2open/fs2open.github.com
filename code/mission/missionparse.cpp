@@ -2916,6 +2916,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
+	// save current team for loadout purposes, so that in multi we always respawn
+	// from the original loadout slot even if the team changes
+	p_objp->loadout_team = p_objp->team;
+
 	if (optional_string("$Team Color Setting:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
