@@ -12,11 +12,24 @@ Undo_system::Undo_system()
 Undo_system::Undo_system(size_t _undos)
 	: max_undos(_undos) {};
 
-void Undo_system::clear() {
-	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
-		delete *it;
+void Undo_system::clamp_stacks() {
+	while (undo_stack.size() > max_undos) {
+		// If we're past the stack limit, de-construct and remove until we're in the limit
+		// If max_undos is held constant (as it should be), the loop isn't necassary. 
+		//   But, it also isn't that much different from an if{} when assembled, so there's no harm in using it
+		delete undo_stack.front();
+		undo_stack.pop_front();
 	}
-	redo_stack.clear();
+
+	// This while() shouldn't ever be triggered, but this is a safety to prevent any weird edge-cases.
+	while (redo_stack.size() > max_undos) {
+		delete redo_stack.front();
+		undo_stack.pop_front();
+	}
+}
+
+void Undo_system::clear() {
+	clear_redo();
 
 	for (auto it = undo_stack.begin(); it != undo_stack.end(); ++it) {
 		delete *it;
@@ -24,13 +37,17 @@ void Undo_system::clear() {
 	undo_stack.clear();
 }
 
-template<typename T>
-size_t Undo_system::save(T& item, T* container) {
-	// De-construct all intances of Undo_item on the redo stack, then clear the stack
+void Undo_system::clear_redo() {
 	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
 		delete *it;
 	}
 	redo_stack.clear();
+}
+
+template<typename T>
+size_t Undo_system::save(T& item, T* container) {
+	// De-construct all intances of Undo_item on the redo stack, then clear the stack
+	clear_redo();
 
 	// Create a new instance of Undo_tem, with the correct type reference
 	Undo_item_base *new_item = new Undo_item<T>(item, container);
@@ -40,13 +57,7 @@ size_t Undo_system::save(T& item, T* container) {
 	Assert(new_item != nullptr);
 	undo_stack.push_back(new_item);
 
-	while (undo_stack.size() > max_undos) {
-		// If we're past the stack limit, de-construct and remove until we're in the limit
-		// If max_undos is held constant (as it should be), the loop isn't necassary. 
-		//   But, it also isn't that much different from an if{} when assembled, so there's no harm in using it
-		delete undo_stack.front();
-		undo_stack.pop_front();
-	}
+	clamp_stacks();
 
 	return undo_stack.size();
 };
@@ -56,20 +67,18 @@ size_t Undo_system::save_stack(Undo_stack& stack) {
 		return 0;
 	}
 	
-	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
-		delete *it;
-	}
-	redo_stack.clear();
+	clear_redo();
 
+	// Copy the stack onto the heap, and push it into our undo_stack as a single item
 	Undo_item_base *new_item = new Undo_stack(stack);
 
 	Assert(new_item != nullptr);
 	undo_stack.push_back(new_item);
 
-	while (undo_stack.size() > max_undos) {
-		delete undo_stack.front();
-		undo_stack.pop_front();
-	}
+	// Input stack is told to untrack the items, so that there's only one deletion handler for them
+	stack.untrack();
+
+	clamp_stacks();
 
 	return undo_stack.size();
 }
@@ -87,11 +96,6 @@ std::pair<const void*, const void*> Undo_system::redo() {
 	undo_stack.push_back(item);
 	redo_stack.pop_back();
 
-	while (undo_stack.size() > max_undos) {
-		delete undo_stack.front();
-		undo_stack.pop_front();
-	}
-
 	return retval;
 };
 
@@ -107,11 +111,6 @@ std::pair<const void*, const void*> Undo_system::undo() {
 	retval = item->restore();
 	redo_stack.push_back(item);
 	undo_stack.pop_back();
-
-	while (redo_stack.size() > max_undos) {
-		delete redo_stack.front();
-		redo_stack.pop_front();
-	}
 
 	return retval;
 };
@@ -135,10 +134,7 @@ Undo_stack::Undo_stack(size_t size)
 }
 
 Undo_stack::~Undo_stack() {
-	for (auto it = stack.begin(); it != stack.end(); ++it) {
-		delete *it;
-	}
-	stack.clear();
+	clear();
 }
 
 void Undo_stack::reserve(size_t size) {
@@ -179,3 +175,13 @@ size_t Undo_stack::size() {
 	return stack.size();
 }
 
+void Undo_stack::untrack() {
+	stack.clear();
+}
+
+void Undo_stack::clear() {
+	for (auto it = stack.begin(); it != stack.end(); ++it) {
+		delete *it;
+	}
+	stack.clear();
+}

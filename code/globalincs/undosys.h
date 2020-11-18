@@ -52,9 +52,10 @@ Lastly, you can make stacks of undo operations, so that a single op in the syste
 
 		for (int i = 0; i < JOY_AXIS_ACTIONS; ++i) {
 			stack.save(Axis_map_to[i], Axis_map_to);		// This example saves a C style array. Does the same thing without a wrapper, but wasteful
+		
+		Undo_controls.save_stack(stack) // Save the stack as a single item!
 	}
 
-	Undo_controls.save(stack);	// Save the stack as a single item!
 	std::pair<const void*, const void*> ref = Undo_controls.undo();
 	// Undo rolls through the items as they were saved, should your data operate on the same location, this will apply the changes in the correct sequence
 	ref.second == Axis_map_to;
@@ -149,6 +150,7 @@ private:
 
 /*!
  * @brief Class which handles multiple undo operations as a single op within the Undo_system
+ * @note Caution: Upon deconstruction the tracked Undo_items are deleted.
  */
 class Undo_stack : public Undo_item_base
 {
@@ -188,6 +190,20 @@ public:
 	 */
 	 size_t size();
 
+	 /*!
+	  * @brief Deletes all tracked items in the internal vector
+	  */
+	 void clear();
+
+protected:
+	friend class Undo_system;
+
+	/*!
+	 * @brief Calls ::clear() on the internal vector
+	 * @note Caution: This does not delete the tracked Undo_items
+	 */
+	void untrack();
+
 private:
 	bool reverse;   // Direction to walk the stack. forward = false, reverse = True
 
@@ -223,7 +239,12 @@ public:
 
 	/*!
 	 * @brief Saves a stack of undo-items as a single undo-item within the system
-	 * @note Should the stack be empty, nothing will be saved to the undo system
+	 *
+	 * @param[in,out] stack  The undo stack to save to the undo system.  Data in the stack is "unspecified" after this operation
+	 *
+	 * @details  The undo system effectively moves the stack into its internal containers, claiming ownership of the
+	 *  Undo_items and deleting them upon going out of scope.  The input stack is told to untrack the Undo_items in
+	 *  the process, so that there is only ever one reference to the Undo_item like a std::unique_ptr
 	 */
 	size_t save_stack(Undo_stack& stack);
 
@@ -250,6 +271,17 @@ public:
 	 * @brief Returns the size of the redo stack
 	 */
 	size_t size_redo();
+
+protected:
+	/*!
+	 * @brief Deletes all redo data
+	 */
+	void clear_redo();
+
+	/*!
+	 * @brief Clamp the stack sizes to be <= max_undos, deleting data as needed
+	 */
+	void clamp_stacks();
 
 private:
 	size_t max_undos;	//!< Max number of Undo's available
