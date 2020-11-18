@@ -2166,7 +2166,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		// get a bunch of shot aims
 		for(idx=0; idx<b->binfo.shot_count; idx++){
 			//	MK, 9/3/99: Added pow() function to make increasingly likely to miss with subsequent shots.  30% more likely with each shot.
-			float r = ((float) pow(1.3f, idx)) * miss_factor * accuracy;
+			float r = ((float) pow(1.3f, (float) idx)) * miss_factor * accuracy;
 			b->binfo.shot_aim[idx] = frand_range(0.0f, 1.0f + r);
 		}
 		break;
