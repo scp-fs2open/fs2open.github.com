@@ -52,6 +52,10 @@ size_t Undo_system::save(T& item, T* container) {
 };
 
 size_t Undo_system::save_stack(Undo_stack& stack) {
+	if (stack.size() == 0) {
+		return 0;
+	}
+	
 	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
 		delete *it;
 	}
@@ -170,4 +174,8 @@ size_t Undo_stack::save(T& item, T* container) {
 
 	return stack.size();
 };
+
+size_t Undo_stack::size() {
+	return stack.size();
+}
 
