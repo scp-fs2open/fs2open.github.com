@@ -79,6 +79,7 @@ typedef struct shockwave_create_info {
 	float speed;
 	angles rot_angles;
 	bool rot_defined;		// if the modder specified rot_angles
+	bool damage_overidden;  // did this have shockwave damage specifically set or not
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx

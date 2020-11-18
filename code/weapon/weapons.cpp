@@ -701,6 +701,7 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf)) {
 		stuff_float(&sci->damage);
+		sci->damage_overidden = true;
 	}
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
@@ -1150,7 +1151,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->damage);
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
-		if(first_time) {
+		if(!wip->shockwave.damage_overidden) {
 			wip->shockwave.damage = wip->damage;
 		}
 	}
