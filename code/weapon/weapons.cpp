@@ -1497,31 +1497,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (optional_string("+Max Active Seekers:")) {
 				stuff_int(&wip->max_seeking);
-			}
-
-			if (optional_string("+Ship Types:")) {
-				SCP_vector<SCP_string> temp_names;
-				stuff_string_list(temp_names);
-
-				for (auto& name : temp_names)
-					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::TYPE, name);
-			}
-
-			if (optional_string("+Ship Classes:")) {
-				SCP_vector<SCP_string> temp_names;
-				stuff_string_list(temp_names);
-
-				for (auto& name : temp_names)
-					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::CLASS, name);
-			}
-
-			if (optional_string("+Species:")) {
-				SCP_vector<SCP_string> temp_names;
-				stuff_string_list(temp_names);
-
-				for (auto& name : temp_names)
-					wip->ship_restrict_strings.emplace_back(MultilockRestrictionType::SPECIES, name);
-			}
+			}			
 
 			if (wip->is_locked_homing()) {
 				// locked homing missiles have a much longer lifespan than the AI think they do
@@ -1531,6 +1507,39 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		else
 		{
 			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT, ASPECT or JAVELIN.\n", temp_type);
+		}
+
+		// handle homing restrictions
+		if (optional_string("+Ship Types:")) {
+			SCP_vector<SCP_string> temp_names;
+			stuff_string_list(temp_names);
+
+			for (auto& name : temp_names)
+				wip->ship_restrict_strings.emplace_back(LockRestrictionType::TYPE, name);
+		}
+
+		if (optional_string("+Ship Classes:")) {
+			SCP_vector<SCP_string> temp_names;
+			stuff_string_list(temp_names);
+
+			for (auto& name : temp_names)
+				wip->ship_restrict_strings.emplace_back(LockRestrictionType::CLASS, name);
+		}
+
+		if (optional_string("+Species:")) {
+			SCP_vector<SCP_string> temp_names;
+			stuff_string_list(temp_names);
+
+			for (auto& name : temp_names)
+				wip->ship_restrict_strings.emplace_back(LockRestrictionType::SPECIES, name);
+		}
+
+		if (optional_string("+IFFs:")) {
+			SCP_vector<SCP_string> temp_names;
+			stuff_string_list(temp_names);
+
+			for (auto& name : temp_names)
+				wip->ship_restrict_strings.emplace_back(LockRestrictionType::IFF, name);
 		}
 
 	}
@@ -3869,9 +3878,10 @@ void weapon_level_init()
 				int idx;
 				switch (pair.first)
 				{
-					case MultilockRestrictionType::TYPE: idx = ship_type_name_lookup(name); break;
-					case MultilockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
-					case MultilockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
+					case LockRestrictionType::TYPE: idx = ship_type_name_lookup(name); break;
+					case LockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
+					case LockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
+					case LockRestrictionType::IFF: idx = iff_lookup(name); break;
 					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
 						idx = -1;
 				}
@@ -4082,7 +4092,9 @@ void find_homing_object(object *weapon_objp, int num)
 				continue; 
 
 			homing_object_team = obj_team(objp);
-			if (iff_x_attacks_y(wp->team, homing_object_team))
+			bool can_lock_on_ship = objp->type != OBJ_SHIP || weapon_can_lock_on_ship(wip, objp->instance);
+			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
+			if (can_lock_on_ship && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
@@ -5340,10 +5352,16 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
+		int target_ship_num = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
+
+			if (obj_type == OBJ_SHIP)
+				target_ship_num = Objects[target_objnum].instance;
+
 			if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_WEAPON) ) {
 				target_team = obj_team(&Objects[target_objnum]);
+
 			}
 		}
 	
@@ -5362,8 +5380,11 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
+		bool can_lock = weapon_has_iff_restrictions(wip) && target_ship_num >= 0 ? weapon_can_lock_on_ship(wip, target_ship_num) :
+			(!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor)));
+
 		// Cyborg17 - exclude all invalid object numbers here since in multi, the lock slots can get out of sync.
-		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && (!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor))) ) {
+		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && can_lock) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -8570,7 +8591,8 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 	return max_target_locks;
 }
 
-bool weapon_multilock_can_lock_on_ship(weapon_info* wip, int ship_num)
+// returns whether a homing weapon can home on a particular ship
+bool weapon_can_lock_on_ship(weapon_info* wip, int ship_num)
 {
 	auto& restrictions = wip->ship_restrict;
 	// if you didn't specify any restrictions, you can always lock
@@ -8579,15 +8601,29 @@ bool weapon_multilock_can_lock_on_ship(weapon_info* wip, int ship_num)
 	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
 	int class_num = Ships[ship_num].ship_info_index;
 	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
+	int iff_num = Ships[ship_num].team;
 
 	// otherwise, you're good as long as it matches one of the allowances in the restriction list
 	return std::any_of(restrictions.begin(), restrictions.end(),
-		[=](std::pair<MultilockRestrictionType, int>& restriction) {
+		[=](std::pair<LockRestrictionType, int>& restriction) {
 			switch (restriction.first) {
-				case MultilockRestrictionType::TYPE: return restriction.second == type_num;
-				case MultilockRestrictionType::CLASS: return restriction.second == class_num;
-				case MultilockRestrictionType::SPECIES: return restriction.second == species_num;
+				case LockRestrictionType::TYPE: return restriction.second == type_num;
+				case LockRestrictionType::CLASS: return restriction.second == class_num;
+				case LockRestrictionType::SPECIES: return restriction.second == species_num;
+				case LockRestrictionType::IFF: return restriction.second == iff_num;
 				default: return true;
 			}
+		});
+}
+
+// what it says on the tin
+// if true, the the IFF restrictions (later to be checked by the above) will replace the normal logic (can lock on enemies, not on friendlies)
+bool weapon_has_iff_restrictions(weapon_info* wip)
+{
+	auto& restrictions = wip->ship_restrict;
+
+	return std::any_of(restrictions.begin(), restrictions.end(),
+		[=](std::pair<LockRestrictionType, int>& restriction) {
+			return restriction.first == LockRestrictionType::IFF; 
 		});
 }
