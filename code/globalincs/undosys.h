@@ -27,14 +27,14 @@ The undo system can save any type of data, you don't have to have an instance of
 	Undo_controls.save(std::array<int, JOY_AXIS_ACTIONS>(Axis_map_to));
 }
 
-In several cases, the client code would like to know exactly what was changed. The undo system provides a mechnism for doing this:
+In several cases, the client code would like to know exactly what was changed. The undo system provides a mechanism for doing this:
 	{
 		Undo_controls.save(Control_config[z], &Control_config[0]);   // Save the item, and a reference to its container. Here, we use the location of the first item in Control_config as our reference
 		Undo_controls.save(Axis_map_to[z], Axis_map_to);             // Saves an axis mapping, here, we use the array's head pointer as our reference (since a int[] is the same as a int*)
 
-		std::pair<const void*, const void*> ref = Undo_controls.undo();    // ::undo() returns a std::pair<const void*, const void*>, the first member referening the item that changed, and the second referencing the item's container (if we provided it)
+		std::pair<const void*, const void*> ref = Undo_controls.undo();    // ::undo() returns a std::pair<const void*, const void*>, the first member referencing the item that changed, and the second referencing the item's container (if we provided it)
 
-		// Once we've stored the return value fron ::undo, we can found out what the item is by comparing the second member with containers that we've been saving
+		// Once we've stored the return value from ::undo, we can found out what the item is by comparing the second member with containers that we've been saving
 		if (ref.second == &Control_config[0]) {
 			cout << "I'm a button!";
 			Tab = static_cast<Config_item>(ref.first).tab;  // Sets the selected tab within the Controls Config menu. We do a static cast here so we can access the Config_item::tab member
@@ -82,7 +82,7 @@ public:
 /*!
  * @brief Class which handles undo operations.
  * @details This class works with a single data item, to make a undo or redo stack you'd use something like a
- *   std::vector or a std::deque of this class. Undo and Redo stacks would be seperate. Before restoring data from
+ *   std::vector or a std::deque of this class. Undo and Redo stacks would be separate. Before restoring data from
  *   either, you'd save a copy of the item in the opposite stack.
  *
  *   For example, if you're about to restore from the undo stack, you'd first save a copy of the current data to the
@@ -162,7 +162,7 @@ public:
 	/*!
 	 * @brief Restores all items within the undo stack
 	 *
-	 * @details Maintains an internal flag which will reverse direction on the next call, thereby redo-ing
+	 * @details Maintains an internal flag which will reverse direction on the next call, thereby re-doing
 	 * 
 	 * @returns A pair of references to the last item restored
 	 */
@@ -182,6 +182,12 @@ public:
 	 * @brief Calls ::reserve() on the internal vector
 	 */
 	void reserve(size_t size);
+
+	/*!
+	 * @brief Returns the size of the stack
+	 */
+	 size_t size();
+
 private:
 	bool reverse;   // Direction to walk the stack. forward = false, reverse = True
 
@@ -217,6 +223,7 @@ public:
 
 	/*!
 	 * @brief Saves a stack of undo-items as a single undo-item within the system
+	 * @note Should the stack be empty, nothing will be saved to the undo system
 	 */
 	size_t save_stack(Undo_stack& stack);
 
