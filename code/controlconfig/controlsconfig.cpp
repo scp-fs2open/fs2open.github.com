@@ -818,10 +818,12 @@ int control_config_do_reset()
 {
 	int i, total = 0;
 	Undo_stack stack;
+	auto &default_bindings = Control_config_presets[0].bindings;
 
 	// first, determine how many bindings need to be changed
-	for (auto &item : Control_config) {
-		if ((item.key_id != item.key_default) || (item.joy_id != item.joy_default)) {
+	for (i = 0; i < Control_config.size(); ++i) {
+		if ((Control_config[i].key_id != default_bindings[i].first.btn) ||
+		    (Control_config[i].joy_id != default_bindings[i].second.btn)) {
 			total++;
 		}
 	}
@@ -832,7 +834,7 @@ int control_config_do_reset()
 		}
 	}
 
-	if ((total == 0) && (Control_config_presets.size() == 1)) {
+	if ((total == 0) && (Control_config_presets.size() <= 1)) {
 		// Nothing to reset, no other presets besides default
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
