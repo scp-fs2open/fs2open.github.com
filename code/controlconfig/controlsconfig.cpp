@@ -17,6 +17,7 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/undosys.h"
 #include "graphics/font.h"
 #include "hud/hudsquadmsg.h"
 #include "io/joy.h"
@@ -142,6 +143,9 @@ SCP_vector<cc_line> Cc_lines;
 SCP_vector<CCI> Control_config_backup;
 int Axis_map_to_backup[NUM_JOY_AXIS_ACTIONS];
 int Invert_axis_backup[JOY_NUM_AXES];
+
+// Undo system
+Undo_system Undo_controls;
 
 // all this stuff is localized/externalized
 #define NUM_AXIS_TEXT			6
@@ -350,6 +354,10 @@ DCF_BOOL(show_controls_info, Show_controls_info);
 
 static int Axes_origin[JOY_NUM_AXES];
 
+
+void control_config_do_undo();
+
+
 static int joy_get_unscaled_reading(int raw)
 {
 	int rng;
@@ -444,6 +452,9 @@ int control_config_detect_axis()
 	return axis;
 }
 
+/**
+ * @brief Checks all controls for conflicts.  This should be called after any change to any bindings.
+ */
 void control_config_conflict_check()
 {
 	int i, j;
@@ -567,7 +578,7 @@ int cc_line_query_visible(int n)
  */
 void control_config_bind_key(int i, int key)
 {
-	//TODO: Undo
+	Undo_controls.save(Control_config[i].key_id);
 	Control_config[i].key_id = (short) key;
 }
 
@@ -576,7 +587,7 @@ void control_config_bind_key(int i, int key)
  */
 void control_config_bind_joy(int i, int joy)
 {
-	//TODO: Undo
+	Undo_controls.save(Control_config[i].joy_id);
 	Control_config[i].joy_id = (short) joy;
 }
 
@@ -585,7 +596,7 @@ void control_config_bind_joy(int i, int joy)
  */
 void control_config_bind_axis(int i, int axis)
 {
-	//TODO: Undo
+	Undo_controls.save(Axis_map_to[i]);
 	Axis_map_to[i] = axis;
 }
 
@@ -609,7 +620,7 @@ int control_config_remove_binding()
 			return -1;
 		}
 
-		//TODO undo
+		Undo_controls.save(Axis_map_to[z]);
 		Axis_map_to[z] = -1;
 		control_config_conflict_check();
 		control_config_list_prepare();
@@ -623,14 +634,20 @@ int control_config_remove_binding()
 		return -1;
 	}
 
-	// TODO undo
+	Undo_stack stack;
+
 	if (Selected_item && (Control_config[z].joy_id >= 0)) {  // if not just key selected (which would be 0)
+		stack.save(Control_config[z].joy_id);
 		Control_config[z].joy_id = (short) -1;
 	}
 
 	if ((Selected_item != 1) && (Control_config[z].key_id >= 0)) {  // if not just joy button selected (1)
+		stack.save(Control_config[z].key_id);
 		Control_config[z].key_id = (short) -1;
 	}
+
+	Undo_controls.save_stack(stack);
+
 
 	control_config_conflict_check();
 	control_config_list_prepare();
@@ -672,7 +689,7 @@ int control_config_clear_other()
 
 		for (i=j=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 			if ((Axis_map_to[i] == Axis_map_to[z]) && (i != z)) {
-				//TODO undo
+				Undo_controls.save(Axis_map_to[i]);
 				Axis_map_to[i] = -1;
 			}
 		}
@@ -700,21 +717,27 @@ int control_config_clear_other()
 	}
 
 	// now, back up the old bindings so we can undo if we want to
+	Undo_stack stack;
+
 	for (i=j=0; i<CCFG_MAX; i++) {
 		if ( (Control_config[i].key_id == Control_config[z].key_id) || (Control_config[i].joy_id == Control_config[z].joy_id) ) {
 			if (i != z) {
-				// TODO: undo
 
 				if (Control_config[i].key_id == Control_config[z].key_id) {
+					stack.save(Control_config[i].key_id);
 					Control_config[i].key_id = (short) -1;
 				}
 
 				if (Control_config[i].joy_id == Control_config[z].joy_id) {
+					stack.save(Control_config[i].joy_id);
 					Control_config[i].joy_id = (short) -1;
 				}
 			}
 		}
 	}
+
+	Undo_controls.save_stack(stack);
+
 	control_config_conflict_check();
 	control_config_list_prepare();
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -727,11 +750,12 @@ int control_config_clear_other()
  */
 int control_config_clear_all()
 {
-	int i, total = 0;
+	int j = 0;
+	int total = 0;
 
 	// first, determine how many bindings need to be changed
-	for (i=0; i<CCFG_MAX; i++) {
-		if ((Control_config[i].key_id >= 0) || (Control_config[i].joy_id >= 0)) {
+	for (auto &item : Control_config) {
+		if ((item.key_id >= 0) || (item.joy_id >= 0)) {
 			total++;
 		}
 	}
@@ -741,18 +765,23 @@ int control_config_clear_all()
 		return -1;
 	}
 
-	// now, back up the old bindings so we can undo if we want to
-	/*
-	for (i=j=0; i<CCFG_MAX; i++) {
-		if ((Control_config[i].key_id >= 0) || (Control_config[i].joy_id >= 0)) {
-			// TODO: undo
+	// Back up old items for undo
+	Undo_stack stack;
+	for (auto &item : Control_config) {
+		if (item.key_id >= 0) {
+			stack.save(item.key_id);
 		}
-	}
-	*/
+		if (item.joy_id >= 0) {
+			stack.save(item.joy_id);
+		}
 
-	//Assert(j == total);
-	for (i=0; i<CCFG_MAX; i++) {
-		Control_config[i].key_id = Control_config[i].joy_id = -1;
+		j++;
+	}
+	Assert(j == total);	// Er, how did we miss saving an item?
+	Undo_controls.save_stack(stack);
+
+	for (auto &item : Control_config) {
+		item.key_id = item.joy_id = -1;
 	}
 
 	control_config_conflict_check();
@@ -762,9 +791,7 @@ int control_config_clear_all()
 }
 
 /**
- * @brief Reverts axis bindings to their defaults
- * TODO: axis inversion
- * TODO: Undo
+ * @brief Gets the default axis binding
  */
 int control_config_axis_default(int axis)
 {
@@ -790,7 +817,8 @@ int control_config_axis_default(int axis)
 int control_config_do_reset()
 {
 	int i, total = 0;
-	
+	Undo_stack stack;
+
 	// first, determine how many bindings need to be changed
 	for (auto &item : Control_config) {
 		if ((item.key_id != item.key_default) || (item.joy_id != item.joy_default)) {
@@ -811,6 +839,8 @@ int control_config_do_reset()
 	}
 
 	if (total == 0) {
+		stack.save(Defaults_cycle_pos); // Save current preset location
+
 		// Cycle to next preset
 		Defaults_cycle_pos++;
 		if (Defaults_cycle_pos >= Control_config_presets.size()) {
@@ -818,7 +848,12 @@ int control_config_do_reset()
 		}
 	} // Else, reset to current preset
 
-	// Todo: Save current bindings to undo stack
+	// Save all item bindings for undo
+	for (auto &item : Control_config) {
+		stack.save(item.key_id);
+		stack.save(item.joy_id);
+	}
+	Undo_controls.save_stack(stack);
 
 	control_config_reset_defaults();
 
@@ -938,7 +973,8 @@ void control_config_toggle_invert()
 	z = Cc_lines[Selected_line].cc_index;
 	Assert(z & JOY_AXIS);
 	z &= ~JOY_AXIS;
-	//TODO undo
+	
+	Undo_controls.save(Invert_axis[z]);
 	Invert_axis[z] = !Invert_axis[z];
 }
 
@@ -1029,6 +1065,13 @@ void control_config_do_cancel(int fail = 0)
 	}
 }
 
+void control_config_do_undo() {
+	Undo_controls.undo();
+	control_config_conflict_check();
+
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+}
+
 int control_config_accept()
 {
 	int i;
@@ -1057,8 +1100,11 @@ void control_config_cancel_exit()
 	std::move(Axis_map_to_backup, Axis_map_to_backup + JOY_NUM_AXES, Axis_map_to);
 	std::move(Invert_axis_backup, Invert_axis_backup + JOY_NUM_AXES, Invert_axis);
 
-	// Free up data from any backups, if possible
+	// Free up memory from dynamic containers
 	Control_config_backup.clear();
+	Cc_lines.clear();
+	Conflicts.clear();
+	Undo_controls.clear();
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
@@ -1125,8 +1171,7 @@ void control_config_button_pressed(int n)
 			break;
 
 		case UNDO_BUTTON:
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			//TODO
+			control_config_do_undo();
 			break;
 
 		case CANCEL_BUTTON:
@@ -1320,9 +1365,10 @@ void control_config_close()
 	}
 
 	// Free up memory from dynamic containers
-	Control_config_backup.resize(0);
-	Cc_lines.resize(0);
-	Conflicts.resize(0);
+	Control_config_backup.clear();
+	Cc_lines.clear();
+	Conflicts.clear();
+	Undo_controls.clear();
 }
 
 /**
@@ -1664,7 +1710,7 @@ void control_config_do_frame(float frametime)
 			}
 		}
 
-		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.enable(false);	// TODO
+		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.enable(!Undo_controls.empty());
 
 		if ( help_overlay_active(Control_config_overlay_id) ) {
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
@@ -1717,6 +1763,7 @@ void control_config_do_frame(float frametime)
 				break;
 
 			case KEY_LEFT:
+				// Previous item
 				Selected_item--;
 				if (Selected_item == -2) {
 					Selected_item = 1;
@@ -1732,6 +1779,7 @@ void control_config_do_frame(float frametime)
 				break;
 
 			case KEY_RIGHT:
+				// Next item
 				Selected_item++;
 				if ((Selected_item == 1) && (Cc_lines[Selected_line].jw < 1)) {
 					Selected_item = -1;
@@ -1743,11 +1791,13 @@ void control_config_do_frame(float frametime)
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
-			case KEY_BACKSP:  // undo
-				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			case KEY_BACKSP:
+				// undo last action
+				control_config_do_undo();
 				break;
 
 			case KEY_ESC:
+				// Escape from menu
 				control_config_cancel_exit();
 				break;
 		}	// end switch
