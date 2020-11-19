@@ -5813,7 +5813,10 @@ int ai_fire_primary_weapon(object *objp)
 		vec3d vecToTarget;
 		vm_vec_normalized_dir(&vecToTarget, &enemy_objp->pos, &objp->pos);
 		float dotToTarget = vm_vec_dot(&vecToTarget, &objp->orient.vec.fvec);
-		dotToTarget = pow(dotToTarget, 4);	//This makes the dot a tiny bit more impactful (otherwise nearly always over 0.98 or so)
+		//This makes the dot a tiny bit more impactful (otherwise nearly always over 0.98 or so)
+		//square twice = raise to the 4th power
+		dotToTarget *= dotToTarget;
+		dotToTarget *= dotToTarget;
 		float fof_spread_cooldown_factor = 1.0f - swp->primary_bank_fof_cooldown[swp->current_primary_bank];
 		
 		//Combine factors
