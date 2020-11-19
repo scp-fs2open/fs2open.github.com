@@ -72,7 +72,7 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 //XSTR:OFF
 SCP_vector<CCI> Control_config;
 
-//! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings
+//! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings. [0] is the default preset.
 SCP_vector<CC_preset> Control_config_presets;
 
 /**
@@ -674,8 +674,9 @@ int translate_key_to_index(const char *key, bool find_override)
 				}
 			}
 		} else {
+		const auto& default_bindings = Control_config_presets[0].bindings;
 			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
+				if (!Control_config[i].disabled && (default_bindings[i].first.btn == index)) {
 					index = i;
 					break;
 				}
@@ -1524,13 +1525,10 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 	assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 
-	// Assign the defaults.
-	item.joy_default = joy_default;
-	item.key_default = key_default;
-
-	// Initialize the current bindings to defaults. Current bindings will be overwritten once the player's bindings is read in.
-	item.joy_id = item.joy_default;
-	item.key_id = item.key_default;
+	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
+	// Current bindings will be overwritten once the player's bindings is read in.
+	item.joy_id = joy_default;
+	item.key_id = key_default;
 
 	// Assign the UI members
 	item.text.assign(text);

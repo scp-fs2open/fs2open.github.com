@@ -324,8 +324,6 @@ public:
 class CCI {
 public:
 // Items Set in menu
-	short joy_default;
-	short key_default;
 	short joy_id;
 	short key_id;
 

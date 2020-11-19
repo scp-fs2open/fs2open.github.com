@@ -5652,12 +5652,12 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_type()
 
 sexp_list_item *sexp_tree::get_listing_opf_keypress()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_default > 0 && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(Control_config[i].key_default));
+	const auto& default_bindings = Control_config_presets[0].bindings;
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		if ((default_bindings[i].first.btn > 0) && !Control_config[i].disabled) {
+			head.add_data_dup(textify_scancode(default_bindings[i].first.btn));
 		}
 	}
 
