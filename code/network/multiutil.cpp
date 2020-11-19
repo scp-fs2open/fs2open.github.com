@@ -922,6 +922,8 @@ void delete_player(int player_num,int kicked_reason)
 					if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
 						// make this guy the host
 						Net_players[idx].flags |= NETINFO_FLAG_GAME_HOST;
+						// set the host pointer
+						Netgame.host = &Net_players[idx];
 
 						// send a packet
 						send_host_captain_change_packet(Net_players[idx].player_id, 0);
