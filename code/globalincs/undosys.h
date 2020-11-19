@@ -136,7 +136,7 @@ public:
 	 */
 	void save(T& _data, T* _cont = nullptr) {
 
-		dest = *_data;
+		dest = &_data;
 		data = new T(_data);
 		container = _cont;
 	};
@@ -178,7 +178,14 @@ public:
 	 * @note Call this _before_ you do your operation on the item
 	 */
 	template<typename T>
-	size_t save(T& item, T* container = nullptr);
+	size_t save(T& item, T* container = nullptr) {
+		// Create a new instance of Undo_tem, with the correct type reference
+		Undo_item_base *new_item = new Undo_item<T>(item, container);
+
+		stack.push_back(new_item);
+
+		return stack.size();
+	};
 
 	/*!
 	 * @brief Calls ::reserve() on the internal vector
@@ -235,7 +242,19 @@ public:
 	 * @note Call this _before_ you do your operation on the item
 	 */
 	template<typename T>
-	size_t save(T& item, T* container = nullptr);
+	size_t save(T& item, T* container = nullptr) {
+		// De-construct all intances of Undo_item on the redo stack, then clear the stack
+		clear_redo();
+
+		// Create a new instance of Undo_tem, with the correct type reference
+		Undo_item_base *new_item = new Undo_item<T>(item, container);
+
+		undo_stack.push_back(new_item);
+
+		clamp_stacks();
+
+		return undo_stack.size();
+	};
 
 	/*!
 	 * @brief Saves a stack of undo-items as a single undo-item within the system
@@ -271,6 +290,16 @@ public:
 	 * @brief Returns the size of the redo stack
 	 */
 	size_t size_redo();
+
+	/*!
+	 * @brief True if undo stack size = 0
+	 */
+	bool empty();
+
+	/*!
+	 * @brief True if redo stack size = 0
+	 */
+	 bool empty_redo();
 
 protected:
 	/*!

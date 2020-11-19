@@ -6,6 +6,9 @@
 #include "globalincs/undosys.h"
 #include "globalincs/vmallocator.h"
 
+// Pure virtual deconstructors must be defined.
+Undo_item_base::~Undo_item_base() {};
+
 Undo_system::Undo_system()
 	: max_undos(10) {};
 
@@ -43,24 +46,6 @@ void Undo_system::clear_redo() {
 	}
 	redo_stack.clear();
 }
-
-template<typename T>
-size_t Undo_system::save(T& item, T* container) {
-	// De-construct all intances of Undo_item on the redo stack, then clear the stack
-	clear_redo();
-
-	// Create a new instance of Undo_tem, with the correct type reference
-	Undo_item_base *new_item = new Undo_item<T>(item, container);
-
-	// If operator new fails, then we've got bigger problems!
-	// If needed, You can modify this to be tolerate of the issue by throwing an error before proceding
-	Assert(new_item != nullptr);
-	undo_stack.push_back(new_item);
-
-	clamp_stacks();
-
-	return undo_stack.size();
-};
 
 size_t Undo_system::save_stack(Undo_stack& stack) {
 	if (stack.size() == 0) {
@@ -115,6 +100,13 @@ std::pair<const void*, const void*> Undo_system::undo() {
 	return retval;
 };
 
+bool Undo_system::empty() {
+	return undo_stack.empty();
+}
+
+bool Undo_system::empty_redo() {
+	return redo_stack.empty();
+}
 size_t Undo_system::size() {
 	return undo_stack.size();
 }
@@ -157,19 +149,6 @@ std::pair<const void*, const void*> Undo_stack::restore() {
 	reverse = !reverse;
 	return retval;
 }
-
-template<typename T>
-size_t Undo_stack::save(T& item, T* container) {
-	// Create a new instance of Undo_tem, with the correct type reference
-	Undo_item_base *new_item = new Undo_item<T>(item, container);
-
-	// If operator new fails, then we've got bigger problems!
-	// If needed, You can modify this to be tolerate of the issue by throwing an error before proceding
-	Assert(new_item != nullptr);
-	stack.push_back(new_item);
-
-	return stack.size();
-};
 
 size_t Undo_stack::size() {
 	return stack.size();
