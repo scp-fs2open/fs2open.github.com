@@ -12,6 +12,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "object/object.h"
 
 #define	FRONT_QUAD	1
 #define	REAR_QUAD	2
