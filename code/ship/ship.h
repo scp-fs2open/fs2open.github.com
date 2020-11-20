@@ -1129,6 +1129,14 @@ public:
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
+	// Fields for tuning the ETS' direct shield<->weapon transfer feature
+	float		shield_weap_amount;				// fraction of shield capacity to transfer
+	float		shield_weap_efficiency;			// efficiency multiplier for output into weapons capacitor
+	float		shield_weap_speed;				// rate that energy will be added to the weap capacitor
+	float		weap_shield_amount;				// ...
+	float		weap_shield_efficiency;			// ditto, but reverse the direction
+	float		weap_shield_speed;				// ...
+
 	// Afterburner fields
 	vec3d		afterburner_max_vel;				//	max velocity of the ship in the linear directions when afterburners are engaged -- read from ships.tbl
 	float		afterburner_forward_accel;		// forward acceleration with afterburner engaged
