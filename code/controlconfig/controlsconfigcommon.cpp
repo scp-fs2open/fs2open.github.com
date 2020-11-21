@@ -256,13 +256,7 @@ void control_config_common_init_bindings() {
 	preset.name = "default";
 
 	for (auto &item : Control_config) {
-		CCB bind;
-
-		bind.first.cid = CID_KEYBOARD;
-		bind.first.btn = item.key_id;
-
-		bind.second.cid = CID_JOY0;
-		bind.second.btn = item.joy_id;
+		CCB bind = item;
 
 		preset.bindings.push_back(bind);
 	}
@@ -667,23 +661,23 @@ int translate_key_to_index(const char *key, bool find_override)
 
 		// convert scancode to Control_config index
 		if (find_override) {
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
+			for (i = 0; i < Control_config.size(); ++i) {
+				if (!Control_config[i].disabled && (Control_config[i].get_btn(CID_KEYBOARD) == index)) {
 					index = i;
 					break;
 				}
 			}
 		} else {
-		const auto& default_bindings = Control_config_presets[0].bindings;
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && (default_bindings[i].first.btn == index)) {
+			const auto& default_bindings = Control_config_presets[0].bindings;
+			for (i = 0; i < Control_config.size(); ++i) {
+				if (!Control_config[i].disabled && (default_bindings[i].get_btn(CID_KEYBOARD) == index)) {
 					index = i;
 					break;
 				}
 			}
 		}
 
-		if (i == CCFG_MAX)
+		if (i == Control_config.size())
 			return -1;
 
 		return index;
@@ -705,8 +699,8 @@ char *translate_key(char *key)
 		return NULL;
 	}
 
-	key_code = Control_config[index].key_id;
-	joy_code = Control_config[index].joy_id;
+	key_code = Control_config[index].get_btn(CID_KEYBOARD);
+	joy_code = Control_config[index].get_btn(CID_JOY0);
 
 	Failed_key_index = index;
 
@@ -1163,7 +1157,7 @@ void LoadEnumsIntoActionMap(void) {
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_5)
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	assert(mActionToVal.size() == CCFG_MAX);
+	Assert(mActionToVal.size() == CCFG_MAX);
 }
 
 /*! Loads the various control configuration maps to allow the parsing functions to appropriately map string tokns to
@@ -1511,6 +1505,112 @@ void control_config_common_load_overrides()
 	}
 }
 
+CC_bind CC_bind::operator=(const CC_bind &A)
+{
+	cid = A.cid;
+	btn = A.btn;
+
+	return *this;
+}
+
+bool CC_bind::operator==(const CC_bind &B) const
+{
+	return (btn == B.btn) && (cid == B.cid);
+}
+
+bool CC_bind::operator==(const CCB &pair) const
+{
+	return (*this == pair.first) || (*this == pair.second);
+}
+
+bool CC_bind::operator!=(const CC_bind &B) const
+{
+	return !(*this == B);
+}
+
+bool CC_bind::operator!=(const CCB &pair) const
+{
+	return !(*this == pair);
+}
+
+void CC_bind::clear()
+{
+	cid = CID_NONE;
+	btn = -1;
+}
+
+bool CC_bind::empty() const
+{
+	return cid == CID_NONE;
+}
+
+bool CCB::empty() const {
+	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
+}
+
+void CCB::take(const CC_bind &A, int order) {
+	switch (order) {
+	case 0:
+		first = A;
+
+		if (second.cid == A.cid) {
+			second.clear();
+		}
+		break;
+
+	case 1:
+		second = A;
+	
+		if (first.cid == A.cid) {
+			first.clear();
+		}
+		break;
+
+	case -1:
+		// Overwrite existing
+		if (first.cid == A.cid) {
+			first = A;
+
+		} else if (second.cid == A.cid) {
+			second = A;
+		}
+	break;
+
+	default:
+		return;
+	}
+}
+
+void CCB::clear() {
+	first.clear();
+	second.clear();
+}
+
+short CCB::get_btn(CID cid) const {
+	if (first.cid == cid) {
+		return first.btn;
+
+	} else if (second.cid == cid) {
+		return second.btn;
+
+	} else {
+		return -1;
+	}
+}
+
+void CCB::operator=(const CCB& A) {
+	first = A.first;
+	second = A.second;
+}
+
+bool CCB::has_first(const CCB& A) const {
+	return (first == A.first) || (first == A.second);
+}
+
+bool CCB::has_second(const CCB& A) const {
+	return (second == A.first) || (second == A.second);
+}
+
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
 	ControlConfig.resize(CCFG_MAX);
 };
@@ -1522,13 +1622,17 @@ CCI_builder& CCI_builder::start() {
 void CCI_builder::end() {};
 
 CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
-	assert(action_id < CCFG_MAX);
+	Assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 
 	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
 	// Current bindings will be overwritten once the player's bindings is read in.
-	item.joy_id = joy_default;
-	item.key_id = key_default;
+	item.first.cid = CID_KEYBOARD;
+	item.first.btn = key_default;
+
+	item.second.cid = CID_JOY0;
+	item.second.btn = joy_default;
+	
 
 	// Assign the UI members
 	item.text.assign(text);
@@ -1538,12 +1642,15 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 	// Assign the CC_type
 	item.type = type;
 
+	if (tab == NO_TAB) {
+		mprintf(("Control item defined without a valid tab. Disabling: %s", item.text.c_str()));
+	}
+
 	// Assign disabled state
 	if ((tab == NO_TAB) || (disabled == true)) {
 		item.disabled = true;
 
-	}
-	else {
+	} else {
 		// Must have a valid tab, and not disabled by hardcode
 		item.disabled = false;
 	}

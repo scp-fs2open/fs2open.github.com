@@ -33,7 +33,7 @@ enum Joy_axis_index {
  * @details For use with hardcoded bindings and scripting API to allow human-readable translation
  * @note These enums are hardcoded so that an int value of 0 would be JOY0
  */
-enum CID {
+enum CID : short {
 	CID_NONE     = -3,	// No device bound
 	CID_KEYBOARD = -2,	// button belongs to keyboard
 	CID_MOUSE    = -1,  // to mouse
@@ -298,15 +298,97 @@ enum IoActionId  {
 /*!
  *  A singular button binding
  */
-struct CC_bind {
-	CID cid = CID_NONE; //!< Which controller this belongs to
-	short btn = -1; //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+class CC_bind {
+public:
+	CID cid;    //!< Which controller this belongs to
+	short btn;  //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+
+public:
+	CC_bind() :cid(CID_NONE), btn(-1) {};
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
+	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn) {};
+
+	CC_bind operator=(const CC_bind &A);
+
+	/*!
+	 * Checks if this CC_bind is equal to the given CC_bind
+	 */
+	bool operator==(const CC_bind &B) const;
+
+	/*!
+	 * Checks if this CC_bind is equal to either in the pair
+	 */
+	bool operator==(const CCB &pair) const;
+
+	/*!
+	 * Checks if this CC_bind is not equal to the given CC_bind
+	 */
+	bool operator!=(const CC_bind &B) const;
+
+	/*!
+	 * Checks if this CC_bind is not equal to either in the pair
+	 */
+	bool operator!=(const CCB &pair) const;
+
+	/*!
+	 * Clears the binding
+	 */
+	void clear();
+
+	/*!
+	 * True if not bound
+	 */
+	bool empty() const;
 };
 
 /*!
  * A pair of bindings. Primary = first, Secondary = second
  */
-typedef std::pair<CC_bind, CC_bind> CCB;
+class CCB {
+public:
+	CC_bind first;
+	CC_bind second;
+
+	/*!
+	 * Returns true if nothing is bound
+	 */
+	bool empty() const;
+
+	/*!
+	 * Takes a given binding
+	 *
+	 * @param[in] A     The bind to take
+	 * @param[in] order 0 is primary, 1 is secondary, -1 is overwrite existing bind (if any)
+	 *
+	 * @note Should there be a binding to the same controller as the given binding, it is cleared
+	 */
+	void take(const CC_bind &A, int order);
+
+	/*!
+	 * Clears both bindings
+	 */
+	void clear();
+
+	/*!
+	 * Gets the value of btn if either CC_bind has the given CID
+	 *
+	 * @returns the btn of the bound controller, or
+	 * @returns -1 if that controller is not bound
+	 */
+	short get_btn(CID) const;
+
+	void operator=(const CCB&);
+
+	/*!
+	 * Returns True if the given CCB has a binding equal to this CCB's first
+	 */
+	bool has_first(const CCB&) const;
+
+	/*!
+	 * Returns True if the given CCB has a binding equal to this CCB's first
+	 */
+	bool has_second(const CCB&) const;
+};
 
 /*!
  * A preset, a collection of bindings for use in Control_config with an associated name
@@ -321,12 +403,14 @@ public:
  * Control configuration item type.
  * @detail Contains binding info, documentation, behavior, etc. for a single control
  */
-class CCI {
+class CCI : public CCB {
+/* Inherited from CCB
+	CC_bind first;
+	CC_bind second;
+*/
+
 public:
 // Items Set in menu
-	short joy_id;
-	short key_id;
-
 	char tab;               //!< what tab (category) it belongs in
 	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR 0 = None, 1= Use item index + CONTROL_CONFIG_XSTR, 2 <= use CCI::indexXSTR directly
 	SCP_string text;        //!< describes the action in the config screen
@@ -390,6 +474,14 @@ extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; 
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 
+/*!
+ * @brief Checks if either binding in the CCB has the given cid
+ *
+ * @returns  0  if its the first element, or
+ * @returns  1  if its the second element, or
+ * @returns -1  if neither
+ */
+int is_cid_either(CID, const CCB);
 
 /*!
 * @brief initialize common control config stuff - call at game startup after localization has been initialized
