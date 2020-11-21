@@ -3292,15 +3292,17 @@ void multi_oo_interp(object* objp)
 
 	local_rubberband_correction = vmd_zero_vector;
 
+	constexpr float anti_rubberbanding_factor = 0.5f;
+
 	// a difference in sign means something just rubberbanded.
 	if ( ((local_displacement.xyz.x < 0.0f) && (temp_local_vel.xyz.x > 0.0f)) || ((local_displacement.xyz.x > 0.0f) && (temp_local_vel.xyz.x < 0.0f)) ) {
-		local_rubberband_correction.xyz.x = -local_displacement.xyz.x;
+		local_rubberband_correction.xyz.x = anti_rubberbanding_factor * -local_displacement.xyz.x;
 	}
 	if ( ((local_displacement.xyz.y < 0.0f) && (temp_local_vel.xyz.y > 0.0f)) || ((local_displacement.xyz.y > 0.0f) && (temp_local_vel.xyz.y < 0.0f)) ) {
-		local_rubberband_correction.xyz.y = -local_displacement.xyz.y;
+		local_rubberband_correction.xyz.y = anti_rubberbanding_factor * -local_displacement.xyz.y;
 	}
 	if ( ((local_displacement.xyz.z < 0.0f) && (temp_local_vel.xyz.z > 0.0f)) || ((local_displacement.xyz.z > 0.0f) && (temp_local_vel.xyz.z < 0.0f)) ) {
-		local_rubberband_correction.xyz.z = -local_displacement.xyz.z;
+		local_rubberband_correction.xyz.z = anti_rubberbanding_factor * -local_displacement.xyz.z;
 	}
 
 	vm_vec_unrotate(&global_rubberband_correction, &local_rubberband_correction, &objp->orient);
