@@ -5437,6 +5437,10 @@ struct object_ship_wing_point_team
 		: object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 	{
 		ship_entry = ship_registry_get(sp->ship_name);
+		if (ship_entry->status == EXITED) 
+		{
+			type = OSWPT_TYPE_EXITED;
+		}
 	}
 
 	object_ship_wing_point_team(p_object *pop)
