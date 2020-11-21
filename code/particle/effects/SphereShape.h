@@ -38,7 +38,9 @@ class SphereShape {
 		return m;
 	}
 
-	void restoreForce(vec3d* dir, vec3d* walker, float fudge) {	}
+	// restoreForce keeps the normalized spout vector (in local orientation) within the shape bounds
+	// Sphere doesn't do anything, the spout can go wherever it wants
+	void restoreForce(vec3d* spout, float spout_speed) {	}
 
 	void parse(bool  /*nocreate*/) {
 	}

@@ -1,5 +1,5 @@
-#ifndef WALKING_SHAPE_EFFECT_H
-#define WALKING_SHAPE_EFFECT_H
+#ifndef SPOUT_EFFECT_H
+#define SPOUT_EFFECT_H
 #pragma once
 
 #include "globalincs/pstypes.h"
@@ -12,7 +12,7 @@ namespace particle {
 namespace effects {
 
 /**
-	* @brief A walking particle effect with a customizable shape
+	* @brief A particle effect with a randomly walking 'spout' in a customizable shape
 	*
 	* @ingroup particleEffects
 	*/
@@ -24,6 +24,7 @@ private:
 	ConeDirection m_direction = ConeDirection::Incoming;
 	::util::UniformFloatRange m_velocity;
 	::util::UniformUIntRange m_particleNum;
+	::util::UniformFloatRange m_spoutSpeed;
 
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
@@ -82,47 +83,47 @@ public:
 			return false;
 		}
 
+		// initialize all the spouts we might need
 		if (source->m_effectData == nullptr) {
 			auto spouts = std::make_shared<SCP_vector<vec3d>>();
 
 			spouts->reserve(m_particleNum.max());
-			vec3d dir = getNewDirection(source);
-			matrix dirMatrix;
-			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-			for (uint i = 0; i < m_particleNum.max(); i++) {
-				matrix velRotation = m_shape.getDisplacementMatrix();
-
-				matrix rotatedVel;
-				vm_matrix_x_matrix(&rotatedVel, &dirMatrix, &velRotation);
-				spouts->push_back(rotatedVel.vec.fvec);
-			}
+			for (uint i = 0; i < m_particleNum.max(); i++) 
+				// the spouts are in their local frame
+				spouts->push_back(vmd_z_vector);
 
 			source->m_effectData = spouts;
 		}
 
 		SCP_vector<vec3d>& spouts = *std::static_pointer_cast<SCP_vector<vec3d>>(source->m_effectData);
 
-		// This uses the internal features of the timing class for determining if and how many effects should be
-		// triggered this frame
 		util::EffectTiming::TimingState time_state;
 		while (m_timing.shouldCreateEffect(source, time_state)) {
 			vec3d dir = getNewDirection(source);
+			matrix dirMatrix;
+			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
+
 			for (vec3d &spout : spouts) {
+				// get the random step
 				vec3d rand;
-				float fufge = 0.1f;
 				vm_vec_rand_vec(&rand);
-				rand *= fufge; // strenght of the walk
+				rand *= m_spoutSpeed.next();
 				
+				// add it to the spout
 				spout += rand;
 
-				m_shape.restoreForce(&spout, &dir, fufge);
-				vm_vec_normalize(&spout);
+				// nudge it back where it belongs so it doesn't get too far off course
+				m_shape.restoreForce(&spout, m_spoutSpeed.max());
+
+				// unrotate because spouts are in their local frame
+				vec3d rotated_spout;
+				vm_vec_unrotate(&rotated_spout, &spout, &dirMatrix);
 
 				particle_info info;
 
 				source->getOrigin()->applyToParticleInfo(info);
 
-				info.vel = spout;
+				info.vel = rotated_spout;
 				if (TShape::scale_velocity_deviation()) {
 					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
@@ -153,6 +154,10 @@ public:
 		m_particleProperties.parse(nocreate);
 
 		m_shape.parse(nocreate);
+
+		if (internal::required_string_if_new("+Spout Speed:", nocreate)) {
+			m_spoutSpeed = ::util::parseUniformRange<float>(0.001f,1.0f);
+		}
 
 		if (internal::required_string_if_new("+Velocity:", nocreate)) {
 			m_velocity = ::util::parseUniformRange<float>();
@@ -185,8 +190,6 @@ public:
 
 		m_timing = util::EffectTiming::parseTiming();
 
-
-
 		if (optional_string("+Trail effect:")) {
 			m_particleTrail = internal::parseEffectElement();
 		}
@@ -207,4 +210,4 @@ public:
 }
 }
 
-#endif // WALKING_SHAPE_EFFECT_H
+#endif // SPOUT_EFFECT_H

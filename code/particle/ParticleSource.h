@@ -263,8 +263,8 @@ class SourceTiming {
  * @brief A particle source
  *
  * A particle source contains the information about where and for how long particles are created. A particle effect uses
- * this information to create new particles. A particle source has not effect-specific information which means that an
- * effect can only use the information contained in this object.
+ * this information to create new particles. m_effectData is only effect-specific information that a 
+ * particle source has.
  *
  * @ingroup particleSystems
  */

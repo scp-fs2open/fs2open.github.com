@@ -31,11 +31,16 @@ class ConeShape {
 		return m;
 	}
 
-	void restoreForce(vec3d* dir, vec3d* walker, float fudge) {
+	// restoreForce keeps the normalized spout vector (in local orientation) within the shape bounds
+	// Cone doesnt do much unless its near the edge of the cone, where it nudges it back
+	void restoreForce(vec3d* spout, float spout_speed) {
 		if (m_normalDeviation.max() == 0.0f)
-			*walker = *dir;
-		else
-			vm_vec_scale_add(walker, walker, dir, fudge / sinf(m_normalDeviation.max()));
+			*spout = vmd_z_vector;
+		else {
+			float deviation = vm_vec_delta_ang(&vmd_z_vector, spout, nullptr);
+			vm_vec_scale_add(spout, spout, &vmd_z_vector, (spout_speed / sinf(m_normalDeviation.max()) * (deviation / m_normalDeviation.max())));
+			vm_vec_normalize(spout);
+		}
 	}
 
 	void parse(bool nocreate) {
