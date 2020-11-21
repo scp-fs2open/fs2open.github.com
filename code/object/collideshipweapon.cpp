@@ -354,13 +354,37 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		hull_collision = model_collide(&mc_hull);
 	}
 
+	// check if the hit point is beyond the clip plane when warping out.
+	if (hull_collision || shield_collision) {
+		WarpEffect* warp_effect = nullptr;
+
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr) 
+			warp_effect = shipp->warpout_effect;
+		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
+			warp_effect = shipp->warpin_effect;
+
+		bool hull_no_collide, shield_no_collide;
+		hull_no_collide = shield_no_collide = false;
+		if (warp_effect != nullptr) {
+			hull_no_collide = point_is_clipped_by_warp(&mc_hull.hit_point_world, warp_effect);
+			shield_no_collide = point_is_clipped_by_warp(&mc_shield.hit_point_world, warp_effect);
+		}
+
+		if (hull_no_collide)
+			hull_collision = 0;
+		if (shield_no_collide)
+			shield_collision = 0;
+	}
+
 	if (shield_collision) {
 		// pick out the shield quadrant
 		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num))
+		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num)) {
 			quadrant_num = -1;
+			shield_collision = 0;
+		}
 
 		// see if we hit the shield
 		if (quadrant_num >= 0) {
@@ -371,43 +395,25 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
-			if (wip->wi_flags[Weapon::Info_Flags::Pierce_shields])
+			if (wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) {
 				quadrant_num = -1;
-			else
-				valid_hit_occurred = 1;
+				shield_collision = 0;
+			}
 		}
 	}
 
 	// see which impact we use
-	if (shield_collision && valid_hit_occurred)
+	if (shield_collision)
 	{
 		memcpy(&mc, &mc_shield, sizeof(mc_info));
 		Assert(quadrant_num >= 0);
+		valid_hit_occurred = 1;
 	}
 	else if (hull_collision)
 	{
 		memcpy(&mc, &mc_hull, sizeof(mc_info));
 		valid_hit_occurred = 1;
 	}
-
-    // check if the hit point is beyond the clip plane when warping out.
-    if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) &&
-        (shipp->warpout_effect) &&
-        (valid_hit_occurred))
-    {
-        vec3d warp_pnt, hit_direction;
-        matrix warp_orient;
-
-        shipp->warpout_effect->getWarpPosition(&warp_pnt);
-        shipp->warpout_effect->getWarpOrientation(&warp_orient);
-
-        vm_vec_sub(&hit_direction, &mc.hit_point_world, &warp_pnt);
-
-        if (vm_vec_dot(&hit_direction, &warp_orient.vec.fvec) < 0.0f)
-        {
-             valid_hit_occurred = 0;
-        }
-    }
 
 	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame
 	if (next_hit && valid_hit_occurred) {

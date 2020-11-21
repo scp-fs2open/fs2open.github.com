@@ -218,6 +218,8 @@ public:
     virtual int getWarpOrientation(matrix *output);
 };
 
+bool point_is_clipped_by_warp(const vec3d* point, WarpEffect* warp_effect);
+
 //********************-----CLASS: WE_Default-----********************//
 #define WE_DEFAULT_NUM_STAGES			2
 class WE_Default : public WarpEffect

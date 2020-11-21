@@ -28,6 +28,7 @@
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 
 
@@ -131,7 +132,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( heavy_shipp->is_arriving(ship::warpstage::STAGE1, false) ) {
+	if ( heavy_shipp->is_arriving(ship::warpstage::STAGE1, false) ||
+		 light_shipp->is_arriving(ship::warpstage::STAGE1, false)) {
 		return 0;
 	}
 
@@ -347,6 +349,38 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 				vm_vec_scale_add(&ship_ship_hit_info->light_collision_cm_pos, mc.p0, &diff, mc.hit_dist);
 			}
 		}
+	}
+	
+	// check if the hit point is beyond the clip plane if one of the ships is warping in or out.
+	if (valid_hit_occured) {
+		WarpEffect* warp_effect = nullptr;
+
+		// this is extremely confusing but mc.hit_point_world isn't actually in world coords
+		// everything above was calculated relative to the heavy's position
+		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
+
+		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect != nullptr)
+			warp_effect = heavy_shipp->warpout_effect;
+		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect != nullptr)
+			warp_effect = heavy_shipp->warpin_effect;
+
+		bool heavy_warp_no_collide = false;
+		if (warp_effect != nullptr)
+			heavy_warp_no_collide = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+
+		warp_effect = nullptr;
+		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect != nullptr)
+			warp_effect = light_shipp->warpout_effect;
+		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect != nullptr)
+			warp_effect = light_shipp->warpin_effect;
+
+		bool light_warp_no_collide = false;
+		if (warp_effect != nullptr)
+			light_warp_no_collide = point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect);
+
+		
+		if (heavy_warp_no_collide || light_warp_no_collide)
+			valid_hit_occured = 0;
 	}
 
 	if (valid_hit_occured) {
@@ -1329,8 +1363,8 @@ int collide_ship_ship( obj_pair * pair )
         // if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
 
         // if ship is huge and warping in or out
-        if (((Ships[A->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
-			|| ((Ships[B->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
+        if (((Ships[A->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[A->instance].ship_info_index].is_big_or_huge()))
+			|| ((Ships[B->instance].is_arriving(ship::warpstage::STAGE1, false)) && (Ship_info[Ships[B->instance].ship_info_index].is_big_or_huge())) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

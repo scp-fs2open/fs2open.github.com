@@ -990,6 +990,22 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		}
 	}
 
+	if (mc_ret_val) {
+		WarpEffect* warp_effect = nullptr;
+		ship* shipp = &Ships[pship_obj->instance];
+
+		// this is extremely confusing but mc.hit_point_world isn't actually in world coords
+		// everything above was calculated relative to the heavy's position
+		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
+		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr))
+			warp_effect = shipp->warpin_effect;
+		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr))
+			warp_effect = shipp->warpout_effect;
+
+		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
+			mc_ret_val = 0;
+	}
+
 
 	if ( mc_ret_val )	{
 
