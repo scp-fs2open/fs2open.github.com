@@ -8393,10 +8393,25 @@ void weapon_spew_stats(WeaponSpewType type)
 			else
 				fire_rate = 1 / wi.fire_wait;
 
-			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
-			mprintf(("%.2f,%.2f,", multiplier * damage * wi.armor_factor, multiplier * damage * wi.armor_factor * fire_rate));
-			mprintf(("%.2f,%.2f,", multiplier * damage * wi.shield_factor, multiplier * damage * wi.shield_factor * fire_rate));
-			mprintf(("%.2f,%.2f,", multiplier * damage * wi.subsystem_factor, multiplier * damage * wi.subsystem_factor * fire_rate));
+			// doubled damage is handled strangely...
+			float hull_multiplier = 1.0f;
+			float subsys_multiplier = 1.0f;
+
+			// area effect?
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+			{
+				hull_multiplier = 2.0f;
+
+				// shockwave?
+				if (wi.shockwave.speed > 0.0f)
+				{
+					subsys_multiplier = 2.0f;
+				}
+			}
+
+			mprintf(("%.2f,%.2f,", hull_multiplier * damage * wi.armor_factor, hull_multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", hull_multiplier * damage * wi.shield_factor, hull_multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", subsys_multiplier * damage * wi.subsystem_factor, subsys_multiplier * damage * wi.subsystem_factor * fire_rate));
 
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.fire_wait, fire_rate));
@@ -8429,10 +8444,25 @@ void weapon_spew_stats(WeaponSpewType type)
 			mprintf(("%s,%s,", wi.name, "Secondary"));
 			mprintf(("%.2f,%.2f,", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.speed > 0.0f) ? 2.0f : 1.0f;
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.armor_factor, multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.shield_factor, multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", multiplier * wi.damage * wi.subsystem_factor, multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
+			// doubled damage is handled strangely...
+			float hull_multiplier = 1.0f;
+			float subsys_multiplier = 1.0f;
+
+			// area effect?
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+			{
+				hull_multiplier = 2.0f;
+
+				// shockwave?
+				if (wi.shockwave.speed > 0.0f)
+				{
+					subsys_multiplier = 2.0f;
+				}
+			}
+
+			mprintf(("%.2f,%.2f,", hull_multiplier * wi.damage * wi.armor_factor, hull_multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", hull_multiplier * wi.damage * wi.shield_factor, hull_multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", subsys_multiplier * wi.damage * wi.subsystem_factor, subsys_multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
 
 			mprintf((","));	// no power use for secondaries
 			mprintf(("%.2f,%.2f,", wi.fire_wait, 1.0f / wi.fire_wait));
@@ -8488,11 +8518,26 @@ void weapon_spew_stats(WeaponSpewType type)
 			else
 				fire_rate = 1 / wi.fire_wait;
 
-			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
+			// doubled damage is handled strangely...
+			float hull_multiplier = 1.0f;
+			float subsys_multiplier = 1.0f;
+
+			// area effect?
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+			{
+				hull_multiplier = 2.0f;
+
+				// shockwave?
+				if (wi.shockwave.speed > 0.0f)
+				{
+					subsys_multiplier = 2.0f;
+				}
+			}
+
 			mprintf(("\tDPS: "));
-			mprintf(("%.0f Hull, ", multiplier * damage * wi.armor_factor * fire_rate));
-			mprintf(("%.0f Shield, ", multiplier * damage * wi.shield_factor * fire_rate));
-			mprintf(("%.0f Subsystem\n", multiplier * damage * wi.subsystem_factor * fire_rate));
+			mprintf(("%.0f Hull, ", hull_multiplier * damage * wi.armor_factor * fire_rate));
+			mprintf(("%.0f Shield, ", hull_multiplier * damage * wi.shield_factor * fire_rate));
+			mprintf(("%.0f Subsystem\n", subsys_multiplier * damage * wi.subsystem_factor * fire_rate));
 
 			char watts[NAME_LENGTH];
 			sprintf(watts, "%.1f", wi.energy_consumed * fire_rate);
@@ -8521,11 +8566,26 @@ void weapon_spew_stats(WeaponSpewType type)
 			mprintf(("%s\n", wi.name));
 			mprintf(("\tVelocity: %-11.0fRange: %.0f\n", wi.max_speed, wi.max_speed * wi.lifetime));
 
-			float multiplier = (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f) ? 2.0f : 1.0f;
+			// doubled damage is handled strangely...
+			float hull_multiplier = 1.0f;
+			float subsys_multiplier = 1.0f;
+
+			// area effect?
+			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
+			{
+				hull_multiplier = 2.0f;
+
+				// shockwave?
+				if (wi.shockwave.speed > 0.0f)
+				{
+					subsys_multiplier = 2.0f;
+				}
+			}
+
 			mprintf(("\tDamage: "));
-			mprintf(("%.0f Hull, ", multiplier * wi.damage * wi.armor_factor));
-			mprintf(("%.0f Shield, ", multiplier * wi.damage * wi.shield_factor));
-			mprintf(("%.0f Subsystem\n", multiplier * wi.damage * wi.subsystem_factor));
+			mprintf(("%.0f Hull, ", hull_multiplier * wi.damage * wi.armor_factor));
+			mprintf(("%.0f Shield, ", hull_multiplier * wi.damage * wi.shield_factor));
+			mprintf(("%.0f Subsystem\n", subsys_multiplier * wi.damage * wi.subsystem_factor));
 
 			char wait[NAME_LENGTH];
 			sprintf(wait, "%.1f", wi.fire_wait);
