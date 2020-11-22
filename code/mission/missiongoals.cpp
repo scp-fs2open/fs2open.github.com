@@ -984,6 +984,11 @@ void mission_process_event( int event )
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
 		Mission_events[event].formula = -1;
+
+		// Also send an update, if necessary.
+		if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (sindex != Mission_events[event].formula) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+			send_event_update_packet(event);
+		}
 		return;
 	}
 
