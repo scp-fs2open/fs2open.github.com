@@ -1553,25 +1553,27 @@ void control_config_do_frame(float frametime)
 		// Poll for joy btn presses
 		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
 			if (joy_down_count(j, 1)) {
+				// btn is down, save it in j
 				// Cancel axis bind if any button is pressed
 				bind = true;
+				break;
 			}
 		}
 
 		if (help_overlay_active(Control_config_overlay_id)) {
-			// Help overlay is active.  Reset the Help button state and watch gadgets
+			// Help overlay is active.  Reset the Help button state and ignore gadgets
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 
 			if ((k > 0) || (j < JOY_TOTAL_BUTTONS) || B1_JUST_RELEASED) {
-				// If a key, joy, or mouse button was pressed, dismiss the overlay, ignore gadgets, and consume them
+				// If a key, joy, or mouse button was pressed, dismiss the overlay, watch gadgets, and consume them
 				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 				j = JOY_TOTAL_BUTTONS;
 			}
 		} else {
-			// Help overlay is not active, ignore gadgets
+			// Help overlay is not active, watch gadgets
 			Ui_window.set_ignore_gadgets(0);
 		}
 		
@@ -1659,7 +1661,7 @@ void control_config_do_frame(float frametime)
 					}
 				}
 
-				if (i == NUM_BUTTONS) {  // no buttons pressed
+				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
 						if (mouse_down(1 << i)) {
 							Assert(!(z & JOY_AXIS));
@@ -1688,75 +1690,85 @@ void control_config_do_frame(float frametime)
 		}
 
 	} else if (Search_mode) {
-		if (help_overlay_active(Control_config_overlay_id)) {
-			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
-			Ui_window.set_ignore_gadgets(1);
-		}
-
+		// Poll for keys
 		k = game_poll();
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 1;
 		Ui_window.process(0);
 
-		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(Control_config_overlay_id) ) {
+		// Poll for joy buttons
+		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+			if (joy_down_count(j, 1)) {
+				// btn is down, save it in j
+				break;
+			}
+		}
+
+		if (help_overlay_active(Control_config_overlay_id)) {
+			// Help overlay is active.  Reset the Help button state and ignore gadgets
+			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
+			Ui_window.set_ignore_gadgets(1);
+
+			if ((k > 0) || (j < JOY_TOTAL_BUTTONS) || B1_JUST_RELEASED) {
+				// If a key, joy, or mouse button was pressed, dismiss the overlay, watch  gadgets, and consume them
 				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
-		}
-
-		if ( !help_overlay_active(Control_config_overlay_id) ) {
+		} else {
+			// Overlay not active, watch gadgets
 			Ui_window.set_ignore_gadgets(0);
 		}
 
 		if (k == KEY_ESC) {
+			// Cancel search if ESC is pressed
 			control_config_do_cancel();
 
 		} else {
 			if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
+				// Ignore disallowed keys
 				k = 0;
 			}
 
 			k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);
 			z = -1;
-			if (k > 0) {
-				for (i=0; i<CCFG_MAX; i++) {
-					if (Control_config[i].key_id == k) {
+			// If not done, Find the control bound to the given key
+			if ((z < 0) && (k > 0)) {
+				for (i=0; i < Control_config.size(); ++i) {
+					if (Control_config[i].first == CC_bind(CID_KEYBOARD, k) ||
+					    Control_config[i].second == CC_bind(CID_KEYBOARD, k)) {
 						z = i;
 						break;
 					}
 				}
 			}
 
-			for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
-				if (joy_down_count(i, 1)) {
-					j = i;
-					for (i=0; i<CCFG_MAX; i++) { //-V535
-						if (Control_config[i].joy_id == j) {
-							z = i;
-							break;
-						}
+			// If not done, Find the control bound to the given joy
+			if ((z < 0) && (j < JOY_NUM_BUTTONS)) {
+				for (i = 0; i < Control_config.size(); ++i) {
+					if (Control_config[i].first == CC_bind(CID_JOY0, k) ||
+						Control_config[i].second == CC_bind(CID_JOY0, k)) {
+						z = i;
+						break;
 					}
-					break;
 				}
 			}
 
 			// check if not on enabled button
-			for (j=0; j<NUM_BUTTONS; j++){
-				if ( (CC_Buttons[gr_screen.res][j].button.is_mouse_on()) && (CC_Buttons[gr_screen.res][j].button.enabled()) ){
+			for (i = 0; i < NUM_BUTTONS; ++i){
+				if ( (CC_Buttons[gr_screen.res][i].button.is_mouse_on()) && (CC_Buttons[gr_screen.res][i].button.enabled()) ){
 					break;
 				}
 			}
 
-			if (j == NUM_BUTTONS) {  // no buttons pressed
-				for (j=0; j<MOUSE_NUM_BUTTONS; j++) {
+			// If not done, and no buttons pressed, poll the mouse and find controls bound to buttons
+			if ((z < 0) && (i == NUM_BUTTONS)) {
+				for (j = 0; j < MOUSE_NUM_BUTTONS; ++j) {
 					if (mouse_down(1 << j)) {
-						for (i=0; i<CCFG_MAX; i++) {
-							if (Control_config[i].joy_id == j) {
+						// Find the control bound to the given mouse button (as joy button)
+						for (i = 0; i < Control_config.size(); ++i) {
+							if (Control_config[i].first == CC_bind(CID_JOY0, j) ||
+							    Control_config[i].second == CC_bind(CID_JOY0, j)) {
 								z = i;
-								for (size_t buttonid=0; buttonid<NUM_BUTTONS; buttonid++){
-									CC_Buttons[gr_screen.res][buttonid].button.reset();
-								}
 								break;
 							}
 						}
@@ -1765,19 +1777,30 @@ void control_config_do_frame(float frametime)
 				}
 			}
 
+			// If done, Focus on the found control
 			if (z >= 0) {
 				Tab = Control_config[z].tab;
 				control_config_list_prepare();
 				Selected_line = Scroll_offset = 0;
+				
+				// Reverse Lookup cc_index to find the line its on
 				for (i=0; i<Num_cc_lines; i++) {
 					if (Cc_lines[i].cc_index == z) {
 						Selected_line = i;
 						break;
 					}
 				}
+				Assert(i != Num_cc_lines);
+
+				// Scroll to line if it is not visible
 				while (!cc_line_query_visible(Selected_line)) {
 					Scroll_offset++;
 					Assert(Scroll_offset < Num_cc_lines);
+				}
+
+				// Reset all nav buttons
+				for (size_t buttonid = 0; buttonid < NUM_BUTTONS; buttonid++) {
+					CC_Buttons[gr_screen.res][buttonid].button.reset();
 				}
 			}
 		}
