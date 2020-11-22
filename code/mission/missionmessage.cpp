@@ -2389,6 +2389,9 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream)
 {
 	int player_comm_state = hud_communications_state(Player_ship);
 
+	if (The_mission.flags[Mission::Mission_Flags::No_emp_scramble])
+		return COMM_OK;
+
 	if (other_shipnum < 0)
 		return player_comm_state;
 

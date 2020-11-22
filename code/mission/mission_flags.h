@@ -32,6 +32,7 @@ namespace Mission {
 		Always_show_goals,			// Show the mission goals, even for training missions - Karajorma
 		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
+		No_emp_scramble,			// Disable scrambling of comm messages by EMP effects
 		
 		NUM_VALUES
 	};
