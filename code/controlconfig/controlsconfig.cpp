@@ -2308,12 +2308,12 @@ float check_control_timef(int id)
 		return 0.0f;
 	}
 
-	t1 = key_down_timef(Control_config[id].key_id);
+	t1 = key_down_timef(Control_config[id].get_btn(CID_KEYBOARD));
 	if (t1) {
 		control_used(id);
 	}
 
-	t2 = joy_down_time(Control_config[id].joy_id);
+	t2 = joy_down_time(Control_config[id].get_btn(CID_JOY0));
 	if (t2) {
 		control_used(id);
 	}
@@ -2344,8 +2344,9 @@ void control_check_indicate()
 
 int check_control_used(int id, int key)
 {
-	int z, mask;
+	int mask;
 	static int last_key = 0;
+	auto & item = Control_config[id];
 
 	Control_check_count++;
 	if (key < 0) {
@@ -2359,17 +2360,21 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if (Control_config[id].disabled)
+	if (item.disabled)
 		return 0;
 
-	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
-		if (joy_down(Control_config[id].joy_id) || joy_down_count(Control_config[id].joy_id, 1)) {
+	short btn = item.get_btn(CID_JOY0);
+	short z = item.get_btn(CID_KEYBOARD);
+
+	if (item.type == CC_TYPE_CONTINUOUS) {
+		
+		if (joy_down(btn) || joy_down_count(btn, 1)) {
 			control_used(id);
 			return 1;
 		}
 
-		if ((Control_config[id].joy_id >= 0) && (Control_config[id].joy_id < MOUSE_NUM_BUTTONS)) {
-			if (mouse_down(1 << Control_config[id].joy_id) || mouse_down_count(1 << Control_config[id].joy_id)) {
+		if ((btn >= 0) && (btn < MOUSE_NUM_BUTTONS)) {
+			if (mouse_down(1 << btn) || mouse_down_count(1 << btn)) {
 				control_used(id);
 				return 1;
 			}
@@ -2385,7 +2390,7 @@ int check_control_used(int id, int key)
 			mask |= KEY_ALTED;
 		}
 
-		z = Control_config[id].key_id;
+		
 		if (z >= 0) {
 			if ( (z != KEY_LALT) && (z != KEY_RALT) && (z != KEY_LSHIFT) && (z != KEY_RSHIFT) ) {
 				// if current modifiers don't match action's modifiers, don't register control active.
@@ -2405,8 +2410,8 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) ||
-			((Control_config[id].joy_id >= 0) && (Control_config[id].joy_id < MOUSE_NUM_BUTTONS) && mouse_down_count(1 << Control_config[id].joy_id))) {
+	if ((z == key) || joy_down_count(btn, 1) ||
+			((btn >= 0) && (btn < MOUSE_NUM_BUTTONS) && mouse_down_count(1 << btn))) {
 		//mprintf(("Key used %d\n", key));
 		control_used(id);
 		return 1;
