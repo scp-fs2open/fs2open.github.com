@@ -1544,6 +1544,74 @@ bool CC_bind::empty() const
 	return cid == CID_NONE;
 }
 
+SCP_string CC_bind::textify() const {
+	SCP_string retval;
+
+	switch (cid) {
+	case CID_KEYBOARD:
+		retval = textify_scancode(btn);
+		break;
+
+	case CID_MOUSE:
+		// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
+		// TODO: XSTR this
+		switch (btn) {
+		case 0:
+			retval = "Mouse Left";
+			break;
+		case 1:
+			retval = "Mouse Right";
+			break;
+		case 2:
+			retval = "Mouse Middle";
+			break;
+		case 3:
+			retval = "Mouse X1";
+			break;
+		case 4:
+			retval = "Mouse X2";
+			break;
+		case 5:
+			retval = "Mouse Wheel Up";
+			break;
+		case 6:
+			retval = "Mouse Wheel Down";
+			break;
+		case 7:
+			retval = "Mouse Wheel Left";
+			break;
+		case 8:
+			retval = "Mouse Wheel Right";
+			break;
+		default:
+			retval = "Unknown Mouse Input";
+		}
+
+	// TODO XSTR the "Joy #" prefix
+	case CID_JOY0:
+		retval = "Joy 0 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY1:
+		retval = "Joy 1 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY2:
+		retval = "Joy 2 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY3:
+		retval = "Joy 3 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_NONE:
+	default:
+		retval = "None";
+	}
+
+	return retval;
+}
+
 bool CCB::empty() const {
 	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
 }

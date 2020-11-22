@@ -339,6 +339,11 @@ public:
 	 * True if not bound
 	 */
 	bool empty() const;
+
+	/*!
+	 * Returns a human-readable string of this binding
+	 */
+	SCP_string textify() const;
 };
 
 /*!
