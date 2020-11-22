@@ -1962,27 +1962,34 @@ void control_config_do_frame(float frametime)
 		}	// end switch
 	}	// End mode specific logic
 
+	// Process UI Button presses
 	for (i=0; i<NUM_BUTTONS; i++){
 		if (CC_Buttons[gr_screen.res][i].button.pressed()){
 			control_config_button_pressed(i);
 		}
 	}
 
+	// Process list box
 	for (i=0; i<LIST_BUTTONS_MAX; i++) {
 		if (List_buttons[i].is_mouse_on()) {
+			// Set this line's state as mouse-over
 			select_tease_line = i + Scroll_offset;
 		}
 	
 		if (List_buttons[i].pressed()) {
+			// Select the pressed line
 			Selected_line = i + Scroll_offset;
-			Selected_item = -1;
+			Selected_item = selItem::None;
 			List_buttons[i].get_mouse_pos(&x, &y);
+
+			// If the mouse is over the Primary binding, select it
 			if ((x >= Cc_lines[Selected_line].kx) && (x < Cc_lines[Selected_line].kx + Cc_lines[Selected_line].kw)) {
-				Selected_item = 0;
+				Selected_item = selItem::Primary;
 			}
 
+			// If the mouse is over the Secondary binding, select it
 			if ((x >= Cc_lines[Selected_line].jx) && (x < Cc_lines[Selected_line].jx + Cc_lines[Selected_line].jw)) {
-				Selected_item = 1;
+				Selected_item = selItem::Secondary;
 			}
 
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -2038,12 +2045,14 @@ void control_config_do_frame(float frametime)
 		Conflict_stamp = -1;
 	}
 
+	// Find if a tab button was pressed
 	for (i=0; i<NUM_TABS; i++) {
 		if (CC_Buttons[gr_screen.res][i].button.button_down()) {
 			break;
 		}
 	}
 
+	// No tab buttons down, show selected tab button as down
 	if (i == NUM_TABS) {
 		CC_Buttons[gr_screen.res][Tab].button.draw_forced(2);
 	}
@@ -2055,17 +2064,19 @@ void control_config_do_frame(float frametime)
 	if (Selected_line >= 0) {
 		z = Cc_lines[Selected_line].cc_index;
 		if (z & JOY_AXIS) {
+			// Show inversion button as down, if the selected axis is inverted
 			if (Invert_axis[z & ~JOY_AXIS]) {
 				CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2);
 			}
 
 		} else {
-			z = Control_config[z].key_id;
-			if (z >= 0) {
-				if (z & KEY_SHIFTED) {
+			// Show modifier buttons as down, if the selected item uses them
+			k = Control_config[z].get_btn(CID_KEYBOARD);
+			if (k >= 0) {
+				if (k & KEY_SHIFTED) {
 					CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.draw_forced(2);
 				}
-				if (z & KEY_ALTED) {
+				if (k & KEY_ALTED) {
 					CC_Buttons[gr_screen.res][ALT_TOGGLE].button.draw_forced(2);
 				}
 			}
@@ -2089,10 +2100,10 @@ void control_config_do_frame(float frametime)
 			gr_printf_menu(x - w / 2, y - font_height / 2, "%s", XSTR( "?", 208));
 		}
 
-	} else if (!(z & JOY_AXIS) && ((Conflicts[z].key >= 0) || (Conflicts[z].joy >= 0))) {
-		i = Conflicts[z].key;
+	} else if (!(z & JOY_AXIS) && ((Conflicts[z].first >= 0) || (Conflicts[z].second >= 0))) {
+		i = Conflicts[z].first;
 		if (i < 0) {
-			i = Conflicts[z].joy;
+			i = Conflicts[z].second;
 		}
 
 		gr_set_color_fast(&Color_text_normal);
@@ -2153,74 +2164,86 @@ void control_config_do_frame(float frametime)
 		}
 
 		if (!(z & JOY_AXIS)) {
-			k = Control_config[z].key_id;
-			j = Control_config[z].joy_id;
+			// is a digital control
 			x = Control_list_key_x[gr_screen.res];
 			*buf = 0;
 
-			if ((k < 0) && (j < 0)) {
+			if (Control_config[z].empty()) {
+				// Nothing bound
 				gr_set_color_fast(&Color_grey);
 				gr_printf_menu(x, y, "%s", XSTR( "None", 211));
 
 			} else {
-				if (k >= 0) {
-					strcpy_s(buf, textify_scancode(k));
-					if (Conflicts[z].key >= 0) {
-						if (c == &Color_text_normal)
-							gr_set_color_fast(&Color_text_error);
-						else {
-							gr_set_color_fast(&Color_text_error_hi);
-							conflict++;
-						}
+				// Textify and print the primary and secondary bindings
+				SCP_string first = Control_config[z].first.textify();
+				SCP_string second = Control_config[z].second.textify();
 
-					} else if (Selected_item == 1) {
-						gr_set_color_fast(&Color_text_normal);
+				// Set color for primary according to state
+				if (Conflicts[z].first >= 0) {
+					// In conflict
+					if (c == &Color_text_normal) {
+						gr_set_color_fast(&Color_text_error);
 
 					} else {
-						gr_set_color_fast(c);
+						gr_set_color_fast(&Color_text_error_hi);
+						conflict++;
 					}
 
-					gr_printf_menu(x, y, "%s", buf);
+				} else if (Selected_item != selItem::Primary) {
+					// Not selected
+					gr_set_color_fast(&Color_text_normal);
 
-					Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-					gr_get_string_size(&w, NULL, buf);
-					Cc_lines[line].kw = w;
-					x += w;
-
-					if (j >= 0) {
-						gr_set_color_fast(&Color_text_normal);
-						gr_printf_menu(x, y, "%s", XSTR( ", ", 212));
-						gr_get_string_size(&w, NULL, XSTR( ", ", 212));
-						x += w;
-					}
+				} else {
+					// Selected
+					gr_set_color_fast(c);
 				}
 
-				if (j >= 0) {
-					strcpy_s(buf, Joy_button_text[j]);
-					if (Conflicts[z].joy >= 0) {
-						if (c == &Color_text_normal) {
-							gr_set_color_fast(&Color_text_error);
-						} else {
-							gr_set_color_fast(&Color_text_error_hi);
-							conflict++;
-						}
+				// Print primary
+				strcpy_s(buf, first.c_str());
+				gr_printf_menu(x, y, "%s", buf);
 
-					} else if (!Selected_item) {
-						gr_set_color_fast(&Color_text_normal);
+				Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+				gr_get_string_size(&w, NULL, buf);
+				Cc_lines[line].kw = w;
+				x += w;
+
+				// Append ", "
+				gr_set_color_fast(&Color_text_normal);
+				gr_printf_menu(x, y, "%s", XSTR( ", ", 212));
+				gr_get_string_size(&w, NULL, XSTR( ", ", 212));
+				x += w;
+
+				// Set color for secondary according to state
+				if (Conflicts[z].second >= 0) {
+					// In conflict
+					if (c == &Color_text_normal) {
+						gr_set_color_fast(&Color_text_error);
 
 					} else {
-						gr_set_color_fast(c);
+						gr_set_color_fast(&Color_text_error_hi);
+						conflict++;
 					}
 
-					font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
-					gr_printf_menu(x, y, "%s", buf);
+				} else if (Selected_item != selItem::Secondary) {
+					// Secondary not selected
+					gr_set_color_fast(&Color_text_normal);
 
-					Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-					gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
+				} else {
+					// Secondary selected
+					gr_set_color_fast(c);
 				}
+
+				// Print secondary
+				strcpy_s(buf, second.c_str());
+				font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
+				gr_printf_menu(x, y, "%s", buf);
+
+				Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+				gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
 			}
 
 		} else {
+			// Is an analogue control
 			x = Control_list_key_x[gr_screen.res];
 			j = Axis_map_to[z & ~JOY_AXIS];
 			if (Binding_mode && (line == Selected_line)) {
@@ -2241,7 +2264,7 @@ void control_config_do_frame(float frametime)
 						conflict++;
 					}
 
-				} else if (!Selected_item) {
+				} else if (Selected_item == selItem::None) {
 					gr_set_color_fast(&Color_text_normal);
 
 				} else {
