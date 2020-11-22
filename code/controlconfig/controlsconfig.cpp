@@ -137,12 +137,14 @@ struct cc_line {
 	int kx, kw, jx, jw;  // x start and width of keyboard and joystick bound text
 };
 
-enum class selItem {
+enum class selItem : int {
+	selItem_REND,	// Must be first to allow cycling
+
 	None,
 	Primary,
 	Secondary,
 
-	selItem_MAX
+	selItem_END	// Must be last to allow cycling
 };
 
 SCP_vector<cc_line> Cc_lines;
@@ -365,8 +367,34 @@ static int Axes_origin[JOY_NUM_AXES];
 
 void control_config_do_undo();
 
+// Rotate selItem forwards
 selItem operator++(selItem& item, int) {
+	Assert(item != selItem::selItem_END);
 	using type = typename std::underlying_type<selItem>::type;
+
+	item = static_cast<selItem>(static_cast<type>(item) + 1);
+
+	if (item == selItem::selItem_END) {
+		// Set to first item
+		item = static_cast<selItem>(static_cast<type>(selItem::selItem_REND) + 1);;
+	}
+
+	return item;
+}
+
+// Rotate selItem backwards
+selItem operator--(selItem& item, int) {
+	Assert(item != selItem::selItem_REND);
+	using type = typename std::underlying_type<selItem>::type;
+
+	item = static_cast<selItem>( static_cast<type>(item) - 1 );
+	
+	if (item == selItem::selItem_REND) {
+		// Set to last item
+		item = static_cast<selItem>(static_cast<type>(selItem::selItem_END) - 1);;
+	}
+
+	return item;
 }
 
 static int joy_get_unscaled_reading(int raw)
@@ -1526,7 +1554,7 @@ void control_config_do_frame(float frametime)
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
 	int j; // polled joy button
 	int a; // polled joy axis
-	int z = Cc_lines[Selected_line].cc_index;; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
+	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
@@ -1806,41 +1834,57 @@ void control_config_do_frame(float frametime)
 		}
 
 	} else {
-		z = Cc_lines[Selected_line].cc_index & JOY_AXIS;
-		CC_Buttons[gr_screen.res][ALT_TOGGLE].button.enable(!z);
-		CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.enable(!z);
-		CC_Buttons[gr_screen.res][INVERT_AXIS].button.enable(z);
+		// Browse/default mode
 
+		//Enable modifier buttons according to selected item type
+		z = Cc_lines[Selected_line].cc_index & JOY_AXIS;
+		CC_Buttons[gr_screen.res][ALT_TOGGLE].button.enable(!z);    // Enabled for keys/buttons
+		CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.enable(!z);  // Enabled for keys/buttons
+		CC_Buttons[gr_screen.res][INVERT_AXIS].button.enable(z);    // Enabled for axes
+
+		// If selected item is not an axis, and
+		// If the bound key is a modifier, disable the modifier UI buttons
 		if (!z) {
 			z = Cc_lines[Selected_line].cc_index;
-			k = Control_config[z].key_id;
-			if ( (k == KEY_LALT) || (k == KEY_RALT) || (k == KEY_LSHIFT) || (k == KEY_RSHIFT) ) {
+			k = Control_config[z].get_btn(CID_KEYBOARD);
+
+			if ((k == KEY_LALT) || (k == KEY_RALT) || (k == KEY_LSHIFT) || (k == KEY_RSHIFT) ) {
 				CC_Buttons[gr_screen.res][ALT_TOGGLE].button.enable(0);
 				CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.enable(0);
 			}
 		}
 
+		// Enable the undo button if our undo stack has something in it
 		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.enable(!Undo_controls.empty());
 
-		if ( help_overlay_active(Control_config_overlay_id) ) {
-			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
-			Ui_window.set_ignore_gadgets(1);
-		}
-
+		// Poll for keypress (navigational only)
 		k = Ui_window.process();
 
-		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(Control_config_overlay_id) ) {
+		// Poll for joy buttons
+		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+			if (joy_down_count(j, 1)) {
+				// btn is down, save it in j
+				break;
+			}
+		}
+
+		if ( help_overlay_active(Control_config_overlay_id) ) {
+			// If the help overlay is active, reset the help button state and ignore gadgets.
+			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
+			Ui_window.set_ignore_gadgets(1);
+
+			if ((k > 0) || (j < JOY_TOTAL_BUTTONS) || B1_JUST_RELEASED) {
+				// If a key, joy, or mouse button was pressed, dismiss the overlay, watch  gadgets, and consume them
 				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
-		}
-
-		if ( !help_overlay_active(Control_config_overlay_id) ) {
+		} else {
+			// Overlay not active, watch gadgets
 			Ui_window.set_ignore_gadgets(0);
 		}
 
+		// Navigate according to keypress
 		switch (k) {
 			case KEY_DOWN:  // select next line
 				control_config_scroll_line_down();
@@ -1873,16 +1917,17 @@ void control_config_do_frame(float frametime)
 				break;
 
 			case KEY_LEFT:
-				// Previous item
+				// Select Previous item
 				Selected_item--;
-				if (Selected_item == -2) {
-					Selected_item = 1;
-					if (Cc_lines[Selected_line].jw < 1) {
-						Selected_item = 0;
-						if (Cc_lines[Selected_line].kw < 1) {
-							Selected_item = -1;
-						}
-					}
+
+				if (Control_config[z].second.empty() && (Selected_item == selItem::Secondary)) {
+					// Nothing bound, try primary
+					Selected_item = selItem::Primary;
+				}
+
+				if (Control_config[z].first.empty() && (Selected_item == selItem::Primary)) {
+					// Nothing bound, set to None
+					Selected_item = selItem::None;
 				}
 
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
@@ -1891,13 +1936,17 @@ void control_config_do_frame(float frametime)
 			case KEY_RIGHT:
 				// Next item
 				Selected_item++;
-				if ((Selected_item == 1) && (Cc_lines[Selected_line].jw < 1)) {
-					Selected_item = -1;
-				} else if (!Selected_item && (Cc_lines[Selected_line].kw < 1)) {
-					Selected_item = -1;
-				} else if (Selected_item > 1) {
-					Selected_item = -1;
+
+				if (Control_config[z].first.empty() && (Selected_item == selItem::Primary)) {
+					// Nothing bound, set to Secondary
+					Selected_item = selItem::Secondary;
 				}
+
+				if (Control_config[z].second.empty() && (Selected_item == selItem::Secondary)) {
+					// Nothing bound, set to None
+					Selected_item = selItem::None;
+				}
+
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
@@ -1911,7 +1960,7 @@ void control_config_do_frame(float frametime)
 				control_config_cancel_exit();
 				break;
 		}	// end switch
-	}
+	}	// End mode specific logic
 
 	for (i=0; i<NUM_BUTTONS; i++){
 		if (CC_Buttons[gr_screen.res][i].button.pressed()){
