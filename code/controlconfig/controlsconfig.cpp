@@ -2531,6 +2531,6 @@ void control_config_clear_used_status()
 void control_config_clear()
 {
 	for (auto &item : Control_config) {
-		item.key_id = item.joy_id = -1;
+		item.clear();
 	}
 }
