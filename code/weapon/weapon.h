@@ -248,12 +248,12 @@ enum InFlightSoundType
 
 #define MAX_SUBSTITUTION_PATTERNS	10
 
-enum class MultilockRestrictionType
+enum class LockRestrictionType
 {
-	TYPE, CLASS, SPECIES
+	TYPE, CLASS, SPECIES, IFF
 };
 
-typedef std::pair<MultilockRestrictionType, int> multilock_restriction;
+typedef std::pair<LockRestrictionType, int> lock_restriction;
 
 struct weapon_info
 {
@@ -352,8 +352,8 @@ struct weapon_info
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
 
-	SCP_vector<multilock_restriction> ship_restrict;
-	SCP_vector<std::pair<MultilockRestrictionType, SCP_string>> ship_restrict_strings;
+	SCP_vector<lock_restriction> ship_restrict;                     // list of pairs of types of restrictions, and the specific restriction of that type
+	SCP_vector<std::pair<LockRestrictionType, SCP_string>> ship_restrict_strings;    // the above but the specific restrictions are the parsed strings (instead of looked up indicies)
 
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
 	bool launch_reset_locks;				// Lock indicators reset after firing
@@ -676,8 +676,11 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);
 
-// return if this weapon can lock on this ship, based on its type, class or species
-bool weapon_multilock_can_lock_on_ship(weapon_info *wip, int ship_num);
+// return if this weapon can lock on this ship, based on its type, class, species or iff
+bool weapon_can_lock_on_ship(weapon_info *wip, int ship_num);
+
+// return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
+bool weapon_has_iff_restrictions(weapon_info* wip);
 
 
 #endif
