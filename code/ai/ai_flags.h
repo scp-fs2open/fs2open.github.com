@@ -64,6 +64,7 @@ namespace AI {
 		Dont_clamp_max_velocity,	// maps to CIF_DONT_CLAMP_MAX_VELOCITY
 		Instantaneous_acceleration,	// maps to CIF_INSTANTANEOUS_ACCELERATION
 		Never_expire,				// don't clear the maneuver when the timestamp is up
+		Dont_override_old_maneuvers,// doesn't clear any previous maneuvers
 
 		NUM_VALUES
 	};

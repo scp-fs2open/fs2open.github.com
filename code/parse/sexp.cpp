@@ -8114,7 +8114,9 @@ void sexp_set_ship_man(ship *shipp, int duration, int heading, int pitch, int ba
 {
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	
-	aip->ai_override_flags.reset();
+	if (!(maneuver_flags & CIF_DONT_OVERRIDE_OLD_MANEUVERS)) {
+		aip->ai_override_flags.reset();
+	}
 
 	// handle infinite timestamps
 	if (duration >= 2) {
@@ -31817,6 +31819,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
 	},
 
 	// Wanderer
@@ -31834,6 +31837,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
 	},
 	
 	// Wanderer
@@ -31851,6 +31855,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading (which won't have any affect for lat-maneuver)\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
 	},
 
 	// Goober5000

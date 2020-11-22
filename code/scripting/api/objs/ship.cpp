@@ -1462,7 +1462,9 @@ ADE_FUNC(doManeuver,
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	control_info *cip = &aip->ai_override_ci;
 
-	aip->ai_override_flags.reset();
+	if (!(maneuver_flags & CIF_DONT_OVERRIDE_OLD_MANEUVERS)) {
+		aip->ai_override_flags.reset();
+	}
 
 	// handle infinite timestamps
 	if (duration >= 2) {
