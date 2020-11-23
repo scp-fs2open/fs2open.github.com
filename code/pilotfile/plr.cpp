@@ -561,9 +561,9 @@ void pilotfile::plr_read_controls()
 		id2 = handler->readShort("joystick");
 		handler->readShort("mouse");	// unused, at the moment
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+		if (idx < Control_config.size()) {
+			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 		}
 	}
 	handler->endArrayRead();
@@ -586,12 +586,12 @@ void pilotfile::plr_write_controls()
 	handler->startSectionWrite(Section::Controls);
 
 	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", CCFG_MAX, true);
-	for (size_t idx = 0; idx < CCFG_MAX; idx++) {
+	handler->startArrayWrite("controls", Control_config.size(), true);
+	for (size_t idx = 0; idx < Control_config.size(); idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", Control_config[idx].key_id);
-		handler->writeShort("joystick", Control_config[idx].joy_id);
+		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", Control_config[idx].get_btn(CID_JOY0));
 		// placeholder? for future mouse_id?
 		handler->writeShort("mouse", -1);
 

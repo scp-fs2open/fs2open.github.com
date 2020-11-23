@@ -294,6 +294,7 @@ enum IoActionId  {
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
 };
 
+class CCB;
 
 /*!
  *  A singular button binding

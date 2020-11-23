@@ -1206,8 +1206,8 @@ void pilotfile::csg_read_controls()
 		id3 = cfread_short(cfp);	// unused, at the moment
 
 		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 		}
 	}
 }
@@ -1221,8 +1221,8 @@ void pilotfile::csg_write_controls()
 	cfwrite_ushort(CCFG_MAX, cfp);
 
 	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].key_id, cfp);
-		cfwrite_short(Control_config[idx].joy_id, cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
 	}
