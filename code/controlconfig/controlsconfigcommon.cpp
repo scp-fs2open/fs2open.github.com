@@ -1275,38 +1275,41 @@ void control_config_common_read_section(int s) {
 
 		// Assign the various attributes to this control
 		int iTemp;
+		short key;
 		auto  item = &Control_config[item_id];
 		auto& new_binding = new_preset.bindings[item_id];
 
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {
 			if (optional_string("NONE")) {
-				new_binding.first.btn = (short)-1;
+				new_binding.take(CC_bind(CID_KEYBOARD, -1), -1);
 			} else {
 				stuff_string(szTempBuffer, F_NAME);
-				new_binding.first.btn = mKeyNameToVal[szTempBuffer];
+				key = mKeyNameToVal[szTempBuffer];
 			}
 		}
 
 		if (optional_string("$Key Mod Shift:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_SHIFTED : 0;
+			key |= (iTemp == 1) ? KEY_SHIFTED : 0;
 		}
 
 		if (optional_string("$Key Mod Alt:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_ALTED : 0;
+			key |= (iTemp == 1) ? KEY_ALTED : 0;
 		}
 
 		if (optional_string("$Key Mod Ctrl:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_CTRLED : 0;
+			key |= (iTemp == 1) ? KEY_CTRLED : 0;
 		}
+
+		new_binding.take(CC_bind(CID_KEYBOARD, key), 0);
 
 		// Joy btn assignment
 		if (optional_string("$Joy Default:")) {
 			stuff_int(&iTemp);
-			new_binding.second.btn = (short)iTemp;
+			new_binding.take(CC_bind(CID_JOY0, iTemp), 1);
 		}
 
 		// Section is #ControlConfigOverride
@@ -1677,11 +1680,11 @@ void CCB::operator=(const CCB& A) {
 }
 
 bool CCB::has_first(const CCB& A) const {
-	return (first == A.first) || (first == A.second);
+	return !first.empty() && ((first == A.first) || (first == A.second));
 }
 
 bool CCB::has_second(const CCB& A) const {
-	return (second == A.first) || (second == A.second);
+	return !second.empty() && ((second == A.first) || (second == A.second));
 }
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
@@ -1700,12 +1703,8 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 
 	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
 	// Current bindings will be overwritten once the player's bindings is read in.
-	item.first.cid = CID_KEYBOARD;
-	item.first.btn = key_default;
-
-	item.second.cid = CID_JOY0;
-	item.second.btn = joy_default;
-	
+	item.take(CC_bind(CID_KEYBOARD, key_default), 0);
+	item.take(CC_bind(CID_JOY0, joy_default), 1);
 
 	// Assign the UI members
 	item.text.assign(text);

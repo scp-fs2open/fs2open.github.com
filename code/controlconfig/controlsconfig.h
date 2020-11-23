@@ -348,12 +348,13 @@ public:
 };
 
 /*!
- * A pair of bindings. Primary = first, Secondary = second
+ * A pair of bindings.
+ * @note Please don't set the bindings directly, use ::take() instead.
  */
 class CCB {
 public:
-	CC_bind first;
-	CC_bind second;
+	CC_bind first;  // The primary binding
+	CC_bind second; // The secondary binding
 
 	/*!
 	 * Returns true if nothing is bound
@@ -386,12 +387,12 @@ public:
 	void operator=(const CCB&);
 
 	/*!
-	 * Returns True if the given CCB has a binding equal to this CCB's first
+	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
 	 */
 	bool has_first(const CCB&) const;
 
 	/*!
-	 * Returns True if the given CCB has a binding equal to this CCB's first
+	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
 	 */
 	bool has_second(const CCB&) const;
 };
