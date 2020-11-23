@@ -112,27 +112,20 @@ static int Current_help_page;
 
 void gameplay_help_blit_control_line(int x, int y, int id)
 {
-	int			has_key=0, has_joy=0;
 	char			buf[256];
 
 	auto ci = &Control_config[id];
 
 	buf[0] = 0;
 
-	if ( ci->key_id >= 0 ) {
-		strcpy_s(buf, textify_scancode(ci->key_id));
-		has_key=1;
+	strcpy_s(buf, ci->first.textify().c_str());
+
+	if (!ci->second.empty()) {
+		strcat_s(buf, XSTR( ", ", 129));
+		strcat_s(buf, ci->second.textify().c_str());
 	}
 
-	if ( ci->joy_id >= 0 ) {
-		if ( has_key ) {
-			strcat_s(buf, XSTR( ", ", 129));
-		}
-		strcat_s(buf, Joy_button_text[ci->joy_id]);
-		has_joy=1;
-	}
-
-	if ( !has_key && !has_joy ) {
+	if (ci->empty()) {
 		strcpy_s(buf, XSTR( "no binding", 130));
 	}
 
