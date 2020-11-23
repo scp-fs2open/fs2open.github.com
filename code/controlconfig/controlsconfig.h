@@ -368,7 +368,7 @@ public:
 	 *
 	 * @note Should there be a binding to the same controller as the given binding, it is cleared
 	 */
-	void take(const CC_bind &A, int order);
+	void take(CC_bind A, int order);
 
 	/*!
 	 * Clears both bindings

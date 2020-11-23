@@ -1616,7 +1616,12 @@ bool CCB::empty() const {
 	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
 }
 
-void CCB::take(const CC_bind &A, int order) {
+void CCB::take(CC_bind A, int order) {
+	// If the button isn't a valid index, nuke the cid.
+	if (A.btn < 0) {
+		A.cid = CID_NONE;
+	}
+	
 	switch (order) {
 	case 0:
 		first = A;
