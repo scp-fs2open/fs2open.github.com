@@ -8117,51 +8117,72 @@ void sexp_set_ship_man(ship *shipp, int duration, int heading, int pitch, int ba
 	if (!(maneuver_flags & CIF_DONT_OVERRIDE_OLD_MANEUVERS)) {
 		aip->ai_override_flags.reset();
 	}
-
-	// handle infinite timestamps
-	if (duration >= 2) {
-		aip->ai_override_timestamp = timestamp(duration);
-	} else {
-		aip->ai_override_timestamp = timestamp(10);
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Never_expire);
-	}
+	bool applied_rot, applied_lat;
+	applied_rot = applied_lat = false;
 
 	if (apply_all_rotate) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_rot);
 		aip->ai_override_ci.bank = bank / 100.0f;
 		aip->ai_override_ci.pitch = pitch / 100.0f;
 		aip->ai_override_ci.heading = heading / 100.0f;
+		applied_rot = true;
 	} else {
 		if (bank != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
 			aip->ai_override_ci.bank = bank / 100.0f;
+			applied_rot = true;
 		}
 		if (pitch != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
 			aip->ai_override_ci.pitch = pitch / 100.0f;
+			applied_rot = true;
 		}
 		if (heading != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
 			aip->ai_override_ci.heading = heading / 100.0f;
+			applied_rot = true;
 		}
 	}
+
 	if (apply_all_lat) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_lat);
 		aip->ai_override_ci.vertical = up / 100.0f;
 		aip->ai_override_ci.sideways = sideways / 100.0f;
 		aip->ai_override_ci.forward = forward / 100.0f;
+		applied_lat = true;
 	} else {
 		if (up != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
 			aip->ai_override_ci.vertical = up / 100.0f;
+			applied_lat = true;
 		}
 		if (sideways != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
 			aip->ai_override_ci.sideways = sideways / 100.0f;
+			applied_lat = true;
 		}
 		if (forward != 0) {
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
 			aip->ai_override_ci.forward = forward / 100.0f;
+			applied_lat = true;
+		}
+	}
+
+	// handle infinite timestamps
+	if (duration >= 2) {
+		if (applied_rot)
+			aip->ai_override_rot_timestamp = timestamp(duration);
+		if (applied_lat)
+			aip->ai_override_lat_timestamp = timestamp(duration);
+	}
+	else {
+		if (applied_rot) {
+			aip->ai_override_rot_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Rotational_never_expire);
+		}
+		if (applied_lat) {
+			aip->ai_override_lat_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Lateral_never_expire);
 		}
 	}
 
@@ -31819,7 +31840,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
-		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten\r\n"
 	},
 
 	// Wanderer
@@ -31837,7 +31858,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
-		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten\r\n"
 	},
 	
 	// Wanderer
@@ -31855,7 +31876,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t1 or 2^0: don't bank when changing heading (which won't have any affect for lat-maneuver)\r\n"
 		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
 		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
-		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten. This will refresh the old maneuver's duration\r\n"
+		"\t\t8 or 2^3: keeps old, but still active, maneuver values that were not overwritten\r\n"
 	},
 
 	// Goober5000

@@ -487,7 +487,8 @@ typedef struct ai_info {
 
 	flagset<AI::Maneuver_Override_Flags>	ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
-	int		ai_override_timestamp;		// mark for when to end the current override
+	int		ai_override_lat_timestamp;		// mark for when to end the current lateral maneuver override
+	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
 } ai_info;

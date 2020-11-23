@@ -63,7 +63,8 @@ namespace AI {
 		Dont_bank_when_turning,		// maps to CIF_DONT_BANK_WHEN_TURNING
 		Dont_clamp_max_velocity,	// maps to CIF_DONT_CLAMP_MAX_VELOCITY
 		Instantaneous_acceleration,	// maps to CIF_INSTANTANEOUS_ACCELERATION
-		Never_expire,				// don't clear the maneuver when the timestamp is up
+		Lateral_never_expire,       // don't clear the lateral maneuver when the timestamp is up
+		Rotational_never_expire,    // don't clear the rotational maneuver when the timestamp is up
 		Dont_override_old_maneuvers,// doesn't clear any previous maneuvers
 
 		NUM_VALUES

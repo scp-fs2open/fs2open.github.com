@@ -14227,8 +14227,28 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 	if (aip->ai_override_flags.none_set())
 		return;
 
-	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Never_expire] && timestamp_elapsed(aip->ai_override_timestamp))
+	bool no_lat = false;
+	bool no_rot = false;
+
+	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Lateral_never_expire] && timestamp_elapsed(aip->ai_override_lat_timestamp))
 	{
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Sideways);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Up);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Forward);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Full_lat);
+		no_lat = true;
+	}
+
+	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Rotational_never_expire] && timestamp_elapsed(aip->ai_override_rot_timestamp))
+	{
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Heading);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Roll);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Pitch);
+		aip->ai_override_flags.remove(AI::Maneuver_Override_Flags::Full_rot);
+		no_rot = true;
+	}
+
+	if (no_rot && no_lat) {
 		aip->ai_override_flags.reset();
 	}
 	else
