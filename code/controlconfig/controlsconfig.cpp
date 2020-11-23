@@ -1657,7 +1657,7 @@ void control_config_do_frame(float frametime)
 				k = Last_key;
 			}
 
-			if (!Config_allowed[k & KEY_MASK]) {
+			if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
 				// This key isn't allowed to be bound.  Consume k and inform the player
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
 				k = 0;
