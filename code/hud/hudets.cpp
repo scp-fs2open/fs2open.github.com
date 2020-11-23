@@ -14,6 +14,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/systemvars.h"
 #include "hud/hudets.h"
+#include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "object/object.h"
@@ -591,14 +592,14 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 }
 
-void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float max, float scale)
+void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)
 {
 	float	delta;
 
-	delta = from_field * ENERGY_DIVERT_DELTA * scale;
+	delta = from_max * scale;
 
-	if (to_field + *to_delta + delta > max)
-		delta = max - to_field - *to_delta;
+	if (to_field + *to_delta + eff * delta > to_max && eff > 0)
+		delta = (to_max - to_field - *to_delta) / eff;
 
 	if ( delta > 0 ) {
 		if ( objp == Player_obj )
@@ -607,7 +608,7 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 		if (delta > from_field)
 			delta = from_field;
 
-		*to_delta += delta;
+		*to_delta += eff * delta;
 		*from_delta -= delta;
 	} else
 		if ( objp == Player_obj )
@@ -615,29 +616,11 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 }
 
 // -------------------------------------------------------------------------------------------------
-// transfer_energy_to_shields() will transfer ENERGY_DIVERT_DELTA percent of weapon energy
+// transfer_energy_to_shields() will transfer a tabled percentage of max weapon energy
 // to shield energy.
 void transfer_energy_to_shields(object* obj)
 {
-	ship*			ship_p = &Ships[obj->instance];
-
-	if (ship_p->flags[Ship::Ship_Flags::Dying])
-		return;
-
-	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
-	{
-		return;
-	}
-
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, shield_get_max_strength(obj), 0.5f);
-}
-
-// -------------------------------------------------------------------------------------------------
-// transfer_energy_to_weapons() will transfer ENERGY_DIVERT_DELTA percent of shield energy
-// to weapon energy.
-void transfer_energy_to_weapons(object* obj)
-{
-	ship*			ship_p = &Ships[obj->instance];
+	ship*		ship_p = &Ships[obj->instance];
 	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
 	if (ship_p->flags[Ship::Ship_Flags::Dying])
@@ -648,7 +631,38 @@ void transfer_energy_to_weapons(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
+	if (sinfo_p->weap_shield_amount == 0 && obj == Player_obj) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Ship does not support weapon->shield transfer.", -1));
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
+		return;
+	}
+
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, sinfo_p->max_weapon_reserve, shield_get_max_strength(obj), sinfo_p->weap_shield_amount, sinfo_p->weap_shield_efficiency);
+}
+
+// -------------------------------------------------------------------------------------------------
+// transfer_energy_to_weapons() will transfer a tabled percentage of max shield energy
+// to weapon energy.
+void transfer_energy_to_weapons(object* obj)
+{
+	ship*		ship_p = &Ships[obj->instance];
+	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
+
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
+		return;
+
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
+	{
+		return;
+	}
+
+	if (sinfo_p->shield_weap_amount == 0 && obj == Player_obj) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Ship does not support shield->weapon transfer.", -1));
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
+		return;
+	}
+
+	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, shield_get_max_strength(obj), sinfo_p->max_weapon_reserve, sinfo_p->shield_weap_amount, sinfo_p->shield_weap_efficiency);
 }
 
 /**

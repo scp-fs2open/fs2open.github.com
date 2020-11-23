@@ -972,6 +972,13 @@ void ship_info::clone(const ship_info& other)
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
 
+	shield_weap_amount = other.shield_weap_amount;
+	shield_weap_efficiency = other.shield_weap_efficiency;
+	shield_weap_speed = other.shield_weap_speed;
+	weap_shield_amount = other.weap_shield_amount;
+	weap_shield_efficiency = other.weap_shield_efficiency;
+	weap_shield_speed = other.weap_shield_speed;
+
 	afterburner_max_vel = other.afterburner_max_vel;
 	afterburner_forward_accel = other.afterburner_forward_accel;
 	afterburner_fuel_capacity = other.afterburner_fuel_capacity;
@@ -1266,6 +1273,13 @@ void ship_info::move(ship_info&& other)
 	max_weapon_reserve = other.max_weapon_reserve;
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
+
+	shield_weap_amount = other.shield_weap_amount;
+	shield_weap_efficiency = other.shield_weap_efficiency;
+	shield_weap_speed = other.shield_weap_speed;
+	weap_shield_amount = other.weap_shield_amount;
+	weap_shield_efficiency = other.weap_shield_efficiency;
+	weap_shield_speed = other.weap_shield_speed;
 
 	std::swap(afterburner_max_vel, other.afterburner_max_vel);
 	afterburner_forward_accel = other.afterburner_forward_accel;
@@ -1650,6 +1664,13 @@ ship_info::ship_info()
 	max_weapon_reserve = 0.0f;
 	max_shield_regen_per_second = 0.0f;
 	max_weapon_regen_per_second = 0.0f;
+
+	shield_weap_amount = 0.0f;
+	shield_weap_efficiency = 0.0f;
+	shield_weap_speed = 0.0f;
+	weap_shield_amount = 0.0f;
+	weap_shield_efficiency = 0.0f;
+	weap_shield_speed = 0.0f;
 
 	vm_vec_zero(&afterburner_max_vel);
 	afterburner_forward_accel = 0.0f;
@@ -3524,6 +3545,36 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&sip->max_weapon_regen_per_second);
 	else if (first_time)
 		sip->max_weapon_regen_per_second = 0.04f;
+
+	if (optional_string("$Shield to Weapon Transfer Quantity:"))
+		stuff_float(&sip->shield_weap_amount);
+	else if (first_time)
+		sip->shield_weap_amount = 0.2f;
+
+	if (optional_string("$Shield to Weapon Transfer Efficiency:"))
+		stuff_float(&sip->shield_weap_efficiency);
+	else if (first_time)
+		sip->shield_weap_efficiency = 1.0f;
+
+	if (optional_string("$Shield to Weapon Transfer Speed:"))
+		stuff_float(&sip->shield_weap_speed);
+	else if (first_time)
+		sip->shield_weap_speed = 0.04f;
+
+	if (optional_string("$Weapon to Shield Transfer Quantity:"))
+		stuff_float(&sip->weap_shield_amount);
+	else if (first_time)
+		sip->weap_shield_amount = 0.1f;
+
+	if (optional_string("$Weapon to Shield Transfer Efficiency:"))
+		stuff_float(&sip->weap_shield_efficiency);
+	else if (first_time)
+		sip->weap_shield_efficiency = 1.0f;
+
+	if (optional_string("$Weapon to Shield Transfer Speed:"))
+		stuff_float(&sip->weap_shield_speed);
+	else if (first_time)
+		sip->weap_shield_speed = 0.04f;
 
 	if (optional_string("$Max Oclk Speed:") || optional_string("$Max Overclock Speed:"))
 		stuff_float(&sip->max_overclocked_speed);
@@ -8443,7 +8494,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 	}
 }
 
-static void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
+// Trickle buffered energy from weapon<->shield transfers into the main banks
+static void ship_move_ets_transfer_buffers(ship *shipp, object *obj, float frametime)
 {
 	float delta;
 	ship_info *sip;
@@ -8453,7 +8505,7 @@ static void ship_chase_shield_energy_targets(ship *shipp, object *obj, float fra
 
 	sip = &Ship_info[shipp->ship_info_index];
 
-	delta = frametime * ETS_RECHARGE_RATE * shipp->ship_max_shield_strength / 100.0f; // recharge is unaffected by $Max Shield Recharge
+	delta = frametime * shipp->ship_max_shield_strength * sip->weap_shield_speed;
 
 	//	Chase target_shields and target_weapon_energy
 	if (shipp->target_shields_delta > 0.0f) {
@@ -8470,7 +8522,7 @@ static void ship_chase_shield_energy_targets(ship *shipp, object *obj, float fra
 		shipp->target_shields_delta += delta;
 	}
 
-	delta = frametime * ETS_RECHARGE_RATE * sip->max_weapon_reserve / 100.0f;
+	delta = frametime * sip->max_weapon_reserve * sip->shield_weap_speed;
 
 	if (shipp->target_weapon_energy_delta > 0.0f) {
 		if (delta > shipp->target_weapon_energy_delta)
@@ -9220,7 +9272,7 @@ void ship_process_post(object * obj, float frametime)
 
 	ship_dying_frame(obj, num);
 
-	ship_chase_shield_energy_targets(shipp, obj, frametime);
+	ship_move_ets_transfer_buffers(shipp, obj, frametime);
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
 	// Goober5000 - added ballistics support
