@@ -520,7 +520,6 @@ void control_config_conflict_check()
 				continue;
 			}
 
-
 			if (item_i.disabled && (item_i.has_first(item_j) || item_i.has_second(item_j))) {
 				// item_i conflicts with item_j and is disabled.  Silently clear item_i
 				item_i.clear();
