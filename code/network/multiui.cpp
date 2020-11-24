@@ -1507,7 +1507,7 @@ void multi_join_do_netstuff()
 	}
 
 	// if we're doing local broadcast then check broadcast queries
-	if (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) {
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
 		multi_mdns_query_do();
 	}
 
@@ -4130,7 +4130,9 @@ void multi_create_init_as_server()
 	multi_port_forward_init();
 
 	// setup mdns
-	multi_mdns_service_init();
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+		multi_mdns_service_init();
+	}
 }
 
 // if on a standalone
