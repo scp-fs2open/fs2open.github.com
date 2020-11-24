@@ -826,7 +826,7 @@ int control_config_remove_binding()
  */
 int control_config_clear_other()
 {
-	int z, i, j, total = 0;
+	int z, i, total = 0;
 
 	if (Selected_line < 0) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1618,11 +1618,12 @@ void control_config_draw_selected_preset() {
  * @param[in] line                  Current line to render
  * @param[in] select_tease_line     Line that the mouse is hovering over
  * @param[in] item                  Which selItem to test against
+ * @param[in] empty                 True if the item is empty or not
  *
  * @returns 0 if no conflicts found, or
  * @returns 1 if a conflict was found
  */
-int set_item_color(int line, int select_tease_line, selItem item) {
+int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 	int z = Cc_lines[line].cc_index;
 	int conflict_id = -1;
 	int found_conflict = 0;	// Is this even needed?
@@ -1658,6 +1659,8 @@ int set_item_color(int line, int select_tease_line, selItem item) {
 		}
 	} else if (line == select_tease_line) {
 		gr_set_color_fast(&Color_text_subselected);
+	} else if (empty) {
+		gr_set_color_fast(&Color_grey);
 	} else {
 		gr_set_color_fast(&Color_text_normal);
 	}
@@ -1672,8 +1675,8 @@ int control_config_draw_list(int select_tease_line) {
 	int conflict = 0;   // 0 if no conflict found
 	int line;       // Current line to render
 	int i;  // Generic index
-	int w;  // width of the string to draw (pixels)
-	int h;  // height of the string to draw (pixels)
+	//int w;  // width of the string to draw (pixels)
+	//int h;  // height of the string to draw (pixels)
 	int x;  // x coordinate of text anchor
 	int y;  // y coordinate of text anchor
 	int z;  // cc_index of the line being drawn
@@ -1716,7 +1719,7 @@ int control_config_draw_list(int select_tease_line) {
 			SCP_string second = Control_config[z].second.textify();
 
 			// Set color for primary according to state
-			conflict += set_item_color(line, select_tease_line, selItem::Primary);
+			conflict += set_item_color(line, select_tease_line, selItem::Primary, Control_config[z].first.empty());
 
 			// Print primary
 			x = Control_list_first_x[gr_screen.res];
@@ -1729,7 +1732,7 @@ int control_config_draw_list(int select_tease_line) {
 			Cc_lines[line].kw = Control_list_first_w[gr_screen.res];
 
 			// Set color for secondary according to state
-			conflict += set_item_color(line, select_tease_line, selItem::Secondary);
+			conflict += set_item_color(line, select_tease_line, selItem::Secondary, Control_config[z].second.empty());
 
 			// Print secondary
 			x = Control_list_second_x[gr_screen.res];
@@ -1749,27 +1752,11 @@ int control_config_draw_list(int select_tease_line) {
 				j = Axis_override;
 			}
 
+			conflict = set_item_color(line, select_tease_line, selItem::Primary, (j < 0));
+			
 			if (j < 0) {
-				gr_set_color_fast(&Color_grey);
 				gr_printf_menu(x, y, "%s", XSTR("None", 211));
-
 			} else {
-				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {
-					if (c == &Color_text_normal) {
-						gr_set_color_fast(&Color_text_error);
-
-					} else {
-						gr_set_color_fast(&Color_text_error_hi);
-						conflict++;
-					}
-
-				} else if (Selected_item == selItem::None) {
-					gr_set_color_fast(&Color_text_normal);
-
-				} else {
-					gr_set_color_fast(c);
-				}
-
 				gr_string(x, y, Joy_axis_text[j], GR_RESIZE_MENU);
 			}
 		}
