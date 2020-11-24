@@ -1612,6 +1612,58 @@ void control_config_draw_selected_preset() {
 	}
 }
 
+/**
+ * Sets the color for binding text according to various states
+ *
+ * @param[in] line                  Current line to render
+ * @param[in] select_tease_line     Line that the mouse is hovering over
+ * @param[in] item                  Which selItem to test against
+ *
+ * @returns 0 if no conflicts found, or
+ * @returns 1 if a conflict was found
+ */
+int set_item_color(int line, int select_tease_line, selItem item) {
+	int z = Cc_lines[line].cc_index;
+	int conflict_id = -1;
+	int found_conflict = 0;	// Is this even needed?
+
+
+	switch (item) {
+	case selItem::Primary:
+		conflict_id = Conflicts[z].first;
+		break;
+	case selItem::Secondary:
+		conflict_id = Conflicts[z].second;
+		break;
+	default:
+		mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
+		Int3();
+	}
+
+	if (conflict_id >= 0) {
+		// In conflict
+		if ((line == Selected_line) && (Selected_item == item)) {
+			// Highlight selected item 
+			gr_set_color_fast(&Color_text_error_hi);
+		} else {
+			gr_set_color_fast(&Color_text_error);
+		}
+		found_conflict++;
+	} else if (line == Selected_line) {
+		// Highlight selected item
+		if (Selected_item == item) {
+			gr_set_color_fast(&Color_text_selected);
+		} else {
+			gr_set_color_fast(&Color_text_subselected);
+		}
+	} else if (line == select_tease_line) {
+		gr_set_color_fast(&Color_text_subselected);
+	} else {
+		gr_set_color_fast(&Color_text_normal);
+	}
+
+	return found_conflict;
+}
 /*!
  * Draws the list box of controls and their bindings
  */
@@ -1664,24 +1716,7 @@ int control_config_draw_list(int select_tease_line) {
 			SCP_string second = Control_config[z].second.textify();
 
 			// Set color for primary according to state
-			if (Conflicts[z].first >= 0) {
-				// In conflict
-				if (c == &Color_text_normal) {
-					gr_set_color_fast(&Color_text_error);
-
-				} else {
-					gr_set_color_fast(&Color_text_error_hi);
-					conflict++;
-				}
-
-			} else if (Selected_item != selItem::Primary) {
-				// Not selected
-				gr_set_color_fast(&Color_text_normal);
-
-			} else {
-				// Selected
-				gr_set_color_fast(c);
-			}
+			conflict += set_item_color(line, select_tease_line, selItem::Primary);
 
 			// Print primary
 			x = Control_list_first_x[gr_screen.res];
@@ -1691,28 +1726,10 @@ int control_config_draw_list(int select_tease_line) {
 			gr_printf_menu(x, y, "%s", buf);
 
 			Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-			gr_get_string_size(&w, NULL, buf);
-			Cc_lines[line].kw = w;
+			Cc_lines[line].kw = Control_list_first_w[gr_screen.res];
 
 			// Set color for secondary according to state
-			if (Conflicts[z].second >= 0) {
-				// In conflict
-				if (c == &Color_text_normal) {
-					gr_set_color_fast(&Color_text_error);
-
-				} else {
-					gr_set_color_fast(&Color_text_error_hi);
-					conflict++;
-				}
-
-			} else if (Selected_item != selItem::Secondary) {
-				// Secondary not selected
-				gr_set_color_fast(&Color_text_normal);
-
-			} else {
-				// Secondary selected
-				gr_set_color_fast(c);
-			}
+			conflict += set_item_color(line, select_tease_line, selItem::Secondary);
 
 			// Print secondary
 			x = Control_list_second_x[gr_screen.res];
@@ -1722,7 +1739,7 @@ int control_config_draw_list(int select_tease_line) {
 			gr_printf_menu(x, y, "%s", buf);
 
 			Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-			gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
+			Cc_lines[line].jw = Control_list_first_w[gr_screen.res];
 
 		} else {
 			// Is an analogue control
@@ -2142,16 +2159,18 @@ void control_config_do_frame(float frametime)
 				// Select Previous item
 				Selected_item--;
 
-				if (Control_config[z].second.empty() && (Selected_item == selItem::Secondary)) {
-					// Nothing bound, try primary
-					Selected_item = selItem::Primary;
-				}
+				if (z & JOY_AXIS) {
+					// is analogue
+					if (Selected_item == selItem::Secondary) {
+						// Currently only one axis to bind to an axis item
+						Selected_item = selItem::Primary;
+					}
 
-				if (Control_config[z].first.empty() && (Selected_item == selItem::Primary)) {
-					// Nothing bound, set to None
-					Selected_item = selItem::None;
+					if ((Axis_map_to[z & ~JOY_AXIS] < 0) && (Selected_item == selItem::Primary)) {
+						// Nothing bound, set to None
+						Selected_item = selItem::None;
+					}
 				}
-
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
@@ -2159,14 +2178,17 @@ void control_config_do_frame(float frametime)
 				// Next item
 				Selected_item++;
 
-				if (Control_config[z].first.empty() && (Selected_item == selItem::Primary)) {
-					// Nothing bound, set to Secondary
-					Selected_item = selItem::Secondary;
-				}
+				if (z & JOY_AXIS) {
+					// is analogue
+					if ((Axis_map_to[z & ~JOY_AXIS] < 0) && (Selected_item == selItem::Primary)) {
+						// Nothing bound, set to None
+						Selected_item = selItem::None;
+					}
 
-				if (Control_config[z].second.empty() && (Selected_item == selItem::Secondary)) {
-					// Nothing bound, set to None
-					Selected_item = selItem::None;
+					if (Selected_item == selItem::Secondary) {
+						// Currently only one axis to bind to an axis item
+						Selected_item = selItem::None;
+					}
 				}
 
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
