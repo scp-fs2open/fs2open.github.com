@@ -24,6 +24,7 @@ class object;
 void	hud_escort_update_list();
 void	hud_escort_init();
 void	hud_setup_escort_list(int level = 1);
+void	hud_resort_escort_list();
 void	hud_add_remove_ship_escort(int objnum, int supress_feedback = 0);
 void	hud_escort_clear_all(bool clear_flags = false);
 void	hud_escort_ship_hit(object *objp, int quadrant);
