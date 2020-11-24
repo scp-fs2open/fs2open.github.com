@@ -3284,7 +3284,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_boolean(&sip->explosion_splits_ship);
 	}
 	else if (first_time) {
-		sip->explosion_splits_ship = sip->explosion_propagates;
+		sip->explosion_splits_ship = sip->explosion_propagates == 1;
 	}
 
 	if(optional_string("$Propagating Expl Radius Multiplier:")){
