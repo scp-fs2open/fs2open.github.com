@@ -1079,6 +1079,7 @@ public:
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
+	bool explosion_splits_ship;				// If true, then the ship 'splits in two' when it blows up
 	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
 	float prop_exp_rad_mult;				// propagating explosions radius multiplier
 	float death_roll_r_mult;

@@ -898,6 +898,7 @@ void ship_info::clone(const ship_info& other)
 
 	memcpy(&shockwave, &other.shockwave, sizeof(shockwave_create_info));
 	explosion_propagates = other.explosion_propagates;
+	explosion_splits_ship = other.explosion_splits_ship;
 	big_exp_visual_rad = other.big_exp_visual_rad;
 	prop_exp_rad_mult = other.prop_exp_rad_mult;
 	death_roll_r_mult = other.death_roll_r_mult;
@@ -1220,6 +1221,7 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(shockwave, other.shockwave);
 	explosion_propagates = other.explosion_propagates;
+	explosion_splits_ship = other.explosion_splits_ship;
 	big_exp_visual_rad = other.big_exp_visual_rad;
 	prop_exp_rad_mult = other.prop_exp_rad_mult;
 	death_roll_r_mult = other.death_roll_r_mult;
@@ -1558,6 +1560,7 @@ ship_info::ship_info()
 
 	shockwave_create_info_init(&shockwave);
 	explosion_propagates = 0;
+	explosion_splits_ship = false;
 	big_exp_visual_rad = -1.0f;
 	prop_exp_rad_mult = 1.0f;
 	death_roll_r_mult = 1.0f;
@@ -3275,6 +3278,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
+	}
+
+	if(optional_string("$Expl Splits Ship:")){
+		stuff_boolean(&sip->explosion_splits_ship);
+	}
+	else if (first_time) {
+		sip->explosion_splits_ship = sip->explosion_propagates;
 	}
 
 	if(optional_string("$Propagating Expl Radius Multiplier:")){
@@ -8336,8 +8346,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 			}
 
-			// If this is a large ship with a propagating explosion, set it to blow up.
-			if ( ship_get_exp_propagates(shipp) )	{
+			// If this is a splitting explosion, set it split up.
+			if ( sip->explosion_splits_ship )	{
 				if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) {
 					ship_blow_up_area_apply_blast( objp );
 				}
@@ -8347,7 +8357,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				polymodel *pm = model_get(sip->model_num);
 				shipp->end_death_time = timestamp((int) pm->core_radius);
 			} else {
-				// only do big fireball if not big ship
+				// else, just a single big fireball
 				float big_rad;
 				int fireball_objnum, fireball_type, default_fireball_type;
 				float explosion_life;
