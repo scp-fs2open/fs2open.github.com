@@ -904,6 +904,7 @@ void ship_info::clone(const ship_info& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_rotation_mult = other.death_roll_rotation_mult;
 	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
 	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
 	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
@@ -1226,6 +1227,7 @@ void ship_info::move(ship_info&& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_rotation_mult = other.death_roll_rotation_mult;
 	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
 	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
 	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
