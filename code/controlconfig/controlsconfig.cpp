@@ -61,10 +61,10 @@ const char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 // control list area
 int Control_list_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
-		32, 58, 198, 259	// GR_640
+		20, 58, 596, 259	// GR_640
 	},
 	{
-		32, 94, 904, 424	// GR_1024
+		32, 94, 956, 424	// GR_1024
 	}
 };
 
@@ -74,16 +74,22 @@ int Control_list_ctrl_w[GR_NUM_RESOLUTIONS] = {
 	600		// GR_1024
 };
 
-// x start position of the binding area section of the list
-int Control_list_key_x[GR_NUM_RESOLUTIONS] = {
-	397,	// GR_640
-	712		// GR_1024
+// x start position of the primary binding area column
+int Control_list_first_x[GR_NUM_RESOLUTIONS] = {
+	350,	// GR_640
+	640		// GR_1024 (712)
 };
 
-// width of the binding area section of the list
-int Control_list_key_w[GR_NUM_RESOLUTIONS] = {
-	198,	// GR_640
-	230		// GR_1024
+// width of the both binding area columns
+int Control_list_first_w[GR_NUM_RESOLUTIONS] = {
+	116,	// GR_640 (198)
+	150		// GR_1024 (230)
+};
+
+// x start position of the secondary binding area column
+int Control_list_second_x[GR_NUM_RESOLUTIONS] = {
+	480,	// GR_640
+	806,	// GR_1024
 };
 
 // display the "more..." text under the control list
@@ -360,6 +366,68 @@ int Config_allowed[] = {
 int Show_controls_info = 0;
 
 DCF_BOOL(show_controls_info, Show_controls_info);
+
+DCF(cc_adjust, "UI tool Used to adjust positioning and size of the controls config widgets") {
+	bool done = false;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Available sub commands: \n");
+		dc_printf("  list - configures control_list_coords\n");
+		dc_printf("  col - configures the horizontal position and widths of control_list columns\n");
+		dc_printf("\n Each sub command has their own arguments, pass 'help' to them for further details.");
+		return;
+	}
+
+	if (dc_optional_string("list")) {
+		// listbox
+		if (dc_optional_string_either("help", "--help")) {
+			dc_printf("Configures control_list_coords\n");
+			dc_printf(" Available arguments: -x -y -w -h");
+			return;
+		}
+
+		if (dc_optional_string("-x")) {
+			dc_stuff_int(&Control_list_coords[gr_screen.res][CONTROL_X_COORD]);
+			done = true;
+		}
+		if (dc_optional_string("-y")) {
+			dc_stuff_int(&Control_list_coords[gr_screen.res][CONTROL_Y_COORD]);
+			done = true;
+		}
+		if (dc_optional_string("-w")) {
+			dc_stuff_int(&Control_list_coords[gr_screen.res][CONTROL_W_COORD]);
+			done = true;
+		}
+		if (dc_optional_string("-h")) {
+			dc_stuff_int(&Control_list_coords[gr_screen.res][CONTROL_H_COORD]);
+			done = true;
+		}
+
+	} else if (dc_optional_string("col")) {
+		if (dc_optional_string_either("help", "--help")) {
+			dc_printf("Configures the column positioning and sizes for Control_list\n");
+			dc_printf("  Avilable arguments: -x1 -w1 -x2");
+			return;
+		}
+
+		if (dc_optional_string("-x1")) {
+			dc_stuff_int(&Control_list_first_x[gr_screen.res]);
+			done = true;
+		}
+		if (dc_optional_string("-w1")) {
+			dc_stuff_int(&Control_list_first_w[gr_screen.res]);
+			done = true;
+		}
+		if (dc_optional_string("-x2")) {
+			dc_stuff_int(&Control_list_second_x[gr_screen.res]);
+			done = true;
+		}
+	}
+
+	if (!done) {
+		dc_printf("Nothing done. Enter 'help' or '--help' for available arguments.");
+	}
+}
 #endif
 
 static int Axes_origin[JOY_NUM_AXES];
@@ -1544,6 +1612,161 @@ void control_config_draw_selected_preset() {
 	}
 }
 
+/*!
+ * Draws the list box of controls and their bindings
+ */
+int control_config_draw_list(int select_tease_line) {
+	color* c;        // Color to draw the text
+	int conflict = 0;   // 0 if no conflict found
+	int line;       // Current line to render
+	int i;  // Generic index
+	int w;  // width of the string to draw (pixels)
+	int h;  // height of the string to draw (pixels)
+	int x;  // x coordinate of text anchor
+	int y;  // y coordinate of text anchor
+	int z;  // cc_index of the line being drawn
+	char buf[256];  // c_str buffer
+	int font_height = gr_get_font_height();
+
+	for (line = Scroll_offset; cc_line_query_visible(line); ++line) {
+		z = Cc_lines[line].cc_index;
+
+		// screen coordinate y = list box origin y + (this item's relative y - topmost item's relative y)
+		y = Control_list_coords[gr_screen.res][CONTROL_Y_COORD] + Cc_lines[line].y - Cc_lines[Scroll_offset].y;
+
+		// Update the y position for this button
+		List_buttons[line - Scroll_offset].update_dimensions(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, Control_list_coords[gr_screen.res][CONTROL_W_COORD], font_height);
+		
+		// Enable selection/hover of items when not in binding mode
+		List_buttons[line - Scroll_offset].enable(!Binding_mode);
+
+		Cc_lines[line].kw = Cc_lines[line].jw = 0;
+
+		if (line == Selected_line) {
+			c = &Color_text_selected;
+		} else if (line == select_tease_line) {
+			c = &Color_text_subselected;
+		} else {
+			c = &Color_text_normal;
+		}
+
+		gr_set_color_fast(c);
+		if (Cc_lines[line].label) {
+			strcpy_s(buf, Cc_lines[line].label);
+			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
+			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, "%s", buf);
+		}
+
+		if (!(z & JOY_AXIS)) {
+			// is a digital control
+			// Textify and print the primary and secondary bindings
+			SCP_string first = Control_config[z].first.textify();
+			SCP_string second = Control_config[z].second.textify();
+
+			// Set color for primary according to state
+			if (Conflicts[z].first >= 0) {
+				// In conflict
+				if (c == &Color_text_normal) {
+					gr_set_color_fast(&Color_text_error);
+
+				} else {
+					gr_set_color_fast(&Color_text_error_hi);
+					conflict++;
+				}
+
+			} else if (Selected_item != selItem::Primary) {
+				// Not selected
+				gr_set_color_fast(&Color_text_normal);
+
+			} else {
+				// Selected
+				gr_set_color_fast(c);
+			}
+
+			// Print primary
+			x = Control_list_first_x[gr_screen.res];
+			*buf = 0;
+			strcpy_s(buf, first.c_str());
+			font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+			gr_printf_menu(x, y, "%s", buf);
+
+			Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+			gr_get_string_size(&w, NULL, buf);
+			Cc_lines[line].kw = w;
+
+			// Set color for secondary according to state
+			if (Conflicts[z].second >= 0) {
+				// In conflict
+				if (c == &Color_text_normal) {
+					gr_set_color_fast(&Color_text_error);
+
+				} else {
+					gr_set_color_fast(&Color_text_error_hi);
+					conflict++;
+				}
+
+			} else if (Selected_item != selItem::Secondary) {
+				// Secondary not selected
+				gr_set_color_fast(&Color_text_normal);
+
+			} else {
+				// Secondary selected
+				gr_set_color_fast(c);
+			}
+
+			// Print secondary
+			x = Control_list_second_x[gr_screen.res];
+			*buf = 0;
+			strcpy_s(buf, second.c_str());
+			font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+			gr_printf_menu(x, y, "%s", buf);
+
+			Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+			gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
+
+		} else {
+			// Is an analogue control
+			x = Control_list_first_x[gr_screen.res];
+			int j = Axis_map_to[z & ~JOY_AXIS];
+			if (Binding_mode && (line == Selected_line)) {
+				j = Axis_override;
+			}
+
+			if (j < 0) {
+				gr_set_color_fast(&Color_grey);
+				gr_printf_menu(x, y, "%s", XSTR("None", 211));
+
+			} else {
+				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {
+					if (c == &Color_text_normal) {
+						gr_set_color_fast(&Color_text_error);
+
+					} else {
+						gr_set_color_fast(&Color_text_error_hi);
+						conflict++;
+					}
+
+				} else if (Selected_item == selItem::None) {
+					gr_set_color_fast(&Color_text_normal);
+
+				} else {
+					gr_set_color_fast(c);
+				}
+
+				gr_string(x, y, Joy_axis_text[j], GR_RESIZE_MENU);
+			}
+		}
+	}
+
+	// Disable remaining empty lines
+	i = line - Scroll_offset;
+	while (i < LIST_BUTTONS_MAX) {
+		List_buttons[i++].disable();
+	}
+
+	return conflict;
+}
+
 void control_config_do_frame(float frametime)
 {
 	const char *str;
@@ -2136,153 +2359,9 @@ void control_config_do_frame(float frametime)
 		gr_printf_menu(Control_more_coords[gr_screen.res][CONTROL_X_COORD], Control_more_coords[gr_screen.res][CONTROL_Y_COORD], "%s", XSTR( "More...", 210));
 	}
 
-	conflict = 0;
-	line = Scroll_offset;
-	while (cc_line_query_visible(line)) {
-		z = Cc_lines[line].cc_index;
-		y = Control_list_coords[gr_screen.res][CONTROL_Y_COORD] + Cc_lines[line].y - Cc_lines[Scroll_offset].y;
-
-		List_buttons[line - Scroll_offset].update_dimensions(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, Control_list_coords[gr_screen.res][CONTROL_W_COORD], font_height);
-		List_buttons[line - Scroll_offset].enable(!Binding_mode);
-
-		Cc_lines[line].kw = Cc_lines[line].jw = 0;
-
-		if (line == Selected_line){
-			c = &Color_text_selected;
-		} else if (line == select_tease_line) {
-			c = &Color_text_subselected;
-		} else {
-			c = &Color_text_normal;
-		}
-
-		gr_set_color_fast(c);
-		if (Cc_lines[line].label) {
-			strcpy_s(buf, Cc_lines[line].label);
-			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
-			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, "%s", buf);
-		}
-
-		if (!(z & JOY_AXIS)) {
-			// is a digital control
-			x = Control_list_key_x[gr_screen.res];
-			*buf = 0;
-
-			if (Control_config[z].empty()) {
-				// Nothing bound
-				gr_set_color_fast(&Color_grey);
-				gr_printf_menu(x, y, "%s", XSTR( "None", 211));
-
-			} else {
-				// Textify and print the primary and secondary bindings
-				SCP_string first = Control_config[z].first.textify();
-				SCP_string second = Control_config[z].second.textify();
-
-				// Set color for primary according to state
-				if (Conflicts[z].first >= 0) {
-					// In conflict
-					if (c == &Color_text_normal) {
-						gr_set_color_fast(&Color_text_error);
-
-					} else {
-						gr_set_color_fast(&Color_text_error_hi);
-						conflict++;
-					}
-
-				} else if (Selected_item != selItem::Primary) {
-					// Not selected
-					gr_set_color_fast(&Color_text_normal);
-
-				} else {
-					// Selected
-					gr_set_color_fast(c);
-				}
-
-				// Print primary
-				strcpy_s(buf, first.c_str());
-				gr_printf_menu(x, y, "%s", buf);
-
-				Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-				gr_get_string_size(&w, NULL, buf);
-				Cc_lines[line].kw = w;
-				x += w;
-
-				// Append ", "
-				gr_set_color_fast(&Color_text_normal);
-				gr_printf_menu(x, y, "%s", XSTR( ", ", 212));
-				gr_get_string_size(&w, NULL, XSTR( ", ", 212));
-				x += w;
-
-				// Set color for secondary according to state
-				if (Conflicts[z].second >= 0) {
-					// In conflict
-					if (c == &Color_text_normal) {
-						gr_set_color_fast(&Color_text_error);
-
-					} else {
-						gr_set_color_fast(&Color_text_error_hi);
-						conflict++;
-					}
-
-				} else if (Selected_item != selItem::Secondary) {
-					// Secondary not selected
-					gr_set_color_fast(&Color_text_normal);
-
-				} else {
-					// Secondary selected
-					gr_set_color_fast(c);
-				}
-
-				// Print secondary
-				strcpy_s(buf, second.c_str());
-				font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
-				gr_printf_menu(x, y, "%s", buf);
-
-				Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-				gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
-			}
-
-		} else {
-			// Is an analogue control
-			x = Control_list_key_x[gr_screen.res];
-			j = Axis_map_to[z & ~JOY_AXIS];
-			if (Binding_mode && (line == Selected_line)) {
-				j = Axis_override;
-			}
-
-			if (j < 0) {
-				gr_set_color_fast(&Color_grey);
-				gr_printf_menu(x, y, "%s", XSTR( "None", 211));
-
-			} else {
-				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {
-					if (c == &Color_text_normal) {
-						gr_set_color_fast(&Color_text_error);
-
-					} else {
-						gr_set_color_fast(&Color_text_error_hi);
-						conflict++;
-					}
-
-				} else if (Selected_item == selItem::None) {
-					gr_set_color_fast(&Color_text_normal);
-
-				} else {
-					gr_set_color_fast(c);
-				}
-
-				gr_string(x, y, Joy_axis_text[j], GR_RESIZE_MENU);
-			}
-		}
-
-		line++;
-	}
+	conflict = control_config_draw_list(select_tease_line);
 
 	CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.enable(conflict);
-
-	i = line - Scroll_offset;
-	while (i < LIST_BUTTONS_MAX) {
-		List_buttons[i++].disable();
-	}
 
 	// Display preset in use
 	control_config_draw_selected_preset();
