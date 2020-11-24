@@ -1535,6 +1535,8 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		rotvel_mag = 150.0f / objp->radius;
 	}
 
+	rotvel_mag *= sip->death_roll_rotation_mult;
+
 	if (object_is_dead_docked(objp)) {
 		// don't change current rotvel
 		sp->deathroll_rotvel = objp->phys_info.rotvel;

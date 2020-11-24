@@ -195,6 +195,7 @@ namespace Ship {
 		Dont_clamp_max_velocity,		// Goober5000
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
+		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
 
 		NUM_VALUES
 	};
