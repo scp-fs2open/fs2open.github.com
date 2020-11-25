@@ -9055,7 +9055,7 @@ float dock_move_towards_point(object *objp, vec3d *start, vec3d *finish, float s
 //	Set the orientation in the global reference frame for an object to attain
 //	to dock with another object.  Resultant global matrix returned in dom.
 // Revised by Goober5000
-void set_goal_dock_orient(matrix *dom, vec3d *docker_pnt, matrix *docker_dock_orient, matrix *docker_orient, vec3d *dockee_pnt, matrix *dockee_dock_orient, matrix *dockee_orient)
+void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docker_orient, matrix *dockee_dock_orient, matrix *dockee_orient)
 {
 	vec3d	fvec, uvec;
 	matrix	m1, m2, m3;
@@ -9282,7 +9282,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &docker_point, &docker_dock_orient, &docker_objp->orient, &dockee_point, &dockee_dock_orient, &dockee_objp->orient);
+		set_goal_dock_orient(&dom, &docker_dock_orient, &docker_objp->orient, &dockee_dock_orient, &dockee_objp->orient);
 
 		//	Compute new orientation matrix and update rotational velocity.
 		vec3d	omega_in, omega_out, vel_limit, acc_limit;
@@ -9342,7 +9342,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &docker_point, &docker_dock_orient, &docker_objp->orient, &dockee_point, &dockee_dock_orient, &dockee_objp->orient);
+		set_goal_dock_orient(&dom, &docker_dock_orient, &docker_objp->orient, &dockee_dock_orient, &dockee_objp->orient);
 
 		//	Compute distance between dock bay points.
 		if (dock_mode == DOA_DOCK) {
