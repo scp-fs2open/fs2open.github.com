@@ -16880,7 +16880,7 @@ int sexp_get_power_output(int node)
 	auto ship_entry = eval_ship(node);
 
 	if (ship_entry == nullptr)
-		return SEXP_NAN_FOREVER;
+		return SEXP_CANT_EVAL;
 	return (int)(std::lround(Ship_info[ship_entry->shipp->ship_info_index].power_output));
 }
 
