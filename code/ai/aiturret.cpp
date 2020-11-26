@@ -2140,7 +2140,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		// maybe sound
 		if ( Weapon_info[tsi->weapon_class].launch_snd.isValid() ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
-			if ( tsi->parent_objnum != OBJ_INDEX(Player_obj) ) {
+			if ( tsi->parent_objnum != OBJ_INDEX(Player_obj) || (tsi->turret->flags[Ship::Subsystem_Flags::Play_sound_for_player]) ) {
 				snd_play_3d( gamesnd_get_game_sound(Weapon_info[tsi->weapon_class].launch_snd), &turret_pos, &View_position );
 			}
 		}
@@ -2541,9 +2541,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	//Assert(ss->turret_enemy_objnum != -1);
 
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
-
-	// Ok, the turret is lined up... now line up a particular gun.
-	bool ok_to_fire = false;
 	bool something_was_ok_to_fire = false;
 
 	if (in_fov) {
@@ -2582,8 +2579,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ss->turret_next_fire_pos = ffp_bank - MAX_SHIP_PRIMARY_BANKS + ss->weapons.num_primary_banks;
 			}
 
-			// make sure to reset this for current weapon
-			ok_to_fire = false;
+			// Ok, the turret is lined up... now line up a particular gun.
+			bool ok_to_fire = false;
 
 			// We're ready to fire... now get down to specifics, like where is the
 			// actual gun point and normal, not just the one for whole turret.
