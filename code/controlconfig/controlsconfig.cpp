@@ -1628,17 +1628,25 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 	int conflict_id = -1;
 	int found_conflict = 0;	// Is this even needed?
 
+	if (z & JOY_AXIS) {
+		// analogue
+		z &= ~JOY_AXIS;
 
-	switch (item) {
-	case selItem::Primary:
-		conflict_id = Conflicts[z].first;
-		break;
-	case selItem::Secondary:
-		conflict_id = Conflicts[z].second;
-		break;
-	default:
-		mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
-		Int3();
+		conflict_id = Conflicts_axes[z];
+
+	} else {
+		// digital
+		switch (item) {
+		case selItem::Primary:
+			conflict_id = Conflicts[z].first;
+			break;
+		case selItem::Secondary:
+			conflict_id = Conflicts[z].second;
+			break;
+		default:
+			mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
+			Int3();
+		}
 	}
 
 	if (conflict_id >= 0) {
@@ -1667,6 +1675,7 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 
 	return found_conflict;
 }
+
 /*!
  * Draws the list box of controls and their bindings
  */
