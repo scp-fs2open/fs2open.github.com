@@ -25,7 +25,17 @@ enum Joy_axis_index {
 	JOY_Z_AXIS,
 	JOY_RX_AXIS,
 	JOY_RY_AXIS,
-	JOY_RZ_AXIS
+	JOY_RZ_AXIS,
+
+	JOY_NUM_AXES	// Number of axes a joystick may have. Must be last enum in Joy_axis_index.
+};
+
+enum Mouse_axis_index {
+	MOUSE_X_AXIS,
+	MOUSE_Y_AXIS,
+	MOUSE_Z_AXIS,
+
+	MOUSE_NUM_AXES	// Number of axes a mouse may have. Must be last enum in Mouse_axis_index.
 };
 
 /*!
@@ -40,8 +50,9 @@ enum CID : short {
 	CID_JOY0     =  0,  // to Joy0
 	CID_JOY1     =  1,  // to Joy1 (Throttle?)
 	CID_JOY2     =  2,  // to Joy2 (Pedals?)
-	CID_JOY3     =  3   // to Joy3 (Head tracker?)
-	                    // Any additional joystick is an int >3
+	CID_JOY3     =  3,  // to Joy3 (Head tracker?)
+	
+	CID_JOY_MAX         // Maximum supported joysticks, must be last in the enum definition
 };
 
 /*!
@@ -306,7 +317,7 @@ public:
 
 public:
 	CC_bind() :cid(CID_NONE), btn(-1) {};
-	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { if (btn < 0) {cid = CID_NONE; btn = -1;} };
 	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn) {};
 
 	CC_bind operator=(const CC_bind &A);
@@ -487,10 +498,10 @@ private:
 
 extern int Failed_key_index;
 
-extern int Axis_map_to[];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
-extern int Axis_map_to_defaults[];
-extern int Invert_axis[];           // Array to hold inversion bools for a joy axis. size() = JOY_NUM_AXES
-extern int Invert_axis_defaults[];
+extern CC_bind Axis_map_to[NUM_JOY_AXIS_ACTIONS];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
+extern CC_bind Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS];
+extern int Invert_axis[NUM_JOY_AXIS_ACTIONS];           // Array to hold inversion bools for a joy axis action. size() = NUM_JOY_AXIS_ACTIONS
+extern int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS];
 
 extern int Joy_dead_zone_size;
 extern int Joy_sensitivity;
@@ -602,11 +613,14 @@ float check_control_timef(int id);
 /**
  * @brief Wrapper for check_control_used. Allows the game to ignore the key if told to do so by the ignore-key SEXP.
  *
- * @brief id    The IoActionId of the control to check
- * @brief key   The key combo to check against the control.
+ * @param[in] id    The IoActionId of the control to check
+ * @param[in] key   The key combo to check against the control. If -1, re-check the last key passed to this function
  *
  * @returns 0 If the control wasn't used, or
  * @returns 1 If the control was used
+ *
+ * @details If the given control is CC_CONTINOUS, param key is effectively ignored and instead keyd_press[] is checked.
+ * This function also checks against joy and mouse presses.
  */
 int check_control(int id, int key = -1);
 

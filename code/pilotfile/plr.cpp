@@ -574,7 +574,7 @@ void pilotfile::plr_read_controls()
 		inv = handler->readInt("invert_axis");
 
 		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = axi;
+			Axis_map_to[idx] = CC_bind(CID_JOY0, axi);
 			Invert_axis[idx] = inv;
 		}
 	}
@@ -603,7 +603,7 @@ void pilotfile::plr_write_controls()
 	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeInt("axis_map", Axis_map_to[idx]);
+		handler->writeInt("axis_map", static_cast<short>(Axis_map_to[idx].btn));	// ignores CID currently
 		handler->writeInt("invert_axis", Invert_axis[idx]);
 
 		handler->endSectionWrite();
