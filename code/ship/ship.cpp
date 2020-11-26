@@ -350,6 +350,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
 	{ "don't bank when turning",	Info_Flags::Dont_bank_when_turning,		true, false },
 	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
 	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
+	{ "large ship deathroll",		Info_Flags::Large_ship_deathroll,	true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -905,6 +906,7 @@ void ship_info::clone(const ship_info& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_rotation_mult = other.death_roll_rotation_mult;
 	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
 	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
 	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
@@ -1235,6 +1237,7 @@ void ship_info::move(ship_info&& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_rotation_mult = other.death_roll_rotation_mult;
 	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
 	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
 	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
@@ -1581,6 +1584,7 @@ ship_info::ship_info()
 	death_roll_r_mult = 1.0f;
 	death_fx_r_mult = 1.0f;
 	death_roll_time_mult = 1.0f;
+	death_roll_rotation_mult = 1.0f;
 	death_roll_xrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
 	death_roll_yrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
 	death_roll_zrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
@@ -3350,6 +3354,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_int(&sip->death_fx_count);
 		if (sip->death_fx_count < 0)
 			sip->death_fx_count = 0;
+	}
+
+	if (optional_string("$Death Roll Rotation Multiplier:")) {
+		stuff_float(&sip->death_roll_rotation_mult);
 	}
 
 	if(optional_string("$Death Roll X rotation Cap:")){

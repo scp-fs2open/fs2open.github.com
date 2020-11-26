@@ -14326,7 +14326,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 	auto sip = &Ship_info[shipp->ship_info_index];
 
 	// return if ship is dead, unless it's a big ship...then its turrets still fire, like I was quoted in a magazine.  -- MK, 5/15/98.
-	if ((shipp->flags[Ship::Ship_Flags::Dying] ) && !(Ship_info[shipp->ship_info_index].is_big_or_huge())) {
+	if ((shipp->flags[Ship::Ship_Flags::Dying] ) && !(sip->is_big_or_huge())) {
 		return;
 	}
 
@@ -14366,6 +14366,10 @@ void ai_process( object * obj, int ai_index, float frametime )
 	default:
 		break;
 	}
+
+	// this is sufficient because non-big ships were already weeded out by dying above
+	if (shipp->flags[Ship::Ship_Flags::Dying] && sip->flags[Ship::Info_Flags::Large_ship_deathroll])
+		rfc = false;
 
 	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
