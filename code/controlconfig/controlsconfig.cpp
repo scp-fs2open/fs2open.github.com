@@ -157,7 +157,7 @@ SCP_vector<cc_line> Cc_lines;
 
 // Backups for use when user closes the config menu without saving
 SCP_vector<CCI> Control_config_backup;
-int Axis_map_to_backup[NUM_JOY_AXIS_ACTIONS];
+CC_bind Axis_map_to_backup[NUM_JOY_AXIS_ACTIONS];
 int Invert_axis_backup[JOY_NUM_AXES];
 
 // Undo system
@@ -184,7 +184,7 @@ static int Last_key = -1;
 static int Selected_line = 0;  // line that is currently selected for binding
 static selItem Selected_item = selItem::None;
 static int Scroll_offset;
-static int Axis_override = -1;
+static CC_bind Axis_override;
 static int Background_bitmap;
 static int Conflicts_tabs[NUM_TABS];
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
@@ -430,7 +430,11 @@ DCF(cc_adjust, "UI tool Used to adjust positioning and size of the controls conf
 }
 #endif
 
-static int Axes_origin[JOY_NUM_AXES];
+/**
+ * Values for all axes of all joysticks at the start of bind mode.  Namely used to detect an axis that moved far enough
+ * from this "origin"
+ */
+static int Axes_origin[CID_JOY_MAX][JOY_NUM_AXES];
 
 
 void control_config_do_undo();
@@ -524,39 +528,66 @@ int joy_get_scaled_reading(int raw)
 	return x;
 }
 
+/**
+ * Initializes a reference point on all axes of all joysticks so that control_config_detect_axis can detect an axis
+ * that was deflected far enough
+ */
 void control_config_detect_axis_reset()
 {
-	joystick_read_raw_axis(JOY_NUM_AXES, Axes_origin);
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		joystick_read_raw_axis(j, JOY_NUM_AXES, Axes_origin[j]);
+	}
 }
 
-int control_config_detect_axis()
+/**
+ * Detects if a joystick axis was moved
+ */
+CC_bind control_config_detect_axis()
 {
 	int i, d, axis = -1, delta = 16384;
-	int axes_values[JOY_NUM_AXES];
+	short j;	// cid of the joy that moved
+	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
 	int dx, dy, dz, fudge = 7;
 
-	joystick_read_raw_axis(JOY_NUM_AXES, axes_values);
-	for (i=0; i<JOY_NUM_AXES; i++) {
-		d = abs(axes_values[i] - Axes_origin[i]);
-		if (d > delta) {
-			axis = i;
-			delta = d;
+	// Find an axis among any of the joysticks that has deflected far enough
+	for (j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		if (!joy_present(j)) {
+			// Joy not present, skip
+			continue;
+		}
+
+		joystick_read_raw_axis(j, JOY_NUM_AXES, axes_values[j]);
+		for (i=0; i<JOY_NUM_AXES; i++) {
+			d = abs(axes_values[j][i] - Axes_origin[j][i]);
+			if (d > delta) {
+				axis = i;
+				delta = d;
+			}
 		}
 	}
 
-	if ( (axis == -1) && Use_mouse_to_fly ) {
+	if (j == CID_JOY_MAX) {
+		j = CID_NONE;
+	}
+
+	if ( (j == CID_NONE) && Use_mouse_to_fly ) {
+		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
 		if ( (dx > fudge) || (dx < -fudge) ) {
+			j = CID_MOUSE;
 			axis = 0;
 		} else if ( (dy > fudge) || (dy < -fudge) ) {
+			j = CID_MOUSE;
 			axis = 1;
 		} else if ( (dz > fudge) || (dz < -fudge) ) {
+			j = CID_MOUSE;
 			axis = 2;
 		}
 	}
-		
-	return axis;
+	
+
+	return CC_bind(static_cast<CID>(j), axis);
 }
 
 /**
@@ -607,7 +638,7 @@ void control_config_conflict_check()
 			}
 
 			if (item_i.has_second(item_j)) {
-				// item_i's second bining has conflict
+				// item_i's second binding has conflict
 				Conflicts[i].second = j;
 				Conflicts_tabs[ item_i.tab ] = 1;
 			}
@@ -632,7 +663,7 @@ void control_config_conflict_check()
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS-1; i++) {
 		for (j=i+1; j<NUM_JOY_AXIS_ACTIONS; j++) {
-			if ((Axis_map_to[i] >= 0) && (Axis_map_to[i] == Axis_map_to[j])) {
+			if (!Axis_map_to[i].empty() && (Axis_map_to[i] == Axis_map_to[j])) {
 				Conflicts_axes[i] = j;
 				Conflicts_axes[j] = i;
 				Conflicts_tabs[SHIP_TAB] = 1;
@@ -731,10 +762,10 @@ void control_config_bind_btn(int i, const CC_bind &new_bind, int order)
 /**
  * @brief binds a joystick axis to the given control
  */
-void control_config_bind_axis(int i, int axis)
+void control_config_bind_axis(int action, const CC_bind &bind)
 {
-	Undo_controls.save(Axis_map_to[i]);
-	Axis_map_to[i] = axis;
+	Undo_controls.save(Axis_map_to[action]);
+	Axis_map_to[action] = bind;
 }
 
 /**
@@ -752,13 +783,13 @@ int control_config_remove_binding()
 	z = Cc_lines[Selected_line].cc_index;
 	if (z & JOY_AXIS) {
 		z &= ~JOY_AXIS;
-		if (Axis_map_to[z] < 0) {
+		if (Axis_map_to[z].empty()) {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return -1;
 		}
 
 		Undo_controls.save(Axis_map_to[z]);
-		Axis_map_to[z] = -1;
+		Axis_map_to[z].clear();
 		control_config_conflict_check();
 		control_config_list_prepare();
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -839,7 +870,7 @@ int control_config_clear_other()
 		z &= ~JOY_AXIS;
 
 		// Fail if axis is unbound
-		if (Axis_map_to[z] < 0) {
+		if (Axis_map_to[z].empty()) {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return -1;
 		}
@@ -853,7 +884,7 @@ int control_config_clear_other()
 
 			if (Axis_map_to[i] == Axis_map_to[z]) {
 				stack.save(Axis_map_to[i]);
-				Axis_map_to[i] = -1;
+				Axis_map_to[i].empty();
 				total++;
 			}
 		}
@@ -953,24 +984,13 @@ int control_config_clear_all()
 }
 
 /**
- * @brief Gets the default axis binding
+ * @brief Gets the default binding for the given axis action
  */
-int control_config_axis_default(int axis)
+CC_bind control_config_axis_default(int action)
 {
-	Assert(axis >= 0);
+	Assert((action >= 0) && (action < NUM_JOY_AXIS_ACTIONS));
 
-	if ( axis > 1 ) {
-		if (Axis_map_to_defaults[axis] < 0) {
-			return -1;
-		}
-
-		auto joystick = io::joystick::getCurrentJoystick();
-		if (joystick == nullptr || Axis_map_to_defaults[axis] >= joystick->numAxes()) {
-			return -1;
-		}
-	}
-
-	return Axis_map_to_defaults[axis];
+	return Axis_map_to_defaults[action];
 }
 
 /**
@@ -985,7 +1005,7 @@ int control_config_do_reset()
 	// first, determine how many bindings need to be changed
 	for (i = 0; i < Control_config.size(); ++i) {
 		if ((Control_config[i].first != default_bindings[i].first) ||
-		    (Control_config[i].second != default_bindings[i].second)) {
+			(Control_config[i].second != default_bindings[i].second)) {
 			total++;
 		}
 	}
@@ -1170,8 +1190,10 @@ void control_config_do_bind()
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
-	for (i=0; i<JOY_TOTAL_BUTTONS; i++){
-		joy_down_count(i, 1);  // clear checking status of all joystick buttons
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		for (i=0; i<JOY_TOTAL_BUTTONS; ++i) {
+			joy_down_count(CC_bind(static_cast<CID>(j), i), 1);  // clear checking status of all joystick buttons
+		}
 	}
 
 	control_config_detect_axis_reset();
@@ -1180,7 +1202,7 @@ void control_config_do_bind()
 	Bind_time = timer_get_milliseconds();
 	Search_mode = 0;
 	Last_key = -1;
-	Axis_override = -1;
+	Axis_override.clear();
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
@@ -1201,8 +1223,10 @@ void control_config_do_search()
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
-	for (i=0; i<JOY_TOTAL_BUTTONS; i++){
-		joy_down_count(i, 1);  // clear checking status of all joystick buttons
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
+			joy_down_count(CC_bind(static_cast<CID>(j), i), 1);  // clear checking status of all joystick buttons
+		}
 	}
 
 	Binding_mode = 0;
@@ -1281,8 +1305,8 @@ void control_config_cancel_exit()
 {
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
-	std::move(Axis_map_to_backup, Axis_map_to_backup + JOY_NUM_AXES, Axis_map_to);
-	std::move(Invert_axis_backup, Invert_axis_backup + JOY_NUM_AXES, Invert_axis);
+	std::move(Axis_map_to_backup, Axis_map_to_backup + NUM_JOY_AXIS_ACTIONS, Axis_map_to);
+	std::move(Invert_axis_backup, Invert_axis_backup + NUM_JOY_AXIS_ACTIONS, Invert_axis);
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
@@ -1756,18 +1780,14 @@ int control_config_draw_list(int select_tease_line) {
 		} else {
 			// Is an analogue control
 			x = Control_list_first_x[gr_screen.res];
-			int j = Axis_map_to[z & ~JOY_AXIS];
+			CC_bind bind = Axis_map_to[z & ~JOY_AXIS];
 			if (Binding_mode && (line == Selected_line)) {
-				j = Axis_override;
+				bind = Axis_override;
 			}
 
-			conflict = set_item_color(line, select_tease_line, selItem::Primary, (j < 0));
+			conflict = set_item_color(line, select_tease_line, selItem::Primary, bind.empty());
 			
-			if (j < 0) {
-				gr_printf_menu(x, y, "%s", XSTR("None", 211));
-			} else {
-				gr_string(x, y, Joy_axis_text[j], GR_RESIZE_MENU);
-			}
+			gr_printf_menu(x, y, "%s", bind.textify().c_str());
 		}
 	}
 
@@ -1788,6 +1808,7 @@ void control_config_do_frame(float frametime)
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
 	int j; // polled joy button
+	int joy;	// polled joystick id
 	int a; // polled joy axis
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
@@ -1813,14 +1834,21 @@ void control_config_do_frame(float frametime)
 		}
 
 		// Poll for joy btn presses
-		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
-			if (joy_down_count(j, 1)) {
-				// btn is down, save it in j
-				// Cancel axis bind if any button is pressed
-				bind = true;
-				break;
+		for (joy = CID_JOY0; joy < CID_JOY_MAX; joy++) {
+			if (!joy_present(joy)) {
+				continue;
+			}
+			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
+					// btn is down, save it in j and joy
+					// Cancel axis bind if any button is pressed
+					bind = true;
+					break;
+				}
 			}
 		}
+
+		// TODO Poll for mouse btn presses
 
 		if (help_overlay_active(Control_config_overlay_id)) {
 			// Help overlay is active.  Reset the Help button state and ignore gadgets
@@ -1849,17 +1877,17 @@ void control_config_do_frame(float frametime)
 			// Is an analogue control
 			// Poll for joy axis
 			z &= ~JOY_AXIS;
-			a = control_config_detect_axis();
-			if (a >= 0) {
-				Axis_override = a;
+			CC_bind ccb = control_config_detect_axis();
+			if (!ccb.empty()) {
+				Axis_override = ccb;
 				bind = true;
 			}
 
 			if (!done && bind) {
-				if (Axis_override >= 0) {
+				if (!Axis_override.empty()) {
 					control_config_bind_axis(z, Axis_override);
 					done = true;
-					strcpy_s(bound_string, Joy_axis_text[Axis_override]);
+					strcpy_s(bound_string, Axis_override.textify().c_str());
 
 				} else {
 					// Canceled
@@ -1909,7 +1937,7 @@ void control_config_do_frame(float frametime)
 
 			if (!done && (j < JOY_TOTAL_BUTTONS)) {
 				Assert(!(z & JOY_AXIS));
-				control_config_bind_btn(z, CC_bind(CID_JOY0, j), 1);
+				control_config_bind_btn(z, CC_bind(static_cast<CID>(joy), j), 1);
 
 				strcpy_s(bound_string, Joy_button_text[j]);
 				done = true;
@@ -1925,7 +1953,7 @@ void control_config_do_frame(float frametime)
 
 				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						if (mouse_down(1 << i)) {
+						if (mouse_down(CC_bind(CID_MOUSE, i))) {
 							Assert(!(z & JOY_AXIS));
 							control_config_bind_btn(z, CC_bind(CID_MOUSE, i), 1);
 
@@ -1958,10 +1986,12 @@ void control_config_do_frame(float frametime)
 		Ui_window.process(0);
 
 		// Poll for joy buttons
-		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
-			if (joy_down_count(j, 1)) {
-				// btn is down, save it in j
-				break;
+		for (joy = CID_JOY0; joy < CID_JOY_MAX; ++joy) {
+			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
+					// btn is down, save it in joy and j
+					break;
+				}
 			}
 		}
 
@@ -2009,13 +2039,13 @@ void control_config_do_frame(float frametime)
 			}
 
 			// If not done, Find the control bound to the given joy
-			if ((z < 0) && (j < JOY_TOTAL_BUTTONS)) {
+			if ((z < 0) && (joy < CID_JOY_MAX)) {
 				for (i = 0; i < Control_config.size(); ++i) {
-					if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
+					if (Control_config[i].first == CC_bind(static_cast<CID>(joy), j)) {
 						Selected_item = selItem::Primary;
 						z = i;
 						break;
-					} else if (Control_config[i].second == CC_bind(CID_JOY0, j)) {
+					} else if (Control_config[i].second == CC_bind(static_cast<CID>(joy), j)) {
 						Selected_item = selItem::Secondary;
 						z = i;
 						break;
@@ -2033,14 +2063,14 @@ void control_config_do_frame(float frametime)
 			// If not done, and no buttons pressed, poll the mouse and find controls bound to buttons
 			if ((z < 0) && (i == NUM_BUTTONS)) {
 				for (j = 0; j < MOUSE_NUM_BUTTONS; ++j) {
-					if (mouse_down(1 << j)) {
-						// Find the control bound to the given mouse button (as joy button)
+					if (mouse_down(CC_bind(CID_MOUSE, j))) {
+						// Find the control bound to the given mouse button
 						for (i = 0; i < Control_config.size(); ++i) {
-							if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
+							if (Control_config[i].first == CC_bind(CID_MOUSE, j)) {
 								Selected_item = selItem::Primary;
 								z = i;
 								break;
-							} else if (Control_config[i].second == CC_bind(CID_JOY0, j)) {
+							} else if (Control_config[i].second == CC_bind(CID_MOUSE, j)) {
 								Selected_item = selItem::Secondary;
 								z = i;
 								break;
@@ -2107,10 +2137,17 @@ void control_config_do_frame(float frametime)
 		k = Ui_window.process();
 
 		// Poll for joy buttons
-		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
-			if (joy_down_count(j, 1)) {
-				// btn is down, save it in j
-				break;
+		for (joy = CID_JOY0; joy < CID_JOY_MAX; ++joy) {
+			if (!joy_present(joy)) {
+				// not present, skip
+				continue;
+			}
+
+			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
+					// btn is down, save it in j and joy
+					break;
+				}
 			}
 		}
 
@@ -2119,7 +2156,7 @@ void control_config_do_frame(float frametime)
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 
-			if ((k > 0) || (j < JOY_TOTAL_BUTTONS) || B1_JUST_RELEASED) {
+			if ((k > 0) || (joy < CID_JOY_MAX) || B1_JUST_RELEASED) {
 				// If a key, joy, or mouse button was pressed, dismiss the overlay, watch  gadgets, and consume them
 				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
@@ -2173,7 +2210,7 @@ void control_config_do_frame(float frametime)
 						Selected_item = selItem::Primary;
 					}
 
-					if ((Axis_map_to[z & ~JOY_AXIS] < 0) && (Selected_item == selItem::Primary)) {
+					if ((Axis_map_to[z & ~JOY_AXIS].empty()) && (Selected_item == selItem::Primary)) {
 						// Nothing bound, set to None
 						Selected_item = selItem::None;
 					}
@@ -2187,7 +2224,7 @@ void control_config_do_frame(float frametime)
 
 				if (z & JOY_AXIS) {
 					// is analogue
-					if ((Axis_map_to[z & ~JOY_AXIS] < 0) && (Selected_item == selItem::Primary)) {
+					if ((Axis_map_to[z & ~JOY_AXIS].empty()) && (Selected_item == selItem::Primary)) {
 						// Nothing bound, set to None
 						Selected_item = selItem::None;
 					}
@@ -2403,7 +2440,7 @@ void control_config_do_frame(float frametime)
 
 float check_control_timef(int id)
 {
-	float t1, t2;
+	float t1, t2, t3, t4, t5;
 
 	// if type isn't continuous, we shouldn't be using this function, cause it won't work.
 	Assert(Control_config[id].type == CC_TYPE_CONTINUOUS);
@@ -2420,18 +2457,23 @@ float check_control_timef(int id)
 		control_used(id);
 	}
 
-	t2 = joy_down_time(Control_config[id].get_btn(CID_JOY0));
+	t2 = joy_down_time(Control_config[id].first);
 	if (t2) {
 		control_used(id);
 	}
 
-	if (t1 + t2) {
+	t3 = joy_down_time(Control_config[id].second);
+	if (t3) {
+		control_used(id);
+	}
+
+	if (t1 + t2 + t3) {
 		// We want to set this to true only after visiting control_used() (above)
 		// to allow it to tell the difference between an ongoing continuous action
 		// started before and a continuous action being started right now.
 		Control_config[id].continuous_ongoing = true;
 
-		return t1 + t2;
+		return t1 + t2 + t3;
 	}
 
 	return 1.0f;
@@ -2470,30 +2512,35 @@ int check_control_used(int id, int key)
 	if (item.disabled)
 		return 0;
 
-	short btn = item.get_btn(CID_JOY0);
-	short z = item.get_btn(CID_KEYBOARD);
+	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
 
 	if (item.type == CC_TYPE_CONTINUOUS) {
 		
-		if (joy_down(btn) || joy_down_count(btn, 1)) {
+		// this is awful, need to make a reverse lookup table to do button -> control instead of this control -> button
+		// nonsense.
+		if ((joy_down(item.first) || joy_down_count(item.first, 1)) ||
+			(joy_down(item.second) || joy_down_count(item.second, 1))) {
+			// Joy button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
 
-		if ((btn >= 0) && (btn < MOUSE_NUM_BUTTONS)) {
-			if (mouse_down(1 << btn) || mouse_down_count(1 << btn)) {
-				control_used(id);
-				return 1;
-			}
+		if ((mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
+			(mouse_down(item.second) || mouse_down_count(item.second, 1))) {
+			// Joy button bound to this control was pressed, control activated
+			control_used(id);
+			return 1;
 		}
 
 		// check what current modifiers are pressed
 		mask = 0;
 		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
+			// Any shift key is pressed, add KEY_SHIFTED mask
 			mask |= KEY_SHIFTED;
 		}
 
 		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
+			// Any alt key is pressed, add KEY_ALTED to the mask
 			mask |= KEY_ALTED;
 		}
 
@@ -2509,6 +2556,7 @@ int check_control_used(int id, int key)
 			z &= KEY_MASK;
 
 			if (keyd_pressed[z] || key_down_count(z)) {
+				// Key combo is pressed, control activated
 				control_used(id);
 				return 1;
 			}
@@ -2517,8 +2565,9 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if ((z == key) || joy_down_count(btn, 1) ||
-			((btn >= 0) && (btn < MOUSE_NUM_BUTTONS) && mouse_down_count(1 << btn))) {
+	if ((z == key) ||
+		joy_down_count(item.first, 1) || joy_down_count(item.second, 1) ||
+		mouse_down_count(item.first, 1) || mouse_down_count(item.second, 1)) {
 		//mprintf(("Key used %d\n", key));
 		control_used(id);
 		return 1;
@@ -2555,53 +2604,63 @@ int check_control(int id, int key)
 
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 {
-	int axes_values[JOY_NUM_AXES];
+	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
 
-	joystick_read_raw_axis(JOY_NUM_AXES, axes_values);
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		joystick_read_raw_axis(j, JOY_NUM_AXES, axes_values[j]);
+	}
 
 	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1 (fixed point)
-	*h = 0;
-	if (Axis_map_to[0] >= 0) {
-		*h = joy_get_scaled_reading(axes_values[Axis_map_to[0]]);
-	}
+	*h = *p = *b = *ta = *tr = 0;
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		const CC_bind * bind = nullptr;	// Binding for the given axis action
+		int invert;	// invertion state for the given axis action
 
-	*p = 0;
-	if (Axis_map_to[1] >= 0) {
-		*p = joy_get_scaled_reading(axes_values[Axis_map_to[1]]);
-	}
+		bind = &Axis_map_to[JOY_HEADING_AXIS];
+		invert = Invert_axis[JOY_HEADING_AXIS];
+		if (!bind->empty() && (bind->cid == j)) {
+			*h = joy_get_scaled_reading(axes_values[j][bind->btn]);
+			if (invert) {
+				*h = -(*h);
+			}
+		}
 
-	*b = 0;
-	if (Axis_map_to[2] >= 0) {
-		*b = joy_get_scaled_reading(axes_values[Axis_map_to[2]]);
-	}
+		bind = &Axis_map_to[JOY_PITCH_AXIS];
+		invert = Invert_axis[JOY_PITCH_AXIS];
+		if (!bind->empty() && (bind->cid == j)) {
+			*p = joy_get_scaled_reading(axes_values[j][bind->btn]);
+			if (invert) {
+				*p = -(*p);
+			}
+		}
 
-	*ta = 0;
-	if (Axis_map_to[3] >= 0) {
-		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]]);
-	}
+		bind = &Axis_map_to[JOY_BANK_AXIS];
+		invert = Invert_axis[JOY_BANK_AXIS];
+		if (!bind->empty() && (bind->cid == j)) {
+			*b = joy_get_scaled_reading(axes_values[j][bind->btn]);
+			if (invert) {
+				*b = -(*b);
+			}
+		}
 
-	*tr = 0;
-	if (Axis_map_to[4] >= 0) {
-		*tr = joy_get_scaled_reading(axes_values[Axis_map_to[4]]);
-	}
+		bind = &Axis_map_to[JOY_ABS_THROTTLE_AXIS];
+		invert = Invert_axis[JOY_ABS_THROTTLE_AXIS];
+		if (!bind->empty() && (bind->cid == j)) {
+			*ta = joy_get_unscaled_reading(axes_values[j][bind->btn]);
+			if (invert) {
+				*ta = F1_0 - *ta;
+			}
+		}
 
-	if (Invert_axis[0]) {
-		*h = -(*h);
+		bind = &Axis_map_to[JOY_REL_THROTTLE_AXIS];
+		invert = Invert_axis[JOY_REL_THROTTLE_AXIS];
+		if (!bind->empty() && (bind->cid == j)) {
+			*tr = joy_get_scaled_reading(axes_values[j][bind->btn]);
+			if (invert) {
+				*tr = -(*tr);
+			}
+		}
 	}
-	if (Invert_axis[1]) {
-		*p = -(*p);
-	}
-	if (Invert_axis[2]) {
-		*b = -(*b);
-	}
-	if (Invert_axis[3]) {
-		*ta = F1_0 - *ta;
-	}
-	if (Invert_axis[4]) {
-		*tr = -(*tr);
-	}
-
-	return;
 }
 
 int Last_frame_timestamp;

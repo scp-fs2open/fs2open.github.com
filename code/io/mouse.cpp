@@ -14,6 +14,7 @@
 #include <windowsx.h>
 #endif
 
+#include "controlconfig/controlsconfig.h"
 #include "graphics/2d.h"
 #include "io/mouse.h"
 #include "options/Option.h"
@@ -301,8 +302,17 @@ void mouse_flush()
 	SDL_UnlockMutex( mouse_lock );
 }
 
-int mouse_down_count(int n, int reset_count)
+int mouse_down_count(const CC_bind &bind, int reset_count)
 {
+	if (bind.cid != CID_MOUSE) {
+		return 0;
+	}
+
+	int n = 1 << bind.btn;
+	return mouse_down_count(n, reset_count);
+}
+
+int mouse_down_count(int n, int reset_count) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -357,8 +367,16 @@ int mouse_down_count(int n, int reset_count)
 //
 // parameters:  n - button of mouse (see #define's in mouse.h)
 //
-int mouse_up_count(int n)
+int mouse_up_count(const CC_bind &bind)
 {
+	if (bind.cid != CID_MOUSE) {
+		return 0;
+	}
+	int n = 1 << bind.btn;
+	return mouse_up_count(n);
+}
+
+int mouse_up_count(int n) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -404,8 +422,17 @@ int mouse_up_count(int n)
 
 // returns 1 if mouse button btn is down, 0 otherwise
 
-int mouse_down(int btn)
+int mouse_down(const CC_bind &bind)
 {
+	if (bind.cid != CID_MOUSE) {
+		return 0;
+	}
+	int btn = bind.btn;
+
+	return mouse_down(btn);
+}
+
+int mouse_down(int btn) {
 	int tmp;
 	if ( !mouse_inited ) return 0;
 
@@ -575,19 +602,17 @@ void mousewheel_motion(int x, int y, bool reversed) {
 }
 
 void mousewheel_decay(int btn) {
-	switch (btn) {
-	case MOUSE_WHEEL_UP:
+	if (btn & MOUSE_WHEEL_UP) {
 		Mouse_wheel_y -= 1;
-		break;
-	case MOUSE_WHEEL_DOWN:
+	}
+	if (btn & MOUSE_WHEEL_DOWN) {
 		Mouse_wheel_y += 1;
-		break;
-	case MOUSE_WHEEL_LEFT:
+	}
+	if (btn & MOUSE_WHEEL_LEFT) {
 		Mouse_wheel_x -= 1;
-		break;
-	case MOUSE_WHEEL_RIGHT:
+	}
+	if (btn & MOUSE_WHEEL_RIGHT) {
 		Mouse_wheel_x += 1;
-		break;
 	}
 
 	if (Mouse_wheel_x == 0) {

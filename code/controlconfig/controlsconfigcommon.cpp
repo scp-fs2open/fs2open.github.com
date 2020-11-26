@@ -60,10 +60,24 @@ auto SensitivityOption =
         .finish();
 
 // Containers for axis binding and defaults
-int Axis_map_to[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-int Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
-int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
+CC_bind Axis_map_to[NUM_JOY_AXIS_ACTIONS] = {
+	CC_bind(CID_JOY0, JOY_X_AXIS),
+	CC_bind(CID_JOY0, JOY_Y_AXIS),
+	CC_bind(CID_JOY0, JOY_RX_AXIS),
+	CC_bind(CID_NONE, -1),
+	CC_bind(CID_NONE,-1)
+};
+
+CC_bind Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = {
+	CC_bind(CID_JOY0, JOY_X_AXIS),
+	CC_bind(CID_JOY0, JOY_Y_AXIS),
+	CC_bind(CID_JOY0, JOY_RX_AXIS),
+	CC_bind(CID_NONE, -1),
+	CC_bind(CID_NONE, -1)
+};
+
+int Invert_axis[NUM_JOY_AXIS_ACTIONS] = { 0 };
+int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS] = { 0 };
 
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array

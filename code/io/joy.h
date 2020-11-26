@@ -10,6 +10,7 @@
 #ifndef __JOY_H__
 #define __JOY_H__
 
+#include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
 
 #include "SDL_joystick.h"
@@ -241,7 +242,7 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
-			int _device_id; //!< The SDL device index
+			int _device_id; //!< The OS device index
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 
 			SCP_string _guidStr; //!< The GUID string
@@ -297,12 +298,17 @@ namespace io
 		Joystick *getJoystick(size_t index);
 
 		/**
-		 * @brief Gets the primary joystick
-		 * @return The joystick pointer, may be @c nullptr of no primary joystick
-		 *
-		 * @warning This function may be removed in the future when multi-joystick support is implemented
+		 * @brief Gets the Joystick with the given cid
+		 * @return The joystick pointer, may be @c nullptr if unassigned or invalid cid
 		 */
-		Joystick *getCurrentJoystick();
+		Joystick *getPlayerJoystick(short cid);
+
+		/**
+		 * @brief Gets the number of active player joysticks
+		 * @return 0 If no player joysticks are bound or active, or
+		 * @return the number of player joysticks
+		 */
+		int getPlayerJoystickCount();
 
 		/**
 		 * @brief Frees resources of the joystick subsystem
@@ -325,20 +331,22 @@ namespace io
 	}
 }
 
-// For now this is a constant for the rest of the engine
-const int JOY_NUM_AXES = 6;
-
 const int JOY_AXIS_MIN = 0;
 const int JOY_AXIS_CENTER = 32768;
 const int JOY_AXIS_MAX = 65536;
 
-int joystick_read_raw_axis(int num_axes, int *axis);
+int joystick_read_raw_axis(short cid, int num_axes, int *axis);
 
-float joy_down_time(int btn);
+float joy_down_time(const CC_bind &bind);
 
-int joy_down_count(int btn, int reset_count);
+int joy_down_count(const CC_bind &bind, int reset_count);
 
-int joy_down(int btn);
+int joy_down(const CC_bind &bind);
+
+/**
+ * Checks if the given joystick is present or not
+ */
+bool joy_present(short cid);
 
 
 #endif	/* __JOY_H__ */

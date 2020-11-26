@@ -555,54 +555,51 @@ void playercontrol_read_stick(int *axis, float frame_time)
 {
 	int i;
 
-	// Read the stick
+	// Read the stick. axes are 0 if not bound
 	control_get_axes_readings(&axis[0], &axis[1], &axis[2], &axis[3], &axis[4]);
 
-	if (Use_mouse_to_fly) {
-		int dx, dy, dz;
-		float factor;
+	if (!Use_mouse_to_fly) {
+		// done
+		return;
+	} // Else, read the mouse
 
-		factor = (float) Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
+	int dx, dy, dz;
+	float factor;
 
-		mouse_get_delta(&dx, &dy, &dz);
-		int x_axis, y_axis, z_axis;
-		x_axis = y_axis = z_axis = -1;
+	factor = (float) Mouse_sensitivity + 1.77f;
+	factor = factor * factor / frame_time / 0.6f;
 
-		for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
-			switch(Axis_map_to[i])
-			{
-			case JOY_X_AXIS:
-				x_axis = i;
-				break;
-			case JOY_Y_AXIS:
-				y_axis = i;
-				break;
-			case JOY_Z_AXIS:
-				z_axis = i;
-				break;
-			}
+	// Read raw mouse values
+	mouse_get_delta(&dx, &dy, &dz);
+
+	// If mapped, scale and maybe invert
+	for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
+		if (Axis_map_to[i].cid != CID_MOUSE) {
+			// skip
+			continue;
 		}
 
-		if (x_axis >= 0) {
-			if (Invert_axis[x_axis]) {
-				dx = -dx;
+		switch(Axis_map_to[i].btn) {
+		case MOUSE_X_AXIS:
+			if (Invert_axis[i]) {
+				dx *= -1;
 			}
-			axis[x_axis] += (int) ((float) dx * factor);
-		}
+			axis[i] += (int)((float)dx * factor);
+			break;
 
-		if (y_axis >= 0) {
-			if (Invert_axis[y_axis]) {
-				dy = -dy;
+		case MOUSE_Y_AXIS:
+			if (Invert_axis[i]) {
+				dy *= -1;
 			}
-			axis[y_axis] += (int) ((float) dy * factor);
-		}
+			axis[i] += (int)((float)dy * factor);
+			break;
 
-		if (z_axis >= 0) {
-			if (Invert_axis[z_axis]) {
-				dz = -dz;
+		case MOUSE_Z_AXIS:
+			if (Invert_axis[i]) {
+				dz *= -1;
 			}
-			axis[z_axis] += (int) ((float) dz * factor);
+			axis[i] += (int)((float)dz * factor);
+			break;
 		}
 	}
 }
@@ -812,7 +809,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		if (Viewer_mode & VM_CAMERA_LOCKED) {
 			// Player has control of the ship
-			if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
+			if (!Axis_map_to[JOY_HEADING_AXIS].empty()) {
 				// check the heading on the x axis
 				if ( check_control(BANK_WHEN_PRESSED) ) {
 					delta = f2fl( axis[JOY_HEADING_AXIS] );
@@ -824,7 +821,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				}
 			}
 			// check the pitch on the y axis
-			if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
+			if (!Axis_map_to[JOY_PITCH_AXIS].empty()) {
 				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
 			}
 		} else {
@@ -833,12 +830,14 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->heading = 0.0f;
 		}
 
-		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
+		// TODO Checking to see if the axis is bound is generally unecassary as the axis is 0.0f if unbound.
+		// This may be trying to skip past 3 flops, which the new check logic probably outpaces it anyway.
+		if (!Axis_map_to[JOY_BANK_AXIS].empty()) {
 			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
 		}
 
 		// axis 2 is for throttle
-		if (Axis_map_to[JOY_ABS_THROTTLE_AXIS] >= 0) {
+		if (!Axis_map_to[JOY_ABS_THROTTLE_AXIS].empty()) {
 			scaled = (float) axis[JOY_ABS_THROTTLE_AXIS] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
 
@@ -852,7 +851,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
-		if (Axis_map_to[JOY_REL_THROTTLE_AXIS] >= 0)
+		if (!Axis_map_to[JOY_REL_THROTTLE_AXIS].empty())
 			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
 
 		CLAMP(ci->forward_cruise_percent, 0, 100);
