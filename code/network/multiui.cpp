@@ -718,6 +718,7 @@ int Multi_join_should_send = -1;
 // master tracker details
 int Multi_join_frame_count;						// keep a count of frames displayed
 int Multi_join_mt_tried_verify;					// already tried verifying the pilot with the tracker
+bool Multi_already_tried_stats_submit;
 
 // data stuff for auto joining a game
 #define MULTI_AUTOJOIN_JOIN_STAMP		2000
@@ -8578,6 +8579,7 @@ void multi_debrief_init()
 
 	Multi_debrief_time = 0.0f;
 	Multi_debrief_resend_time = 10.0f;
+	Multi_already_tried_stats_submit = false;
 	
 	// do this to notify the standalone or the normal server that we're in the debrief state and ready to receive packets
 	if (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
@@ -8689,8 +8691,9 @@ void multi_debrief_accept_hit()
 			if (MULTI_IS_TRACKER_GAME) {
 				// if not on standalone, send stats
 				if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-					if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+					if (!(Multi_already_tried_stats_submit)) {
 						int stats_saved = multi_fs_tracker_store_stats();
+						Multi_already_tried_stats_submit = true;
 
 						if (stats_saved) {
 							Netgame.flags |= NG_FLAG_STORED_MT_STATS;
@@ -8755,8 +8758,9 @@ void multi_debrief_esc_hit()
 		if((Multi_debrief_stats_accept_code != -1) || (MULTI_IS_TRACKER_GAME)){
 			// if not on standalone, maybe send stats
 			if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && MULTI_IS_TRACKER_GAME ) {
-				if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+				if (!(Multi_already_tried_stats_submit) ) {
 					int stats_saved = multi_fs_tracker_store_stats();
+					Multi_already_tried_stats_submit = true;
 
 					if (stats_saved) {
 						Netgame.flags |= NG_FLAG_STORED_MT_STATS;
