@@ -91,7 +91,7 @@ static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
 	int axis = -1;
 	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; ++i)
 	{
-		if (Axis_map_to[i] == joy_axis)
+		if (Axis_map_to[i] == CC_bind(CID_JOY0, joy_axis))
 		{
 			axis = i;
 			break;
@@ -113,17 +113,17 @@ static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the X-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 X-axis is inverted", "boolean", "True/false")
 {
 	return AxisInverted_sub(JOY_X_AXIS, L);
 }
 
-ADE_VIRTVAR(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Y-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Y-axis is inverted", "boolean", "True/false")
 {
 	return AxisInverted_sub(JOY_Y_AXIS, L);
 }
 
-ADE_VIRTVAR(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Z-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Z-axis is inverted", "boolean", "True/false")
 {
 	return AxisInverted_sub(JOY_Z_AXIS, L);
 }
