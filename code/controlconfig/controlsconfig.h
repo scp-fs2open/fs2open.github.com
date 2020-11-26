@@ -43,9 +43,9 @@ enum Mouse_axis_index {
  * @details For use with hardcoded bindings and scripting API to allow human-readable translation
  * @note These enums are hardcoded so that an int value of 0 would be JOY0
  */
-enum CID : short {
+enum CID : int8_t {
 	CID_NONE     = -3,	// No device bound
-	CID_KEYBOARD = -2,	// button belongs to keyboard
+	CID_KEYBOARD = -2,	// belongs to keyboard
 	CID_MOUSE    = -1,  // to mouse
 	CID_JOY0     =  0,  // to Joy0
 	CID_JOY1     =  1,  // to Joy1 (Throttle?)
@@ -59,7 +59,7 @@ enum CID : short {
  * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
  */
 enum Joy_axis_action_index {
-	JOY_HEADING_AXIS	=0,	//
+	JOY_HEADING_AXIS = 0,
 	JOY_PITCH_AXIS,
 	JOY_BANK_AXIS,
 	JOY_ABS_THROTTLE_AXIS,
@@ -72,22 +72,15 @@ enum Joy_axis_action_index {
 };
 
 /*!
- * Joystick action modes
- * note: should this be in joy.h?
- */
-enum Joy_axis_action_mode {
-	JAAM_ABS,       //!< Absolute mode.  Axis position = output value
-	JAAM_REL,       //!< Relative mode.  Axis postion away from its center adds or subtracts an output value register.
-	JAAM_BTN_NEG,   //!< Button mode, negative side.  Axis position in the negative side will trigger a button action
-	JAAM_BTN_POS,   //!< Button mode, positive side.  Axis position in the positive side will trigger a button action
-};
-
-/*!
  * Control Configuration Types. Namely differ in how the control is activated
  */
 enum CC_type {
-	CC_TYPE_TRIGGER			=0,		//!< A normal, one-shot type control that is activated when a key is or button is pressed
-	CC_TYPE_CONTINUOUS				//!< A continous control that is activated as long as the key or button is held down
+	CC_TYPE_TRIGGER = 0,    //!< A normal, one-shot type control that is activated when a key is or button is pressed
+	CC_TYPE_CONTINUOUS,     //!< A continous control that is activated as long as the key or button is held down
+	CC_TYPE_AXIS_ABS,       //!< Absolute Axis mode.  Axis position = output value
+	CC_TYPE_AXIS_REL,       //!< Relative Axis mode.  Axis postion away from its center adds or subtracts an output value register
+	CC_TYPE_AXIS_BTN_NEG,   //!< Axis Button mode, negative side.  Axis position in the negative side will trigger a button action
+	CC_TYPE_AXIS_BTN_POS    //!< Axis Button mode, positive side.  Axis position in the positive side will trigger a button action
 };
 
 /*!
@@ -313,7 +306,7 @@ class CCB;
 class CC_bind {
 public:
 	CID cid;    //!< Which controller this belongs to
-	short btn;  //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+	short btn;  //!< The button, key, or axis that's bound. Is masked to determine various states.
 
 public:
 	CC_bind() :cid(CID_NONE), btn(-1) {};
