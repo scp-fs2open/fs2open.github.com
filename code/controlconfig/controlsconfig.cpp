@@ -1785,7 +1785,7 @@ void control_config_do_frame(float frametime)
 	const char *str;
 	char buf[256];
 	int i; // generic index
-	int w, x, y, line, conflict;
+	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
 	int j; // polled joy button
 	int a; // polled joy axis
@@ -1793,7 +1793,6 @@ void control_config_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
-	color *c;
 	static int bound_timestamp = 0;
 	static char bound_string[40];
 	
@@ -1912,7 +1911,7 @@ void control_config_do_frame(float frametime)
 				Assert(!(z & JOY_AXIS));
 				control_config_bind_btn(z, CC_bind(CID_JOY0, j), 1);
 
-				strcpy_s(bound_string, Joy_button_text[i]);
+				strcpy_s(bound_string, Joy_button_text[j]);
 				done = true;
 			}
 
