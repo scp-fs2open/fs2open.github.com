@@ -427,7 +427,7 @@ int mouse_down(const CC_bind &bind)
 	if (bind.cid != CID_MOUSE) {
 		return 0;
 	}
-	int btn = bind.btn;
+	int btn = 1 << bind.btn;
 
 	return mouse_down(btn);
 }
