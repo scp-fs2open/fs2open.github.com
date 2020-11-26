@@ -443,6 +443,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "special-warpout-name",			OP_SET_SPECIAL_WARPOUT_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "get-ets-value",					OP_GET_ETS_VALUE,						2,	2,			SEXP_ACTION_OPERATOR,	},	// niffiwan
 	{ "set-ets-values",					OP_SET_ETS_VALUES,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// niffiwan
+	{ "get-power-output",				OP_GET_POWER_OUTPUT,					1,	1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Subsystems and Health Sub-Category
 	{ "ship-invulnerable",				OP_SHIP_INVULNERABLE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -16870,6 +16871,20 @@ int sexp_gse_recharge_pct(int node, int op_num)
 	return (int)(100.0f * Energy_levels[index]);
 }
 
+/*
+* Get a ship's power output
+*/
+int sexp_get_power_output(int node) 
+{
+	node = CDR(node);
+	auto ship_entry = eval_ship(node);
+
+	if (ship_entry == nullptr)
+		return SEXP_NAN_FOREVER;
+	return (int)(std::lround(Ship_info[ship_entry->shipp->ship_info_index].power_output));
+}
+
+
 /**
  * retrieve one ETS index from a ship
  */
@@ -24705,6 +24720,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_ets_values(node);
 				break;
 
+			case OP_GET_POWER_OUTPUT:
+				sexp_val = sexp_get_power_output(node);
+				break;
+
 			case OP_SHIELD_QUAD_LOW:
 				sexp_val = sexp_shield_quad_low(node);
 				break;
@@ -25975,6 +25994,7 @@ int query_operator_return_type(int op)
 		case OP_GET_ETS_VALUE:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_GET_POWER_OUTPUT:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -28044,6 +28064,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			}
 
+		case OP_GET_POWER_OUTPUT:
+			return OPF_SHIP;
+
 		case OP_SET_ETS_VALUES:
 			if (argnum < 3) {
 				return OPF_POSITIVE;
@@ -30031,6 +30054,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
 		case OP_SET_ETS_VALUES:
+		case OP_GET_POWER_OUTPUT:
 			return CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 
 		case OP_SHIP_INVULNERABLE:
@@ -33236,6 +33260,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Shields index\r\n"
 		"\t3: Weapons index\r\n"
 		"\t4: Ship name\r\n"},
+
+	{ OP_GET_POWER_OUTPUT, "get-power-output\r\n"
+		"\tGets the power output rating of a ship\r\n"
+		"\t1: Ship name"
+	},
 
 	{ OP_CARGO_NO_DEPLETE, "cargo-no-deplete\r\n"
 		"\tCauses the named ship to have unlimited cargo.\r\n"
