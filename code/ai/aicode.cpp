@@ -9055,20 +9055,19 @@ float dock_move_towards_point(object *objp, vec3d *start, vec3d *finish, float s
 //	Set the orientation in the global reference frame for an object to attain
 //	to dock with another object.  Resultant global matrix returned in dom.
 // Revised by Goober5000
-void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d *docker_p0_norm, matrix *docker_orient, vec3d *dockee_p0, vec3d *dockee_p1, vec3d *dockee_p0_norm, matrix *dockee_orient)
+void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docker_orient, matrix *dockee_dock_orient, matrix *dockee_orient)
 {
-	vec3d	fvec, uvec, temp;
+	vec3d	fvec, uvec;
 	matrix	m1, m2, m3;
 
 	//	Compute the global orientation of the dockee's docking bay.
 
 	// get the rotated (local) fvec
-	vm_vec_rotate(&fvec, dockee_p0_norm, dockee_orient);
+	vm_vec_rotate(&fvec, &dockee_dock_orient->vec.fvec, dockee_orient);
 	vm_vec_negate(&fvec);
 
 	// get the rotated (local) uvec
-	vm_vec_normalized_dir(&temp, dockee_p1, dockee_p0);
-	vm_vec_rotate(&uvec, &temp, dockee_orient);
+	vm_vec_rotate(&uvec, &dockee_dock_orient->vec.uvec, dockee_orient);
 
 	// create a rotation matrix
 	vm_vector_2_matrix(&m1, &fvec, &uvec, NULL);
@@ -9079,11 +9078,10 @@ void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d
 	//	Compute the matrix given by the docker's docking bay.
 
 	// get the rotated (local) fvec
-	vm_vec_rotate(&fvec, docker_p0_norm, docker_orient);
+	vm_vec_rotate(&fvec, &docker_dock_orient->vec.fvec, docker_orient);
 
 	// get the rotated (local) uvec
-	vm_vec_normalized_dir(&temp, docker_p1, docker_p0);
-	vm_vec_rotate(&uvec, &temp, docker_orient);
+	vm_vec_rotate(&uvec, &docker_dock_orient->vec.uvec, docker_orient);
 
 	// create a rotation matrix
 	vm_vector_2_matrix(&m2, &fvec, &uvec, NULL);
@@ -9129,11 +9127,13 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 }
 
 // Goober5000
-void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *global_p0_norm, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
+void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_orient, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
 {
-	Assertion(global_p0 != nullptr && global_p1 != nullptr && global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
+	Assertion(global_dock_point != nullptr && global_dock_orient != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
 	Assertion(pm->id == modelnum, "inconsistent polymodel and modelnum!");
 	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
+
+	vec3d fvec, uvec;
 
 	// are we basing this off a rotating submodel?
 	if (submodel >= 0)
@@ -9150,22 +9150,31 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
 
 		// find the dynamic positions of the dockpoints
-		model_instance_find_world_point(global_p0, &local_p0, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
-		model_instance_find_world_point(global_p1, &local_p1, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		vec3d global_p0, global_p1;
+		model_instance_find_world_point(&global_p0, &local_p0, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_point(&global_p1, &local_p1, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		vm_vec_avg(global_dock_point, &global_p0, &global_p1);
+		vm_vec_normalized_dir(&uvec, &global_p1, &global_p0);
 
 		// find the normal of the first dockpoint
-		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], shipp->model_instance_num, submodel, &objp->orient);
+		model_instance_find_world_dir(&fvec, &pm->docking_bays[dock_index].norm[0], shipp->model_instance_num, submodel, &objp->orient);
+
+		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
 	}
 	// use the static dockpoints
 	else
 	{
-		vm_vec_unrotate(global_p0, &pm->docking_bays[dock_index].pnt[0], &objp->orient);
-		vm_vec_add2(global_p0, &objp->pos);
+		vec3d local_point, local_uvec, local_fvec;
+		vm_vec_avg(&local_point, &pm->docking_bays[dock_index].pnt[0], &pm->docking_bays[dock_index].pnt[1]);
+		vm_vec_normalized_dir(&local_uvec, &pm->docking_bays[dock_index].pnt[1], &pm->docking_bays[dock_index].pnt[0]);
+		local_fvec = pm->docking_bays[dock_index].norm[0];
 
-		vm_vec_unrotate(global_p1, &pm->docking_bays[dock_index].pnt[1], &objp->orient);
-		vm_vec_add2(global_p1, &objp->pos);
+		vm_vec_unrotate(global_dock_point, &local_point, &objp->orient);
+		vm_vec_unrotate(&uvec, &local_uvec, &objp->orient);
+		vm_vec_unrotate(&fvec, &local_fvec, &objp->orient);
 
-		vm_vec_unrotate(global_p0_norm, &pm->docking_bays[dock_index].norm[0], &objp->orient);
+		vm_vec_add2(global_dock_point, &objp->pos);
+		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
 	}
 }
 
@@ -9184,8 +9193,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	polymodel	*pm0, *pm1;
 	ai_info		*aip;
 	matrix		dom, out_orient;
-	vec3d docker_p0, docker_p1, docker_p0_norm;
-	vec3d dockee_p0, dockee_p1, dockee_p0_norm;
 	vec3d docker_point, dockee_point;
 	float			fdist = UNINITIALIZED_VALUE;
 
@@ -9219,13 +9226,10 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	// Goober5000 - check if we're attached to a rotating submodel
 	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
 
+	matrix docker_dock_orient, dockee_dock_orient;
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
-	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->model_num, -1, docker_index);
-	find_adjusted_dockpoint_info(&dockee_p0, &dockee_p1, &dockee_p0_norm, dockee_objp, pm1, sip1->model_num, dockee_rotating_submodel, dockee_index);
-
-	// Goober5000 - find average of point
-	vm_vec_avg(&docker_point, &docker_p0, &docker_p1);
-	vm_vec_avg(&dockee_point, &dockee_p0, &dockee_p1);
+	find_adjusted_dockpoint_info(&docker_point, &docker_dock_orient, docker_objp, pm0, sip0->model_num, -1, docker_index);
+	find_adjusted_dockpoint_info(&dockee_point, &dockee_dock_orient, dockee_objp, pm1, sip1->model_num, dockee_rotating_submodel, dockee_index);
 
 	// Goober5000
 	vec3d submodel_pos = ZERO_VECTOR;
@@ -9234,7 +9238,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	if ((dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
 	{
 		vec3d submodel_offset;
-		vec3d dockpoint_temp;
 
 		// get submodel center
 		model_find_submodel_offset(&submodel_offset, sip1->model_num, dockee_rotating_submodel);
@@ -9249,8 +9252,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		}
 
 		// get radius to dockpoint
-		vm_vec_avg(&dockpoint_temp, &dockee_p0, &dockee_p1);
-		submodel_radius = vm_vec_dist(&submodel_pos, &dockpoint_temp);
+		submodel_radius = vm_vec_dist(&submodel_pos, &dockee_point);
 	}
 
 	// Goober5000
@@ -9280,7 +9282,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &docker_p0, &docker_p1, &docker_p0_norm, &docker_objp->orient, &dockee_p0, &dockee_p1, &dockee_p0_norm, &dockee_objp->orient);
+		set_goal_dock_orient(&dom, &docker_dock_orient, &docker_objp->orient, &dockee_dock_orient, &dockee_objp->orient);
 
 		//	Compute new orientation matrix and update rotational velocity.
 		vec3d	omega_in, omega_out, vel_limit, acc_limit;
@@ -9340,7 +9342,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &docker_p0, &docker_p1, &docker_p0_norm, &docker_objp->orient, &dockee_p0, &dockee_p1, &dockee_p0_norm, &dockee_objp->orient);
+		set_goal_dock_orient(&dom, &docker_dock_orient, &docker_objp->orient, &dockee_dock_orient, &dockee_objp->orient);
 
 		//	Compute distance between dock bay points.
 		if (dock_mode == DOA_DOCK) {
