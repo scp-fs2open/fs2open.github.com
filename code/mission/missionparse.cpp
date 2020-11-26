@@ -4406,6 +4406,17 @@ void parse_wing(mission *pm)
 
 	required_string("$Name:");
 	stuff_string(wingp->name, F_NAME, NAME_LENGTH);
+
+	// quickly look through the squadron wing names to see if we have to warn the modder about this mission
+	// to avoid them avoid the multi missing wing bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		for (int j = 0; j < MAX_SQUADRON_WINGS; j++) {
+			if (!strcmp(wingp->name, Squadron_wing_names[j])) {
+				Squadron_wing_names_found[j] = true;
+			}
+		}
+	}
+
 	wingnum = find_wing_name(wingp->name);
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
@@ -4729,14 +4740,45 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
-void parse_wings(mission *pm)
+void parse_wings(mission* pm)
 {
+	// reset this for the missing wing bug.
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		Squadron_wing_names_found[i] = false;
+	}
+
 	required_string("#Wings");
 	while (required_string_either("#Events", "$Name:"))
 	{
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
+	}
+
+	bool found = false;
+
+	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
+
+	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
+	// for now TvT mission do not have enough player wings to be affected by this bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		do {
+			found = false;
+			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
+			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
+				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
+				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
+					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					char temp_chars[NAME_LENGTH];
+					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
+					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					strcpy_s(Squadron_wing_names[i], temp_chars);
+					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
+					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
+					found = true;
+				}
+			}
+		} while (found);
 	}
 }
 
