@@ -16876,7 +16876,6 @@ int sexp_gse_recharge_pct(int node, int op_num)
 */
 int sexp_get_power_output(int node) 
 {
-	node = CDR(node);
 	auto ship_entry = eval_ship(node);
 
 	if (ship_entry == nullptr || ship_entry->status == ShipStatus::EXITED)
