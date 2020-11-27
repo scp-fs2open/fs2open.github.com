@@ -11272,7 +11272,6 @@ void sexp_player_use_ai(int flag)
 // Karajorma
 void sexp_allow_treason (int n) 
 {
-	n = CDR(n);
 	if (n != -1) {
 		The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n));
 	}
