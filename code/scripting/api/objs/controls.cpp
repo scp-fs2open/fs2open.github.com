@@ -88,44 +88,94 @@ static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
 	if (!ade_get_args(L, "*|b", &b))
 		return ade_set_error(L, "b", false);
 
-	int axis = -1;
-	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; ++i)
+	// Find the binding of the action that has the given joystick axis bound
+	CC_bind *A = nullptr;
+	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
 	{
-		if (Axis_map_to[i] == CC_bind(CID_JOY0, joy_axis))
+		CC_bind B(CID_JOY0, joy_axis, CCF_AXIS);
+		if (Control_config[i].first == B)
 		{
-			axis = i;
+			A = &Control_config[i].first;
+			break;
+		}
+		else if (Control_config[i].second == B)
+		{
+			A = &Control_config[i].second;
 			break;
 		}
 	}
 
-	if (axis < 0)
+	if (A == nullptr)
 	{
 		LuaError(L, "Control axis %d not found!", static_cast<int>(joy_axis));
 		return ADE_RETURN_NIL;
 	}
 
 	if (ADE_SETTING_VAR)
-		Invert_axis[axis] = b ? 1 : 0;
+		b ? (A->flags |= CCF_INVERTED) : (A->flags &= ~CCF_INVERTED);
 
-	if (Invert_axis[axis] != 0)
+	if (A->flags & CCF_INVERTED)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 X-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 X-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
 {
 	return AxisInverted_sub(JOY_X_AXIS, L);
 }
 
-ADE_VIRTVAR(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Y-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Y-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
 {
 	return AxisInverted_sub(JOY_Y_AXIS, L);
 }
 
-ADE_VIRTVAR(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Z-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Z-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
 {
 	return AxisInverted_sub(JOY_Z_AXIS, L);
+}
+
+ADE_FUNC(AxisInverted, l_Mouse, "int Joy, int axis, boolean inverted", "Gets or sets the given Joystick axis inversion state", "boolean", "True/false")
+{
+	int joy = CID_NONE;
+	int axis = -1;
+	bool inverted = false;
+	int n = ade_get_args(L, "ii|b", &joy, &axis, &inverted);
+
+	if (n == 0)
+		return ade_set_error(L, "b", false);	// no arguments passed
+
+	if ((joy < CID_JOY0) || (CID_JOY_MAX <= joy))
+		return ade_set_error(L, "b", false);	// Invalid cid
+
+	// Find the binding that has the given joy.
+	// This is a bit obtuse since inversion is on the config side instead of on the joystick side
+	CC_bind *A = nullptr;
+	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
+	{
+		CC_bind B(static_cast<CID>(joy), axis, CCF_AXIS);
+		A = Control_config[i].find(B);
+
+		if (A != nullptr)
+			break;
+	}
+
+	// TODO Should this be an error or silent false?
+	if (A == nullptr)
+		return ade_set_error(L, "b", false);	// Axis not bound
+
+	if (n > 2)
+	{
+		if (inverted)
+			A->flags |= CCF_AXIS;
+		else
+			A->flags &= ~CCF_AXIS;
+	}
+
+	if (A->flags & CCF_AXIS)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
