@@ -16879,8 +16879,12 @@ int sexp_get_power_output(int node)
 	node = CDR(node);
 	auto ship_entry = eval_ship(node);
 
-	if (ship_entry == nullptr)
-		return SEXP_CANT_EVAL;
+	if (ship_entry == nullptr || ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
 	return (int)(std::lround(Ship_info[ship_entry->shipp->ship_info_index].power_output));
 }
 
