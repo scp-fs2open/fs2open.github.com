@@ -572,7 +572,7 @@ void pilotfile::plr_read_controls()
 		inv = handler->readInt("invert_axis");
 
 		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = CC_bind(CID_JOY0, axi);
+			Axis_map_to[idx] = CC_bind(CID_JOY0, axi, CCF_AXIS);
 			Invert_axis[idx] = inv;
 		}
 	}

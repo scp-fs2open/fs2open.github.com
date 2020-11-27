@@ -15,6 +15,9 @@
 
 #define CONTROL_CONFIG_XSTR	507
 
+#define CCF_AXIS        0x08    //!< btn is an axis
+#define CCF_INVERTED    0x04    //!< axis is inverted
+
 /*!
  * These are used to index a corresponding joystick axis value from an array.
  * Currently only used by ::Axis_map_to[] and ::Axis_map_to_defaults[]
@@ -44,15 +47,15 @@ enum Mouse_axis_index {
  * @note These enums are hardcoded so that an int value of 0 would be JOY0
  */
 enum CID : int8_t {
-	CID_NONE     = -3,	// No device bound
-	CID_KEYBOARD = -2,	// belongs to keyboard
-	CID_MOUSE    = -1,  // to mouse
-	CID_JOY0     =  0,  // to Joy0
-	CID_JOY1     =  1,  // to Joy1 (Throttle?)
-	CID_JOY2     =  2,  // to Joy2 (Pedals?)
-	CID_JOY3     =  3,  // to Joy3 (Head tracker?)
+	CID_NONE     = -3,	//!< No device bound
+	CID_KEYBOARD = -2,	//!< belongs to keyboard
+	CID_MOUSE    = -1,  //!< to mouse
+	CID_JOY0     =  0,  //!< to Joy0
+	CID_JOY1     =  1,  //!< to Joy1 (Throttle?)
+	CID_JOY2     =  2,  //!< to Joy2 (Pedals?)
+	CID_JOY3     =  3,  //!< to Joy3 (Head tracker?)
 	
-	CID_JOY_MAX         // Maximum supported joysticks, must be last in the enum definition
+	CID_JOY_MAX         //!< Maximum supported joysticks, must be last in the enum definition
 };
 
 /*!
@@ -306,12 +309,14 @@ class CCB;
 class CC_bind {
 public:
 	CID cid;    //!< Which controller this belongs to
-	short btn;  //!< The button, key, or axis that's bound. Is masked to determine various states.
+	char flags; //!< mask to determine various additional attributes of btn
+	short btn;  //!< The button, key combo, or axis that's bound.
 
 public:
-	CC_bind() :cid(CID_NONE), btn(-1) {};
-	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { if (btn < 0) {cid = CID_NONE; btn = -1;} };
-	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn) {};
+	CC_bind() :cid(CID_NONE), btn(-1), flags(0) {};
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn), flags(0) { validate(); };
+	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), btn(_btn), flags(_flags) { validate(); };
+	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn), flags(A.flags) {};
 
 	CC_bind operator=(const CC_bind &A);
 
@@ -336,7 +341,7 @@ public:
 	bool operator!=(const CCB &pair) const;
 
 	/*!
-	 * Clears the binding
+	 * Clears the binding and flags.  Some flags are retained.
 	 */
 	void clear();
 
@@ -344,6 +349,16 @@ public:
 	 * True if not bound
 	 */
 	bool empty() const;
+
+	/**
+	 * Takes the given binding.
+	 */
+	void take(CID _cid, short _btn, char _flags = 0);
+
+	/**
+	 * Validates the binding, clearing it if necassary
+	 */
+	void validate();
 
 	/*!
 	 * Returns a human-readable string of this binding
@@ -484,6 +499,7 @@ extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
+extern char *Joy_axis_text[JOY_NUM_AXES];
 
 /*!
  * @brief Checks if either binding in the CCB has the given cid
