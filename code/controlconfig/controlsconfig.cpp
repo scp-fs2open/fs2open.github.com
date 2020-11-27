@@ -164,7 +164,7 @@ int Invert_axis_backup[JOY_NUM_AXES];
 Undo_system Undo_controls;
 
 // all this stuff is localized/externalized
-#define NUM_AXIS_TEXT			6
+#define NUM_AXIS_TEXT			JOY_NUM_AXES
 #define NUM_MOUSE_TEXT			5
 #define NUM_MOUSE_AXIS_TEXT		2
 #define NUM_INVERT_TEXT			2	
@@ -586,8 +586,7 @@ CC_bind control_config_detect_axis()
 		}
 	}
 	
-
-	return CC_bind(static_cast<CID>(j), axis);
+	return CC_bind(static_cast<CID>(j), axis, CCF_AXIS);;
 }
 
 /**
@@ -886,7 +885,7 @@ int control_config_clear_other()
 
 			if (Axis_map_to[i] == Axis_map_to[z]) {
 				stack.save(Axis_map_to[i]);
-				Axis_map_to[i].empty();
+				Axis_map_to[i].clear();
 				total++;
 			}
 		}
@@ -1505,17 +1504,17 @@ void control_config_init()
 	Joy_axis_action_text[2] = vm_strdup(XSTR("Bank Axis", 1018));
 	Joy_axis_action_text[3] = vm_strdup(XSTR("Absolute Throttle Axis", 1019));
 	Joy_axis_action_text[4] = vm_strdup(XSTR("Relative Throttle Axis", 1020));
-	Joy_axis_text[0] = vm_strdup(XSTR("Joystick/Mouse X Axis", 1021));
-	Joy_axis_text[1] = vm_strdup(XSTR("Joystick/Mouse Y Axis", 1022));
-	Joy_axis_text[2] = vm_strdup(XSTR("Joystick Z Axis", 1023));
-	Joy_axis_text[3] = vm_strdup(XSTR("Joystick rX Axis", 1024));
-	Joy_axis_text[4] = vm_strdup(XSTR("Joystick rY Axis", 1025));
-	Joy_axis_text[5] = vm_strdup(XSTR("Joystick rZ Axis", 1026));
+	Joy_axis_text[0] = vm_strdup(XSTR("X Axis", 1021));
+	Joy_axis_text[1] = vm_strdup(XSTR("Y Axis", 1022));
+	Joy_axis_text[2] = vm_strdup(XSTR("Z Axis", 1023));
+	Joy_axis_text[3] = vm_strdup(XSTR("rX Axis", 1024));
+	Joy_axis_text[4] = vm_strdup(XSTR("rY Axis", 1025));
+	Joy_axis_text[5] = vm_strdup(XSTR("rZ Axis", 1026));
 	Mouse_button_text[0] = vm_strdup("");
 	Mouse_button_text[1] = vm_strdup(XSTR("Left Button", 1027));
 	Mouse_button_text[2] = vm_strdup(XSTR("Right Button", 1028));
 	Mouse_button_text[3] = vm_strdup(XSTR("Mid Button", 1029));
-	Mouse_button_text[4] = vm_strdup("");
+	Mouse_button_text[4] = vm_strdup("");	// TODO Mousewheel and X1, X2
 	Mouse_axis_text[0] = vm_strdup(XSTR("L/R", 1030));
 	Mouse_axis_text[1] = vm_strdup(XSTR("U/B", 1031));
 	Invert_text[0] = vm_strdup(XSTR("N", 1032));
@@ -1787,7 +1786,6 @@ int control_config_draw_list(int select_tease_line) {
 			if (Binding_mode && (line == Selected_line)) {
 				bind = Axis_override;
 			}
-
 			conflict = set_item_color(line, select_tease_line, selItem::Primary, bind.empty());
 			
 			gr_printf_menu(x, y, "%s", bind.textify().c_str());

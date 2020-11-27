@@ -61,19 +61,19 @@ auto SensitivityOption =
 
 // Containers for axis binding and defaults
 CC_bind Axis_map_to[NUM_JOY_AXIS_ACTIONS] = {
-	CC_bind(CID_JOY0, JOY_X_AXIS),
-	CC_bind(CID_JOY0, JOY_Y_AXIS),
-	CC_bind(CID_JOY0, JOY_RX_AXIS),
-	CC_bind(CID_NONE, -1),
-	CC_bind(CID_NONE,-1)
+	CC_bind(CID_JOY0, JOY_X_AXIS, CCF_AXIS),
+	CC_bind(CID_JOY0, JOY_Y_AXIS, CCF_AXIS),
+	CC_bind(CID_JOY0, JOY_RX_AXIS, CCF_AXIS),
+	CC_bind(CID_NONE, -1, CCF_AXIS),
+	CC_bind(CID_NONE, -1, CCF_AXIS)
 };
 
 CC_bind Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = {
-	CC_bind(CID_JOY0, JOY_X_AXIS),
-	CC_bind(CID_JOY0, JOY_Y_AXIS),
-	CC_bind(CID_JOY0, JOY_RX_AXIS),
-	CC_bind(CID_NONE, -1),
-	CC_bind(CID_NONE, -1)
+	CC_bind(CID_JOY0, JOY_X_AXIS, CCF_AXIS),
+	CC_bind(CID_JOY0, JOY_Y_AXIS, CCF_AXIS),
+	CC_bind(CID_JOY0, JOY_RX_AXIS, CCF_AXIS),
+	CC_bind(CID_NONE, -1, CCF_AXIS),
+	CC_bind(CID_NONE, -1, CCF_AXIS)
 };
 
 int Invert_axis[NUM_JOY_AXIS_ACTIONS] = { 0 };
@@ -1530,6 +1530,7 @@ CC_bind CC_bind::operator=(const CC_bind &A)
 {
 	cid = A.cid;
 	btn = A.btn;
+	flags = A.flags;
 
 	return *this;
 }
@@ -1558,6 +1559,7 @@ void CC_bind::clear()
 {
 	cid = CID_NONE;
 	btn = -1;
+	flags &= ~(CCF_AXIS); // Clear all flags except these
 }
 
 bool CC_bind::empty() const
@@ -1565,75 +1567,119 @@ bool CC_bind::empty() const
 	return cid == CID_NONE;
 }
 
+void CC_bind::take(CID _cid, short _btn, char _flags) {
+	cid = _cid;
+	btn = _btn;
+	flags = _flags;
+
+	validate();
+}
+
+void CC_bind::validate() {
+	if (cid == CID_NONE) {
+		btn = -1;
+	}
+	if (btn == -1) {
+		cid = CID_NONE;
+	}
+}
+
 SCP_string CC_bind::textify() const {
+	SCP_string prefix;
 	SCP_string retval;
 
 	switch (cid) {
-	case CID_KEYBOARD:
-		retval = textify_scancode(btn);
-		break;
-
 	case CID_MOUSE:
-		// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
-		// TODO: XSTR this
-		switch (btn) {
-		case 0:
-			retval = "Mouse Left";
-			break;
-		case 1:
-			retval = "Mouse Right";
-			break;
-		case 2:
-			retval = "Mouse Middle";
-			break;
-		case 3:
-			retval = "Mouse X1";
-			break;
-		case 4:
-			retval = "Mouse X2";
-			break;
-		case 5:
-			retval = "Mouse Wheel Up";
-			break;
-		case 6:
-			retval = "Mouse Wheel Down";
-			break;
-		case 7:
-			retval = "Mouse Wheel Left";
-			break;
-		case 8:
-			retval = "Mouse Wheel Right";
-			break;
-		default:
-			retval = "Unknown Mouse Input";
-			break;
-		}
+		prefix = "Mouse ";
 		break;
-
-	// TODO XSTR the "Joy #" prefix
 	case CID_JOY0:
-		retval = "Joy 0 " + SCP_string(Joy_button_text[btn]);
+		prefix = "Joy-0 ";
 		break;
-
 	case CID_JOY1:
-		retval = "Joy 1 " + SCP_string(Joy_button_text[btn]);
+		prefix = "Joy-1 ";
 		break;
-
 	case CID_JOY2:
-		retval = "Joy 2 " + SCP_string(Joy_button_text[btn]);
+		prefix = "Joy-2 ";
 		break;
-
 	case CID_JOY3:
-		retval = "Joy 3 " + SCP_string(Joy_button_text[btn]);
+		prefix = "Joy-3 ";
 		break;
-
 	case CID_NONE:
+	case CID_KEYBOARD:
 	default:
-		retval = "None";
+		// No prefix
 		break;
 	}
 
-	return retval;
+	if (flags & CCF_AXIS) {
+		// Is Axis
+		if (cid == CID_NONE) {
+			retval = "None";
+		} else {
+			retval = Joy_axis_text[btn];
+		}
+
+	} else {
+			// Is button or key
+		switch (cid) {
+		case CID_KEYBOARD:
+			retval = textify_scancode(btn);
+			break;
+
+		case CID_MOUSE:
+			// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
+			// TODO: XSTR this
+			switch (btn) {
+			case 0:
+				retval = "Left";
+				break;
+			case 1:
+				retval = "Right";
+				break;
+			case 2:
+				retval = "Middle";
+				break;
+			case 3:
+				retval = "X1";
+				break;
+			case 4:
+				retval = "X2";
+				break;
+			case 5:
+				retval = "Wheel Up";
+				break;
+			case 6:
+				retval = "Wheel Down";
+				break;
+			case 7:
+				retval = "Wheel Left";
+				break;
+			case 8:
+				retval = "Wheel Right";
+				break;
+			default:
+				retval = "Unknown Button";
+			break;
+			}
+		break;
+
+		// TODO XSTR the "Joy #" prefix
+		case CID_JOY0:
+		case CID_JOY1:
+		case CID_JOY2:
+		case CID_JOY3:
+			Assert((btn >= 0) && (btn < JOY_TOTAL_BUTTONS));
+			retval = SCP_string(Joy_button_text[btn]);
+			break;
+
+		case CID_NONE:
+		default:
+			retval = "None";
+		break;
+		}
+	}
+
+	return prefix + retval;
 }
 
 bool CCB::empty() const {
@@ -1641,10 +1687,7 @@ bool CCB::empty() const {
 }
 
 void CCB::take(CC_bind A, int order) {
-	// If the button isn't a valid index, nuke the cid.
-	if (A.btn < 0) {
-		A.cid = CID_NONE;
-	}
+	A.validate();
 	
 	switch (order) {
 	case 0:
