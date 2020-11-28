@@ -1530,7 +1530,7 @@ CC_bind CC_bind::operator=(const CC_bind &A)
 
 bool CC_bind::operator==(const CC_bind &B) const
 {
-	return (btn == B.btn) && (cid == B.cid) && (flags & B.flags & CCF_AXIS);
+	return (btn == B.btn) && (cid == B.cid) && (~(flags ^ B.flags) & CCF_AXIS);
 }
 
 bool CC_bind::operator==(const CCB &pair) const
