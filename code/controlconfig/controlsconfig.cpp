@@ -1100,12 +1100,6 @@ void control_config_cancel_exit()
 	std::move(Axis_map_to_backup, Axis_map_to_backup + JOY_NUM_AXES, Axis_map_to);
 	std::move(Invert_axis_backup, Invert_axis_backup + JOY_NUM_AXES, Invert_axis);
 
-	// Free up memory from dynamic containers
-	Control_config_backup.clear();
-	Cc_lines.clear();
-	Conflicts.clear();
-	Undo_controls.clear();
-
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
