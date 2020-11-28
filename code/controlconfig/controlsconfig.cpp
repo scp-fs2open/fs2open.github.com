@@ -128,7 +128,6 @@ int Conflict_stamp = -1;
 int Conflict_bright = 0;
 
 #define LIST_BUTTONS_MAX	42
-#define JOY_AXIS			0x80000
 
 static int Num_cc_lines;	// Number of Cc_lines to display on the current page. Is, at worse, CCFG_MAX + NUM_JOY_AXIS_ACTIONS
 
@@ -157,8 +156,6 @@ SCP_vector<cc_line> Cc_lines;
 
 // Backups for use when user closes the config menu without saving
 SCP_vector<CCI> Control_config_backup;
-CC_bind Axis_map_to_backup[NUM_JOY_AXIS_ACTIONS];
-int Invert_axis_backup[JOY_NUM_AXES];
 
 // Undo system
 Undo_system Undo_controls;
@@ -168,7 +165,6 @@ Undo_system Undo_controls;
 #define NUM_MOUSE_TEXT			5
 #define NUM_MOUSE_AXIS_TEXT		2
 #define NUM_INVERT_TEXT			2	
-char *Joy_axis_action_text[NUM_JOY_AXIS_ACTIONS];
 char *Joy_axis_text[NUM_AXIS_TEXT];
 char *Mouse_button_text[NUM_MOUSE_TEXT];
 char *Mouse_axis_text[NUM_MOUSE_AXIS_TEXT];
@@ -202,7 +198,6 @@ struct conflict {
 
 SCP_vector<conflict> Conflicts;
 
-int Conflicts_axes[NUM_JOY_AXIS_ACTIONS];
 
 #define TARGET_TAB				0
 #define SHIP_TAB				1
@@ -655,20 +650,6 @@ void control_config_conflict_check()
 			}
 		}
 	}
-
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		Conflicts_axes[i] = -1;
-	}
-
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS-1; i++) {
-		for (j=i+1; j<NUM_JOY_AXIS_ACTIONS; j++) {
-			if (!Axis_map_to[i].empty() && (Axis_map_to[i] == Axis_map_to[j])) {
-				Conflicts_axes[i] = j;
-				Conflicts_axes[j] = i;
-				Conflicts_tabs[SHIP_TAB] = 1;
- 			}
-		}
-	}
 }
 
 // do list setup required prior to rendering and checking for the controls listing.  Called when list changes
@@ -698,16 +679,6 @@ void control_config_list_prepare()
 
 		z++;	// z is the index position in Control_config[]
 	}
-
-	// Populate the analog controls.
-	if (Tab == SHIP_TAB) {
-		for (int j = 0; j < NUM_JOY_AXIS_ACTIONS; j++) {
-			Cc_lines[Num_cc_lines].label = Joy_axis_action_text[j];
-			Cc_lines[Num_cc_lines].cc_index = j | JOY_AXIS;
-			Cc_lines[Num_cc_lines++].y = y;
-			y += font_height + 2;
-		}
-	}
 }
 
 int cc_line_query_visible(int n)
@@ -727,20 +698,24 @@ int cc_line_query_visible(int n)
 }
 
 /**
- * @brief Wrapper for CC_bind::take(), binds a key combo or button to the given control
+ * @brief Wrapper for CC_bind::take(), binds a given control
  */
-void control_config_bind_btn(int i, const CC_bind &new_bind, int order)
+void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 {
+	int sel;
 	switch (order) {
 		// Bind states. Saving covered by below
-		case 0:
-		case 1:
+		case selItem::Primary:
+			sel = 0;
 			break;
-		
-		// Ignore states
-		case -1:
-			// Ignore silently
-			return;
+
+		case selItem::Secondary:
+			sel = 1;
+			break;
+
+		case selItem::None:
+			sel = -1;
+			break;
 
 		default:
 			// Ignore and complain
@@ -754,18 +729,17 @@ void control_config_bind_btn(int i, const CC_bind &new_bind, int order)
 	stack.save(Control_config[i].second);
 	Undo_controls.save_stack(stack);
 
-	Control_config[i].take(new_bind, order);
+	CCB old(Control_config[i]);
+
+	Control_config[i].take(new_bind, sel);
+
+	if (old == Control_config[i]) {
+		// Binding didn't take
+		Undo_controls.undo();
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+	}
 }
 
-
-/**
- * @brief binds a joystick axis to the given control
- */
-void control_config_bind_axis(int action, const CC_bind &bind)
-{
-	Undo_controls.save(Axis_map_to[action]);
-	Axis_map_to[action] = bind;
-}
 
 /**
  * @brief Unbinds the selected control
@@ -780,22 +754,6 @@ int control_config_remove_binding()
 	}
 
 	z = Cc_lines[Selected_line].cc_index;
-	if (z & JOY_AXIS) {
-		z &= ~JOY_AXIS;
-		if (Axis_map_to[z].empty()) {
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			return -1;
-		}
-
-		Undo_controls.save(Axis_map_to[z]);
-		Axis_map_to[z].clear();
-		control_config_conflict_check();
-		control_config_list_prepare();
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		Selected_item = selItem::None;
-		return 0;
-	}
-
 	switch (Selected_item) {
 	case selItem::None:
 		// Clear both
@@ -864,43 +822,6 @@ int control_config_clear_other()
 	}
 
 	z = Cc_lines[Selected_line].cc_index;
-	if (z & JOY_AXIS) {
-		// is in Axis_map_to[]
-		z &= ~JOY_AXIS;
-
-		// Fail if axis is unbound
-		if (Axis_map_to[z].empty()) {
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			return -1;
-		}
-
-		Undo_stack stack;
-		for (i = total = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
-			if (i == z) {
-				// skip
-				continue;
-			}
-
-			if (Axis_map_to[i] == Axis_map_to[z]) {
-				stack.save(Axis_map_to[i]);
-				Axis_map_to[i].clear();
-				total++;
-			}
-		}
-
-		// Fail if no conflicts
-		if (total == 0) {
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			return -1;
-		}
-
-		Undo_controls.save_stack(stack);
-
-		control_config_conflict_check();
-		control_config_list_prepare();
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		return 0;
-	} // Else, is in Control_config
 
 	const auto &selected = Control_config[z];
 
@@ -983,16 +904,6 @@ int control_config_clear_all()
 }
 
 /**
- * @brief Gets the default binding for the given axis action
- */
-CC_bind control_config_axis_default(int action)
-{
-	Assert((action >= 0) && (action < NUM_JOY_AXIS_ACTIONS));
-
-	return Axis_map_to_defaults[action];
-}
-
-/**
  * @brief Reverts all bindings to their preset. If already default, cycle to the next presets.
  */
 int control_config_do_reset()
@@ -1005,12 +916,6 @@ int control_config_do_reset()
 	for (i = 0; i < Control_config.size(); ++i) {
 		if ((Control_config[i].first != default_bindings[i].first) ||
 			(Control_config[i].second != default_bindings[i].second)) {
-			total++;
-		}
-	}
-
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i])) {
 			total++;
 		}
 	}
@@ -1048,17 +953,11 @@ int control_config_do_reset()
 
 void control_config_reset_defaults()
 {
-	// Reset keyboard defaults
+	// Reset all
 	const auto &preset = Control_config_presets[Defaults_cycle_pos].bindings;
 	for (size_t i = 0; i < Control_config.size(); ++i) {
 		Control_config[i].first = preset[i].first;
 		Control_config[i].second = preset[i].second;
-	}
-
-	// Reset joy defaults.  No presets for joysticks currently
-	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
-		Axis_map_to[i] = control_config_axis_default(i);
-		Invert_axis[i] = Invert_axis_defaults[i];
 	}
 }
 
@@ -1134,7 +1033,6 @@ void control_config_toggle_modifier(int bit)
 	int k, z;
 
 	z = Cc_lines[Selected_line].cc_index;
-	Assert(!(z & JOY_AXIS));
 	k = Control_config[z].get_btn(CID_KEYBOARD);
 	if (k < 0) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1156,14 +1054,36 @@ void control_config_toggle_modifier(int bit)
  */
 void control_config_toggle_invert()
 {
-	int z;
+	int z = Cc_lines[Selected_line].cc_index;
+	CCI& item = Control_config[z];
 
-	z = Cc_lines[Selected_line].cc_index;
-	Assert(z & JOY_AXIS);
-	z &= ~JOY_AXIS;
+	// Only toggle inversion state for axis types
+	Assert((item.type == JOY_HEADING_AXIS) ||
+		   (item.type == JOY_PITCH_AXIS) ||
+		   (item.type == JOY_BANK_AXIS) ||
+		   (item.type == JOY_ABS_THROTTLE_AXIS) ||
+		   (item.type == JOY_PITCH_AXIS));
+
 	
-	Undo_controls.save(Invert_axis[z]);
-	Invert_axis[z] = !Invert_axis[z];
+	Undo_controls.save(item);
+	
+	switch (Selected_item) {
+	case selItem::None:
+		// both
+		item.invert_toggle();
+		break;
+	case selItem::Primary:
+		// first
+		item.first.invert_toggle();
+		break;
+	case selItem::Secondary:
+		// second
+		item.second.invert_toggle();
+		break;
+	default:
+		// unhandled
+		mprintf(("Unhandled selItem in control_config_toggle_invert(): %i", static_cast<int>(Selected_item)));
+	}
 }
 
 /*!
@@ -1304,8 +1224,6 @@ void control_config_cancel_exit()
 {
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
-	std::move(Axis_map_to_backup, Axis_map_to_backup + NUM_JOY_AXIS_ACTIONS, Axis_map_to);
-	std::move(Invert_axis_backup, Invert_axis_backup + NUM_JOY_AXIS_ACTIONS, Invert_axis);
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
@@ -1420,16 +1338,13 @@ void control_config_init()
 	Control_config_backup.reserve(Control_config.size());
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(Control_config_backup));
 
-	std::copy(Axis_map_to, Axis_map_to + NUM_JOY_AXIS_ACTIONS, Axis_map_to_backup);
-	std::copy(Invert_axis, Invert_axis + JOY_NUM_AXES, Invert_axis_backup);
-
 	// Init conflict vector
 	Conflicts.clear();
 	Conflicts.resize(Control_config.size());
 
 	// Init Cc_lines
 	Cc_lines.clear();
-	Cc_lines.resize(Control_config.size() + NUM_JOY_AXIS_ACTIONS);	// Can't use CCFG_MAX here, since scripts or might add controls
+	Cc_lines.resize(Control_config.size());	// Can't use CCFG_MAX here, since scripts or might add controls
 
 	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -1496,11 +1411,6 @@ void control_config_init()
 	control_config_conflict_check();
 
 	// setup strings					
-	Joy_axis_action_text[0] = vm_strdup(XSTR("Turn (Yaw) Axis", 1016));
-	Joy_axis_action_text[1] = vm_strdup(XSTR("Pitch Axis", 1017));
-	Joy_axis_action_text[2] = vm_strdup(XSTR("Bank Axis", 1018));
-	Joy_axis_action_text[3] = vm_strdup(XSTR("Absolute Throttle Axis", 1019));
-	Joy_axis_action_text[4] = vm_strdup(XSTR("Relative Throttle Axis", 1020));
 	Joy_axis_text[0] = vm_strdup(XSTR("X Axis", 1021));
 	Joy_axis_text[1] = vm_strdup(XSTR("Y Axis", 1022));
 	Joy_axis_text[2] = vm_strdup(XSTR("Z Axis", 1023));
@@ -1540,12 +1450,6 @@ void control_config_close()
 	}
 
 	// free strings	
-	for(idx=0; idx<NUM_JOY_AXIS_ACTIONS; idx++){
-		if(Joy_axis_action_text[idx] != NULL){
-			vm_free(Joy_axis_action_text[idx]);
-			Joy_axis_action_text[idx] = NULL;
-		}
-	}
 	for(idx=0; idx<NUM_AXIS_TEXT; idx++){
 		if(Joy_axis_text[idx] != NULL){
 			vm_free(Joy_axis_text[idx]);
@@ -1651,25 +1555,17 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 	int conflict_id = -1;
 	int found_conflict = 0;	// Is this even needed?
 
-	if (z & JOY_AXIS) {
-		// analogue
-		z &= ~JOY_AXIS;
-
-		conflict_id = Conflicts_axes[z];
-
-	} else {
-		// digital
-		switch (item) {
-		case selItem::Primary:
-			conflict_id = Conflicts[z].first;
-			break;
-		case selItem::Secondary:
-			conflict_id = Conflicts[z].second;
-			break;
-		default:
-			mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
-			Int3();
-		}
+	// digital
+	switch (item) {
+	case selItem::Primary:
+		conflict_id = Conflicts[z].first;
+		break;
+	case selItem::Secondary:
+		conflict_id = Conflicts[z].second;
+		break;
+	default:
+		mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
+		Int3();
 	}
 
 	if (conflict_id >= 0) {
@@ -1744,49 +1640,35 @@ int control_config_draw_list(int select_tease_line) {
 			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, "%s", buf);
 		}
 
-		if (!(z & JOY_AXIS)) {
-			// is a digital control
-			// Textify and print the primary and secondary bindings
-			SCP_string first = Control_config[z].first.textify();
-			SCP_string second = Control_config[z].second.textify();
+		// Textify and print the primary and secondary bindings
+		SCP_string first = Control_config[z].first.textify();
+		SCP_string second = Control_config[z].second.textify();
 
-			// Set color for primary according to state
-			conflict += set_item_color(line, select_tease_line, selItem::Primary, Control_config[z].first.empty());
+		// Set color for primary according to state
+		conflict += set_item_color(line, select_tease_line, selItem::Primary, Control_config[z].first.empty());
 
-			// Print primary
-			x = Control_list_first_x[gr_screen.res];
-			*buf = 0;
-			strcpy_s(buf, first.c_str());
-			font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
-			gr_printf_menu(x, y, "%s", buf);
+		// Print primary
+		x = Control_list_first_x[gr_screen.res];
+		*buf = 0;
+		strcpy_s(buf, first.c_str());
+		font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+		gr_printf_menu(x, y, "%s", buf);
 
-			Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-			Cc_lines[line].kw = Control_list_first_w[gr_screen.res];
+		Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+		Cc_lines[line].kw = Control_list_first_w[gr_screen.res];
 
-			// Set color for secondary according to state
-			conflict += set_item_color(line, select_tease_line, selItem::Secondary, Control_config[z].second.empty());
+		// Set color for secondary according to state
+		conflict += set_item_color(line, select_tease_line, selItem::Secondary, Control_config[z].second.empty());
 
-			// Print secondary
-			x = Control_list_second_x[gr_screen.res];
-			*buf = 0;
-			strcpy_s(buf, second.c_str());
-			font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
-			gr_printf_menu(x, y, "%s", buf);
+		// Print secondary
+		x = Control_list_second_x[gr_screen.res];
+		*buf = 0;
+		strcpy_s(buf, second.c_str());
+		font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+		gr_printf_menu(x, y, "%s", buf);
 
-			Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
-			Cc_lines[line].jw = Control_list_first_w[gr_screen.res];
-
-		} else {
-			// Is an analogue control
-			x = Control_list_first_x[gr_screen.res];
-			CC_bind bind = Axis_map_to[z & ~JOY_AXIS];
-			if (Binding_mode && (line == Selected_line)) {
-				bind = Axis_override;
-			}
-			conflict = set_item_color(line, select_tease_line, selItem::Primary, bind.empty());
-			
-			gr_printf_menu(x, y, "%s", bind.textify().c_str());
-		}
+		Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
+		Cc_lines[line].jw = Control_list_first_w[gr_screen.res];
 	}
 
 	// Disable remaining empty lines
@@ -1871,10 +1753,9 @@ void control_config_do_frame(float frametime)
 			bound_timestamp = timestamp(2500);
 			control_config_do_cancel();
 
-		} else if (z & JOY_AXIS) {
+		} else if (Control_config[z].is_axis()) {
 			// Is an analogue control
 			// Poll for joy axis
-			z &= ~JOY_AXIS;
 			CC_bind ccb = control_config_detect_axis();
 			if (!ccb.empty()) {
 				Axis_override = ccb;
@@ -1883,7 +1764,7 @@ void control_config_do_frame(float frametime)
 
 			if (!done && bind) {
 				if (!Axis_override.empty()) {
-					control_config_bind_axis(z, Axis_override);
+					control_config_bind(z, Axis_override, Selected_item);
 					done = true;
 					strcpy_s(bound_string, Axis_override.textify().c_str());
 
@@ -1926,16 +1807,18 @@ void control_config_do_frame(float frametime)
 
 			k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);	// This shouldn't be needed, but just in case...
 			if (!done && (k > 0)) {
-				Assert(!(z & JOY_AXIS));
-				control_config_bind_btn(z, CC_bind(CID_KEYBOARD, k), 0);
+				// Bind the key
+				Assert(!Control_config[z].is_axis());
+				control_config_bind(z, CC_bind(CID_KEYBOARD, k), Selected_item);
 
 				strcpy_s(bound_string, textify_scancode(k));
 				done = true;
 			}
 
 			if (!done && (j < JOY_TOTAL_BUTTONS)) {
-				Assert(!(z & JOY_AXIS));
-				control_config_bind_btn(z, CC_bind(static_cast<CID>(joy), j), 1);
+				// Bind the joy button
+				Assert(!Control_config[z].is_axis());
+				control_config_bind(z, CC_bind(static_cast<CID>(joy), j), Selected_item);
 
 				strcpy_s(bound_string, Joy_button_text[j]);
 				done = true;
@@ -1952,8 +1835,8 @@ void control_config_do_frame(float frametime)
 				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
 						if (mouse_down(CC_bind(CID_MOUSE, i))) {
-							Assert(!(z & JOY_AXIS));
-							control_config_bind_btn(z, CC_bind(CID_MOUSE, i), 1);
+							Assert(!Control_config[z].is_axis());
+							control_config_bind(z, CC_bind(CID_MOUSE, i), Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
@@ -2111,15 +1994,14 @@ void control_config_do_frame(float frametime)
 		// Browse/default mode
 
 		//Enable modifier buttons according to selected item type
-		z = Cc_lines[Selected_line].cc_index & JOY_AXIS;
-		CC_Buttons[gr_screen.res][ALT_TOGGLE].button.enable(!z);    // Enabled for keys/buttons
-		CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.enable(!z);  // Enabled for keys/buttons
-		CC_Buttons[gr_screen.res][INVERT_AXIS].button.enable(z);    // Enabled for axes
+		z = Cc_lines[Selected_line].cc_index;
+		CC_Buttons[gr_screen.res][ALT_TOGGLE].button.enable(!Control_config[z].is_axis());    // Enabled for keys/buttons
+		CC_Buttons[gr_screen.res][SHIFT_TOGGLE].button.enable(!Control_config[z].is_axis());  // Enabled for keys/buttons
+		CC_Buttons[gr_screen.res][INVERT_AXIS].button.enable(Control_config[z].is_axis());    // Enabled for axes
 
 		// If selected item is not an axis, and
 		// If the bound key is a modifier, disable the modifier UI buttons
-		if (!z) {
-			z = Cc_lines[Selected_line].cc_index;
+		if (!Control_config[z].is_axis()) {
 			k = Control_config[z].get_btn(CID_KEYBOARD);
 
 			if ((k == KEY_LALT) || (k == KEY_RALT) || (k == KEY_LSHIFT) || (k == KEY_RSHIFT) ) {
@@ -2201,37 +2083,12 @@ void control_config_do_frame(float frametime)
 				// Select Previous item
 				Selected_item--;
 
-				if (z & JOY_AXIS) {
-					// is analogue
-					if (Selected_item == selItem::Secondary) {
-						// Currently only one axis to bind to an axis item
-						Selected_item = selItem::Primary;
-					}
-
-					if ((Axis_map_to[z & ~JOY_AXIS].empty()) && (Selected_item == selItem::Primary)) {
-						// Nothing bound, set to None
-						Selected_item = selItem::None;
-					}
-				}
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
 			case KEY_RIGHT:
 				// Next item
 				Selected_item++;
-
-				if (z & JOY_AXIS) {
-					// is analogue
-					if ((Axis_map_to[z & ~JOY_AXIS].empty()) && (Selected_item == selItem::Primary)) {
-						// Nothing bound, set to None
-						Selected_item = selItem::None;
-					}
-
-					if (Selected_item == selItem::Secondary) {
-						// Currently only one axis to bind to an axis item
-						Selected_item = selItem::None;
-					}
-				}
 
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
@@ -2349,10 +2206,17 @@ void control_config_do_frame(float frametime)
 
 	if (Selected_line >= 0) {
 		z = Cc_lines[Selected_line].cc_index;
-		if (z & JOY_AXIS) {
+		if (Control_config[z].is_axis()) {
 			// Show inversion button as down, if the selected axis is inverted
-			if (Invert_axis[z & ~JOY_AXIS]) {
-				CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2);
+			switch (Selected_item) {
+			case selItem::None:
+			case selItem::Primary:
+				Control_config[z].first.is_inverted() ? CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2) : 0;
+				break;
+			case selItem::Secondary:
+				Control_config[z].second.is_inverted() ? CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2) : 0;
+			default:
+				break;
 			}
 
 		} else {
@@ -2386,7 +2250,7 @@ void control_config_do_frame(float frametime)
 			gr_printf_menu(x - w / 2, y - font_height / 2, "%s", XSTR( "?", 208));
 		}
 
-	} else if (!(z & JOY_AXIS) && ((Conflicts[z].first >= 0) || (Conflicts[z].second >= 0))) {
+	} else if (!Control_config[z].is_axis() && ((Conflicts[z].first >= 0) || (Conflicts[z].second >= 0))) {
 		i = Conflicts[z].first;
 		if (i < 0) {
 			i = Conflicts[z].second;
@@ -2600,62 +2464,98 @@ int check_control(int id, int key)
 	return 0;
 }
 
-void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
+void control_get_axes_readings(int *axis_v, float frame_time)
 {
-	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
+	int axe[CID_JOY_MAX + 1][JOY_NUM_AXES] = {0};
+	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
+	int dx = 0;
+	float factor = 0.0f;
 
+	Assert(axis_v != nullptr);
+
+	// Read raw sticks.
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
-		joystick_read_raw_axis(j, JOY_NUM_AXES, axes_values[j]);
+		joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]);
 	}
 
-	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1 (fixed point)
-	*h = *p = *b = *ta = *tr = 0;
-	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
-		const CC_bind * bind = nullptr;	// Binding for the given axis action
-		int invert;	// invertion state for the given axis action
+	// Read raw mouse, stuff in axes_values[0]
+	if (Use_mouse_to_fly) {
+		factor = (float)Mouse_sensitivity + 1.77f;
+		factor = factor * factor / frame_time / 0.6f;
 
-		bind = &Axis_map_to[JOY_HEADING_AXIS];
-		invert = Invert_axis[JOY_HEADING_AXIS];
-		if (!bind->empty() && (bind->cid == j)) {
-			*h = joy_get_scaled_reading(axes_values[j][bind->btn]);
-			if (invert) {
-				*h = -(*h);
+		mouse_get_delta(&axe[MOUSE_ID][JOY_X_AXIS], &axe[MOUSE_ID][JOY_Y_AXIS], &axe[MOUSE_ID][JOY_Z_AXIS]);
+	}
+
+	for (int action = 0; action < NUM_JOY_AXIS_ACTIONS; ++action) {
+		CCI & item = Control_config[action + JOY_AXIS_BEGIN];
+
+		// Assume actions are all axis actions, no need to check
+		// Assumes all axes are uniquely bound to an action
+		// Process first
+		if (!item.first.empty()) {
+			switch (item.first.cid) {
+			case CID_MOUSE:
+				if (!Use_mouse_to_fly) {
+					continue;
+				}
+
+				dx = axe[MOUSE_ID][item.first.btn];
+				if (item.first.is_inverted()) {
+					dx *= -1;
+				}
+
+				axis_v[action] += (int)((float)dx * factor);
+				break;
+
+			case CID_JOY0:
+			case CID_JOY1:
+			case CID_JOY2:
+			case CID_JOY3:
+				dx = joy_get_scaled_reading(axe[item.first.cid][item.first.btn]);
+				if (item.first.is_inverted()) {
+					dx *= -1;
+				}
+				axis_v[action] += dx;
+				break;
+
+			default:
+				// All others, ignore
+				break;
 			}
 		}
 
-		bind = &Axis_map_to[JOY_PITCH_AXIS];
-		invert = Invert_axis[JOY_PITCH_AXIS];
-		if (!bind->empty() && (bind->cid == j)) {
-			*p = joy_get_scaled_reading(axes_values[j][bind->btn]);
-			if (invert) {
-				*p = -(*p);
-			}
-		}
+		// Process second.  Is copy pasta of above
+		if (!item.second.empty()) {
+			switch (item.second.cid) {
+			case CID_MOUSE:
+				if (!Use_mouse_to_fly) {
+					continue;
+				}
 
-		bind = &Axis_map_to[JOY_BANK_AXIS];
-		invert = Invert_axis[JOY_BANK_AXIS];
-		if (!bind->empty() && (bind->cid == j)) {
-			*b = joy_get_scaled_reading(axes_values[j][bind->btn]);
-			if (invert) {
-				*b = -(*b);
-			}
-		}
+				dx = axe[MOUSE_ID][item.second.btn];
+				if (item.second.is_inverted()) {
+					dx *= -1;
+				}
 
-		bind = &Axis_map_to[JOY_ABS_THROTTLE_AXIS];
-		invert = Invert_axis[JOY_ABS_THROTTLE_AXIS];
-		if (!bind->empty() && (bind->cid == j)) {
-			*ta = joy_get_unscaled_reading(axes_values[j][bind->btn]);
-			if (invert) {
-				*ta = F1_0 - *ta;
-			}
-		}
+				axis_v[action] += (int)((float)dx * factor);
+				CLAMP(axis_v[action], -JOY_AXIS_RANGE, JOY_AXIS_RANGE);
+				break;
 
-		bind = &Axis_map_to[JOY_REL_THROTTLE_AXIS];
-		invert = Invert_axis[JOY_REL_THROTTLE_AXIS];
-		if (!bind->empty() && (bind->cid == j)) {
-			*tr = joy_get_scaled_reading(axes_values[j][bind->btn]);
-			if (invert) {
-				*tr = -(*tr);
+			case CID_JOY0:
+			case CID_JOY1:
+			case CID_JOY2:
+			case CID_JOY3:
+				dx = joy_get_scaled_reading(axe[item.second.cid][item.second.btn]);
+				if (item.second.is_inverted()) {
+					dx *= -1;
+				}
+				axis_v[action] += dx;
+				CLAMP(axis_v[action], -JOY_AXIS_RANGE, JOY_AXIS_RANGE);
+				break;
+
+			default:
+				// All others, ignore
+				break;
 			}
 		}
 	}

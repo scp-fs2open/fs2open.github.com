@@ -572,8 +572,8 @@ void pilotfile::plr_read_controls()
 		inv = handler->readInt("invert_axis");
 
 		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = CC_bind(CID_JOY0, axi, CCF_AXIS);
-			Invert_axis[idx] = inv;
+			Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, axi, CCF_AXIS), 0);
+			Control_config[idx + JOY_AXIS_BEGIN].invert(inv);
 		}
 	}
 	handler->endArrayRead();
@@ -601,8 +601,8 @@ void pilotfile::plr_write_controls()
 	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeInt("axis_map", static_cast<short>(Axis_map_to[idx].btn));	// ignores CID currently
-		handler->writeInt("invert_axis", Invert_axis[idx]);
+		handler->writeInt("axis_map", static_cast<short>(Control_config[idx + JOY_AXIS_BEGIN].first.btn));	// ignores CID and secondary currently
+		handler->writeInt("invert_axis", Control_config[idx + JOY_AXIS_BEGIN].is_inverted());
 
 		handler->endSectionWrite();
 	}

@@ -59,26 +59,6 @@ auto SensitivityOption =
         .importance(2)
         .finish();
 
-// Containers for axis binding and defaults
-CC_bind Axis_map_to[NUM_JOY_AXIS_ACTIONS] = {
-	CC_bind(CID_JOY0, JOY_X_AXIS, CCF_AXIS),
-	CC_bind(CID_JOY0, JOY_Y_AXIS, CCF_AXIS),
-	CC_bind(CID_JOY0, JOY_RX_AXIS, CCF_AXIS),
-	CC_bind(CID_NONE, -1, CCF_AXIS),
-	CC_bind(CID_NONE, -1, CCF_AXIS)
-};
-
-CC_bind Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = {
-	CC_bind(CID_JOY0, JOY_X_AXIS, CCF_AXIS),
-	CC_bind(CID_JOY0, JOY_Y_AXIS, CCF_AXIS),
-	CC_bind(CID_JOY0, JOY_RX_AXIS, CCF_AXIS),
-	CC_bind(CID_NONE, -1, CCF_AXIS),
-	CC_bind(CID_NONE, -1, CCF_AXIS)
-};
-
-int Invert_axis[NUM_JOY_AXIS_ACTIONS] = { 0 };
-int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS] = { 0 };
-
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array
 //! When adding new controls, order that they show up is dependant on their location in IoActionId, not on their hardcoded locations here
@@ -98,7 +78,7 @@ void control_config_common_init_bindings() {
 	CCI_builder Builder(Control_config);
 	Builder.start()
 	// Note: when adding new controls, group them according to the tab they would show up on.
-	// action_id, key_default, joy_default, tab, XStR index, Text, CC_Type
+	// action_id, key_default, secondary, tab, XStR index, Text, CC_Type
 	// Ship targeting
 	(TARGET_NEXT,                                         KEY_T, -1, TARGET_TAB, 1, "Target Next Ship",                      CC_TYPE_TRIGGER)
 	(TARGET_PREV,                           KEY_SHIFTED | KEY_T, -1, TARGET_TAB, 1, "Target Previous Ship",                  CC_TYPE_TRIGGER)
@@ -161,6 +141,13 @@ void control_config_common_init_bindings() {
 	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
 	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS, true)
 	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER, true)
+
+	// flight controls (axes)
+	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_ABS)
+	(JOY_PITCH_AXIS,                       JOY_Y_AXIS, MOUSE_Y_AXIS, SHIP_TAB, 1017, "Pitch Axis",             CC_TYPE_AXIS_ABS)
+	(JOY_BANK_AXIS,                                -1,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_ABS)
+	(JOY_ABS_THROTTLE_AXIS,               JOY_RX_AXIS,           -1, SHIP_TAB, 1019, "Absolute Throttle Axis", CC_TYPE_AXIS_ABS)
+	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
 
 	// weapons
 	(FIRE_PRIMARY,                                    KEY_LCTRL,  0, WEAPON_TAB, 1, "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS)
@@ -837,12 +824,6 @@ void control_config_common_init()
  */
 void control_config_common_close()
 {
-	/*
-	// only need to worry control presets for now
-	for (auto ii = Control_config_presets.cbegin(); ii != Control_config_presets.cend(); ++ii) {
-		delete[] * ii;
-	}
-	*/
 }
 
 
@@ -996,7 +977,11 @@ void LoadEnumsIntoCCTypeMap(void) {
 #define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
 
 	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_TRIGGER)
-		ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_CONTINUOUS)
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_CONTINUOUS)
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_AXIS_ABS)
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_AXIS_REL)
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_AXIS_BTN_NEG)
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_AXIS_BTN_POS)
 
 #undef ADD_ENUM_TO_CCTYPE_MAP
 }
@@ -1169,6 +1154,14 @@ void LoadEnumsIntoActionMap(void) {
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_3)
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_4)
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_5)
+
+	ADD_ENUM_TO_ACTION_MAP(JOY_HEADING_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_PITCH_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_BANK_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_ABS_THROTTLE_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_REL_THROTTLE_AXIS)
+
+
 #undef ADD_ENUM_TO_ACTION_MAP
 
 	Assert(mActionToVal.size() == CCFG_MAX);
@@ -1533,7 +1526,7 @@ CC_bind CC_bind::operator=(const CC_bind &A)
 
 bool CC_bind::operator==(const CC_bind &B) const
 {
-	return (btn == B.btn) && (cid == B.cid);
+	return (btn == B.btn) && (cid == B.cid) && (flags & B.flags & CCF_AXIS);
 }
 
 bool CC_bind::operator==(const CCB &pair) const
@@ -1563,6 +1556,23 @@ bool CC_bind::empty() const
 	return cid == CID_NONE;
 }
 
+void CC_bind::invert(bool inv)
+{
+	if (inv) {
+		flags |= CCF_INVERTED;
+	} else {
+		flags &= ~CCF_INVERTED;
+	}
+}
+
+void CC_bind::invert_toggle() {
+	flags ^= CCF_INVERTED;
+}
+
+bool CC_bind::is_inverted() const {
+	return flags & CCF_INVERTED;
+}
+
 void CC_bind::take(CID _cid, short _btn, char _flags) {
 	cid = _cid;
 	btn = _btn;
@@ -1578,6 +1588,8 @@ void CC_bind::validate() {
 	if (btn == -1) {
 		cid = CID_NONE;
 	}
+
+	// TODO validate flags
 }
 
 SCP_string CC_bind::textify() const {
@@ -1700,11 +1712,17 @@ void CCB::take(CC_bind A, int order) {
 		break;
 
 	case -1:
-		// Overwrite existing
+		// Overwrite existing, or put in empty
 		if (first.cid == A.cid) {
 			first = A;
 
 		} else if (second.cid == A.cid) {
+			second = A;
+
+		} else if (first.empty()) {
+			first = A;
+
+		} else if (second.empty()) {
 			second = A;
 		}
 	break;
@@ -1736,12 +1754,78 @@ void CCB::operator=(const CCB& A) {
 	second = A.second;
 }
 
+bool CCB::operator==(const CCB& A) {
+	return (first == A.first) && (second == A.second);
+}
+
 bool CCB::has_first(const CCB& A) const {
 	return !first.empty() && ((first == A.first) || (first == A.second));
 }
 
 bool CCB::has_second(const CCB& A) const {
 	return !second.empty() && ((second == A.first) || (second == A.second));
+}
+
+CC_bind* CCB::find(const CC_bind &A) {
+	if (first == A) {
+		return &first;
+
+	} else if (second == A) {
+		return &second;
+	}
+
+	return nullptr;
+}
+
+CC_bind* CCB::find(CID A) {
+	if (first.cid == A) {
+		return &first;
+
+	} else if (second.cid == A) {
+		return &second;
+	}
+
+	return nullptr;
+}
+
+CC_bind* CCB::find_flags(const char mask) {
+	// ((A & B) ^ B) is true if A has any bit in B that's different
+	// !((A & B) ^ B) should therefore mean A has all bits in B
+	if (!((first.flags & mask) ^ mask)) {
+		return &first;
+	}
+
+	if (!((second.flags & mask) ^ mask)) {
+		return &second;
+	}
+
+	return nullptr;
+}
+
+void CCB::invert(bool inv) {
+	first.invert(inv);
+	second.invert(inv);
+}
+
+void CCB::invert_toggle() {
+	first.invert_toggle();
+	second.flags = first.flags & CCF_INVERTED;
+}
+
+bool CCB::is_inverted() const {
+	return first.is_inverted() && second.is_inverted();
+}
+
+bool CCI::is_axis() {
+	switch (type) {
+	case CC_TYPE_AXIS_ABS:
+	case CC_TYPE_AXIS_REL:
+	case CC_TYPE_AXIS_BTN_NEG:
+	case CC_TYPE_AXIS_BTN_POS:
+		return true;
+	default:
+		return false;
+	}
 }
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
@@ -1754,14 +1838,25 @@ CCI_builder& CCI_builder::start() {
 
 void CCI_builder::end() {};
 
-CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
+CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
 	Assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 
 	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
 	// Current bindings will be overwritten once the player's bindings is read in.
-	item.take(CC_bind(CID_KEYBOARD, key_default), 0);
-	item.take(CC_bind(CID_JOY0, joy_default), 1);
+	if ((type == CC_TYPE_AXIS_ABS) ||
+		(type == CC_TYPE_AXIS_REL) ||
+		(type == CC_TYPE_AXIS_BTN_POS) ||
+		(type == CC_TYPE_AXIS_BTN_NEG)) {
+		// This is an analog control
+		item.take(CC_bind(CID_JOY0, primary, CCF_AXIS), 0);
+		item.take(CC_bind(CID_MOUSE, secondary, CCF_AXIS), 1);
+
+	} else {
+		// This is a digital control
+		item.take(CC_bind(CID_KEYBOARD, primary), 0);
+		item.take(CC_bind(CID_JOY0, secondary), 1);
+	}
 
 	// Assign the UI members
 	item.text.assign(text);
