@@ -135,7 +135,37 @@ ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets
 	return AxisInverted_sub(JOY_Z_AXIS, L);
 }
 
-ADE_FUNC(AxisInverted, l_Mouse, "int Joy, int axis, boolean inverted", "Gets or sets the given Joystick axis inversion state", "boolean", "True/false")
+ADE_FUNC(AxisActionInverted, l_Mouse, "int IoActionId, boolean inverted", "Gets or sets whether the given axis action is inverted", "boolean", "True/false")
+{
+	// z64: If so desired, it may be possible to have two inversion states, one set by the player in the config menu,
+	//   and one set by scripting.  Essentially, the CCI will have its own inversion flag in addition to the inversion
+	//   flags to both bindings.  Thus, its possible for the player to invert one binding while keeping the other
+	//   binding normal instead of having the script try to set each bind's inversion state individually.
+	int AxisAction = CCFG_MAX;
+	bool inverted;
+
+	int n = ade_get_args(L, "i|b", &AxisAction, &inverted);
+
+	if (n==0)
+		return ade_set_error(L, "b", false);	// no arguments passed
+
+	if ((AxisAction < JOY_HEADING_AXIS) || (JOY_REL_THROTTLE_AXIS <= AxisAction))
+		return ade_set_error(L, "b", false);	// invalid IoActionId
+
+	auto& item = Control_config[AxisAction];
+
+	if (n > 1)
+	{
+		item.invert(inverted);
+	}
+
+	if (item.is_inverted())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(AxisInverted, l_Mouse, "int cid, int axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state", "boolean", "True/false")
 {
 	int joy = CID_NONE;
 	int axis = -1;
@@ -145,8 +175,11 @@ ADE_FUNC(AxisInverted, l_Mouse, "int Joy, int axis, boolean inverted", "Gets or 
 	if (n == 0)
 		return ade_set_error(L, "b", false);	// no arguments passed
 
-	if ((joy < CID_JOY0) || (CID_JOY_MAX <= joy))
+	if ((joy < CID_JOY0) || (CID_JOY_MAX <= joy) || (joy != CID_MOUSE))
 		return ade_set_error(L, "b", false);	// Invalid cid
+
+	if ((axis < 0) || (axis > JOY_NUM_AXES))
+		return ade_set_error(L, "b", false);	// invalid axis
 
 	// Find the binding that has the given joy.
 	// This is a bit obtuse since inversion is on the config side instead of on the joystick side
@@ -166,13 +199,10 @@ ADE_FUNC(AxisInverted, l_Mouse, "int Joy, int axis, boolean inverted", "Gets or 
 
 	if (n > 2)
 	{
-		if (inverted)
-			A->flags |= CCF_AXIS;
-		else
-			A->flags &= ~CCF_AXIS;
+		A->invert(inverted);
 	}
 
-	if (A->flags & CCF_AXIS)
+	if (A->is_inverted())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

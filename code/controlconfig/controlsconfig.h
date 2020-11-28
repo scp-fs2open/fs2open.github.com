@@ -15,14 +15,19 @@
 
 #define CONTROL_CONFIG_XSTR	507
 
+
+#define CCF_AXIS_BTN    0x40    //!< axis is a button on positive side. If also inverted, is on negative side instead
+#define CCF_RELATIVE    0x20    //!< axis is relative
+#define CCF_INVERTED    0x10    //!< axis is inverted
 #define CCF_AXIS        0x08    //!< btn is an axis
-#define CCF_INVERTED    0x04    //!< axis is inverted
+
+
 
 /*!
  * These are used to index a corresponding joystick axis value from an array.
  * Currently only used by ::Axis_map_to[] and ::Axis_map_to_defaults[]
  */
-enum Joy_axis_index {
+enum Joy_axis_index : short {
 	JOY_X_AXIS		=0,
 	JOY_Y_AXIS,
 	JOY_Z_AXIS,
@@ -56,22 +61,6 @@ enum CID : int8_t {
 	CID_JOY3     =  3,  //!< to Joy3 (Head tracker?)
 	
 	CID_JOY_MAX         //!< Maximum supported joysticks, must be last in the enum definition
-};
-
-/*!
- * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
- */
-enum Joy_axis_action_index {
-	JOY_HEADING_AXIS = 0,
-	JOY_PITCH_AXIS,
-	JOY_BANK_AXIS,
-	JOY_ABS_THROTTLE_AXIS,
-	JOY_REL_THROTTLE_AXIS,
-
-	/*!
-	 * This must always be below the last defined item
-	 */
-	NUM_JOY_AXIS_ACTIONS			//!< The total number of actions an axis may map to
 };
 
 /*!
@@ -295,11 +284,27 @@ enum IoActionId  {
 	CUSTOM_CONTROL_4								= 122,
 	CUSTOM_CONTROL_5								= 123,
 
+	//!< @n
+	//!< Analog controls
+	//!<-----------------------------
+	//!< All axis actions must be kept together
+	JOY_HEADING_AXIS								= 124,
+	JOY_PITCH_AXIS									= 125,
+	JOY_BANK_AXIS									= 126,
+	JOY_ABS_THROTTLE_AXIS							= 127,
+	JOY_REL_THROTTLE_AXIS							= 128,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
 };
+
+// Constants for array-based checking for the axis actions.
+// z64: Yes, this is hackish. No I don't really like it.
+const int JOY_AXIS_BEGIN = JOY_HEADING_AXIS;
+const int JOY_AXIS_END = JOY_REL_THROTTLE_AXIS + 1;
+const int NUM_JOY_AXIS_ACTIONS = JOY_AXIS_END - JOY_AXIS_BEGIN;
 
 class CCB;
 
@@ -322,6 +327,9 @@ public:
 
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
+	 *
+	 * @details Not all flags may be necassary for equality, which may require careful bool logic
+	 *   For now, we just have to worry about CCF_AXIS
 	 */
 	bool operator==(const CC_bind &B) const;
 
@@ -364,6 +372,21 @@ public:
 	 * Returns a human-readable string of this binding
 	 */
 	SCP_string textify() const;
+
+	/*!
+	 * Sets the inversion state of this binding according to the passed bool. True = inverted, false = normal
+	 */
+	void invert(bool);
+
+	/*!
+	 * Toggles the inversion state
+	 */
+	void invert_toggle();
+
+	/*!
+	 * Is true if inverted, false otherwise
+	 */
+	bool is_inverted() const;
 };
 
 /*!
@@ -413,6 +436,11 @@ public:
 	void operator=(const CCB&);
 
 	/*!
+	 * Checks if the given CCB is exactly equal to this
+	 */
+	bool operator==(const CCB&);
+
+	/*!
 	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
 	 */
 	bool has_first(const CCB&) const;
@@ -421,6 +449,36 @@ public:
 	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
 	 */
 	bool has_second(const CCB&) const;
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has a binding equal to the given CC_bind, or nullptr if neither
+	 */
+	CC_bind* find(const CC_bind&);
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has a CID equal to the given CID, or nullptr if neither
+	 */
+	CC_bind* find(CID);
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has *all* flags in the given mask
+	 */
+	CC_bind* find_flags(const char);
+
+	/*!
+	 * Sets the inversion state of both bindings
+	 */
+	void invert(bool);
+
+	/*!
+	 * Toggles the inversion state of Primary and copies it to Secondary
+	 */
+	void invert_toggle();
+
+	/*!
+	 * Is true if both bindings are inverted, false otherwise
+	 */
+	bool is_inverted() const;
 };
 
 /*!
@@ -470,6 +528,11 @@ public:
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
 	 */
 	void operator=(const CCB&);
+
+	/*!
+	 * Returns true if this item is analogue or an axis
+	 */
+	bool is_axis();
 };
 
 /*!
@@ -494,9 +557,23 @@ public:
 
 	/*!
 	 * Assigns the hardcoded binding to the given action
+	 *
 	 * @note This differs from the original hardcode from :V: in the hopes of it being more intuitive to future IoAction additions
+	 *
+	 * param[in] action_id  The IoActionId enum associated with the control
+	 * param[in] primary    The btn, key combo, or axis for the default primary binding
+	 * param[in] secondary  The btn, key combo, or axis for the default secondary binding
+	 * param[in] tab        Category tab this control should show up under on the config menu
+	 * param[in] indexXSTR  ID for the XSTR localization utility. 0 for no localization, 1 for automatic lookup, all other values are index for item in strings.tbl
+	 * param[in] text       Label text displayed in the config menu.
+	 * param[in] type       How the control should be treated. see doxy on CC_type for details
+	 * param[in] disabled   If true, this control will not be available in the game.  Controlsconfigdefaults.tbl may override this.  Don't use this to temporarily disable controls in mission.
+	 * 
+	 * @details The CID for the default primary and secondary is determined by the type parameter.
+	 *   If the type is CC_TYPE_TRIGGER or CC_TYPE_CONTINOUS, the primary is assumed to be a key combo and secondary is assumed to be a joy button.
+	 *   If the type is CC_TYPE_AXIS_ABS, CC_TYPE_AXIS_REL, CC_TYPE_AXIS_BTN_POS, or CC_TYPE_AXIS_BTN_NEG, the primary is a Joy0 axis and the secondary is a Mouse axis
 	 */
-	CCI_builder& operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
+	CCI_builder& operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
 
 private:
 	CCI_builder();	// Only one builder per Control Config, so a default constructor is useless
@@ -505,11 +582,6 @@ private:
 
 
 extern int Failed_key_index;
-
-extern CC_bind Axis_map_to[NUM_JOY_AXIS_ACTIONS];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
-extern CC_bind Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS];
-extern int Invert_axis[NUM_JOY_AXIS_ACTIONS];           // Array to hold inversion bools for a joy axis action. size() = NUM_JOY_AXIS_ACTIONS
-extern int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS];
 
 extern int Joy_dead_zone_size;
 extern int Joy_sensitivity;
@@ -636,15 +708,15 @@ int check_control(int id, int key = -1);
 /**
  * @brief Gets the scaled reading for all control axes.
  *
- * @param[out] h  heading
- * @param[out] p pitch
- * @param[out] b bank
- * @param[out] ta Throttle - Absolute
- * @param[out] tr Throttle - Relative
+ * @param[in]   frametime   Frametime used to scale the mouse axes
+ * @param[out]  axis_v      Output array of all control axes, must have size of JOY_NUM_AXIS_ACTIONS
  *
- * @note None of the input pointers may be nullptr
+ * @details
+ * * Clamps output to stay within +/-JOY_AXIS_RANGE.
+ * * Should multiple axes be bound to a control, their values are blended with a simple sum.  This is to save a bit of
+ *   processing for speed.
  */
-void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
+void control_get_axes_readings(int *axis_v, float frame_time);
 
 /**
  * @brief Markes the given control (by IoActionId) as used

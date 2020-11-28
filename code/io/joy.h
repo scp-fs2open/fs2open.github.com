@@ -332,8 +332,9 @@ namespace io
 }
 
 const int JOY_AXIS_MIN = 0;
-const int JOY_AXIS_CENTER = 32768;
+const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXIS_MIN) / 2)
 const int JOY_AXIS_MAX = 65536;
+const int JOY_AXIS_RANGE = (JOY_AXIS_MAX - JOY_AXIS_MIN) / 2;	// Currently equal to JOY_AXIS_CENTER
 
 int joystick_read_raw_axis(short cid, int num_axes, int *axis);
 
