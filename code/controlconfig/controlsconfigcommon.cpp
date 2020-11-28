@@ -143,9 +143,9 @@ void control_config_common_init_bindings() {
 	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER, true)
 
 	// flight controls (axes)
-	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_ABS)
-	(JOY_PITCH_AXIS,                       JOY_Y_AXIS, MOUSE_Y_AXIS, SHIP_TAB, 1017, "Pitch Axis",             CC_TYPE_AXIS_ABS)
-	(JOY_BANK_AXIS,                                -1,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_ABS)
+	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
+	(JOY_PITCH_AXIS,                       JOY_Y_AXIS, MOUSE_Y_AXIS, SHIP_TAB, 1017, "Pitch Axis",             CC_TYPE_AXIS_REL)
+	(JOY_BANK_AXIS,                                -1,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_REL)
 	(JOY_ABS_THROTTLE_AXIS,               JOY_RX_AXIS,           -1, SHIP_TAB, 1019, "Absolute Throttle Axis", CC_TYPE_AXIS_ABS)
 	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
 
