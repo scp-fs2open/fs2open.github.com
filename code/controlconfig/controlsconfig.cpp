@@ -1058,11 +1058,8 @@ void control_config_toggle_invert()
 	CCI& item = Control_config[z];
 
 	// Only toggle inversion state for axis types
-	Assert((item.type == JOY_HEADING_AXIS) ||
-		   (item.type == JOY_PITCH_AXIS) ||
-		   (item.type == JOY_BANK_AXIS) ||
-		   (item.type == JOY_ABS_THROTTLE_AXIS) ||
-		   (item.type == JOY_PITCH_AXIS));
+	Assert((item.type == CC_TYPE_AXIS_ABS) ||
+		   (item.type == CC_TYPE_AXIS_REL));
 
 	
 	Undo_controls.save(item);
