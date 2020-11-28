@@ -597,8 +597,8 @@ void pilotfile::plr_write_controls()
 	}
 	handler->endArrayWrite();
 
-	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+	handler->startArrayWrite("axes", Action::NUM_VALUES);
+	for (size_t idx = 0; idx < Action::NUM_VALUES; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
 		handler->writeInt("axis_map", static_cast<short>(Control_config[idx + JOY_AXIS_BEGIN].first.btn));	// ignores CID and secondary currently

@@ -1687,9 +1687,8 @@ void control_config_do_frame(float frametime)
 	int i; // generic index
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
-	int j; // polled joy button
-	int joy;	// polled joystick id
-	int a; // polled joy axis
+	int j = -1; // polled joy button
+	int joy = -1;	// polled joystick id
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
@@ -2302,7 +2301,7 @@ void control_config_do_frame(float frametime)
 
 float check_control_timef(int id)
 {
-	float t1, t2, t3, t4, t5;
+	float t1, t2, t3;
 
 	// if type isn't continuous, we shouldn't be using this function, cause it won't work.
 	Assert(Control_config[id].type == CC_TYPE_CONTINUOUS);
@@ -2472,6 +2471,11 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	float factor = 0.0f;
 
 	Assert(axis_v != nullptr);
+
+	// Init output
+	for (int action = 0; action < Action::NUM_VALUES; ++action) {
+		axis_v[action] = 0;
+	}
 
 	// Read raw sticks.
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {

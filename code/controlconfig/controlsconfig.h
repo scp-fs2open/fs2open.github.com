@@ -15,13 +15,12 @@
 
 #define CONTROL_CONFIG_XSTR	507
 
-
 #define CCF_AXIS_BTN    0x40    //!< axis is a button on positive side. If also inverted, is on negative side instead
 #define CCF_RELATIVE    0x20    //!< axis is relative
 #define CCF_INVERTED    0x10    //!< axis is inverted
 #define CCF_AXIS        0x08    //!< btn is an axis
-
-
+#define CCF_HAT         0x04    //!< btn is a hat
+#define CCF_BALL        0x02    //!< btn is a ball
 
 /*!
  * These are used to index a corresponding joystick axis value from an array.
@@ -300,11 +299,27 @@ enum IoActionId  {
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
 };
 
-// Constants for array-based checking for the axis actions.
+// Constants for array-based checking (within Control_config) for the axis actions.
 // z64: Yes, this is hackish. No I don't really like it.
 const int JOY_AXIS_BEGIN = JOY_HEADING_AXIS;
 const int JOY_AXIS_END = JOY_REL_THROTTLE_AXIS + 1;
 const int NUM_JOY_AXIS_ACTIONS = JOY_AXIS_END - JOY_AXIS_BEGIN;
+
+/*!
+ * @brief Enum for indexing into axis action arrays.
+ * @note Keep this up to date with JOY_HEADING_AXIS and friends.  Pay attention to their order and copy to here
+ */
+namespace Action {
+enum {
+	HEADING = 0,
+	PITCH,
+	BANK,
+	ABS_THROTTLE,
+	REL_THROTTLE,
+
+	NUM_VALUES
+};
+}
 
 class CCB;
 
