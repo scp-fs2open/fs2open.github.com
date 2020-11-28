@@ -466,9 +466,7 @@ selItem operator--(selItem& item, int) {
 
 static int joy_get_unscaled_reading(int raw)
 {
-	int rng;
-
-	rng = JOY_AXIS_MAX - JOY_AXIS_MIN;
+	const int rng = JOY_AXIS_MAX - JOY_AXIS_MIN;
 	raw -= JOY_AXIS_MIN;  // adjust for linear range starting at 0
 
 	// cap at limits
@@ -1710,7 +1708,9 @@ void control_config_do_frame(float frametime)
 		}
 
 		// Poll for joy btn presses
-		for (joy = CID_JOY0; joy < CID_JOY_MAX; joy++) {
+		// Stop polling all joys if a btn was detected
+		bool found = false;
+		for (joy = CID_JOY0; (joy < CID_JOY_MAX); joy++) {
 			if (!joy_present(joy)) {
 				continue;
 			}
@@ -1719,8 +1719,13 @@ void control_config_do_frame(float frametime)
 					// btn is down, save it in j and joy
 					// Cancel axis bind if any button is pressed
 					bind = true;
+					found = true;
 					break;
 				}
+			}
+
+			if (found) {
+				break;
 			}
 		}
 
@@ -1863,12 +1868,18 @@ void control_config_do_frame(float frametime)
 		Ui_window.process(0);
 
 		// Poll for joy buttons
+		bool found = false;
 		for (joy = CID_JOY0; joy < CID_JOY_MAX; ++joy) {
 			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
 				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
 					// btn is down, save it in joy and j
+					found = true;
 					break;
 				}
+			}
+
+			if (found) {
+				break;
 			}
 		}
 
@@ -2460,12 +2471,104 @@ int check_control(int id, int key)
 	return 0;
 }
 
+/**
+ * Inverts the given raw axis value according to the action type
+ *
+ * @param[in]       inv     True for invert, False for noram
+ * @param[in]       type    Type of the axis value to invert, determines method of inversion
+ * @param[in,out]   val     raw axis value in, maybe inverted axis value out
+ */
+inline
+void maybe_invert(bool inv, CC_type type, int &val)
+{
+	if (!inv) {
+		return;
+	}
+
+	switch (type) {
+	case CC_TYPE_AXIS_ABS:
+		// Abs uses full range, 0 to 1
+		val = F1_0 - val;
+		break;
+
+	case CC_TYPE_AXIS_REL:
+		// Rel is centered around 0; range -1 to 1
+		val *= -1;
+		break;
+
+	default:
+		// ignore all others
+		break;
+	}
+}
+
+/*!
+ * Scales, and maybe inverts, the input axis values
+ *
+ * @param[in]   bind        The control's binding to check
+ * @param[in]   action      index into axis_out of the action
+ * @param[in]   type        CC_type of the control
+ * @param[in]   frame_time  Current frame time, used to scale mouse axis
+ * @param[in]   axis_in[][] Array of raw axis values
+ * @param[out]  axis_out    Output array of the scaled axes
+ *
+ * @note C++ doesn't like passing multi-dim arrays as arguments
+ */
+void scale_invert(const CC_bind &bind,
+				int action,
+				CC_type type,
+				float frame_time,
+				int (&axis_in)[CID_JOY_MAX + 1][JOY_NUM_AXES],
+				int *axis_out)
+{
+	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
+	float factor = 0.0f;
+	int dx = 0;
+
+	switch (bind.cid) {
+	case CID_MOUSE:
+		factor = (float)Mouse_sensitivity + 1.77f;
+		factor = factor * factor / frame_time / 0.6f;
+		if (!Use_mouse_to_fly) {
+			return;
+		}
+
+		dx = axis_in[MOUSE_ID][bind.btn];
+		maybe_invert(bind.is_inverted(), type, dx);
+		axis_out[action] += (int)((float)dx * factor);
+		break;
+
+	case CID_JOY0:
+	case CID_JOY1:
+	case CID_JOY2:
+	case CID_JOY3:
+		switch (type) {
+		case CC_TYPE_AXIS_ABS:
+			dx = joy_get_unscaled_reading(axis_in[bind.cid][bind.btn]);
+			break;
+
+		case CC_TYPE_AXIS_REL:
+		case CC_TYPE_AXIS_BTN_NEG:
+		case CC_TYPE_AXIS_BTN_POS:
+		default:
+			dx = joy_get_scaled_reading(axis_in[bind.cid][bind.btn]);
+			break;
+		}
+		
+		maybe_invert(bind.is_inverted(), type, dx);
+		axis_out[action] += dx;
+		break;
+
+	default:
+		// All others, ignore
+		break;
+	}
+}
+
 void control_get_axes_readings(int *axis_v, float frame_time)
 {
 	int axe[CID_JOY_MAX + 1][JOY_NUM_AXES] = {0};
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
-	int dx = 0;
-	float factor = 0.0f;
 
 	Assert(axis_v != nullptr);
 
@@ -2481,83 +2584,22 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 
 	// Read raw mouse, stuff in axes_values[0]
 	if (Use_mouse_to_fly) {
-		factor = (float)Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
-
 		mouse_get_delta(&axe[MOUSE_ID][JOY_X_AXIS], &axe[MOUSE_ID][JOY_Y_AXIS], &axe[MOUSE_ID][JOY_Z_AXIS]);
 	}
 
-	for (int action = 0; action < NUM_JOY_AXIS_ACTIONS; ++action) {
+	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		CCI & item = Control_config[action + JOY_AXIS_BEGIN];
 
 		// Assume actions are all axis actions, no need to check
 		// Assumes all axes are uniquely bound to an action
 		// Process first
 		if (!item.first.empty()) {
-			switch (item.first.cid) {
-			case CID_MOUSE:
-				if (!Use_mouse_to_fly) {
-					continue;
-				}
-
-				dx = axe[MOUSE_ID][item.first.btn];
-				if (item.first.is_inverted()) {
-					dx *= -1;
-				}
-
-				axis_v[action] += (int)((float)dx * factor);
-				break;
-
-			case CID_JOY0:
-			case CID_JOY1:
-			case CID_JOY2:
-			case CID_JOY3:
-				dx = joy_get_scaled_reading(axe[item.first.cid][item.first.btn]);
-				if (item.first.is_inverted()) {
-					dx *= -1;
-				}
-				axis_v[action] += dx;
-				break;
-
-			default:
-				// All others, ignore
-				break;
-			}
+			scale_invert(item.first, action, item.type, frame_time, axe, axis_v);
 		}
 
-		// Process second.  Is copy pasta of above
+		// Process second.
 		if (!item.second.empty()) {
-			switch (item.second.cid) {
-			case CID_MOUSE:
-				if (!Use_mouse_to_fly) {
-					continue;
-				}
-
-				dx = axe[MOUSE_ID][item.second.btn];
-				if (item.second.is_inverted()) {
-					dx *= -1;
-				}
-
-				axis_v[action] += (int)((float)dx * factor);
-				CLAMP(axis_v[action], -JOY_AXIS_RANGE, JOY_AXIS_RANGE);
-				break;
-
-			case CID_JOY0:
-			case CID_JOY1:
-			case CID_JOY2:
-			case CID_JOY3:
-				dx = joy_get_scaled_reading(axe[item.second.cid][item.second.btn]);
-				if (item.second.is_inverted()) {
-					dx *= -1;
-				}
-				axis_v[action] += dx;
-				CLAMP(axis_v[action], -JOY_AXIS_RANGE, JOY_AXIS_RANGE);
-				break;
-
-			default:
-				// All others, ignore
-				break;
-			}
+			scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
 		}
 	}
 }
