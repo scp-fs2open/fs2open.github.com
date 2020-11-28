@@ -144,7 +144,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 	float   u = 0;
 
 	// Analog inputs
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	float h = 0.0f;
 	float p = 0.0f;
 
@@ -219,8 +219,8 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 		control_get_axes_readings(axis, flRealframetime);
 
 		// Does the same thing as t and u but for the joystick input 
-		h = f2fl(axis[JOY_HEADING_AXIS]);
-		p = -f2fl(axis[JOY_PITCH_AXIS]);
+		h = f2fl(axis[Action::HEADING]);
+		p = -f2fl(axis[Action::PITCH]);
 	}
 
 	// Combine Analog and Digital slew commands
@@ -539,7 +539,7 @@ void player_control_reset_ci( control_info *ci )
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
@@ -743,15 +743,15 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			// Player has control of the ship
 			// Set heading
 			if ( check_control(BANK_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_HEADING_AXIS] );
+				delta = f2fl( axis[Action::HEADING] );
 				if ( (delta > 0.05f) || (delta < -0.05f) ) {
 					ci->bank -= delta;
 				}
 			} else {
-				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
+				ci->heading += f2fl( axis[Action::HEADING] );
 			}
 			// Set pitch
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			ci->pitch -= f2fl( axis[Action::PITCH] );
 
 		} else {
 			// Player has control of the camera
@@ -760,11 +760,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// Set bank
-		ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
+		ci->bank -= f2fl( axis[Action::BANK] ) * 1.5f;
 
-		// axis 2 is for throttle
 		if (!Control_config[JOY_ABS_THROTTLE_AXIS].empty()) {
-			scaled = (float) axis[JOY_ABS_THROTTLE_AXIS] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
+			scaled = (float) axis[Action::ABS_THROTTLE] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
 
 			newspeed = (1.0f - scaled) * 100.0f;
@@ -777,8 +776,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
-		if (!Control_config[JOY_REL_THROTTLE_AXIS].empty())
-			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
+		if (!Control_config[Action::REL_THROTTLE].empty())
+			ci->forward_cruise_percent += f2fl(axis[Action::REL_THROTTLE]) * 100.0f * frame_time;
 
 		CLAMP(ci->forward_cruise_percent, 0, 100);
 
