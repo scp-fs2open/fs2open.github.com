@@ -2005,10 +2005,10 @@ void control_config_do_frame(float frametime)
 			}
 
 			// If not done, Find the control bound to the given joy
-			if ((z < 0) && (j < JOY_NUM_BUTTONS)) {
+			if ((z < 0) && (j < JOY_TOTAL_BUTTONS)) {
 				for (i = 0; i < Control_config.size(); ++i) {
-					if (Control_config[i].first == CC_bind(CID_JOY0, k) ||
-						Control_config[i].second == CC_bind(CID_JOY0, k)) {
+					if (Control_config[i].first == CC_bind(CID_JOY0, j) ||
+						Control_config[i].second == CC_bind(CID_JOY0, j)) {
 						z = i;
 						break;
 					}
