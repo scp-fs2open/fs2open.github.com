@@ -1212,5 +1212,5 @@ bool joy_present(short cid) {
 		return false;
 	}
 
-	return pJoystick[cid] == nullptr;
+	return pJoystick[cid] != nullptr;
 }
