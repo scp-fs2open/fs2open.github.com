@@ -351,7 +351,7 @@ void setPlayerJoystick(Joystick *stick, short cid)
 
 	if (pJoystick[cid] != nullptr)
 	{
-		mprintf(("  Using '%s' as joystick %i\n", pJoystick[cid]->getName().c_str(), cid));
+		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
 		mprintf(("\n"));
 		mprintf(("  Number of axes: %d\n", pJoystick[cid]->numAxes()));
 		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
