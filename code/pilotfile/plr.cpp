@@ -562,8 +562,7 @@ void pilotfile::plr_read_controls()
 	}
 
 	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++) {
-		handler->nextArraySection();
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		// Primary
 		cid = handler->readByte("cid-1");
 		flags =handler->readByte("flags-1");
