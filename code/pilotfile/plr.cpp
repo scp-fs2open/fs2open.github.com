@@ -552,9 +552,44 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	short id1, id2;
-	int axi, inv;
+	int8_t cid;
+	int8_t flags;
+	int16_t btn;
 
+	if (version < 3) {
+		// Don't read old controls for now.
+		return;
+	}
+
+	auto list_size = handler->startArrayRead("controls", true);
+	for (size_t idx = 0; idx < list_size; idx++) {
+		handler->nextArraySection();
+		// Primary
+		cid = handler->readByte("cid-1");
+		flags =handler->readByte("flags-1");
+		btn  = handler->readShort("btn-1");
+
+		if (idx < Control_config.size()) {
+			// Assign the control, else, silently slice out custom controls from other mods
+			cid_assign(Control_config[idx].first.cid, cid);
+			Control_config[idx].first.flags = flags;
+			Control_config[idx].first.btn = btn;
+		}
+
+		// Secondary
+		cid = handler->readByte("cid-2");
+		flags = handler->readByte("flags-2");
+		btn = handler->readShort("btn-2");
+
+		if (idx < Control_config.size()) {
+			cid_assign(Control_config[idx].second.cid, cid);
+			Control_config[idx].second.flags = flags;
+			Control_config[idx].second.btn = btn;
+		}
+	}
+	handler->endArrayRead();
+
+	/* Old read method. Temporarily commented out until compatibility code is made
 	auto list_size = handler->startArrayRead("controls", true);
 	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		id1 = handler->readShort("key");
@@ -579,6 +614,7 @@ void pilotfile::plr_read_controls()
 		}
 	}
 	handler->endArrayRead();
+	*/
 }
 
 void pilotfile::plr_write_controls()
@@ -590,21 +626,17 @@ void pilotfile::plr_write_controls()
 	for (size_t idx = 0; idx < Control_config.size(); idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", Control_config[idx].get_btn(CID_JOY0));
-		// placeholder? for future mouse_id?
-		handler->writeShort("mouse", -1);
+		const auto &item = Control_config[idx];
 
-		handler->endSectionWrite();
-	}
-	handler->endArrayWrite();
+		// Primary
+		handler->writeUByte("cid-1", item.first.cid);
+		handler->writeUByte("flags-1", item.first.flags);
+		handler->writeShort("btn-1", item.first.btn);
 
-	handler->startArrayWrite("axes", Action::NUM_VALUES);
-	for (size_t idx = 0; idx < Action::NUM_VALUES; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
-
-		handler->writeInt("axis_map", static_cast<short>(Control_config[idx + JOY_AXIS_BEGIN].first.btn));	// ignores CID and secondary currently
-		handler->writeInt("invert_axis", Control_config[idx + JOY_AXIS_BEGIN].is_inverted());
+		// Secondary
+		handler->writeUByte("cid-2", item.second.cid);
+		handler->writeUByte("flags-2", item.second.flags);
+		handler->writeShort("btn-2", item.second.btn);
 
 		handler->endSectionWrite();
 	}

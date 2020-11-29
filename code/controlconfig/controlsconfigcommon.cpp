@@ -798,6 +798,12 @@ const char *textify_scancode_universal(int code)
 
 void control_config_common_load_overrides();
 
+void cid_assign(CID & A, const short B)
+{
+	Assert((B >= CID_NONE) && (B < CID_JOY_MAX));
+	A = static_cast<CID>(B);
+}
+
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
