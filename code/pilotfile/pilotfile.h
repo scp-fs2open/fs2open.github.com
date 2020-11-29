@@ -30,7 +30,8 @@ static const ubyte PLR_VERSION = 3;
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
 //   5 - save rank to flags for quick access
-static const ubyte CSG_VERSION = 5;
+//   6 - Remove controls save.  Can still read
+static const ubyte CSG_VERSION = 6;
 
 typedef struct index_list_t {
 	SCP_string name;
