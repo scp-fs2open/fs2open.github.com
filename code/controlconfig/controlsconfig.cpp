@@ -555,9 +555,11 @@ CC_bind control_config_detect_axis()
 			if (d > delta) {
 				axis = i;
 				delta = d;
+				goto found_axis;
 			}
 		}
 	}
+	found_axis:;
 
 	if (j == CID_JOY_MAX) {
 		j = CID_NONE;
@@ -1714,7 +1716,6 @@ void control_config_do_frame(float frametime)
 
 		// Poll for joy btn presses
 		// Stop polling all joys if a btn was detected
-		bool found = false;
 		for (joy = CID_JOY0; (joy < CID_JOY_MAX); joy++) {
 			if (!joy_present(joy)) {
 				continue;
@@ -1724,15 +1725,11 @@ void control_config_do_frame(float frametime)
 					// btn is down, save it in j and joy
 					// Cancel axis bind if any button is pressed
 					bind = true;
-					found = true;
-					break;
+					goto bind_find_joy_btn;
 				}
 			}
-
-			if (found) {
-				break;
-			}
 		}
+		bind_find_joy_btn:;
 
 		// TODO Poll for mouse btn presses
 
@@ -1873,20 +1870,15 @@ void control_config_do_frame(float frametime)
 		Ui_window.process(0);
 
 		// Poll for joy buttons
-		bool found = false;
 		for (joy = CID_JOY0; joy < CID_JOY_MAX; ++joy) {
 			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
 				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
 					// btn is down, save it in joy and j
-					found = true;
-					break;
+					goto search_found_joy_btn;
 				}
 			}
-
-			if (found) {
-				break;
-			}
 		}
+		search_found_joy_btn:;
 
 		if (help_overlay_active(Control_config_overlay_id)) {
 			// Help overlay is active.  Reset the Help button state and ignore gadgets
@@ -2038,10 +2030,11 @@ void control_config_do_frame(float frametime)
 			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
 				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
 					// btn is down, save it in j and joy
-					break;
+					goto browse_found_btn;
 				}
 			}
 		}
+		browse_found_btn:;
 
 		if ( help_overlay_active(Control_config_overlay_id) ) {
 			// If the help overlay is active, reset the help button state and ignore gadgets.
