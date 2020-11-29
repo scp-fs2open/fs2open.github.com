@@ -606,6 +606,11 @@ extern char *Joy_axis_text[JOY_NUM_AXES];
 int is_cid_either(CID, const CCB);
 
 /*!
+ * Allows CID to be assigned by a short.  Has Assert to check values
+ */
+void cid_assign(CID&, const short);
+
+/*!
 * @brief initialize common control config stuff - call at game startup after localization has been initialized
 */
 void control_config_common_init();

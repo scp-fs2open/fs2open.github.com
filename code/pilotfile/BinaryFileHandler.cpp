@@ -10,6 +10,9 @@ pilot::BinaryFileHandler::~BinaryFileHandler() {
 	_cfp = nullptr;
 }
 
+void pilot::BinaryFileHandler::writeByte(const char*, std::int8_t value) {
+	cfwrite_char(value, _cfp);
+}
 void pilot::BinaryFileHandler::writeUByte(const char*, std::uint8_t value) {
 	cfwrite_ubyte(value, _cfp);
 }
@@ -94,6 +97,9 @@ void pilot::BinaryFileHandler::endArrayWrite() {
 }
 void pilot::BinaryFileHandler::flush() {
 	cflush(_cfp);
+}
+std::int8_t pilot::BinaryFileHandler::readByte(const char*) {
+	return cfread_char(_cfp);
 }
 std::uint8_t pilot::BinaryFileHandler::readUByte(const char*) {
 	return cfread_ubyte(_cfp);
