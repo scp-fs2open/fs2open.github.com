@@ -1212,24 +1212,6 @@ void pilotfile::csg_read_controls()
 	}
 }
 
-void pilotfile::csg_write_controls()
-{
-	int idx;
-
-	startSection(Section::Controls);
-
-	cfwrite_ushort(CCFG_MAX, cfp);
-
-	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
-		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
-		// placeholder? for future mouse_id?
-		cfwrite_short(-1, cfp);
-	}
-
-	endSection();
-}
-
 void pilotfile::csg_read_cutscenes() {
 	size_t list_size = cfread_uint(cfp);
 
@@ -1637,8 +1619,7 @@ bool pilotfile::save_savefile()
 	csg_write_variables();
 	mprintf(("CSG => Saving:  Settings...\n"));
 	csg_write_settings();
-	mprintf(("CSG => Saving:  Controls...\n"));
-	csg_write_controls();
+	// mprintf(("CSG => Not saving:  Controls...\n"));
 	mprintf(("CSG => Saving:  Cutscenes...\n"));
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));
