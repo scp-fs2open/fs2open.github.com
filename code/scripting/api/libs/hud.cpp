@@ -53,6 +53,24 @@ ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the 
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(HUDDefaultGaugeCount, l_HUD, "number", "Specifies the amount of HUD gauges defined by FSO", "number", "The number of FSO HUD gauges")
+{
+	int amount = default_hud_gauges.size();
+
+	if (!ade_get_args(L, "*|i", &amount))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		hud_disable_except_messages(amount);
+	}
+
+	if (hud_disabled_except_messages())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(setHUDGaugeColor, l_HUD,
          "number gaugeIndex, [number red, number green, number blue, number alpha]",
          "Color used to draw the gauge", "boolean", "If the operation was successful")
@@ -61,15 +79,15 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	int r = 0;
 	int g = 0;
 	int b = 0;
-	int a = 0;
+	int a = 255;
 
 	if(!ade_get_args(L, "i|iiii", &idx, &r, &g, &b, &a))
 		return ADE_RETURN_FALSE;
 
-	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= default_hud_gauges.size()))
 		return ADE_RETURN_FALSE;
 
-	gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, a);
+	default_hud_gauges[idx]->updateColor(r, g, b, a);
 
 	return ADE_RETURN_TRUE;
 }
@@ -82,10 +100,10 @@ ADE_FUNC(getHUDGaugeColor, l_HUD, "number gaugeIndex", "Color used to draw the g
 	if(!ade_get_args(L, "i", &idx))
 		return ADE_RETURN_NIL;
 
-	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
-	color c = HUD_config.clr[idx];
+	color c = default_hud_gauges[idx]->getColor();
 
 	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);
 }
