@@ -180,7 +180,7 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	}
 
 	GUID = os_config_read_string(nullptr, key_guid.c_str(), "");
-	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), 0));
+	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), -1));
 
 	return joystickMatchesGuid(testStick, GUID, Id);
 }
@@ -357,6 +357,7 @@ void setPlayerJoystick(Joystick *stick, short cid)
 		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
 		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
 		mprintf(("  Number of trackballs: %d\n", pJoystick[cid]->numBalls()));
+		mprintf(("\n"));
 	}
 	else
 	{
@@ -502,6 +503,7 @@ bool device_event_handler(const SDL_Event &evt)
 			{
 				if (isPlayerJoystick(addedStick, i))
 				{
+					mprintf(("Joystick %i connected", i));
 					setPlayerJoystick(addedStick, i);
 					break;
 				}
