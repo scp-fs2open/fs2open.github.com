@@ -2432,7 +2432,7 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if ((z == key) ||
+	if (((z >= 0) && (z == key)) ||
 		joy_down_count(item.first, 1) || joy_down_count(item.second, 1) ||
 		mouse_down_count(item.first, 1) || mouse_down_count(item.second, 1)) {
 		//mprintf(("Key used %d\n", key));

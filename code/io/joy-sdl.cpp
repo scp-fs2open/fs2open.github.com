@@ -1138,7 +1138,7 @@ int joystick_read_raw_axis(short cid, int num_axes, int *axis)
 
 float joy_down_time(const CC_bind &bind)
 {
-	int btn = bind.cid;
+	int btn = bind.btn;
 	if (btn < 0) return 0.f;
 
 	auto current = io::joystick::getPlayerJoystick(bind.cid);
