@@ -1996,8 +1996,12 @@ void control_config_do_frame(float frametime)
 			// If not done, Find the control bound to the given key
 			if ((z < 0) && (k > 0)) {
 				for (i=0; i < Control_config.size(); ++i) {
-					if (Control_config[i].first == CC_bind(CID_KEYBOARD, k) ||
-					    Control_config[i].second == CC_bind(CID_KEYBOARD, k)) {
+					if (Control_config[i].first == CC_bind(CID_KEYBOARD, k)) {
+						Selected_item = selItem::Primary;
+						z = i;
+						break;
+					} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, k)) {
+						Selected_item = selItem::Secondary;
 						z = i;
 						break;
 					}
@@ -2007,8 +2011,12 @@ void control_config_do_frame(float frametime)
 			// If not done, Find the control bound to the given joy
 			if ((z < 0) && (j < JOY_TOTAL_BUTTONS)) {
 				for (i = 0; i < Control_config.size(); ++i) {
-					if (Control_config[i].first == CC_bind(CID_JOY0, j) ||
-						Control_config[i].second == CC_bind(CID_JOY0, j)) {
+					if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
+						Selected_item = selItem::Primary;
+						z = i;
+						break;
+					} else if (Control_config[i].second == CC_bind(CID_JOY0, j)) {
+						Selected_item = selItem::Secondary;
 						z = i;
 						break;
 					}
@@ -2028,8 +2036,12 @@ void control_config_do_frame(float frametime)
 					if (mouse_down(1 << j)) {
 						// Find the control bound to the given mouse button (as joy button)
 						for (i = 0; i < Control_config.size(); ++i) {
-							if (Control_config[i].first == CC_bind(CID_JOY0, j) ||
-							    Control_config[i].second == CC_bind(CID_JOY0, j)) {
+							if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
+								Selected_item = selItem::Primary;
+								z = i;
+								break;
+							} else if (Control_config[i].second == CC_bind(CID_JOY0, j)) {
+								Selected_item = selItem::Secondary;
 								z = i;
 								break;
 							}
