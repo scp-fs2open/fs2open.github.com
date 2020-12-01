@@ -57,18 +57,7 @@ ADE_VIRTVAR(HUDDefaultGaugeCount, l_HUD, "number", "Specifies the amount of HUD 
 {
 	int amount = (int)default_hud_gauges.size();
 
-	if (!ade_get_args(L, "*|i", &amount))
-		return ADE_RETURN_NIL;
-
-	if (ADE_SETTING_VAR)
-	{
-		hud_disable_except_messages(amount);
-	}
-
-	if (hud_disabled_except_messages())
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
+	return ade_set_args(L, "i", amount);
 }
 
 ADE_FUNC(setHUDGaugeColor, l_HUD,
