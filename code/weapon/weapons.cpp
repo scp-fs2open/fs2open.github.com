@@ -1616,7 +1616,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
 	//Disarmed impact sound
-	parse_game_sound("$Disarmed ImpactSnd:", &wip->impact_snd);
+	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
 
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
 
