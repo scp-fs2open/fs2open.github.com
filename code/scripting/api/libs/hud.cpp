@@ -121,7 +121,7 @@ ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
 	if(!ade_get_args(L, "i|iiii", &idx, &r, &g, &b, &a))
 		return ADE_RETURN_FALSE;
 
-	if ((idx < 0) || (idx >= default_hud_gauges.size()))
+	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_FALSE;
 
 	default_hud_gauges[idx]->updateColor(r, g, b, a);
@@ -137,7 +137,7 @@ ADE_FUNC(getHUDGaugeColorInMission, l_HUD, "number gaugeIndex", "Color currently
 	if(!ade_get_args(L, "i", &idx))
 		return ADE_RETURN_NIL;
 
-	if ((idx < 0) || (idx >= default_hud_gauges.size()))
+	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
 	color c = default_hud_gauges[idx]->getColor();
