@@ -350,6 +350,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -9517,7 +9518,7 @@ int eval_cond(int n)
 
 // Goober5000
 // NOTE: if you change this function, check to see if the following function should also be changed!
-int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
 	int val, num_valid_arguments;
 	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
@@ -9587,12 +9588,14 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		n = CDR(n);
 	}
 
+	int count = 0;
 	// now we write from the temporary store into the real one, reversing the order. We do this because 
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
-	while (!Applicable_arguments_temp.empty())
+	while (!Applicable_arguments_temp.empty() && (threshold == -1 || count < threshold))
 	{
 		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
 		Applicable_arguments_temp.pop_back(); 
+		++count;
 	}
 
 	return num_valid_arguments;
@@ -10089,6 +10092,38 @@ int eval_for_players(int arg_handler_node, int condition_node)
 		return SEXP_FALSE;
 }
 
+// MageKing17 - this is sort of a cross between any-of, number-of, and in-sequence
+int eval_first_of(int arg_handler_node, int condition_node)
+{
+	bool is_nan, is_nan_forever;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// the arguments should just be data, not operators, so we can skip the CAR
+	n = CDR(arg_handler_node);
+
+	// the first argument is the number threshold
+	threshold = eval_num(n, is_nan, is_nan_forever);
+	n = CDR(n);
+
+	// test the whole argument list
+	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false, threshold);
+
+	// we check for NaN after the conditions are evaluated, just as the logical operators evaluate all their conditions
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
 void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
@@ -10282,6 +10317,7 @@ bool is_blank_of_op(int op_const)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FIRST_OF:
 			return true;
 
 		default:
@@ -23662,6 +23698,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_for_players( cur_node, referenced_node );
 				break;
 
+			// MageKing17
+			case OP_FIRST_OF:
+				sexp_val = eval_first_of( cur_node, referenced_node );
+				break;
+
 			// Karajorma
 			case OP_INVALIDATE_ALL_ARGUMENTS:
 			case OP_VALIDATE_ALL_ARGUMENTS:
@@ -26377,6 +26418,7 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FIRST_OF:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default: {
@@ -27094,6 +27136,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
+		case OP_FIRST_OF:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
@@ -31421,6 +31464,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
+
+	// MageKing17
+	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Up to [number] of the supplied arguments can satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used. Essentially the same as any-of, but with a cap on the number of arguments that can be evaluated in a single call.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tMaximum number of arguments that can be evaluated in a call.\r\n"
+		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
