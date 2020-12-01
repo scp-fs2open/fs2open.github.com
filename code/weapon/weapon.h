@@ -306,6 +306,8 @@ struct weapon_info
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
+	float	damage_incidence_max;
+	float	damage_incidence_min;
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
