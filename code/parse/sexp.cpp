@@ -18313,7 +18313,7 @@ void sexp_turret_change_weapon(int node)
 	}
 	else if (sec_slot)
 	{
-		if (sec_slot > MAX_SHIP_PRIMARY_BANKS) {
+		if (sec_slot > MAX_SHIP_SECONDARY_BANKS) {
 			return;
 		}
 
