@@ -538,6 +538,11 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
+ const color& HudGauge::getColor()
+{
+	return gauge_color;
+}
+
 void HudGauge::updateActive(bool show)
 {
 	active = show;
