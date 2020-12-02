@@ -784,4 +784,68 @@ const char * mValToAction(IoActionId id);
  * @return nullptr if not found, or invalid id
  */
 const char * mValToAction(int id);
+
+/**
+ * Reverse lookups the CID to get its stringified name
+ * @return  Pointer to the stringified name of the CID, or
+ * @return  nullptr if not found
+ */
+const char * mValToCID(CID id);
+
+/**
+ * Reverse lookups the CID to get its stringified name
+ * @return Pointer to the stringified name of the CID, or
+ * @return nullptr if not found, or invalid id
+ */
+const char * mValToCID(int id);
+
+/**
+ * Constructs a enum string from the CCF_FLAGS
+ * @return Pointer to the stringified name of the CCF, or
+ * @return nullptr if not found, or invalid id
+ */
+SCP_string mValToCCF(char id);
+
+/**
+ * Constructs a enumstring from the input binding, depending on the CID
+ *
+ * @return Pointer to the stringified name of the input, or
+ * @return nullptr if not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ */
+SCP_string mValToInput(const CC_bind &bind);
+
+/**
+ * Constructs a enum string from the mouse input
+ *
+ * @return Pointer to the stringified name of the input, or
+ * @return nullptr if not found, or invalid CC_bind
+ * TODO XSTR
+ *
+ * @note This requires a CCB due to the way things are encoded
+ */
+SCP_string mValToMouse(const CC_bind &bind);
+
+/**
+ * Constructs an enum string from the key binding
+ *
+ * @return Pointer to the stringified name of the input, or
+ * @return nullptr if not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ * TODO XSTR
+ */
+SCP_string mValToKeyboard(const CC_bind &bind);
+
+/**
+ * Constructs a enum string from the Joystick input
+ *
+ * @return Pointer to the stringified name of the input, or
+ * @return nullptr if not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ * TODO XSTR
+ */
+SCP_string mValToJoy(const CC_bind &bind);
 #endif
