@@ -81,7 +81,7 @@ enum CC_type {
  *
  * Note: Do not adjust the order or numeric value
  */
-enum IoActionId  {
+enum IoActionId : int {
 	TARGET_NEXT										=0,		//!< target next
 	TARGET_PREV										=1,		//!< target previous
 	TARGET_NEXT_CLOSEST_HOSTILE						=2,		//!< target the next hostile target
@@ -609,6 +609,8 @@ extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 extern char *Joy_axis_text[JOY_NUM_AXES];
 
+extern SCP_map<SCP_string, short> mKeyNameToVal;	// Map used to translate stringified Key names into key value
+extern SCP_map<SCP_string, IoActionId> mActionToVal;	// Map used to translate stringified action names into IoActionId
 /*!
  * @brief Checks if either binding in the CCB has the given cid
  *
@@ -769,4 +771,17 @@ void control_config_clear_used_status();
  */
 int joy_get_scaled_reading(int raw);
 
+/**
+ * Reverse lookups the IoActionId to get its stringified name
+ * @return  Pointer to the stringified name of the action, or
+ * @return  nullptr if not found
+ */
+const char * mValToAction(IoActionId id);
+
+/**
+ * Reverse lookups the IoActionId to get its stringified name
+ * @return Pointer to the stringified name of the action, or
+ * @return nullptr if not found, or invalid id
+ */
+const char * mValToAction(int id);
 #endif

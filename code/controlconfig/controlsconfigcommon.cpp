@@ -1525,6 +1525,25 @@ void control_config_common_load_overrides()
 	}
 }
 
+const char * mValToAction(IoActionId id) {
+	auto it = std::find_if(mActionToVal.cbegin(), mActionToVal.cend(), [id](const auto& pair) {return pair.second == id;} );
+	
+	if (it == mActionToVal.cend()) {
+		return nullptr;
+	} else {
+		return it->first.c_str();
+	}
+	
+}
+
+const char * mValToAction(int id) {
+	if ((id < 0) && (id >= Control_config.size())) {
+		return nullptr;
+	}
+
+	return mValToAction(static_cast<IoActionId>(id));
+}
+
 CC_bind CC_bind::operator=(const CC_bind &A)
 {
 	cid = A.cid;
