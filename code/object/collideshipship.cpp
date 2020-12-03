@@ -108,7 +108,7 @@ static int bay_emerge_or_depart(object *heavy_objp, object *light_objp)
 	return 0;
 }
 
-int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *hitpos)
+int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 {
 	object *heavy_obj	= ship_ship_hit_info->heavy;
 	object *light_obj = ship_ship_hit_info->light;
@@ -1148,7 +1148,7 @@ int collide_ship_ship( obj_pair * pair )
 
 		vec3d world_hit_pos;
 
-		hit = ship_ship_check_collision(&ship_ship_hit_info, &world_hit_pos);
+		hit = ship_ship_check_collision(&ship_ship_hit_info);
 
 		pair->next_check_time = timestamp(0);
 
