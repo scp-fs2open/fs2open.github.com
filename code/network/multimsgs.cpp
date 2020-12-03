@@ -3271,7 +3271,6 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	object *objp;
 	ubyte has_sig = 0;
 	ship_subsys *ssp;
-	short val;
 
 	// sanity
 	if((weapon_objnum < 0) || (Objects[weapon_objnum].type != OBJ_WEAPON) || (Objects[weapon_objnum].instance < 0) || (Weapons[Objects[weapon_objnum].instance].weapon_info_index < 0)){
@@ -3300,11 +3299,10 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	if(has_sig){		
 		ADD_USHORT( objp->net_signature );
 	}
+	ADD_SHORT( static_cast<short>(Weapons[objp->instance].weapon_info_index) );
 	ADD_SHORT( static_cast<short>(subsys_index) );
-	val = (short)ssp->submodel_instance_1->angs.h;
-	ADD_SHORT( val );
-	val = (short)ssp->submodel_instance_2->angs.p;
-	ADD_SHORT( val );	
+	ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+	ADD_FLOAT( ssp->submodel_instance_2->angs.p );
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3314,17 +3312,17 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 // process a packet indicating a turret has been fired
 void process_turret_fired_packet( ubyte *data, header *hinfo )
 {
-	int offset, weapon_objnum, wid = -1;
+	int offset, weapon_objnum;
 	ushort pnet_signature, wnet_signature;
 	vec3d pos, temp;
 	matrix orient;
 	vec3d o_fvec;
-	short turret_index;
+	short turret_index, wid;
 	object *objp;
 	ship_subsys *ssp;
 	ubyte has_sig = 0;
 	ship *shipp;
-	short pitch, heading;	
+	float pitch, heading;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3336,10 +3334,16 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	} else {
 		wnet_signature = 0;
 	}
+	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_SHORT( heading );
-	GET_SHORT( pitch );	
+	GET_FLOAT( heading );
+	GET_FLOAT( pitch );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
+
+	// if we don't have a valid weapon index then bail
+	if ( (wid < 0) || (wid >= weapon_info_size()) ) {
+		return;
+	}
 
 	// find the object
 	objp = multi_get_network_object( pnet_signature );
@@ -3364,18 +3368,9 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
-	if (ssp->weapons.num_primary_banks > 0) {
-		wid = ssp->weapons.primary_bank_weapons[0];
-	} else if (ssp->weapons.num_secondary_banks > 0) {
-		wid = ssp->weapons.secondary_bank_weapons[0];
-	}
-
-	if (wid < 0)
-		return;
-
 	// bash the position and orientation of the turret
-	ssp->submodel_instance_1->angs.h = (float)heading;
-	ssp->submodel_instance_2->angs.p = (float)pitch;
+	ssp->submodel_instance_1->angs.h = heading;
+	ssp->submodel_instance_2->angs.p = pitch;
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
@@ -3388,7 +3383,6 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 
 	if (weapon_objnum != -1) {
-		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}		
@@ -8412,7 +8406,6 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	ubyte data[MAX_PACKET_SIZE];
 	object *objp;	
 	ship_subsys *ssp;
-	short val;
 
 	// sanity
 	if((weapon_objnum < 0) || (Objects[weapon_objnum].type != OBJ_WEAPON) || (Objects[weapon_objnum].instance < 0) || (Weapons[Objects[weapon_objnum].instance].weapon_info_index < 0)){
@@ -8433,11 +8426,10 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	BUILD_HEADER(FLAK_FIRED);	
 	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);	
 	ADD_USHORT( pnet_signature );		
+	ADD_SHORT( static_cast<short>(Weapons[Objects[weapon_objnum].instance].weapon_info_index) );
 	ADD_SHORT( static_cast<short>(subsys_index) );
-	val = (short)ssp->submodel_instance_1->angs.h;
-	ADD_SHORT( val );
-	val = (short)ssp->submodel_instance_2->angs.p;
-	ADD_SHORT( val );	
+	ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+	ADD_FLOAT( ssp->submodel_instance_2->angs.p );
 	ADD_FLOAT( flak_range );
 	
 	multi_io_send_to_all(data, packet_size);
@@ -8447,27 +8439,33 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 void process_flak_fired_packet(ubyte *data, header *hinfo)
 {
-	int offset, weapon_objnum, wid = -1;
+	int offset, weapon_objnum;
 	ushort pnet_signature;
 	vec3d pos, dir;
 	matrix orient;
 	vec3d o_fvec;
-	short turret_index;
+	short turret_index, wid;
 	object *objp;
 	ship_subsys *ssp;	
 	ship *shipp;
-	short pitch, heading;
+	float pitch, heading;
 	float flak_range;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
 	offset += multi_pack_unpack_position(0, data + offset, &o_fvec);
 	GET_USHORT( pnet_signature );
+	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_SHORT( heading );
-	GET_SHORT( pitch );	
+	GET_FLOAT( heading );
+	GET_FLOAT( pitch );
 	GET_FLOAT( flak_range );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
+
+	// if we don't have a valid weapon index then bail
+	if ( (wid < 0) || (wid >= weapon_info_size()) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak]) ) {
+		return;
+	}
 
 	// find the object
 	objp = multi_get_network_object( pnet_signature );
@@ -8492,19 +8490,9 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	if (ssp->weapons.num_primary_banks > 0) {
-		wid = ssp->weapons.primary_bank_weapons[0];
-	} else if (ssp->weapons.num_secondary_banks > 0) {
-		wid = ssp->weapons.secondary_bank_weapons[0];
-	}
-
-	if((wid < 0) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak])){
-		return;
-	}
-
 	// bash the position and orientation of the turret
-	ssp->submodel_instance_1->angs.h = (float)heading;
-	ssp->submodel_instance_2->angs.p = (float)pitch;
+	ssp->submodel_instance_1->angs.h = heading;
+	ssp->submodel_instance_2->angs.p = pitch;
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
@@ -8512,7 +8500,6 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// create the weapon object	
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 	if (weapon_objnum != -1) {
-		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
