@@ -2276,6 +2276,10 @@ bool CCB::operator==(const CCB& A) {
 	return (first == A.first) && (second == A.second);
 }
 
+bool CCB::operator!=(const CCB& A) {
+	return !this->operator==(A);
+}
+
 bool CCB::has_first(const CCB& A) const {
 	return !first.empty() && ((first == A.first) || (first == A.second));
 }

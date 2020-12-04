@@ -454,6 +454,11 @@ public:
 	bool operator==(const CCB&);
 
 	/*!
+	 * Checks if the given CCB differs from this
+	 */
+	bool operator!=(const CCB&);
+
+	/*!
 	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
 	 */
 	bool has_first(const CCB&) const;
