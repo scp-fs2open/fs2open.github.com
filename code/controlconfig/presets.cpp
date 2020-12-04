@@ -121,8 +121,25 @@ bool test_read() {
 		}
 		handler->endArrayRead(); // Actions
 
-		// Done with the file, push back the preset
-		Control_config_presets.push_back(preset);
+		// Done with the file
+		bool unique = true;
+		auto it = Control_config_presets.begin();
+		for (; it != Control_config_presets.end(); ++it) {
+			for (size_t i = 0; i < it->bindings.size(); ++i) {
+				if (preset.bindings[i] == it->bindings[i]) {
+					unique = false;
+					goto not_unique;
+				}
+			}
+		}
+		not_unique:;
+
+		if (unique) {
+			Control_config_presets.push_back(preset);
+		} else {
+			Warning(LOCATION, "Preset '%s' is a duplicate of '%s', ignoring", preset.name.c_str(), it->name.c_str());
+		}
+		
 	}
 	return true;
 }
