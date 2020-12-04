@@ -2718,11 +2718,16 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				something_was_ok_to_fire = true;
 				Num_turrets_fired++;
 
+				vec3d* shoot_vector = &v2e;
+				if (tp->flags[Model::Subsystem_Flags::Fire_on_normal])
+					shoot_vector = &gvec;
+
 				//Pass along which gun we are using
+				int wep_to_fire = i;
 				if (tp->flags[Model::Subsystem_Flags::Turret_salvo])
-					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &v2e, &predicted_enemy_pos);
-				else
-					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &v2e, &predicted_enemy_pos);
+					wep_to_fire = 0;
+
+				turret_fire_weapon(valid_weapons[wep_to_fire], ss, parent_objnum, &gpos, shoot_vector, &predicted_enemy_pos);
 			} else {
 				// make sure salvo fire mode does not turn into autofire
 				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
