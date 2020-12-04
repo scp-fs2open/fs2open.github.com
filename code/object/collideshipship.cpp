@@ -1167,7 +1167,12 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!a_override && !b_override)
 			{
-				ship* light_shipp = &Ships[ship_ship_hit_info.heavy->instance];
+				//
+				// Start of a codeblock that was originally taken from ship_ship_check_collision
+				// Moved here to properly handle ship-ship collision overrides and not process their physics when overridden by lua
+				//
+
+				ship *light_shipp = &Ships[ship_ship_hit_info.heavy->instance];
 				ship *heavy_shipp = &Ships[ship_ship_hit_info.heavy->instance];
 
 				object* heavy_obj = ship_ship_hit_info.heavy;
@@ -1243,6 +1248,10 @@ int collide_ship_ship( obj_pair * pair )
 						vm_vec_rotate(&light_obj->phys_info.prev_ramp_vel, &light_obj->phys_info.vel, &light_obj->orient);
 					}
 				}
+
+				//
+				// End of the codeblock that was originally taken from ship_ship_check_collision
+				//
 
 				float		damage;
 
