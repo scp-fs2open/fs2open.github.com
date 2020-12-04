@@ -923,7 +923,7 @@ int control_config_do_reset()
 	int i, total = 0;
 	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 	Undo_stack stack;
-	auto &default_bindings = Control_config_presets[0].bindings;
+	auto &default_bindings = Control_config_presets[Defaults_cycle_pos].bindings;
 
 	// first, determine how many bindings need to be changed
 	for (i = 0; i < CCFG_SIZE; ++i) {
@@ -969,6 +969,7 @@ void control_config_reset_defaults()
 	// Reset all
 	const auto &preset = Control_config_presets[Defaults_cycle_pos].bindings;
 	for (size_t i = 0; i < Control_config.size(); ++i) {
+		// Don't use std::copy here, since the preset may contain more bindings than Control_config
 		Control_config[i].first = preset[i].first;
 		Control_config[i].second = preset[i].second;
 	}
