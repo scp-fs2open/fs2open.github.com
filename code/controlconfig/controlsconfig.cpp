@@ -1224,8 +1224,8 @@ int control_config_accept()
 
 	if (preset_find_duplicate() == Control_config_presets.end()) {
 		// We have a custom preset to save, prompt the user
-		int flags = PF_TITLE_BIG | PF_TITLE_WHITE;
-		auto cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort.", 32);
+		int flags = PF_TITLE_WHITE;
+		auto cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort.", 32 - 6);
 		if (cstr == nullptr) {
 			// Abort
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1239,7 +1239,7 @@ int control_config_accept()
 						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		if (fp) {
 			cfclose(fp);
-			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "Preset '%s' already exists!\n Press OK to overwrite existing preset, or CANCEL to abort", str);
+			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to abort", str.c_str());
 			if ((n == 1) || (n == -1)) {
 				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
