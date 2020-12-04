@@ -10,7 +10,9 @@
 
 
 
+#include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamehelp/contexthelp.h"
@@ -433,6 +435,14 @@ static int Axes_origin[CID_JOY_MAX][JOY_NUM_AXES];
 
 
 void control_config_do_undo();
+
+/**
+ * Checks the current state of Control_config against all known presets.
+ *
+ * @returns An iterator to the preset that's equal to the current Control_config bindings, or
+ * @returns An iterator to Control_config_presets.end() otherwise
+ */
+SCP_vector<CC_preset>::iterator preset_find_duplicate();
 
 // Rotate selItem forwards
 selItem operator++(selItem& item, int) {
@@ -1211,6 +1221,44 @@ int control_config_accept()
 		return -1;
 	}
 
+	if (preset_find_duplicate() == Control_config_presets.end()) {
+		// We have a custom preset to save, prompt the user
+		int flags = PF_TITLE_BIG | PF_TITLE_WHITE;
+		auto cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort.", 32);
+		if (cstr == nullptr) {
+			// Abort
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			return -1;
+		}
+
+		SCP_string str = cstr;
+
+		// Check if a preset file with name already exists.  If so, prompt the user
+		CFILE* fp = cfopen((str + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		if (fp) {
+			cfclose(fp);
+			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "Preset '%s' already exists!\n Press OK to overwrite existing preset, or CANCEL to abort", str);
+			if ((n == 1) || (n == -1)) {
+				// Abort
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				return -1;
+			}
+		}
+
+		// Pack the current bindings into a preset, then save the file
+		CC_preset preset;
+		preset.name = str;
+		std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+		Control_config_presets.push_back(preset);
+		save_preset_file(preset, true);
+
+		// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get consistant ordering
+		Control_config_presets.resize(1);
+		load_preset_files();
+	}
+	
+
 	hud_squadmsg_save_keys();  // rebuild map for saving/restoring keys in squadmsg mode
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1482,43 +1530,55 @@ void control_config_close()
 	Undo_controls.clear();
 }
 
+SCP_vector<CC_preset>::iterator preset_find_duplicate() {
+	// Find the matching preset.
+	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
+	auto it = Control_config_presets.begin();
+	
+	// While a match isn't found, and there more presets to check, do search.
+	for (bool is_match = false; it != Control_config_presets.end(); ++it) {
+		is_match = true;	// Set to true at start of each loop
+
+		for (size_t i = 0; i < Control_config.size(); ++i) {
+			// Check disabled
+			if (Control_config[i].disabled) {
+				// Skip this item
+				continue;
+			}
+
+			// Check Primary
+			if (Control_config[i].first != it->bindings[i].first) {
+				// Isn't a match, stop checking this preset
+				is_match = false;
+				break;
+			}
+
+			// Check Secondary
+			if (Control_config[i].second != it->bindings[i].second) {
+				// Isn't a match, stop checking this preset
+				is_match = false;
+				break;
+			}
+		}
+
+		if (is_match) {
+			// Need to break out before iterator is advanced
+			break;
+		}
+	}
+
+	return it;
+}
+
 /**
  * @brief Display the currently selected preset
  */
 void control_config_draw_selected_preset() {
 	SCP_string preset_str;
-	auto preset_it = Control_config_presets.begin();
 
 	// Find the matching preset.
 	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
-	for (; preset_it != Control_config_presets.end(); ++preset_it) {
-		bool found_match = true;
-
-		// Check digital controls
-		for (size_t i = 0; i < Control_config.size(); ++i) {
-			if (Control_config[i].disabled) {
-				// Skip
-				continue;
-			}
-
-			// Check key
-			if (Control_config[i].first != preset_it->bindings[i].first) {
-				found_match = false;
-				break;
-			}
-
-			// Check Joy
-			if (Control_config[i].second != preset_it->bindings[i].second) {
-				found_match = false;
-				break;
-			}
-		}
-
-
-		if (found_match) {
-			break;
-		}
-	}
+	auto preset_it = preset_find_duplicate();
 
 	if (preset_it != Control_config_presets.end()) {
 		sprintf(preset_str, "Controls: %s", preset_it->name.c_str());

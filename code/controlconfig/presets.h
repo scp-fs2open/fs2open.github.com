@@ -201,6 +201,19 @@ private:
 } // namespace presets
 } // namespace io
 
-bool test_write();
+/**
+ * @brief Saves the given preset to file.
+ * @param[in] preset    The preset to save
+ * @param[in] overwrite If true, overwrite existing preset file which have the same name as the given preset
+ *
+ * @returns True    if successful, or
+ * @returns False   otherwise
+ */
+bool save_preset_file(CC_preset preset, bool overwrite);
 
-bool test_read();
+/**
+ * @brief Loads in all preset .json files from 'players/presets'
+ * @details If a preset file is unique, it is loaded into the game and available for use by the player.  However, if
+ * a preset is a duplicate of another preset, it is ignored, and the player is warned of it
+ */
+void load_preset_files();

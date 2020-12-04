@@ -35,7 +35,7 @@ Section lookupSectionValue(const char* name) {
 	return Section::Invalid;
 }
 
-bool test_read() {
+void load_preset_files() {
 	SCP_vector<SCP_string> filelist;
 	cf_get_file_list(filelist, CF_TYPE_PLAYER_BINDS, NOX("*.json"), CF_SORT_NAME, nullptr,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
@@ -141,26 +141,39 @@ bool test_read() {
 		}
 		
 	}
-	return true;
 }
 
-bool test_write() {
-	SCP_string filename = "testPreset.json";
+bool save_preset_file(CC_preset preset, bool overwrite) {
+	// Must have a name
+	if (preset.name == "") {
+		mprintf(("PST => Unable to save preset, missing name!"));
+		return false;
+	}
+	
+	SCP_string filename = preset.name + ".json";
 	std::unique_ptr<PresetFileHandler> handler = nullptr;
 
-	// " why is the .plr file opening this in wb?
-	CFILE* fp = cfopen(filename.c_str(), "w", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+	// Check if there's a file already
+	CFILE* fp = cfopen(filename.c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
 	                  CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	
-	if (!fp) {
-		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
+	if (!fp && !overwrite) {
+		mprintf(("PST => Unable to save '%s', file already exists!\n", filename.c_str()));
 		return false;
+	}
+
+	// Try opening file for write
+	fp = cfopen(filename.c_str(), "w", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+					   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+
+	if (!fp) {
+		mprintf(("PST => Unable to save '%s', unknown error!\n", filename.c_str()));
 	}
 
 	try {
 		handler.reset(new PresetFileHandler(fp, false));
 	} catch (const std::exception& e) {
-		mprintf(("PLR => Failed to open JSON: %s\n", e.what()));
+		mprintf(("PST => Failed to open JSON: %s\n", e.what()));
 		return false;
 	}
 
@@ -171,8 +184,8 @@ bool test_write() {
 	mprintf(("PST => Saving %s with version %d...\n", filename.c_str(), (int)PST_VERSION));
 
 	handler->beginArrayWrite(Section::Actions, -1);
-	for (auto i = 0; i < Control_config.size(); ++i) {
-		const auto& item = Control_config[i];
+	for (auto i = 0; i < preset.bindings.size(); ++i) {
+		const auto& item = preset.bindings[i];
 		const auto& first = item.first;
 		const auto& second = item.second;
 

@@ -811,13 +811,20 @@ void cid_assign(CID & A, const short B)
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
+	// Init hardcoded bindings
 	control_config_common_init_bindings();
 
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
-
+	
+	// Load controlconfigdefaults.tbl overrides and mod presets
 	control_config_common_load_overrides();
+
+	// load player presets
+	load_preset_files();
+
+	// Init control label localization
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
 		Joy_button_text = Joy_button_text_german;
@@ -831,9 +838,6 @@ void control_config_common_init()
 		Scan_code_text = Scan_code_text_english;
 		Joy_button_text = Joy_button_text_english;
 	}
-
-	//test_write();
-	test_read();
 }
 
 /*
