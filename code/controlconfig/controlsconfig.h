@@ -657,9 +657,14 @@ void control_config_close();
 void control_config_cancel_exit();
 
 /*!
- * @brief Resets all controls to values within the currently selected preset
+ * @brief Copies all bindings within preset into Control_config
  */
-void control_config_reset_defaults();
+void control_config_use_preset(CC_preset &preset);
+
+/**
+ * @brief Gets the currently used preset index
+ */
+size_t control_config_get_current_preset();
 
 /*!
  * Returns the IoActionId of a control bound to the given key

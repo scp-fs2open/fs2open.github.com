@@ -1195,21 +1195,51 @@ void pilotfile::csg_write_settings()
 
 void pilotfile::csg_read_controls()
 {
-	int idx, list_size;
-	short id1, id2, id3 __UNUSED;
+	if (version < 6) {
+		// Pre CSG-6 compatibility
+		int idx, list_size;
+		short id1, id2, id3 __UNUSED;
 
-	list_size = (int)cfread_ushort(cfp);
+		list_size = (int)cfread_ushort(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
-		id1 = cfread_short(cfp);
-		id2 = cfread_short(cfp);
-		id3 = cfread_short(cfp);	// unused, at the moment
+		for (idx = 0; idx < list_size; idx++) {
+			id1 = cfread_short(cfp);
+			id2 = cfread_short(cfp);
+			id3 = cfread_short(cfp);	// unused, at the moment
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if (idx < CCFG_MAX) {
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
+
+		return;
+	
+	} else {
+		// >= CSG-6
+		char buf[MAX_FILENAME_LEN];
+		cfread_string(buf, 32, cfp);
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+		                       [buf](const auto& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			// Couldn't find the preset, use defaults
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
+}
+
+void pilotfile::csg_write_controls()
+{
+	auto n = control_config_get_current_preset();
+
+	Control_config_presets[n].name;
+
+	cfwrite_string(Control_config_presets[n].name.c_str(), cfp);
 }
 
 void pilotfile::csg_read_cutscenes() {

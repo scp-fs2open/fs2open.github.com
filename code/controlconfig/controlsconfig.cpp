@@ -956,7 +956,7 @@ int control_config_do_reset()
 	}
 	Undo_controls.save_stack(stack);
 
-	control_config_reset_defaults();
+	control_config_use_preset(Control_config_presets[Defaults_cycle_pos]);
 
 	control_config_conflict_check();
 	control_config_list_prepare();
@@ -964,14 +964,17 @@ int control_config_do_reset()
 	return 0;
 }
 
-void control_config_reset_defaults()
+void control_config_use_preset(CC_preset &preset)
 {
+	
 	// Reset all
-	const auto &preset = Control_config_presets[Defaults_cycle_pos].bindings;
-	for (size_t i = 0; i < Control_config.size(); ++i) {
+	const auto &bindings = preset.bindings;
+	const size_t size = MIN(bindings.size(), Control_config.size());
+	Assert(size >= CCFG_MAX);
+	for (size_t i = 0; i < size; ++i) {
 		// Don't use std::copy here, since the preset may contain more bindings than Control_config
-		Control_config[i].first = preset[i].first;
-		Control_config[i].second = preset[i].second;
+		Control_config[i].first = bindings[i].first;
+		Control_config[i].second = bindings[i].second;
 	}
 }
 
@@ -1598,6 +1601,10 @@ void control_config_draw_selected_preset() {
 	} else {
 		gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
 	}
+}
+
+size_t control_config_get_current_preset() {
+	return Defaults_cycle_pos;
 }
 
 /**

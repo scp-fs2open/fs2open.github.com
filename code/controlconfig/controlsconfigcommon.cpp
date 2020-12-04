@@ -818,6 +818,8 @@ void control_config_common_init()
 		Control_config[i].continuous_ongoing = false;
 	}
 	
+	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
+	// preset we're currently using for .plr and .csg
 	// Load controlconfigdefaults.tbl overrides and mod presets
 	control_config_common_load_overrides();
 

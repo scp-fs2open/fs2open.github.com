@@ -88,7 +88,7 @@ void init_new_pilot(player *p, int reset)
 	if (reset) {
 		hud_set_default_hud_config(p);		// use a default hud config
 
-		control_config_reset_defaults();		// get a default keyboard config
+		control_config_use_preset(Control_config_presets[0]);		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
 		// set the default detail level based on tabling rather than the above method
