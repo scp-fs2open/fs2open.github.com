@@ -1684,7 +1684,7 @@ void control_config_do_frame(float frametime)
 	int i; // generic index
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
-	int j = -1; // polled joy button
+	int j = JOY_TOTAL_BUTTONS; // polled joy button
 	int joy = -1;	// polled joystick id
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
