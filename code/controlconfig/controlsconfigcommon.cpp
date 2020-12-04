@@ -1427,8 +1427,24 @@ void control_config_common_read_section(int s) {
 		std::copy(new_bindings.begin(), new_bindings.end(), default_bindings.begin());
 
 	} else {
-		// Add new preset
-		Control_config_presets.push_back(new_preset);
+		// Add new preset, if it is unique
+		bool unique = true;
+		auto it = Control_config_presets.begin();
+		for (; it != Control_config_presets.end(); ++it) {
+			for (size_t i = 0; i < it->bindings.size(); ++i) {
+				if (new_preset.bindings[i] == it->bindings[i]) {
+					unique = false;
+					goto not_unique;
+				}
+			}
+		}
+		not_unique:;
+
+		if (unique) {
+			Control_config_presets.push_back(new_preset);
+		} else {
+			Warning(LOCATION, "Preset '%s' found in 'controlconfigdefaults.tbl' is a duplicate of existing preset '%s', ignoring", new_preset.name, it->name);
+		}
 	}
 };
 
@@ -2064,13 +2080,27 @@ void CC_bind::take(CID _cid, short _btn, char _flags) {
 
 void CC_bind::validate() {
 	if (cid == CID_NONE) {
+		flags = 0;
 		btn = -1;
-	}
-	if (btn == -1) {
+		return;
+
+	} else if (btn == -1) {
 		cid = CID_NONE;
+		flags = 0;
+		return;
 	}
 
-	// TODO validate flags
+	if (cid == CID_KEYBOARD) {
+		// Keyboard has no flags
+		flags = 0;
+		return;
+	}
+
+	if (cid == CID_MOUSE) {
+		// Mouse doesn't have these flags
+		flags &= ~(CCF_BALL | CCF_HAT | CCF_AXIS_BTN | CCF_HAT);
+		return;
+	}
 }
 
 SCP_string CC_bind::textify() const {
