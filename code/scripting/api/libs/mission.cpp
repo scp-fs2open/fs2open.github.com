@@ -1059,7 +1059,6 @@ ADE_FUNC(createExplosion,
 	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
 {
 	vec3d pos = vmd_zero_vector;
-	vec3d point_to = vmd_zero_vector;
 	float radius = 0.0f;
 	int fireballclass = -1;
 	bool big = false;
