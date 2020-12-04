@@ -4,7 +4,6 @@
 #include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
-#include "pilotfile/JSONFileHandler.h"
 
 #include <jansson.h>
 
@@ -54,7 +53,9 @@ static const unsigned int PST_FILE_ID = 0x5f545350;  // "PST_" in file
 
 enum class Section {
 	Invalid = -1,
-	Unammed = 0,
+	Unnamed = 0,
+	
+	// arrays
 	Actions,
 
 	// subsections
@@ -62,66 +63,144 @@ enum class Section {
 	Secondary
 };
 
-class PresetFileHandler : public pilot::JSONFileHandler {
+class PresetFileHandler {
 public:
-	PresetFileHandler(CFILE* cfp, bool reading) : JSONFileHandler(cfp, reading) {};
+	PresetFileHandler(CFILE* cfp, bool reading);
+	~PresetFileHandler();
 
 	/**
-	 * Begins writing to a section using the presets::Section as its name
+	 * begins writing to a section using the presets::Section as its name
+	 * @param[in] s     id of the section
 	 */
-	void startSectionWrite(presets::Section id);
-	
-	/**
-	 * Begins writing to a section using IoActionId as its name
-	 */
-	void startSectionWrite(int IoActionId);
+	void beginSectionWrite(presets::Section s);
 
-protected:
-	void startSectionWriteCommon(const char* key_name);
+	/**
+	 * begins reading a section, if it exists
+	 * @param[in] s    id of the section
+	 */
+	bool beginSectionRead(presets::Section s);
+
+	/**
+	 * Begins writing to an array using the presets::Section as its name
+	 *
+	 * @param[in] s     id of the array
+	 * @param[in] size  opt. expected size of the array.
+	 */
+	void beginArrayWrite(presets::Section s, size_t size);
+
+	/**
+	 * Begins reading from an array
+	 * @param[int] s    id of the array
+	 * @param[out] size the size of the array
+	 */
+	bool beginArrayRead(presets::Section s, size_t &size);
+
+	/**
+	 * ends writing to a section
+	 */
+	void endSectionWrite();
+
+	/**
+	 * ends reading a section
+	 */
+	void endSectionRead();
+
+	/**
+	 * ends writing to an array.
+	 */
+	void endArrayWrite();
+
+	/**
+	 * ends reading from an array
+	 */
+	void endArrayRead();
+
+	/**
+	 * Writes a string with the given key name
+	 */
+	void writeString(const char* key, SCP_string s);
+
+	/**
+	 * Reads a string with the given key name
+	 */
+	SCP_string readString(const char* key);
+
+	/**
+	 * Writes an int with the given key name
+	 */
+	void writeInt(const char* key, int val);
+
+	/**
+	 * Reads an int with the given key name
+	 */
+	int readInt(const char* key);
+
+	/**
+	 * For writing, Flushes the buffers and dumps to file
+	 */
+	void flush();
+
+	/**
+	 * Advances the array parser to the next element
+	 */
+	void nextArrayElement();
 
 private:
-/*
 	CFILE* _cfp = nullptr;
+	bool _reading;
 
 	json_t* _rootObj = nullptr;
 
 	json_t* _currentEl = nullptr;
 
+	/**
+	 * BufferStack of all json elements being read/written
+	 */
 	SCP_vector<json_t*> _elementStack;
-	void pushElement(json_t* el);
-	void popElement();
 
-	void* _sectionIterator = nullptr;
-	bool _startingSectionIteration = false;
+	/**
+	 * Stack to keep track of the heirachy/nesting. Back is immediate parent, Front is root
+	 */
+	SCP_vector<void*> _parentStack;
+
 	size_t _arrayIndex = INVALID_SIZE;
-*/
-};
 
-class Preset {
-public:
-	/**
-	 * @brief Saves the given preset to its own file
-	 *
-	 * @param[in] preset  Preset to save.  Uses the CC_preset::name to determine filename
-	 */
-	void save(CC_preset &preset);
-
-	/**
-	 * @brief Loads the given file into the preset
-	 *
-	 * @param[in]  file     filepath to the prest file
-	 * @param[out] preset   preset to load into.  Will be named after the filename
-	 */
-	bool load(SCP_string file, CC_preset &preset);
-
-protected:
+	//void* _sectionIterator = nullptr;	//!< Pointer to the current section/array we're in
 
 private:
+	/**
+	 * Pushes an element onto the elementStack
+	 */
+	void pushElement(json_t* el);
+	
+	/**
+	 * Pops an element off the elementStack
+	 */
+	json_t * popElement();
+
+	/**
+	 * Used for optionals, checks if an element exists with the given name
+	 * @return True     if the element exists
+	 * @return False    otherwise
+	 */
+	bool exists(const char* name);
+
+	/**
+	 * Throws an error if an element with the given name does not exist
+	 */
+	void ensureExists(const char* name);
+
+	/**
+	 * Throws an error if an element with the given name exists
+	 */
+	void ensureNotExists(const char* name);
+
 
 };
-
 
 } // namespace presets
 } // namespace io
 
 bool test_write();
+
+bool test_read();

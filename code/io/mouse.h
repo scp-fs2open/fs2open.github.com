@@ -97,4 +97,10 @@ void mousewheel_motion(int x, int y, bool reversed);
 
 extern void mouse_force_pos(int x, int y);
 
+/**
+ * Get the closest distance of a bit mask to 0
+ * @note use this to translate mouse button masks to button id's
+ */
+short bit_distance(short x);
+
 #endif

@@ -23,7 +23,7 @@
 #define CCF_BALL        0x02    //!< btn is a ball
 
 /*!
- * These are used to index a corresponding joystick axis value from an array.
+ * These are used to index a corresponding axis value from an array.
  * Currently only used by ::Axis_map_to[] and ::Axis_map_to_defaults[]
  */
 enum Joy_axis_index : short {
@@ -37,13 +37,11 @@ enum Joy_axis_index : short {
 	JOY_NUM_AXES	// Number of axes a joystick may have. Must be last enum in Joy_axis_index.
 };
 
-enum Mouse_axis_index {
-	MOUSE_X_AXIS,
-	MOUSE_Y_AXIS,
-	MOUSE_Z_AXIS,
-
-	MOUSE_NUM_AXES	// Number of axes a mouse may have. Must be last enum in Mouse_axis_index.
-};
+// Aliases for mouse axes.  Really should unify this...
+const short MOUSE_X_AXIS = JOY_X_AXIS;
+const short MOUSE_Y_AXIS = JOY_Y_AXIS;
+const short MOUSE_Z_AXIS = MOUSE_Z_AXIS;
+const short MOUSE_NUM_AXES = 3;
 
 /*!
  * Controller index enumeration
@@ -609,8 +607,6 @@ extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 extern char *Joy_axis_text[JOY_NUM_AXES];
 
-extern SCP_map<SCP_string, short> mKeyNameToVal;	// Map used to translate stringified Key names into key value
-extern SCP_map<SCP_string, IoActionId> mActionToVal;	// Map used to translate stringified action names into IoActionId
 /*!
  * @brief Checks if either binding in the CCB has the given cid
  *
@@ -772,39 +768,61 @@ void control_config_clear_used_status();
 int joy_get_scaled_reading(int raw);
 
 /**
+ * Lookups the given stringified enum to find its value
+ * @return -1 if not found, or
+ * @return IoActionId if found
+ */
+int ActionToVal(const char * str);
+
+/**
  * Reverse lookups the IoActionId to get its stringified name
  * @return  Pointer to the stringified name of the action, or
  * @return  nullptr if not found
  */
-const char * mValToAction(IoActionId id);
+const char * ValToAction(IoActionId id);
 
 /**
  * Reverse lookups the IoActionId to get its stringified name
  * @return Pointer to the stringified name of the action, or
  * @return nullptr if not found, or invalid id
  */
-const char * mValToAction(int id);
+const char * ValToAction(int id);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+CID CIDToVal(const char * str);
 
 /**
  * Reverse lookups the CID to get its stringified name
  * @return  Pointer to the stringified name of the CID, or
  * @return  nullptr if not found
  */
-const char * mValToCID(CID id);
+const char * ValToCID(CID id);
 
 /**
  * Reverse lookups the CID to get its stringified name
  * @return Pointer to the stringified name of the CID, or
  * @return nullptr if not found, or invalid id
  */
-const char * mValToCID(int id);
+const char * ValToCID(int id);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+char CCFToVal(const char * str);
 
 /**
  * Constructs a enum string from the CCF_FLAGS
  * @return Pointer to the stringified name of the CCF, or
  * @return nullptr if not found, or invalid id
  */
-SCP_string mValToCCF(char id);
+SCP_string ValToCCF(char id);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+short InputToVal(CID cid, const char * str);
 
 /**
  * Constructs a enumstring from the input binding, depending on the CID
@@ -814,7 +832,12 @@ SCP_string mValToCCF(char id);
  *
  * @note This requires a CCB due to the way things are encoded
  */
-SCP_string mValToInput(const CC_bind &bind);
+SCP_string ValToInput(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its btn value
+ */
+short MouseToVal(const char * str);
 
 /**
  * Constructs a enum string from the mouse input
@@ -825,7 +848,12 @@ SCP_string mValToInput(const CC_bind &bind);
  *
  * @note This requires a CCB due to the way things are encoded
  */
-SCP_string mValToMouse(const CC_bind &bind);
+SCP_string ValToMouse(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its btn value
+ */
+short KeyboardToVal(const char * str);
 
 /**
  * Constructs an enum string from the key binding
@@ -836,7 +864,12 @@ SCP_string mValToMouse(const CC_bind &bind);
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
  */
-SCP_string mValToKeyboard(const CC_bind &bind);
+SCP_string ValToKeyboard(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+short JoyToVal(const char * str);
 
 /**
  * Constructs a enum string from the Joystick input
@@ -847,5 +880,5 @@ SCP_string mValToKeyboard(const CC_bind &bind);
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
  */
-SCP_string mValToJoy(const CC_bind &bind);
+SCP_string ValToJoy(const CC_bind &bind);
 #endif

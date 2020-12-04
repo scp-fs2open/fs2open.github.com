@@ -24,6 +24,8 @@
 #include "options/Option.h"
 #include "parse/parselo.h"
 
+#include <map>
+
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
 // z64: Really need a better way than this.
 enum CC_tab {
@@ -829,6 +831,9 @@ void control_config_common_init()
 		Scan_code_text = Scan_code_text_english;
 		Joy_button_text = Joy_button_text_english;
 	}
+
+	//test_write();
+	test_read();
 }
 
 /*
@@ -838,14 +843,16 @@ void control_config_common_close()
 {
 }
 
-
-#include <map>
-#include <string>
 SCP_map<SCP_string, short> mKeyNameToVal;
+SCP_map<SCP_string, short> mMouseNameToVal;
+SCP_map<SCP_string, short> mAxisNameToVal;
+SCP_map<SCP_string, short> mHatNameToVal;
 SCP_map<SCP_string, CC_type> mCCTypeNameToVal;
 SCP_map<SCP_string, char> mCCTabNameToVal;
 SCP_map<SCP_string, IoActionId> mActionToVal;
 SCP_map<SCP_string, CID> mCIDNameToVal;
+SCP_map<SCP_string, char> mCCFNameToVal;
+
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
 */
@@ -1189,9 +1196,37 @@ void LoadEnumsIntoCIDMap() {
 	ADD_ENUM_TO_CID_MAP(CID_JOY1)
 	ADD_ENUM_TO_CID_MAP(CID_JOY2)
 	ADD_ENUM_TO_CID_MAP(CID_JOY3)
-//	ADD_ENUM_TO_CID_MAP(CID_JOY_MAX) // Not needed
+//	ADD_ENUM_TO_CID_MAP(CID_JOY_MAX) // Not mapped
 
 #undef ADD_ENUM_TO_CID_MAP
+}
+
+void LoadEnumsIntoMouseMap() {
+	mMouseNameToVal["LEFT_BUTTON"] = MOUSE_LEFT_BUTTON;
+	mMouseNameToVal["RIGHT_BUTTON"] = MOUSE_RIGHT_BUTTON;
+	mMouseNameToVal["MIDDLE_BUTTON"] = MOUSE_MIDDLE_BUTTON;
+	mMouseNameToVal["X1_BUTTON"] = MOUSE_X1_BUTTON;
+	mMouseNameToVal["X2_BUTTON"] = MOUSE_X2_BUTTON;
+	mMouseNameToVal["WHEEL_UP"] = MOUSE_WHEEL_UP;
+	mMouseNameToVal["WHEEL_DOWN"] = MOUSE_WHEEL_DOWN;
+	mMouseNameToVal["WHEEL_LEFT"] = MOUSE_WHEEL_LEFT;
+	mMouseNameToVal["WHEEL_RIGHT"] = MOUSE_WHEEL_RIGHT;
+}
+
+void LoadEnumsIntoAxisMap() {
+	mAxisNameToVal["X_AXIS"] = JOY_X_AXIS;
+	mAxisNameToVal["Y_AXIS"] = JOY_Y_AXIS;
+	mAxisNameToVal["Z_AXIS"] = JOY_Z_AXIS;
+	mAxisNameToVal["RX_AXIS"] = JOY_RX_AXIS;
+	mAxisNameToVal["RY_AXIS"] = JOY_RY_AXIS;
+	mAxisNameToVal["RZ_AXIS"] = JOY_RZ_AXIS;
+}
+
+void LoadEnumsIntoHatMap() {
+	mHatNameToVal["UP"] = io::joystick::HatPosition::HAT_UP;
+	mHatNameToVal["RIGHT"] = io::joystick::HatPosition::HAT_RIGHT;
+	mHatNameToVal["DOWN"] = io::joystick::HatPosition::HAT_DOWN;
+	mHatNameToVal["LEFT"] = io::joystick::HatPosition::HAT_LEFT;
 }
 
 /*! Loads the various control configuration maps to allow the parsing functions to appropriately map string tokns to
@@ -1204,6 +1239,9 @@ void LoadEnumsIntoMaps() {
 	LoadEnumsIntoCCTabMap();
 	LoadEnumsIntoActionMap();
 	LoadEnumsIntoCIDMap();
+	LoadEnumsIntoMouseMap();
+	LoadEnumsIntoAxisMap();
+	LoadEnumsIntoHatMap();
 }
 
 
@@ -1543,81 +1581,241 @@ void control_config_common_load_overrides()
 	}
 }
 
-const char * mValToAction(IoActionId id) {
-	auto it = std::find_if(mActionToVal.cbegin(), mActionToVal.cend(), [id](const auto& pair) {return pair.second == id;} );
+int ActionToVal(const char * str) {
+	Assert(str != nullptr);
+	auto it = mActionToVal.find(str);
+
+	if (it == mActionToVal.end()) {
+		return -1;
+	} // else
+
+	return it->second;
+}
+
+char CCFToVal(const char * str) {
+	Assert(str != nullptr);
+	char val = 0;
+	// Keep up to date with ValToCCF
+	if (strstr(str, "AXIS_BTN") != nullptr) {
+		val |= CCF_AXIS_BTN;
+	}
+	if (strstr(str, "RELATIVE") != nullptr) {
+		val |= CCF_RELATIVE;
+	}
+	if (strstr(str, "INVERTED") != nullptr) {
+		val |= CCF_INVERTED;
+	}
+	if (strstr(str, "AXIS") != nullptr) {
+		val |= CCF_AXIS;
+	}
+	if (strstr(str, "HAT") != nullptr) {
+		val |= CCF_HAT;
+	}
+	if (strstr(str, "BALL") != nullptr) {
+		val |= CCF_BALL;
+	}
+
+	return val;
+}
+
+CID CIDToVal(const char * str) {
+	Assert(str != nullptr);
+	auto it = mCIDNameToVal.find(str);
+
+	if (it == mCIDNameToVal.end()) {
+		return CID_NONE;
+	} // else
+
+	return it->second;
+}
+
+short JoyToVal(const char * str) {
+	Assert(str != nullptr);
 	
-	if (it == mActionToVal.cend()) {
-		return nullptr;
+	auto it = mAxisNameToVal.find(str);
+	if (it != mAxisNameToVal.end()) {
+		// is an axis
+		return it->second;
+	}
+
+	/*
+	it = mHatNameToVal.find(str);
+	if (it != mHatNameToVal.end()) {
+		// is a hat
+		return it->second;
+	}
+	*/
+
+	// Is it a button?
+	short val = atoi(str);
+
+	// atoi returns 0 if the str is invalid, so we need check it actually is 0
+	if ((val == 0) && (str[0] != '0')) {
+		// Not a button
+		Error(LOCATION, "PST: Unknown input value for Joystick: '%s'", str);
+		return -1;
+
+	} else {
+		// is a button
+		return val;
+	}
+}
+
+short KeyboardToVal(const char * str) {
+	Assert(str != nullptr);
+	short val = 0;
+	const char * ch;
+	
+	// Alt must be checked first
+	ch = strstr(str, "ALT-");
+	if (ch != nullptr) {
+		// Add the Alt mask, and advance str past "ALT-"
+		// -1 to exclude the '\0'
+		val |= KEY_ALTED;
+		str += sizeof("ALT-") - 1;
+	}
+
+	ch = strstr(str, "SHIFT-");
+	if ( ch != nullptr) {
+		val |= KEY_SHIFTED;
+		str += sizeof("SHIFT-") - 1;
+	}
+
+	auto it = mKeyNameToVal.find(str);
+
+	if (it == mKeyNameToVal.end()) {
+		// not bound
+		val = -1;
+
+	} else {
+		val |= it->second;
+	}
+
+	return val;
+}
+
+short InputToVal(CID cid, const char * str) {
+	Assert(str != nullptr);
+	short val;
+	switch (cid) {
+	case CID_MOUSE:
+		val = MouseToVal(str);
+		break;
+
+	case CID_KEYBOARD:
+		val = KeyboardToVal(str);
+		break;
+
+	case CID_JOY0:
+	case CID_JOY1:
+	case CID_JOY2:
+	case CID_JOY3:
+		val = JoyToVal(str);
+		break;
+
+	case CID_NONE:
+		val = -1;
+		break;
+
+	default:
+		Error(LOCATION, "Unknown  CID");
+	}
+
+	return val;
+}
+
+short MouseToVal(const char * str) {
+	Assert(str != nullptr);
+
+	// is it an axis?
+	auto it = mAxisNameToVal.find(str);
+
+	if (it != mAxisNameToVal.end()) {
+		// is an axis
+
+		if (it->second < MOUSE_NUM_AXES) {
+			return it->second;
+		} else {
+			Error(LOCATION, "Illegal axis for mouse: '%s'", str);
+			return -1;
+		}
+	}
+
+	// is it a button?
+	it = mMouseNameToVal.find(str);
+	if (it != mMouseNameToVal.end()) {
+		// is a button
+		return bit_distance(it->second);
+	}
+	
+	// Else, I dunno
+	Error(LOCATION, "Unknown input value for Mouse: '%s'", str);
+	return -1;
+}
+
+
+const char * ValToAction(IoActionId id) {
+	auto it = std::find_if(mActionToVal.begin(), mActionToVal.end(),
+		[id](std::pair<SCP_string, IoActionId> pair) { return pair.second == id; });
+	
+	if (it == mActionToVal.end()) {
+		// Shouldn't happen
+		Error(LOCATION, "Unknown IoActionId %i", id);
+
 	} else {
 		return it->first.c_str();
 	}
 }
 
-const char * mValToAction(int id) {
+const char * ValToAction(int id) {
 	if ((id < 0) && (id >= Control_config.size())) {
-		return nullptr;
+		return "NONE";
 	}
 
-	return mValToAction(static_cast<IoActionId>(id));
+	return ValToAction(static_cast<IoActionId>(id));
 }
 
-const char * mValToCID(CID id) {
-	auto it = std::find_if(mCIDNameToVal.cbegin(), mCIDNameToVal.cend(), [id](const auto& pair) {return pair.second == id; });
 
-	if (it == mCIDNameToVal.cend()) {
-		return nullptr;
-	} else {
-		return it->first.c_str();
-	}
-}
-
-const char * mValToCID(int id) {
-	if ((id < 0) && (id >= CID_JOY_MAX)) {
-		return nullptr;
-	}
-
-	return mValToCID(static_cast<CID>(id));
-}
-
-SCP_string mValToCCF(char id) {
+SCP_string ValToCCF(char id) {
 	// Keep this up to date with the CCF defines in controlsconfig.h
+	// This one doesn't get a map since its a mask that has to be constructed/deconst
 	SCP_string str;
 
 	if (id & CCF_AXIS_BTN) {
-		if (!str.empty())
-	//		str += ", ";
+	//	if (!str.empty())
+	//			str += ", ";
 
 		str += "AXIS_BTN";
 	}
-	
+
 	if (id & CCF_RELATIVE) {
 		if (!str.empty())
 			str += ", ";
 
 		str += "RELATIVE";
 	}
-	
+
 	if (id & CCF_INVERTED) {
 		if (!str.empty())
 			str += ", ";
 
 		str += "INVERTED";
 	}
-	
+
 	if (id & CCF_AXIS) {
 		if (!str.empty())
 			str += ", ";
 
 		str += "AXIS";
 	}
-	
+
 	if (id & CCF_HAT) {
 		if (!str.empty())
 			str += ", ";
 
 		str += "HAT";
 	}
-	
+
 	if (id & CCF_BALL) {
 		if (!str.empty())
 			str += ", ";
@@ -1633,107 +1831,97 @@ SCP_string mValToCCF(char id) {
 	return str;
 }
 
-SCP_string mValToInput(const CC_bind &bind) {
+const char * ValToCID(CID id) {
+	auto it = std::find_if(mCIDNameToVal.cbegin(), mCIDNameToVal.cend(),
+		[id](const auto& pair) {return pair.second == id; });
+
+	if (it == mCIDNameToVal.cend()) {
+		// Shouldn't happen
+		Error(LOCATION, "Unknown CID value %i", id);
+
+	} else {
+		return it->first.c_str();
+	}
+}
+
+const char * ValToCID(int id) {
+	if ((id < 0) && (id >= CID_JOY_MAX)) {
+		return "NONE";
+	}
+
+	return ValToCID(static_cast<CID>(id));
+}
+
+SCP_string ValToInput(const CC_bind &bind) {
 	SCP_string str;
 
 	switch (bind.cid) {
 	case CID_MOUSE:
-		str = mValToMouse(bind);
+		str = ValToMouse(bind);
 		break;
 
 	case CID_KEYBOARD:
-		str = mValToKeyboard(bind);
+		str = ValToKeyboard(bind);
 		break;
 
 	case CID_JOY0:
 	case CID_JOY1:
 	case CID_JOY2:
 	case CID_JOY3:
-		str = mValToJoy(bind);
+		str = ValToJoy(bind);
 		break;
 
 	case CID_NONE:
-	default:
-		// If unsupported, or unbound, return "NONE"
 		str = "NONE";
+		break;
+
+	default:
+		Error(LOCATION, "Unknown CID");
 		break;
 	}
 
 	return str;
 }
 
-SCP_string mValToMouse(const CC_bind &bind) {
+SCP_string ValToMouse(const CC_bind &bind) {
 	const short btn = bind.btn;
 
 	Assert(bind.cid == CID_MOUSE);
 
-	// Keep these up to date with the defines in mouse.h
-	if (btn & MOUSE_LEFT_BUTTON) {
-		return "MOUSE_LEFT_BUTTON";
-	}
-	
-	if (btn & MOUSE_LEFT_BUTTON) {
-		return "MOUSE_LEFT_BUTTON";
-	}
-	
-	if (btn & MOUSE_MIDDLE_BUTTON) {
-		return "MOUSE_MIDDLE_BUTTON";
-	}
-	
-	if (btn & MOUSE_X1_BUTTON) {
-		return "MOUSE_X1_BUTTON";
-	}
-	
-	if (btn & MOUSE_X2_BUTTON) {
-		return "MOUSE_X2_BUTTON";
-	}
-	
-	if (btn & MOUSE_WHEEL_UP) {
-		return "MOUSE_WHEEL_UP";
-	}
-	
-	if (btn & MOUSE_WHEEL_DOWN) {
-		return "MOUSE_WHEEL_DOWN";
-	}
+	if (bind.flags & CCF_AXIS) {
+		// is an axis
+		if (bind.btn >= MOUSE_NUM_AXES) {
+			Error(LOCATION, "Invalid mouse axis '%i'", bind.btn);
+			return "NONE";
+		}
 
-	if (btn & MOUSE_WHEEL_LEFT) {
-		return "MOUSE_WHEEL_LEFT";
-	}
+		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
+		[bind](std::pair<SCP_string, short> pair) { return pair.second == bind.btn; });
 
-	if (btn & MOUSE_WHEEL_RIGHT) {
-		return "MOUSE_WHEEL_RIGHT";
-	}
+		if (it == mAxisNameToVal.end()) {
+			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.btn);
+			return "NONE";
+		}
 
-	// else
-	return "NONE";
+		return it->first;
+	} // else, its a button
+
+	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
+		[bind](std::pair<SCP_string, char> pair) { return pair.second == bind.btn; });
+
+	if (it == mMouseNameToVal.end()) {
+		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.btn);
+		return "NONE";
+
+	} else {
+		return it->first;
+	}
 }
 
-SCP_string mValToKeyboard(const CC_bind &bind) {
+SCP_string ValToKeyboard(const CC_bind &bind) {
 	SCP_string str;
 
 	Assert(bind.cid == CID_KEYBOARD);
-
-	if (bind.flags & CCF_AXIS) {
-		// is an axis
-		switch (bind.btn) {
-		case MOUSE_X_AXIS:
-			str = "X_AXIS";
-			break;
-
-		case MOUSE_Y_AXIS:
-			str = "Y_AXIS";
-			break;
-
-		case MOUSE_Z_AXIS:
-			str = "Z_AXIS";
-			break;
-
-		default:
-			str = "NONE";
-		}
-
-		return str;
-	}
 
 	// Can't use textify_scancode since we want the key enum strings
 	short btn = bind.btn;
@@ -1748,18 +1936,21 @@ SCP_string mValToKeyboard(const CC_bind &bind) {
 
 	btn &= KEY_MASK;
 
-	auto it = std::find_if(mKeyNameToVal.cbegin(), mKeyNameToVal.cend(), [btn](const auto& pair) {return pair.second == btn; });
+	auto it = std::find_if(mKeyNameToVal.cbegin(), mKeyNameToVal.cend(),
+		[btn](const auto& pair) {return pair.second == btn; });
 
 	if (it == mKeyNameToVal.cend()) {
-		str = "NONE";
+		// Shouldn't happen
+		Error(LOCATION, "Unknown key %i", btn);
+
 	} else {
-		str += it->first.c_str();
+		str += it->first;
 	}
 
 	return str;
 }
 
-SCP_string mValToJoy(const CC_bind &bind) {
+SCP_string ValToJoy(const CC_bind &bind) {
 	SCP_string str;
 
 	Assert((bind.cid == CID_JOY0) || (bind.cid == CID_JOY1) ||
@@ -1767,75 +1958,42 @@ SCP_string mValToJoy(const CC_bind &bind) {
 
 	if (bind.flags & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
-		switch (bind.btn) {
-			case JOY_X_AXIS:
-				str = "X_AXIS";
-				break;
+		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
+			[bind](std::pair<SCP_string, int> pair) { return pair.second == bind.btn; });
 
-			case JOY_Y_AXIS:
-				str = "Y_AXIS";
-				break;
+		if (it == mAxisNameToVal.end()) {
+			// should never happen
+			Error(LOCATION, "Unknown error occured during reverse lookup of joy input string.");
+		} // else print out value
 
-			case JOY_Z_AXIS:
-				str = "Z_AXIS";
-				break;
+		str = it->first;
 
-			case JOY_RX_AXIS:
-				str = "RX_AXIS";
-				break;
-
-			case JOY_RY_AXIS:
-				str = "RY_AXIS";
-				break;
-
-			case JOY_RZ_AXIS:
-				str = "RZ_AXIS";
-				break;
-
-			default:
-				str = "NONE";
-		}
-		return str;
-
-	} else if (bind.flags & CCF_HAT) {
+/*	} else if (bind.flags & CCF_HAT) {
+		// TODO Still currently encoded as buttons
 		// Is a hat
 		int hat_id = bind.btn / 4;
 		int hat_pos = bind.btn % 4;
 
-		sprintf(str, "HAT-%i ", hat_id);
+		auto it = std::find_if(mJoyNameToVal.begin(), mJoyNameToVal.end(),
+			[hat_pos](std::pair<SCP_string, int> pair) { return pair.second == hat_pos; });
+
+		if (it == mJoyNameToVal.end()) {
+			// should never happen
+			Error(LOCATION, "Unknown error occured during reverse lookup of joy input string.");
+		} // else print out value
 		
-		// see io::joystick::HatPosition
-		switch (hat_pos) {
-		case 0:
-			str += "UP";
-			break;
-
-		case 1:
-			str += "RIGHT";
-			break;
-
-		case 2:
-			str += "DOWN";
-			break;
-
-		case 3:
-			str += "LEFT";
-			break;
-
-		default:
-			str = "NONE";
-		}
-
-		return str;
-
+		sprintf(str, "HAT-%i %s", hat_id, it->first.c_str());
+*/
 	} else if (bind.btn != -1) {
 		// Is a button
 		sprintf(str, "%i", bind.btn);
 
-		return str;
-	} // Else, unbound
+	} else {
+		// Unbound
+		str = "NONE";
+	}
 
-	return "NONE";
+	return str;
 }
 
 CC_bind CC_bind::operator=(const CC_bind &A)

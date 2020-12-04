@@ -622,3 +622,18 @@ void mousewheel_decay(int btn) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
 }
+
+short bit_distance(short x) {
+	short i;
+	const short max_dist = sizeof(short) * 8;
+	
+	for (i = 0; i < max_dist; ++i, x >> 1) {
+		if (x & 0x01) {
+			break;
+		}
+	}
+
+	if (i >= max_dist) {
+		return -1;
+	}
+}
