@@ -1688,7 +1688,7 @@ void control_config_do_frame(float frametime)
 	const int CCFG_SIZE = static_cast<int>(Control_config.size());	// hack to get around signed/unsigned mismatch errors
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
-	short j = -1; // polled joy button
+	short j = JOY_TOTAL_BUTTONS; // polled joy button
 	int joy = -1;	// polled joystick id
 	int a; // polled joy axis
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
