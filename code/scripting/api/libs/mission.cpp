@@ -992,7 +992,7 @@ ADE_FUNC(createWeapon,
 ADE_FUNC(createWarpeffect,
 	l_Mission,
 	"vector WorldPosition, vector PointTo, number radius, number duration /* Must be >= 4*/, fireballclass Class, "
-	"sound WarpOpenSound, sound WarpCloseSound, "
+	"soundentry WarpOpenSound, soundentry WarpCloseSound, "
 	"[number WarpOpenDuration = -1, number WarpCloseDuration = -1, vector Velocity /* null vector by default*/, "
 	"boolean Use3DModel = false]",
 	"Creates a warp-effect fireball and returns a handle to it.",
@@ -1004,15 +1004,17 @@ ADE_FUNC(createWarpeffect,
 	float radius = 0.0f;
 	float duration = 4.0f;
 	int fireballclass = -1;
-	sound_h *opensound = NULL;
-	sound_h *closesound = NULL;
+	sound_entry_h *opensound = NULL;
+	sound_entry_h *closesound = NULL;
 
 	float opentime = -1.0f;
 	float closetime = -1.0f;
 	vec3d velocity = vmd_zero_vector;
 	bool warp3d = false;
-	
-	ade_get_args(L, "ooffooo|ffob", l_Vector.Get(&pos), l_Vector.Get(&point_to), &radius, &duration, l_Fireballclass.Get(&fireballclass), l_Sound.Get(opensound), l_Sound.Get(closesound), &opentime, &closetime, l_Vector.Get(&velocity), &warp3d);
+
+	if (!ade_get_args(L, "ooffooo|ffob", l_Vector.Get(&pos), l_Vector.Get(&point_to), &radius, &duration, l_Fireballclass.Get(&fireballclass), l_SoundEntry.GetPtr(&opensound), l_SoundEntry.GetPtr(&closesound), &opentime, &closetime, l_Vector.Get(&velocity), &warp3d)) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
 
 	int flags = warp3d ? FBF_WARP_VIA_SEXP | FBF_WARP_3D : FBF_WARP_VIA_SEXP;
 
@@ -1022,7 +1024,7 @@ ADE_FUNC(createWarpeffect,
 	if (duration < opentime + closetime)
 	{
 		//Both warp opening and warp closing must occur within the duration of the warp effect.
-		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+		opentime = closetime = duration / 2.0f;
 	}
 
 	// calculate orientation matrix ----------------
@@ -1040,8 +1042,40 @@ ADE_FUNC(createWarpeffect,
 
 	vm_vector_2_matrix(&m_orient, &v_orient, nullptr, nullptr);
 
-
 	int obj_idx = fireball_create(&pos, fireballclass, FIREBALL_WARP_EFFECT, -1, radius, false, &velocity, duration, -1, &m_orient, 0, flags, opensound->idx, closesound->idx, opentime, closetime);
+
+	if (obj_idx > -1)
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+	else
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+
+ADE_FUNC(createExplosion,
+	l_Mission,
+	"vector WorldPosition, number radius, fireballclass Class, "
+	"[boolean LargeExplosion = false, vector Velocity /* null vector by default*/, object parent = nil]",
+	"Creates an explosion-effect fireball and returns a handle to it.",
+	"fireball",
+	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
+{
+	vec3d pos = vmd_zero_vector;
+	vec3d point_to = vmd_zero_vector;
+	float radius = 0.0f;
+	int fireballclass = -1;
+	bool big = false;
+
+	vec3d velocity = vmd_zero_vector;
+	object_h* parent = NULL;
+
+	if (!ade_get_args(L, "ofo|boo", l_Vector.Get(&pos), &radius, l_Fireballclass.Get(&fireballclass), &big, l_Vector.Get(&velocity), l_Object.GetPtr(&parent))) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
+
+	int parent_idx = (parent && parent->IsValid()) ? OBJ_INDEX(parent->objp) : -1;
+
+	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
 	if (obj_idx > -1)
 		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
