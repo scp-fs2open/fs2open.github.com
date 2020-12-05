@@ -589,6 +589,11 @@ void pilotfile::plr_read_controls()
 		if (it == Control_config_presets.end()) {
 			CC_preset preset;
 			preset.name = filename;
+
+			// strip off extension
+			int n = preset.name.find_last_of(".");
+			preset.name.resize(n);
+
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
 			save_preset_file(preset, true);
