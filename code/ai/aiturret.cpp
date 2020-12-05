@@ -2587,16 +2587,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+			// [Yet this retail comment precedes the calculation of vector-to-enemy...]
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
 			dist_to_enemy = vm_vec_normalize(&v2e);
 			float dot = vm_vec_dot(&v2e, &gvec);
 
-			// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
-			// to make a cool visual effect and make them less lethal
-			if(wip->wi_flags[Weapon::Info_Flags::Flak]){
-				flak_jitter_aim(&v2e, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
-			}
-			
+			// (flak jitter moved to after we obtain shoot_vector below)
+
 			// Fire if:
 			//		dumbfire and nearly pointing at target.
 			//		heat seeking and target in a fairly wide cone.
@@ -2708,11 +2705,18 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				something_was_ok_to_fire = true;
 				Num_turrets_fired++;
 
-				vec3d *shoot_vector = &v2e;
+				// (Despite the retail comment above, retail actually fired toward the enemy; v2e = vector-to-enemy)
+				vec3d shoot_vector = v2e;
 				if (tp->flags[Model::Subsystem_Flags::Fire_on_normal])
-					shoot_vector = &gvec;
+					shoot_vector = gvec;
 
-				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, shoot_vector, &predicted_enemy_pos);
+				// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
+				// to make a cool visual effect and make them less lethal
+				if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
+					flak_jitter_aim(&shoot_vector, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
+				}
+
+				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, &shoot_vector, &predicted_enemy_pos);
 			}
 			else
 			{
