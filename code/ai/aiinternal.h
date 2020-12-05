@@ -28,6 +28,9 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold);
 //Returns true if OK for *aip to fire its current weapon at its current target.
 int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip);
 
+//Returns true if *aip has a line of sight to its current target.
+int check_los(int objnum, int target_objnum);
+
 //Does all the stuff needed to aim and fire a turret.
 void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum);
 
