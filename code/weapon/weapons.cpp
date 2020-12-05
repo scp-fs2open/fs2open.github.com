@@ -173,6 +173,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "don't spawn if shot",            Weapon::Info_Flags::Dont_spawn_if_shot,                 true, false },
     { "die on lost lock",               Weapon::Info_Flags::Die_on_lost_lock,                   true, true  }, //special case
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
+	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);

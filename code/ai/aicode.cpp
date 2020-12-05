@@ -25,6 +25,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmeasure/cmeasure.h"
+#include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
@@ -6104,6 +6105,7 @@ float compute_incoming_payload(object *target_objp)
 //		targeted at player
 //			OR:	player has too many homers targeted at him
 //					Missiontime in that dead zone in which can't fire at this player
+//			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
 int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
@@ -6117,6 +6119,52 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 		if ( tobjp->type == OBJ_SHIP ) {
 			if (Ship_info[Ships[tobjp->instance].ship_info_index].is_small_ship()) {
 				num_homers = compute_num_homing_objects(&Objects[target_objnum]);
+			}
+		}
+
+		if (wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
+			vec3d& end = tobjp->pos;
+			vec3d& start = Objects[objnum].pos;
+
+			for (int i = 0; i < Highest_object_index; i++) {
+				//Don't collision check against ourselves or our target
+				if (i == objnum || i == target_objnum)
+					continue;
+
+				int model_num = 0;
+				int model_instance_num = 0;
+
+				//Only collision check against other pieces of Debris, Asteroids or Ships
+				char type = Objects[i].type;
+				if (type == OBJ_DEBRIS) {
+					model_num = Debris[Objects[i].instance].model_num;
+					model_instance_num = -1;
+				}
+				else if (type == OBJ_ASTEROID) {
+					model_num = Asteroid_info[Asteroids[Objects[i].instance].asteroid_type].model_num[Asteroids[Objects[i].instance].asteroid_subtype];
+					model_instance_num = Asteroids[Objects[i].instance].model_instance_num;
+				}
+				else if (type == OBJ_SHIP) {
+					model_num = Ship_info[Ships[Objects[i].instance].ship_info_index].model_num;
+					model_instance_num = Ships[Objects[i].instance].model_instance_num;
+				}
+				else
+					continue;
+
+				mc_info hull_check;
+				mc_info_init(&hull_check);
+
+				hull_check.model_instance_num = model_instance_num;
+				hull_check.model_num = model_num;
+				hull_check.orient = &Objects[i].orient;
+				hull_check.pos = &Objects[i].pos;
+				hull_check.p0 = &start;
+				hull_check.p1 = &end;
+				hull_check.flags = MC_CHECK_MODEL;
+
+				if (model_collide(&hull_check)) {
+					return 0;
+				}
 			}
 		}
 

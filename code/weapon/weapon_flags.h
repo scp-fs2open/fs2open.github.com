@@ -84,6 +84,7 @@ namespace Weapon {
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
 		Has_display_name,					// Goober5000
 		No_impact_spew,						// Goober5000
+		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 
         NUM_VALUES
 	};
