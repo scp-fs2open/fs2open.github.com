@@ -6171,31 +6171,33 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	This is a computationally expensive operation, so use sparingly
-int check_los(int objnum, int target_objnum) {
+bool check_los(int objnum, int target_objnum) {
 	vec3d& end = Objects[target_objnum].pos;
 	vec3d& start = Objects[objnum].pos;
 
-	for (int i = 0; i < Highest_object_index; i++) {
+	object* objp;
+
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		//Don't collision check against ourselves or our target
-		if (i == objnum || i == target_objnum)
+		if (OBJ_INDEX(objp) == objnum || OBJ_INDEX(objp) == target_objnum)
 			continue;
 
 		int model_num = 0;
 		int model_instance_num = 0;
 
 		//Only collision check against other pieces of Debris, Asteroids or Ships
-		char type = Objects[i].type;
+		char type = objp->type;
 		if (type == OBJ_DEBRIS) {
-			model_num = Debris[Objects[i].instance].model_num;
+			model_num = Debris[objp->instance].model_num;
 			model_instance_num = -1;
 		}
 		else if (type == OBJ_ASTEROID) {
-			model_num = Asteroid_info[Asteroids[Objects[i].instance].asteroid_type].model_num[Asteroids[Objects[i].instance].asteroid_subtype];
-			model_instance_num = Asteroids[Objects[i].instance].model_instance_num;
+			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+			model_instance_num = Asteroids[objp->instance].model_instance_num;
 		}
 		else if (type == OBJ_SHIP) {
-			model_num = Ship_info[Ships[Objects[i].instance].ship_info_index].model_num;
-			model_instance_num = Ships[Objects[i].instance].model_instance_num;
+			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+			model_instance_num = Ships[objp->instance].model_instance_num;
 		}
 		else
 			continue;
@@ -6205,18 +6207,18 @@ int check_los(int objnum, int target_objnum) {
 
 		hull_check.model_instance_num = model_instance_num;
 		hull_check.model_num = model_num;
-		hull_check.orient = &Objects[i].orient;
-		hull_check.pos = &Objects[i].pos;
+		hull_check.orient = &objp->orient;
+		hull_check.pos = &objp->pos;
 		hull_check.p0 = &start;
 		hull_check.p1 = &end;
 		hull_check.flags = MC_CHECK_MODEL;
 
 		if (model_collide(&hull_check)) {
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 //	--------------------------------------------------------------------------
