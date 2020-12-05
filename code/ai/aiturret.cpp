@@ -2734,6 +2734,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 
 			// we are done firing, so fire the next weapon from the next firing point
+			// (This was originally done under the "We're ready to fire..." comment)
 			ss->turret_next_fire_pos++;
 		}
 
