@@ -436,14 +436,6 @@ static int Axes_origin[CID_JOY_MAX][JOY_NUM_AXES];
 
 void control_config_do_undo();
 
-/**
- * Checks the current state of Control_config against all known presets.
- *
- * @returns An iterator to the preset that's equal to the current Control_config bindings, or
- * @returns An iterator to Control_config_presets.end() otherwise
- */
-SCP_vector<CC_preset>::iterator preset_find_duplicate();
-
 // Rotate selItem forwards
 selItem operator++(selItem& item, int) {
 	Assert(item != selItem::selItem_END);

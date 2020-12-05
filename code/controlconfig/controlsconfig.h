@@ -769,6 +769,14 @@ void control_check_indicate();
 void control_config_clear_used_status();
 
 /**
+ * Checks the current state of Control_config against all known presets.
+ *
+ * @returns An iterator to the preset that's equal to the current Control_config bindings, or
+ * @returns An iterator to Control_config_presets.end() otherwise
+ */
+SCP_vector<CC_preset>::iterator preset_find_duplicate();
+
+/**
  * @brief Applies sensitivity multiplier and deadzone histerisis to the raw axis value
  *
  * @param[in] raw  The raw axis value to transform

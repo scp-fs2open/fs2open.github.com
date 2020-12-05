@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
@@ -581,6 +583,16 @@ void pilotfile::plr_read_controls()
 			}
 		}
 		handler->endArrayRead();
+
+		// Check that these bindings are in a preset.  If it is not, create a new preset file
+		auto it = preset_find_duplicate();
+		if (it == Control_config_presets.end()) {
+			CC_preset preset;
+			preset.name = filename;
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+			save_preset_file(preset, true);
+		}
 		return;
 
 	} else {

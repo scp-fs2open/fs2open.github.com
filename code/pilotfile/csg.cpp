@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "cutscene/cutscenes.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
@@ -1213,6 +1215,17 @@ void pilotfile::csg_read_controls()
 			}
 		}
 
+		// Check that these bindings are in a preset.
+		auto it = preset_find_duplicate();
+		if (it == Control_config_presets.end()) {
+			// Not a preset, create one and its file
+			CC_preset preset;
+			preset.name = filename;
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+			save_preset_file(preset, true);
+
+		}
 		return;
 	
 	} else {
