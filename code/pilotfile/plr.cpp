@@ -584,37 +584,19 @@ void pilotfile::plr_read_controls()
 		return;
 
 	} else {
-		// PLR >= 3
-		int8_t cid;
-		int8_t flags;
-		int16_t btn;
+		// read PLR >= 3
+		char buf[MAX_FILENAME_LEN];
+		cfread_string(buf, 32, cfp);
 
-		auto list_size = handler->startArrayRead("controls", true);
-		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-			// Primary
-			cid = handler->readByte("cid-1");
-			flags =handler->readByte("flags-1");
-			btn  = handler->readShort("btn-1");
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							   [buf](const auto& preset) { return preset.name == buf; });
 
-			if (idx < Control_config.size()) {
-				// Assign the control, else, silently slice out custom controls from other mods
-				cid_assign(Control_config[idx].first.cid, cid);
-				Control_config[idx].first.flags = flags;
-				Control_config[idx].first.btn = btn;
-			}
-
-			// Secondary
-			cid = handler->readByte("cid-2");
-			flags = handler->readByte("flags-2");
-			btn = handler->readShort("btn-2");
-
-			if (idx < Control_config.size()) {
-				cid_assign(Control_config[idx].second.cid, cid);
-				Control_config[idx].second.flags = flags;
-				Control_config[idx].second.btn = btn;
-			}
+		if (it == Control_config_presets.end()) {
+			// Couldn't find the preset, use defaults
+			it = Control_config_presets.begin();
 		}
-		handler->endArrayRead();
+
+		control_config_use_preset(*it);
 		return;
 	}
 }
@@ -622,29 +604,12 @@ void pilotfile::plr_read_controls()
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
+	
+	size_t n = control_config_get_current_preset();
 
-	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", Control_config.size(), true);
-	for (size_t idx = 0; idx < Control_config.size(); idx++) {
-		handler->startSectionWrite(Section::Unnamed);
+	handler->writeString("preset", Control_config_presets[n].name.c_str());
 
-		const auto &item = Control_config[idx];
-
-		// Primary
-		handler->writeUByte("cid-1", item.first.cid);
-		handler->writeUByte("flags-1", item.first.flags);
-		handler->writeShort("btn-1", item.first.btn);
-
-		// Secondary
-		handler->writeUByte("cid-2", item.second.cid);
-		handler->writeUByte("flags-2", item.second.flags);
-		handler->writeShort("btn-2", item.second.btn);
-
-		handler->endSectionWrite();
-	}
-	handler->endArrayWrite();
-
-	handler->endSectionWrite();
+	handler->endSectionWrite(); // Controls
 }
 
 void pilotfile::plr_read_settings()
