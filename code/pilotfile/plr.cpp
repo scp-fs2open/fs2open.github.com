@@ -552,68 +552,71 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	int8_t cid;
-	int8_t flags;
-	int16_t btn;
-
 	if (version < 3) {
-		// Don't read old controls for now.
+		// PLR < 3
+		short id1, id2;
+		int axi, inv;
+
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			id1 = handler->readShort("key");
+			id2 = handler->readShort("joystick");
+			handler->readShort("mouse");	// unused, at the moment
+
+			if (idx < Control_config.size()) {
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
+		}
+		handler->endArrayRead();
+
+		auto list_axis = handler->startArrayRead("axes");
+		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
+			axi = handler->readInt("axis_map");
+			inv = handler->readInt("invert_axis");
+
+			if (idx < NUM_JOY_AXIS_ACTIONS) {
+				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, axi, CCF_AXIS), 0);
+				Control_config[idx + JOY_AXIS_BEGIN].invert(inv);
+			}
+		}
+		handler->endArrayRead();
+		return;
+
+	} else {
+		// PLR >= 3
+		int8_t cid;
+		int8_t flags;
+		int16_t btn;
+
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			// Primary
+			cid = handler->readByte("cid-1");
+			flags =handler->readByte("flags-1");
+			btn  = handler->readShort("btn-1");
+
+			if (idx < Control_config.size()) {
+				// Assign the control, else, silently slice out custom controls from other mods
+				cid_assign(Control_config[idx].first.cid, cid);
+				Control_config[idx].first.flags = flags;
+				Control_config[idx].first.btn = btn;
+			}
+
+			// Secondary
+			cid = handler->readByte("cid-2");
+			flags = handler->readByte("flags-2");
+			btn = handler->readShort("btn-2");
+
+			if (idx < Control_config.size()) {
+				cid_assign(Control_config[idx].second.cid, cid);
+				Control_config[idx].second.flags = flags;
+				Control_config[idx].second.btn = btn;
+			}
+		}
+		handler->endArrayRead();
 		return;
 	}
-
-	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-		// Primary
-		cid = handler->readByte("cid-1");
-		flags =handler->readByte("flags-1");
-		btn  = handler->readShort("btn-1");
-
-		if (idx < Control_config.size()) {
-			// Assign the control, else, silently slice out custom controls from other mods
-			cid_assign(Control_config[idx].first.cid, cid);
-			Control_config[idx].first.flags = flags;
-			Control_config[idx].first.btn = btn;
-		}
-
-		// Secondary
-		cid = handler->readByte("cid-2");
-		flags = handler->readByte("flags-2");
-		btn = handler->readShort("btn-2");
-
-		if (idx < Control_config.size()) {
-			cid_assign(Control_config[idx].second.cid, cid);
-			Control_config[idx].second.flags = flags;
-			Control_config[idx].second.btn = btn;
-		}
-	}
-	handler->endArrayRead();
-
-	/* Old read method. Temporarily commented out until compatibility code is made
-	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-		id1 = handler->readShort("key");
-		id2 = handler->readShort("joystick");
-		handler->readShort("mouse");	// unused, at the moment
-
-		if (idx < Control_config.size()) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
-		}
-	}
-	handler->endArrayRead();
-
-	auto list_axis = handler->startArrayRead("axes");
-	for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
-		axi = handler->readInt("axis_map");
-		inv = handler->readInt("invert_axis");
-
-		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, axi, CCF_AXIS), 0);
-			Control_config[idx + JOY_AXIS_BEGIN].invert(inv);
-		}
-	}
-	handler->endArrayRead();
-	*/
 }
 
 void pilotfile::plr_write_controls()
