@@ -6124,7 +6124,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum)) {
+			if (!check_los(objnum, target_objnum, 1.0f)) {
 				return 0;
 			}
 		}
@@ -6170,8 +6170,8 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
-//	This is a computationally expensive operation, so use sparingly
-bool check_los(int objnum, int target_objnum) {
+//	threshold defines the minimum radius for an object to be considered relevant for LoS
+bool check_los(int objnum, int target_objnum, float threshold) {
 	vec3d& end = Objects[target_objnum].pos;
 	vec3d& start = Objects[objnum].pos;
 
@@ -6200,6 +6200,28 @@ bool check_los(int objnum, int target_objnum) {
 			model_instance_num = Ships[objp->instance].model_instance_num;
 		}
 		else
+			continue;
+
+		//Early Out Model too small
+
+		float radius = model_get(model_num)->rad;
+		if (radius < threshold)
+			continue;
+
+		vec3d a, b, c;
+		vm_vec_sub(&a, &start, &objp->pos);
+		vm_vec_sub(&b, &end, &start);
+		vm_vec_cross(&c, &b, &a);
+
+		float distToTargetRecip = 1.0f / vm_vec_dist_squared(&start, &end);
+		float distLoSSquared = vm_vec_mag_squared(&c) * distToTargetRecip;
+		float t = -vm_vec_dot(&a, &b) * distToTargetRecip;
+
+		radius *= radius;
+		float maxTdelta = sqrtf(radius * distToTargetRecip);
+		
+		//Early out Model too far from LoS
+		if (distLoSSquared > radius || -maxTdelta > t || maxTdelta + 1 < t)
 			continue;
 
 		mc_info hull_check;
