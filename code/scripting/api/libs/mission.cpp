@@ -1024,7 +1024,7 @@ ADE_FUNC(createWarpeffect,
 	if (duration < opentime + closetime)
 	{
 		//Both warp opening and warp closing must occur within the duration of the warp effect.
-		opentime = closetime = duration / 2.0f;
+		LuaError(L, "The duration of the warp effect must be higher than the sum of the opening and close durations");
 	}
 
 	// calculate orientation matrix ----------------
