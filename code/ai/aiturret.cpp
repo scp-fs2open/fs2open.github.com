@@ -2391,11 +2391,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		// Similar check for small weapons
 		if ( wip->wi_flags[Weapon::Info_Flags::Small_only] ) {
-			if ( lep->type != OBJ_SHIP) {
-				tentative_return = true;
-				continue;
-			}
-			if ( Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge() ) {
+			if ( (lep->type == OBJ_SHIP) && Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge() ) {
 				tentative_return = true;
 				continue;
 			}
