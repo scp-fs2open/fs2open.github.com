@@ -2333,7 +2333,6 @@ int parse_create_object_sub(p_object *p_objp)
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
 
-		ptr->turret_best_weapon = -1;
 		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
 		ptr->turret_animation_done_time = 0;
 	}
