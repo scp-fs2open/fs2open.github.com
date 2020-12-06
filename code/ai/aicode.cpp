@@ -6124,7 +6124,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum, 1.0f)) {
+			if (!check_los(objnum, target_objnum, 10.0f)) {
 				return 0;
 			}
 		}
@@ -6204,11 +6204,12 @@ bool check_los(int objnum, int target_objnum, float threshold) {
 
 		//Early Out Model too small
 
-		float radius = model_get(model_num)->rad;
+		float radius = objp->radius;
 		if (radius < threshold)
 			continue;
 
-		vec3d a, b, c;
+		//Alternate "is in cylinder relevant for LoS" check
+		/*vec3d a, b, c;
 		vm_vec_sub(&a, &start, &objp->pos);
 		vm_vec_sub(&b, &end, &start);
 		vm_vec_cross(&c, &b, &a);
@@ -6223,6 +6224,29 @@ bool check_los(int objnum, int target_objnum, float threshold) {
 		//Early out Model too far from LoS
 		if (distLoSSquared > radius || -maxTdelta > t || maxTdelta + 1 < t)
 			continue;
+		*/
+
+		//Asteroth's implementation
+		// if objp is inside start or end then we have to check the model
+		if (vm_vec_dist(&start, &objp->pos) > objp->radius && vm_vec_dist(&end, &objp->pos) > objp->radius) {
+			// now check that objp is in between start and end
+			vec3d start2end = end - start;
+			vec3d end2start = start - end;
+			vec3d start2objp = objp->pos - start;
+			vec3d end2objp = objp->pos - end;
+
+			// if objp and end are in opposite directions from start, then early out
+			if (vm_vec_dot(&start2end, &start2objp) < 0.0f)
+				continue;
+
+			// if objp and start are in opposite directions from end, then early out
+			if (vm_vec_dot(&end2start, &end2objp) < 0.0f)
+				continue;
+
+			// finally check if objp is too close to the path
+			if (vm_vec_mag(&start2objp) > (vm_vec_mag(&start2end) + objp->radius))
+				continue; // adding objp->radius is somewhat of an overestimate but thats ok
+		}
 
 		mc_info hull_check;
 		mc_info_init(&hull_check);
