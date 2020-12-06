@@ -1018,12 +1018,16 @@ ADE_FUNC(createWarpeffect,
 
 	int flags = warp3d ? FBF_WARP_VIA_SEXP | FBF_WARP_3D : FBF_WARP_VIA_SEXP;
 
-	duration = duration < 4.0f ? 4.0f : duration;
+	if (duration < 4.0f) {
+		duration = 4.0f;
+		LuaError(L, "The duration of the warp effect must be at least 4 seconds");
+	}
 
 	// sanity check, if these were specified
 	if (duration < opentime + closetime)
 	{
 		//Both warp opening and warp closing must occur within the duration of the warp effect.
+		opentime = closetime = duration / 2.0f;
 		LuaError(L, "The duration of the warp effect must be higher than the sum of the opening and close durations");
 	}
 
@@ -1037,6 +1041,7 @@ ADE_FUNC(createWarpeffect,
 	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		//error in warp-effect: warp can't point to itself
+		LuaError(L, "The warp effect cannot be pointing at itself");
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 	}
 
