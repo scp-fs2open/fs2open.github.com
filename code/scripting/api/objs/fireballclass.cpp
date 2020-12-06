@@ -40,26 +40,20 @@ ADE_FUNC(__eq, l_Fireballclass, "fireballclass, fireballclass", "Checks if the t
 	return ade_set_args(L, "b", idx1 == idx2);
 }
 
-ADE_VIRTVAR(Name, l_Fireballclass, "string", "Fireball class name", "string", "Fireball class unique id, or empty string if handle is invalid")
+ADE_VIRTVAR(UniqueID, l_Fireballclass, "string", "Fireball class name", "string", "Fireball class unique id, or empty string if handle is invalid")
 {
 	int idx;
 	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Fireballclass.Get(&idx), &s))
+	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
 	if(idx < 0 || idx >= Num_fireball_types)
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Fireball_info[idx].unique_id);
-		strncpy(Fireball_info[idx].unique_id, s, len);
-		Fireball_info[idx].unique_id[len - 1] = 0;
-	}
-
 	return ade_set_args(L, "s", Fireball_info[idx].unique_id);
 }
 
-ADE_VIRTVAR(FireballFilename, l_Fireballclass, NULL, "Fireball class animation filename (LOD 0)", "string", "Filename, or empty string if handle is invalid")
+ADE_VIRTVAR(Filename, l_Fireballclass, NULL, "Fireball class animation filename (LOD 0)", "string", "Filename, or empty string if handle is invalid")
 {
 	//Currently not settable as the bitmaps are only loaded once at level start
 	int idx;
@@ -111,7 +105,7 @@ ADE_FUNC(isValid, l_Fireballclass, NULL, "Detects whether handle is valid", "boo
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getFireballClassIndex, l_Fireballclass, NULL, "Gets the index value of the fireball class", "number", "index value of the fireball class")
+ADE_FUNC(getTableIndex, l_Fireballclass, NULL, "Gets the index value of the fireball class", "number", "index value of the fireball class")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
