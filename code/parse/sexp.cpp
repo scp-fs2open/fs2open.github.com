@@ -21122,13 +21122,20 @@ void sexp_fade(int n, bool fade_in)
 			R = 255;
 			G = B = 0;
 		}
-		// default: fade black or previous fadout color
+		// default: fade black or previous fadeout color
 		else
 		{
-			// Mantis #2944: if we're fading in, and we previously faded out to some specific color, use that same color to fade in
-			R = Fade_out_r;
-			G = Fade_out_g;
-			B = Fade_out_b;
+			// Mantis #2944: if we're fading in, use the same color we used to fade out with
+			if (fade_in)
+			{
+				R = Fade_out_r;
+				G = Fade_out_g;
+				B = Fade_out_b;
+			}
+			else
+			{
+				R = G = B = 0;
+			}
 		}
 	}
 
