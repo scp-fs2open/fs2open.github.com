@@ -35,6 +35,8 @@
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
+#include "scripting/api/objs/fireball.h"
+#include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
@@ -42,6 +44,7 @@
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
@@ -693,6 +696,37 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 	return ade_set_args(L, "i", Num_personas);
 }
 
+//****SUBLIBRARY: Mission/Fireballs
+ADE_LIB_DERIV(l_Mission_Fireballs, "Fireballs", NULL, NULL, l_Mission);
+
+ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball object in the mission.", "fireball", "Fireball handle, or invalid fireball handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+
+	//Remember, Lua indices start at 0.
+	int count = 1;
+
+	for (int i = 0; i < MAX_FIREBALLS; i++)
+	{
+		if (Fireballs[i].fireball_info_index < 0 || Fireballs[i].objnum < 0 || Objects[Fireballs[i].objnum].type != OBJ_FIREBALL)
+			continue;
+
+		if (count == idx) {
+			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[Fireballs[i].objnum])));
+		}
+
+		count++;
+	}
+
+	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
+{
+	return ade_set_args(L, "i", Num_fireballs);
+}
+
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
 	const char* name = nullptr;
@@ -953,6 +987,104 @@ ADE_FUNC(createWeapon,
 		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+}
+
+ADE_FUNC(createWarpeffect,
+	l_Mission,
+	"vector WorldPosition, vector PointTo, number radius, number duration /* Must be >= 4*/, fireballclass Class, "
+	"soundentry WarpOpenSound, soundentry WarpCloseSound, "
+	"[number WarpOpenDuration = -1, number WarpCloseDuration = -1, vector Velocity /* null vector by default*/, "
+	"boolean Use3DModel = false]",
+	"Creates a warp-effect fireball and returns a handle to it.",
+	"fireball",
+	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
+{
+	vec3d pos = vmd_zero_vector;
+	vec3d point_to = vmd_zero_vector;
+	float radius = 0.0f;
+	float duration = 4.0f;
+	int fireballclass = -1;
+	sound_entry_h *opensound = NULL;
+	sound_entry_h *closesound = NULL;
+
+	float opentime = -1.0f;
+	float closetime = -1.0f;
+	vec3d velocity = vmd_zero_vector;
+	bool warp3d = false;
+
+	if (!ade_get_args(L, "ooffooo|ffob", l_Vector.Get(&pos), l_Vector.Get(&point_to), &radius, &duration, l_Fireballclass.Get(&fireballclass), l_SoundEntry.GetPtr(&opensound), l_SoundEntry.GetPtr(&closesound), &opentime, &closetime, l_Vector.Get(&velocity), &warp3d)) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	int flags = warp3d ? FBF_WARP_VIA_SEXP | FBF_WARP_3D : FBF_WARP_VIA_SEXP;
+
+	if (duration < 4.0f) {
+		duration = 4.0f;
+		LuaError(L, "The duration of the warp effect must be at least 4 seconds");
+	}
+
+	// sanity check, if these were specified
+	if (duration < opentime + closetime)
+	{
+		//Both warp opening and warp closing must occur within the duration of the warp effect.
+		opentime = closetime = duration / 2.0f;
+		LuaError(L, "The duration of the warp effect must be higher than the sum of the opening and close durations");
+	}
+
+	// calculate orientation matrix ----------------
+
+	vec3d v_orient;
+	matrix m_orient;
+
+	vm_vec_sub(&v_orient, &point_to, &pos);
+
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
+	{
+		//error in warp-effect: warp can't point to itself
+		LuaError(L, "The warp effect cannot be pointing at itself");
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	vm_vector_2_matrix(&m_orient, &v_orient, nullptr, nullptr);
+
+	int obj_idx = fireball_create(&pos, fireballclass, FIREBALL_WARP_EFFECT, -1, radius, false, &velocity, duration, -1, &m_orient, 0, flags, opensound->idx, closesound->idx, opentime, closetime);
+
+	if (obj_idx > -1)
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+	else
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+
+ADE_FUNC(createExplosion,
+	l_Mission,
+	"vector WorldPosition, number radius, fireballclass Class, "
+	"[boolean LargeExplosion = false, vector Velocity /* null vector by default*/, object parent = nil]",
+	"Creates an explosion-effect fireball and returns a handle to it.",
+	"fireball",
+	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
+{
+	vec3d pos = vmd_zero_vector;
+	float radius = 0.0f;
+	int fireballclass = -1;
+	bool big = false;
+
+	vec3d velocity = vmd_zero_vector;
+	object_h* parent = NULL;
+
+	if (!ade_get_args(L, "ofo|boo", l_Vector.Get(&pos), &radius, l_Fireballclass.Get(&fireballclass), &big, l_Vector.Get(&velocity), l_Object.GetPtr(&parent))) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
+
+	int parent_idx = (parent && parent->IsValid()) ? OBJ_INDEX(parent->objp) : -1;
+
+	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
+
+	if (obj_idx > -1)
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+	else
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")

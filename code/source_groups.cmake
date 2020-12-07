@@ -1213,6 +1213,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/eye.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
+	scripting/api/objs/fireballclass.cpp
+	scripting/api/objs/fireballclass.h
+	scripting/api/objs/fireball.cpp
+	scripting/api/objs/fireball.h
 	scripting/api/objs/font.cpp
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
