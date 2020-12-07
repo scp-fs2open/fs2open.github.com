@@ -446,6 +446,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
 
+				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
+
 				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
 				{

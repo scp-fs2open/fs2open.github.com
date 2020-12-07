@@ -25,6 +25,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmeasure/cmeasure.h"
+#include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
@@ -6104,6 +6105,7 @@ float compute_incoming_payload(object *target_objp)
 //		targeted at player
 //			OR:	player has too many homers targeted at him
 //					Missiontime in that dead zone in which can't fire at this player
+//			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
 int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
@@ -6117,6 +6119,13 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 		if ( tobjp->type == OBJ_SHIP ) {
 			if (Ship_info[Ships[tobjp->instance].ship_info_index].is_small_ship()) {
 				num_homers = compute_num_homing_objects(&Objects[target_objnum]);
+			}
+		}
+
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
+			//Check if th AI has Line of Sight and is allowed to fire
+			if (!check_los(objnum, target_objnum, 10.0f)) {
+				return 0;
 			}
 		}
 
@@ -6157,6 +6166,105 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 	}
 
 	return 1;
+}
+
+//	--------------------------------------------------------------------------
+//  Returns true if *aip has a line of sight to its current target.
+//	threshold defines the minimum radius for an object to be considered relevant for LoS
+bool check_los(int objnum, int target_objnum, float threshold) {
+	vec3d& end = Objects[target_objnum].pos;
+	vec3d& start = Objects[objnum].pos;
+
+	object* objp;
+
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		//Don't collision check against ourselves or our target
+		if (OBJ_INDEX(objp) == objnum || OBJ_INDEX(objp) == target_objnum)
+			continue;
+
+		int model_num = 0;
+		int model_instance_num = 0;
+
+		//Only collision check against other pieces of Debris, Asteroids or Ships
+		char type = objp->type;
+		if (type == OBJ_DEBRIS) {
+			model_num = Debris[objp->instance].model_num;
+			model_instance_num = -1;
+		}
+		else if (type == OBJ_ASTEROID) {
+			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+			model_instance_num = Asteroids[objp->instance].model_instance_num;
+		}
+		else if (type == OBJ_SHIP) {
+			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+			model_instance_num = Ships[objp->instance].model_instance_num;
+		}
+		else
+			continue;
+
+		//Early Out Model too small
+
+		float radius = objp->radius;
+		if (radius < threshold)
+			continue;
+
+		//Alternate "is in cylinder relevant for LoS" check
+		/*vec3d a, b, c;
+		vm_vec_sub(&a, &start, &objp->pos);
+		vm_vec_sub(&b, &end, &start);
+		vm_vec_cross(&c, &b, &a);
+
+		float distToTargetRecip = 1.0f / vm_vec_dist_squared(&start, &end);
+		float distLoSSquared = vm_vec_mag_squared(&c) * distToTargetRecip;
+		float t = -vm_vec_dot(&a, &b) * distToTargetRecip;
+
+		radius *= radius;
+		float maxTdelta = sqrtf(radius * distToTargetRecip);
+		
+		//Early out Model too far from LoS
+		if (distLoSSquared > radius || -maxTdelta > t || maxTdelta + 1 < t)
+			continue;
+		*/
+
+		//Asteroth's implementation
+		// if objp is inside start or end then we have to check the model
+		if (vm_vec_dist(&start, &objp->pos) > objp->radius && vm_vec_dist(&end, &objp->pos) > objp->radius) {
+			// now check that objp is in between start and end
+			vec3d start2end = end - start;
+			vec3d end2start = start - end;
+			vec3d start2objp = objp->pos - start;
+			vec3d end2objp = objp->pos - end;
+
+			// if objp and end are in opposite directions from start, then early out
+			if (vm_vec_dot(&start2end, &start2objp) < 0.0f)
+				continue;
+
+			// if objp and start are in opposite directions from end, then early out
+			if (vm_vec_dot(&end2start, &end2objp) < 0.0f)
+				continue;
+
+			// finally check if objp is too close to the path
+			if (vm_vec_mag(&start2objp) > (vm_vec_mag(&start2end) + objp->radius))
+				continue; // adding objp->radius is somewhat of an overestimate but thats ok
+		}
+
+		mc_info hull_check;
+		mc_info_init(&hull_check);
+
+		hull_check.model_instance_num = model_instance_num;
+		hull_check.model_num = model_num;
+		hull_check.orient = &objp->orient;
+		hull_check.pos = &objp->pos;
+		hull_check.p0 = &start;
+		hull_check.p1 = &end;
+		hull_check.flags = MC_CHECK_MODEL;
+
+		if (model_collide(&hull_check)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 //	--------------------------------------------------------------------------
