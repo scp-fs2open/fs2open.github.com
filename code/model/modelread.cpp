@@ -1710,7 +1710,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].bsp_data = NULL;
 				}
 
-				pm->submodel[n].is_thruster = strstr(pm->submodel[n].name, "thruster");
+				pm->submodel[n].is_thruster = (strstr(pm->submodel[n].name, "thruster") != nullptr);
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
@@ -1719,7 +1719,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].nocollide_this_only = true;
 				}
 
-				pm->submodel[n].is_damaged = strstr(pm->submodel[n].name, "-destroyed");
+				pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
 
 				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
 				//key_getch();
