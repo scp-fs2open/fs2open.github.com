@@ -1710,10 +1710,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].bsp_data = NULL;
 				}
 
-				if ( strstr( pm->submodel[n].name, "thruster") )	
-					pm->submodel[n].is_thruster=1;
-				else
-					pm->submodel[n].is_thruster=0;
+				pm->submodel[n].is_thruster = strstr(pm->submodel[n].name, "thruster");
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
@@ -1722,10 +1719,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].nocollide_this_only = true;
 				}
 
-				if ( strstr( pm->submodel[n].name, "-destroyed") )	
-					pm->submodel[n].is_damaged=1;
-				else
-					pm->submodel[n].is_damaged=0;
+				pm->submodel[n].is_damaged = strstr(pm->submodel[n].name, "-destroyed");
 
 				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
 				//key_getch();
@@ -2800,7 +2794,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
-				sm1->is_damaged = 1;
+				sm1->is_damaged = true;
 			} 
 		}
 
@@ -4590,11 +4584,7 @@ void model_clear_instance(int model_num)
 	for (i=0; i<pm->n_models; i++ )	{
 		bsp_info *sm = &pm->submodel[i];
 		
-		if ( pm->submodel[i].is_damaged )	{
-			sm->blown_off = 1;
-		} else {
-			sm->blown_off = 0;
-		}
+		sm->blown_off = pm->submodel[i].is_damaged;
 		sm->angs.p = 0.0f;
 		sm->angs.b = 0.0f;
 		sm->angs.h = 0.0f;
@@ -4621,7 +4611,7 @@ void model_clear_instance(int model_num)
 // initialization during ship set
 void model_clear_instance_info( submodel_instance_info * sii )
 {
-	sii->blown_off = 0;
+	sii->blown_off = false;
 	sii->angs.p = 0.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
@@ -4640,7 +4630,7 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 	sm_instance->angs.b = 0.0f;
 	sm_instance->angs.h = 0.0f;
 
-	sm_instance->blown_off = sm->is_damaged ? true : false;
+	sm_instance->blown_off = sm->is_damaged;
 
 	sm_instance->collision_checked = false;
 	sm_instance->sii = nullptr;
@@ -4660,7 +4650,7 @@ void model_clear_submodel_instances( int model_instance_num )
 // initialization during ship set
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
 {
-	sii->blown_off = 0;
+	sii->blown_off = false;
 	sii->angs.p = 0.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
@@ -4671,7 +4661,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 	sii->current_turn_rate = turn_rate * 0.0f;
 	sii->desired_turn_rate = turn_rate;
 	sii->turn_accel = turn_accel;
-	sii->axis_set = 0;
+	sii->axis_set = false;
 	sii->step_zero_timestamp = timestamp();
 }
 
@@ -4697,7 +4687,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
 	if (instance_flags[Ship::Subsystem_Flags::No_disappear]) {
-		sm->blown_off = 0;
+		sm->blown_off = false;
 	} else {
 		// Set the "blown out" flags
 		sm->blown_off = sii->blown_off;
@@ -4705,14 +4695,14 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	if ( (sm->blown_off) && (!(instance_flags[Ship::Subsystem_Flags::No_replace])) )	{
 		if ( sm->my_replacement > -1 )	{
-			pm->submodel[sm->my_replacement].blown_off = 0;
+			pm->submodel[sm->my_replacement].blown_off = false;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
 		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-			pm->submodel[sm->my_replacement].blown_off = 1;
+			pm->submodel[sm->my_replacement].blown_off = true;
 		}
 	}
 
@@ -4744,7 +4734,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 	// the replacement model from being drawn by marking it as having been blown off
 	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-		pm->submodel[sm->my_replacement].blown_off = 1;
+		pm->submodel[sm->my_replacement].blown_off = true;
 	}
 
 	// Set the angles
@@ -4775,7 +4765,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else {
-		smi->blown_off = sii->blown_off ? true : false;
+		smi->blown_off = sii->blown_off;
 	}
 
 	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
@@ -4955,7 +4945,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 
 	// set flag to init
 	sii->point_on_axis = int1;
-	sii->axis_set = 1;
+	sii->axis_set = true;
 }
 
 

@@ -76,22 +76,26 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
 typedef struct submodel_instance_info {
-	int		blown_off;								// If set, this subobject is blown off
 	angles	angs;									// The current angle this thing is turned to.
 	angles	prev_angs;
-	vec3d	point_on_axis;							// in ship RF
-	float		current_turn_rate;
-	float		desired_turn_rate;
-	float		turn_accel;
-	int		axis_set;
+
+	float	current_turn_rate;
+	float	desired_turn_rate;
+	float	turn_accel;
 	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
+
+	vec3d	point_on_axis;							// in ship RF
+	bool	axis_set;
+	bool	blown_off;								// If set, this subobject is blown off
 } submodel_instance_info;
 
 typedef struct submodel_instance {
 	angles angs;
 	angles prev_angs;
+
 	vec3d mc_base;
 	matrix mc_orient;
+
 	bool collision_checked;
 	bool blown_off;
 	submodel_instance_info *sii;
@@ -259,10 +263,10 @@ class bsp_info
 {
 public:
 	bsp_info()
-		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
-		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0),
-		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
+		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
+		rad(0.0f), blown_off(false), my_replacement(-1), i_replace(-1), is_live_debris(false), num_live_debris(0),
+		is_thruster(false), is_damaged(false), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		num_arcs(0), outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
 		look_at_num(-1)
@@ -303,17 +307,17 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	int		blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
+	bool	blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
 	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
 	angles	angs;					// The rotation angles of this subobject (Within its own orientation, NOT relative to parent - KeldorKatarn)
 
-	int		is_live_debris;		// whether current submodel is a live debris model
+	bool	is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
 
-	int		is_thruster;
-	int		is_damaged;
+	bool	is_thruster;
+	bool	is_damaged;
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
