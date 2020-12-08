@@ -407,7 +407,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->current_width_factor = wip->b_info.beam_initial_width;	
+	new_item->current_width_factor = wip->b_info.beam_initial_width < 0.1f ? 0.1f : wip->b_info.beam_initial_width;
 	new_item->team = (firing_ship == NULL) ? fire_info->team : static_cast<char>(firing_ship->team);
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
@@ -597,7 +597,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->current_width_factor = wip->b_info.beam_initial_width;
+	new_item->current_width_factor = wip->b_info.beam_initial_width < 0.1f ? 0.1f : wip->b_info.beam_initial_width;
 	new_item->team = (char)firing_ship->team;
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
