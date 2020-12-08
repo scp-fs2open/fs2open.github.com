@@ -230,7 +230,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = boxText.c_str();
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -314,7 +314,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = text;
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -382,7 +382,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_WARNING;
 			boxData.message = boxMessage.c_str();
 			boxData.title = "Warning!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -486,7 +486,7 @@ namespace os
 					break;
 			}
 
-			SDL_ShowSimpleMessageBox(flags, title, message, os::getSDLMainWindow());
+			SDL_ShowSimpleMessageBox(flags, title, message, !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow());
 		}
 	}
 }
