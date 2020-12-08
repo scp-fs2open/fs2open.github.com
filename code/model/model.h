@@ -77,9 +77,9 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 // the model_clear_instance, model_set_instance, model_get_instance functions.
 typedef struct submodel_instance_info {
 	int		blown_off;								// If set, this subobject is blown off
-	angles	angs;										// The current angle this thing is turned to.
+	angles	angs;									// The current angle this thing is turned to.
 	angles	prev_angs;
-	vec3d	pt_on_axis;								// in ship RF
+	vec3d	point_on_axis;							// in ship RF
 	float		current_turn_rate;
 	float		desired_turn_rate;
 	float		turn_accel;

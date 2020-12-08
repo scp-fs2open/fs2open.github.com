@@ -3722,7 +3722,7 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 	sii->current_turn_rate = final_turn_rate;
 
 	// Apply rotation in the axis of movement
-	// then normalize the angle angle so that we are within a valid range:
+	// then normalize the angle so that we are within a valid range:
 	//  greater than or equal to 0
 	//  less than PI2
 	switch( sm->movement_axis )	{
@@ -4643,7 +4643,7 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 	sm_instance->blown_off = sm->is_damaged ? true : false;
 
 	sm_instance->collision_checked = false;
-	sm_instance->sii = NULL;
+	sm_instance->sii = nullptr;
 }
 
 void model_clear_submodel_instances( int model_instance_num )
@@ -4954,7 +4954,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	vm_vec_scale_add(&int1, &p1, &v1, s);
 
 	// set flag to init
-	sii->pt_on_axis = int1;
+	sii->point_on_axis = int1;
 	sii->axis_set = 1;
 }
 

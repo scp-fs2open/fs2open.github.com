@@ -7120,7 +7120,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// Fix up animation code references
 	for (i = 0; i < sinfo->n_subsystems; i++) {
 		for (j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
-			if (subsystem_stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
+			if (stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
 				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
 				if (idx != -1) {
 					sinfo->subsystems[i].triggers[j].subtype = idx;
