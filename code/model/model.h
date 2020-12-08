@@ -80,7 +80,7 @@ typedef struct submodel_instance_info {
 	angles	angs;										// The current angle this thing is turned to.
 	angles	prev_angs;
 	vec3d	pt_on_axis;								// in ship RF
-	float		cur_turn_rate;
+	float		current_turn_rate;
 	float		desired_turn_rate;
 	float		turn_accel;
 	int		axis_set;

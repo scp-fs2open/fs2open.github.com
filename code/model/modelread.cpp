@@ -139,7 +139,7 @@ public:
 		: submodel_num(_submodel_num)
 	{
 		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
-		submodel_info_1.cur_turn_rate = _turn_rate;
+		submodel_info_1.current_turn_rate = _turn_rate;
 		submodel_info_1.desired_turn_rate = _turn_rate;
 	}
 };
@@ -3551,21 +3551,21 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		// do accel
 		float accel_time = step_offset_time;
 		*ang_next += 0.5f * psub->stepped_rotation->max_turn_accel * accel_time * accel_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
 	} else if (step_offset_time < decel_start_time) {
 		// do coast
 		float coast_time = step_offset_time - coast_start_time;
 		*ang_next += start_coast_angle + psub->stepped_rotation->max_turn_rate * coast_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_rate;
 	} else if (step_offset_time < pause_start_time) {
 		// do decel
 		float time_to_pause = psub->stepped_rotation->t_transit - step_offset_time;
 		*ang_next += (step_size - 0.5f * psub->stepped_rotation->max_turn_accel * time_to_pause * time_to_pause);
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
 	} else {
 		// do pause
 		*ang_next += step_size;
-		sii->cur_turn_rate = 0.0f;
+		sii->current_turn_rate = 0.0f;
 	}
 }
 
@@ -3701,16 +3701,16 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 	sii->prev_angs = sii->angs;
 
 	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
+	float diff = sii->desired_turn_rate - sii->current_turn_rate;
 
 	float final_turn_rate;
 	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate + sii->turn_accel * flFrametime;
 		if (final_turn_rate > sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
 	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate - sii->turn_accel * flFrametime;
 		if (final_turn_rate < sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
@@ -3718,8 +3718,8 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 		final_turn_rate = sii->desired_turn_rate;
 	}
 
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
+	float delta = (sii->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+	sii->current_turn_rate = final_turn_rate;
 
 	// Apply rotation in the axis of movement
 	// then normalize the angle angle so that we are within a valid range:
@@ -3773,16 +3773,16 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	sii->prev_angs = sii->angs;
 
 	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
+	float diff = sii->desired_turn_rate - sii->current_turn_rate;
 
 	float final_turn_rate;
 	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate + sii->turn_accel * flFrametime;
 		if (final_turn_rate > sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
 	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate - sii->turn_accel * flFrametime;
 		if (final_turn_rate < sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
@@ -3790,8 +3790,8 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		final_turn_rate = sii->desired_turn_rate;
 	}
 
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
+	float delta = (sii->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+	sii->current_turn_rate = final_turn_rate;
 
 	
 	//float delta = psub->turn_rate * flFrametime;
@@ -4629,7 +4629,7 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->prev_angs.b = 0.0f;
 	sii->prev_angs.h = 0.0f;
 
-	sii->cur_turn_rate = 0.0f;
+	sii->current_turn_rate = 0.0f;
 	sii->desired_turn_rate = 0.0f;
 	sii->turn_accel = 0.0f;
 }
@@ -4668,7 +4668,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 	sii->prev_angs.b = 0.0f;
 	sii->prev_angs.h = 0.0f;
 
-	sii->cur_turn_rate = turn_rate * 0.0f;
+	sii->current_turn_rate = turn_rate * 0.0f;
 	sii->desired_turn_rate = turn_rate;
 	sii->turn_accel = turn_accel;
 	sii->axis_set = 0;

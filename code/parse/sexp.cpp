@@ -18952,7 +18952,7 @@ void sexp_reverse_rotating_subsystem(int node)
 
 		// switch direction of rotation
 		rotate->turn_rate *= -1.0f;
-		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
+		rotate->submodel_info_1.current_turn_rate *= -1.0f;
 		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
 	}
 }
@@ -18992,7 +18992,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
+		rotate->submodel_info_1.current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)
