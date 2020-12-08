@@ -4609,9 +4609,10 @@ void model_clear_instance(int model_num)
 }
 
 // initialization during ship set
-void model_clear_instance_info( submodel_instance_info * sii )
+void model_clear_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
 {
 	sii->blown_off = false;
+
 	sii->angs.p = 0.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
@@ -4620,8 +4621,11 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->prev_angs.h = 0.0f;
 
 	sii->current_turn_rate = 0.0f;
-	sii->desired_turn_rate = 0.0f;
-	sii->turn_accel = 0.0f;
+	sii->desired_turn_rate = turn_rate;
+	sii->turn_accel = turn_accel;
+
+	sii->axis_set = false;
+	sii->step_zero_timestamp = timestamp();
 }
 
 void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm )
@@ -4645,24 +4649,6 @@ void model_clear_submodel_instances( int model_instance_num )
 	for ( i = 0; i < pm->n_models; i++ ) {
 		model_clear_submodel_instance(&pmi->submodel[i], &pm->submodel[i]);
 	}
-}
-
-// initialization during ship set
-void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
-{
-	sii->blown_off = false;
-	sii->angs.p = 0.0f;
-	sii->angs.b = 0.0f;
-	sii->angs.h = 0.0f;
-	sii->prev_angs.p = 0.0f;
-	sii->prev_angs.b = 0.0f;
-	sii->prev_angs.h = 0.0f;
-
-	sii->current_turn_rate = turn_rate * 0.0f;
-	sii->desired_turn_rate = turn_rate;
-	sii->turn_accel = turn_accel;
-	sii->axis_set = false;
-	sii->step_zero_timestamp = timestamp();
 }
 
 // Sets the submodel instance data in a submodel (for all detail levels)

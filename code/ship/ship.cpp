@@ -7098,9 +7098,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		// turn_rate, turn_accel
 		float turn_accel = 0.5f;
-		model_set_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
-
-		model_clear_instance_info( &ship_system->submodel_info_2 );
+		model_clear_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
+		model_clear_instance_info(&ship_system->submodel_info_2);
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
         model_system->flags.remove(Model::Subsystem_Flags::Turret_matrix);

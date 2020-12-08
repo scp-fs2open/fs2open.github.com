@@ -972,11 +972,9 @@ extern void model_clear_instance(int model_num);
 void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm );
 void model_clear_submodel_instances( int model_instance_num );
 
-// Sets rotating submodel turn info to that stored in model
-void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel);
-
 // Clears all the values in a particular instance to their defaults.
-extern void model_clear_instance_info(submodel_instance_info * sii);
+// Sets rotating submodel turn info to that stored in model
+extern void model_clear_instance_info(submodel_instance_info *sii, float turn_rate = 0.0f, float turn_accel = 0.0f);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags = NULL);
