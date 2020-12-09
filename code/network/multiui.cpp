@@ -68,6 +68,7 @@
 #include "network/multi_sw.h"
 #include "menuui/mainhallmenu.h"
 #include "debugconsole/console.h"
+#include "network/multi_mdns.h"
 
 #include <algorithm>
 
@@ -1115,7 +1116,10 @@ void multi_join_game_close()
 
 	// free up the active game list
 	multi_free_active_games();
-	
+
+	// cancel mdns queries
+	multi_mdns_query_close();
+
 	// destroy the UI_WINDOW
 	Multi_join_window.destroy();
 }
@@ -1501,6 +1505,11 @@ void multi_join_do_netstuff()
 		} else {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
 		}		
+	}
+
+	// if we're doing local broadcast then check broadcast queries
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+		multi_mdns_query_do();
 	}
 
 	// check to see if we've been accepted.  If so, put up message saying so
@@ -4120,6 +4129,11 @@ void multi_create_init_as_server()
 
 	// setup port forwarding
 	multi_port_forward_init();
+
+	// setup mdns
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+		multi_mdns_service_init();
+	}
 }
 
 // if on a standalone

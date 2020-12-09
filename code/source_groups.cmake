@@ -821,6 +821,8 @@ add_file_folder("Network"
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_mdns.cpp
+	network/multi_mdns.h
 	network/multi_obj.cpp
 	network/multi_obj.h
 	network/multi_observer.cpp
