@@ -21,27 +21,9 @@ jobs:
             compiler: gcc-10
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    container: ghcr.io/scp-fs2open/linux_build:sha-84eedff
     steps:
-      - name: Prepare Environment
-        working-directory: /tmp
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-
-          # Repository for the Vulkan SDK so that we have the glslc compiler
-          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
-          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.148-bionic.list https://packages.lunarg.com/vulkan/1.2.148/lunarg-vulkan-1.2.148-bionic.list
-
-          sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng-dev libjpeg62-dev \
-            liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-10 vulkan-sdk
-
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 9
-          sudo apt-get -yq install libc++-9-dev libc++abi-9-dev
       - name: Cache Qt
         id: cache-qt-lin
         uses: actions/cache@v1
@@ -60,6 +42,7 @@ jobs:
         with:
           submodules: true
       - name: Configure CMake
+        shell: bash
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
