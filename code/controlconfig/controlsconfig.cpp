@@ -873,7 +873,7 @@ void control_config_reset_defaults()
 	}
 
 	// Reset joy defaults.  No presets for joysticks currently
-	for (size_t i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
+	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
 		Axis_map_to[i] = control_config_axis_default(i);
 		Invert_axis[i] = Invert_axis_defaults[i];
 	}
