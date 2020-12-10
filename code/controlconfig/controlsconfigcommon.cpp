@@ -1201,7 +1201,7 @@ size_t find_control_by_text(SCP_string& text) {
 	try {
 		item_id = old_text.at(text);
 
-	} catch (const std::out_of_range) {
+	} catch (const std::out_of_range &) {
 		// Couldn't find in old ::text
 		return Control_config.size();
 
