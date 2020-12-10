@@ -87,6 +87,7 @@ jobs:
         working-directory: ./build
         env:
           CONFIGURATION: ${{ matrix.configuration }}
+          XDG_RUNTIME_DIR: /root
         run: |
           if [ "$CONFIGURATION" = "Debug" ]; then
               valgrind --leak-check=full --error-exitcode=1 --gen-suppressions=all \
