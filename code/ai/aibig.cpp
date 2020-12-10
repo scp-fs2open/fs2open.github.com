@@ -21,6 +21,7 @@
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "object\objcollide.h"
 
 
 #ifdef _MSC_VER
@@ -527,6 +528,101 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	return 0;
 }
 
+bool ai_new_maybe_reposition_attack_subsys() {
+	ai_info* aip;
+	float		dot = 1.0f, min_dot;
+	object* target_objp;
+
+	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+
+	if (aip->target_objnum < 0 || aip->targeted_subsys == nullptr)
+		return false;
+
+	target_objp = &Objects[aip->target_objnum];
+
+	// dont bother with this if you're still far away
+	if (vm_vec_dist(&Pl_objp->pos, &target_objp->pos) > target_objp->radius * 5.0f)
+		return false;
+
+	vec3d		geye, gsubpos;
+	eye* ep;
+	polymodel* pm = model_get(Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num);
+
+	// get world pos of eye (stored in geye)
+	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
+	model_find_world_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
+
+	// get world pos of subsystem
+	vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
+	vm_vec_add2(&gsubpos, &En_objp->pos);
+
+	// you're in sight! shoot it!
+	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 0))
+		return false;
+
+	// not in sight, gotta get there
+	vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
+	vec3d tgt2subsys = gsubpos - target_objp->pos;
+	float pl_dist = vm_vec_mag(&tgt2pl);
+	float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
+
+	float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
+	float angle2goal = angle2subsys;
+	if (angle2goal > 1.2f) // let's not try to go more than 1.5 radians around the ship
+		angle2goal = 1.2f;
+
+	// we'll start by travelling along the sphere at our current distance around the ship
+	// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
+	vec3d goal_pos, cross;
+	vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
+	vm_vec_normalize(&cross);
+	vm_vec_negate(&cross);
+	vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
+
+	// then scale in (or out) towards our subsys
+	vec3d world_goal_pos;
+	float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
+	vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
+	world_goal_pos += target_objp->pos;
+
+	vec3d* good_pos = nullptr;
+	if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
+		// ok best case won't work
+		if (pl_dist > subsys_dist) {
+			//we're farther away than the subsys, let's try at our current distance
+			world_goal_pos = goal_pos + target_objp->pos;
+			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+				good_pos = &world_goal_pos;
+		}
+
+		// ok, let's start moving it away and see if that's better
+		for (int i = 1; i < 4; i++) {
+			if (good_pos)
+				break;
+
+			vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * pow(1.3f,i));
+			world_goal_pos += target_objp->pos;
+			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+				good_pos = &world_goal_pos;
+		}
+
+		// welp this sucks, just run away i guess
+		if (!good_pos) {
+			vm_vec_copy_normalize(&world_goal_pos, &Pl_objp->pos);
+			world_goal_pos *= target_objp->radius;
+			world_goal_pos += target_objp->pos;
+			good_pos = &world_goal_pos;
+		}
+	}
+	else
+		good_pos = &world_goal_pos;
+
+	ai_turn_towards_vector(good_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
+	accelerate_ship(aip, 1.0f);
+	return true;
+
+}
+
 // This function is only called from ai_big_chase_attack() when a ship is flying very slowly and
 // attacking a big ship.  The ship should scan for enemy fighter/bombers... if any are close, then
 // return 1, otherwise return 0;
@@ -635,10 +731,10 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		}
 
 		// see if Pl_objp needs to reposition to get a good shot at subsystem which is being attacked
-		if ( ai_big_maybe_follow_subsys_path() ) {
-			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
-				afterburners_stop(Pl_objp);
-			}
+		if ( /*ai_big_maybe_follow_subsys_path() */ ai_new_maybe_reposition_attack_subsys() ) {
+			//if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
+			//	afterburners_stop(Pl_objp);
+			//}
 			return;
 		}
 
@@ -1037,7 +1133,10 @@ void ai_big_chase()
 		float dist_normal_to_enemy;
 
 		if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-			dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			if (true) 
+				dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			else // I'm fairly the retail this retail code VVV meant to use / instead of * 
+				dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
 		} else {
 			// don;t have normal so use a conservative value here
 			dist_normal_to_enemy = 0.3f * dist_to_enemy;
@@ -1318,7 +1417,7 @@ void ai_big_strafe_attack()
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
-	if ( ai_big_maybe_follow_subsys_path(0) ) {
+	if ( ai_new_maybe_reposition_attack_subsys() ) {
 		return;
 	}
 
@@ -1437,7 +1536,7 @@ void ai_big_strafe_glide_attack()
 	flight_dot_to_enemy = vm_vec_dot(&target_objp->pos, &norm_vel_vec);	//Angle between flight path and target ship
 
 	//If we're following a path, then we shouldn't be doing glide strafe
-	if ( ai_big_maybe_follow_subsys_path(0) ) {
+	if ( ai_new_maybe_reposition_attack_subsys() ) {
 		return;
 	}
 
