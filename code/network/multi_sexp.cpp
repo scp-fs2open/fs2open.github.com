@@ -10,7 +10,7 @@
 #include "network/multiutil.h"
 
 static const std::uint8_t CALLBACK_TERMINATOR = 255;
-static const short TEMP_DATA_SIZE = -1;
+static const std::int16_t TEMP_DATA_SIZE = -1;
 
 sexp_network_packet Current_sexp_network_packet;
 

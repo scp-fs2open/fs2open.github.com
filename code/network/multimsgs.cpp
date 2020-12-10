@@ -2203,8 +2203,8 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 	int packet_size = 0;
 
 	// Get this out of the way, because we don't want to waste our time if the addr is bad.
-	Assert(addr != nullptr);
 	if (addr == nullptr) {
+		UNREACHABLE("Net address not specified!");
 		return;
 	}
 
@@ -5682,9 +5682,9 @@ void send_player_settings_packet(net_player *p)
 			// break the p_info structure by member, so we don't overwrite any absolute pointers
 			// ADD_DATA(Net_players[idx].p_info);
 			ADD_INT(Net_players[idx].p_info.team);
-			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_index));
-			val = static_cast<char>(Net_players[idx].p_info.ship_class);
+			val = static_cast<char>(Net_players[idx].p_info.ship_index);
 			ADD_DATA(val);
+			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_class));
 		}
 	}
 	// add the stop byte
@@ -5705,8 +5705,8 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 	net_player_info bogus,*ptr;
 	short player_id;
 	ubyte stop;
-	short ship_index;
-	char ship_class;
+	short ship_class;
+	char ship_index;
 
 	offset = HEADER_LENGTH;
 
@@ -5725,9 +5725,9 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 		}
 		
 		GET_INT(ptr->team);
-		GET_SHORT(ship_index);
+		GET_DATA(ship_index);
 		ptr->ship_index = ship_index;
-		GET_DATA(ship_class);
+		GET_SHORT(ship_class);
 		ptr->ship_class = ship_class;
 		
 		// next stop byte
