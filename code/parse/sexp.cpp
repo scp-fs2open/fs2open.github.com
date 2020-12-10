@@ -12731,8 +12731,8 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		ss->submodel_info_1.blown_off = 0;
-		ss->submodel_info_2.blown_off = 0;
+		ss->submodel_info_1.blown_off = false;
+		ss->submodel_info_2.blown_off = false;
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -18952,7 +18952,7 @@ void sexp_reverse_rotating_subsystem(int node)
 
 		// switch direction of rotation
 		rotate->turn_rate *= -1.0f;
-		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
+		rotate->submodel_info_1.current_turn_rate *= -1.0f;
 		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
 	}
 }
@@ -18992,7 +18992,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
+		rotate->submodel_info_1.current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)

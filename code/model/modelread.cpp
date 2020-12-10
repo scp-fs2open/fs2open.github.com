@@ -139,7 +139,7 @@ public:
 		: submodel_num(_submodel_num)
 	{
 		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
-		submodel_info_1.cur_turn_rate = _turn_rate;
+		submodel_info_1.current_turn_rate = _turn_rate;
 		submodel_info_1.desired_turn_rate = _turn_rate;
 	}
 };
@@ -1710,10 +1710,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].bsp_data = NULL;
 				}
 
-				if ( strstr( pm->submodel[n].name, "thruster") )	
-					pm->submodel[n].is_thruster=1;
-				else
-					pm->submodel[n].is_thruster=0;
+				pm->submodel[n].is_thruster = (strstr(pm->submodel[n].name, "thruster") != nullptr);
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
@@ -1722,10 +1719,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].nocollide_this_only = true;
 				}
 
-				if ( strstr( pm->submodel[n].name, "-destroyed") )	
-					pm->submodel[n].is_damaged=1;
-				else
-					pm->submodel[n].is_damaged=0;
+				pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
 
 				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
 				//key_getch();
@@ -2800,7 +2794,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
-				sm1->is_damaged = 1;
+				sm1->is_damaged = true;
 			} 
 		}
 
@@ -3551,21 +3545,21 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		// do accel
 		float accel_time = step_offset_time;
 		*ang_next += 0.5f * psub->stepped_rotation->max_turn_accel * accel_time * accel_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_accel * accel_time;
 	} else if (step_offset_time < decel_start_time) {
 		// do coast
 		float coast_time = step_offset_time - coast_start_time;
 		*ang_next += start_coast_angle + psub->stepped_rotation->max_turn_rate * coast_time;
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_rate;
 	} else if (step_offset_time < pause_start_time) {
 		// do decel
 		float time_to_pause = psub->stepped_rotation->t_transit - step_offset_time;
 		*ang_next += (step_size - 0.5f * psub->stepped_rotation->max_turn_accel * time_to_pause * time_to_pause);
-		sii->cur_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
+		sii->current_turn_rate = psub->stepped_rotation->max_turn_rate * time_to_pause;
 	} else {
 		// do pause
 		*ang_next += step_size;
-		sii->cur_turn_rate = 0.0f;
+		sii->current_turn_rate = 0.0f;
 	}
 }
 
@@ -3701,16 +3695,16 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 	sii->prev_angs = sii->angs;
 
 	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
+	float diff = sii->desired_turn_rate - sii->current_turn_rate;
 
 	float final_turn_rate;
 	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate + sii->turn_accel * flFrametime;
 		if (final_turn_rate > sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
 	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate - sii->turn_accel * flFrametime;
 		if (final_turn_rate < sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
@@ -3718,11 +3712,11 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 		final_turn_rate = sii->desired_turn_rate;
 	}
 
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
+	float delta = (sii->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+	sii->current_turn_rate = final_turn_rate;
 
 	// Apply rotation in the axis of movement
-	// then normalize the angle angle so that we are within a valid range:
+	// then normalize the angle so that we are within a valid range:
 	//  greater than or equal to 0
 	//  less than PI2
 	switch( sm->movement_axis )	{
@@ -3773,16 +3767,16 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	sii->prev_angs = sii->angs;
 
 	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->cur_turn_rate;
+	float diff = sii->desired_turn_rate - sii->current_turn_rate;
 
 	float final_turn_rate;
 	if (diff > 0) {
-		final_turn_rate = sii->cur_turn_rate + sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate + sii->turn_accel * flFrametime;
 		if (final_turn_rate > sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
 	} else if (diff < 0) {
-		final_turn_rate = sii->cur_turn_rate - sii->turn_accel * flFrametime;
+		final_turn_rate = sii->current_turn_rate - sii->turn_accel * flFrametime;
 		if (final_turn_rate < sii->desired_turn_rate) {
 			final_turn_rate = sii->desired_turn_rate;
 		}
@@ -3790,8 +3784,8 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		final_turn_rate = sii->desired_turn_rate;
 	}
 
-	float delta = (sii->cur_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->cur_turn_rate = final_turn_rate;
+	float delta = (sii->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+	sii->current_turn_rate = final_turn_rate;
 
 	
 	//float delta = psub->turn_rate * flFrametime;
@@ -4590,11 +4584,7 @@ void model_clear_instance(int model_num)
 	for (i=0; i<pm->n_models; i++ )	{
 		bsp_info *sm = &pm->submodel[i];
 		
-		if ( pm->submodel[i].is_damaged )	{
-			sm->blown_off = 1;
-		} else {
-			sm->blown_off = 0;
-		}
+		sm->blown_off = pm->submodel[i].is_damaged;
 		sm->angs.p = 0.0f;
 		sm->angs.b = 0.0f;
 		sm->angs.h = 0.0f;
@@ -4619,9 +4609,10 @@ void model_clear_instance(int model_num)
 }
 
 // initialization during ship set
-void model_clear_instance_info( submodel_instance_info * sii )
+void model_clear_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
 {
-	sii->blown_off = 0;
+	sii->blown_off = false;
+
 	sii->angs.p = 0.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
@@ -4629,9 +4620,12 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->prev_angs.b = 0.0f;
 	sii->prev_angs.h = 0.0f;
 
-	sii->cur_turn_rate = 0.0f;
-	sii->desired_turn_rate = 0.0f;
-	sii->turn_accel = 0.0f;
+	sii->current_turn_rate = 0.0f;
+	sii->desired_turn_rate = turn_rate;
+	sii->turn_accel = turn_accel;
+
+	sii->axis_set = false;
+	sii->step_zero_timestamp = timestamp();
 }
 
 void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm )
@@ -4640,10 +4634,10 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 	sm_instance->angs.b = 0.0f;
 	sm_instance->angs.h = 0.0f;
 
-	sm_instance->blown_off = sm->is_damaged ? true : false;
+	sm_instance->blown_off = sm->is_damaged;
 
 	sm_instance->collision_checked = false;
-	sm_instance->sii = NULL;
+	sm_instance->sii = nullptr;
 }
 
 void model_clear_submodel_instances( int model_instance_num )
@@ -4655,24 +4649,6 @@ void model_clear_submodel_instances( int model_instance_num )
 	for ( i = 0; i < pm->n_models; i++ ) {
 		model_clear_submodel_instance(&pmi->submodel[i], &pm->submodel[i]);
 	}
-}
-
-// initialization during ship set
-void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
-{
-	sii->blown_off = 0;
-	sii->angs.p = 0.0f;
-	sii->angs.b = 0.0f;
-	sii->angs.h = 0.0f;
-	sii->prev_angs.p = 0.0f;
-	sii->prev_angs.b = 0.0f;
-	sii->prev_angs.h = 0.0f;
-
-	sii->cur_turn_rate = turn_rate * 0.0f;
-	sii->desired_turn_rate = turn_rate;
-	sii->turn_accel = turn_accel;
-	sii->axis_set = 0;
-	sii->step_zero_timestamp = timestamp();
 }
 
 // Sets the submodel instance data in a submodel (for all detail levels)
@@ -4697,7 +4673,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
 	if (instance_flags[Ship::Subsystem_Flags::No_disappear]) {
-		sm->blown_off = 0;
+		sm->blown_off = false;
 	} else {
 		// Set the "blown out" flags
 		sm->blown_off = sii->blown_off;
@@ -4705,14 +4681,14 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	if ( (sm->blown_off) && (!(instance_flags[Ship::Subsystem_Flags::No_replace])) )	{
 		if ( sm->my_replacement > -1 )	{
-			pm->submodel[sm->my_replacement].blown_off = 0;
+			pm->submodel[sm->my_replacement].blown_off = false;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
 		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-			pm->submodel[sm->my_replacement].blown_off = 1;
+			pm->submodel[sm->my_replacement].blown_off = true;
 		}
 	}
 
@@ -4744,7 +4720,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 	// the replacement model from being drawn by marking it as having been blown off
 	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-		pm->submodel[sm->my_replacement].blown_off = 1;
+		pm->submodel[sm->my_replacement].blown_off = true;
 	}
 
 	// Set the angles
@@ -4775,7 +4751,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else {
-		smi->blown_off = sii->blown_off ? true : false;
+		smi->blown_off = sii->blown_off;
 	}
 
 	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
@@ -4954,8 +4930,8 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	vm_vec_scale_add(&int1, &p1, &v1, s);
 
 	// set flag to init
-	sii->pt_on_axis = int1;
-	sii->axis_set = 1;
+	sii->point_on_axis = int1;
+	sii->axis_set = true;
 }
 
 

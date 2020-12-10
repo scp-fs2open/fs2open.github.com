@@ -591,11 +591,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			// get world rotational velocity of rotating submodel
 			model_instance_find_obj_dir(&omega, &axis, model_instance_num, ship_ship_hit_info->submodel_num, &heavy->orient);
 
-			vm_vec_scale(&omega, pmi->submodel[ship_ship_hit_info->submodel_num].sii->cur_turn_rate);
+			vm_vec_scale(&omega, pmi->submodel[ship_ship_hit_info->submodel_num].sii->current_turn_rate);
 
 			// world coords for r_rot
 			vec3d temp;
-			vm_vec_unrotate(&temp, &pmi->submodel[ship_ship_hit_info->submodel_num].sii->pt_on_axis, &heavy->orient);
+			vm_vec_unrotate(&temp, &pmi->submodel[ship_ship_hit_info->submodel_num].sii->point_on_axis, &heavy->orient);
 			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
 
 			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);

@@ -7098,9 +7098,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		// turn_rate, turn_accel
 		float turn_accel = 0.5f;
-		model_set_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
-
-		model_clear_instance_info( &ship_system->submodel_info_2 );
+		model_clear_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
+		model_clear_instance_info(&ship_system->submodel_info_2);
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
         model_system->flags.remove(Model::Subsystem_Flags::Turret_matrix);
@@ -7120,7 +7119,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// Fix up animation code references
 	for (i = 0; i < sinfo->n_subsystems; i++) {
 		for (j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
-			if (subsystem_stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
+			if (stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>") != 0) {
 				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
 				if (idx != -1) {
 					sinfo->subsystems[i].triggers[j].subtype = idx;

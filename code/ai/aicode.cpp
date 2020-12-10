@@ -9356,7 +9356,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		// get angular velocity of dockpoint
 		//WMC - hack(?) to fix bug where sii might not exist
 		if ( pmi1->submodel[dockee_rotating_submodel].sii != NULL ) {
-			submodel_omega = pmi1->submodel[dockee_rotating_submodel].sii->cur_turn_rate;
+			submodel_omega = pmi1->submodel[dockee_rotating_submodel].sii->current_turn_rate;
 		}
 
 		// get radius to dockpoint

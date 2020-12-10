@@ -1181,7 +1181,7 @@ NoHit:
 			collision_checked = Mc_pmi->submodel[i].collision_checked;
 		} else {
 			angs = csm->angs;
-			blown_off = csm->blown_off ? true : false;
+			blown_off = csm->blown_off;
 			collision_checked = false;
 		}
 

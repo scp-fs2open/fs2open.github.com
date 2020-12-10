@@ -2320,7 +2320,7 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				ptr->submodel_info_1.blown_off = 1;
+				ptr->submodel_info_1.blown_off = true;
 			}
 			else
 			{

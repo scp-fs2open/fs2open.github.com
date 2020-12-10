@@ -118,9 +118,9 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 		// get the rotvel
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, shipp->model_instance_num, submodel_num, &ship_objp->orient);
-		vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
+		vm_vec_copy_scale(&rotvel, &world_axis, sii->current_turn_rate);
 
-		model_instance_find_world_point(&world_axis_pt, &sii->pt_on_axis, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&world_axis_pt, &sii->point_on_axis, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
 	} else {
@@ -269,7 +269,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 						// now set subsystem as blown off, so we only get one copy
 						pmi->submodel[parent].blown_off = true;
-						pss->submodel_info_1.blown_off = 1;
+						pss->submodel_info_1.blown_off = true;
 					}
 				}
 			}

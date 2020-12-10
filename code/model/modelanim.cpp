@@ -512,7 +512,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 
 	// objects can be animated along several axes at the same time
 	// I'm prety sure using the magnitude of the vectors is at least pretty close for any code that might be using it
-	sii->cur_turn_rate = vm_vec_mag(&trigger->current_vel);
+	sii->current_turn_rate = vm_vec_mag(&trigger->current_vel);
 	sii->desired_turn_rate = vm_vec_mag(&trigger->rot_vel);
 	sii->turn_accel = vm_vec_mag(&trigger->rot_accel);
 
