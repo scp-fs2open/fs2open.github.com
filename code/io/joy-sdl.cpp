@@ -928,6 +928,20 @@ namespace joystick
 		mprintf(("  Joystick ID: %d\n", getID()));
 		mprintf(("  Joystick device ID: %d\n", _device_id));
 	}
+
+	json_t* Joystick::getJSON() {
+		json_t* object;
+
+		object = json_pack("{s:s, s:s, s:i, s:i}",
+			"name", getName().c_str(),
+			"guid", getGUID().c_str(),
+			"id", static_cast<int>( getID() ),
+			"device", _device_id
+		);
+
+		return object;
+	}
+
 	int Joystick::getDeviceId() const {
 		return _device_id;
 	}
@@ -1101,6 +1115,32 @@ namespace joystick
 		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 
 		return joystickInfo;
+	}
+
+	void printJoyJSON() {
+		init();
+
+		json_t* root = json_object();
+		json_t* array = json_array();
+		size_t len = 0;
+
+		// Attach array to root
+		json_object_set_new(root, "joysticks", array);
+		
+		// Get the JSON info of each detected joystick and attach it to array
+		for (auto i = 0; i < joysticks.size(); ++i) {
+			json_t* object = joysticks[i]->getJSON();
+
+			if (object != nullptr) {
+				json_array_append_new(array, object);
+				len++;
+			}
+		}
+
+		// Dump to STDOUT
+		json_dumpf(root, stdout, JSON_INDENT(4));
+
+		shutdown();
 	}
 }
 }

@@ -13,6 +13,7 @@
 #include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
 
+#include "libs/jansson.h"
 #include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
@@ -227,7 +228,16 @@ namespace io
 			 */
 			void handleJoyEvent(const SDL_Event &evt);
 
+			/**
+			 * @brief Prints joystick info to log
+			 */
 			void printInfo();
+
+			/**
+			 * @brief Like printInfo, but returns info as a JSON object
+			 */
+			json_t* getJSON();
+
 		private:
 			Joystick(const Joystick &);
 			Joystick &operator=(const Joystick &);
@@ -328,6 +338,11 @@ namespace io
 		};
 
 		SCP_vector<JoystickInformation> getJoystickInformations();
+
+		/**
+		 * @brief Called from cmdline -joy_info, Prints Joy info JSON to STDOUT and shuts down SDL_JOYSTICK subsystem.
+		 */
+		void printJoyJSON();
 	}
 }
 
