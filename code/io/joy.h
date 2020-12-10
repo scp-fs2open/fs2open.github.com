@@ -288,9 +288,15 @@ namespace io
 
 		/**
 		 * @brief Initializes the joystick subsystem
+		 *
+		 * @param[in] no_register if true, init won't try to register joysticks for use.
+		 *
 		 * @return @c true when successfully initialized
+		 *
+		 * @details Registration involves setting up listeners and grabbing the selected joystick from the registry.
+		 * Should no_register be true, the only init done is the SDL systems needed to query joystick information
 		 */
-		bool init();
+		bool init(bool no_register = false);
 
 		/**
 		 * @brief Gets number of connected joysticks

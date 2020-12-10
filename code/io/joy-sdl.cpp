@@ -946,7 +946,7 @@ namespace joystick
 		return _device_id;
 	}
 
-	bool init()
+	bool init(bool no_register)
 	{
 		using namespace os::events;
 
@@ -978,6 +978,11 @@ namespace joystick
 
 		// Get the initial list of connected joysticks
 		enumerateJoysticks(joysticks);
+
+		if (no_register) {
+			// bail before registering anything
+			return false;
+		}
 
 		// Register all the event handlers
 		addEventListener(SDL_JOYAXISMOTION, DEFAULT_LISTENER_WEIGHT, axis_event_handler);
