@@ -274,11 +274,18 @@ namespace
 
 	}
 
-	// Reads a string from the INI file.  If default is passed,
-	// and the string isn't found, returns ptr to default otherwise
-	// returns NULL;    Copy the return value somewhere before
-	// calling os_read_string again, because it might reuse the
-	// same buffer.
+	/**
+	 * @brief Reads a string from the INI file or registry.
+	 *
+	 * @param[in] section       Section to look in
+	 * @param[in] name          Key name of the value
+	 * @param[in] default_value Value to return, if not found or if OS_reg_inited is false
+	 *
+	 * @returns The value of the string with the given name in the given section if found
+	 *
+	 * @note Copy the return value somewhere before calling os_read_string again, because it might reuse the same
+	 * buffer
+	 */
 	static char registry_tmp_string_data[1024];
 	const char * registry_read_string(const char *section, const char *name, const char *default_value)
 	{
@@ -288,7 +295,7 @@ namespace
 		LONG lResult;
 
 		if (!Os_reg_inited) {
-			return NULL;
+			return default_value;
 		}
 
 		HKEY useHKey = get_registry_keyname(keyname, section, Cmdline_alternate_registry_path);
