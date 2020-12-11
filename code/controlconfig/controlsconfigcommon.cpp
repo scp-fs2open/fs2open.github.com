@@ -623,21 +623,25 @@ const char **Joy_button_text = Joy_button_text_english;
 
 int translate_key_to_index(const char *key, bool find_override)
 {
-	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
+	unsigned int max_scan_codes;
+	unsigned int i;
+	int index = -1;
+	bool alt = false;
+	bool shift = false;
 
 	max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
 
 	// look for modifiers
 	Assert(key);
 	if (!strnicmp(key, "Alt", 3)) {
-		alt = 1;
+		alt = true;
 		key += 3;
 		if (*key)
 			key++;
 	}
 
 	if (!strnicmp(key, "Shift", 5)) {
-		shift = 1;
+		shift = true;
 		key += 5;
 		if (*key)
 			key++;
@@ -663,7 +667,7 @@ int translate_key_to_index(const char *key, bool find_override)
 		if (find_override) {
 			for (i = 0; i < Control_config.size(); ++i) {
 				if (!Control_config[i].disabled && (Control_config[i].get_btn(CID_KEYBOARD) == index)) {
-					index = i;
+					index = static_cast<int>(i);
 					break;
 				}
 			}
@@ -671,7 +675,7 @@ int translate_key_to_index(const char *key, bool find_override)
 			const auto& default_bindings = Control_config_presets[0].bindings;
 			for (i = 0; i < Control_config.size(); ++i) {
 				if (!Control_config[i].disabled && (default_bindings[i].get_btn(CID_KEYBOARD) == index)) {
-					index = i;
+					index = static_cast<int>(i);
 					break;
 				}
 			}

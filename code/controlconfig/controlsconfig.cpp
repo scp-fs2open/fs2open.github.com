@@ -565,8 +565,9 @@ int control_config_detect_axis()
 void control_config_conflict_check()
 {
 	int i, j;
+	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 	
-	for (i=0; i < Control_config.size(); i++) {
+	for (i=0; i < CCFG_SIZE; i++) {
 		Conflicts[i].first = Conflicts[i].second = -1;
 	}
 
@@ -574,14 +575,14 @@ void control_config_conflict_check()
 		Conflicts_tabs[i] = 0;
 	}
 
-	for (i = 0; i < (Control_config.size() - 1); i++) {
+	for (i = 0; i < (CCFG_SIZE - 1); i++) {
 		auto &item_i = Control_config[i];
 		if (item_i.empty()) {
 			// skip
 			continue;
 		}
 
-		for (j = i + 1; j < Control_config.size(); j++) {
+		for (j = i + 1; j < CCFG_SIZE; j++) {
 			auto &item_j = Control_config[j];
 			if (item_j.empty()) {
 				// skip
@@ -827,6 +828,7 @@ int control_config_remove_binding()
 int control_config_clear_other()
 {
 	int z, i, total = 0;
+	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 
 	if (Selected_line < 0) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -883,7 +885,7 @@ int control_config_clear_other()
 	// Back up the old bindings
 	Undo_stack stack;
 
-	for (i = total = 0; i < Control_config.size(); ++i) {
+	for (i = total = 0; i < CCFG_SIZE; ++i) {
 		if (i == z) {
 			// skip
 			continue;
@@ -979,11 +981,12 @@ int control_config_axis_default(int axis)
 int control_config_do_reset()
 {
 	int i, total = 0;
+	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 	Undo_stack stack;
 	auto &default_bindings = Control_config_presets[0].bindings;
 
 	// first, determine how many bindings need to be changed
-	for (i = 0; i < Control_config.size(); ++i) {
+	for (i = 0; i < CCFG_SIZE; ++i) {
 		if ((Control_config[i].first != default_bindings[i].first) ||
 		    (Control_config[i].second != default_bindings[i].second)) {
 			total++;
@@ -1785,6 +1788,7 @@ void control_config_do_frame(float frametime)
 	const char *str;
 	char buf[256];
 	int i; // generic index
+	const int CCFG_SIZE = static_cast<int>(Control_config.size());	// hack to get around signed/unsigned mismatch errors
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
 	short j; // polled joy button
@@ -1995,7 +1999,7 @@ void control_config_do_frame(float frametime)
 			z = -1;
 			// If not done, Find the control bound to the given key
 			if ((z < 0) && (k > 0)) {
-				for (i=0; i < Control_config.size(); ++i) {
+				for (i=0; i < CCFG_SIZE; ++i) {
 					if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
 						Selected_item = selItem::Primary;
 						z = i;
@@ -2010,7 +2014,7 @@ void control_config_do_frame(float frametime)
 
 			// If not done, Find the control bound to the given joy
 			if ((z < 0) && (j < JOY_TOTAL_BUTTONS)) {
-				for (i = 0; i < Control_config.size(); ++i) {
+				for (i = 0; i < CCFG_SIZE; ++i) {
 					if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
 						Selected_item = selItem::Primary;
 						z = i;
@@ -2035,7 +2039,7 @@ void control_config_do_frame(float frametime)
 				for (j = 0; j < MOUSE_NUM_BUTTONS; ++j) {
 					if (mouse_down(1 << j)) {
 						// Find the control bound to the given mouse button (as joy button)
-						for (i = 0; i < Control_config.size(); ++i) {
+						for (i = 0; i < CCFG_SIZE; ++i) {
 							if (Control_config[i].first == CC_bind(CID_JOY0, j)) {
 								Selected_item = selItem::Primary;
 								z = i;
