@@ -1127,7 +1127,7 @@ void control_config_toggle_modifier(int bit)
 	stack.save(Control_config[z].second);
 	Undo_controls.save_stack(stack);
 
-	Control_config[z].take(CC_bind(CID_KEYBOARD, k ^ bit), -1);
+	Control_config[z].take(CC_bind(CID_KEYBOARD, static_cast<short>(k ^ bit)), -1);
 	control_config_conflict_check();
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
@@ -1787,7 +1787,7 @@ void control_config_do_frame(float frametime)
 	int i; // generic index
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
-	int j; // polled joy button
+	short j; // polled joy button
 	int a; // polled joy axis
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
@@ -1901,7 +1901,7 @@ void control_config_do_frame(float frametime)
 			k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);	// This shouldn't be needed, but just in case...
 			if (!done && (k > 0)) {
 				Assert(!(z & JOY_AXIS));
-				control_config_bind_btn(z, CC_bind(CID_KEYBOARD, k), 0);
+				control_config_bind_btn(z, CC_bind(CID_KEYBOARD, static_cast<short>(k)), 0);
 
 				strcpy_s(bound_string, textify_scancode(k));
 				done = true;
@@ -1927,7 +1927,7 @@ void control_config_do_frame(float frametime)
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
 						if (mouse_down(1 << i)) {
 							Assert(!(z & JOY_AXIS));
-							control_config_bind_btn(z, CC_bind(CID_MOUSE, i), 1);
+							control_config_bind_btn(z, CC_bind(CID_MOUSE, static_cast<short>(i)), 1);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
@@ -1996,11 +1996,11 @@ void control_config_do_frame(float frametime)
 			// If not done, Find the control bound to the given key
 			if ((z < 0) && (k > 0)) {
 				for (i=0; i < Control_config.size(); ++i) {
-					if (Control_config[i].first == CC_bind(CID_KEYBOARD, k)) {
+					if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
 						Selected_item = selItem::Primary;
 						z = i;
 						break;
-					} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, k)) {
+					} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
 						Selected_item = selItem::Secondary;
 						z = i;
 						break;

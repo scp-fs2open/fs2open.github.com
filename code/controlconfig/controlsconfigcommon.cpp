@@ -1309,7 +1309,7 @@ void control_config_common_read_section(int s) {
 		// Joy btn assignment
 		if (optional_string("$Joy Default:")) {
 			stuff_int(&iTemp);
-			new_binding.take(CC_bind(CID_JOY0, iTemp), 1);
+			new_binding.take(CC_bind(CID_JOY0, static_cast<short>(iTemp)), 1);
 		}
 
 		// Section is #ControlConfigOverride
