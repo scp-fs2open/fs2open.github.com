@@ -39,38 +39,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: gcc-5
-        shell: bash
-        run: |
-          if [ "$COMPILER" = "gcc-5" ]; then
-            export CC=gcc-5
-            export CXX=g++-5
-          fi
-          if [ "$COMPILER" = "gcc-9" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
-          fi
-          if [ "$COMPILER" = "clang-4.0" ]; then
-            export CC=clang-4.0
-            export CXX=clang++-4.0
-          fi
-
-          LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
-          CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
-          CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
-
-          if [[ "$CC" =~ ^clang.*$ ]]; then
-              CXXFLAGS="$CXXFLAGS -stdlib=libc++"
-          fi
-
-          mkdir build
-          cd build
-
-          export CXXFLAGS
-          export CFLAGS
-          export LD_LIBRARY_PATH
-          CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON $CMAKE_OPTIONS"
-          eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$CONFIGURATION -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/build/install" \
-            -DFSO_BUILD_APPIMAGE=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON ..
+        run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
         env:
@@ -78,22 +47,16 @@ jobs:
         run: |
           LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
       - name: Run Tests
-        working-directory: ./build/bin
-        run: |
-          LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH ./unittests --gtest_shuffle
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          XDG_RUNTIME_DIR: /root
+        run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Generate AppImage
         working-directory: ./build
         env:
           CONFIGURATION: ${{ matrix.configuration }}
-        run: |
-          # Install Freespace2 targets
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/build/install -DCOMPONENT=Unspecified -P cmake_install.cmake
-          cmake -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/build/install -DCOMPONENT=Freespace2 -P cmake_install.cmake
-
-          # We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
-          FILENAME="$(find $GITHUB_WORKSPACE/build/install/bin -name 'fs2_open_*' -type f -printf "%f\n").AppImage"
-          appimagetool -n $GITHUB_WORKSPACE/build/install "$GITHUB_WORKSPACE/build/install/$FILENAME"
-          ls -al $GITHUB_WORKSPACE/build/install
+        run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
         uses: actions/upload-artifact@v2
         with:
@@ -122,24 +85,15 @@ jobs:
           path: builds
       - name: Create Distribution package
         working-directory: ./builds
-        shell: bash
-        run: |
-          . $GITHUB_WORKSPACE/ci/github/dist_functions.sh
-          ls -alR
-          tar -cvzf "$(get_package_name)-builds-Linux.tar.gz" *
-          ls -alR
+        run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
         working-directory: ./builds
-        shell: bash
         env:
+          INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
           INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
-        run: |
-          . $GITHUB_WORKSPACE/ci/github/dist_functions.sh
-
-          SSHPASS=$INDIEGAMES_SSHPASS upload_files_to_sftp "${{ secrets.INDIEGAMES_USER }}@scp.indiegames.us" "public_html/builds/nightly"
-
-          SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "${{ secrets.DATACORDER_USER }}@porphyrion.feralhosting.com" "/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly"
+        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh
 
   build_windows:
     strategy:
@@ -245,24 +199,13 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
           SIMD: ${{ matrix.simd }}
-        run: |
-          . $GITHUB_WORKSPACE/ci/github/dist_functions.sh
-          ls -alR
-
-          7z a -xr'!*.pdb' "$(get_package_name)-builds-$ARCH-$SIMD.zip" "*"
-
-          7z a "$(get_package_name)-debug-$ARCH-$SIMD.7z" "*.pdb"
-
-          ls -alR
+        run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Windows
       - name: Upload result package
         working-directory: ./builds
         shell: bash
         env:
+          INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
           INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
-        run: |
-          . $GITHUB_WORKSPACE/ci/github/dist_functions.sh
-
-          SSHPASS=$INDIEGAMES_SSHPASS upload_files_to_sftp "${{ secrets.INDIEGAMES_USER }}@scp.indiegames.us" "public_html/builds/nightly"
-
-          SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "${{ secrets.DATACORDER_USER }}@porphyrion.feralhosting.com" "/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly"
+        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh
