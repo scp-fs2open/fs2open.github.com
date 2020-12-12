@@ -1594,6 +1594,7 @@ SCP_string CC_bind::textify() const {
 			retval = "Unknown Mouse Input";
 			break;
 		}
+		break;
 
 	// TODO XSTR the "Joy #" prefix
 	case CID_JOY0:
