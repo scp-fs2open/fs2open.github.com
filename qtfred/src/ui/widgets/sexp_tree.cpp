@@ -4104,10 +4104,11 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_type() {
 sexp_list_item* sexp_tree::get_listing_opf_keypress() {
 	int i;
 	sexp_list_item head;
+	auto& Default_config = Control_config_presets[0].bindings;
 
 	for (i = 0; i < CCFG_MAX; i++) {
-		if (Control_config[i].key_default > 0 && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(Control_config[i].key_default));
+		if ((Default_config[i].get_btn(CID_KEYBOARD) != -1) && !Control_config[i].disabled) {
+			head.add_data_dup(textify_scancode(Default_config[i].get_btn(CID_KEYBOARD)));
 		}
 	}
 
