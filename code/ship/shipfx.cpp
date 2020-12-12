@@ -93,7 +93,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	polymodel *pm = model_get(Ship_info[ship_p->ship_info_index].model_num);
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	int submodel_num = subsys->system_info->subobj_num;
-	submodel_instance_info *sii = &subsys->submodel_info_1;
+	submodel_instance *smi = &pmi->submodel[submodel_num];
 
 	object *live_debris_obj;
 	int i, num_live_debris, live_debris_submodel;
@@ -104,25 +104,22 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		return;
 	}
 
-	// copy angles
-	angles copy_angs = pm->submodel[submodel_num].angs;
-
 	// make sure the axis point is set
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
 	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-		if ( !sii->axis_set ) {
-			model_init_submodel_axis_pt(sii, pm, submodel_num);
+		if ( !smi->axis_set ) {
+			model_init_submodel_axis_pt(pm, pmi, submodel_num);
 		}
 
 		// get the rotvel
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm, pmi, submodel_num, &ship_objp->orient);
-		vm_vec_copy_scale(&rotvel, &world_axis, sii->current_turn_rate);
+		vm_vec_copy_scale(&rotvel, &world_axis, smi->current_turn_rate);
 
-		model_instance_find_world_point(&world_axis_pt, &sii->point_on_axis, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&world_axis_pt, &smi->point_on_axis, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
-		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
+		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&smi->angs), &model_axis);
 	} else {
 		//fix to allow non rotating submodels to use live debris
 		vm_vec_zero(&rotvel);
@@ -140,13 +137,9 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		model_instance_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm, pmi, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
-		// set angle to zero
-		pm->submodel[submodel_num].angs = vmd_zero_angles;
 		world_find_model_instance_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
-		// reset angle to current angle
-		pm->submodel[submodel_num].angs = copy_angs;
 		model_instance_find_world_point(&end_world_pos, &start_model_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
@@ -269,7 +262,6 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 						// now set subsystem as blown off, so we only get one copy
 						pmi->submodel[parent].blown_off = true;
-						pss->submodel_info_1.blown_off = true;
 					}
 				}
 			}
@@ -305,8 +297,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *sub
 	}
 }
 
-
-static void shipfx_blow_up_hull(object *obj, polymodel *pm, vec3d *exp_center)
+static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *pmi, vec3d *exp_center)
 {
 	int i;
 	ushort sig_save;
@@ -325,8 +316,8 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, vec3d *exp_center)
 	bool try_live_debris = true;
 	for (i=0; i<pm->num_debris_objects; i++ )	{
 		if (! pm->submodel[pm->debris_objects[i]].is_live_debris) {
-			vec3d tmp = ZERO_VECTOR;		
-			model_find_world_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, 0, &obj->orient, &obj->pos );
+			vec3d tmp = ZERO_VECTOR;
+			model_instance_find_world_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, pmi, 0, &obj->orient, &obj->pos );
 			debris_create( obj, pm->id, pm->debris_objects[i], &tmp, exp_center, 1, 3.0f );
 		} else {
 			if ( try_live_debris ) {
@@ -368,7 +359,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 	// made a change to allow anyone but multiplayer client to blow up hull.  Clients will do it when
 	// they get the create packet
 	if ( submodel == 0 ) {
-		shipfx_blow_up_hull(obj, pm, exp_center);
+		shipfx_blow_up_hull(obj, pm, pmi, exp_center);
 	}
 
 	for (i=0; i<ndebris; i++ )	{
@@ -380,7 +371,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 		vec3d tmp, outpnt;
 
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
-		model_find_world_point(&outpnt, &tmp, pm, submodel, &obj->orient, &obj->pos );
+		model_instance_find_world_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
 
 		debris_create( obj, -1, -1, &outpnt, exp_center, 0, 1.0f );
 	}

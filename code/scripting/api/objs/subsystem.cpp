@@ -113,10 +113,10 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_info_1.angs = *mh->GetAngles();
+		sso->ss->submodel_instance_1->angs = *mh->GetAngles();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_1.angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_instance_1->angs)));
 }
 
 ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret gun", "orientation", "Gun orientation, or null orientation if handle is invalid")
@@ -131,10 +131,10 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_info_2.angs = *mh->GetAngles();
+		sso->ss->submodel_instance_2->angs = *mh->GetAngles();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_2.angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_instance_2->angs)));
 }
 
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
@@ -644,7 +644,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	// Find direction of turret
 	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 
-	int ret_val = model_rotate_gun(pm, tp, &objp->orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &objp->pos, &pos, shipp->objnum, reset);
+	int ret_val = model_rotate_gun(pm, tp, &objp->orient, &sso->ss->submodel_instance_1->angs, &sso->ss->submodel_instance_2->angs, &objp->pos, &pos, shipp->objnum, reset);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;

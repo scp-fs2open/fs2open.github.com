@@ -572,12 +572,12 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = NULL;
 		}
 		
-		if ( pmi != NULL && pmi->submodel[ship_ship_hit_info->submodel_num].sii != NULL ) {
+		if ( pmi != nullptr ) {
 			auto smi = &pmi->submodel[ship_ship_hit_info->submodel_num];
 
 			// set point on axis of rotating submodel if not already set.
-			if ( !smi->sii->axis_set ) {
-				model_init_submodel_axis_pt(smi->sii, pm, ship_ship_hit_info->submodel_num);
+			if ( !smi->axis_set ) {
+				model_init_submodel_axis_pt(pm, pmi, ship_ship_hit_info->submodel_num);
 			}
 
 			vec3d omega, axis, r_rot;
@@ -595,11 +595,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			// get world rotational velocity of rotating submodel
 			model_instance_find_obj_dir(&omega, &axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
 
-			vm_vec_scale(&omega, smi->sii->current_turn_rate);
+			vm_vec_scale(&omega, smi->current_turn_rate);
 
 			// world coords for r_rot
 			vec3d temp;
-			vm_vec_unrotate(&temp, &smi->sii->point_on_axis, &heavy->orient);
+			vm_vec_unrotate(&temp, &smi->point_on_axis, &heavy->orient);
 			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
 
 			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);

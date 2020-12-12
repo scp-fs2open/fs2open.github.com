@@ -73,9 +73,8 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
-// Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
-// the model_clear_instance, model_set_instance, model_get_instance functions.
-typedef struct submodel_instance_info {
+// Data specific to a particular instance of a submodel.
+typedef struct submodel_instance {
 	angles	angs;									// The current angle this thing is turned to.
 	angles	prev_angs;
 
@@ -87,23 +86,15 @@ typedef struct submodel_instance_info {
 	vec3d	point_on_axis;							// in ship RF
 	bool	axis_set;
 	bool	blown_off;								// If set, this subobject is blown off
-} submodel_instance_info;
-
-typedef struct submodel_instance {
-	angles angs;
-	angles prev_angs;
 
 	vec3d mc_base;
 	matrix mc_orient;
-
 	bool collision_checked;
-	bool blown_off;
-	submodel_instance_info *sii;
 } submodel_instance;
 
 // Data specific to a particular instance of a model.
 typedef struct polymodel_instance {
-	int id;
+	int id;							// global model_instance num index
 	int model_num;					// global model num index, same as polymodel->id
 	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
 } polymodel_instance;
@@ -265,8 +256,8 @@ class bsp_info
 public:
 	bsp_info()
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
-		rad(0.0f), blown_off(false), my_replacement(-1), i_replace(-1), is_live_debris(false), num_live_debris(0),
-		is_thruster(false), is_damaged(false), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		rad(0.0f), my_replacement(-1), i_replace(-1), is_live_debris(false), num_live_debris(0),
+		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		num_arcs(0), outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
@@ -280,7 +271,6 @@ public:
 		orientation = vmd_identity_matrix;
 
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
-		memset(&angs, 0, sizeof(angles));
 		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
 		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
 		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
@@ -308,17 +298,15 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	bool	blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
 	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
-	angles	angs;					// The rotation angles of this subobject (Within its own orientation, NOT relative to parent - KeldorKatarn)
 
 	bool	is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
 
-	bool	is_thruster;
-	bool	is_damaged;
+	bool	is_thruster	= false;		// is an engine thruster submodel
+	bool	is_damaged = false;			// is a submodel that represents a damaged submodel (e.g. a -destroyed version of some other submodel)
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -546,7 +534,6 @@ struct shield_info {
 typedef struct bsp_light {
 	vec3d			pos;
 	int				type;		// See BSP_LIGHT_TYPE_?? for values
-	float				value;	// How much to light up this light.  0-1.
 } bsp_light;
 
 // model_octant - There are 8 of these per model.  They are a handy way to categorize
@@ -921,16 +908,16 @@ extern int modelstats_num_sortnorms;
 extern int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
 // Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(polymodel *pm, model_subsystem *turret);
+extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii);
-extern void submodel_rotate(bsp_info *sm, submodel_instance_info *sii);
+extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
-void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii);
+void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi);
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
@@ -961,7 +948,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn);
 
 // For a rotating submodel, find a point on the axis
-void model_init_submodel_axis_pt(submodel_instance_info *sii, polymodel *pm, int submodel_num);
+void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num);
 
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
@@ -974,19 +961,17 @@ extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, c
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
-void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm );
-void model_clear_submodel_instances( int model_instance_num );
-
 // Clears all the values in a particular instance to their defaults.
+extern void model_clear_submodel_instance(submodel_instance *smi);
+
 // Sets rotating submodel turn info to that stored in model
-extern void model_clear_instance_info(submodel_instance_info *sii, float turn_rate = 0.0f, float turn_accel = 0.0f);
+extern void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags = NULL);
-extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
+extern void model_set_instance_techroom(polymodel *pm, polymodel_instance *pmi, int submodel_num, float angle_1, float angle_2);
 
-void model_update_instance(int model_instance_num, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
+void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
+void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -1156,7 +1141,7 @@ bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
 
-void model_collide_preprocess(matrix *orient, int model_instance_num, int detail = 0);
+void model_collide_preprocess(matrix *orient, polymodel *pm, polymodel_instance *pmi, int detail = 0);
 
 //=========================== MODEL OCTANT STUFF ================================
 

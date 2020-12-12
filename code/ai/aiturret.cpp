@@ -1438,8 +1438,8 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
 		}
 
-		auto base_angles = &ss->submodel_info_1.angs;
-		auto gun_angles = &ss->submodel_info_2.angs;
+		auto base_angles = &ss->submodel_instance_1->angs;
+		auto gun_angles = &ss->submodel_instance_2->angs;
 		if (in_fov) {
 			ret_val = model_rotate_gun(pm,
 										tp, &Objects[parent_objnum].orient, 
@@ -1449,8 +1449,8 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 			ret_val = model_rotate_gun(pm, tp, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 		}
 	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
-		auto base_angles = &ss->submodel_info_1.angs;
-		auto gun_angles = &ss->submodel_info_2.angs;
+		auto base_angles = &ss->submodel_instance_1->angs;
+		auto gun_angles = &ss->submodel_instance_2->angs;
 		ret_val = model_rotate_gun(pm, ss->system_info, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 	}
 
@@ -2253,8 +2253,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	{
 		if (!(tp->turret_gun_sobj == tp->subobj_num))
 		{
-			auto pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-			model_make_turret_matrix(pm, tp);
+			auto pmi = model_get_instance(shipp->model_instance_num);
+			auto pm = model_get(pmi->model_num);
+			model_make_turret_matrix(pm, pmi, tp);
 		}
 	}
 
