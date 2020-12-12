@@ -3538,12 +3538,11 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
+				shipfx_blow_up_model(objp, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
-				auto sip = &Ships[objp->instance];
-				ship_add_exited_ship(sip, Ship::Exit_Flags::Destroyed);
+				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds

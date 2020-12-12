@@ -1266,21 +1266,20 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 {
 	vec3d * gun_pos;
 	model_subsystem *tp = ssp->system_info;
-
-	//ship_model_start(objp);
+	polymodel_instance *pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	gun_pos = &tp->turret_firing_point[ssp->turret_next_fire_pos % tp->turret_num_firing_points];
 
-	//model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
-	model_instance_find_world_point(gpos, gun_pos, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	model_instance_find_world_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 	if (use_angles) {
-		model_instance_find_world_dir(gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
+		model_instance_find_world_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 	} else if (tp->flags[Model::Subsystem_Flags::Share_fire_direction]) {
 		vec3d avg, tmp_pos, tmp_target, enemy_point, turret_norm;
 		vm_vec_avg_n(&avg, tp->turret_num_firing_points, tp->turret_firing_point);
 
-		model_instance_find_world_point(&tmp_pos, &avg, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+		model_instance_find_world_point(&tmp_pos, &avg, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		if (targetp == nullptr) {
 			ship* shipp = &Ships[Objects[ssp->parent_objnum].instance];
@@ -1331,8 +1330,6 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
-	//ship_model_stop(objp);
-
 	// per firingpoint based changes go here for turrets
 }
 
@@ -1367,6 +1364,7 @@ void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss)
 int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
 	int ret_val __UNUSED = 0; // to be used in future, see comment @ end of function
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
@@ -1440,16 +1438,20 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
 		}
 
+		auto base_angles = &ss->submodel_info_1.angs;
+		auto gun_angles = &ss->submodel_info_2.angs;
 		if (in_fov) {
-			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num,
+			ret_val = model_rotate_gun(pm,
 										tp, &Objects[parent_objnum].orient, 
-										&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
+										base_angles, gun_angles,
 										&Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum);
 		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
-			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num, tp, &Objects[parent_objnum].orient, &ss->submodel_info_1.angs, &ss->submodel_info_2.angs, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
+			ret_val = model_rotate_gun(pm, tp, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 		}
 	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
-		ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num, ss->system_info, &Objects[parent_objnum].orient, &ss->submodel_info_1.angs, &ss->submodel_info_2.angs, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
+		auto base_angles = &ss->submodel_info_1.angs;
+		auto gun_angles = &ss->submodel_info_2.angs;
+		ret_val = model_rotate_gun(pm, ss->system_info, &Objects[parent_objnum].orient, base_angles, gun_angles, &Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum, true);
 	}
 
 	// by default "ret_val" should be set to 1 for multi-part turrets, and 0 for single-part turrets
@@ -2251,7 +2253,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	{
 		if (!(tp->turret_gun_sobj == tp->subobj_num))
 		{
-			model_make_turret_matrix(Ship_info[shipp->ship_info_index].model_num, tp );
+			auto pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+			model_make_turret_matrix(pm, tp);
 		}
 	}
 

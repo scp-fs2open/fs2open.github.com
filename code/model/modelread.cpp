@@ -2934,6 +2934,7 @@ int model_create_instance(bool is_ship, int model_num)
 	} else {
 		Polygon_model_instances[open_slot] = pmi;
 	}
+	pmi->id = open_slot;
 
 	polymodel *pm = model_get(model_num);
 
@@ -3401,14 +3402,13 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	return 0;
 }
 
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
 {
 	vec3d tvec, vec;
 	matrix m;
 	int mn;
+	Assert(pm->id == pmi->model_num);
 
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
 	vec = *m_vec;
 	mn = submodel_num;
 
@@ -3437,11 +3437,9 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_
 
 
 // Given a rotating submodel, find the ship and world axes of rotation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int model_instance_num, int submodel_num, matrix *objorient)
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
 {
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
-
+	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
 	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 
@@ -3454,7 +3452,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
+	model_instance_find_obj_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
 
@@ -3563,10 +3561,12 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 
-void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
-
 void submodel_look_at(polymodel *pm, int mn)
 {
+	SCP_UNUSED(pm);
+	SCP_UNUSED(mn);
+	// To be reimplemented
+	/*
 	bsp_info * sm;
 
 	if ( mn < 0 ) {
@@ -3669,7 +3669,7 @@ void submodel_look_at(polymodel *pm, int mn)
 	for (int k=0; k<sm->num_details; k++ ) {
 		pm->submodel[sm->details[k]].angs = *angs;
 	}
-
+	*/
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
@@ -3749,79 +3749,6 @@ void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 		break;
 	}
 }
-/*
-void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
-{
-	bsp_info * sm;
-
-	if ( psub->subobj_num < 0 ) return;
-	if(psub->ai_rotation.type = 0) return;
-
-	polymodel *pm = model_get(psub->model_num);
-	sm = &pm->submodel[psub->subobj_num];
-
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
-
-	
-	// save last angles
-	sii->prev_angs = sii->angs;
-
-	// probably send in a calculated desired turn rate
-	float diff = sii->desired_turn_rate - sii->current_turn_rate;
-
-	float final_turn_rate;
-	if (diff > 0) {
-		final_turn_rate = sii->current_turn_rate + sii->turn_accel * flFrametime;
-		if (final_turn_rate > sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else if (diff < 0) {
-		final_turn_rate = sii->current_turn_rate - sii->turn_accel * flFrametime;
-		if (final_turn_rate < sii->desired_turn_rate) {
-			final_turn_rate = sii->desired_turn_rate;
-		}
-	} else {
-		final_turn_rate = sii->desired_turn_rate;
-	}
-
-	float delta = (sii->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	sii->current_turn_rate = final_turn_rate;
-
-	
-	//float delta = psub->turn_rate * flFrametime;
-
-	switch( sm->movement_axis )	{
-	case MOVEMENT_AXIS_X:
-		if (sii->angs.p + delta > psub->ai_rotation.max ){//if it will or has gone past it's max then set it to the max/min
-			sii->angs.p = psub->ai_rotation.max;
-			return;
-		} else if(sii->angs.p + delta < psub->ai_rotation.min){
-			sii->angs.p = psub->ai_rotation.min;
-			return;
-		}
-		sii->angs.p += delta;
-		if (sii->angs.p > PI2 )
-			sii->angs.p -= PI2;
-		else if (sii->angs.p < 0.0f )
-			sii->angs.p += PI2;
-		break;
-	case MOVEMENT_AXIS_Y:	
-		sii->angs.h += delta;
-		if (sii->angs.h > PI2 )
-			sii->angs.h -= PI2;
-		else if (sii->angs.h < 0.0f )
-			sii->angs.h += PI2;
-		break;
-	case MOVEMENT_AXIS_Z:	
-		sii->angs.b += delta;
-		if (sii->angs.b > PI2 )
-			sii->angs.b -= PI2;
-		else if (sii->angs.b < 0.0f )
-			sii->angs.b += PI2;
-		break;
-	}
-}
-*/
 
 
 //=========================================================================
@@ -3831,12 +3758,10 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 // I determine I need the correct matrix.   In this code, you can't use
 // vm_vec_2_matrix or anything, since these turrets could be either 
 // right handed or left handed.
-void model_make_turret_matrix(int model_num, model_subsystem * turret )
+void model_make_turret_matrix(polymodel *pm, model_subsystem *turret)
 {
-	polymodel * pm;
 	vec3d fvec, uvec, rvec;
 
-	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
 	bsp_info * base = &pm->submodel[turret->subobj_num];
 	float offset_base_h = 0.0f;
@@ -3849,20 +3774,20 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	if (base->force_turret_normal == true)
 		turret->turret_norm = base->orientation.vec.uvec;
 
-	model_clear_instance(model_num);
+	model_clear_instance(pm->id);
 	base->angs.h = offset_base_h;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
+	model_find_world_dir(&fvec, &turret->turret_norm, pm, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = -PI_2 + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
+	model_find_world_dir(&rvec, &turret->turret_norm, pm, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = 0.0f + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
+	model_find_world_dir(&uvec, &turret->turret_norm, pm, turret->turret_gun_sobj, &vmd_identity_matrix);
 									
 	vm_vec_normalize(&fvec);
 	vm_vec_normalize(&rvec);
@@ -3889,14 +3814,12 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
+int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
 {
-	polymodel * pm;
 	object *objp = &Objects[obj_idx];
 	ship *shipp = &Ships[objp->instance];
 	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
 
-	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
 	bsp_info * base = &pm->submodel[turret->subobj_num];
 	bool limited_base_rotation = false;
@@ -3913,7 +3836,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 	// Build the correct turret matrix if there isn't already one
 	if ( !(turret->flags[Model::Subsystem_Flags::Turret_matrix]) )
-		model_make_turret_matrix(model_num, turret );
+		model_make_turret_matrix(pm, turret);
 
 	Assert( turret->flags[Model::Subsystem_Flags::Turret_matrix]);
 //	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
@@ -4026,13 +3949,10 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
-void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num)
+void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int submodel_num)
 {
-	int mn;
-	polymodel *pm = model_get(model_num);
-
 	vm_vec_zero(outpnt);
-	mn = sub_model_num;
+	int mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4042,55 +3962,20 @@ void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num)
 	}
 }
 
-void make_submodel_world_matrix(polymodel *pm, int sn, vec3d*v){
-	if (pm->submodel[sn].parent != -1) {
-		make_submodel_world_matrix(pm,pm->submodel[sn].parent,v);
-	}
-
-	vm_vec_sub2(v, &pm->submodel[sn].offset);
-	vec3d t = *v;
-
-	matrix a;
-	vm_angles_2_matrix(&a, &pm->submodel[sn].angs);
-	if (!IS_MAT_NULL(&pm->submodel[sn].orientation)) {
-		matrix inv, f;
-		vm_copy_transpose(&inv, &pm->submodel[sn].orientation);
-		vm_matrix_x_matrix(&f, &a, &inv);
-		vm_matrix_x_matrix(&a, &pm->submodel[sn].orientation, &f);
-	}
-	vm_vec_rotate(v, &t, &a);
-}
-
-// just like below, exept it actualy does what it says it does
-void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos)
+void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	vec3d tempv1, tempv2;
-
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
-
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
-	}
-
-	//vec3d os = ZERO_VECTOR;
-	// put into submodel RF
-	make_submodel_world_matrix(pm,submodel_num, &tempv2);
-	*out = tempv2;
+	return model_find_world_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
 }
 
 // Given a point (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 
 	pnt = *mpnt;
 	mn = submodel_num;
@@ -4122,12 +4007,18 @@ void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submo
 
 void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	return model_instance_find_world_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
+}
+
+void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
+{
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 
 	pnt = *mpnt;
 	mn = submodel_num;
@@ -4157,10 +4048,9 @@ void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_insta
 	vm_vec_add2(outpnt,objpos);
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
-	polymodel *pm = model_get(pmi->model_num);
-
+	Assert(pm->id == pmi->model_num);
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
 	vec3d tempv1, tempv2;
@@ -4200,13 +4090,11 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymode
  * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num)
+void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num)
 {
+	Assert(pm->id == pmi->model_num);
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
-
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4244,14 +4132,12 @@ void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int sub
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
  */
-void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
+void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
 {
+	Assert(pm->id == pmi->model_num);
 	*outnorm = *submodel_norm;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
-
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4312,14 +4198,12 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int mode
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_orient The local matrix which's current orientation in the ship's frame of reference we want
  */
-void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
+void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
 {
+	Assert(pm->id == pmi->model_num);
 	*outorient = *submodel_orient;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
-
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4373,11 +4257,12 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int m
  * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void find_submodel_instance_world_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d loc_pnt;
+	Assert(pm->id == pmi->model_num);
 
-	find_submodel_instance_point(&loc_pnt, model_instance_num, submodel_num);
+	find_submodel_instance_point(&loc_pnt, pm, pmi, submodel_num);
 
 	vm_vec_unrotate(outpnt, &loc_pnt, objorient);
 	vm_vec_add2(outpnt, objpos);
@@ -4492,16 +4377,20 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* p
 	}
 }
 
+void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
+{
+	model_find_world_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
+}
+
 // Given a direction (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
+void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 
 	pnt = *in_dir;
 	mn = submodel_num;
@@ -4529,16 +4418,21 @@ void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int subm
 	vm_vec_unrotate(out_dir,&pnt,objorient);
 }
 
-// the same as above - just taking model instance data into account
-// model_find_world_dir
-void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
+// the same as model_find_world_dir - just taking model instance data into account
+void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
+{
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, submodel_num, objorient);
+}
+
+void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 
 	pnt = *in_dir;
 	mn = submodel_num;
@@ -4570,12 +4464,11 @@ void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_inst
 // Clears all the submodel instances stored in a model to their defaults.
 void model_clear_instance(int model_num)
 {
-	polymodel * pm;
 	int i;
-
-	pm = model_get(model_num);
+	auto pm = model_get(model_num);
 
 	pm->gun_submodel_rotation = 0.0f;
+
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
 		pm->maps[i].ResetToOriginal();
@@ -4583,13 +4476,13 @@ void model_clear_instance(int model_num)
 	
 	for (i=0; i<pm->n_models; i++ )	{
 		bsp_info *sm = &pm->submodel[i];
-		
+
 		sm->blown_off = pm->submodel[i].is_damaged;
 		sm->angs.p = 0.0f;
 		sm->angs.b = 0.0f;
 		sm->angs.h = 0.0f;
 
-		sm->num_arcs = 0;		// Turn off any electric arcing effects
+		sm->num_arcs = 0;				// Turn off any electric arcing effects
 	}
 
 	for (i=0; i<pm->num_lights; i++ )	{
@@ -4728,24 +4621,27 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
+void model_update_instance(int model_instance_num, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
+{
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_update_instance(pm, pmi, submodel_num, sii, flags);
+}
+
+void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
 {
 	int i;
-	polymodel *pm;
-	polymodel_instance *pmi;
-
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 	
-	Assertion(sub_model_num >= 0 && sub_model_num < pm->n_models,
+	Assertion(submodel_num >= 0 && submodel_num < pm->n_models,
 		"Sub model number (%d) which should be updated is out of range! Must be between 0 and %d. This happend on model %s.",
-		sub_model_num, pm->n_models - 1, pm->filename);
+		submodel_num, pm->n_models - 1, pm->filename);
 
-	if ( sub_model_num < 0 ) return;
-	if ( sub_model_num >= pm->n_models ) return;
+	if ( submodel_num < 0 ) return;
+	if ( submodel_num >= pm->n_models ) return;
 
-	submodel_instance *smi = &pmi->submodel[sub_model_num];
-	bsp_info *sm = &pm->submodel[sub_model_num];
+	submodel_instance *smi = &pmi->submodel[submodel_num];
+	bsp_info *sm = &pm->submodel[submodel_num];
 	
 	// Set the "blown out" flags
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
@@ -4763,7 +4659,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
+		if ( sm->my_replacement > -1 && sm->my_replacement != submodel_num)	{
 			pmi->submodel[sm->my_replacement].blown_off = true;
 		}
 	}
@@ -4775,7 +4671,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_update_instance(model_instance_num, sm->details[i], sii, flags );
+		model_update_instance(pm, pmi, sm->details[i], sii, flags);
 	}
 }
 
@@ -4783,12 +4679,12 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 {
 	polymodel_instance *pmi = model_get_instance(ir->model_instance_num);
 	Assert(pmi != nullptr);
+	polymodel *pm = model_get(pmi->model_num);
+	Assert(pm != nullptr);
 
 	// Handle all submodels which have $dumb_rotate
 	for (auto submodel_it = ir->list.begin(); submodel_it != ir->list.end(); ++submodel_it)
 	{
-		polymodel *pm = model_get(pmi->model_num);
-		Assert(pm != nullptr);
 		bsp_info *sm = &pm->submodel[submodel_it->submodel_num];
 
 		// First, calculate the angles for the rotation
@@ -4797,7 +4693,7 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 		// Now actually rotate the submodel instance
 		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
         flagset<Ship::Subsystem_Flags> empty;
-		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, empty);
+		model_update_instance(pm, pmi, submodel_it->submodel_num, &submodel_it->submodel_info_1, empty);
 	}
 }
 
@@ -4869,13 +4765,12 @@ void model_do_look_at(int pn)
 }
 
 // Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
-void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num)
+void model_init_submodel_axis_pt(submodel_instance_info *sii, polymodel *pm, int submodel_num)
 {
 	vec3d axis;
 	vec3d *mpoint1, *mpoint2;
 	vec3d p1, v1, p2, v2, int1;
 
-	polymodel *pm = model_get(model_num);
 	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 	Assert(sii);
 
@@ -4907,13 +4802,13 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 
 	// find two points rotated into model RF when angs set to 0
 	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, 0.0f);
-	model_find_world_point(&p1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_find_world_point(&p2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_find_world_point(&p1, mpoint1, pm, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_find_world_point(&p2, mpoint2, pm, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// find two points rotated into model RF when angs set to PI
 	vm_vec_copy_scale((vec3d*)&pm->submodel[submodel_num].angs, &axis, PI);
-	model_find_world_point(&v1, mpoint1, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_find_world_point(&v2, mpoint2, model_num, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_find_world_point(&v1, mpoint1, pm, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_find_world_point(&v2, mpoint2, pm, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// reset submodel angs
 	pm->submodel[submodel_num].angs = copy_angs;
