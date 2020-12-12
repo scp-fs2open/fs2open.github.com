@@ -1592,6 +1592,7 @@ SCP_string CC_bind::textify() const {
 			break;
 		default:
 			retval = "Unknown Mouse Input";
+			break;
 		}
 
 	// TODO XSTR the "Joy #" prefix
@@ -1614,6 +1615,7 @@ SCP_string CC_bind::textify() const {
 	case CID_NONE:
 	default:
 		retval = "None";
+		break;
 	}
 
 	return retval;
@@ -1690,6 +1692,23 @@ bool CCB::has_first(const CCB& A) const {
 bool CCB::has_second(const CCB& A) const {
 	return !second.empty() && ((second == A.first) || (second == A.second));
 }
+
+void CCI::operator=(const CCI& A) {
+	first = A.first;
+	second = A.second;
+	tab = A.tab;
+	indexXSTR = A.indexXSTR;
+	text = A.text;
+	type = A.type;
+	used = A.used;
+	disabled = A.disabled;
+	continuous_ongoing = A.continuous_ongoing;
+};
+
+void CCI::operator=(const CCB& A) {
+	first = A.first;
+	second = A.second;
+};
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
 	ControlConfig.resize(CCFG_MAX);

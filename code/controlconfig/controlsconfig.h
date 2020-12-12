@@ -356,6 +356,10 @@ public:
 	CC_bind first;  // The primary binding
 	CC_bind second; // The secondary binding
 
+public:
+	CCB() {};
+	CCB(const CCB& A) : first(A.first), second(A.second) {};
+
 	/*!
 	 * Returns true if nothing is bound
 	 */
@@ -384,6 +388,9 @@ public:
 	 */
 	short get_btn(CID) const;
 
+	/*!
+	 * Assigns the contents of the given CCB to this CCB
+	 */
 	void operator=(const CCB&);
 
 	/*!
@@ -411,12 +418,11 @@ public:
  * @detail Contains binding info, documentation, behavior, etc. for a single control
  */
 class CCI : public CCB {
-/* Inherited from CCB
-	CC_bind first;
-	CC_bind second;
-*/
-
 public:
+// Inherited from CCB
+	// CC_bind first;
+	// CC_bind second;
+
 // Items Set in menu
 	char tab;               //!< what tab (category) it belongs in
 	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR 0 = None, 1= Use item index + CONTROL_CONFIG_XSTR, 2 <= use CCI::indexXSTR directly
@@ -429,7 +435,22 @@ public:
 	bool disabled;              //!< whether this action should be available at all
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
+public:
 	CCI() : disabled(true) {};
+
+	CCI(const CCI& A) :
+		CCB(A), tab(A.tab), indexXSTR(A.indexXSTR), text(A.text), type(A.type), used(A.used), disabled(A.disabled),
+		continuous_ongoing(A.continuous_ongoing) {};
+	
+	/*!
+	 * Assigns the contents of the given CCI to this CCI
+	 */
+	void operator=(const CCI&);
+
+	/*!
+	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
+	 */
+	void operator=(const CCB&);
 };
 
 /*!
