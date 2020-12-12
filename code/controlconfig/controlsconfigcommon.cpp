@@ -1279,7 +1279,7 @@ void control_config_common_read_section(int s) {
 
 		// Assign the various attributes to this control
 		int iTemp;
-		short key;
+		short key = 0;
 		auto  item = &Control_config[item_id];
 		auto& new_binding = new_preset.bindings[item_id];
 
