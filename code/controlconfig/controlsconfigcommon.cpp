@@ -1909,8 +1909,6 @@ SCP_string ValToInput(const CC_bind &bind) {
 }
 
 SCP_string ValToMouse(const CC_bind &bind) {
-	const short btn = bind.btn;
-
 	Assert(bind.cid == CID_MOUSE);
 
 	if (bind.flags & CCF_AXIS) {

@@ -1078,7 +1078,7 @@ namespace joystick
 		joy_ff_shutdown();
 
 		initialized = false;
-		std::for_each(pJoystick.begin(), pJoystick.end(), [](Joystick* pJoy){ pJoy = nullptr; });
+		std::for_each(pJoystick.begin(), pJoystick.end(), [](Joystick*& pJoy){ pJoy = nullptr; });
 
 		// Automatically frees joystick resources
 		joysticks.clear();
