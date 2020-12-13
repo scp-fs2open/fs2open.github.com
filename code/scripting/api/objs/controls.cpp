@@ -135,7 +135,7 @@ ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets
 	return AxisInverted_sub(JOY_Z_AXIS, L);
 }
 
-ADE_FUNC(AxisActionInverted, l_Mouse, "int IoActionId, boolean inverted", "Gets or sets whether the given axis action is inverted", "boolean", "True/false")
+ADE_FUNC(AxisActionInverted, l_Mouse, "number IoActionId, boolean inverted", "Gets or sets whether the given axis action is inverted", "boolean", "True/false")
 {
 	// z64: If so desired, it may be possible to have two inversion states, one set by the player in the config menu,
 	//   and one set by scripting.  Essentially, the CCI will have its own inversion flag in addition to the inversion
@@ -165,7 +165,7 @@ ADE_FUNC(AxisActionInverted, l_Mouse, "int IoActionId, boolean inverted", "Gets 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(AxisInverted, l_Mouse, "int cid, int axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state", "boolean", "True/false")
+ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state", "boolean", "True/false")
 {
 	int joy = CID_NONE;
 	int axis = -1;
