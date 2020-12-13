@@ -261,9 +261,7 @@ void control_config_common_init_bindings() {
 	preset.name = "default";
 
 	for (auto &item : Control_config) {
-		CCB bind = item;
-
-		preset.bindings.push_back(bind);
+		preset.bindings.push_back(CCB(item));
 	}
 
 	Control_config_presets.push_back(preset);
@@ -1029,7 +1027,7 @@ void LoadEnumsIntoCCTabMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the IoActionId enums into mActionToVal
  */
-void LoadEnumsIntoActionMap(void) {
+void LoadEnumsIntoActionMap() {
 #define ADD_ENUM_TO_ACTION_MAP(Enum) mActionToVal[#Enum] = (Enum);
 	ADD_ENUM_TO_ACTION_MAP(TARGET_NEXT)
 	ADD_ENUM_TO_ACTION_MAP(TARGET_PREV)
@@ -1511,7 +1509,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 
 		short btn = bindings.second.btn;
 
-		SCP_string buf_str = "";
+		SCP_string buf_str;
 		
 		if (bindings.first.btn != -1) {
 			// Translate the key into string form
@@ -1526,7 +1524,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 					break;
 				}
 			}
-			Assert(buf_str != "");
+			Assert(!buf_str.empty());
 		} else {
 			// Not bound
 			buf_str = "NONE";
@@ -1549,7 +1547,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assert(!buf_str.empty());
 		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
 
 		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
@@ -1563,7 +1561,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assert(!buf_str.empty());
 		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
@@ -1669,7 +1667,7 @@ short JoyToVal(const char * str) {
 	*/
 
 	// Is it a button?
-	short val = static_cast<short>(atoi(str));
+	auto val = static_cast<short>(atoi(str));
 
 	// atoi returns 0 if the str is invalid, so we need check it actually is 0
 	if ((val == 0) && (str[0] != '0')) {
@@ -1779,7 +1777,7 @@ short MouseToVal(const char * str) {
 
 const char * ValToAction(IoActionId id) {
 	auto it = std::find_if(mActionToVal.begin(), mActionToVal.end(),
-		[id](std::pair<SCP_string, IoActionId> pair) { return pair.second == id; });
+		[id](const std::pair<SCP_string, IoActionId>& pair) { return pair.second == id; });
 	
 	if (it == mActionToVal.end()) {
 		// Shouldn't happen
@@ -1870,7 +1868,7 @@ const char * ValToCID(CID id) {
 }
 
 const char * ValToCID(int id) {
-	if ((id < 0) && (id >= CID_JOY_MAX)) {
+	if ((id < 0) || (id >= CID_JOY_MAX)) {
 		return "NONE";
 	}
 
@@ -1919,7 +1917,7 @@ SCP_string ValToMouse(const CC_bind &bind) {
 		}
 
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-		[bind](std::pair<SCP_string, short> pair) { return pair.second == bind.btn; });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == bind.btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.btn);
@@ -1930,7 +1928,7 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[bind](std::pair<SCP_string, short> pair) { return pair.second == (1 << bind.btn); });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << bind.btn); });
 
 	if (it == mMouseNameToVal.end()) {
 		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.btn);
@@ -1982,7 +1980,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 	if (bind.flags & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-			[bind](std::pair<SCP_string, int> pair) { return pair.second == bind.btn; });
+			[bind](const std::pair<SCP_string, int>& pair) { return pair.second == bind.btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
@@ -2019,7 +2017,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 	return str;
 }
 
-CC_bind CC_bind::operator=(const CC_bind &A)
+CC_bind& CC_bind::operator=(const CC_bind &A)
 {
 	cid = A.cid;
 	btn = A.btn;
@@ -2270,9 +2268,11 @@ short CCB::get_btn(CID cid) const {
 	}
 }
 
-void CCB::operator=(const CCB& A) {
+CCB& CCB::operator=(const CCB& A) {
 	first = A.first;
 	second = A.second;
+
+	return *this;
 }
 
 bool CCB::operator==(const CCB& A) {
@@ -2291,7 +2291,7 @@ bool CCB::has_second(const CCB& A) const {
 	return !second.empty() && ((second == A.first) || (second == A.second));
 }
 
-void CCI::operator=(const CCI& A) {
+CCI& CCI::operator=(const CCI& A) {
 	first = A.first;
 	second = A.second;
 	tab = A.tab;
@@ -2301,12 +2301,16 @@ void CCI::operator=(const CCI& A) {
 	used = A.used;
 	disabled = A.disabled;
 	continuous_ongoing = A.continuous_ongoing;
+
+	return *this;
 };
 
-void CCI::operator=(const CCB& A) {
+CCI& CCI::operator=(const CCB& A) {
 	first = A.first;
 	second = A.second;
+	return *this;
 };
+
 CC_bind* CCB::find(const CC_bind &A) {
 	if (first == A) {
 		return &first;
@@ -2412,7 +2416,7 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 	}
 
 	// Assign disabled state
-	if ((tab == NO_TAB) || (disabled == true)) {
+	if ((tab == NO_TAB) || disabled) {
 		item.disabled = true;
 
 	} else {

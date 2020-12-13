@@ -1223,7 +1223,7 @@ void pilotfile::csg_read_controls()
 			preset.name = filename;
 
 			// strip off extension
-			auto n = preset.name.find_last_of(".");
+			auto n = preset.name.find_last_of('.');
 			preset.name.resize(n);
 
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));

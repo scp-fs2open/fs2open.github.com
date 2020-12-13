@@ -334,9 +334,9 @@ public:
 	CC_bind() :cid(CID_NONE), flags(0), btn(-1) {};
 	CC_bind(CID _cid, short _btn) : cid(_cid), flags(0), btn(_btn) { validate(); };
 	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
-	CC_bind(const CC_bind &A) : cid(A.cid), flags(A.flags), btn(A.btn) {};
+	CC_bind(const CC_bind &A) = default;
 
-	CC_bind operator=(const CC_bind &A);
+	CC_bind& operator=(const CC_bind &A);
 
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
@@ -446,7 +446,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCB to this CCB
 	 */
-	void operator=(const CCB&);
+	CCB& operator=(const CCB&);
 
 	/*!
 	 * Checks if the given CCB is exactly equal to this
@@ -527,25 +527,23 @@ public:
 
 // Items used during gameplay
 	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
-	bool disabled;              //!< whether this action should be available at all
+	bool disabled = true;       //!< whether this action should be available at all
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
 public:
-	CCI() : disabled(true) {};
+	CCI() {};
 
-	CCI(const CCI& A) :
-		CCB(A), tab(A.tab), indexXSTR(A.indexXSTR), text(A.text), type(A.type), used(A.used), disabled(A.disabled),
-		continuous_ongoing(A.continuous_ongoing) {};
+	CCI(const CCI& A) = default;
 	
 	/*!
 	 * Assigns the contents of the given CCI to this CCI
 	 */
-	void operator=(const CCI&);
+	CCI& operator=(const CCI&);
 
 	/*!
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
 	 */
-	void operator=(const CCB&);
+	CCI& operator=(const CCB&);
 
 	/*!
 	 * Returns true if this item is analogue or an axis

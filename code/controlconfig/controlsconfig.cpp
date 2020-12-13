@@ -192,10 +192,8 @@ static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last
 int Control_config_overlay_id;
 
 struct conflict {
-	int first;  // index of other control in conflict with this one
-	int second; // index of other control in conflict with this one
-
-	conflict() : first(-1), second(-1) {};
+	int first = -1;  // index of other control in conflict with this one
+	int second = -1; // index of other control in conflict with this one
 };
 
 SCP_vector<conflict> Conflicts;
@@ -1588,7 +1586,7 @@ void control_config_draw_selected_preset() {
 	// Draw the string
 	int font_height = gr_get_font_height();
 	int w;
-	gr_get_string_size(&w, NULL, preset_str.c_str());
+	gr_get_string_size(&w, nullptr, preset_str.c_str());
 	gr_set_color_fast(&Color_text_normal);
 
 	if (gr_screen.res == GR_640) {

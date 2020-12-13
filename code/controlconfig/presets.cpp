@@ -145,7 +145,7 @@ void load_preset_files() {
 
 bool save_preset_file(CC_preset preset, bool overwrite) {
 	// Must have a name
-	if (preset.name == "") {
+	if (preset.name.empty()) {
 		mprintf(("PST => Unable to save preset, missing name!"));
 		return false;
 	}
