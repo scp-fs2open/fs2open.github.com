@@ -832,7 +832,7 @@ void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float
 				continue;
 			}
 
-			if ( ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
+			if ( !ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
 				continue;
 			}
 
