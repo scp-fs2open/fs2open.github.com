@@ -576,13 +576,13 @@ CC_bind control_config_detect_axis()
 
 		if ( (dx > deadzone) || (dx < -deadzone) ) {
 			j = CID_MOUSE;
-			axis = 0;
+			axis = MOUSE_X_AXIS;
 		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
 			j = CID_MOUSE;
-			axis = 1;
+			axis = MOUSE_Y_AXIS;
 		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
 			j = CID_MOUSE;
-			axis = 2;
+			axis = MOUSE_Z_AXIS;
 		}
 	}
 	
@@ -2644,7 +2644,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 
 	// Read raw mouse, stuff in axes_values[0]
 	if (Use_mouse_to_fly) {
-		mouse_get_delta(&axe[MOUSE_ID][JOY_X_AXIS], &axe[MOUSE_ID][JOY_Y_AXIS], &axe[MOUSE_ID][JOY_Z_AXIS]);
+		mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 	}
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
