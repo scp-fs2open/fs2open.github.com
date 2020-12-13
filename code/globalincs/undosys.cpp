@@ -7,7 +7,7 @@
 #include "globalincs/vmallocator.h"
 
 // Pure virtual deconstructors must be defined.
-Undo_item_base::~Undo_item_base() {};
+Undo_item_base::~Undo_item_base() = default;
 
 Undo_system::Undo_system()
 	: max_undos(10) {};
@@ -34,15 +34,15 @@ void Undo_system::clamp_stacks() {
 void Undo_system::clear() {
 	clear_redo();
 
-	for (auto it = undo_stack.begin(); it != undo_stack.end(); ++it) {
-		delete *it;
+	for (auto& item : undo_stack) {
+		delete item;
 	}
 	undo_stack.clear();
 }
 
 void Undo_system::clear_redo() {
-	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
-		delete *it;
+	for (auto& item : redo_stack) {
+		delete item;
 	}
 	redo_stack.clear();
 }
@@ -73,7 +73,7 @@ std::pair<const void*, const void*> Undo_system::redo() {
 
 	if (redo_stack.empty()) {
 		// Nothing to redo
-		return std::pair<const void*, const void*>(nullptr, nullptr);
+		return {nullptr, nullptr};
 	}
 
 	auto &item = redo_stack.back();
@@ -89,7 +89,7 @@ std::pair<const void*, const void*> Undo_system::undo() {
 	
 	if (undo_stack.empty()) {
 		// Nothing to undo
-		return std::pair<const void*, const void*>(nullptr, nullptr);
+		return {nullptr, nullptr};
 	}
 
 	auto &item = undo_stack.back();
@@ -141,8 +141,8 @@ std::pair<const void*, const void*> Undo_stack::restore() {
 			retval = (*it)->restore();
 		}
 	} else {
-		for (auto it = stack.begin(); it != stack.end(); ++it) {
-			retval = (*it)->restore();
+		for (auto& item : stack) {
+			retval = item->restore();
 		}
 	}
 
@@ -159,8 +159,8 @@ void Undo_stack::untrack() {
 }
 
 void Undo_stack::clear() {
-	for (auto it = stack.begin(); it != stack.end(); ++it) {
-		delete *it;
+	for (auto& item : stack) {
+		delete item;
 	}
 	stack.clear();
 }
