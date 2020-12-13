@@ -1929,7 +1929,7 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[bind](std::pair<SCP_string, char> pair) { return pair.second == (1 << bind.btn); });
+		[bind](std::pair<SCP_string, short> pair) { return pair.second == (1 << bind.btn); });
 
 	if (it == mMouseNameToVal.end()) {
 		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.btn);

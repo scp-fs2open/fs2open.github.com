@@ -440,7 +440,7 @@ int PresetFileHandler::readInt(const char* key) {
 		return 0;
 	}
 
-	return json_integer_value(el);
+	return static_cast<int>(json_integer_value(el));
 }
 
 void PresetFileHandler::writeString(const char* key, SCP_string s) {

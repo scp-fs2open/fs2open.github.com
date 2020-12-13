@@ -332,9 +332,9 @@ public:
 
 public:
 	CC_bind() :cid(CID_NONE), btn(-1), flags(0) {};
-	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn), flags(0) { validate(); };
-	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), btn(_btn), flags(_flags) { validate(); };
-	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn), flags(A.flags) {};
+	CC_bind(CID _cid, short _btn) : cid(_cid), flags(0), btn(_btn) { validate(); };
+	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
+	CC_bind(const CC_bind &A) : cid(A.cid), flags(A.flags), btn(A.btn) {};
 
 	CC_bind operator=(const CC_bind &A);
 
