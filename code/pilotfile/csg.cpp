@@ -1254,8 +1254,6 @@ void pilotfile::csg_write_controls()
 {
 	auto n = control_config_get_current_preset();
 
-	Control_config_presets[n].name;
-
 	cfwrite_string(Control_config_presets[n].name.c_str(), cfp);
 }
 

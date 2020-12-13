@@ -146,7 +146,6 @@ public:
 
 private:
 	CFILE* _cfp = nullptr;
-	bool _reading;
 
 	json_t* _rootObj = nullptr;
 

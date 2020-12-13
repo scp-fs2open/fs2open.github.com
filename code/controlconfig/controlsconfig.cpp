@@ -2634,7 +2634,7 @@ void scale_invert(const CC_bind &bind,
 
 void control_get_axes_readings(int *axis_v, float frame_time)
 {
-	int axe[CID_JOY_MAX + 1][JOY_NUM_AXES] = {0};
+	int axe[CID_JOY_MAX + 1][JOY_NUM_AXES] = {{0}};
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
 
 	Assert(axis_v != nullptr);
