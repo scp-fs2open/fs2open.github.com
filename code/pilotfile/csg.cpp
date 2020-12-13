@@ -1238,7 +1238,7 @@ void pilotfile::csg_read_controls()
 		cfread_string(buf, 32, cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-		                       [buf](const auto& preset) { return preset.name == buf; });
+		                       [buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			// Couldn't find the preset, use defaults

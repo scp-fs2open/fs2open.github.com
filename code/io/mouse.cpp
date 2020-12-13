@@ -627,7 +627,7 @@ short bit_distance(short x) {
 	short i;
 	const short max_dist = sizeof(short) * 8;
 	
-	for (i = 0; i < max_dist; ++i, x >> 1) {
+	for (i = 0; i < max_dist; ++i, x >>= 1) {
 		if (x & 0x01) {
 			break;
 		}

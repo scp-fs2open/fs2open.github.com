@@ -1857,7 +1857,7 @@ SCP_string ValToCCF(char id) {
 
 const char * ValToCID(CID id) {
 	auto it = std::find_if(mCIDNameToVal.cbegin(), mCIDNameToVal.cend(),
-		[id](const auto& pair) {return pair.second == id; });
+		[id](const std::pair<SCP_string, CID>& pair) {return pair.second == id; });
 
 	if (it == mCIDNameToVal.cend()) {
 		// Shouldn't happen
@@ -1962,7 +1962,7 @@ SCP_string ValToKeyboard(const CC_bind &bind) {
 	btn &= KEY_MASK;
 
 	auto it = std::find_if(mKeyNameToVal.cbegin(), mKeyNameToVal.cend(),
-		[btn](const auto& pair) {return pair.second == btn; });
+		[btn](const std::pair<SCP_string, short>& pair) {return pair.second == btn; });
 
 	if (it == mKeyNameToVal.cend()) {
 		// Shouldn't happen

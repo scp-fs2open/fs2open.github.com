@@ -467,7 +467,7 @@ bool device_event_handler(const SDL_Event &evt)
 		}
 
 		// Is true if all of the pJoysticks are bound
-		bool all_bound = std::all_of(pJoystick.begin(), pJoystick.end(), [](auto pJoy){ return pJoy != nullptr; });
+		bool all_bound = std::all_of(pJoystick.begin(), pJoystick.end(), [](Joystick* pJoy){ return pJoy != nullptr; });
 
 		if (all_bound)
 		{
