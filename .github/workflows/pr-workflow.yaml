@@ -22,7 +22,7 @@ jobs:
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-84eedff
+    container: ghcr.io/scp-fs2open/linux_build:sha-a8ca321
     steps:
       - name: Cache Qt
         id: cache-qt-lin
@@ -41,6 +41,7 @@ jobs:
         name: Checkout
         with:
           submodules: true
+          fetch-depth: 0
       - name: Configure CMake
         shell: bash
         env:
@@ -57,8 +58,9 @@ jobs:
             export CXX=g++-10
           fi
           if [ "$COMPILER" = "clang-9" ]; then
-            export CC=clang-9
-            export CXX=clang++-9
+            # Work around bug in clang that uses the wrong installation directory: https://bugs.llvm.org/show_bug.cgi?id=47460
+            export CC=$(readlink -f $(which clang-9))
+            export CXX=$(readlink -f $(which clang++-9))
           fi
 
           LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
@@ -66,7 +68,7 @@ jobs:
           CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
           CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
-          if [[ "$CC" =~ ^clang.*$ ]]; then
+          if [[ "$COMPILER" =~ ^clang.*$ ]]; then
               CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
           fi
 
@@ -76,7 +78,7 @@ jobs:
           export CXXFLAGS
           export CFLAGS
           export LD_LIBRARY_PATH
-          CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON $CMAKE_OPTIONS"
+          CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $CMAKE_OPTIONS"
           eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=ON ..
       - name: Compile
         working-directory: ./build
@@ -92,6 +94,10 @@ jobs:
           else
               ./bin/unittests --gtest_shuffle
           fi
+      - name: Run Clang Tidy
+        # Clang-tidy reuses the precompiled headers so this only makes sense for the clang compilers
+        if: startsWith(matrix.compiler, 'clang-')
+        run: $GITHUB_WORKSPACE/ci/linux/clang_tidy.sh ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
   build_windows:
     strategy:
       matrix:
