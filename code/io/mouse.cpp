@@ -636,4 +636,6 @@ short bit_distance(short x) {
 	if (i >= max_dist) {
 		return -1;
 	}
+
+	return i;
 }

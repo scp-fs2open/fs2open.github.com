@@ -183,7 +183,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 
 	mprintf(("PST => Saving %s with version %d...\n", filename.c_str(), (int)PST_VERSION));
 
-	handler->beginArrayWrite(Section::Actions, -1);
+	handler->beginArrayWrite(Section::Actions, Control_config.size());
 	for (auto i = 0; i < preset.bindings.size(); ++i) {
 		const auto& item = preset.bindings[i];
 		const auto& first = item.first;
@@ -449,7 +449,6 @@ void PresetFileHandler::writeString(const char* key, SCP_string s) {
 
 	if (!s.empty()) {
 		// if this string isn't proper UTF-8, try to convert it
-		auto len = s.length();
 		if (utf8::find_invalid(s.begin(), s.end()) != s.end()) {
 			SCP_string buffer;
 			coerce_to_utf8(buffer, s.c_str());

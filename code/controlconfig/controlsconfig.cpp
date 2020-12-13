@@ -539,10 +539,12 @@ void control_config_detect_axis_reset()
  */
 CC_bind control_config_detect_axis()
 {
-	int i, d, axis = -1, delta = 16384;
-	short j;	// cid of the joy that moved
+	int dx, dy, dz;
+	int delta = 16384;
 	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
-	int dx, dy, dz, fudge = 7;
+	short j;			// cid of the joy that moved
+	short axis = -1;	// index of the detected axis
+	const int deadzone = 7;	// Minor deadzone for mouse axis detection
 
 	// Find an axis among any of the joysticks that has deflected far enough
 	for (j = CID_JOY0; j < CID_JOY_MAX; ++j) {
@@ -552,11 +554,12 @@ CC_bind control_config_detect_axis()
 		}
 
 		joystick_read_raw_axis(j, JOY_NUM_AXES, axes_values[j]);
-		for (i=0; i<JOY_NUM_AXES; i++) {
-			d = abs(axes_values[j][i] - Axes_origin[j][i]);
-			if (d > delta) {
+		for (short i = 0; i < JOY_NUM_AXES; i++) {
+			dx = abs(axes_values[j][i] - Axes_origin[j][i]);
+
+			if (dx > delta) {
 				axis = i;
-				delta = d;
+				delta = dx;
 				goto found_axis;
 			}
 		}
@@ -571,13 +574,13 @@ CC_bind control_config_detect_axis()
 		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
-		if ( (dx > fudge) || (dx < -fudge) ) {
+		if ( (dx > deadzone) || (dx < -deadzone) ) {
 			j = CID_MOUSE;
 			axis = 0;
-		} else if ( (dy > fudge) || (dy < -fudge) ) {
+		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
 			j = CID_MOUSE;
 			axis = 1;
-		} else if ( (dz > fudge) || (dz < -fudge) ) {
+		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
 			j = CID_MOUSE;
 			axis = 2;
 		}
@@ -1097,7 +1100,7 @@ void control_config_toggle_invert()
  */
 void control_config_do_bind()
 {
-	int i;
+	short i;
 
 	game_flush();
 //	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
@@ -1136,7 +1139,7 @@ void control_config_do_bind()
  */
 void control_config_do_search()
 {
-	int i;
+	short i;
 
 	for (i=0; i<NUM_BUTTONS; i++){
 		if (i != CANCEL_BUTTON) {
@@ -1749,8 +1752,7 @@ void control_config_do_frame(float frametime)
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
 	short j = JOY_TOTAL_BUTTONS; // polled joy button
-	int joy = -1;	// polled joystick id
-	int a; // polled joy axis
+	short joy = -1;              // polled joystick id
 	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
@@ -1776,7 +1778,7 @@ void control_config_do_frame(float frametime)
 
 		// Poll for joy btn presses
 		// Stop polling all joys if a btn was detected
-		for (joy = CID_JOY0; (joy < CID_JOY_MAX); joy++) {
+		for (joy = CID_JOY0; joy < CID_JOY_MAX; joy++) {
 			if (!joy_present(joy)) {
 				continue;
 			}
@@ -1872,7 +1874,7 @@ void control_config_do_frame(float frametime)
 			if (!done && (k > 0)) {
 				// Bind the key
 				Assert(!Control_config[z].is_axis());
-				control_config_bind(z, CC_bind(CID_KEYBOARD, k), Selected_item);
+				control_config_bind(z, CC_bind(CID_KEYBOARD, static_cast<short>(k)), Selected_item);
 
 				strcpy_s(bound_string, textify_scancode(k));
 				done = true;
@@ -1897,9 +1899,9 @@ void control_config_do_frame(float frametime)
 
 				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						if (mouse_down(CC_bind(CID_MOUSE, i))) {
+						if (mouse_down(CC_bind(CID_MOUSE, static_cast<short>(i)))) {
 							Assert(!Control_config[z].is_axis());
-							control_config_bind(z, CC_bind(CID_MOUSE, i), Selected_item);
+							control_config_bind(z, CC_bind(CID_MOUSE, static_cast<short>(i)), Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;

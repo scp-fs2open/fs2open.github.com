@@ -186,7 +186,7 @@ ADE_FUNC(AxisInverted, l_Mouse, "int cid, int axis, boolean inverted", "Gets or 
 	CC_bind *A = nullptr;
 	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
 	{
-		CC_bind B(static_cast<CID>(joy), axis, CCF_AXIS);
+		CC_bind B(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS);
 		A = Control_config[i].find(B);
 
 		if (A != nullptr)

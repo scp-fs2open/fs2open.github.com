@@ -1449,7 +1449,7 @@ void control_config_common_read_section(int s) {
 		if (unique) {
 			Control_config_presets.push_back(new_preset);
 		} else {
-			Warning(LOCATION, "Preset '%s' found in 'controlconfigdefaults.tbl' is a duplicate of existing preset '%s', ignoring", new_preset.name, it->name);
+			Warning(LOCATION, "Preset '%s' found in 'controlconfigdefaults.tbl' is a duplicate of existing preset '%s', ignoring", new_preset.name.c_str(), it->name.c_str());
 		}
 	}
 };
@@ -1669,7 +1669,7 @@ short JoyToVal(const char * str) {
 	*/
 
 	// Is it a button?
-	short val = atoi(str);
+	short val = static_cast<short>(atoi(str));
 
 	// atoi returns 0 if the str is invalid, so we need check it actually is 0
 	if ((val == 0) && (str[0] != '0')) {
@@ -1718,7 +1718,7 @@ short KeyboardToVal(const char * str) {
 
 short InputToVal(CID cid, const char * str) {
 	Assert(str != nullptr);
-	short val;
+	short val = -1;
 	switch (cid) {
 	case CID_MOUSE:
 		val = MouseToVal(str);
@@ -1741,6 +1741,7 @@ short InputToVal(CID cid, const char * str) {
 
 	default:
 		Error(LOCATION, "Unknown  CID");
+		break;
 	}
 
 	return val;
@@ -1783,6 +1784,7 @@ const char * ValToAction(IoActionId id) {
 	if (it == mActionToVal.end()) {
 		// Shouldn't happen
 		Error(LOCATION, "Unknown IoActionId %i", id);
+		return "NONE";
 
 	} else {
 		return it->first.c_str();
@@ -1860,6 +1862,7 @@ const char * ValToCID(CID id) {
 	if (it == mCIDNameToVal.cend()) {
 		// Shouldn't happen
 		Error(LOCATION, "Unknown CID value %i", id);
+		return "NONE";
 
 	} else {
 		return it->first.c_str();

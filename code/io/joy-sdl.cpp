@@ -180,7 +180,7 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	}
 
 	GUID = os_config_read_string(nullptr, key_guid.c_str(), "");
-	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), -1));
+	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), 0));
 
 	return joystickMatchesGuid(testStick, GUID, Id);
 }
