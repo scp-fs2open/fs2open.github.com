@@ -725,7 +725,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 
 		default:
 			// Ignore and complain
-			mprintf(("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.", order));
+			mprintf(("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.", static_cast<int>(order)));
 			return;
 	}
 
@@ -2278,10 +2278,17 @@ void control_config_do_frame(float frametime)
 			switch (Selected_item) {
 			case selItem::None:
 			case selItem::Primary:
-				Control_config[z].first.is_inverted() ? CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2) : 0;
+				if (Control_config[z].first.is_inverted()) {
+					CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2);
+				}
 				break;
+
 			case selItem::Secondary:
-				Control_config[z].second.is_inverted() ? CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2) : 0;
+				if (Control_config[z].second.is_inverted()) {
+					CC_Buttons[gr_screen.res][INVERT_AXIS].button.draw_forced(2);
+				}
+				break;
+
 			default:
 				break;
 			}

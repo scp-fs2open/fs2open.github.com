@@ -183,7 +183,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 
 	mprintf(("PST => Saving %s with version %d...\n", filename.c_str(), (int)PST_VERSION));
 
-	handler->beginArrayWrite(Section::Actions, Control_config.size());
+	handler->beginArrayWrite(Section::Actions);
 	for (int i = 0; static_cast<size_t>(i) < preset.bindings.size(); ++i) {
 		const auto& item = preset.bindings[i];
 		const auto& first = item.first;
@@ -296,7 +296,7 @@ bool PresetFileHandler::beginArrayRead(Section s, size_t &size) {
 	return true;
 }
 
-void PresetFileHandler::beginArrayWrite(Section s, size_t size = 0) {
+void PresetFileHandler::beginArrayWrite(Section s) {
 	const char * name = lookupSectionName(s);
 	auto array = json_array();
 

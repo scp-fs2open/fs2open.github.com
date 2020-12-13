@@ -84,9 +84,8 @@ public:
 	 * Begins writing to an array using the presets::Section as its name
 	 *
 	 * @param[in] s     id of the array
-	 * @param[in] size  opt. expected size of the array.
 	 */
-	void beginArrayWrite(presets::Section s, size_t size);
+	void beginArrayWrite(presets::Section s);
 
 	/**
 	 * Begins reading from an array

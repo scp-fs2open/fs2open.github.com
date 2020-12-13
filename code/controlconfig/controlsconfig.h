@@ -331,7 +331,7 @@ public:
 	short btn;  //!< The button, key combo, or axis that's bound.
 
 public:
-	CC_bind() :cid(CID_NONE), btn(-1), flags(0) {};
+	CC_bind() :cid(CID_NONE), flags(0), btn(-1) {};
 	CC_bind(CID _cid, short _btn) : cid(_cid), flags(0), btn(_btn) { validate(); };
 	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
 	CC_bind(const CC_bind &A) : cid(A.cid), flags(A.flags), btn(A.btn) {};
