@@ -184,7 +184,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	mprintf(("PST => Saving %s with version %d...\n", filename.c_str(), (int)PST_VERSION));
 
 	handler->beginArrayWrite(Section::Actions, Control_config.size());
-	for (auto i = 0; i < preset.bindings.size(); ++i) {
+	for (int i = 0; static_cast<size_t>(i) < preset.bindings.size(); ++i) {
 		const auto& item = preset.bindings[i];
 		const auto& first = item.first;
 		const auto& second = item.second;

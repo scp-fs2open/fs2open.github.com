@@ -1133,7 +1133,7 @@ namespace joystick
 		json_object_set_new(root, "joysticks", array);
 		
 		// Get the JSON info of each detected joystick and attach it to array
-		for (auto i = 0; i < joysticks.size(); ++i) {
+		for (size_t i = 0; i < joysticks.size(); ++i) {
 			json_t* object = joysticks[i]->getJSON();
 
 			if (object != nullptr) {

@@ -1792,7 +1792,7 @@ const char * ValToAction(IoActionId id) {
 }
 
 const char * ValToAction(int id) {
-	if ((id < 0) && (id >= Control_config.size())) {
+	if ((id < 0) && (static_cast<size_t>(id) >= Control_config.size())) {
 		return "NONE";
 	}
 
