@@ -1448,7 +1448,7 @@ void control_config_common_read_section(int s) {
 
 		if (unique) {
 			Control_config_presets.push_back(new_preset);
-		} else {
+		} else if (!running_unittests) {
 			Warning(LOCATION, "Preset '%s' found in 'controlconfigdefaults.tbl' is a duplicate of existing preset '%s', ignoring", new_preset.name.c_str(), it->name.c_str());
 		}
 	}
