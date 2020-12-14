@@ -1230,7 +1230,7 @@ int control_config_accept()
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			return -1;
 
-		} else if (cstr == "") {
+		} else if (strcmp(cstr, "") == 0) {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			// retry
 			goto retry;
@@ -1245,6 +1245,7 @@ int control_config_accept()
 			cfclose(fp);
 			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name", str.c_str());
 			if ((n == 1) || (n == -1)) {
+				// If Cancel button was pressed, or popup dismissed:
 				// retry
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				goto retry;
@@ -1263,13 +1264,14 @@ int control_config_accept()
 		load_preset_files();
 
 		// Find our preset again to set the selection index
-		for (unsigned int i = 0; i < Control_config_presets.size(); ++i) {
-			if (Control_config_presets[i].name == str) {
-				Defaults_cycle_pos = i;
+		unsigned int n;
+		for (n = 0; n < Control_config_presets.size(); ++n) {
+			if (Control_config_presets[n].name == str) {
+				Defaults_cycle_pos = n;
 				break;
 			}
 		}
-		Assert(i != Control_config_presets.size());
+		Assert(n != Control_config_presets.size());
 	}
 	
 
