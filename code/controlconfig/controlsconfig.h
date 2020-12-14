@@ -326,17 +326,17 @@ class CCB;
  */
 class CC_bind {
 public:
-	CID cid;    //!< Which controller this belongs to
-	char flags; //!< mask to determine various additional attributes of btn
-	short btn;  //!< The button, key combo, or axis that's bound.
+	CID cid = CID_NONE; //!< Which controller this belongs to
+	char flags = 0;     //!< mask to determine various additional attributes of btn
+	short btn = -1;     //!< The button, key combo, or axis that's bound.
 
 public:
-	CC_bind() :cid(CID_NONE), flags(0), btn(-1) {};
-	CC_bind(CID _cid, short _btn) : cid(_cid), flags(0), btn(_btn) { validate(); };
+	CC_bind() = default;
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { validate(); };
 	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
 	CC_bind(const CC_bind &A) = default;
 
-	CC_bind& operator=(const CC_bind &A);
+	CC_bind& operator=(const CC_bind &A) = default;
 
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
@@ -412,8 +412,8 @@ public:
 	CC_bind second; // The secondary binding
 
 public:
-	CCB() {};
-	CCB(const CCB& A) : first(A.first), second(A.second) {};
+	CCB() = default;
+	CCB(const CCB& A) = default;
 
 	/*!
 	 * Returns true if nothing is bound
@@ -446,7 +446,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCB to this CCB
 	 */
-	CCB& operator=(const CCB&);
+	CCB& operator=(const CCB&) = default;
 
 	/*!
 	 * Checks if the given CCB is exactly equal to this
@@ -531,8 +531,7 @@ public:
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
 public:
-	CCI() {};
-
+	CCI() = default;
 	CCI(const CCI& A) = default;
 	
 	/*!

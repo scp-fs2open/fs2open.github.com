@@ -2017,15 +2017,6 @@ SCP_string ValToJoy(const CC_bind &bind) {
 	return str;
 }
 
-CC_bind& CC_bind::operator=(const CC_bind &A)
-{
-	cid = A.cid;
-	btn = A.btn;
-	flags = A.flags;
-
-	return *this;
-}
-
 bool CC_bind::operator==(const CC_bind &B) const
 {
 	return (btn == B.btn) && (cid == B.cid) && (~(flags ^ B.flags) & CCF_AXIS);
@@ -2268,13 +2259,6 @@ short CCB::get_btn(CID cid) const {
 	}
 }
 
-CCB& CCB::operator=(const CCB& A) {
-	first = A.first;
-	second = A.second;
-
-	return *this;
-}
-
 bool CCB::operator==(const CCB& A) {
 	return (first == A.first) && (second == A.second);
 }
@@ -2415,12 +2399,8 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 		mprintf(("Control item defined without a valid tab. Disabling: %s", item.text.c_str()));
 	}
 
-	// Assign disabled state
-	if ((tab == NO_TAB) || disabled) {
-		item.disabled = true;
-
-	} else {
-		// Must have a valid tab, and not disabled by hardcode
+	// Enable if it has a valid tab and if caller wants it enabled
+	if ((tab != NO_TAB) && !disabled) {
 		item.disabled = false;
 	}
 

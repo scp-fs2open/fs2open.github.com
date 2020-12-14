@@ -192,8 +192,6 @@ private:
 	 * Throws an error if an element with the given name exists
 	 */
 	void ensureNotExists(const char* name);
-
-
 };
 
 } // namespace presets
