@@ -54,7 +54,8 @@ SDL_mutex* key_lock;
 								// when typing in your pilots callsign.  This global flag is checked before execution
 								// is stopped.
 
-SCP_map<int, int> SDLtoFS2;
+SCP_map<SDL_Scancode, int> SDLtoFS2;
+SCP_map<int, SDL_Scancode> FS2toSDL; // Convenience map to speed up FS2->SDL lookups needed for displaying localized keycodes in config
 
 int ascii_table[SIZE_OF_ASCII_TABLE] =
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,
@@ -237,6 +238,10 @@ void FillSDLArray ()
 	SDLtoFS2[SDL_SCANCODE_PRINTSCREEN] = KEY_PRINT_SCRN;
 	SDLtoFS2[SDL_SCANCODE_PAUSE] = KEY_PAUSE;
 	//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
+
+	for (auto& lookup : SDLtoFS2) {
+		FS2toSDL[lookup.second] = lookup.first;
+	}
 }
 
 int key_numlock_is_on()
@@ -269,6 +274,37 @@ int key_to_ascii(int keycode )
 	keycode &= 0xFF;
 
 	if ( keycode>=127 )
+		return 255;
+
+	if (shifted)
+		return shifted_ascii_table[keycode];
+	else
+		return ascii_table[keycode];
+}
+
+//This is very bad. However, proper handling done with SDL_TextInput events requires the inputbox structure to be changed to work with a different type of event.
+//This will work for basic replacement of chars depending on the Keyboard layout, but not special characters.
+int key_to_ascii_modern(int keycode)
+{
+	bool shifted;
+
+	if (!key_inited) return 255;
+
+	shifted = keycode & KEY_SHIFTED;
+	keycode &= 0xFF;
+
+	const char* keys = SDL_GetKeyName(SDL_GetKeyFromScancode(FS2toSDL[keycode]));
+	if (keys[0] != '\0' && keys[1] == '\0') {
+		//We actually only have a single char
+		if (isdigit(keys[0]) && !shifted)
+			return keys[0]; //A number and no shift is fine
+		if (keys[0] < 127 && isalpha(keys[0])) {
+			return shifted ? toupper(keys[0]) : keys[0]; //A roman letter is always fine, but no special letters like umlauts. Make it uppercase if needed
+		}
+		//Neither a number nor a simple character. We have no clue what this is, thus pass to FS2 table.
+	}
+
+	if (keycode >= 127)
 		return 255;
 
 	if (shifted)

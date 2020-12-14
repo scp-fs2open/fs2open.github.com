@@ -22,6 +22,8 @@ extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
 extern ubyte keyd_pressed[NUM_KEYS];
 
+extern SCP_map<int, SDL_Scancode> FS2toSDL;
+
 // O/S level hooks...
 void key_init();
 void key_level_init();
@@ -35,6 +37,7 @@ void key_flush();
 float key_down_timef( uint code );
 
 int key_to_ascii(int keycode );
+int key_to_ascii_modern(int keycode );
 int key_inkey();
 
 // global flag that will enable/disable the backspace key from stopping execution

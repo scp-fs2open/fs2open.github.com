@@ -395,10 +395,8 @@ void UI_INPUTBOX::process(int focus)
 					}
 
 					// get an ascii char from the input if possible
-					key_check = keypad_to_ascii(key);
-					if(key_check == -1){
-						key_check = key_to_ascii(key);
-					}
+					
+					key_check = key_to_ascii_modern(key);
 
 					ascii = validate_input(key_check);
 					if ((ascii > 0) && (ascii < 255)) {
