@@ -1261,6 +1261,15 @@ int control_config_accept()
 		// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get consistant ordering
 		Control_config_presets.resize(1);
 		load_preset_files();
+
+		// Find our preset again to set the selection index
+		for (unsigned int i = 0; i < Control_config_presets.size(); ++i) {
+			if (Control_config_presets[i].name == str) {
+				Defaults_cycle_pos = i;
+				break;
+			}
+		}
+		Assert(i != Control_config_presets.size());
 	}
 	
 
