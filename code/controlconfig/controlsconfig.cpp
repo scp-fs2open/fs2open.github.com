@@ -1225,15 +1225,16 @@ int control_config_accept()
 		char * cstr;	// Must be a char *, because popup_input may return nullptr and std::string don't like it
 		
 		retry:;
-		cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6, Player->callsign);
+		cstr = popup_input(flags, "Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6, Player->callsign);
 		if (cstr == nullptr) {
 			// Abort
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			return -1;
 
 		} else if (strcmp(cstr, "") == 0) {
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			// retry
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			
 			goto retry;
 		}
 
