@@ -1221,11 +1221,19 @@ int control_config_accept()
 	if (preset_find_duplicate() == Control_config_presets.end()) {
 		// We have a custom preset to save, prompt the user
 		int flags = PF_TITLE_WHITE;
-		auto cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort.", 32 - 6);
+		char * cstr;	// Must be a char *, because popup_input may return nullptr and std::string don't like it
+		
+		retry:;
+		cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6);
 		if (cstr == nullptr) {
 			// Abort
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			return -1;
+
+		} else if (cstr == "") {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			// retry
+			goto retry;
 		}
 
 		SCP_string str = cstr;
@@ -1235,11 +1243,11 @@ int control_config_accept()
 						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		if (fp) {
 			cfclose(fp);
-			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to abort", str.c_str());
+			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name", str.c_str());
 			if ((n == 1) || (n == -1)) {
-				// Abort
+				// retry
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-				return -1;
+				goto retry;
 			}
 		}
 
