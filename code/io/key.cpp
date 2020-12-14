@@ -282,37 +282,6 @@ int key_to_ascii(int keycode )
 		return ascii_table[keycode];
 }
 
-//This is very bad. However, proper handling done with SDL_TextInput events requires the inputbox structure to be changed to work with a different type of event.
-//This will work for basic replacement of chars depending on the Keyboard layout, but not special characters.
-int key_to_ascii_modern(int keycode)
-{
-	bool shifted;
-
-	if (!key_inited) return 255;
-
-	shifted = keycode & KEY_SHIFTED;
-	keycode &= 0xFF;
-
-	const char* keys = SDL_GetKeyName(SDL_GetKeyFromScancode(FS2toSDL[keycode]));
-	if (keys[0] != '\0' && keys[1] == '\0') {
-		//We actually only have a single char
-		if (isdigit(keys[0]) && !shifted)
-			return keys[0]; //A number and no shift is fine
-		if (keys[0] < 127 && isalpha(keys[0])) {
-			return shifted ? toupper(keys[0]) : keys[0]; //A roman letter is always fine, but no special letters like umlauts. Make it uppercase if needed
-		}
-		//Neither a number nor a simple character. We have no clue what this is, thus pass to FS2 table.
-	}
-
-	if (keycode >= 127)
-		return 255;
-
-	if (shifted)
-		return shifted_ascii_table[keycode];
-	else
-		return ascii_table[keycode];
-}
-
 //	Flush the keyboard buffer.
 //	Clear the keyboard array (keyd_pressed).
 void key_flush()

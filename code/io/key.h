@@ -37,7 +37,6 @@ void key_flush();
 float key_down_timef( uint code );
 
 int key_to_ascii(int keycode );
-int key_to_ascii_modern(int keycode );
 int key_inkey();
 
 // global flag that will enable/disable the backspace key from stopping execution
