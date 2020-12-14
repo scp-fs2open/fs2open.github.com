@@ -682,5 +682,15 @@ bool weapon_can_lock_on_ship(weapon_info *wip, int ship_num);
 // return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
 bool weapon_has_iff_restrictions(weapon_info* wip);
 
+// whether secondary weapon wip on shooter is in range of target_world_pos
+bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos);
+
+// return whether shooter is in range, fov, etc of target_subsys, for multilock
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* dot = 0);
+
+// return whether shooter is in fov, etc of a target, for multilock
+// does NOT check range
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* dot);
+
 
 #endif

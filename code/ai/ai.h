@@ -491,6 +491,8 @@ typedef struct ai_info {
 	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
+
+	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 } ai_info;
 
 // Goober5000

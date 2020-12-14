@@ -5729,6 +5729,93 @@ void set_primary_weapon_linkage(object *objp)
 	}
 }
 
+//  This function returns if the ship could theoretically have fully locked all available targets
+// given the current time it's been locking on its primary target
+//  If so, it cheats a little bit and assumes that's what it has done, and fills 
+// the ai's missile_locks_firing vector, and fires them at those targets
+bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
+
+	if (!wip->multi_lock)
+		return true;
+
+	object* target_objp = &Objects[aip->target_objnum];
+
+	struct multilock_target {
+		object* objp;
+		ship_subsys* subsys;
+		float dot;
+	};
+
+	SCP_vector<multilock_target> multilock_targets;
+
+	if (wip->target_restrict == LR_CURRENT_TARGET) {
+		multilock_targets.push_back(multilock_target{ target_objp,  nullptr, 1.0f });
+	}
+	else if (wip->target_restrict == LR_CURRENT_TARGET_SUBSYS) {
+
+		if (target_objp->type != OBJ_SHIP) {
+			multilock_targets.push_back(multilock_target{ target_objp,  nullptr, 1.0f });
+		}
+		else {
+			ship* sp = &Ships[target_objp->instance];
+			ship_subsys* ss;
+
+			if (Ship_info[sp->ship_info_index].is_big_or_huge()) {
+				for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss)) {
+					float dot;
+
+					if (!weapon_multilock_can_lock_on_subsys(Pl_objp, target_objp, ss, wip, &dot))
+						continue;
+
+					multilock_targets.push_back(multilock_target{ target_objp,  ss, dot });
+				}
+			}
+			else {
+				multilock_targets.push_back(multilock_target{ target_objp,  nullptr, 1.0f });
+			}
+		}
+	}
+	else { // any target
+		multilock_targets.push_back(multilock_target{ target_objp,  nullptr, 1.0f });
+
+		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			object* target_objp = &Objects[so->objnum];
+			ship* target_ship = &Ships[target_objp->instance];
+			float dot;
+
+			if (!weapon_multilock_can_lock_on_target(Pl_objp, target_objp, wip, &dot))
+				continue;
+
+			if (Ship_info[target_ship->ship_info_index].is_big_or_huge()) {
+				// add ALL the valid subsystems as possible targets
+				// dont check range or lock fov, the sub function will do that for function subsys
+				ship_subsys* ss;
+				for (ss = GET_FIRST(&target_ship->subsys_list); ss != END_OF_LIST(&target_ship->subsys_list); ss = GET_NEXT(ss)) {
+
+					if (!weapon_multilock_can_lock_on_subsys(Pl_objp, target_objp, ss, wip, &dot))
+						continue;
+
+					multilock_targets.push_back(multilock_target{ target_objp,  ss, dot });
+				}
+			}
+			else {
+				// just a small target, now we check range and fov
+				if (!weapon_secondary_world_pos_in_range(Player_obj, wip, &target_objp->pos)) {
+					continue;
+				}
+
+				if (dot < wip->lock_fov) {
+					continue;
+				}
+
+				multilock_targets.push_back(multilock_target{ target_objp,  nullptr, dot });
+			}
+		}
+	}
+
+
+}
+
 //	--------------------------------------------------------------------------
 //	Fire the current primary weapon.
 //	*objp is the object to fire from.
@@ -6312,6 +6399,9 @@ int ai_fire_secondary_weapon(object *objp)
 		//	Note, maybe don't fire if firing at player and any homers yet fired.
 		//	Decreasing chance to fire the more homers are incoming on player.
 		if (check_ok_to_fire(OBJ_INDEX(objp), aip->target_objnum, wip)) {
+
+			if(wip->)
+
 			if (ship_fire_secondary(objp)) {
 				rval = 1;
 				swp->next_secondary_fire_stamp[current_bank] = timestamp(500);
@@ -7806,11 +7896,13 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 			(tshpp == NULL ||
 			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos))))) {
 				aip->aspect_locked_time += flFrametime;
-				if (aip->aspect_locked_time >= wip->min_lock_time) {
-					aip->aspect_locked_time = wip->min_lock_time;
+				 if (aip->aspect_locked_time >= wip->min_lock_time) {
 					aip->current_target_is_locked = 1;
 				}
 		} else {
+			if (aip->aspect_locked_time > wip->min_lock_time)
+				aip->aspect_locked_time = wip->min_lock_time;
+
 			aip->aspect_locked_time -= flFrametime*2;
 			if (aip->aspect_locked_time < 0.0f)
 				aip->aspect_locked_time = 0.0f;
@@ -14649,6 +14741,8 @@ void init_ai_object(int objnum)
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 
 	aip->form_obj_slotnum = -1;
+
+	aip->ai_missile_locks_firing.clear();
 }
 
 void init_ai_system()

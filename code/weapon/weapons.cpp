@@ -8688,3 +8688,88 @@ bool weapon_has_iff_restrictions(weapon_info* wip)
 			return restriction.first == LockRestrictionType::IFF; 
 		});
 }
+
+bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos)
+{
+	int target_in_range = true;
+
+	vec3d vec_to_target;
+	vm_vec_sub(&vec_to_target, target_world_pos, &shooter->pos);
+	float dist_to_target = vm_vec_mag(&vec_to_target);
+
+	float weapon_range;
+	//local ssms are always in range :)
+	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
+		weapon_range = wip->lssm_lock_range;
+	else
+		// calculate the range of the weapon, and only display the lead target indicator when
+		// if the weapon can actually hit the target
+		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
+
+
+	extern int Nebula_sec_range;
+	// reduce firing range in nebula
+	if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
+		weapon_range *= 0.8f;
+	}
+
+	return dist_to_target <= weapon_range;
+}
+
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* dot) {
+
+	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
+		return false;
+
+	vec3d ss_pos;
+	get_subsystem_world_pos(target, target_subsys, &ss_pos);
+
+	if (!weapon_secondary_world_pos_in_range(shooter, wip, &ss_pos))
+		return false;
+
+	vec3d vec_to_target;
+	vm_vec_normalized_dir(&vec_to_target, &ss_pos, &shooter->pos);
+	*dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+
+	if (*dot < wip->lock_fov)
+		return false;
+
+	vec3d gsubpos;
+	vm_vec_unrotate(&gsubpos, &target_subsys->system_info->pnt, &target->orient);
+	vm_vec_add2(&gsubpos, &target->pos);
+
+	return ship_subsystem_in_sight(target, target_subsys, &shooter->pos, &gsubpos) == 1;
+}
+
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* dot) {
+	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
+	if (target_objp->type != OBJ_SHIP)
+		return false;
+
+	if (hud_target_invalid_awacs(target_objp))
+		return false;
+
+	ship* target_ship = &Ships[target_objp->instance];
+
+	if (target_objp->flags[Object::Object_Flags::Should_be_dead])
+		return false;
+
+	if (target_ship->flags[Ship::Ship_Flags::Dying])
+		return false;
+
+	if (should_be_ignored(target_ship))
+		return false;
+
+	// if this is part of the same team and doesn't have any iff restrictions, reject lock
+	if (!weapon_has_iff_restrictions(wip) && target_ship->team == obj_team(target_objp))
+		return false;
+
+	vec3d vec_to_target;
+	vm_vec_normalized_dir(&vec_to_target, &target_objp->pos, &shooter->pos);
+	*dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+
+	if (*dot < wip->lock_fov)
+		return false;
+
+	return weapon_can_lock_on_ship(wip, target_objp->instance);
+}
