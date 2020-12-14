@@ -301,7 +301,10 @@ class UI_INPUTBOX : public UI_GADGET
 		int cursor_current_frame;
 		int cursor_elapsed_time;
 
+		os::events::ListenerIdentifier textListener;
+
 		int	validate_input(int chr);
+		void add_input(int chr, int *key_used, int *changed_flag);
 		void	init_cursor();
 
 		void draw() override;
