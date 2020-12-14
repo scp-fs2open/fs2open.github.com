@@ -29,6 +29,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "scripting/scripting.h"
+#include "playerman/player.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
 #include "ui/ui.h"
@@ -1218,13 +1219,13 @@ int control_config_accept()
 		return -1;
 	}
 
-	if (preset_find_duplicate() == Control_config_presets.end()) {
+	if (control_config_get_current_preset() == Control_config_presets.end()) {
 		// We have a custom preset to save, prompt the user
 		int flags = PF_TITLE_WHITE;
 		char * cstr;	// Must be a char *, because popup_input may return nullptr and std::string don't like it
 		
 		retry:;
-		cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6);
+		cstr = popup_input(flags, "Confirm new custom preset name\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6, Player->callsign);
 		if (cstr == nullptr) {
 			// Abort
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1262,16 +1263,6 @@ int control_config_accept()
 		// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get consistant ordering
 		Control_config_presets.resize(1);
 		load_preset_files();
-
-		// Find our preset again to set the selection index
-		unsigned int n;
-		for (n = 0; n < Control_config_presets.size(); ++n) {
-			if (Control_config_presets[n].name == str) {
-				Defaults_cycle_pos = n;
-				break;
-			}
-		}
-		Assert(n != Control_config_presets.size());
 	}
 	
 
@@ -1415,6 +1406,15 @@ void control_config_init()
 	Ui_window.set_mask_bmap(Conflict_background_bitmap_mask_fname[gr_screen.res]);
 	Ui_window.tooltip_handler = control_config_tooltip_handler;
 
+	// Init preset cycling system
+	auto preset_it = control_config_get_current_preset();
+	if (preset_it == Control_config_presets.end()) {
+		Defaults_cycle_pos = 0;
+
+	} else {
+		Defaults_cycle_pos = static_cast<unsigned int>(std::distance(Control_config_presets.begin(), preset_it));
+	}
+
 	// load in help overlay bitmap	
 	Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
 	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
@@ -1546,7 +1546,7 @@ void control_config_close()
 	Undo_controls.clear();
 }
 
-SCP_vector<CC_preset>::iterator preset_find_duplicate() {
+SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
 	// Find the matching preset.
 	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
 	auto it = Control_config_presets.begin();
@@ -1594,10 +1594,11 @@ void control_config_draw_selected_preset() {
 
 	// Find the matching preset.
 	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
-	auto preset_it = preset_find_duplicate();
+	auto preset_it = control_config_get_current_preset();
 
 	if (preset_it != Control_config_presets.end()) {
 		sprintf(preset_str, "Controls: %s", preset_it->name.c_str());
+		
 	} else {
 		sprintf(preset_str, "Controls: custom");
 	}
@@ -1613,10 +1614,6 @@ void control_config_draw_selected_preset() {
 	} else {
 		gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
 	}
-}
-
-size_t control_config_get_current_preset() {
-	return Defaults_cycle_pos;
 }
 
 /**

@@ -585,7 +585,7 @@ void pilotfile::plr_read_controls()
 		handler->endArrayRead();
 
 		// Check that these bindings are in a preset.  If it is not, create a new preset file
-		auto it = preset_find_duplicate();
+		auto it = control_config_get_current_preset();
 		if (it == Control_config_presets.end()) {
 			CC_preset preset;
 			preset.name = filename;
@@ -602,8 +602,7 @@ void pilotfile::plr_read_controls()
 
 	} else {
 		// read PLR >= 3
-		char buf[MAX_FILENAME_LEN];
-		cfread_string(buf, 32, cfp);
+		SCP_string buf = handler->readString("preset");
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
 							   [buf](const CC_preset& preset) { return preset.name == buf; });
@@ -622,9 +621,9 @@ void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
 	
-	size_t n = control_config_get_current_preset();
+	auto it = control_config_get_current_preset();
 
-	handler->writeString("preset", Control_config_presets[n].name.c_str());
+	handler->writeString("preset", it->name.c_str());
 
 	handler->endSectionWrite(); // Controls
 }

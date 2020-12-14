@@ -22,7 +22,7 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //   1 - Adding support for the player is multi flag
 //   2 - Add language in use when pilot was created
 //       (due to intel entries using translated text as the primary key)
-//   3   Redefine controls section.
+//   3   Controls are removed, and instead a preset name is saved/loaded
 static const ubyte PLR_VERSION = 3;
 //   0 - initial version
 //   1 - re-add recent missions

@@ -1216,7 +1216,7 @@ void pilotfile::csg_read_controls()
 		}
 
 		// Check that these bindings are in a preset.
-		auto it = preset_find_duplicate();
+		auto it = control_config_get_current_preset();
 		if (it == Control_config_presets.end()) {
 			// Not a preset, create one and its file
 			CC_preset preset;
@@ -1252,9 +1252,9 @@ void pilotfile::csg_read_controls()
 
 void pilotfile::csg_write_controls()
 {
-	auto n = control_config_get_current_preset();
+	auto it = control_config_get_current_preset();
 
-	cfwrite_string(Control_config_presets[n].name.c_str(), cfp);
+	cfwrite_string(it->name.c_str(), cfp);
 }
 
 void pilotfile::csg_read_cutscenes() {
@@ -1664,7 +1664,8 @@ bool pilotfile::save_savefile()
 	csg_write_variables();
 	mprintf(("CSG => Saving:  Settings...\n"));
 	csg_write_settings();
-	// mprintf(("CSG => Not saving:  Controls...\n"));
+	mprintf(("CSG => Saving:  Controls...\n"));
+	csg_write_controls();
 	mprintf(("CSG => Saving:  Cutscenes...\n"));
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));

@@ -659,9 +659,12 @@ void control_config_cancel_exit();
 void control_config_use_preset(CC_preset &preset);
 
 /**
- * @brief Gets the currently used preset index
+ * @brief Gets the currently used preset
+ *
+ * @returns a pointer to the current preset, or
+ * @returns nullptr if current bindings are not in a preset
  */
-size_t control_config_get_current_preset();
+SCP_vector<CC_preset>::iterator control_config_get_current_preset();
 
 /*!
  * Returns the IoActionId of a control bound to the given key
@@ -764,14 +767,6 @@ void control_check_indicate();
  * @brief Clears the used timestamp of all controls
  */
 void control_config_clear_used_status();
-
-/**
- * Checks the current state of Control_config against all known presets.
- *
- * @returns An iterator to the preset that's equal to the current Control_config bindings, or
- * @returns An iterator to Control_config_presets.end() otherwise
- */
-SCP_vector<CC_preset>::iterator preset_find_duplicate();
 
 /**
  * @brief Applies sensitivity multiplier and deadzone histerisis to the raw axis value
