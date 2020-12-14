@@ -80,6 +80,30 @@ void UI_INPUTBOX::init_cursor()
 
 void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, const char *_text, int _flags, int pixel_lim, color *clr)
 {
+	textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, [this](const SDL_Event& event) {
+		bool focus = my_wnd->selected_gadget == this;
+
+		//Not in focus, don't take the TextInput
+		if (!focus || disabled_flag)
+			return false; 
+
+		if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
+			int key_used = 0;
+			for (int i = 0; i < sizeof(event.text.text) / sizeof(event.text.text[0]); i++) {
+				if (event.text.text[i] <= 32)
+					break;
+
+				add_input(event.text.text[i], &key_used, &changed_flag);
+			}
+
+			if (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED))
+				my_wnd->last_keypress = 0;
+		}
+
+		return true;
+	});
+	SDL_StartTextInput();
+
 	int tw, th;
 
 	Assert(_text_len >= 0);
@@ -153,6 +177,10 @@ void UI_INPUTBOX::set_invalid_chars(const char *ichars)
 
 void UI_INPUTBOX::destroy()
 {
+
+	SDL_StopTextInput();
+	os::events::removeEventListener(textListener);
+
 	if (text) {
 		vm_free(text);
 		text = NULL;
@@ -305,7 +333,7 @@ int UI_INPUTBOX::validate_input(int chr)
 
 void UI_INPUTBOX::process(int focus)
 {
-	int ascii, clear_lastkey, key, key_used, key_check;	
+	int clear_lastkey, key, key_used, key_check;	
 
 	// check if mouse is pressed
 	if (B1_PRESSED && is_mouse_on()) {
@@ -326,11 +354,11 @@ void UI_INPUTBOX::process(int focus)
 
 	if (focus) {
 		key = my_wnd->keypress;
-		switch (key) {
+			switch (key) {
 			case 0:
 				break;
 
-			//case KEY_LEFT:
+				//case KEY_LEFT:
 			case KEY_BACKSP:
 				if (position > 0)
 					position--;
@@ -354,12 +382,13 @@ void UI_INPUTBOX::process(int focus)
 				break;
 
 			case KEY_ESC:
-				if (flags & UI_INPUTBOX_FLAG_ESC_CLR){
+				if (flags & UI_INPUTBOX_FLAG_ESC_CLR) {
 					if (position > 0) {
 						set_text("");
-						key_used = 1;						
+						key_used = 1;
 
-					} else {
+					}
+					else {
 						key_used = 0;
 						clear_lastkey = 0;
 					}
@@ -375,8 +404,8 @@ void UI_INPUTBOX::process(int focus)
 				if (!locked) {
 					// allow pasting from system clipboard
 					if (key == (KEY_CTRLED | KEY_V)) {
-						if ( SDL_HasClipboardText() ) {
-							char *cliptext = SDL_GetClipboardText();
+						if (SDL_HasClipboardText()) {
+							char* cliptext = SDL_GetClipboardText();
 
 							if (cliptext) {
 								append_text(cliptext);
@@ -389,72 +418,72 @@ void UI_INPUTBOX::process(int focus)
 					// MWA -- determine if alt or ctrl held down on this key and don't process if it is.  We
 					// need to be able to pass these keys back to the top level.  (And anyway -- ctrl-a shouldn't
 					// print out an A in the input window
-					if ( key & (KEY_ALTED | KEY_CTRLED) ) {
+					if (key & (KEY_ALTED | KEY_CTRLED)) {
 						clear_lastkey = 0;
 						break;
 					}
 
-					// get an ascii char from the input if possible
-					key_check = keypad_to_ascii(key);
-					if(key_check == -1){
-						key_check = key_to_ascii(key);
-					}
-
-					ascii = validate_input(key_check);
-					if ((ascii > 0) && (ascii < 255)) {
-
-						if (flags & UI_INPUTBOX_FLAG_LETTER_FIRST) {
-							if ((position == 0) && !is_letter((char) ascii))
-								break;
-						}
-
-						key_used = 1;
-
-						if ( position < length ) {
-							text[position] = (char) ascii;
-							text[position + 1] = 0;
-
-							if (flags & UI_INPUTBOX_FLAG_PASSWD) {
-								passwd_text[position] = (char) INPUTBOX_PASSWD_CHAR;
-								passwd_text[position + 1] = 0;
-							}
-
-							position++;
-
-							// check to see if we should limit by pixel width
-							if (pixel_limit > -1) {
-								int _w;
-
-								if (flags & UI_INPUTBOX_FLAG_PASSWD) {
-									gr_get_string_size(&_w, NULL, passwd_text);									
-
-								} else {
-									gr_get_string_size(&_w, NULL, text);								
-								}
-
-								if (_w > pixel_limit) {
-									position--;
-									locked = 1;
-									text[position] = 0;
-
-									if (flags & UI_INPUTBOX_FLAG_PASSWD) {
-										passwd_text[position] = 0;
-									}
-								}
-							}
-						}
-
-						changed_flag = 1;
-					}
+					// Don't add ASCII-Chars, assume this all happens in the TextInputEvent
 				}
 
 				break;
-		}
+			}
+		
 
 		if (clear_lastkey || (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED)) )
 			my_wnd->last_keypress=0;
         
 	}	
+}
+
+void UI_INPUTBOX::add_input(int chr, int* key_used, int* changed_flag) {
+	int ascii = validate_input(chr);
+	if ((ascii > 0) && (ascii < 255)) {
+
+		if (flags & UI_INPUTBOX_FLAG_LETTER_FIRST) {
+			if ((position == 0) && !is_letter((char)ascii))
+				return;
+		}
+
+		*key_used = 1;
+
+		if (position < length) {
+			text[position] = (char)ascii;
+			text[position + 1] = 0;
+
+			if (flags & UI_INPUTBOX_FLAG_PASSWD) {
+				passwd_text[position] = (char)INPUTBOX_PASSWD_CHAR;
+				passwd_text[position + 1] = 0;
+			}
+
+			position++;
+
+			// check to see if we should limit by pixel width
+			if (pixel_limit > -1) {
+				int _w;
+
+				if (flags & UI_INPUTBOX_FLAG_PASSWD) {
+					gr_get_string_size(&_w, NULL, passwd_text);
+
+				}
+				else {
+					gr_get_string_size(&_w, NULL, text);
+				}
+
+				if (_w > pixel_limit) {
+					position--;
+					locked = 1;
+					text[position] = 0;
+
+					if (flags & UI_INPUTBOX_FLAG_PASSWD) {
+						passwd_text[position] = 0;
+					}
+				}
+			}
+		}
+
+		*changed_flag = 1;
+	}
 }
 
 int UI_INPUTBOX::changed()

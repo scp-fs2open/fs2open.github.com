@@ -416,7 +416,8 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-const char *Scan_code_text_german[] = {
+//Scan code texts are no longer needed as SDL handles the names
+/*const char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
@@ -456,7 +457,7 @@ const char *Scan_code_text_german[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-};
+};*/
 
 const char *Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
@@ -467,7 +468,8 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-const char *Scan_code_text_french[] = {
+//Scan code texts are no longer needed as SDL handles the names
+/*const char *Scan_code_text_french[] = {
 	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
 	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -507,7 +509,7 @@ const char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-};
+};*/
 
 const char *Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
@@ -518,7 +520,8 @@ const char *Joy_button_text_french[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char *Scan_code_text_polish[] = {
+//Scan code texts are no longer needed as SDL handles the names
+/*const char *Scan_code_text_polish[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -558,7 +561,7 @@ const char *Scan_code_text_polish[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-};
+};*/
 
 const char *Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
@@ -569,7 +572,7 @@ const char *Joy_button_text_polish[] = {
 	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
 };
 
-//!	This is the text that is displayed on the screen for the keys a player selects
+//English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
 const char *Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
@@ -621,7 +624,6 @@ const char *Joy_button_text_english[] = {
 	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
-const char **Scan_code_text = Scan_code_text_english;
 const char **Joy_button_text = Joy_button_text_english;
 
 int translate_key_to_index(const char *key, bool find_override)
@@ -771,7 +773,7 @@ const char *textify_scancode(int code)
 		}
 	}
 
-	strcat_s(text, Scan_code_text[keycode]);
+	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(FS2toSDL[keycode])));
 	return text;
 }
 
@@ -826,16 +828,12 @@ void control_config_common_init()
 
 	// Init control label localization
 	if(Lcl_gr){
-		Scan_code_text = Scan_code_text_german;
 		Joy_button_text = Joy_button_text_german;
 	} else if(Lcl_fr){
-		Scan_code_text = Scan_code_text_french;
 		Joy_button_text = Joy_button_text_french;
 	} else if(Lcl_pl){
-		Scan_code_text = Scan_code_text_polish;
 		Joy_button_text = Joy_button_text_polish;
 	} else {
-		Scan_code_text = Scan_code_text_english;
 		Joy_button_text = Joy_button_text_english;
 	}
 }

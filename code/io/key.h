@@ -22,6 +22,8 @@ extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
 extern ubyte keyd_pressed[NUM_KEYS];
 
+extern SCP_map<int, SDL_Scancode> FS2toSDL;
+
 // O/S level hooks...
 void key_init();
 void key_level_init();
