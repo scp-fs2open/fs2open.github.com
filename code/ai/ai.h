@@ -492,6 +492,7 @@ typedef struct ai_info {
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
 
+	int multilock_check_timestamp;		// when to check for multilock next
 	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 } ai_info;
 
