@@ -1235,6 +1235,7 @@ void pilotfile::csg_read_controls()
 	} else {
 		// >= CSG-6
 		char buf[MAX_FILENAME_LEN];
+		memset(buf, '\0', sizeof(buf));
 		cfread_string(buf, 32, cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),

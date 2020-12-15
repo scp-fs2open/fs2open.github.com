@@ -2063,7 +2063,7 @@ void CC_bind::invert_toggle() {
 }
 
 bool CC_bind::is_inverted() const {
-	return flags & CCF_INVERTED;
+	return static_cast<bool>(flags & CCF_INVERTED);
 }
 
 void CC_bind::take(CID _cid, short _btn, char _flags) {

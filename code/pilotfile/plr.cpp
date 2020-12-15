@@ -579,7 +579,7 @@ void pilotfile::plr_read_controls()
 
 			if (idx < NUM_JOY_AXIS_ACTIONS) {
 				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
-				Control_config[idx + JOY_AXIS_BEGIN].invert(inv);
+				Control_config[idx + JOY_AXIS_BEGIN].invert(inv != 0);
 			}
 		}
 		handler->endArrayRead();
