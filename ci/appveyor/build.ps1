@@ -9,22 +9,22 @@ class BuildConfig {
 }
 
 $NightlyConfigurations = @(
-	[BuildConfig]@{ 
-		Generator="Visual Studio 14 2015 Win64";
-		PackageType="Win64";
-		Toolset="v140";
-		SimdType="SSE2";
-		QtDir="C:\Qt\5.9\msvc2015_64";
-		SourcePackage=$false;
-	},
-	[BuildConfig]@{ 
-		Generator="Visual Studio 14 2015";
-		PackageType="Win32";
-		Toolset="v140";
-		SimdType="SSE2";
-		QtDir="C:\Qt\5.9\msvc2015";
-		SourcePackage=$false;
-	}
+#	[BuildConfig]@{
+#		Generator="Visual Studio 14 2015 Win64";
+#		PackageType="Win64";
+#		Toolset="v140";
+#		SimdType="SSE2";
+#		QtDir="C:\Qt\5.9\msvc2015_64";
+#		SourcePackage=$false;
+#	},
+#	[BuildConfig]@{
+#		Generator="Visual Studio 14 2015";
+#		PackageType="Win32";
+#		Toolset="v140";
+#		SimdType="SSE2";
+#		QtDir="C:\Qt\5.9\msvc2015";
+#		SourcePackage=$false;
+#	}
 )
 $ReleaseConfigurations = @(
 	[BuildConfig]@{

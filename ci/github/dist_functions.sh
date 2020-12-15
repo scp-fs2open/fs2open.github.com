@@ -28,7 +28,7 @@ function upload_files_to_sftp() {
   sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch $1 || true
 
   echo "cd $2/$(get_version_name)/" > sftp_batch
-  for file in *.tar.gz; do
+  for file in {*.tar.gz, *.7z}; do
     echo "put $file" >> sftp_batch
   done
 
