@@ -304,7 +304,7 @@ class UI_INPUTBOX : public UI_GADGET
 		os::events::ListenerIdentifier textListener;
 
 		int	validate_input(int chr);
-		void add_input(int chr, int *key_used, int *changed_flag);
+		void add_input(int chr, int *key_used);
 		void	init_cursor();
 
 		void draw() override;

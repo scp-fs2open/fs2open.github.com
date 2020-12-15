@@ -93,7 +93,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 				if (event.text.text[i] <= 32)
 					break;
 
-				add_input(event.text.text[i], &key_used, &changed_flag);
+				add_input(event.text.text[i], &key_used);
 			}
 
 			if (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED))
@@ -333,7 +333,7 @@ int UI_INPUTBOX::validate_input(int chr)
 
 void UI_INPUTBOX::process(int focus)
 {
-	int clear_lastkey, key, key_used, key_check;	
+	int clear_lastkey, key, key_used;	
 
 	// check if mouse is pressed
 	if (B1_PRESSED && is_mouse_on()) {
@@ -436,7 +436,7 @@ void UI_INPUTBOX::process(int focus)
 	}	
 }
 
-void UI_INPUTBOX::add_input(int chr, int* key_used, int* changed_flag) {
+void UI_INPUTBOX::add_input(int chr, int* key_used) {
 	int ascii = validate_input(chr);
 	if ((ascii > 0) && (ascii < 255)) {
 
@@ -482,7 +482,7 @@ void UI_INPUTBOX::add_input(int chr, int* key_used, int* changed_flag) {
 			}
 		}
 
-		*changed_flag = 1;
+		changed_flag = 1;
 	}
 }
 
