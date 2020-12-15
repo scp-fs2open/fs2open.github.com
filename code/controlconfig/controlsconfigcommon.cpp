@@ -416,49 +416,6 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_german[] = {
-	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
-	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Rollen",			"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num ,",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Eingabe",			"Strg Rechts",			"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"Druck",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",			"",				"Pos 1",
-	"Pfeil Hoch",			"Bild Hoch",			"",				"Pfeil Links",			"",				"Pfeil Rechts",			"",				"Ende",
-	"Pfeil Runter", 			"Bild Runter",			"Einfg",			"Entf",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
-
 const char *Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
@@ -468,49 +425,6 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
-	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
-	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
-	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
-	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
-
 const char *Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
@@ -519,49 +433,6 @@ const char *Joy_button_text_french[] = {
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
-
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_polish[] = {
-	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Enter",			"Lewy Ctrl",	"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"LShift",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"PShift",			"Num *",
-	"Alt",			"Spacja",		"CapsLock",	"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scrlock",	"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num .",			"",				"",				"",				"F11",
-	"F12",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Enter",	"Prawy Ctrl",	"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"PrntScr",
-	"Alt",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
 
 const char *Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
@@ -773,7 +644,8 @@ const char *textify_scancode(int code)
 		}
 	}
 
-	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(FS2toSDL[keycode])));
+	auto scancode = FS2toSDL.find(keycode);
+	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(scancode == FS2toSDL.end() ? SDL_SCANCODE_UNKNOWN : scancode->second)));
 	return text;
 }
 
