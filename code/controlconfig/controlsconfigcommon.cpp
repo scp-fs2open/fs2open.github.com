@@ -416,49 +416,6 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_german[] = {
-	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
-	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Rollen",			"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num ,",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Eingabe",			"Strg Rechts",			"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"Druck",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",			"",				"Pos 1",
-	"Pfeil Hoch",			"Bild Hoch",			"",				"Pfeil Links",			"",				"Pfeil Rechts",			"",				"Ende",
-	"Pfeil Runter", 			"Bild Runter",			"Einfg",			"Entf",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
-
 const char *Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
@@ -468,49 +425,6 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
-	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
-	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
-	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
-	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
-
 const char *Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
@@ -519,49 +433,6 @@ const char *Joy_button_text_french[] = {
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
-
-//Scan code texts are no longer needed as SDL handles the names
-/*const char *Scan_code_text_polish[] = {
-	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Enter",			"Lewy Ctrl",	"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"LShift",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"PShift",			"Num *",
-	"Alt",			"Spacja",		"CapsLock",	"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scrlock",	"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num .",			"",				"",				"",				"F11",
-	"F12",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Enter",	"Prawy Ctrl",	"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"PrntScr",
-	"Alt",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};*/
 
 const char *Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
@@ -625,6 +496,8 @@ const char *Joy_button_text_english[] = {
 };
 
 const char **Joy_button_text = Joy_button_text_english;
+
+bool Generate_controlconfig_table = false;
 
 int translate_key_to_index(const char *key, bool find_override)
 {
@@ -773,7 +646,7 @@ const char *textify_scancode(int code)
 		}
 	}
 
-	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(FS2toSDL[keycode])));
+	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode))));
 	return text;
 }
 
@@ -1480,25 +1353,16 @@ void control_config_common_read_tbl() {
  * @returns 0 if successful
  * @returns 1 if not successful - nothing was saved
  */
-int control_config_common_write_tbl(bool overwrite = false) {
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
-		// File exists, and we're told to not overwrite it. Bail
-		return 1;
-	}
+template<class FILETYPE>
+int control_config_common_write_tbl_segment(FILETYPE* cfile, int preset, int (* puts)(const char *, FILETYPE*) ) {
 
-	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
-	if (cfile == nullptr) {
-		// Could not open. Bail.
-		return 1;
-	}
-
-	cfputs("#ControlConfigOverride\n", cfile);
-	cfputs(("$Name: " + Control_config_presets[0].name + "\n").c_str(), cfile);
+	puts("#ControlConfigOverride\n", cfile);
+	puts(("$Name: " + Control_config_presets[preset].name + "\n").c_str(), cfile);
 
 	// Write bindings for all controls
 	for (size_t i = 0; i < Control_config.size(); ++i) {
 		auto& item = Control_config[i];
-		auto& bindings = Control_config_presets[0].bindings[i];
+		auto& bindings = Control_config_presets[preset].bindings[i];
 
 		short key = -1;
 		int key_shift = 0;
@@ -1528,14 +1392,14 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			buf_str = "NONE";
 		}
 
-		cfputs(("$Bind Name: " + item.text + "\n").c_str(), cfile);
+		puts(("$Bind Name: " + item.text + "\n").c_str(), cfile);
 		
-		cfputs(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
+		puts(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
+		puts(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
+		puts(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
 
-		cfputs(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
+		puts(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
 
 		// Config menu options
 		buf_str = "";
@@ -1546,11 +1410,11 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			}
 		}
 		Assert(!buf_str.empty());
-		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Category: " + buf_str + "\n").c_str(), cfile);
 
-		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
+		puts(("  $Text: " + item.text + "\n").c_str(), cfile);
 		
-		cfputs(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
+		puts(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
 		
 		buf_str = "";
 		for (const auto& pair : mCCTypeNameToVal) {
@@ -1560,17 +1424,76 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			}
 		}
 		Assert(!buf_str.empty());
-		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
-	cfputs("#End\n", cfile);
+	puts("#End\n", cfile);
+
+	return 0;
+}
+
+int control_config_common_write_tbl(bool overwrite = false, bool all = false) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	if (cfile == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
+	if(all)
+		load_preset_files();
+
+	control_config_common_write_tbl_segment(cfile, 0, &cfputs);
+
+	if (all) {
+		for (size_t i = 1; i < Control_config_presets.size(); i++) {
+			control_config_common_write_tbl_segment(cfile, (int)i, &cfputs);
+		}
+	}
+
 	cfclose(cfile);
 
 	return 0;
 }
 
+int control_config_common_write_tbl_root(bool overwrite = true) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_ROOT) && !overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	FILE* fp = fopen("controlconfigdefaults.tbl", "w");
+	if (fp == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
+	for (size_t i = 0; i < Control_config_presets.size(); i++) {
+		control_config_common_write_tbl_segment(fp, (int)i, &fputs);
+	}
+
+	fclose(fp);
+
+	return 0;
+} 
+
 DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
-	if (!control_config_common_write_tbl(true)) {
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Will write (and overwrite) a controlconfigdefault.tbl in root/tables with the current profile. Use --all to export all profiles.\n");
+		return;
+	}
+
+	bool createAll = false;
+
+	if (dc_optional_string_either("all", "--all")) {
+		createAll = true;
+	}
+
+	if (!control_config_common_write_tbl(true, createAll)) {
 		dc_printf("Default bindings saved to controlconfigdefaults.tbl");
 	} else {
 		dc_printf("Error: Unable to save Control Configuration Defaults.");
@@ -1588,6 +1511,11 @@ DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
 void control_config_common_load_overrides()
 {
 	LoadEnumsIntoMaps();
+
+	if (Generate_controlconfig_table) {
+		load_preset_files();
+		control_config_common_write_tbl_root();
+	}
 
 	try {
 		control_config_common_read_tbl();

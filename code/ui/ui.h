@@ -302,10 +302,11 @@ class UI_INPUTBOX : public UI_GADGET
 		int cursor_elapsed_time;
 
 		os::events::ListenerIdentifier textListener;
+		bool handle_textInputEvent(const SDL_Event& event);
 
 		int	validate_input(int chr);
-		void add_input(int chr, int *key_used, int *changed_flag);
-		void	init_cursor();
+		void add_input(int chr, int *key_used);
+		void init_cursor();
 
 		void draw() override;
 		void process(int focus = 0) override;
