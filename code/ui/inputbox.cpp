@@ -89,7 +89,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 
 		if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
 			int key_used = 0;
-			for (int i = 0; i < sizeof(event.text.text) / sizeof(event.text.text[0]); i++) {
+			for (size_t i = 0; i < sizeof(event.text.text) / sizeof(event.text.text[0]); i++) {
 				if (event.text.text[i] <= 32)
 					break;
 
