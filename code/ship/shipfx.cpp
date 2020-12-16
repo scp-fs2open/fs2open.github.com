@@ -1990,7 +1990,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 		if ( !the_split_ship->explosion_flash_started ) {
 			object* objp = &Objects[shipp->objnum];
 			if (objp->flags[Object::Object_Flags::Was_rendered]) {
-				float excess_dist = vm_vec_dist(&Player_obj->pos, &objp->pos) - 2.0f*objp->radius - Player_obj->radius;
+				float excess_dist = (Player_obj == nullptr) ? 0.0f : vm_vec_dist(&Player_obj->pos, &objp->pos) - 2.0f*objp->radius - Player_obj->radius;
 				float intensity = 1.0f - 0.1f*excess_dist / objp->radius;
 
 				if (intensity > 1) {
