@@ -80,28 +80,7 @@ void UI_INPUTBOX::init_cursor()
 
 void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, const char *_text, int _flags, int pixel_lim, color *clr)
 {
-	textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, [this](const SDL_Event& event) {
-		bool focus = my_wnd->selected_gadget == this;
-
-		//Not in focus, don't take the TextInput
-		if (!focus || disabled_flag)
-			return false; 
-
-		if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
-			int key_used = 0;
-			for (char c : event.text.text) {
-				if (c <= 32)
-					break;
-
-				add_input(c, &key_used);
-			}
-
-			if (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED))
-				my_wnd->last_keypress = 0;
-		}
-
-		return true;
-	});
+	textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, std::bind(&UI_INPUTBOX::handle_textInputEvent, this, std::placeholders::_1));
 	SDL_StartTextInput();
 
 	int tw, th;
@@ -358,7 +337,7 @@ void UI_INPUTBOX::process(int focus)
 			case 0:
 				break;
 
-				//case KEY_LEFT:
+			//case KEY_LEFT:
 			case KEY_BACKSP:
 				if (position > 0)
 					position--;
@@ -387,8 +366,7 @@ void UI_INPUTBOX::process(int focus)
 						set_text("");
 						key_used = 1;
 
-					}
-					else {
+					} else {
 						key_used = 0;
 						clear_lastkey = 0;
 					}
@@ -436,6 +414,29 @@ void UI_INPUTBOX::process(int focus)
 	}	
 }
 
+bool UI_INPUTBOX::handle_textInputEvent(const SDL_Event& event) {
+	bool focus = my_wnd->selected_gadget == this;
+
+	//Not in focus, don't take the TextInput
+	if (!focus || disabled_flag)
+		return false;
+
+	if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
+		int key_used = 0;
+		for (char c : event.text.text) {
+			if (c <= 32)
+				break;
+
+			add_input(c, &key_used);
+		}
+
+		if (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED))
+			my_wnd->last_keypress = 0;
+	}
+
+	return true;
+}
+
 void UI_INPUTBOX::add_input(int chr, int* key_used) {
 	int ascii = validate_input(chr);
 	if ((ascii > 0) && (ascii < 255)) {
@@ -465,8 +466,7 @@ void UI_INPUTBOX::add_input(int chr, int* key_used) {
 				if (flags & UI_INPUTBOX_FLAG_PASSWD) {
 					gr_get_string_size(&_w, nullptr, passwd_text);
 
-				}
-				else {
+				} else {
 					gr_get_string_size(&_w, nullptr, text);
 				}
 
