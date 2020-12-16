@@ -644,8 +644,7 @@ const char *textify_scancode(int code)
 		}
 	}
 
-	auto scancode = FS2toSDL.find(keycode);
-	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(scancode == FS2toSDL.end() ? SDL_SCANCODE_UNKNOWN : scancode->second)));
+	strcat_s(text, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode))));
 	return text;
 }
 

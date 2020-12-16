@@ -238,10 +238,15 @@ void FillSDLArray ()
 	SDLtoFS2[SDL_SCANCODE_PRINTSCREEN] = KEY_PRINT_SCRN;
 	SDLtoFS2[SDL_SCANCODE_PAUSE] = KEY_PAUSE;
 	//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
+}
 
-	for (auto& lookup : SDLtoFS2) {
-		FS2toSDL[lookup.second] = lookup.first;
+SDL_Scancode fs2_to_sdl(int scancode) {
+	for (auto code : SDLtoFS2) {
+		if (code.second == scancode)
+			return code.first;
 	}
+
+	return SDL_SCANCODE_UNKNOWN;
 }
 
 int key_numlock_is_on()
