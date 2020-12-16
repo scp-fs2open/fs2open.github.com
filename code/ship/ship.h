@@ -1607,12 +1607,6 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-// These two functions transfer instance specific angle
-// data into and out of the model structure, which contains
-// angles, but not for each instance of model being used. See
-// the actual functions in ship.cpp for more details.
-extern void ship_model_start(object *objp);
-extern void ship_model_stop(object *objp);
 void ship_model_update_instance(object *objp);
 
 //============================================

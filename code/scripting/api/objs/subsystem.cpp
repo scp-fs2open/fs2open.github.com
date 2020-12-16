@@ -638,10 +638,13 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	//Add turret position to appropriate world space
 	vm_vec_add2(&gpos, &objp->pos);
 
-	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, shipp->model_instance_num, tp->turret_gun_sobj, &objp->orient);
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
-	int ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num, tp, &objp->orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &objp->pos, &pos, shipp->objnum, reset);
+	// Find direction of turret
+	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
+
+	int ret_val = model_rotate_gun(pm, tp, &objp->orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &objp->pos, &pos, shipp->objnum, reset);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
@@ -661,7 +664,10 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	vec3d gvec;
 	object *objp = sso->objp;
 
-	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, Ships[objp->instance].model_instance_num, sso->ss->system_info->turret_gun_sobj, &objp->orient);
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, pm, pmi, sso->ss->system_info->turret_gun_sobj, &objp->orient);
 
 	vec3d out;
 	vm_vec_rotate(&out, &gvec, &objp->orient);

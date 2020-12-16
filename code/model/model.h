@@ -103,6 +103,7 @@ typedef struct submodel_instance {
 
 // Data specific to a particular instance of a model.
 typedef struct polymodel_instance {
+	int id;
 	int model_num;					// global model num index, same as polymodel->id
 	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
 } polymodel_instance;
@@ -917,10 +918,10 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
+extern int model_rotate_gun(polymodel *pm, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
 // Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
+extern void model_make_turret_matrix(polymodel *pm, model_subsystem *turret);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
@@ -933,23 +934,25 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 // Goober5000
 // For a submodel, return its overall offset from the main model.
-extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num);
+extern void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int sub_model_num);
 
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
 extern void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
+extern void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos);
+extern void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos);
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos);
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos);
 
-extern void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num);
-extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm);
-extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient);
-extern void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos);
+extern void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num);
+extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm);
+extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient);
+extern void find_submodel_instance_world_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
 void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
@@ -958,13 +961,15 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn);
 
 // For a rotating submodel, find a point on the axis
-void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
+void model_init_submodel_axis_pt(submodel_instance_info *sii, polymodel *pm, int submodel_num);
 
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-extern void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
-extern void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient);
+extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
+extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient);
+extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient);
+extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
@@ -980,7 +985,8 @@ extern void model_clear_instance_info(submodel_instance_info *sii, float turn_ra
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags = NULL);
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
+void model_update_instance(int model_instance_num, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
+void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -1014,7 +1020,7 @@ int submodel_get_num_polys(int model_num, int submodel_num);
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient);
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these

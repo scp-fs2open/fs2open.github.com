@@ -1345,9 +1345,9 @@ int model_collide(mc_info *mc_info_obj)
 			vm_vec_add2(&Mc->hit_point_world, Mc->pos);
 		} else {
 			if ( Mc_pmi ) {
-				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_instance_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc_pmi, Mc->hit_submodel, Mc->orient, Mc->pos);
 			} else {
-				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc->hit_submodel, Mc->orient, Mc->pos);
 			}
 		}
 	}
@@ -1357,8 +1357,9 @@ int model_collide(mc_info *mc_info_obj)
 
 }
 
-void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm,  polymodel_instance *pmi, int subobj_num)
+void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, polymodel_instance *pmi, int subobj_num)
 {
+	Assert(pm->id == pmi->model_num);
 	submodel_instance *smi = &pmi->submodel[subobj_num];
 
 	smi->mc_base = *pos;
@@ -1398,14 +1399,10 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 
 void model_collide_preprocess(matrix *orient, int model_instance_num, int detail_num)
 {
-	polymodel_instance	*pmi;
-	polymodel *pm;
-
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
-
 	matrix current_orient;
 	vec3d current_pos;
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	current_orient = *orient;
 

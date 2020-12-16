@@ -1458,7 +1458,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 		if (model->use_render_box_offset) {
 			offset = model->render_box_offset;
 		} else {
-			model_find_submodel_offset(&offset, pm->id, submodel_num);
+			model_find_submodel_offset(&offset, pm, submodel_num);
 		}
 
 		vm_vec_copy_scale(&box_min, &model->render_box_min, box_scale);
@@ -1478,7 +1478,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 		if (model->use_render_sphere_offset) {
 			offset = model->render_sphere_offset;
 		} else {
-			model_find_submodel_offset(&offset, pm->id, submodel_num);
+			model_find_submodel_offset(&offset, pm, submodel_num);
 		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, sphere_radius, view_pos)) ) {
@@ -1637,7 +1637,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 	scene->pop_transform();
 }
 
-void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, ship* shipp, bool use_depth_buffer)
+void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
 {
 	glow_point *gpt = &bank->points[point_num];
 	vec3d loc_offset = gpt->pnt;
@@ -1649,7 +1649,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	bool submodel_rotation = false;
 
 	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
-		model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
+		model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_parent);
 
 		submodel_rotation = true;
 	}
@@ -1658,7 +1658,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_parent, &tempv, &loc_norm);
+		find_submodel_instance_point_normal(&loc_offset, &loc_norm, pm, pmi, bank->submodel_parent, &tempv, &loc_norm);
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -1807,7 +1807,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 						cone_dir_rot = gpo->cone_direction; 
 					}
 
-					find_submodel_instance_point_normal(&unused, &cone_dir_model, shipp->model_instance_num, bank->submodel_parent, &unused, &cone_dir_rot);
+					find_submodel_instance_point_normal(&unused, &cone_dir_model, pm, pmi, bank->submodel_parent, &unused, &cone_dir_rot);
 					vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
 					vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 					cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
@@ -1927,7 +1927,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 	}
 }
 
-void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
+void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
 {
 	if ( Rendering_to_shadow_map ) {
 		return;
@@ -1986,7 +1986,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 				}
 
 				if (flick == 1) {
-					model_render_glowpoint(j, pos, orient, bank, gpo, pm, shipp, use_depth_buffer);
+					model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
 				} // flick
 			} // for slot
 		} // bank is on
@@ -2001,7 +2001,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	int n_q = 0;
 	size_t 	k;
 	vec3d norm, norm2, fvec, pnt, npnt;
-	thruster_bank *bank = NULL;
+	thruster_bank *bank = nullptr;
+	polymodel_instance *pmi = nullptr;
 	vertex p;
 	bool do_render = false;
 
@@ -2075,7 +2076,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
 		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
-			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
+			model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 			submodel_rotation = true;
 		}
@@ -2093,9 +2094,12 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 			if ( submodel_rotation ) {
 				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
-
 				tempv = loc_offset;
-				find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_num, &tempv, &loc_norm);
+
+				if (pmi == nullptr)
+					pmi = model_get_instance(shipp->model_instance_num);
+
+				find_submodel_instance_point_normal(&loc_offset, &loc_norm, pm, pmi, bank->submodel_num, &tempv, &loc_norm);
 			}
 
 			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -2847,7 +2851,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 
 	// start rendering glow points -Bobboau
 	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
-		model_render_glow_points(pm, shipp, orient, pos, Glowpoint_use_depth_buffer);
+		model_render_glow_points(pm, pmi, shipp, orient, pos, Glowpoint_use_depth_buffer);
 	}
 
 	// Draw the thruster glow

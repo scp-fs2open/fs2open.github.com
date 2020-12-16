@@ -1312,38 +1312,39 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 			// retrieve the submodel for rotation info.
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
+				angles *angs_1 = &subsystem->submodel_info_1.angs;
+				angles *angs_2 = &subsystem->submodel_info_2.angs;
 
 				// here we're checking to see if the subsystems rotated enough to send.
-				if (subsystem->submodel_info_1.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
+				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.b / PI2);
+					subsys_data.push_back(angs_1->b / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
+				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.h / PI2);
+					subsys_data.push_back(angs_1->h / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
+				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.p / PI2);
+					subsys_data.push_back(angs_1->p / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
+				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.b / PI2);
+					subsys_data.push_back(angs_2->b / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
+				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.h / PI2);
+					subsys_data.push_back(angs_2->h / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
+				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.p / PI2);
+					subsys_data.push_back(angs_2->p / PI2);
 				}
-
 			}
 			i++;
 		}
@@ -1914,39 +1915,44 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					data_idx++;
 				}
 
+				angles *prev_angs_1 = &subsysp->submodel_info_1.prev_angs;
+				angles *prev_angs_2 = &subsysp->submodel_info_2.prev_angs;
+				angles *angs_1 = &subsysp->submodel_info_1.angs;
+				angles *angs_2 = &subsysp->submodel_info_2.angs;
+
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
-					subsysp->submodel_info_1.prev_angs.b = subsysp->submodel_info_1.angs.b;
-					subsysp->submodel_info_1.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_1->b = angs_1->b;
+					angs_1->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1h) {
-					subsysp->submodel_info_1.prev_angs.h = subsysp->submodel_info_1.angs.h;
-					subsysp->submodel_info_1.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_1->h = angs_1->h;
+					angs_1->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1p) {
-					subsysp->submodel_info_1.prev_angs.p = subsysp->submodel_info_1.angs.p;
-					subsysp->submodel_info_1.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_1->p = angs_1->p;
+					angs_1->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2b) {
-					subsysp->submodel_info_2.prev_angs.b = subsysp->submodel_info_2.angs.b;
-					subsysp->submodel_info_2.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_2->b = angs_2->b;
+					angs_2->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2h) {
-					subsysp->submodel_info_2.prev_angs.h = subsysp->submodel_info_2.angs.h;
-					subsysp->submodel_info_2.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_2->h = angs_2->h;
+					angs_2->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2p) {
-					subsysp->submodel_info_2.prev_angs.p = subsysp->submodel_info_2.angs.p;
-					subsysp->submodel_info_2.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_2->p = angs_2->p;
+					angs_2->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 				subsysp = GET_NEXT(subsysp);
