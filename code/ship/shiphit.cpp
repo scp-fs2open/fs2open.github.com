@@ -2067,8 +2067,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// if this is not a laser, or i'm not a multiplayer client
 	// apply pain to me
 
-	// Goober5000: make sure other_obj doesn't cause a read violation!
-	if (other_obj && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::No_pain_flash]))
+	// check for nulls, check that the player is the one being hit, and check that we're actually doing the pain flash
+	if ((other_obj != nullptr) && (ship_objp == Player_obj) && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::No_pain_flash]))
 	{
 		// For the record, ship_hit_pain seems to simply be the red flash that appears
 		// on the screen when you're hit.
@@ -2078,7 +2078,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		if (other_obj->type == OBJ_BEAM)
 		{
 			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < weapon_info_size()));
-			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
+			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);
 			}	
@@ -2086,12 +2086,12 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		if (other_obj_is_weapon)
 		{
 			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < weapon_info_size()));
-			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_objp == Player_obj))
+			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check))
 			{
 				ship_hit_pain(damage * difficulty_scale_factor, quadrant);
 			}
 		}
-	}	// read violation sanity check
+	}
 
 
 	// If the ship is invulnerable, do nothing

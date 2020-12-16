@@ -203,7 +203,7 @@ void maybe_delete_debris(debris *db)
 {
 	object	*objp;
 
-	if (timestamp_elapsed(db->next_distance_check) && timestamp_elapsed(db->must_survive_until)) {
+	if (Player_obj != nullptr && timestamp_elapsed(db->next_distance_check) && timestamp_elapsed(db->must_survive_until)) {
 		if (!(Game_mode & GM_MULTIPLAYER)) {		//	In single player game, just check against player.
 			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[db->objnum].pos) > MAX_DEBRIS_DIST)
 				db->lifeleft = 0.1f;
