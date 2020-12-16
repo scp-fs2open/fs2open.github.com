@@ -7535,6 +7535,15 @@ int main(int argc, char *argv[])
 	::CoInitialize(nullptr);
 
 	SCP_mspdbcs_Initialise();
+
+	// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
+	// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
+	// seems to close or otherwise grab the streams for somthing else.
+	if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+		freopen("CONIN$", "r", stdin);
+		freopen("CONOUT$", "w", stdout);
+		freopen("CONOUT$", "w", stderr);
+	}
 #else
 #ifdef APPLE_APP
     char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
