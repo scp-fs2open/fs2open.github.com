@@ -1312,6 +1312,95 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 	}
 }
 
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != NULL) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_cross_sectional_avg_pos(), model %s does not have a collision tree!\n", pm->filename));
+			return;
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_avg_pos!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
+			return;
+		}
+
+		vm_vec_zero(pos);
+		// we take a regular average, add them all up, divide by the total number, but weighted by how close they are to the z slice
+		float accum_scale_factor = 0.0f;
+		for (int i = 0; i < tree->n_verts; i++) {
+			// this goes from 1 directly at our z pos, and quickly goes to 0 the further it gets
+			float scale_factor = 1 / ((fabs(tree->point_list[i].xyz.z - z_slice_pos) / (pm->rad / 10)) + 1);
+			vm_vec_scale_add(pos, pos, &tree->point_list[i], scale_factor);
+			// keep track of the scale factor we use because we need to divide by its total at the end
+			accum_scale_factor += scale_factor;
+		}
+
+		*pos /= accum_scale_factor;
+	}
+}
+
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != NULL) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_cross_sectional_random_pos(), model %s does not have a collision tree!\n", pm->filename));
+			return;
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_random_pos!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
+			return;
+		}
+
+		vm_vec_zero(pos);
+		vec3d best1, best2;
+		// make random guesses a bunch of times, and average our two best guesses closest to the z pos, ez
+		// there are more accurate ways, but this is reasonably good and super cheap
+		vm_vec_make(&best1, 0, 0, 999999);
+		vm_vec_make(&best2, 0, 0, 999999);
+		for (int i = 0; i < 15; i++) {
+			vec3d rand_point = tree->point_list[rand32() % nv];
+			if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best1.xyz.z - z_slice_pos))
+				best1 = rand_point;
+			else if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best2.xyz.z - z_slice_pos))
+				best2 = rand_point;
+		}
+
+		vm_vec_avg(pos, &best1, &best2);
+	}
+}
+
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
 // This defaults to black.
 void model_set_outline_color(int r, int g, int b )

@@ -406,46 +406,6 @@ static float subsys_get_range(object *other_obj, ship_subsys *subsys)
 	return range;
 }
 
-#define MAX_DEBRIS_SHARDS	16		// cap the amount of debris shards that fly off per hit
-
-// Make some random debris particles.  Previous way was not very random.  Create debris 75% of the time.
-// Don't worry about multiplayer since this debris is the small stuff that cannot collide
-static void create_subsys_debris(object *ship_objp, vec3d *hitpos)
-{
-	float show_debris = frand();
-	
-	if ( show_debris <= 0.75f ) {
-		int ndebris;
-
-		ndebris = (int)(show_debris * Detail.num_small_debris) + 1;			// number of pieces of debris to create
-
-		if ( ndebris > MAX_DEBRIS_SHARDS )
-			ndebris = MAX_DEBRIS_SHARDS;
-
-		//mprintf(( "Damage = %.1f, ndebris=%d\n", show_debris, ndebris ));
-		for (int i=0; i<ndebris; i++ )	{
-			debris_create( ship_objp, -1, -1, hitpos, hitpos, 0, 1.0f );
-		}
-	}
-}
-
-static void create_vaporize_debris(object *ship_objp, vec3d *hitpos)
-{
-	int ndebris;
-	float show_debris = frand();
-
-	ndebris = (int)(4.0f * ((0.5f + show_debris) * Detail.num_small_debris)) + 5;			// number of pieces of debris to create
-
-	if ( ndebris > MAX_DEBRIS_SHARDS ) {
-		ndebris = MAX_DEBRIS_SHARDS;
-	}
-
-	//mprintf(( "Damage = %.1f, ndebris=%d\n", show_debris, ndebris ));
-	for (int i=0; i<ndebris; i++ )	{
-		debris_create( ship_objp, -1, -1, hitpos, hitpos, 0, 1.4f );
-	}
-}
-
 #define	MAX_SUBSYS_LIST	200 //DTP MAX SUBSYS LIST BUMPED FROM 32 to 200, ahmm 32???
 
 typedef struct {
@@ -558,7 +518,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
 
 		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) {
-			create_subsys_debris(ship_objp, hitpos);
+			create_generic_debris(ship_objp, hitpos, 1.0f, 5.0f, 1.0f, false);
 		}
 	}
 
@@ -1582,9 +1542,10 @@ static void ship_vaporize(ship *shipp)
 		return;
 	}
 	ship_objp = &Objects[shipp->objnum];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 	// create debris shards
-	create_vaporize_debris(ship_objp, &ship_objp->pos);
+	create_generic_debris(ship_objp, &ship_objp->pos, sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!

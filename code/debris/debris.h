@@ -44,7 +44,7 @@ typedef struct debris {
 	int		model_num;				// What model this uses
 	int		submodel_num;			// What submodel this uses
 	int		next_fireball;			// When to start a fireball
-	int		is_hull;				// indicates a large hull chunk of debris
+	int		is_hull;				// indicates whether this is a collideable, destructable peice of debris from the model, or just a generic debris fragment
 	int		species;				// What species this is from.  -1 if don't care.
 	int		fire_timeout;			// timestamp that holds time for fireballs to stop appearing
 	int		sound_delay;			// timestamp to signal when sound should start
@@ -79,5 +79,6 @@ void debris_remove_from_hull_list(debris *db);
 
 bool debris_is_generic(debris *db);
 bool debris_is_vaporized(debris *db);
+void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool vaporize);
 
 #endif // _DEBRIS_H

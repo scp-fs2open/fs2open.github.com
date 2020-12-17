@@ -940,6 +940,10 @@ void ship_info::clone(const ship_info& other)
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
 	debris_explosion_sound = other.debris_explosion_sound;
+	strcpy_s(generic_debris_pof_file, other.generic_debris_pof_file);
+	generic_debris_model_num = other.generic_debris_model_num;
+	generic_debris_num_submodels = other.generic_debris_num_submodels;
+	generic_debris_spew_num = other.generic_debris_spew_num;
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
@@ -1271,6 +1275,10 @@ void ship_info::move(ship_info&& other)
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
 	debris_explosion_sound = other.debris_explosion_sound;
+	strcpy_s(generic_debris_pof_file, other.generic_debris_pof_file);
+	generic_debris_model_num = other.generic_debris_model_num;
+	generic_debris_num_submodels = other.generic_debris_num_submodels;
+	generic_debris_spew_num = other.generic_debris_spew_num;
 
 	std::swap(subsystems, other.subsystems);
 	std::swap(n_subsystems, other.n_subsystems);
@@ -1664,6 +1672,10 @@ ship_info::ship_info()
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
 	debris_explosion_sound = GameSounds::MISSILE_IMPACT1;
+	generic_debris_pof_file[0] = '\0';
+	generic_debris_model_num = -1;
+	generic_debris_num_submodels = -1;
+	generic_debris_spew_num = 20;
 
 	n_subsystems = 0;
 	subsystems = NULL;
@@ -3131,6 +3143,25 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->debris_collision_sound_heavy = collision_snd_heavy;
 		if (parse_game_sound("+Explosion Sound:", &explosion_snd))
 			sip->debris_explosion_sound = explosion_snd;
+
+		if (optional_string("+Generic Debris POF file:"))
+		{
+			char temp[MAX_FILENAME_LEN];
+			stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+			bool valid = true;
+
+			if (replace)
+				if (sip->generic_debris_pof_file[0] != '\0')
+					if (!cf_exists_full(temp, CF_TYPE_MODELS))
+						valid = false;
+
+			if (valid)
+				strcpy_s(sip->generic_debris_pof_file, temp);
+			else
+				WarningEx(LOCATION, "Ship %s\nGeneric Debris POF file \"%s\" invalid!", sip->name, temp);
+		}
+
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -8489,7 +8520,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				return;
 			} 
 
-			shipfx_blow_up_model(objp, sip->model_num, 0, 20, &objp->pos );
+			shipfx_blow_up_model(objp, sip->model_num, 0, sip->generic_debris_spew_num, &objp->pos );
 
 			// do all accounting for respawning client and server side here.
 			if(objp == Player_obj) {				
@@ -9790,6 +9821,14 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 		// mow load it for me with no subsystems
 		sip->model_num_hud = model_load(sip->pof_file_hud, 0, NULL);
+	}
+
+	if (strlen(sip->generic_debris_pof_file)) {
+		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, NULL);
+		if (sip->generic_debris_model_num >= 0) {
+			polymodel* pm = model_get(sip->generic_debris_model_num);
+			sip->generic_debris_num_submodels = pm->n_models;
+		}
 	}
 
 	polymodel *pm = model_get(sip->model_num);

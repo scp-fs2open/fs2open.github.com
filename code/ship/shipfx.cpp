@@ -383,7 +383,7 @@ void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
 		model_find_world_point(&outpnt, &tmp, model,submodel, &obj->orient, &obj->pos );
 
-		debris_create( obj, -1, -1, &outpnt, exp_center, 0, 1.0f );
+		debris_create( obj, Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num, -1, &outpnt, exp_center, 0, 1.0f );
 	}
 }
 
@@ -1961,6 +1961,19 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 
 			if (pe.num_high > 0) {
 				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
+			}
+
+			if (sip->generic_debris_model_num >= 0) {
+				vec3d local_xc_rand, local_xc_avg, xc_rand, xc_avg;
+				submodel_get_cross_sectional_avg_pos(sip->model_num, -1, half_ship->cur_clip_plane_pt, &local_xc_avg);
+				vm_vec_unrotate(&xc_avg, &local_xc_avg, &half_ship->orient);
+				vm_vec_add2(&xc_avg, &orig_ship_world_center);
+				for (int i = 0; i < sip->generic_debris_spew_num; i++) {
+					submodel_get_cross_sectional_random_pos(sip->model_num, -1, half_ship->cur_clip_plane_pt, &local_xc_rand);
+					vm_vec_unrotate(&xc_rand, &local_xc_rand, &half_ship->orient);
+					vm_vec_add2(&xc_rand, &orig_ship_world_center);
+					debris_create(half_ship->parent_obj, sip->generic_debris_model_num, -1, &xc_rand, &xc_avg, 0, frand() * half_ship->parent_obj->radius / 100);
+				}
 			}
 
 		} else {
