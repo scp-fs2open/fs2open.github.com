@@ -15,27 +15,9 @@ jobs:
       matrix:
         configuration: [FastDebug, Release]
     name: Linux
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
+    container: ghcr.io/scp-fs2open/linux_build:sha-a8ca321
     steps:
-      - name: Prepare Environment
-        working-directory: /tmp
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
-          sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind g++-5 g++-9 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
-          # Fix a header bug present in ubuntu...
-          sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
-
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 9
-          sudo apt-get -yq install libc++-9-dev libc++abi-9-dev
-
-          wget -O appimagetool -c "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" # (64-bit)
-          chmod a+x ./appimagetool
       - name: Cache Qt
         id: cache-qt-lin
         uses: actions/cache@v1
@@ -57,6 +39,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: gcc-5
+        shell: bash
         run: |
           if [ "$COMPILER" = "gcc-5" ]; then
             export CC=gcc-5
@@ -109,7 +92,7 @@ jobs:
 
           # We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
           FILENAME="$(find $GITHUB_WORKSPACE/build/install/bin -name 'fs2_open_*' -type f -printf "%f\n").AppImage"
-          /tmp/appimagetool -n $GITHUB_WORKSPACE/build/install "$GITHUB_WORKSPACE/build/install/$FILENAME"
+          appimagetool -n $GITHUB_WORKSPACE/build/install "$GITHUB_WORKSPACE/build/install/$FILENAME"
           ls -al $GITHUB_WORKSPACE/build/install
       - name: Upload build result
         uses: actions/upload-artifact@v2
@@ -149,23 +132,11 @@ jobs:
         working-directory: ./builds
         shell: bash
         env:
-          SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
         run: |
           . $GITHUB_WORKSPACE/ci/github/dist_functions.sh
 
-          echo "cd public_html/builds/nightly/" > sftp_batch
-          echo "mkdir $(get_version_name)" >> sftp_batch
-          # Create directory but do not cause an error if it already exists
-          sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch ${{ secrets.INDIEGAMES_USER }}@scp.indiegames.us || true
+          SSHPASS=$INDIEGAMES_SSHPASS upload_files_to_sftp "${{ secrets.INDIEGAMES_USER }}@scp.indiegames.us" "public_html/builds/nightly"
 
-          echo "cd public_html/builds/nightly/$(get_version_name)/" > sftp_batch
-          for file in *.tar.gz; do
-            echo "put $file" >> sftp_batch
-          done
-
-          echo "bye" >> sftp_batch
-
-          sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch ${{ secrets.INDIEGAMES_USER }}@scp.indiegames.us
-
-#          # Upload to datacorder
-#          curl -k "sftp://porphyrion.feralhosting.com/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly/$(get_version_name)/" --user "${{ secrets.DATACORDER_USER }}:${{ secrets.DATACORDER_PASSWORD }}" -T "$file" --ftp-create-dirs
+          SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "${{ secrets.DATACORDER_USER }}@porphyrion.feralhosting.com" "/www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly"

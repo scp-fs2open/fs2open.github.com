@@ -20,3 +20,22 @@ function get_version_name() {
 
   echo "unknown_config"
 }
+
+function upload_files_to_sftp() {
+  echo "cd $2/" > sftp_batch
+  echo "mkdir $(get_version_name)" >> sftp_batch
+  # Create directory but do not cause an error if it already exists
+  sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch $1 || true
+
+  echo "cd $2/$(get_version_name)/" > sftp_batch
+  for file in *.tar.gz; do
+    echo "put $file" >> sftp_batch
+  done
+
+  echo "bye" >> sftp_batch
+
+  sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch $1
+
+  rm sftp_batch
+}
+
