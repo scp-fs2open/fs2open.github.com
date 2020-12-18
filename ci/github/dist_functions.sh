@@ -22,13 +22,17 @@ function get_version_name() {
 }
 
 function upload_files_to_sftp() {
+  # We need empty glob patterns to "disappear" in the for loop below since this will be run for different configurations
+  # where it may be possible that some of the file patterns will not be present
+  shopt -s nullglob
+
   echo "cd $2/" > sftp_batch
   echo "mkdir $(get_version_name)" >> sftp_batch
   # Create directory but do not cause an error if it already exists
   sshpass -e sftp -oBatchMode=no -o "StrictHostKeyChecking no" -b sftp_batch $1 || true
 
   echo "cd $2/$(get_version_name)/" > sftp_batch
-  for file in {*.tar.gz, *.7z}; do
+  for file in *.tar.gz *.7z; do
     echo "put $file" >> sftp_batch
   done
 
