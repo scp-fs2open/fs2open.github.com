@@ -5,7 +5,8 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/ k to the state before "git rebase", run "git rebase --abort".
+
 
 
 
@@ -272,7 +273,7 @@ void techroom_unload_animation()
 {
 	//clear everything, just in case, it will get loaded when needed later
 	for (auto& list_entry : Weapon_list) {
-		if (list_entry.animation.num_frames != 0) {
+		if (list_entry.animation.type != BM_TYPE_NONE) {
 			generic_anim_unload(&list_entry.animation);
 		}
 
@@ -283,7 +284,7 @@ void techroom_unload_animation()
 	}
 
 	for (auto & intel_entry : Intel_list) {
-		if (intel_entry.animation.num_frames != 0) {
+		if (intel_entry.animation.type != BM_TYPE_NONE) {
 			generic_anim_unload(&intel_entry.animation);
 		}
 
@@ -1207,30 +1208,20 @@ void techroom_lists_reset()
 			generic_anim_unload(&list_item.animation);
 		}
 
-		if (list_item.bitmap >= 0) {
-			bm_release(list_item.bitmap);
-			list_item.bitmap = -1;
-		}
-	}
-	
-	// now that we're sure all the bitmaps are released, clear the vector.
+	// now that we're sure all the bitmaps are released, clear the vectors.
 	Weapon_list.clear();
 	Weapons_loaded = false;
 
-	for (auto& intel_entry : Intel_list) {
-		if (intel_entry.animation.num_frames != 0) {
-			generic_anim_unload(&intel_entry.animation);
-		}
-
-		if (intel_entry.bitmap >= 0) {
-			bm_release(intel_entry.bitmap);
-			intel_entry.bitmap = -1;
-		}
-	}
-
-	// now that we're sure all the bitmaps are released, clear the vector.
 	Intel_list.clear();
 	Intel_loaded = false;
+
+	// clear the current list of items
+	Current_list.clear();
+
+	// free all models in use before clearing the ship list.
+	model_free_all();
+	Ship_list.clear();
+	Ships_loaded = false;
 }
 
 void techroom_close()
