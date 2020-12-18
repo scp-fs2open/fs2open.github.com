@@ -4454,6 +4454,7 @@ void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const po
 // Clears all the submodel instances stored in a model to their defaults.
 void model_clear_instance(int model_num)
 {
+	// ---- stuff that should be moved into model instances at some point
 	int i;
 	auto pm = model_get(model_num);
 
@@ -4467,6 +4468,7 @@ void model_clear_instance(int model_num)
 	for (i=0; i<pm->n_models; i++ )	{
 		pm->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
 	}
+	// ---- end of stuff that should be moved into model instances at some point
 
 	interp_clear_instance();
 }

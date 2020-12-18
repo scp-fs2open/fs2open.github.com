@@ -929,7 +929,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		Assert( other_obj->type == OBJ_WEAPON );
 		mc.model_instance_num = Asteroids[num].model_instance_num;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];	// Fill in the model to check
-		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;					// The object's orient
 		mc.pos = &pasteroid->pos;							// The object's position
 		mc.p0 = &other_obj->last_pos;				// Point 1 of ray to check
@@ -943,7 +942,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 			if (hitnormal)
 			{
 				vec3d normal;
-				model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
+
+				if (mc.model_instance_num >= 0)
+					model_instance_find_world_dir(&normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, mc.orient);
+				else
+					model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
 
 				*hitnormal = normal;
 			}
@@ -1114,7 +1117,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		// Asteroid is heavier obj
 		mc.model_instance_num = Asteroids[num].model_instance_num;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
-		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
 		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 

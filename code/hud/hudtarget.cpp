@@ -2513,8 +2513,6 @@ void hud_target_in_reticle_new()
 			}
 
 		} else {
-
-			model_clear_instance( mc.model_num );
 			mc.orient = &A->orient;										// The object's orient
 			mc.pos = &A->pos;												// The object's position
 			mc.p0 = &Eye_position;										// Point 1 of ray to check
