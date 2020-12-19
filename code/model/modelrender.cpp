@@ -819,13 +819,13 @@ model_draw_list::~model_draw_list() {
 	reset();
 }
 
-void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, bsp_info * sm )
+void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, submodel_instance *smi )
 {
 	int i;
 	float width = 0.9f;
 	color primary, secondary;
 
-	Assert( sm->num_arcs > 0 );
+	Assert( smi->num_arcs > 0 );
 
 	if ( interp->get_model_flags() & MR_SHOW_OUTLINE_PRESET ) {
 		return;
@@ -845,9 +845,9 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 	}
 
-	for ( i = 0; i < sm->num_arcs; i++ ) {
+	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
-		switch ( sm->arc_type[i] ) {
+		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
@@ -875,7 +875,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&sm->arc_pts[i][0], &sm->arc_pts[i][1], &primary, &secondary, width);
+		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
@@ -1227,10 +1227,10 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		return;
 	}
 
-	bsp_info *model = &pm->submodel[mn];
-	submodel_instance *smi = NULL;
+	bsp_info *sm = &pm->submodel[mn];
+	submodel_instance *smi = nullptr;
 
-	if ( pmi != NULL ) {
+	if ( pmi != nullptr ) {
 		smi = &pmi->submodel[mn];
 		if ( smi->blown_off ) {
 			return;
@@ -1239,7 +1239,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 
 	const uint model_flags = interp->get_model_flags();
 
-	if (model->is_thruster) {
+	if (sm->is_thruster) {
 		if ( !( model_flags & MR_SHOW_THRUSTERS ) ) {
 			return;
 		}
@@ -1258,12 +1258,12 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// the submodel relative to its parent
 	angles ang = vmd_zero_angles;
 
-	if ( smi != NULL ) {
+	if ( smi != nullptr ) {
 		ang = smi->angs;
 	}
 
 	// Add barrel rotation if needed
-	if ( model->gun_rotation ) {
+	if ( sm->gun_rotation ) {
 		if ( pm->gun_submodel_rotation > PI2 ) {
 			pm->gun_submodel_rotation -= PI2;
 		} else if ( pm->gun_submodel_rotation < 0.0f ) {
@@ -1278,34 +1278,34 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// By using this kind of computation, the rotational angles can always
 	// be computed relative to the submodel itself, instead of relative
 	// to the parent
-	matrix rotation_matrix = model->orientation;
+	matrix rotation_matrix = sm->orientation;
 	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
 
 	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &model->orientation);
+	vm_copy_transpose(&inv_orientation, &sm->orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
-	scene->push_transform(&model->offset, &submodel_matrix);
+	scene->push_transform(&sm->offset, &submodel_matrix);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
-		pm->submodel[mn].outline_buffer != NULL ) {
+		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
-		scene->add_outline(pm->submodel[mn].outline_buffer, pm->submodel[mn].n_verts_outline, &outline_color);
+		scene->add_outline(sm->outline_buffer, sm->n_verts_outline, &outline_color);
 	} else {
-		if ( trans_buffer && pm->submodel[mn].trans_buffer.flags & VB_FLAG_TRANS ) {
-			model_render_buffers(scene, rendering_material, interp, &pm->submodel[mn].trans_buffer, pm, mn, detail_level, tmap_flags);
+		if ( trans_buffer && sm->trans_buffer.flags & VB_FLAG_TRANS ) {
+			model_render_buffers(scene, rendering_material, interp, &sm->trans_buffer, pm, mn, detail_level, tmap_flags);
 		} else {
-			model_render_buffers(scene, rendering_material, interp, &pm->submodel[mn].buffer, pm, mn, detail_level, tmap_flags);
+			model_render_buffers(scene, rendering_material, interp, &sm->buffer, pm, mn, detail_level, tmap_flags);
 		} 
 	}
 
-	if ( model->num_arcs ) {
-		model_render_add_lightning( scene, interp, pm, &pm->submodel[mn] );
+	if ( smi != nullptr && smi->num_arcs > 0 ) {
+		model_render_add_lightning( scene, interp, pm, smi );
 	}
 
-	i = model->first_child;
+	i = sm->first_child;
 
 	while ( i >= 0 ) {
 		if ( !pm->submodel[i].is_thruster ) {
@@ -1315,7 +1315,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		i = pm->submodel[i].next_sibling;
 	}
 
-	if ( model->is_thruster ) {
+	if ( sm->is_thruster ) {
 		rendering_material->set_lighting(true);
 	}
 
@@ -1484,13 +1484,15 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	return true;
 }
 
-void submodel_render_immediate(model_render_params *render_info, int model_num, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
+	Assert(pm->id == pmi->model_num);
+
 	model_draw_list model_list;
 	
 	model_list.init();
 
-	submodel_render_queue(render_info, &model_list, model_num, submodel_num, orient, pos);
+	submodel_render_queue(render_info, &model_list, pm, pmi, submodel_num, orient, pos);
 
 	model_list.init_render();
 	model_list.render_all();
@@ -1506,9 +1508,10 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	gr_set_lighting(false, false);
 }
 
-void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
-	polymodel * pm;
+	Assert(pm->id == pmi->model_num);
+
 	model_material rendering_material;
 
 	//MONITOR_INC( NumModelsRend, 1 );	
@@ -1525,8 +1528,6 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		
 	uint flags = render_info->get_model_flags();
 	int objnum = render_info->get_object_number();
-
-	pm = model_get(model_num);
 
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
@@ -1621,8 +1622,8 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		}
 	}
 	
-	if ( pm->submodel[submodel_num].num_arcs )	{
-		model_render_add_lightning( scene, render_info, pm, &pm->submodel[submodel_num] );
+	if ( pmi->submodel[submodel_num].num_arcs > 0 )	{
+		model_render_add_lightning( scene, render_info, pm, &pmi->submodel[submodel_num] );
 	}
 
 	if ( set_autocen ) {
@@ -1980,8 +1981,8 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 				Assert( bank->points != NULL );
 				int flick;
 
-				if (pm->submodel[pm->detail[0]].num_arcs) {
-					flick = static_rand( timestamp() % 20 ) % (pm->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
+					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
 				} else {
 					flick = 1;
 				}
@@ -2588,17 +2589,10 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 			shipp = &Ships[objp->instance];
 			pmi = model_get_instance(shipp->model_instance_num);
 		}
-		else if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			if (objp->type == OBJ_ASTEROID) {
-				pmi = model_get_instance(Asteroids[objp->instance].model_instance_num);
-			} else if (objp->type == OBJ_WEAPON) {
-				pmi = model_get_instance(Weapons[objp->instance].model_instance_num);
-			} else if (objp->type == OBJ_JUMP_NODE) {
-				CJumpNode* jnp = jumpnode_get_by_objnum(objnum);
-				Assertion(jnp != nullptr, "Could not find jump node with object number %d!", objnum);
-				pmi = model_get_instance(jnp->GetPolymodelInstanceNum());
-			} else {			
-				Warning(LOCATION, "Unsupported object type %d for rendering intrinsic-rotate submodels!", objp->type);
+		else {
+			int model_instance_num = object_get_model_instance(objp);
+			if (model_instance_num >= 0) {
+				pmi = model_get_instance(model_instance_num);
 			}
 		}
 	}
@@ -2784,8 +2778,8 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 
-			if ( pm->submodel[detail_model_num].num_arcs ) {
-				model_render_add_lightning( scene, interp, pm, &pm->submodel[detail_model_num] );
+			if ( pmi != nullptr && pmi->submodel[detail_model_num].num_arcs > 0 ) {
+				model_render_add_lightning( scene, interp, pm, &pmi->submodel[detail_model_num] );
 			}
 		}
 	}

@@ -186,6 +186,8 @@ void debris_delete( object * obj )
 
 	db = &Debris[num];
 
+	model_delete_instance(db->model_instance_num);
+
 	if ( db->is_hull ) {
 		debris_remove_from_hull_list(db);
 	}
@@ -542,6 +544,9 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->model_num = model_num;
 		db->submodel_num = submodel_num;
 	}
+
+	db->model_instance_num = model_create_instance(false, db->model_num);
+
 	float radius = submodel_get_radius( db->model_num, db->submodel_num );
 
 	db->next_fireball = timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
@@ -1078,11 +1083,9 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 void debris_render(object * obj, model_draw_list *scene)
 {
 	int			i, num, swapped;
-	polymodel	*pm;
 	debris		*db;
 
 	swapped = -1;
-	pm = NULL;	
 	num = obj->instance;
 
 	Assert(num >= 0 && num < (int)Debris.size());
@@ -1090,17 +1093,19 @@ void debris_render(object * obj, model_draw_list *scene)
 
 	Assert(db->flags[Debris_Flags::Used]);
 
-	texture_info *tbase = NULL;
+	texture_info *tbase = nullptr;
+
+	auto pmi = model_get_instance(db->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	model_clear_instance( db->model_num );
+	model_instance_clear_arcs(pm, pmi);
 
 	// Swap in a different texture depending on the species
 	if (db->species >= 0)
 	{
-		pm = model_get( db->model_num );
-
 		//WMC - Someday, we should have glowing debris.
-		if ( pm != NULL && (pm->n_textures == 1) ) {
+		if ( pm->n_textures == 1 ) {
 			tbase = &pm->maps[0].textures[TM_BASE_TYPE];
 			swapped = tbase->GetTexture();
 			tbase->SetTexture(Species_info[db->species].debris_texture.bitmap_id);
@@ -1111,7 +1116,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
 		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
-				model_add_arc( db->model_num, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
+				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
 			}
 		}
 	}
@@ -1125,7 +1130,7 @@ void debris_render(object * obj, model_draw_list *scene)
 		render_info.set_flags(MR_NO_LIGHTING);
 	}
 
-	submodel_render_queue( &render_info, scene, db->model_num, db->submodel_num, &obj->orient, &obj->pos );
+	submodel_render_queue( &render_info, scene, pm, pmi, db->submodel_num, &obj->orient, &obj->pos );
 
 	if (tbase != NULL && (swapped!=-1) && pm)	{
 		tbase->SetTexture(swapped);
