@@ -40,7 +40,7 @@ enum Joy_axis_index : short {
 // Aliases for mouse axes.  Really should unify this...
 const short MOUSE_X_AXIS = JOY_X_AXIS;
 const short MOUSE_Y_AXIS = JOY_Y_AXIS;
-const short MOUSE_Z_AXIS = MOUSE_Z_AXIS;
+const short MOUSE_Z_AXIS = JOY_Z_AXIS;
 const short MOUSE_NUM_AXES = 3;
 
 /*!
