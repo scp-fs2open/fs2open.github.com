@@ -622,10 +622,55 @@ void pilotfile::plr_write_controls()
 	handler->startSectionWrite(Section::Controls);
 	
 	auto it = control_config_get_current_preset();
-
 	handler->writeString("preset", it->name.c_str());
 
-	handler->endSectionWrite(); // Controls
+	// For forward compatibility with old versions of FSO, we must still save the preset to the best of our ability.
+	// This is required because the plr_read will trigger an error and halt FSO execution.
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t idx = 0; idx < JOY_AXIS_BEGIN; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		// Merge Joy0 and Mouse buttons, Joy0 bind has priority
+		short joy_btn = Control_config[idx].get_btn(CID_JOY0);
+		short mouse_btn = Control_config[idx].get_btn(CID_MOUSE);
+
+		if (joy_btn == -1) {
+			joy_btn = mouse_btn;
+		}
+
+		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", joy_btn);
+		handler->writeShort("mouse", -1);
+
+		handler->endSectionWrite();	// Section::Unnamed
+	}
+	handler->endArrayWrite(); // Array::controls
+
+	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		CC_bind *bind_ptr;
+		CC_bind bind;
+		int inverted = 0;
+
+		bind_ptr = Control_config[idx].find(CID_JOY0);
+		if (bind_ptr != nullptr) {
+			bind = *bind_ptr;
+		}
+
+		if ((bind.flags & CCF_INVERTED) == CCF_INVERTED) {
+			inverted = 1;
+		}
+
+		handler->writeInt("axis_map", bind.btn);
+		handler->writeInt("invert_axis", inverted);
+
+		handler->endSectionWrite(); // Section::Unnamed
+	}
+	handler->endArrayWrite(); // Array::axes
+
+	handler->endSectionWrite(); // Section::controls
 }
 
 void pilotfile::plr_read_settings()
