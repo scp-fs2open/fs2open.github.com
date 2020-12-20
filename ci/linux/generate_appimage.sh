@@ -9,4 +9,6 @@ cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_FOLDER -DCOMPONENT=Freespace2 -P cmake_ins
 # We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
 FILENAME="$(find $INSTALL_FOLDER/bin -name 'fs2_open_*' -type f -printf "%f\n").AppImage"
 appimagetool -n $INSTALL_FOLDER "$INSTALL_FOLDER/$FILENAME"
+chmod +x "$INSTALL_FOLDER/$FILENAME"
+
 ls -al $INSTALL_FOLDER
