@@ -609,6 +609,8 @@ extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 extern char *Joy_axis_text[JOY_NUM_AXES];
 
+extern bool Generate_controlconfig_table;
+
 /*!
  * @brief Checks if either binding in the CCB has the given cid
  *

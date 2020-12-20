@@ -497,6 +497,8 @@ const char *Joy_button_text_english[] = {
 
 const char **Joy_button_text = Joy_button_text_english;
 
+bool Generate_controlconfig_table = false;
+
 int translate_key_to_index(const char *key, bool find_override)
 {
 	unsigned int max_scan_codes;
@@ -1351,25 +1353,16 @@ void control_config_common_read_tbl() {
  * @returns 0 if successful
  * @returns 1 if not successful - nothing was saved
  */
-int control_config_common_write_tbl(bool overwrite = false) {
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
-		// File exists, and we're told to not overwrite it. Bail
-		return 1;
-	}
+template<class FILETYPE>
+int control_config_common_write_tbl_segment(FILETYPE* cfile, int preset, int (* puts)(const char *, FILETYPE*) ) {
 
-	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
-	if (cfile == nullptr) {
-		// Could not open. Bail.
-		return 1;
-	}
-
-	cfputs("#ControlConfigOverride\n", cfile);
-	cfputs(("$Name: " + Control_config_presets[0].name + "\n").c_str(), cfile);
+	puts("#ControlConfigOverride\n", cfile);
+	puts(("$Name: " + Control_config_presets[preset].name + "\n").c_str(), cfile);
 
 	// Write bindings for all controls
 	for (size_t i = 0; i < Control_config.size(); ++i) {
 		auto& item = Control_config[i];
-		auto& bindings = Control_config_presets[0].bindings[i];
+		auto& bindings = Control_config_presets[preset].bindings[i];
 
 		short key = -1;
 		int key_shift = 0;
@@ -1399,14 +1392,14 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			buf_str = "NONE";
 		}
 
-		cfputs(("$Bind Name: " + item.text + "\n").c_str(), cfile);
+		puts(("$Bind Name: " + item.text + "\n").c_str(), cfile);
 		
-		cfputs(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
+		puts(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
+		puts(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
+		puts(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
 
-		cfputs(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
+		puts(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
 
 		// Config menu options
 		buf_str = "";
@@ -1417,11 +1410,11 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			}
 		}
 		Assert(!buf_str.empty());
-		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Category: " + buf_str + "\n").c_str(), cfile);
 
-		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
+		puts(("  $Text: " + item.text + "\n").c_str(), cfile);
 		
-		cfputs(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
+		puts(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
 		
 		buf_str = "";
 		for (const auto& pair : mCCTypeNameToVal) {
@@ -1431,11 +1424,50 @@ int control_config_common_write_tbl(bool overwrite = false) {
 			}
 		}
 		Assert(!buf_str.empty());
-		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
+		puts(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
-	cfputs("#End\n", cfile);
+	puts("#End\n", cfile);
+
+	return 0;
+}
+
+int control_config_common_write_tbl(bool overwrite = false) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	if (cfile == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
+	control_config_common_write_tbl_segment(cfile, 0, &cfputs);
+
 	cfclose(cfile);
+
+	return 0;
+}
+
+int control_config_common_write_full_tbl(bool overwrite = true) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_ROOT) && !overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	FILE* fp = fopen("controlconfigdefaults.tbl", "w");
+	if (fp == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
+	for (int i = 0; i < Control_config_presets.size(); i++) {
+		control_config_common_write_tbl_segment(fp, i, &fputs);
+	}
+
+	fclose(fp);
 
 	return 0;
 }
@@ -1459,6 +1491,11 @@ DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
 void control_config_common_load_overrides()
 {
 	LoadEnumsIntoMaps();
+
+	if (Generate_controlconfig_table) {
+		load_preset_files();
+		control_config_common_write_full_tbl();
+	}
 
 	try {
 		control_config_common_read_tbl();
