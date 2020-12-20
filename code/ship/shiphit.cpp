@@ -145,7 +145,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				// is this other submodel a child of the one being destroyed?
 				if (pm->submodel[ssp->system_info->subobj_num].parent == psub->subobj_num) {
 					// is it not yet destroyed?  (this is a valid check because we already know there is a submodel)
-					if (!ssp->submodel_info_1.blown_off) {
+					if (!ssp->submodel_instance_1->blown_off) {
 						// then destroy it first
 						ssp->current_hits = 0;
 						do_subobj_destroyed_stuff(ship_p, ssp, nullptr, no_explosion);
@@ -308,11 +308,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
 			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion);
-			subsys->submodel_info_1.blown_off = true;
+			subsys->submodel_instance_1->blown_off = true;
 		}
 
 		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
-			subsys->submodel_info_2.blown_off = true;
+			subsys->submodel_instance_2->blown_off = true;
 		}
 	}
 

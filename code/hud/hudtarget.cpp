@@ -2513,8 +2513,6 @@ void hud_target_in_reticle_new()
 			}
 
 		} else {
-
-			model_clear_instance( mc.model_num );
 			mc.orient = &A->orient;										// The object's orient
 			mc.pos = &A->pos;												// The object's position
 			mc.p0 = &Eye_position;										// Point 1 of ray to check
@@ -7270,7 +7268,6 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					//renderCircle(xc, yc, 25);
 				} else {
 					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
 
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);

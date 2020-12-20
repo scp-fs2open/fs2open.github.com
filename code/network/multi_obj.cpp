@@ -1312,8 +1312,12 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 			// retrieve the submodel for rotation info.
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
-				angles *angs_1 = &subsystem->submodel_info_1.angs;
-				angles *angs_2 = &subsystem->submodel_info_2.angs;
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsystem->submodel_instance_1)
+					angs_1 = &subsystem->submodel_instance_1->angs;
+				if (subsystem->submodel_instance_2)
+					angs_2 = &subsystem->submodel_instance_2->angs;
 
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
@@ -1915,10 +1919,18 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					data_idx++;
 				}
 
-				angles *prev_angs_1 = &subsysp->submodel_info_1.prev_angs;
-				angles *prev_angs_2 = &subsysp->submodel_info_2.prev_angs;
-				angles *angs_1 = &subsysp->submodel_info_1.angs;
-				angles *angs_2 = &subsysp->submodel_info_2.angs;
+				angles *prev_angs_1 = nullptr;
+				angles *prev_angs_2 = nullptr;
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsysp->submodel_instance_1) {
+					prev_angs_1 = &subsysp->submodel_instance_1->prev_angs;
+					angs_1 = &subsysp->submodel_instance_1->angs;
+				}
+				if (subsysp->submodel_instance_2) {
+					prev_angs_2 = &subsysp->submodel_instance_2->prev_angs;
+					angs_2 = &subsysp->submodel_instance_2->angs;
+				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
 					prev_angs_1->b = angs_1->b;

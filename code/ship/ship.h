@@ -374,8 +374,8 @@ public:
 	// angles and if it is blown off or not.
 	// There are 2 of these because turrets need one for the turret and one for the barrel.
 	// Things like radar dishes would only use one.
-	submodel_instance_info	submodel_info_1;		// Instance data for main turret or main object
-	submodel_instance_info	submodel_info_2;		// Instance data for turret guns, if there is one
+	submodel_instance *submodel_instance_1;		// Instance data for main turret or main object
+	submodel_instance *submodel_instance_2;		// Instance data for turret guns, if there is one
 
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 

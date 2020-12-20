@@ -3261,9 +3261,9 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 		ADD_USHORT( objp->net_signature );
 	}
 	ADD_DATA( cindex );
-	val = (short)ssp->submodel_info_1.angs.h;
+	val = (short)ssp->submodel_instance_1->angs.h;
 	ADD_SHORT( val );
-	val = (short)ssp->submodel_info_2.angs.p;
+	val = (short)ssp->submodel_instance_2->angs.p;
 	ADD_SHORT( val );	
 	
 	multi_io_send_to_all(data, packet_size);
@@ -3334,8 +3334,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		return;
 
 	// bash the position and orientation of the turret
-	ssp->submodel_info_1.angs.h = (float)heading;
-	ssp->submodel_info_2.angs.p = (float)pitch;
+	ssp->submodel_instance_1->angs.h = (float)heading;
+	ssp->submodel_instance_2->angs.p = (float)pitch;
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
@@ -8293,9 +8293,9 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);	
 	ADD_USHORT( pnet_signature );		
 	ADD_DATA( cindex );
-	val = (short)ssp->submodel_info_1.angs.h;
+	val = (short)ssp->submodel_instance_1->angs.h;
 	ADD_SHORT( val );
-	val = (short)ssp->submodel_info_2.angs.p;
+	val = (short)ssp->submodel_instance_2->angs.p;
 	ADD_SHORT( val );	
 	ADD_FLOAT( flak_range );
 	
@@ -8362,8 +8362,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// bash the position and orientation of the turret
-	ssp->submodel_info_1.angs.h = (float)heading;
-	ssp->submodel_info_2.angs.p = (float)pitch;
+	ssp->submodel_instance_1->angs.h = (float)heading;
+	ssp->submodel_instance_2->angs.p = (float)pitch;
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);

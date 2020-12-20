@@ -211,7 +211,8 @@ static const char *Text_lines[MAX_TEXT_LINES];
 
 static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
 static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
-static int Techroom_ship_modelnum;
+static int Techroom_ship_modelnum = -1;
+static int Techroom_ship_model_instance = -1;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -335,6 +336,11 @@ void techroom_select_new_entry()
 
 		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
+		if (Techroom_ship_model_instance >= 0) {
+			model_delete_instance(Techroom_ship_model_instance);
+		}
+		Techroom_ship_model_instance = model_create_instance(true, Techroom_ship_modelnum);
+
 		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
 
 		// page in ship textures properly (takes care of nondimming pixels)
@@ -343,6 +349,12 @@ void techroom_select_new_entry()
 		Current_list[Cur_entry].textures_loaded = 1;
 	} else {
 		Techroom_ship_modelnum = -1;
+
+		if (Techroom_ship_model_instance >= 0) {
+			model_delete_instance(Techroom_ship_model_instance);
+			Techroom_ship_model_instance = -1;
+		}
+
 		Trackball_mode = 0;
 
 		// load animation here, we now only have one loaded
@@ -540,6 +552,7 @@ void techroom_ships_render(float frametime)
 	render_info.set_detail_level_lock(0);
 
 	polymodel *pm = model_get(Techroom_ship_modelnum);
+	polymodel_instance *pmi = model_get_instance(Techroom_ship_model_instance);
 	
 	for (i = 0; i < sip->n_subsystems; i++) {
 		model_subsystem *msp = &sip->subsystems[i];
@@ -555,10 +568,10 @@ void techroom_ships_render(float frametime)
 				h = msp->triggers[j].angle.xyz.y;
 			}
 			if ( msp->subobj_num >= 0 )	{
-				model_set_instance_techroom(Techroom_ship_modelnum, msp->subobj_num, 0.0f, h );
+				model_set_instance_techroom(pm, pmi, msp->subobj_num, 0.0f, h );
 			}
 			if ( (msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0) )		{
-				model_set_instance_techroom(Techroom_ship_modelnum, msp->turret_gun_sobj, p, 0.0f );
+				model_set_instance_techroom(pm, pmi, msp->turret_gun_sobj, p, 0.0f );
 			}
 		}
 	}
@@ -1220,6 +1233,8 @@ void techroom_lists_reset()
 	Current_list_size = 0;
 
 	model_free_all();
+	Techroom_ship_modelnum = -1;
+	Techroom_ship_model_instance = -1;
 
 	if (Ship_list != NULL) {
 		delete[] Ship_list;

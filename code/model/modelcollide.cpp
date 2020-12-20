@@ -1180,8 +1180,8 @@ NoHit:
 			blown_off = Mc_pmi->submodel[i].blown_off;
 			collision_checked = Mc_pmi->submodel[i].collision_checked;
 		} else {
-			angs = csm->angs;
-			blown_off = csm->blown_off;
+			angs = vmd_zero_angles;
+			blown_off = false;
 			collision_checked = false;
 		}
 
@@ -1330,9 +1330,7 @@ int model_collide(mc_info *mc_info_obj)
 				mc_check_subobj(Mc_pm->detail[0]);
 			}
 		} else {
-			if ( !Mc_pm->submodel[Mc_pm->detail[0]].blown_off ) {
-				mc_check_subobj(Mc_pm->detail[0]);
-			}
+			mc_check_subobj(Mc_pm->detail[0]);
 		}
 	}
 
@@ -1397,12 +1395,11 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 	}
 }
 
-void model_collide_preprocess(matrix *orient, int model_instance_num, int detail_num)
+void model_collide_preprocess(matrix *orient, polymodel *pm, polymodel_instance *pmi, int detail_num)
 {
 	matrix current_orient;
 	vec3d current_pos;
-	auto pmi = model_get_instance(model_instance_num);
-	auto pm = model_get(pmi->model_num);
+	Assert(pm->id == pmi->model_num);
 
 	current_orient = *orient;
 

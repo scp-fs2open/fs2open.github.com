@@ -1232,14 +1232,9 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 
 	if ( pmi != NULL ) {
 		smi = &pmi->submodel[mn];
-	}
-
-	if ( smi != NULL ) {
 		if ( smi->blown_off ) {
 			return;
 		}
-	} else if ( model->blown_off ) {
-		return;
 	}
 
 	const uint model_flags = interp->get_model_flags();
@@ -1261,7 +1256,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = model->angs;
+	angles ang = vmd_zero_angles;
 
 	if ( smi != NULL ) {
 		ang = smi->angs;
@@ -1929,6 +1924,8 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 
 void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
 {
+	Assert(pmi == nullptr || pm->id == pmi->model_num);
+
 	if ( Rendering_to_shadow_map ) {
 		return;
 	}
@@ -1968,8 +1965,12 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 		if (bank->glow_bitmap == -1)
 			continue;
 
-		if (pm->submodel[bank->submodel_parent].blown_off)
-			continue;
+		if (pmi != nullptr) {
+			auto smi = &pmi->submodel[bank->submodel_parent];
+			if (smi->blown_off) {
+				continue;
+			}
+		}
 
 		if ((gpo && gpo->off_time_override && !gpo->off_time)?gpo->is_on:bank->is_on) {
 			if ( (shipp != NULL) && !(shipp->glow_point_bank_active[i]) )
@@ -2394,25 +2395,11 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 
 	bsp_info *model = &pm->submodel[mn];
 
-	if ( model->blown_off ) {
-		return;
-	}
-
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = model->angs;
-
-	// Add barrel rotation if needed
-	if ( model->gun_rotation ) {
-		if ( pm->gun_submodel_rotation > PI2 ) {
-			pm->gun_submodel_rotation -= PI2;
-		} else if ( pm->gun_submodel_rotation < 0.0f ) {
-			pm->gun_submodel_rotation += PI2;
-		}
-
-		ang.b += pm->gun_submodel_rotation;
-	}
+	// (Not needed here because we're not using model instances)
+	angles ang = vmd_zero_angles;
 
 	// Compute final submodel orientation by using the orientation matrix
 	// and the rotation angles.

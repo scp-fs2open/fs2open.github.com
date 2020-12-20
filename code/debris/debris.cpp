@@ -776,7 +776,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.model_instance_num = -1;
 		mc.model_num = Debris[num].model_num;	// Fill in the model to check
 		mc.submodel_num = Debris[num].submodel_num;
-		model_clear_instance( mc.model_num );
 		mc.orient = &pdebris->orient;					// The object's orient
 		mc.pos = &pdebris->pos;							// The object's position
 		mc.p0 = &other_obj->last_pos;				// Point 1 of ray to check
@@ -789,7 +788,11 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 			if (hitNormal)
 			{
 				vec3d normal;
-				model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
+
+				if (mc.model_instance_num >= 0)
+					model_instance_find_world_dir(&normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, mc.orient);
+				else
+					model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
 
 				*hitNormal = normal;
 			}
@@ -965,7 +968,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.model_instance_num = -1;
 		mc.model_num = Debris[num].model_num;		// Fill in the model to check
 		mc.submodel_num = Debris[num].submodel_num;
-		model_clear_instance( mc.model_num );
 		mc.orient = &pdebris->orient;				// The object's orient
 		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 
