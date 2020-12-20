@@ -1463,7 +1463,7 @@ int control_config_common_write_full_tbl(bool overwrite = true) {
 		return 1;
 	}
 
-	for (int i = 0; i < Control_config_presets.size(); i++) {
+	for (size_t i = 0; i < Control_config_presets.size(); i++) {
 		control_config_common_write_tbl_segment(fp, i, &fputs);
 	}
 
