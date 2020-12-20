@@ -1269,7 +1269,7 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	return ade_set_args(L, "b", b);
 }
 
-ADE_FUNC(isNebula, l_Mission, NULL, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
+ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
 {
 	bool b = false;
 
@@ -1280,7 +1280,7 @@ ADE_FUNC(isNebula, l_Mission, NULL, "Get whether or not the current mission bein
 	return ade_set_args(L, "b", b);
 }
 
-ADE_FUNC(isSubspace, l_Mission, NULL, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
+ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
 	bool b = false;
 
