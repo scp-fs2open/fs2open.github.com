@@ -1271,24 +1271,12 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 
 ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
 {
-	bool b = false;
-
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
 }
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
-	bool b = false;
-
-	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace);
 }
 
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
