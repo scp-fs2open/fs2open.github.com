@@ -1276,7 +1276,7 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
-	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace);
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace]);
 }
 
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
