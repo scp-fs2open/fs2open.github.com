@@ -1432,7 +1432,7 @@ int control_config_common_write_tbl_segment(FILETYPE* cfile, int preset, int (* 
 	return 0;
 }
 
-int control_config_common_write_tbl(bool overwrite = false) {
+int control_config_common_write_tbl(bool overwrite = false, bool all = false) {
 	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
 		// File exists, and we're told to not overwrite it. Bail
 		return 1;
@@ -1444,14 +1444,23 @@ int control_config_common_write_tbl(bool overwrite = false) {
 		return 1;
 	}
 
+	if(all)
+		load_preset_files();
+
 	control_config_common_write_tbl_segment(cfile, 0, &cfputs);
+
+	if (all) {
+		for (size_t i = 1; i < Control_config_presets.size(); i++) {
+			control_config_common_write_tbl_segment(cfile, (int)i, &cfputs);
+		}
+	}
 
 	cfclose(cfile);
 
 	return 0;
 }
 
-int control_config_common_write_full_tbl(bool overwrite = true) {
+int control_config_common_write_tbl_root(bool overwrite = true) {
 	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_ROOT) && !overwrite) {
 		// File exists, and we're told to not overwrite it. Bail
 		return 1;
@@ -1470,10 +1479,21 @@ int control_config_common_write_full_tbl(bool overwrite = true) {
 	fclose(fp);
 
 	return 0;
-}
+} 
 
 DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
-	if (!control_config_common_write_tbl(true)) {
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Will write (and overwrite) a controlconfigdefault.tbl in root/tables with the current profile. Use --all to export all profiles.\n");
+		return;
+	}
+
+	bool createAll = false;
+
+	if (dc_optional_string_either("all", "--all")) {
+		createAll = true;
+	}
+
+	if (!control_config_common_write_tbl(true, createAll)) {
 		dc_printf("Default bindings saved to controlconfigdefaults.tbl");
 	} else {
 		dc_printf("Error: Unable to save Control Configuration Defaults.");
@@ -1494,7 +1514,7 @@ void control_config_common_load_overrides()
 
 	if (Generate_controlconfig_table) {
 		load_preset_files();
-		control_config_common_write_full_tbl();
+		control_config_common_write_tbl_root();
 	}
 
 	try {
