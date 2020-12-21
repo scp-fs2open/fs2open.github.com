@@ -117,7 +117,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(detachFBO, l_Texture, nullptr, "Detaches a texture's FBO. Call this when done drawing to a texture, as it frees up ressources.", nullptr, nullptr)
+ADE_FUNC(unloadRenderTarget, l_Texture, nullptr, "Unloads a texture's render target. Call this when done drawing to a texture, as it frees up resources.", nullptr, nullptr)
 {
 	texture_h* th;
 
@@ -127,9 +127,7 @@ ADE_FUNC(detachFBO, l_Texture, nullptr, "Detaches a texture's FBO. Call this whe
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
 
-	auto slot = bm_get_slot(th->handle);
-
-	bm_free_data(slot, false);
+	bm_release_rendertarget(th->handle);
 
 	return ADE_RETURN_NIL;
 }
