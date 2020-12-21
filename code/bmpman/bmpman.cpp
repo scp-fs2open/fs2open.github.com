@@ -2864,24 +2864,14 @@ bool bm_release_rendertarget(int handle) {
 	}
 
 	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release_rendertarget()\n", be->handle, handle, be->filename);
+	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
 
 	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
 		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
 		return false;
 	}
 
-	if (bm_is_anim(be)) {
-		int i, first = be->info.ani.first_frame;
-		int total = bm_get_entry(first)->info.ani.num_frames;
-
-		// Go through all frames and release each ones rendertarget 
-		for (i = 0; i < total; i++) {
-			gr_bm_free_data(bm_get_slot(first + i), false);
-		}
-	}
-	else {
-		gr_bm_free_data(bm_get_slot(handle), false);
-	}
+	gr_bm_free_data(bm_get_slot(handle), false);
 
 	return true;
 }

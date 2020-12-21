@@ -117,7 +117,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(unloadRenderTarget, l_Texture, nullptr, "Unloads a texture's render target. Call this when done drawing to a texture, as it frees up resources.", nullptr, nullptr)
+ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render target. Call this when done drawing to a texture, as it frees up resources.", nullptr, nullptr)
 {
 	texture_h* th;
 
@@ -126,6 +126,9 @@ ADE_FUNC(unloadRenderTarget, l_Texture, nullptr, "Unloads a texture's render tar
 
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
+
+	if(!bm_is_render_target(th->handle))
+		LuaError(L, "Tried to destroy a render target of a non-renderable texture!");
 
 	bm_release_rendertarget(th->handle);
 

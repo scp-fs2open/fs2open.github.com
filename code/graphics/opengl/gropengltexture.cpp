@@ -1554,8 +1554,13 @@ static void opengl_free_fbo_slot(int id) {
 
 	Assertion(fbo != nullptr, "Invalid id passed to opengl_free_fbo_slot!");
 
+	//We need to reset the FBO but keep it's ID, otherwise they'll get reassigned with ID 0
+	int fbo_id = fbo->fbo_id;
+
 	// Reset this slot using the default constructor
 	*fbo = fbo_t();
+
+	fbo->fbo_id = fbo_id;
 }
 
 int opengl_check_framebuffer()
@@ -1601,7 +1606,7 @@ int opengl_check_framebuffer()
 	return 0;
 }
 
-void opengl_kill_render_target(bitmap_slot* slot, bool remove_slot)
+void opengl_kill_render_target(bitmap_slot* slot)
 {
 	// this will happen when opengl_kill_all_render_targets() gets called first on exit
 	if ( RenderTarget.empty() ) {
@@ -1627,8 +1632,7 @@ void opengl_kill_render_target(bitmap_slot* slot, bool remove_slot)
 		fbo->renderbuffer_id = 0;
 	}
 
-	if(remove_slot)
-		opengl_free_fbo_slot(fbo->fbo_id);
+	opengl_free_fbo_slot(fbo->fbo_id);
 }
 
 void opengl_kill_all_render_targets()
