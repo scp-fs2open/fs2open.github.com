@@ -2880,7 +2880,7 @@ bool bm_release_rendertarget(int handle) {
 		}
 	}
 	else {
-		gr_bm_free_data(bm_get_slot(handle), false);		// clears flags, bbp, data, etc
+		gr_bm_free_data(bm_get_slot(handle), false);
 	}
 
 	return true;
