@@ -117,7 +117,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(detachFBO, l_Texture, NULL, "Detaches a texture's FBO. Call this when done drawing to a texture, as it frees up ressources.", NULL, NULL)
+ADE_FUNC(detachFBO, l_Texture, nullptr, "Detaches a texture's FBO. Call this when done drawing to a texture, as it frees up ressources.", nullptr, nullptr)
 {
 	texture_h* th;
 
