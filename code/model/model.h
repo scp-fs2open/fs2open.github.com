@@ -282,7 +282,6 @@ public:
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
-		look_at[0] = 0;
 
 		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
 		orientation = vmd_identity_matrix;
@@ -357,9 +356,7 @@ public:
 	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
 	float	dumb_turn_rate;			//Bobboau
-	//int	look_at;				//Bobboau
 	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
-	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
 };
 
 #define MP_TYPE_UNUSED 0
@@ -672,7 +669,7 @@ public:
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
-		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
 		vert_source()
 	{
 		filename[0] = 0;
@@ -776,8 +773,6 @@ public:
 
 	int n_glow_point_banks;						// number of glow points on this ship. -Bobboau
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
-
-	float gun_submodel_rotation;
 
 	indexed_vertex_source vert_source;
 	

@@ -6402,6 +6402,9 @@ void ship_weapon::clear()
     {
         primary_bank_weapons[i] = -1;
 
+		primary_bank_external_model_instance[i] = -1;
+		primary_bank_model_instance_check[i] = false;
+
         next_primary_fire_stamp[i] = timestamp(0);
         last_primary_fire_stamp[i] = timestamp(-1);
         last_primary_fire_sound_stamp[i] = timestamp(0);
@@ -7584,6 +7587,13 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 	
 	model_delete_instance(shipp->model_instance_num);
+
+	// free up any weapon model instances
+	for (int i = 0; i < shipp->weapons.num_primary_banks; ++i)
+	{
+		if (shipp->weapons.primary_bank_external_model_instance[i] >= 0)
+			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
+	}
 }
 
 /**
@@ -19205,18 +19215,49 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
-		if ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) {
+		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 			continue;
 		}
 
-		w_bank *bank = &model_get(sip->model_num)->gun_banks[i];
+		// Lazily create the model instance here, if we need to.  The ideal place to put this
+		// would be in parse_object_create_sub, but the player can alter the ship loadout
+		// after that function runs.
+		if (!swp->primary_bank_model_instance_check[i])
+		{
+			auto pm = model_get(wip->external_model_num);
+
+			// create a model instance only if at least one submodel has gun rotation
+			for (int mn = 0; mn < pm->n_models; mn++)
+			{
+				if (pm->submodel[mn].gun_rotation)
+				{
+					swp->primary_bank_external_model_instance[i] = model_create_instance(false, wip->external_model_num);
+					break;
+				}
+			}
+
+			swp->primary_bank_model_instance_check[i] = true;
+		}
+
+		auto bank = &model_get(sip->model_num)->gun_banks[i];
+
+		if ( swp->primary_bank_external_model_instance[i] >= 0 )
+		{
+			auto pmi = model_get_instance(swp->primary_bank_external_model_instance[i]);
+			auto pm = model_get(pmi->model_num);
+
+			// spin the submodels by the gun rotation
+			for (int mn = 0; mn < pm->n_models; ++mn)
+			{
+				if (pm->submodel[mn].gun_rotation)
+					pmi->submodel[mn].angs.b = shipp->primary_rotate_ang[i];
+			}
+		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
-			pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
-			model_render_queue(ship_render_info, scene, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
-			pm->gun_submodel_rotation = 0.0f;
+			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &vmd_identity_matrix, &bank->pnt[k]);
 		}
 	}
 

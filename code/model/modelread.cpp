@@ -1350,7 +1350,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				if ( ( p = strstr(props, "$look_at")) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
-					get_user_prop_value(p+9, pm->submodel[n].look_at);
+//					TODO: put this in a temp map and post-process it; no need to store the look_at name in the submodel
+//					get_user_prop_value(p+9, pm->submodel[n].look_at);
 					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
 					
 				} else {
@@ -4445,8 +4446,6 @@ void model_clear_instance(int model_num)
 	// ---- stuff that should be moved into model instances at some point
 	int i;
 	auto pm = model_get(model_num);
-
-	pm->gun_submodel_rotation = 0.0f;
 
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
