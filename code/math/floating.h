@@ -113,4 +113,8 @@ extern float fl_roundoff(float x, int multiple);
  */
 #define IS_NEAR_ZERO(x, e) (fl_abs(x) < (float)(e))
 
+const float GOLDEN_RATIO = 0.618033989f;
+
+float golden_ratio_rand();
+
 #endif

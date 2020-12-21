@@ -19,6 +19,7 @@
 #include "gamesnd/gamesnd.h"
 #include "model/model.h"
 #include "weapon/shockwave.h"
+#include "weapon/swarm.h"
 #include "weapon/trails.h"
 #include "particle/ParticleManager.h"
 #include "weapon/weapon_flags.h"
@@ -101,7 +102,7 @@ typedef struct weapon {
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
-	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
+	std::unique_ptr<swarm_info>		swarm_info_ptr;					// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
