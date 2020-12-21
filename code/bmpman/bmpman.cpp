@@ -207,11 +207,6 @@ void clear_bm_lookup_cache() {
 static void bm_convert_format(bitmap *bmp, ushort flags);
 
 /**
- * Frees a bitmap's data if it can
- */
-static void bm_free_data(bitmap_slot* n, bool release = false);
-
-/**
  * A special version of bm_free_data() that can be safely used in gr_*_texture
  * to save system memory once textures have been transfered to API memory
  * it doesn't restore the slot to a pristine state, it only releases the data
@@ -622,6 +617,10 @@ void bm_free_data(bitmap_slot* bs, bool release)
 	bmp = &be->bm;
 
 	gr_bm_free_data(bs, release);
+
+	//If we only unattach the RenderTarget but not the bitmap, abort here
+	if (!release)
+		return;
 
 	// If there isn't a bitmap in this structure, don't
 	// do anything but clear out the bitmap info

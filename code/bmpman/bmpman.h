@@ -262,6 +262,15 @@ int bm_unload_fast(int handle, int clear_render_targets = 0);
 int bm_release(int handle, int clear_render_targets = 0);
 
 /**
+ * @brief Frees only a bitmap's associated slot and FBO.
+ *
+ * @param n						The handle of the Bitmap Slot
+ * @param release				If true, releases the Bitmap Slot, if false, only detaches the FBO
+ *
+ */
+void bm_free_data(bitmap_slot* n, bool release = false);
+
+/**
  * @brief Loads a bitmap sequance so we can draw with it.
  *
  * @param[in] filename

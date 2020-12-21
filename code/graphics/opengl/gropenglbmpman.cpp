@@ -51,7 +51,7 @@ void gr_opengl_bm_free_data(bitmap_slot* slot, bool release)
 		 opengl_free_texture_slot( slot );
 
 	if ( (slot->entry.type == BM_TYPE_RENDER_TARGET_STATIC) || (slot->entry.type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
-		opengl_kill_render_target( slot );
+		opengl_kill_render_target( slot, release );
 }
 
 /**

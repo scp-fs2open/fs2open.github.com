@@ -1601,7 +1601,7 @@ int opengl_check_framebuffer()
 	return 0;
 }
 
-void opengl_kill_render_target(bitmap_slot* slot)
+void opengl_kill_render_target(bitmap_slot* slot, bool remove_slot)
 {
 	// this will happen when opengl_kill_all_render_targets() gets called first on exit
 	if ( RenderTarget.empty() ) {
@@ -1627,7 +1627,8 @@ void opengl_kill_render_target(bitmap_slot* slot)
 		fbo->renderbuffer_id = 0;
 	}
 
-	opengl_free_fbo_slot(fbo->fbo_id);
+	if(remove_slot)
+		opengl_free_fbo_slot(fbo->fbo_id);
 }
 
 void opengl_kill_all_render_targets()
