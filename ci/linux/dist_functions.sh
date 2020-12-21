@@ -4,6 +4,11 @@ function get_package_name() {
     return
   fi
 
+  if git describe --match 'release_*' --exact-match >/dev/null; then
+    echo -n "$(git describe --match "release_*" --exact-match | sed 's/release_/fs2_open_/i')"
+    return
+  fi
+
   echo "unknown_config"
 }
 
@@ -13,6 +18,16 @@ function get_version_name() {
 
     # Use the bash regex matching for getting the relevant part of the tag name
     [[ $tag_name =~ ^nightly_(.*)$ ]]
+
+    echo -n "${BASH_REMATCH[1]}"
+    return
+  fi
+
+  if git describe --match 'release_*' --exact-match >/dev/null; then
+    local tag_name=$(git describe --match "release_*" --exact-match)
+
+    # Use the bash regex matching for getting the relevant part of the tag name
+    [[ $tag_name =~ ^release_(.*)$ ]]
 
     echo -n "${BASH_REMATCH[1]}"
     return
