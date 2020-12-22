@@ -868,8 +868,10 @@ void model_anim_set_initial_states(ship *shipp)
 			if (psub->triggers[i].type == AnimationTriggerType::Initial) {
 				if (psub->type == SUBSYSTEM_TURRET) {
 					// special case for turrets
-					pss->submodel_instance_2->angs.p = psub->triggers[i].angle.xyz.x;
-					pss->submodel_instance_1->angs.h = psub->triggers[i].angle.xyz.y;
+					if (pss->submodel_instance_2 != nullptr)
+						pss->submodel_instance_2->angs.p = psub->triggers[i].angle.xyz.x;
+					if (pss->submodel_instance_1 != nullptr)
+						pss->submodel_instance_1->angs.h = psub->triggers[i].angle.xyz.y;
 				} else {
 					if (pss->triggered_rotation_index < 0) {
 						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
