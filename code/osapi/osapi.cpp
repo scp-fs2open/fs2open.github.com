@@ -42,8 +42,20 @@ namespace
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
 		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-		    if (!preferencesPath) {
-			    mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
+			
+			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
+			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
+		    if (preferencesPath == nullptr) {
+				static bool sdl_is_borked_warning = false;
+				if (!sdl_is_borked_warning) {
+					ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
+						"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
+						"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
+						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
+					sdl_is_borked_warning = true;
+				}
+				// No preferences path, try current directory.  
+				return "." DIR_SEPARATOR_STR;
 		    }
 #ifdef WIN32
 		    try {
