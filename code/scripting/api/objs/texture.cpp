@@ -127,8 +127,10 @@ ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render t
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
 
-	if(!bm_is_render_target(th->handle))
+	if (!bm_is_render_target(th->handle)) {
 		LuaError(L, "Tried to destroy a render target of a non-renderable texture!");
+		return ADE_RETURN_NIL;
+	}
 
 	bm_release_rendertarget(th->handle);
 

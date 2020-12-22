@@ -1513,6 +1513,7 @@ struct fbo_t {
 	int working_handle = -1;
 	int is_static = 0;
 	int fbo_id = -1;
+	bool free = true;
 };
 
 static SCP_vector<fbo_t> RenderTarget;
@@ -1535,7 +1536,7 @@ static fbo_t* opengl_get_fbo(int id) {
 
 static fbo_t* opengl_get_free_fbo() {
 	for (auto& target : RenderTarget) {
-		if (target.fbo_id < 0) {
+		if (target.free) {
 			// This slot is free
 			return &target;
 		}
@@ -1544,6 +1545,7 @@ static fbo_t* opengl_get_free_fbo() {
 	RenderTarget.push_back(fbo_t());
 	auto& last = RenderTarget.back();
 	last.fbo_id = next_fbo_id;
+	last.free = false;
 	++next_fbo_id;
 
 	return &RenderTarget.back();
