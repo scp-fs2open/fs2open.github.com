@@ -111,6 +111,9 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
+	if (sso->ss->submodel_instance_1 == nullptr)
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
 	if(ADE_SETTING_VAR && mh)
 	{
 		sso->ss->submodel_instance_1->angs = *mh->GetAngles();
@@ -127,6 +130,9 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
+	if (sso->ss->submodel_instance_2 == nullptr)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if(ADE_SETTING_VAR && mh)
@@ -624,6 +630,12 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	vec3d pos = vmd_zero_vector;
 	bool reset = false;
 	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
+		return ADE_RETURN_NIL;
+
+	if (!sso->isSubsystemValid())
+		return ADE_RETURN_NIL;
+
+	if (sso->ss->submodel_instance_1 == nullptr || sso->ss->submodel_instance_2 == nullptr)
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
