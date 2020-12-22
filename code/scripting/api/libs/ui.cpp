@@ -395,7 +395,7 @@ ADE_VIRTVAR(ColorTags,
 	nullptr,
 	"The available tagged colors",
 	ade_type_map("string", "color"),
-	"A apping from tag string to color value")
+	"A mapping from tag string to color value")
 {
 	using namespace luacpp;
 
