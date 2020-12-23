@@ -2626,7 +2626,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 //returns the number of this model
 int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
-	int i, num, arc_idx;
+	int i, num;
 	polymodel *pm = NULL;
 
 	if ( !model_initted )
@@ -2764,11 +2764,6 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 		size_t l1;
 		bsp_info * sm1 = &pm->submodel[i];
 
-		// set all arc types to be default 		
-		for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
-			sm1->arc_type[arc_idx] = MARC_TYPE_NORMAL;
-		}
-
 		sm1->num_details = 0;
 		// If a backward compatibility LOD name is declared use it
 		if (sm1->lod_name[0] != '\0') {
@@ -2795,11 +2790,6 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 			if ( i==j ) continue;
 			
-			// set all arc types to be default 		
-			for(arc_idx=0; arc_idx < MAX_ARC_EFFECTS; arc_idx++){
-				sm2->arc_type[arc_idx] = MARC_TYPE_NORMAL;
-			}
-
 			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
 			if (strlen(sm2->name)!=l1) continue; 
 	
@@ -2910,8 +2900,8 @@ int model_create_instance(bool is_ship, int model_num)
 		}
 	}
 
-	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
-	memset(pmi, 0, sizeof(polymodel_instance));
+	auto pmi = new polymodel_instance;
+
 	pmi->model_num = model_num;
 
 	// if not found, create a slot
@@ -2925,11 +2915,8 @@ int model_create_instance(bool is_ship, int model_num)
 
 	polymodel *pm = model_get(model_num);
 
-	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
-
-	for ( i = 0; i < pm->n_models; i++ ) {
-		model_clear_submodel_instance( &pmi->submodel[i] );
-	}
+	if (pm->n_models > 0)
+		pmi->submodel = new submodel_instance[pm->n_models];
 
 	// add intrinsic_rotation instances if this model is intrinsic-rotating
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
@@ -2955,17 +2942,18 @@ void model_delete_instance(int model_instance_num)
 {
 	Assert(model_instance_num >= 0);
 	Assert(model_instance_num < (int)Polygon_model_instances.size());
-	Assert(Polygon_model_instances[model_instance_num] != NULL);
+	Assert(Polygon_model_instances[model_instance_num] != nullptr);
 
 	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
 
 	if ( pmi->submodel ) {
-		vm_free(pmi->submodel);
+		delete[] pmi->submodel;
+		pmi->submodel = nullptr;
 	}
 
-	vm_free(pmi);
+	delete pmi;
 
-	Polygon_model_instances[model_instance_num] = NULL;
+	Polygon_model_instances[model_instance_num] = nullptr;
 
 	// delete intrinsic rotations associated with this instance
 	for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it) {
@@ -4464,29 +4452,9 @@ void model_clear_instance(int model_num)
 	for (i=0; i<pm->n_textures; i++ )	{
 		pm->maps[i].ResetToOriginal();
 	}
-	
-	for (i=0; i<pm->n_models; i++ )	{
-		pm->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
-	}
 	// ---- end of stuff that should be moved into model instances at some point
 
 	interp_clear_instance();
-}
-
-// initialization during ship set
-void model_clear_submodel_instance(submodel_instance *smi)
-{
-	smi->blown_off = false;
-	smi->axis_set = false;
-	smi->collision_checked = false;
-
-	smi->angs = vmd_zero_angles;
-	smi->prev_angs = vmd_zero_angles;
-
-	smi->current_turn_rate = 0.0f;
-	smi->desired_turn_rate = 0.0f;
-	smi->turn_accel = 0.0f;
-	smi->step_zero_timestamp = timestamp();
 }
 
 void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel)
@@ -4722,13 +4690,19 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 	smi->axis_set = true;
 }
 
+void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
+{
+	Assert(pm->id == pmi->model_num);
+
+	for (int i = 0; i < pm->n_models; ++i) {
+		pmi->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
+	}
+}
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
 {
-	polymodel * pm;
-
-	pm = model_get(model_num);
+	Assert(pm->id == pmi->model_num);
 
 	if ( sub_model_num == -1 )	{
 		sub_model_num = pm->detail[0];
@@ -4739,13 +4713,13 @@ void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int a
 
 	if ( sub_model_num < 0 ) return;
 	if ( sub_model_num >= pm->n_models ) return;
-	bsp_info *sm = &pm->submodel[sub_model_num];
+	auto smi = &pmi->submodel[sub_model_num];
 
-	if ( sm->num_arcs < MAX_ARC_EFFECTS )	{
-		sm->arc_type[sm->num_arcs] = (ubyte)arc_type;
-		sm->arc_pts[sm->num_arcs][0] = *v1;
-		sm->arc_pts[sm->num_arcs][1] = *v2;
-		sm->num_arcs++;
+	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
+		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
+		smi->arc_pts[smi->num_arcs][0] = *v1;
+		smi->arc_pts[smi->num_arcs][1] = *v2;
+		smi->num_arcs++;
 	}
 }
 

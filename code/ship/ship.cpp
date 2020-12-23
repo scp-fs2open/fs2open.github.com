@@ -19381,13 +19381,17 @@ void ship_render(object* obj, model_draw_list* scene)
 		}
 	}
 
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
 	model_clear_instance(sip->model_num);
+	model_instance_clear_arcs(pm, pmi);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
 			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
-				model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 			}
 		}
 	}

@@ -1538,7 +1538,8 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 
 void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_ship* half_ship, ship *shipp)
 {
-	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	// get rotated clip plane normal and world coord of original ship center
 	vec3d orig_ship_world_center, clip_plane_norm, model_clip_plane_pt, debris_clip_plane_pt;
@@ -1594,7 +1595,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 				render_info.set_replacement_textures(shipp->ship_replacement_textures);
 				render_info.set_flags(render_flags);
 
-				submodel_render_queue(&render_info, scene, pm->id, pm->debris_objects[i], &half_ship->orient, &tmp);
+				submodel_render_queue(&render_info, scene, pm, pmi, pm->debris_objects[i], &half_ship->orient, &tmp);
 			}
 
 			// make free piece of debris

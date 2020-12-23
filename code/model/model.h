@@ -16,6 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "gamesnd/gamesnd.h"
+#include "io/timer.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "model/model_flags.h"
@@ -74,30 +75,46 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 #define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
 // Data specific to a particular instance of a submodel.
-typedef struct submodel_instance {
-	angles	angs;									// The current angle this thing is turned to.
-	angles	prev_angs;
+struct submodel_instance
+{
+	angles	angs = vmd_zero_angles;					// The current angle this thing is turned to.
+	angles	prev_angs = vmd_zero_angles;
 
-	float	current_turn_rate;
-	float	desired_turn_rate;
-	float	turn_accel;
-	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
+	float	current_turn_rate = 0.0f;
+	float	desired_turn_rate = 0.0f;
+	float	turn_accel = 0.0f;
+	int		step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
 
 	vec3d	point_on_axis;							// in ship RF
-	bool	axis_set;
-	bool	blown_off;								// If set, this subobject is blown off
+	bool	axis_set = false;
+	bool	blown_off = false;						// If set, this subobject is blown off
 
 	vec3d mc_base;
 	matrix mc_orient;
-	bool collision_checked;
-} submodel_instance;
+	bool collision_checked = false;
+
+	// --- these fields used to be in bsp_info ---
+
+	// Electrical Arc Effect Info
+	// Sets a spark for this submodel between vertex v1 and v2	
+	int		num_arcs = 0;											// See model_add_arc for more info	
+	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
+	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
+
+	submodel_instance()
+	{
+		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+	}
+};
 
 // Data specific to a particular instance of a model.
-typedef struct polymodel_instance {
-	int id;							// global model_instance num index
-	int model_num;					// global model num index, same as polymodel->id
-	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
-} polymodel_instance;
+struct polymodel_instance
+{
+	int id = -1;							// global model_instance num index
+	int model_num = -1;						// global model num index, same as polymodel->id
+	submodel_instance *submodel = nullptr;	// array of submodel instances; mirrors the polymodel->submodel array
+};
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
@@ -258,7 +275,7 @@ public:
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
 		rad(0.0f), my_replacement(-1), i_replace(-1), is_live_debris(false), num_live_debris(0),
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
+		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
 		look_at_num(-1)
@@ -273,8 +290,6 @@ public:
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
 		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
-		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
-		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
 	}
 
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
@@ -317,12 +332,6 @@ public:
 	int		num_details;			// How many submodels are lower detail "mirrors" of this submodel
 	int		details[MAX_MODEL_DETAIL_LEVELS];		// A list of all the lower detail "mirrors" of this submodel
 
-	// Electrical Arc Effect Info
-	// Sets a spark for this submodel between vertex v1 and v2	
-	int		num_arcs;												// See model_add_arc for more info	
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];	
-	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
-	
 	// buffers used by HT&L
 	vertex_buffer buffer;
 	vertex_buffer trans_buffer;
@@ -769,7 +778,7 @@ public:
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
 
 	float gun_submodel_rotation;
-	
+
 	indexed_vertex_source vert_source;
 	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
@@ -961,9 +970,6 @@ extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, c
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
-// Clears all the values in a particular instance to their defaults.
-extern void model_clear_submodel_instance(submodel_instance *smi);
-
 // Sets rotating submodel turn info to that stored in model
 extern void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel);
 
@@ -974,7 +980,8 @@ void model_update_instance(int model_instance_num, int submodel_num, flagset<Shi
 void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
+void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
