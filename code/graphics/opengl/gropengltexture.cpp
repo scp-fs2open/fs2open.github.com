@@ -1537,7 +1537,7 @@ static fbo_t* opengl_get_free_fbo() {
 	fbo_t* fbo = nullptr;
 
 	for (auto& target : RenderTarget) {
-		if (target.fbo_id == 0) {
+		if (target.fbo_id < 0) {
 			// This slot is free
 			fbo = &target;
 		}
