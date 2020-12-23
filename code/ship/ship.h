@@ -100,7 +100,10 @@ public:
 	int num_tertiary_banks;
 
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
+
+	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
+	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -146,6 +149,7 @@ public:
 	int ai_class;
 
 	flagset<Ship::Weapon_Flags> flags;
+
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
 	EModelAnimationPosition secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];

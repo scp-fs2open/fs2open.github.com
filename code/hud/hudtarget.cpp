@@ -7248,10 +7248,11 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 	//primary weapons
 	if ( draw_primary_models ) {
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 			auto bank = &model_get(sip->model_num)->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
-				if ( ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) ) {
+				if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
 					//vm_vec_sub(&subobj_pos, &Eye_position, &subobj_pos);
 					//g3_rotate_vertex(&draw_point, &bank->pnt[k]);
@@ -7267,8 +7268,6 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 					//renderCircle(xc, yc, 25);
 				} else {
-					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
@@ -7278,9 +7277,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					vec3d world_position;
 					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
 
-					pm->gun_submodel_rotation = sp->primary_rotate_ang[i];
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
-					pm->gun_submodel_rotation = 0.0f;
+					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &object_orient, &world_position);
 				}
 			}
 		}

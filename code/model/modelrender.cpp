@@ -1262,17 +1262,6 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		ang = smi->angs;
 	}
 
-	// Add barrel rotation if needed
-	if ( sm->gun_rotation ) {
-		if ( pm->gun_submodel_rotation > PI2 ) {
-			pm->gun_submodel_rotation -= PI2;
-		} else if ( pm->gun_submodel_rotation < 0.0f ) {
-			pm->gun_submodel_rotation += PI2;
-		}
-
-		ang.b += pm->gun_submodel_rotation;
-	}
-
 	// Compute final submodel orientation by using the orientation matrix
 	// and the rotation angles.
 	// By using this kind of computation, the rotational angles can always
@@ -2496,14 +2485,18 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render,
-                            bool sort)
+void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render, bool sort)
+{
+	model_render_immediate(render_info, model_num, -1, orient, pos, render, sort);
+}
+
+void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render, bool sort)
 {
 	model_draw_list model_list;
 
 	model_list.init();
 
-	model_render_queue(render_info, &model_list, model_num, orient, pos);
+	model_render_queue(render_info, &model_list, model_num, model_instance_num, orient, pos);
 
 	model_list.init_render(sort);
 
@@ -2540,6 +2533,11 @@ void model_render_immediate(model_render_params* render_info, int model_num, mat
 }
 
 void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos)
+{
+	model_render_queue(interp, scene, model_num, -1, orient, pos);
+}
+
+void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
 {
 	int i;
 
@@ -2584,23 +2582,30 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
+		int tentative_num = -1;
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
-			pmi = model_get_instance(shipp->model_instance_num);
+			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			int model_instance_num = object_get_model_instance(objp);
-			if (model_instance_num >= 0) {
-				pmi = model_get_instance(model_instance_num);
-			}
+			tentative_num = object_get_model_instance(objp);
+		}
+
+		if (tentative_num >= 0) {
+			model_instance_num = tentative_num;
 		}
 	}
 
 	// is this a skybox with a rotating submodel?
 	extern int Nmodel_num, Nmodel_instance_num;
-	if (model_num == Nmodel_num && Nmodel_instance_num >= 0)
-		pmi = model_get_instance(Nmodel_instance_num);
+	if (model_num == Nmodel_num && Nmodel_instance_num >= 0) {
+		model_instance_num = Nmodel_instance_num;
+	}
+
+	if (model_instance_num >= 0) {
+		pmi = model_get_instance(model_instance_num);
+	}
 	
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
