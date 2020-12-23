@@ -3756,6 +3756,8 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 	if (pm_base->force_turret_normal)
 		turret->turret_norm = pm_base->orientation.vec.uvec;
 
+	auto save_base_angs = base->angs;
+	auto save_gun_angs = gun->angs;
 	base->angs = gun->angs = vmd_zero_angles;
 
 	base->angs.h = offset_base_h;
@@ -3792,6 +3794,10 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 	// apart, so this should be close enough.  I think this will start 
 	// causing weird errors when we view from turrets. -John
     turret->flags.set(Model::Subsystem_Flags::Turret_matrix);
+
+	// restore the position of the turret before we entered this function
+	base->angs = save_base_angs;
+	gun->angs = save_gun_angs;
 }
 
 // Tries to move joints so that the turret points to the point dst.
