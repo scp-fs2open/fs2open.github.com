@@ -1,4 +1,4 @@
-name: Build distribution package
+name: Build Release package
 
 on:
   push:

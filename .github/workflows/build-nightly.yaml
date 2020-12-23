@@ -1,4 +1,4 @@
-name: Build distribution package
+name: Build Nightly package
 
 on:
   push:
