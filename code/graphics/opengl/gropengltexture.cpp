@@ -1551,7 +1551,7 @@ static fbo_t* opengl_get_free_fbo() {
 	fbo->fbo_id = next_fbo_id;
 	++next_fbo_id;
 
-	return &RenderTarget.back();
+	return fbo;
 }
 
 static void opengl_free_fbo_slot(int id) {
