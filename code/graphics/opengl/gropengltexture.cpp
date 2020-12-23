@@ -1513,7 +1513,6 @@ struct fbo_t {
 	int working_handle = -1;
 	int is_static = 0;
 	int fbo_id = -1;
-	bool free = true;
 };
 
 static SCP_vector<fbo_t> RenderTarget;
@@ -1535,17 +1534,21 @@ static fbo_t* opengl_get_fbo(int id) {
 }
 
 static fbo_t* opengl_get_free_fbo() {
+	fbo_t* fbo = nullptr;
+
 	for (auto& target : RenderTarget) {
-		if (target.free) {
+		if (target.fbo_id == 0) {
 			// This slot is free
-			return &target;
+			fbo = &target;
 		}
 	}
 
-	RenderTarget.push_back(fbo_t());
-	auto& last = RenderTarget.back();
-	last.fbo_id = next_fbo_id;
-	last.free = false;
+	if (fbo == nullptr) {
+		RenderTarget.push_back(fbo_t());
+		fbo = &RenderTarget.back();
+	}
+	
+	fbo->fbo_id = next_fbo_id;
 	++next_fbo_id;
 
 	return &RenderTarget.back();
@@ -1556,13 +1559,8 @@ static void opengl_free_fbo_slot(int id) {
 
 	Assertion(fbo != nullptr, "Invalid id passed to opengl_free_fbo_slot!");
 
-	//We need to reset the FBO but keep it's ID, otherwise they'll get reassigned with ID 0
-	int fbo_id = fbo->fbo_id;
-
 	// Reset this slot using the default constructor
 	*fbo = fbo_t();
-
-	fbo->fbo_id = fbo_id;
 }
 
 int opengl_check_framebuffer()
