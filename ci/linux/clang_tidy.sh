@@ -14,7 +14,7 @@ fi
 
 # In order to get a proper diff without irrelevant changes, we need to determine where we branched off from the base
 # branch
-$BASE_COMMIT=$(git merge-base $1 $2)
+BASE_COMMIT=$(git merge-base $1 $2)
 
 echo "Running clang-tidy on changed files"
 git diff -U0 --no-color "$BASE_COMMIT..$2" | \
