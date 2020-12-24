@@ -6107,7 +6107,7 @@ float compute_incoming_payload(object *target_objp)
 //			OR: secondary los flag is set but no line of sight is availabe
 //	Note: If player is attacking a ship, that ship is allowed to fire at player.  Otherwise, we get in a situation in which
 //	player is attacking a large ship, but that large ship is not defending itself with missiles.
-int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
+int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, ship_subsys* turret)
 {
 	int	num_homers = 0;
 
@@ -6123,7 +6123,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum, 10.0f)) {
+			if (!check_los(objnum, target_objnum, 10.0f, secondary_bank, turret)) {
 				return 0;
 			}
 		}
@@ -6170,9 +6170,53 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	threshold defines the minimum radius for an object to be considered relevant for LoS
-bool check_los(int objnum, int target_objnum, float threshold) {
+bool check_los(int objnum, int target_objnum, float threshold, int secondary_bank, ship_subsys* turret) {
+
+	//Do both checks over an XOR-Check for more detailed messages
+	Assertion(secondary_bank != -1 || turret != nullptr, "Cannot check line of sight from a model with neither a secondary bank nor a turret set as a source.");
+	Assertion(secondary_bank != -1 && turret != nullptr, "Cannot check line of sight from a model with both a secondary bank and a turret set.");
+
+	vec3d start;
+
+	object* firing_ship = &Objects[objnum];
+
+	if (secondary_bank == -1) {
+		vec3d turret_fvec;
+		//It doesn't like not having an fvec output vector, so give it a dummy vector
+		ship_get_global_turret_gun_info(firing_ship, turret, &start, &turret_fvec, 1, nullptr);
+	} else {
+		ship *shipp = &Ships[firing_ship->instance];
+		ship_weapon *swp = &shipp->weapons;
+		weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[secondary_bank]];
+		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+		
+		vec3d pnt = pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
+		vec3d missile_point;
+
+		//Following Section taken from ship.cpp ship_fire_secondary()
+		polymodel* weapon_model = nullptr;
+		if (wip->external_model_num >= 0) {
+			weapon_model = model_get(wip->external_model_num);
+		}
+
+		if (weapon_model && weapon_model->n_guns) {
+			int external_bank = secondary_bank + MAX_SHIP_PRIMARY_BANKS;
+			if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
+				if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
+					swp->external_model_fp_counter[external_bank] = 0;
+				vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
+				swp->external_model_fp_counter[external_bank]++;
+			}
+			else {
+				// make it use the 0 index slot
+				vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
+			}
+		}
+		vm_vec_unrotate(&missile_point, &pnt, &firing_ship->orient);
+		vm_vec_add(&start, &missile_point, &firing_ship->pos);
+	}
+
 	vec3d& end = Objects[target_objnum].pos;
-	vec3d& start = Objects[objnum].pos;
 
 	object* objp;
 
@@ -6310,7 +6354,7 @@ int ai_fire_secondary_weapon(object *objp)
 		
 		//	Note, maybe don't fire if firing at player and any homers yet fired.
 		//	Decreasing chance to fire the more homers are incoming on player.
-		if (check_ok_to_fire(OBJ_INDEX(objp), aip->target_objnum, wip)) {
+		if (check_ok_to_fire(OBJ_INDEX(objp), aip->target_objnum, wip, current_bank, nullptr)) {
 			if (ship_fire_secondary(objp)) {
 				rval = 1;
 				swp->next_secondary_fire_stamp[current_bank] = timestamp(500);
