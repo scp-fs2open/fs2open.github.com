@@ -12,10 +12,12 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "anim/packunpack.h"
 #include "globalincs/globals.h"
+
+#include "anim/packunpack.h"
 #include "graphics/generic.h"
 #include "hud/hud.h"
+#include "utils/unicode.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -320,5 +322,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void cmd_brief_reset();
 
 int brief_time_to_advance(int stage_num);
+
+bool brief_verify_color_tag(unicode::codepoint_t color_tag);
 
 #endif
