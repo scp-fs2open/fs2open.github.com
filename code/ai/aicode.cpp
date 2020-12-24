@@ -5775,6 +5775,15 @@ int ai_fire_primary_weapon(object *objp)
 		aip->primary_select_timestamp = timestamp(5 * 1000);	//	Maybe change primary weapon five seconds from now.
 	}
 
+	//We can only check LoS if we have a target defined
+	weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
+	if (aip->target_objnum != -1 && (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los])) {
+		//Check if th AI has Line of Sight and is allowed to fire
+		if (!check_los(OBJ_INDEX(objp), aip->target_objnum, 10.0f, swp->current_primary_bank, -1, nullptr)) {
+			return 0;
+		}
+	}
+
 	//	If pointing nearly at predicted collision point of target, bash orientation to be perfectly pointing.
 	float	dot;
 	vec3d	v2t;
@@ -6123,7 +6132,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_exact_los] || wip->wi_flags[Weapon::Info_Flags::Require_exact_los]) {
 			//Check if th AI has Line of Sight and is allowed to fire
-			if (!check_los(objnum, target_objnum, 10.0f, secondary_bank, turret)) {
+			if (!check_los(objnum, target_objnum, 10.0f, -1, secondary_bank, turret)) {
 				return 0;
 			}
 		}
@@ -6170,28 +6179,30 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 //	--------------------------------------------------------------------------
 //  Returns true if *aip has a line of sight to its current target.
 //	threshold defines the minimum radius for an object to be considered relevant for LoS
-bool check_los(int objnum, int target_objnum, float threshold, int secondary_bank, ship_subsys* turret) {
+bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, ship_subsys* turret) {
 
 	//Do both checks over an XOR-Check for more detailed messages
-	Assertion(secondary_bank != -1 || turret != nullptr, "Cannot check line of sight from a model with neither a secondary bank nor a turret set as a source.");
-	Assertion(!(secondary_bank != -1 && turret != nullptr), "Cannot check line of sight from a model with both a secondary bank and a turret set as source.");
+	int sources = (primary_bank != -1 ? 1 : 0) + (secondary_bank != -1 ? 1 : 0) + (turret != nullptr ? 1 : 0);
+	Assertion(sources >= 1, "Cannot check line of sight from a model with neither a primar bank, nor secondary bank nor a turret set as a source.");
+	Assertion(sources <= 1, "Cannot check line of sight from a model with more than one source set.");
 
 	vec3d start;
 
 	object* firing_ship = &Objects[objnum];
 
-	if (secondary_bank == -1) {
+	if (turret != nullptr) {
 		vec3d turret_fvec;
 		//It doesn't like not having an fvec output vector, so give it a dummy vector
 		ship_get_global_turret_gun_info(firing_ship, turret, &start, &turret_fvec, 1, nullptr);
 	} else {
+		bool is_primary = secondary_bank == -1;
 		ship *shipp = &Ships[firing_ship->instance];
 		ship_weapon *swp = &shipp->weapons;
-		weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[secondary_bank]];
+		weapon_info *wip = &Weapon_info[is_primary ? swp->primary_bank_weapons[primary_bank] : swp->secondary_bank_weapons[secondary_bank]];
 		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 		
-		vec3d pnt = pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
-		vec3d missile_point;
+		vec3d pnt = is_primary ? pm->gun_banks[primary_bank].pnt[swp->primary_next_slot[primary_bank]] : pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
+		vec3d firing_point;
 
 		//Following Section taken from ship.cpp ship_fire_secondary()
 		polymodel* weapon_model = nullptr;
@@ -6200,7 +6211,7 @@ bool check_los(int objnum, int target_objnum, float threshold, int secondary_ban
 		}
 
 		if (weapon_model && weapon_model->n_guns) {
-			int external_bank = secondary_bank + MAX_SHIP_PRIMARY_BANKS;
+			int external_bank = is_primary ? primary_bank : secondary_bank + MAX_SHIP_PRIMARY_BANKS;
 			if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
 				if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
 					swp->external_model_fp_counter[external_bank] = 0;
@@ -6212,8 +6223,8 @@ bool check_los(int objnum, int target_objnum, float threshold, int secondary_ban
 				vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
 			}
 		}
-		vm_vec_unrotate(&missile_point, &pnt, &firing_ship->orient);
-		vm_vec_add(&start, &missile_point, &firing_ship->pos);
+		vm_vec_unrotate(&firing_point, &pnt, &firing_ship->orient);
+		vm_vec_add(&start, &firing_point, &firing_ship->pos);
 	}
 
 	vec3d& end = Objects[target_objnum].pos;
