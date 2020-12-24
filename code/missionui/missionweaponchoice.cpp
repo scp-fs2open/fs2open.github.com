@@ -3858,7 +3858,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	if ( update ) {
 		if ( MULTIPLAYER_HOST ) {
 			int size;
-			ubyte wss_data[MAX_PACKET_SIZE-20];
+			ubyte wss_data[MAX_PACKET_SIZE];
 
 			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);			
 			Assert(pl != NULL);

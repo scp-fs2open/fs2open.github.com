@@ -287,9 +287,6 @@ fix FrametimeOverall = 0;
 
 int	Framerate_cap = 120;
 
-// to determine if networking should be disabled, needs to be done first thing
-int Networking_disabled = 0;
-
 // for the model page in system
 extern void model_page_in_start();
 
@@ -6423,12 +6420,6 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 int game_main(int argc, char *argv[])
 {
 	int state;
-
-	// check if networking should be disabled, this could probably be done later but the sooner the better
-	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
-	if ( Ship_info.size() > MAX_SHIP_CLASSES_MULTI ) {
-		Networking_disabled = 1;
-	}
 
 #ifdef _WIN32
 	// Find out how much RAM is on this machine

@@ -2447,7 +2447,7 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!object_is_docked(p_objp) || (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]))
 		{
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
-				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
 		// also add this ship to the multi ship tracking and interpolation struct
 		multi_ship_record_add_ship(objnum);

@@ -926,7 +926,7 @@ void delete_player(int player_num,int kicked_reason)
 						Netgame.host = &Net_players[idx];
 
 						// send a packet
-						send_host_captain_change_packet(Net_players[idx].player_id, 0);
+						send_host_captain_change_packet(Net_players[idx].player_id, false);
 
 						found_new_host = 1;
 						break;
