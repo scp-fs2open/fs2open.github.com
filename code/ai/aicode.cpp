@@ -6174,7 +6174,7 @@ bool check_los(int objnum, int target_objnum, float threshold, int secondary_ban
 
 	//Do both checks over an XOR-Check for more detailed messages
 	Assertion(secondary_bank != -1 || turret != nullptr, "Cannot check line of sight from a model with neither a secondary bank nor a turret set as a source.");
-	Assertion(secondary_bank != -1 && turret != nullptr, "Cannot check line of sight from a model with both a secondary bank and a turret set.");
+	Assertion(!(secondary_bank != -1 && turret != nullptr), "Cannot check line of sight from a model with both a secondary bank and a turret set as source.");
 
 	vec3d start;
 
