@@ -7975,13 +7975,13 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 	}
 
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
-		Assertion(fire_info->bank > 0, "Bank for fighter BEAM is invalid!");
-		Assertion(fire_info->point > 0, "Bank point for fighter BEAM is invalid!");
+		Assertion(fire_info->bank >= 0, "Bank for fighter BEAM is invalid!");
+		Assertion(fire_info->point >= 0, "Bank point for fighter BEAM is invalid!");
 
 		if ( (fire_info->bank < 0) || (fire_info->point < 0) ) {
 			return;
 		}
-	} else if (fire_info->shooter) {
+	} else if (fire_info->shooter && fire_info->turret) {
 		shooter_subsys_index = ship_get_index_from_subsys(fire_info->turret, OBJ_INDEX(fire_info->shooter));
 
 		Assertion(shooter_subsys_index >= 0, "BEAM fired from unknown subsystem!");
@@ -8190,7 +8190,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			fire_info.turret = &shipp->fighter_beam_turret_data;
 			fire_info.bank = bank;
 			fire_info.point = point;
-		} else {
+		} else if (shooter_subsys_index >= 0) {
 			fire_info.turret = ship_get_indexed_subsys(shipp, shooter_subsys_index);
 		}
 	}
