@@ -3301,8 +3301,23 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	}
 	ADD_SHORT( static_cast<short>(Weapons[objp->instance].weapon_info_index) );
 	ADD_SHORT( static_cast<short>(subsys_index) );
-	ADD_FLOAT( ssp->submodel_instance_1->angs.h );
-	ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+
+	// since the two following values can accidentally dereference nullptrs, send 0 when null
+	constexpr float zero_value = 0.0f;
+
+	if (ssp->submodel_instance_1 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+	}
+	else {
+		ADD_FLOAT( zero_value );
+	}
+
+	if (ssp->submodel_instance_2 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+	}
+	else {
+		ADD_FLOAT(zero_value);
+	}
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3369,8 +3384,14 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	// bash the position and orientation of the turret
-	ssp->submodel_instance_1->angs.h = heading;
-	ssp->submodel_instance_2->angs.p = pitch;
+	// but only if the submodels are not null
+	if (ssp->submodel_instance_1 != nullptr) {
+		ssp->submodel_instance_1->angs.h = heading;
+	}
+	
+	if (ssp->submodel_instance_2 != nullptr) {
+		ssp->submodel_instance_2->angs.p = pitch;
+	}
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
