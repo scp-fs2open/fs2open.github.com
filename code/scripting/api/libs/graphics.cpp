@@ -1394,7 +1394,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	"Draws a monochrome image from a texture or file using the current color",
 	"boolean",
 	"Whether image was drawn",
-	gameversion::version(20, 1),
+	gameversion::version(21, 0),
 	"gr.drawImage now has support for drawing monochrome images with full UV scaling support")
 {
 	if(!Gr_inited)
