@@ -642,7 +642,6 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	vec3d gpos, gvec;
 	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
-	ship *shipp = &Ships[objp->instance];
 
 	//Rotate turret position with ship
 	vm_vec_unrotate(&gpos, &tp->pnt, &objp->orient);
@@ -656,7 +655,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	// Find direction of turret
 	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 
-	int ret_val = model_rotate_gun(pm, tp, &objp->orient, &sso->ss->submodel_instance_1->angs, &sso->ss->submodel_instance_2->angs, &objp->pos, &pos, shipp->objnum, reset);
+	int ret_val = model_rotate_gun(objp, pm, pmi, tp, &pos, reset);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;

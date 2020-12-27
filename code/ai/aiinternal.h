@@ -32,6 +32,6 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip);
 bool check_los(int objnum, int target_objnum, float threshold);
 
 //Does all the stuff needed to aim and fire a turret.
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum);
+void ai_fire_from_turret(ship *shipp, ship_subsys *ss);
 
 #endif
