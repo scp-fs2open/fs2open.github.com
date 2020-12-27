@@ -5457,11 +5457,22 @@ void game_enter_state( int old_state, int new_state )
 			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != nullptr)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
 				Main_hall_netgame_started = 1;
 				main_hall_do_multi_ready();
-			}
 
-			if(Cmdline_start_mission) {
+				if (Cmdline_start_mission) {
+					mprintf(( "Ignoring the -start_mission commandline because it is incompatible with multiplayer.\n"));
+					Cmdline_start_mission = nullptr;
+				}
+
+			} else if(Cmdline_start_mission) {
 				strcpy_s(Game_current_mission_filename, Cmdline_start_mission);
 				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
+
+				// force to singleplayer, because this is a singleplayer only commmandline option
+				if (Game_mode & GM_MULTIPLAYER) {
+					Game_mode = GM_NORMAL;
+					mprintf(( "Forcing to single player mode.  Multiplayer is not compatible with the -start_mission commandline.\n" ));
+				}
+
 				gameseq_post_event(GS_EVENT_START_GAME);
 				// This stops the mission from loading again when you go back to the hall
 				Cmdline_start_mission = nullptr;
