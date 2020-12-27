@@ -1388,7 +1388,7 @@ ADE_FUNC(drawImage,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC_DEPRECATED(drawMonochromeImage,
+ADE_FUNC(drawMonochromeImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]",
 	"Draws a monochrome image from a texture or file using the current color",
