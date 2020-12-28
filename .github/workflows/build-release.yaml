@@ -254,3 +254,13 @@ jobs:
           asset_name: ${{ steps.generate_package.outputs.package_name }}
           # All builds are zips at the moment so this is fine for now
           asset_content_type: application/zip
+      - name: Upload debug symbols
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
+          asset_path: ${{ steps.generate_package.outputs.debug_path }}
+          asset_name: ${{ steps.generate_package.outputs.debug_name }}
+          # All builds are zips at the moment so this is fine for now
+          asset_content_type: application/zip

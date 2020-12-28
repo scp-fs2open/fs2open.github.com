@@ -19,6 +19,9 @@ elif [ "$OS" = "Windows" ]; then
     echo "::set-output name=package_name::$(get_package_name)-builds-$ARCH-$SIMD.zip"
 
     7z a "$(get_package_name)-debug-$ARCH-$SIMD.7z" "*.pdb"
+
+    echo "::set-output name=debug_path::$(pwd)/$(get_package_name)-debug-$ARCH-$SIMD.zip"
+    echo "::set-output name=debug_name::$(get_package_name)-debug-$ARCH-$SIMD.zip"
 else
     echo "Invalid OS: $OS"
 fi
