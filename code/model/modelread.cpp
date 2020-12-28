@@ -472,6 +472,11 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 	pause_parse();
 	Mp = buf;
 
+	// Note that we can't simply return from within this block
+	// because we always need to call unpause_parse before we
+	// leave the function.  A one-iteration loop with break
+	// statements allows the code to jump to the end.  Alternatively,
+	// goto could have been used.
 	do {
 		// skip white space and equal sign
 		while (isspace(*Mp) || (*Mp == '='))
