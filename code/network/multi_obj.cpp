@@ -2059,6 +2059,13 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 			object *objp = multi_get_network_object( dock_sig );
 			if(objp != nullptr){
 				Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
+				if ((objp->instance > -1) && (objp->type == OBJ_SHIP)) {
+					Ai_info[shipp->ai_index].goals[0].target_name = Ships[objp->instance].ship_name;
+					Ai_info[shipp->ai_index].goals[0].target_signature = objp->signature;
+				} else {
+					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
+					Ai_info[shipp->ai_index].goals[0].target_signature = 0;
+				}
 			}
 		}			
 	} 
