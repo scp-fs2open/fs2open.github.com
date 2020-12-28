@@ -1833,7 +1833,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	}
 #endif
 
-	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip)) {
+	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip, -1, turret)) {
 		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
 		turret->turret_last_fire_direction = *turret_fvec;
 
