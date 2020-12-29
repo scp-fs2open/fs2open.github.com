@@ -1,9 +1,9 @@
-name: Build Nightly package
+name: Build Test package
 
 on:
   push:
-    tags:
-      - 'nightly_*'
+    branches:
+      - 'test/*'
 
 env:
   QT_VERSION: 5.12.9
@@ -34,6 +34,12 @@ jobs:
         name: Checkout
         with:
           submodules: true
+      - name: Set up test version
+        shell: bash
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs\/heads\/test\/(.*)$ ]]
+          # Override the revision string so that the builds are named correctly
+          echo "set(FSO_VERSION_REVISION_STR ${BASH_REMATCH[1]})" > "version_override.cmake"
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -67,11 +73,12 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-dd9d8cf
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         uses: actions/download-artifact@v1
         with:
@@ -92,7 +99,7 @@ jobs:
           INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
           DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
-        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh nightly
+        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh test
 
   build_windows:
     strategy:
@@ -107,6 +114,12 @@ jobs:
         name: Checkout
         with:
           submodules: true
+      - name: Set up test version
+        shell: bash
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs\/heads\/test\/(.*)$ ]]
+          # Override the revision string so that the builds are named correctly
+          echo "set(FSO_VERSION_REVISION_STR ${BASH_REMATCH[1]})" > "version_override.cmake"
       - name: Cache Qt
         id: cache-qt-win
         uses: actions/cache@v1
@@ -177,11 +190,12 @@ jobs:
         arch: [Win32, x64]
         simd: [SSE2]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
+          ref: '${{ github.ref }}'
       - name: Download Release builds
         uses: actions/download-artifact@v1
         with:
@@ -207,4 +221,4 @@ jobs:
           INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
           DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
-        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh nightly
+        run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh test

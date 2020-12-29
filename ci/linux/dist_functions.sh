@@ -1,11 +1,16 @@
 function get_package_name() {
-  if git describe --match 'nightly_*' --exact-match >/dev/null; then
+  if git describe --match 'nightly_*' --exact-match 2>/dev/null >/dev/null; then
     echo -n "$(git describe --match "nightly_*" --exact-match)"
     return
   fi
 
-  if git describe --match 'release_*' --exact-match >/dev/null; then
+  if git describe --match 'release_*' --exact-match 2>/dev/null >/dev/null; then
     echo -n "$(git describe --match "release_*" --exact-match | sed 's/release_/fs2_open_/i')"
+    return
+  fi
+
+  if [[ "$(git branch --show-current)" =~ ^test\/(.*)$ ]]; then
+    echo -n "test_${BASH_REMATCH[1]}"
     return
   fi
 
@@ -13,7 +18,7 @@ function get_package_name() {
 }
 
 function get_version_name() {
-  if git describe --match 'nightly_*' --exact-match >/dev/null; then
+  if git describe --match 'nightly_*' --exact-match 2>/dev/null >/dev/null; then
     local tag_name=$(git describe --match "nightly_*" --exact-match)
 
     # Use the bash regex matching for getting the relevant part of the tag name
@@ -23,12 +28,17 @@ function get_version_name() {
     return
   fi
 
-  if git describe --match 'release_*' --exact-match >/dev/null; then
+  if git describe --match 'release_*' --exact-match 2>/dev/null >/dev/null; then
     local tag_name=$(git describe --match "release_*" --exact-match)
 
     # Use the bash regex matching for getting the relevant part of the tag name
     [[ $tag_name =~ ^release_(.*)$ ]]
 
+    echo -n "${BASH_REMATCH[1]}"
+    return
+  fi
+
+  if [[ "$(git branch --show-current)" =~ ^test\/(.*)$ ]]; then
     echo -n "${BASH_REMATCH[1]}"
     return
   fi
