@@ -478,8 +478,8 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 	// statements allows the code to jump to the end.  Alternatively,
 	// goto could have been used.
 	do {
-		// skip white space and equal sign
-		while (isspace(*Mp) || (*Mp == '='))
+		// skip white space and equal sign or colon
+		while (isspace(*Mp) || (*Mp == '=') || (*Mp == ':'))
 			Mp++;
 
 		if (require_brackets)
@@ -1392,9 +1392,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				if ( strstr(pm->submodel[n].name, "turret") || strstr(pm->submodel[n].name, "gun") || strstr(pm->submodel[n].name, "cannon")) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
 					pm->submodel[n].can_move = true;
-				} else
-
-				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+				} else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
 					if (strstr(pm->submodel[n].name, "thruster")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
@@ -1602,14 +1600,14 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				// KeldorKatarn, with modifications
-				if ( (p = strstr(props, "$uvec:")) != nullptr ) {
+				if ( (p = strstr(props, "$uvec")) != nullptr ) {
 					matrix submodel_orient;
 
-					if (get_user_vec3d_value(p + 6, &submodel_orient.vec.uvec, false)) {
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false)) {
 
-						if ((p = strstr(props, "$fvec:")) != nullptr) {
+						if ((p = strstr(props, "$fvec")) != nullptr) {
 
-							if (get_user_vec3d_value(p + 6, &submodel_orient.vec.fvec, false)) {
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false)) {
 
 								vm_vec_normalize(&submodel_orient.vec.uvec);
 								vm_vec_normalize(&submodel_orient.vec.fvec);
@@ -1627,8 +1625,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 							} else {
 								Warning(LOCATION,
-									"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
-									"\n\n$fvec: should be followed by 3 numbers separated with commas.",
+									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
+									"\n\n$fvec should be followed by 3 numbers separated with commas.",
 									pm->submodel[n].name, filename);
 							}
 						} else {
@@ -1636,8 +1634,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						}
 					} else {
 						Warning(LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
-							"\n\n$uvec: should be followed by 3 numbers separated with commas.",
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
+							"\n\n$uvec should be followed by 3 numbers separated with commas.",
 							pm->submodel[n].name, filename);
 					}
 				} else {

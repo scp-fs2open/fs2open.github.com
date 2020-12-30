@@ -579,6 +579,28 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	return a;
 }
 
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+{
+	float a, dot;
+	vec3d t;
+
+	// to avoid round-off errors...
+	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
+	dot = vm_vec_dot(v0, v1);
+	CLAMP(dot, -1.0f, 1.0f);
+
+	a = acosf(dot);
+
+	if (fvec) {
+		vm_vec_cross(&t,v0,v1);
+		if ( vm_vec_dot(&t,fvec) < 0.0 ) {
+			a = -a;
+		}
+	}
+
+	return a;
+}
+
 // helper function that fills in matrix m based on provided sine and cosine values. 
 static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {

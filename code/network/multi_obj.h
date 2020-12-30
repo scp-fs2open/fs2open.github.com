@@ -53,8 +53,8 @@ struct weapon;
 #define OO_SUBSYS_TRANSLATION		(1<<7)		// Only for backwards compatibility of future builds.
 
 // combo values
-#define OO_SUBSYS_ROTATION_1	(OO_SUBSYS_ROTATION_1b | OO_SUBSYS_ROTATION_1h || OO_SUBSYS_ROTATION_1p)
-#define OO_SUBSYS_ROTATION_2	(OO_SUBSYS_ROTATION_2b | OO_SUBSYS_ROTATION_2h || OO_SUBSYS_ROTATION_2p)
+#define OO_SUBSYS_ROTATION_1	(OO_SUBSYS_ROTATION_1b | OO_SUBSYS_ROTATION_1h | OO_SUBSYS_ROTATION_1p)
+#define OO_SUBSYS_ROTATION_2	(OO_SUBSYS_ROTATION_2b | OO_SUBSYS_ROTATION_2h | OO_SUBSYS_ROTATION_2p)
 
 
 // ---------------------------------------------------------------------------------------------------
