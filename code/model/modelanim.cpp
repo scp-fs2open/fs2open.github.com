@@ -537,7 +537,6 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	else if (angs.b < 0.0f)
 		angs.b += PI2;
 
-	smi->canonical_angs = angs;
 	vm_angles_2_matrix(&smi->canonical_orient, &angs);
 }
 
@@ -599,8 +598,10 @@ bool model_anim_start_type(ship_subsys *pss, AnimationTriggerType animation_type
 			// rotate instantly; don't use the queue
 			if (instant) {
 				trigger->set_to_final(&psub->triggers[i]);
-				trigger->apply_trigger_angles(&pss->submodel_instance_1->canonical_angs);
-				vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &pss->submodel_instance_1->canonical_angs);
+
+				angles angs;
+				trigger->apply_trigger_angles(&angs);
+				vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &angs);
 
 				retval = true;
 			}
@@ -892,8 +893,10 @@ void model_anim_set_initial_states(ship *shipp)
 					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 					tr->set_to_initial(&psub->triggers[i]);
-					tr->apply_trigger_angles(&pss->submodel_instance_1->canonical_angs);
-					vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &pss->submodel_instance_1->canonical_angs);
+
+					angles angs;
+					tr->apply_trigger_angles(&angs);
+					vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &angs);
 				}
 			}
 		}

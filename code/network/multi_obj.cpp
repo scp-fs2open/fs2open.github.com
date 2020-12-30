@@ -1314,10 +1314,14 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
-				if (subsystem->submodel_instance_1)
-					angs_1 = &subsystem->submodel_instance_1->canonical_angs;
-				if (subsystem->submodel_instance_2)
-					angs_2 = &subsystem->submodel_instance_2->canonical_angs;
+				if (subsystem->submodel_instance_1) {
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(angs_1, &subsystem->submodel_instance_1->canonical_orient);
+				}
+				if (subsystem->submodel_instance_2) {
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(angs_2, &subsystem->submodel_instance_2->canonical_orient);
+				}
 
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
@@ -1349,6 +1353,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
 					subsys_data.push_back(angs_2->p / PI2);
 				}
+
+				// clang says deleting null pointer has no effect
+				delete angs_1;
+				delete angs_2;
 			}
 			i++;
 		}
@@ -1925,11 +1933,15 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 				angles *angs_2 = nullptr;
 				if (subsysp->submodel_instance_1) {
 					prev_angs_1 = new angles;
-					angs_1 = &subsysp->submodel_instance_1->canonical_angs;
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
 				}
 				if (subsysp->submodel_instance_2) {
 					prev_angs_2 = new angles;
-					angs_2 = &subsysp->submodel_instance_2->canonical_angs;
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
@@ -1973,11 +1985,13 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
 					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
 					delete prev_angs_1;
+					delete angs_1;
 				}
 				if (flags[i] & OO_SUBSYS_ROTATION_2) {
 					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
 					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
 					delete prev_angs_2;
+					delete angs_2;
 				}
 
 				subsysp = GET_NEXT(subsysp);

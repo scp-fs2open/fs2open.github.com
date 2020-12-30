@@ -95,9 +95,6 @@ struct submodel_instance
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
-	// NOTE: IF THE ANGLES ARE MODIFIED, THE ORIENT SHOULD BE MODIFIED TOO!
-
-	angles	canonical_angs = vmd_zero_angles;
 	matrix	canonical_orient = vmd_identity_matrix;
 	matrix	canonical_prev_orient = vmd_identity_matrix;
 

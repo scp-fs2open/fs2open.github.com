@@ -19252,8 +19252,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			{
 				if (pm->submodel[mn].gun_rotation)
 				{
-					pmi->submodel[mn].canonical_angs.b = shipp->primary_rotate_ang[i];
-					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &pmi->submodel[mn].canonical_angs);
+					angles angs = vmd_zero_angles;
+					angs.b = shipp->primary_rotate_ang[i];
+					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
 				}
 			}
 		}

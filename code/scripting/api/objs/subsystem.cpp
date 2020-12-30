@@ -119,7 +119,6 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	{
 		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
-		smi->canonical_angs = *mh->GetAngles();
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
@@ -143,7 +142,6 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	{
 		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
-		smi->canonical_angs = *mh->GetAngles();
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));

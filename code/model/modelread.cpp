@@ -1470,18 +1470,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].movement_axis = vmd_z_vector;
 				}
 				else if (movement_axis_id == MOVEMENT_AXIS_OTHER) {
-					if ((p = strstr(props, "$movement_axis_point")) != nullptr) {
+					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
 						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
 							vm_vec_normalize(&pm->submodel[n].movement_axis);
 						}
 						else {
-							Warning(LOCATION, "Failed to parse $movement_axis_point on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
 							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 							movement_axis_id = MOVEMENT_AXIS_NONE;
 						}
 					}
 					else {
-						Warning(LOCATION, "A $movement_axis_point was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						movement_axis_id = MOVEMENT_AXIS_NONE;
 					}
@@ -3498,23 +3498,31 @@ void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 	switch (sm->movement_axis_id)
 	{
 		case MOVEMENT_AXIS_X:
-			smi->canonical_angs.p = smi->cur_angle;
-			vm_angles_2_matrix(&smi->canonical_orient, &smi->canonical_angs);
+		{
+			angles angs = vmd_zero_angles;
+			angs.p = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
 			break;
+		}
 
 		case MOVEMENT_AXIS_Y:
-			smi->canonical_angs.h = smi->cur_angle;
-			vm_angles_2_matrix(&smi->canonical_orient, &smi->canonical_angs);
+		{
+			angles angs = vmd_zero_angles;
+			angs.h = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
 			break;
+		}
 
 		case MOVEMENT_AXIS_Z:
-			smi->canonical_angs.b = smi->cur_angle;
-			vm_angles_2_matrix(&smi->canonical_orient, &smi->canonical_angs);
+		{
+			angles angs = vmd_zero_angles;
+			angs.b = smi->cur_angle;
+			vm_angles_2_matrix(&smi->canonical_orient, &angs);
 			break;
+		}
 
 		default:
 			vm_quaternion_rotate(&smi->canonical_orient, smi->cur_angle, &sm->movement_axis);
-			vm_extract_angles_matrix_alternate(&smi->canonical_angs, &smi->canonical_orient);
 			break;
 	}
 }
@@ -3790,8 +3798,6 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 
 	auto save_base_angle = base->cur_angle;
 	auto save_gun_angle = gun->cur_angle;
-	auto save_base_angs = base->canonical_angs;
-	auto save_gun_angs = gun->canonical_angs;
 	auto save_base_orient = base->canonical_orient;
 	auto save_gun_orient = gun->canonical_orient;
 
@@ -3835,8 +3841,6 @@ void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subs
 	// restore the position of the turret before we entered this function
 	base->cur_angle = save_base_angle;
 	gun->cur_angle = save_gun_angle;
-	base->canonical_angs = save_base_angs;
-	gun->canonical_angs = save_gun_angs;
 	base->canonical_orient = save_base_orient;
 	gun->canonical_orient = save_gun_orient;
 }
@@ -4494,12 +4498,10 @@ void model_update_instance(polymodel *pm, polymodel_instance *pmi, const submode
 			r_smi->blown_off = false;
 			if ( copy_from ) {
 				r_smi->cur_angle = copy_from->cur_angle;
-				r_smi->canonical_angs = copy_from->canonical_angs;
 				r_smi->canonical_orient = copy_from->canonical_orient;
 				r_smi->canonical_prev_orient = copy_from->canonical_prev_orient;
 			} else {
 				r_smi->cur_angle = smi->cur_angle;
-				r_smi->canonical_angs = smi->canonical_angs;
 				r_smi->canonical_orient = smi->canonical_orient;
 				r_smi->canonical_prev_orient = smi->canonical_prev_orient;
 			}
@@ -4516,7 +4518,6 @@ void model_update_instance(polymodel *pm, polymodel_instance *pmi, const submode
 	// Set the angles.
 	if ( copy_from ) {
 		smi->cur_angle = copy_from->cur_angle;
-		smi->canonical_angs = copy_from->canonical_angs;
 		smi->canonical_orient = copy_from->canonical_orient;
 		smi->canonical_prev_orient = copy_from->canonical_prev_orient;
 	}
@@ -4665,7 +4666,6 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 
 	// copy submodel angs
 	float save_angle = smi->cur_angle;
-	angles save_angs = smi->canonical_angs;
 	matrix save_orient = smi->canonical_orient;
 
 	// find two points rotated into model RF when angs set to 0
@@ -4682,7 +4682,6 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 
 	// reset submodel angs
 	smi->cur_angle = save_angle;
-	smi->canonical_angs = save_angs;
 	smi->canonical_orient = save_orient;
 
 	// find direction vectors of the two lines
