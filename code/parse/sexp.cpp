@@ -16807,7 +16807,12 @@ int sexp_query_orders (int n)
 
 int sexp_seconds_to_waypoint (int n)
 {
-    ship* shipp = sexp_get_ship_from_node(n);
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp) {
+		return -2;
+	}
+	auto shipp = ship_entry->shipp;
+
 	return ship_return_seconds_to_goal(shipp);
 }
 
