@@ -304,6 +304,7 @@ class waypoint_list;
 #define	OP_MISSION_TIME_MSECS				(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define	OP_TIME_DOCKED						(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_UNDOCKED					(0x0009 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define OP_TIME_TO_GOAL						(0x000a | OP_CATEGORY_TIME) // tcrayford
 
 #define	OP_SHIELDS_LEFT						(0x0000 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT						(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -838,7 +839,6 @@ class waypoint_list;
 #define OP_QUERY_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
 #define OP_NODE_TARGETED					(0x0015 | OP_CATEGORY_TRAINING) // FUBAR
 #define OP_IGNORE_KEY						(0x0016 | OP_CATEGORY_TRAINING) // Karajorma
-#define OP_SECONDS_TO_GOAL					(0x0017 | OP_CATEGORY_TRAINING) // tcrayford
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"

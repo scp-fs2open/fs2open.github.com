@@ -775,7 +775,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "special-check",					OP_SPECIAL_CHECK,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,		2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,			2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "seconds-to-goal",				OP_SECONDS_TO_GOAL,	   	         		1,	1,			SEXP_INTEGER_OPERATOR,	}, // tcrayford
+	{ "time-to-goal",					OP_TIME_TO_GOAL,	   	         		1,	1,			SEXP_INTEGER_OPERATOR,	}, // tcrayford
 };
 
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
@@ -16805,7 +16805,7 @@ int sexp_query_orders (int n)
 	return hud_query_order_issued(order_to, order, target, timestamp, order_from, special);
 }
 
-int sexp_seconds_to_waypoint (int n)
+int sexp_time_to_goal(int n)
 {
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->shipp) {
@@ -24502,8 +24502,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_query_orders(node);
 				break;
 
-			case OP_SECONDS_TO_GOAL:
-				sexp_val = sexp_seconds_to_waypoint(node);
+			case OP_TIME_TO_GOAL:
+				sexp_val = sexp_time_to_goal(node);
 				break;
 
 
@@ -26007,7 +26007,7 @@ int query_operator_return_type(int op)
 		case OP_GET_COLGROUP_ID:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_GET_HOTKEY:
-        case OP_SECONDS_TO_GOAL:
+		case OP_TIME_TO_GOAL:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -26835,7 +26835,7 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP_WING;
 
-		case OP_SECONDS_TO_GOAL:
+		case OP_TIME_TO_GOAL:
 			if (argnum == 0)
 				return OPF_SHIP;
 
@@ -31202,6 +31202,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe name of the dockee ship.\r\n"
 		"\t3:\tThe number of times they must have undocked to be true." },
 
+	{ OP_TIME_TO_GOAL, "Time-to-goal (Time operator)\r\n"
+		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
+		"Returns a number value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check waypoint time." },
+
 	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
 		"\tReturns a ship's current engine energy as a percentage.\r\n"
 		"\t1: Ship name\r\n" },
@@ -32259,10 +32264,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tBecomes true when a waypoint is hit that is before the last one hit, which "
 		"indicates they have flown a waypoint twice.\r\n\r\n"
 		"Returns a boolean value.  Takes no arguments." },
-	{ OP_SECONDS_TO_GOAL, "Seconds-to-goal (Number training operator)\r\n"
-		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
-		"Returns a number value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check waypoint time." },
+
 	{ OP_TRAINING_MSG, "Training-msg (Action training operator)\r\n"
 		"\tSends the player a training message.  Uses the same messages as normal messages, "
 		"only they get displayed differently using this operator.  If a secondary message "
