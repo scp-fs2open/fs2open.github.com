@@ -838,6 +838,7 @@ class waypoint_list;
 #define OP_QUERY_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
 #define OP_NODE_TARGETED					(0x0015 | OP_CATEGORY_TRAINING) // FUBAR
 #define OP_IGNORE_KEY						(0x0016 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_SECONDS_TO_GOAL					(0x0017 | OP_CATEGORY_TRAINING) // tcrayford
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
