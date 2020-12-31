@@ -181,6 +181,8 @@ mission_event Mission_events[MAX_MISSION_EVENTS];
 mission_goal Mission_goals[MAX_GOALS];		// structure for the goals of this mission
 static goal_text Goal_text;
 
+SCP_vector<event_comment> Event_comments;
+
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 

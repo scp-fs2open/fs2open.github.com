@@ -955,6 +955,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
+	Event_comments.clear();
+
 	mission_parse_reset_alt();		// alternate ship type names
 	mission_parse_reset_callsign();
 

@@ -5070,6 +5070,35 @@ void parse_event(mission * /*pm*/)
 			}
 		}
 	}
+
+	if (optional_string("$Comments Start")) {
+		// comments are only used in FRED
+		if (Fred_running) {
+			while (optional_string("+Comment:")) {
+				event_comment ec;
+				stuff_string(ec.comment, F_MULTITEXT);
+				lcl_replace_stuff(ec.comment, true);
+
+				ec.path.push_back(Num_mission_events);
+
+				if (optional_string("+Path:")) {
+					int num;
+					while (true) {
+						ignore_gray_space();
+						if (stuff_int_optional(&num, true) != 2) {
+							break;
+						}
+						ec.path.push_back(num);
+					}
+				}
+
+				Event_comments.push_back(std::move(ec));
+			}
+			required_string("$Comments End");
+		} else {
+			skip_to_string("$Comments End");
+		}
+	}
 }
 
 void parse_events(mission *pm)

@@ -17,6 +17,7 @@
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
 #include <localization/fhash.h>
+#include <localization/localize.h>
 #include <mission/missionbriefcommon.h>
 #include <mission/missioncampaign.h>
 #include <mission/missiongoals.h>
@@ -1735,7 +1736,67 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		fso_comment_pop();
+		// save event comments
+		if (save_format != MissionFormat::RETAIL && !Event_comments.empty())
+		{
+			bool at_least_one = false;
+			fso_comment_push(";;FSO 20.1.0;;");
+
+			// see if there is a comment for this event
+			for (const auto &ec : Event_comments)
+			{
+				if (!ec.path.empty() && ec.path.front() == i)
+				{
+					if (!at_least_one)
+					{
+						if (optional_string_fred("$Comments Start", "$Formula:"))
+							parse_comments();
+						else
+							fout_version("\n$Comments Start");
+						at_least_one = true;
+					}
+
+					if (optional_string_fred("+Comment:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Comment:");
+
+					auto copy = ec.comment;
+					lcl_fred_replace_stuff(copy);
+					fout(" %s", copy.c_str());
+
+					if (optional_string_fred("$end_multi_text", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$end_multi_text");
+				}
+
+				if (ec.path.size() > 1)
+				{
+					if (optional_string_fred("+Path:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Path:");
+
+					bool comma = false;
+					auto it = ec.path.begin();
+					for (++it; it != ec.path.end(); ++it)
+					{
+						if (comma)
+							fout(",");
+						comma = true;
+						fout(" %d", *it);
+					}
+				}
+			}
+
+			if (optional_string_fred("$Comments End", "$Formula:"))
+				parse_comments();
+			else
+				fout_version("\n$Comments End");
+
+			fso_comment_pop();
+		}
 	}
 
 	fso_comment_pop(true);

@@ -121,6 +121,8 @@ QString node_image_to_resource_name(NodeImage image) {
 		return ":/images/data90.png";
 	case NodeImage::DATA_95:
 		return ":/images/data95.png";
+	case NodeImage::COMMENT:
+		return ":/images/comment.png";
 	}
 	return ":/images/bitmap1.png";
 }
