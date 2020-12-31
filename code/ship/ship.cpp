@@ -13,6 +13,7 @@
 #include <csetjmp>
 #include <algorithm>
 
+#include "ai/aibig.h"
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
@@ -13159,15 +13160,59 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	int	count = 0;
 	int	i;
 	ship	*shipp;
-
+	weapon_info *wepp;
+	bool flag = true;
 	Assert(objp->type == OBJ_SHIP);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 	shipp = &Ships[objp->instance];
+	ai_info* aip = &Ai_info[shipp->ai_index];
+	
+	float target_range,	weapon_range_max,weapon_range_min;
 
+	if (flag) {
+		vec3d our_position = objp->pos;
+		vec3d target_position;
+		object *target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		if (target->type == OBJ_SHIP) {
+			if (aip->targeted_subsys != NULL) {
+				get_subsystem_pos(&target_position, target, aip->targeted_subsys);
+			}
+			else if (Ship_info[shipp->ship_info_index].is_big_or_huge() ){
+				ai_big_pick_attack_point(target, objp, &target_position, 0.8f);
+			}
+			else {
+				target_position = target->pos;
+			}
+		}
+		else {
+			target_position = target->pos;
+		}
+		target_range = vm_vec_dist_quick(&our_position, &target_position);
+	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
 		if (shipp->weapons.secondary_bank_ammo[i]) {
-			outbanklist[count] = i;
-			outlist[count++] = shipp->weapons.secondary_bank_weapons[i];
+			if (flag) {
+				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
+				weapon_range_min = wepp->WeaponMinRange;
+				weapon_range_max = wepp->weapon_range;
+				//If weapon range is not set in the weapon info, derive it
+				if (weapon_range_max >= 999999999.0f) { 
+					if (wepp->subtype == WP_BEAM) {
+						weapon_range_max = wepp->b_info.range;
+					}
+					else {
+						weapon_range_max = wepp->lifetime * wepp->max_speed;
+					}
+				}
+				if (target_range <= weapon_range_max && target_range >= weapon_range_min) {
+					outbanklist[count] = i;
+					outlist[count++] = shipp->weapons.secondary_bank_weapons[i];
+				}
+			}
+			else {
+				outbanklist[count] = i;
+				outlist[count++] = shipp->weapons.secondary_bank_weapons[i];
+			}
 		}
 
 	return count;
