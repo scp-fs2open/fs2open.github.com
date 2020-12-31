@@ -1255,7 +1255,13 @@ void pilotfile::csg_write_controls()
 {
 	auto it = control_config_get_current_preset();
 
-	cfwrite_string(it->name.c_str(), cfp);
+	if (it != Control_config_presets.end()) {
+		cfwrite_string(it->name.c_str(), cfp);
+
+	} else {
+		Warning(LOCATION, "CSG => Tried to save to campaign file with invalid preset! Using default preset.");
+		cfwrite_string(Control_config_presets[0].name.c_str(), cfp);
+	}
 }
 
 void pilotfile::csg_read_cutscenes() {

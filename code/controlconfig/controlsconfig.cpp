@@ -723,8 +723,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 			break;
 
 		default:
-			// Ignore and complain
-			mprintf(("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.", static_cast<int>(order)));
+			UNREACHABLE("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.\n", static_cast<int>(order));
 			return;
 	}
 
@@ -1089,8 +1088,7 @@ void control_config_toggle_invert()
 		item.second.invert_toggle();
 		break;
 	default:
-		// unhandled
-		mprintf(("Unhandled selItem in control_config_toggle_invert(): %i", static_cast<int>(Selected_item)));
+		UNREACHABLE("Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(Selected_item));
 	}
 }
 
@@ -1239,6 +1237,15 @@ int control_config_accept()
 		}
 
 		SCP_string str = cstr;
+		
+		// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							  [str](CC_preset& p) { return (p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)); });
+
+		if (it != Control_config_presets.end()) {
+			popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+			goto retry;
+		}
 
 		// Check if a preset file with name already exists.  If so, prompt the user
 		CFILE* fp = cfopen((str + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
@@ -1642,8 +1649,7 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 		conflict_id = Conflicts[z].second;
 		break;
 	default:
-		mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
-		Int3();
+		UNREACHABLE("Invalid selItem passed to set_item_color: %i", static_cast<int>(item));
 	}
 
 	if (conflict_id >= 0) {

@@ -21,6 +21,7 @@
 #define CCF_AXIS        0x08    //!< btn is an axis
 #define CCF_HAT         0x04    //!< btn is a hat
 #define CCF_BALL        0x02    //!< btn is a ball
+#define CCF_BUTTON      0x00    //!< btn is actually a button
 
 /*!
  * These are used to index a corresponding axis value from an array.
@@ -319,6 +320,15 @@ enum {
 };
 }
 
+/*!
+ * Where the preset is located in memory
+ */
+enum class Preset_t {
+	hardcode,	// Preset is defined hardcode
+	tbl,		// Preset is defined in controlconfigdefaults.tbl
+	pst			// Preset is defined in a .json
+};
+
 class CCB;
 
 /*!
@@ -451,12 +461,12 @@ public:
 	/*!
 	 * Checks if the given CCB is exactly equal to this
 	 */
-	bool operator==(const CCB&);
+	bool operator==(const CCB&) const;
 
 	/*!
 	 * Checks if the given CCB differs from this
 	 */
-	bool operator!=(const CCB&);
+	bool operator!=(const CCB&) const;
 
 	/*!
 	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
@@ -506,6 +516,13 @@ class CC_preset {
 public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
+	Preset_t type;
+
+public:
+	CC_preset() = default;
+	CC_preset(const CC_preset& A) = default;
+
+	CC_preset& operator=(const CC_preset&);
 };
 
 /*!
@@ -663,8 +680,10 @@ void control_config_use_preset(CC_preset &preset);
 /**
  * @brief Gets the currently used preset
  *
- * @returns a pointer to the current preset, or
- * @returns nullptr if current bindings are not in a preset
+ * @returns an iterator to the current preset, or
+ * @returns Control_config_presets.end() if current bindings are not in a preset
+ *
+ * @note Similar to preset_find_duplicate, this function has additional logic in its search to ignore disabled controls
  */
 SCP_vector<CC_preset>::iterator control_config_get_current_preset();
 
@@ -807,17 +826,17 @@ CID CIDToVal(const char * str);
 
 /**
  * Reverse lookups the CID to get its stringified name
- * @return  Pointer to the stringified name of the CID, or
- * @return  nullptr if not found
+ * @return  The stringified name of the CID, or
+ * @return  "NONE" if not found
  */
-const char * ValToCID(CID id);
+SCP_string ValToCID(CID id);
 
 /**
  * Reverse lookups the CID to get its stringified name
- * @return Pointer to the stringified name of the CID, or
- * @return nullptr if not found, or invalid id
+ * @return The stringified name of the CID, or
+ * @return "NONE" if not found, or invalid id
  */
-const char * ValToCID(int id);
+SCP_string ValToCID(int id);
 
 /**
  * Lookups the given stringified enum to find its value
@@ -826,8 +845,8 @@ char CCFToVal(const char * str);
 
 /**
  * Constructs a enum string from the CCF_FLAGS
- * @return Pointer to the stringified name of the CCF, or
- * @return nullptr if not found, or invalid id
+ * @return The stringified name of the CCF, or
+ * @return "NONE" if not found, or invalid id
  */
 SCP_string ValToCCF(char id);
 
@@ -839,8 +858,8 @@ short InputToVal(CID cid, const char * str);
 /**
  * Constructs a enumstring from the input binding, depending on the CID
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  */
@@ -854,8 +873,8 @@ short MouseToVal(const char * str);
 /**
  * Constructs a enum string from the mouse input
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  * TODO XSTR
  *
  * @note This requires a CCB due to the way things are encoded
@@ -870,8 +889,8 @@ short KeyboardToVal(const char * str);
 /**
  * Constructs an enum string from the key binding
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" f not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
@@ -886,11 +905,38 @@ short JoyToVal(const char * str);
 /**
  * Constructs a enum string from the Joystick input
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
  */
 SCP_string ValToJoy(const CC_bind &bind);
+
+/**
+ * Lookups the given string to find its tab value
+ */
+char CCTabToVal(const char *str);
+
+/**
+ * Reverse lookups the given tab in mCCTabToVal to retrieve the string name
+ *
+ * @return The stringified name of the input, or
+ * @return nullptr if not found, or invalid tab
+ *
+ */
+SCP_string ValToCCTab(char tab);
+
+/**
+ * Lookups the given string to find its CC_type value. =
+ */
+CC_type CCTypeToVal(const char *str);
+
+/**
+ * Reverse lookups the given CC_type to retrieve the string name
+
+ */
+SCP_string ValToCCType(CC_type type);
+
+
 #endif

@@ -622,7 +622,14 @@ void pilotfile::plr_write_controls()
 	handler->startSectionWrite(Section::Controls);
 	
 	auto it = control_config_get_current_preset();
-	handler->writeString("preset", it->name.c_str());
+
+	if (it != Control_config_presets.end()) {
+		handler->writeString("preset", it->name.c_str());
+
+	} else {
+		Warning(LOCATION, "PLR => Tried to save pilotfile with an invalid preset! Using default preset.");
+		handler->writeString("preset", Control_config_presets[0].name.c_str());
+	}
 
 	// For forward compatibility with old versions of FSO, we must still save the preset to the best of our ability.
 	// This is required because the plr_read will trigger an error and halt FSO execution.
