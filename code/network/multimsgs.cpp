@@ -6159,6 +6159,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		for (j = 0; j < shipp->weapons.num_primary_banks; j++) {
 			GET_SHORT(val_short);
 			shipp->weapons.primary_bank_weapons[j] = static_cast<int>(val_short);
+			shipp->weapons.primary_bank_start_ammo[j] = (int)std::lround(Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[j] / Weapon_info[shipp->weapons.primary_bank_weapons[j]].cargo_size);
 		}
 
 		// secondary weapon info
@@ -6167,6 +6168,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 			shipp->weapons.secondary_bank_weapons[j] = static_cast<int>(val_short);
 			GET_SHORT(val_short);
 			shipp->weapons.secondary_bank_ammo[j] = static_cast<int>(val_short);
+			shipp->weapons.secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[shipp->ship_info_index].secondary_bank_ammo_capacity[j] / Weapon_info[shipp->weapons.secondary_bank_weapons[j]].cargo_size);
 		}
 
 		// other flags
