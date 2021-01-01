@@ -841,7 +841,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
-         ade_type_info({"number", "number", "number", "number"}),
+         "number, number, number, number",
          "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
 	if(!Gr_inited) {
@@ -950,7 +950,7 @@ ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
     "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
-    ade_type_info({"number", "number", "number", "number"}),
+    "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
 	if(!Gr_inited) {
@@ -1001,7 +1001,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
          "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
          "coordinates will be returned in either case. The indicator will be drawn using the current color if "
          "setColor=true and using the IFF color of the object if setColor=false.",
-         ade_type_info({"number", "number"}),
+         "number, number",
          "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
 {
 	object_h *objh = NULL;
