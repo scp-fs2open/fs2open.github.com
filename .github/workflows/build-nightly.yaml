@@ -65,7 +65,7 @@ jobs:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-dd9d8cf
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -171,7 +171,7 @@ jobs:
     name: Build Windows distribution zip
     needs: build_windows
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-dd9d8cf
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
       matrix:
         arch: [Win32, x64]

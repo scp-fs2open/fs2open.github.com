@@ -89,7 +89,7 @@ jobs:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-dd9d8cf
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -126,8 +126,7 @@ jobs:
           upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
           asset_path: ${{ steps.generate_package.outputs.package_path }}
           asset_name: ${{ steps.generate_package.outputs.package_name }}
-          # All builds are zips at the moment so this is fine for now
-          asset_content_type: application/zip
+          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
 
   build_windows:
     strategy:
@@ -207,7 +206,7 @@ jobs:
     name: Build Windows distribution zip
     needs: build_windows
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-dd9d8cf
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
       matrix:
         arch: [Win32, x64]
@@ -252,8 +251,7 @@ jobs:
           upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
           asset_path: ${{ steps.generate_package.outputs.package_path }}
           asset_name: ${{ steps.generate_package.outputs.package_name }}
-          # All builds are zips at the moment so this is fine for now
-          asset_content_type: application/zip
+          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
       - name: Upload debug symbols
         uses: actions/upload-release-asset@v1
         env:
@@ -262,5 +260,4 @@ jobs:
           upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
           asset_path: ${{ steps.generate_package.outputs.debug_path }}
           asset_name: ${{ steps.generate_package.outputs.debug_name }}
-          # All builds are zips at the moment so this is fine for now
-          asset_content_type: application/zip
+          asset_content_type: ${{ steps.generate_package.outputs.debug_mime }}
