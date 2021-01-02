@@ -15630,8 +15630,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 			seconds = 99;
 		}
 		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
-	} else if ( time == -2) {
-        // -2 is used as a signal of "there is no valid goal right now"
+	
 	} else {
 		strcpy( outbuf, XSTR( "Unknown", 497) );
 	}
@@ -15639,8 +15638,16 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 	return outbuf;
 }
 
-// tcrayford: returns the number of seconds to a goal
-// split out of ship_return_time_to_goal
+// Returns the estimated time, in seconds, of the given ship to reach its goal
+//
+// @param[in] sp  Pointer to ship to check
+//
+// @returns Time of the ship to reach its goal, or
+// @returns  0, if it has met its goal, or
+// @returns -1, if the ship is not moving or can not move, or
+// @returns -2, if the ship does not have a valid goal
+//
+// @note tcrayford: split out of ship_return_time_to_goal
 int ship_return_seconds_to_goal(ship *sp)
 {
 	ai_info	*aip;
@@ -15661,6 +15668,7 @@ int ship_return_seconds_to_goal(ship *sp)
 		max_speed = sp->current_max_speed;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
+		// Is traveling a waypoint path
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
@@ -15677,12 +15685,15 @@ int ship_return_seconds_to_goal(ship *sp)
 		}
 
 		if ( dist < 1.0f) {
-			return -2;
-		}	
+			// Already there
+			time = 0;
 
-		if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+		} else if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+			// Is not moving or can not move
 			time = -1;
+
 		} else {
+			// On the way!
 			float	speed;
 
 			speed = objp->phys_info.speed;
@@ -15693,11 +15704,14 @@ int ship_return_seconds_to_goal(ship *sp)
 		}
 
 	} else if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_DOCK_4) ) {
+		// Is traveling a docking path
 		time = hud_get_dock_time( objp );
+
 	} else {
-		// don't return anytime for time to except for waypoints and actual docking.
-		return -2;
+		// Not a waypoint or docking goal
+		time = -2;
 	}
+
 	return time;
 }
 

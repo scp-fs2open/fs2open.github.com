@@ -329,6 +329,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "mission-time-msecs",				OP_MISSION_TIME_MSECS,					0,	0,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "time-docked",					OP_TIME_DOCKED,							3,	3,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-undocked",					OP_TIME_UNDOCKED,						3,	3,			SEXP_INTEGER_OPERATOR,	},
+	{ "time-to-goal",					OP_TIME_TO_GOAL,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// tcrayford
 
 	//Conditionals Category
 	{ "cond",							OP_COND,								1,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},
@@ -775,7 +776,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "special-check",					OP_SPECIAL_CHECK,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,		2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,			2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "time-to-goal",					OP_TIME_TO_GOAL,	   	         		1,	1,			SEXP_INTEGER_OPERATOR,	}, // tcrayford
 };
 
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
@@ -16808,12 +16808,24 @@ int sexp_query_orders (int n)
 int sexp_time_to_goal(int n)
 {
 	auto ship_entry = eval_ship(n);
-	if (!ship_entry || !ship_entry->shipp) {
-		return -2;
-	}
-	auto shipp = ship_entry->shipp;
 
-	return ship_return_seconds_to_goal(shipp);
+	if (!ship_entry || !ship_entry->shipp)
+		return SEXP_NAN;
+
+	if (ship_entry->status == NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
+	
+	if (ship_entry->status == EXITED)
+		return SEXP_NAN_FOREVER;
+
+	auto shipp = ship_entry->shipp;
+	int time = ship_return_seconds_to_goal(shipp);
+	
+	if (time < 0) {
+		return SEXP_CANT_EVAL;
+	}
+
+	return time;
 }
 
 // Karajorma
@@ -26836,7 +26848,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING;
 
 		case OP_TIME_TO_GOAL:
-			if (argnum == 0)
 				return OPF_SHIP;
 
 		case OP_WAS_DESTROYED_BY_DELAY:
