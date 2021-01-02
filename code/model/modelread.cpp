@@ -4479,13 +4479,16 @@ void model_update_instance(int model_instance_num, int submodel_num, flagset<Shi
 	model_update_instance(pm, pmi, submodel_num, flags);
 }
 
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
+/*
+ * This function handles copying submodel instance information to other submodel instances as appropriate.  The copy_from parameter is used for
+ * copying data to other LODs, and is only specified from within model_update_instance itself.  The "public" function header omits this parameter.
+ */
+void model_update_instance(polymodel *pm, polymodel_instance *pmi, const submodel_instance *copy_from, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
 {
-	int i;
 	Assert(pm->id == pmi->model_num);
 	
 	Assertion(submodel_num >= 0 && submodel_num < pm->n_models,
-		"Sub model number (%d) which should be updated is out of range! Must be between 0 and %d. This happend on model %s.",
+		"Submodel number (%d) which should be updated is out of range! Must be between 0 and %d. This happened on model %s.",
 		submodel_num, pm->n_models - 1, pm->filename);
 
 	if ( submodel_num < 0 ) return;
@@ -4494,31 +4497,49 @@ void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_
 	submodel_instance *smi = &pmi->submodel[submodel_num];
 	bsp_info *sm = &pm->submodel[submodel_num];
 	
-	// Set the "blown out" flags
+	// Set the "blown out" flags.
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
+	} else if ( copy_from ) {
+		smi->blown_off = copy_from->blown_off;
 	}
 
-	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
-		if ( sm->my_replacement > -1 )	{
+	if ( smi->blown_off )	{
+		if ( sm->my_replacement >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
 			auto r_smi = &pmi->submodel[sm->my_replacement];
 			r_smi->blown_off = false;
-			r_smi->angs = smi->angs;
-			r_smi->prev_angs = smi->prev_angs;
+			if ( copy_from ) {
+				r_smi->angs = copy_from->angs;
+				r_smi->prev_angs = copy_from->prev_angs;
+			} else {
+				r_smi->angs = smi->angs;
+				r_smi->prev_angs = smi->prev_angs;
+			}
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement > -1 && sm->my_replacement != submodel_num)	{
+		if ( sm->my_replacement >= 0 && sm->my_replacement != submodel_num)	{
 			auto r_smi = &pmi->submodel[sm->my_replacement];
 			r_smi->blown_off = true;
 		}
 	}
 
-	// For all the detail levels of this submodel, set them also.
-	for (i=0; i<sm->num_details; i++ )	{
-		model_update_instance(pm, pmi, sm->details[i], flags );
+	// Set the angles.
+	if ( copy_from ) {
+		smi->angs = copy_from->angs;
+		smi->prev_angs = copy_from->prev_angs;
 	}
+
+	// For all the detail levels of this submodel, set them also.
+	for ( int i=0; i<sm->num_details; i++ )	{
+		model_update_instance( pm, pmi, smi, sm->details[i], flags );
+	}
+}
+
+void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
+{
+	model_update_instance(pm, pmi, nullptr, submodel_num, flags);
 }
 
 void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
