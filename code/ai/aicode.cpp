@@ -3321,7 +3321,9 @@ void ai_start_fly_to_ship(object *objp, int shipnum)
 	aip->mode = AIM_FLY_TO_SHIP;
 	aip->submode_start_time = Missiontime;
 
-	aip->target_objnum = Ships[shipnum].objnum;	
+	aip->target_objnum = Ships[shipnum].objnum;
+	// clear targeted subsystem
+	set_targeted_subsys(aip, nullptr, -1);
 
 	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
 }
