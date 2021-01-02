@@ -5323,15 +5323,16 @@ SCP_string hud_get_ship_class(const ship *shipp)
 	// try to get alt name
 	if (Fred_running) {
 		ship_class_text = Fred_alt_names[shipp-Ships];
+
+		if (ship_class_text.empty()) {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
+		}
 	} else {
 		if (shipp->alt_type_index >= 0) {
 			ship_class_text = mission_parse_lookup_alt_index(shipp->alt_type_index);
+		} else {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
 		}
-	}
-
-	// maybe get ship class
-	if (ship_class_text.empty()) {
-		ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
 	}
 
 	if (!Disable_built_in_translations) {
