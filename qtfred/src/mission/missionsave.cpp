@@ -3396,7 +3396,7 @@ int CFred_mission_save::save_objects()
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin();
 				 ii != Fred_texture_replacements.end(); ++ii) {
 				// Only look at this entry if it's not from the table. Table entries will just be read by FSO.
-				if (!stricmp(shipp->ship_name, ii->ship_name) && (!ii->from_table)) {
+				if (!stricmp(shipp->ship_name, ii->ship_name) && !(ii->from_table)) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
