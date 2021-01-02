@@ -26019,7 +26019,6 @@ int query_operator_return_type(int op)
 		case OP_GET_COLGROUP_ID:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_GET_HOTKEY:
-		case OP_TIME_TO_GOAL:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -26039,6 +26038,7 @@ int query_operator_return_type(int op)
 		case OP_MISSION_TIME_MSECS:
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
+		case OP_TIME_TO_GOAL:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_SHIELDS_LEFT:
