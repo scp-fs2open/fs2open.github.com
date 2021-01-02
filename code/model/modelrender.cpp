@@ -2605,6 +2605,14 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 
 	if (model_instance_num >= 0) {
 		pmi = model_get_instance(model_instance_num);
+
+		// This can happen if we supply a HUD target model for a real ship.
+		// The passed parameter was -1 but it was assigned an instance from
+		// the actual object.  Set it back to -1 if there is a mismatch.
+		if (pmi->model_num != pm->id) {
+			model_instance_num = -1;
+			pmi = nullptr;
+		}
 	}
 	
 	// Set the flags we will pass to the tmapper
