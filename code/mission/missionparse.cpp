@@ -3366,6 +3366,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = false;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, p_objp->name);
@@ -3400,6 +3402,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
 	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 	{
+
 		// load the texture
 		if (!stricmp(tr->new_texture, "invisible"))
 		{
