@@ -1135,7 +1135,7 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 void model_maybe_adjust_movement_axis(bsp_info *sm)
 {
 	// if we have a FOR, we need to transform the movement axis and make it a non-standard one
-	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && sm->movement_axis_id != MOVEMENT_AXIS_NONE) {
+	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (sm->movement_type != MOVEMENT_TYPE_NONE) && (sm->movement_axis_id != MOVEMENT_AXIS_NONE)) {
 		vec3d new_axis;
 		vm_vec_unrotate(&new_axis, &sm->movement_axis, &sm->frame_of_reference);
 		sm->movement_axis = new_axis;
@@ -1441,17 +1441,17 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
 
+				// ---------- submodel movement ----------
+
 				pm->submodel[n].movement_type = cfread_int(fp);
-				int movement_axis_id = cfread_int(fp);
+				pm->submodel[n].movement_axis_id = cfread_int(fp);
 
 				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
-				if ( stristr(pm->submodel[n].name, "turret") || stristr(pm->submodel[n].name, "gun") || stristr(pm->submodel[n].name, "cannon")) {
+				if ( stristr(pm->submodel[n].name, "turret") || ((parent >= 0) && (pm->submodel[parent].movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-					pm->submodel[n].can_move = true;
 				} else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
 					if (stristr(pm->submodel[n].name, "thruster")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						movement_axis_id = MOVEMENT_AXIS_NONE;
 					} else if(strstr(props, "$triggered")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
@@ -1460,30 +1460,26 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// determine rotation axis
 				// (the axis is a vector from 0,0,0 to the point specified)
 				// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
-				if (movement_axis_id == MOVEMENT_AXIS_X) {
+				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_X) {
 					pm->submodel[n].movement_axis = vmd_x_vector;
 				}
-				else if (movement_axis_id == MOVEMENT_AXIS_Y) {
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Y) {
 					pm->submodel[n].movement_axis = vmd_y_vector;
 				}
-				else if (movement_axis_id == MOVEMENT_AXIS_Z) {
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Z) {
 					pm->submodel[n].movement_axis = vmd_z_vector;
 				}
-				else if (movement_axis_id == MOVEMENT_AXIS_OTHER) {
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
 					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
 						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
 							vm_vec_normalize(&pm->submodel[n].movement_axis);
-						}
-						else {
+						} else {
 							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
 							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-							movement_axis_id = MOVEMENT_AXIS_NONE;
 						}
-					}
-					else {
+					} else {
 						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						movement_axis_id = MOVEMENT_AXIS_NONE;
 					}
 				}
 
@@ -1526,14 +1522,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
 
-				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered") || strstr(props, "$rotate") || strstr(props, "$gun_rotation")) {
-					pm->submodel[n].can_move = true;
-				} else if (parent >= 0 && pm->submodel[parent].can_move) {
-					pm->submodel[n].can_move = true;
-				}
-
 				if ( pm->submodel[n].name[0] == '\0' ) {
 					strcpy_s(pm->submodel[n].name, "unknown object name");
 				}
@@ -1547,35 +1535,13 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					} else if ( !stricmp(type, "no_rotate") ) {
 						// mark those submodels which should not rotate - ie, those with no subsystem
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						movement_axis_id = MOVEMENT_AXIS_NONE;
 					} else {
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
 					}
 				}
 
-				// adding a warning if rotation is specified without movement axis.
-				if (movement_axis_id == MOVEMENT_AXIS_NONE) {
-					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-					}
-					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-					}
-					vm_vec_zero(&pm->submodel[n].movement_axis);
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-				}
-
-/*				if ( strstr(props, "$nontargetable")!= NULL ) {
-					pm->submodel[n].targetable = 0;
-				}else{
-					pm->submodel[n].targetable = 1;
-				}
-*/
-//				pm->submodel[n].n_triggers = 0;
-//				pm->submodel[n].triggers = NULL;
-
-				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
+				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
 
 				if (strstr(props, "$no_collisions") != NULL )
 					pm->submodel[n].no_collisions = true;
@@ -1592,9 +1558,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				else
 					pm->submodel[n].collide_invisible = false;
 
-				if (strstr(props, "$gun_rotation") != NULL)
+				if (strstr(props, "$gun_rotation") != nullptr) {
 					pm->submodel[n].gun_rotation = true;
-				else
+					pm->submodel[n].can_move = true;		// this is something of a special case because it's rotating without "rotating"
+				} else
 					pm->submodel[n].gun_rotation = false;
 
 				if ( (p = strstr(props, "$lod0_name")) != NULL)
@@ -1731,16 +1698,15 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				// sanity check
+				// ---------- submodel rotation sanity checks ----------
+
+				// make sure this is a validly normalized axis
 				if (vm_vec_mag(&pm->submodel[n].movement_axis) < 0.999f || vm_vec_mag(&pm->submodel[n].movement_axis) > 1.001f) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-					movement_axis_id = MOVEMENT_AXIS_NONE;
 				}
 
-				// finally assign the axis id
-				pm->submodel[n].movement_axis_id = movement_axis_id;
-
 				// maybe use the FOR to manipulate the rotation axis
+				// (do this before the compatibility check below to prevent doing it twice)
 				model_maybe_adjust_movement_axis(&pm->submodel[n]);
 
 				// important compatibility check: if there are multipart turrets without rotation axes defined, define them
@@ -1769,6 +1735,33 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
+				// adding a warning if rotation is specified without movement axis.
+				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_NONE) {
+					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+				}
+
+				// clear the axis if the submodel doesn't move
+				// (don't clear can_move because of gun_rotation)
+				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_NONE) {
+					pm->submodel[n].movement_axis_id = MOVEMENT_AXIS_NONE;
+					pm->submodel[n].movement_axis = vmd_zero_vector;
+				}
+
+				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
+				}
+
+				// ---------- done submodel rotation sanity checks ----------
+
 
 				{
 					int nchunks = cfread_int( fp );		// Throw away nchunks
@@ -1796,15 +1789,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
 
-				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
-				//key_getch();
-
-		//mprintf(( "Submodel %d, tree offset %d\n", n, pm->submodel[n].tree_offset ));
-		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
-		//key_getch();
-
 				break;
-
 			}
 
 			case ID_SLDC: // kazan - Shield Collision tree
