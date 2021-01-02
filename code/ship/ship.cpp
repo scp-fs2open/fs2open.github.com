@@ -2838,6 +2838,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = true;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, sip->name);

@@ -310,6 +310,7 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
+	bool from_table;
 } texture_replace;
 
 extern SCP_vector<texture_replace> Fred_texture_replacements;

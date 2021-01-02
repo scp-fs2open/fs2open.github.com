@@ -3366,6 +3366,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = false;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, p_objp->name);
