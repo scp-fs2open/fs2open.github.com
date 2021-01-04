@@ -303,7 +303,7 @@ void techroom_select_new_entry()
 		return;
 	}
 
-	Assert(Cur_entry < Current_list->size());
+	Assert(Cur_entry < static_cast<int>(Current_list->size()));
 
 	Cur_entry_index = Current_list->at(Cur_entry).index;
 	Assert( Cur_entry_index >= 0 );
@@ -428,7 +428,7 @@ void tech_common_render()
 	y = 0;
 	z = List_offset;
 	while (y + font_height <= Tech_list_coords[gr_screen.res][SHIP_H_COORD]) {
-		if (z >= Current_list->size()) {
+		if (z >= static_cast<int>(Current_list->size())) {
 			break;
 		}
 
@@ -650,7 +650,7 @@ void tech_next_entry()
 	techroom_unload_animation();
 
 	Cur_entry++;
-	if (Cur_entry >= Current_list->size()) {
+	if (Cur_entry >= static_cast<int>(Current_list->size())) {
 		Cur_entry = 0;
 
 		// scroll to beginning of list
@@ -706,7 +706,7 @@ void tech_scroll_list_up()
 
 void tech_scroll_list_down()
 {
-	if (List_offset + Tech_list_coords[gr_screen.res][SHIP_H_COORD] / gr_get_font_height() < Current_list->size()) {
+	if (List_offset + Tech_list_coords[gr_screen.res][SHIP_H_COORD] / gr_get_font_height() < static_cast<int>(Current_list->size())) {
 		List_offset++;
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
@@ -731,7 +731,7 @@ void techroom_anim_render(float frametime)
 	tech_common_render();
 
 	// exit now if there are no entries to show
-	if (Current_list->empty() || Cur_entry < 0 || Cur_entry >= Current_list->size())
+	if (Current_list->empty() || Cur_entry < 0 || Cur_entry >= static_cast<int>(Current_list->size()))
 		return;
 
 	// render the animation
