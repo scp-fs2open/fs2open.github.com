@@ -326,7 +326,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 
 		}
 
-		// Recover and do usual ship_ship collision, but without rotating submodels
+		// Now complete base model collision checks that do not take into account rotating submodels.
 		mc.flags = copy_flags;
 		*mc.p0 = copy_p0;
 		*mc.p1 = copy_p1;
