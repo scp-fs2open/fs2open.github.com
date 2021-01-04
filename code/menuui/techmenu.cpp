@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ k to the state before "git rebase", run "git rebase --abort".
+*/
 
 
 
@@ -1208,20 +1208,21 @@ void techroom_lists_reset()
 			generic_anim_unload(&list_item.animation);
 		}
 
-	// now that we're sure all the bitmaps are released, clear the vectors.
-	Weapon_list.clear();
-	Weapons_loaded = false;
+		// now that we're sure all the bitmaps are released, clear the vectors.
+		Weapon_list.clear();
+		Weapons_loaded = false;
 
-	Intel_list.clear();
-	Intel_loaded = false;
+		Intel_list.clear();
+		Intel_loaded = false;
 
-	// clear the current list of items
-	Current_list.clear();
+		// clear the current list of items
+		Current_list.clear();
 
-	// free all models in use before clearing the ship list.
-	model_free_all();
-	Ship_list.clear();
-	Ships_loaded = false;
+		// free all models in use before clearing the ship list.
+		model_free_all();
+		Ship_list.clear();
+		Ships_loaded = false;
+	}
 }
 
 void techroom_close()
