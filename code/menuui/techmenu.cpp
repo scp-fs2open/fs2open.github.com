@@ -297,7 +297,7 @@ void techroom_unload_animation()
 
 void techroom_select_new_entry()
 {
-	if (Current_list->empty() || Current_list->at(0).index == -1) {
+	if (Current_list->empty()) {
 		Cur_entry_index = Cur_entry = -1;
 		techroom_init_desc(nullptr,0);
 		return;
