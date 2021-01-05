@@ -1,13 +1,14 @@
 #pragma once
 
 #include "actions/Action.h"
+#include "actions/expression/ActionExpression.h"
 #include "utils/RandomRange.h"
 
 namespace actions {
 namespace types {
 
 class WaitAction : public Action {
-	util::UniformFloatRange _waitTime;
+	expression::ActionExpression<float> _waitTimeExpression;
 
   public:
 	~WaitAction() override;

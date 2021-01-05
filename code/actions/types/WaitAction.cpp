@@ -13,7 +13,14 @@ WaitAction::~WaitAction() = default;
 ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 {
 	if (!timestamp_valid(locals.waitTimestamp)) {
-		locals.waitTimestamp = timestamp(fl2i(_waitTime.next()) * TIMESTAMP_FREQUENCY);
+		auto waitTime = _waitTimeExpression.execute();
+
+		// Catch errors in the expression
+		if (waitTime < 0.001f) {
+			waitTime = 0.001f;
+		}
+
+		locals.waitTimestamp = timestamp(fl2i(waitTime * TIMESTAMP_FREQUENCY));
 	}
 	if (!timestamp_elapsed(locals.waitTimestamp)) {
 		// Wait until the timestamp is elapsed
@@ -26,7 +33,7 @@ ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 }
 void WaitAction::parseValues(const flagset<ProgramContextFlags>&)
 {
-	_waitTime = util::parseUniformRange(0.001f);
+	_waitTimeExpression = expression::ActionExpression<float>::parseFromTable();
 }
 std::unique_ptr<Action> WaitAction::clone() const
 {

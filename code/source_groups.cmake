@@ -14,6 +14,27 @@ add_file_folder("Actions"
 	actions/Program.h
 )
 
+add_file_folder("Actions\\\\Expression"
+	actions/expression/AbstractExpression.cpp
+	actions/expression/AbstractExpression.h
+	actions/expression/ActionExpression.cpp
+	actions/expression/ActionExpression.h
+	actions/expression/ExpressionParser.cpp
+	actions/expression/ExpressionParser.h
+	actions/expression/LiteralExpression.cpp
+	actions/expression/LiteralExpression.h
+	actions/expression/OperatorCallExpression.cpp
+	actions/expression/OperatorCallExpression.h
+	actions/expression/RandomRangeExpression.cpp
+	actions/expression/RandomRangeExpression.h
+	actions/expression/TypeDefinition.cpp
+	actions/expression/TypeDefinition.h
+	actions/expression/Value.cpp
+	actions/expression/Value.h
+	actions/expression/VectorConstructorExpression.cpp
+	actions/expression/VectorConstructorExpression.h
+)
+
 add_file_folder("Actions\\\\Types"
 	actions/types/MoveToSubmodel.cpp
 	actions/types/MoveToSubmodel.h
@@ -661,6 +682,11 @@ add_file_folder("Libs"
 	libs/jansson.cpp
 	libs/jansson.h
 )
+
+add_file_folder("Libs\\\\AntLR"
+	libs/antlr/ErrorListener.cpp
+	libs/antlr/ErrorListener.h
+	)
 
 add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.cpp

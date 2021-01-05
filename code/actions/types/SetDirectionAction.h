@@ -1,12 +1,13 @@
 #pragma once
 
 #include "actions/Action.h"
+#include "actions/expression/ActionExpression.h"
 
 namespace actions {
 namespace types {
 
 class SetDirectionAction : public Action {
-	vec3d _newDir = vmd_zero_vector;
+	expression::ActionExpression<vec3d> _newDirExpression;
 
   public:
 	~SetDirectionAction() override;
