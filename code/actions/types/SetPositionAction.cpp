@@ -9,13 +9,13 @@ SetPositionAction::~SetPositionAction() = default;
 
 ActionResult SetPositionAction::execute(ProgramLocals& locals) const
 {
-	locals.position = _newPos;
+	locals.position = _newPosExpression.execute();
 	return ActionResult::Finished;
 }
 
 void SetPositionAction::parseValues(const flagset<ProgramContextFlags>& /*parse_flags*/)
 {
-	stuff_parenthesized_vec3d(&_newPos);
+	_newPosExpression = expression::ActionExpression<vec3d>::parseFromTable();
 }
 
 std::unique_ptr<Action> SetPositionAction::clone() const

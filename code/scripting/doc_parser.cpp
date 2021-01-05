@@ -1,6 +1,7 @@
 #include "doc_parser.h"
 
 #include "parse/parselo.h"
+#include "libs/antlr/ErrorListener.h"
 
 #undef TRUE
 #undef FALSE
@@ -14,32 +15,6 @@ POP_SUPPRESS_WARNINGS
 namespace scripting {
 
 namespace {
-
-struct Diagnostic {
-	size_t line;
-	size_t columnInLine;
-	size_t tokenLength;
-	SCP_string errorMessage;
-};
-
-struct ErrorListener : public antlr4::BaseErrorListener {
-	SCP_vector<Diagnostic> diagnostics;
-
-	void syntaxError(antlr4::Recognizer* /*recognizer*/,
-	                 antlr4::Token* offendingSymbol,
-	                 size_t line,
-	                 size_t charPositionInLine,
-	                 const std::string& msg,
-	                 std::exception_ptr /*e*/) override
-	{
-		// Apparently stop < start is a thing?
-		const auto left   = std::min(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
-		const auto right  = std::max(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
-		const auto length = right - left + 1;
-
-		diagnostics.push_back(Diagnostic{line, charPositionInLine, length, msg});
-	}
-};
 
 ade_type_info merge_alternatives(const ade_type_info& left, const ade_type_info& right)
 {
@@ -369,7 +344,7 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 	ArgumentListParser parser(&tokens);
 	// By default we log to stderr which we do not want
 	parser.removeErrorListeners();
-	ErrorListener errListener;
+	libs::antlr::ErrorListener errListener;
 	parser.addErrorListener(&errListener);
 
 	antlr4::tree::ParseTree* tree = parser.arg_list();
