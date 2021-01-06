@@ -9065,7 +9065,7 @@ void ai_chase()
 								}
 							}
 
-							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_can_lock_on_ship(swip, En_objp->instance)) {
+							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_allowed_lock_restriction_object(swip, En_objp)) {
 								if (current_bank >= 0) {
 									float firing_range;
 									

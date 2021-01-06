@@ -924,7 +924,7 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}*/
 
-		if (!weapon_can_lock_on_ship(wip, A->instance)) {
+		if (!weapon_allowed_lock_restriction_object(wip, A)) {
 			continue;
 		}
 
@@ -1042,7 +1042,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_allowed_lock_restriction_object(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1110,7 +1110,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_allowed_lock_restriction_object(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
