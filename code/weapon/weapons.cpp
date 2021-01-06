@@ -5353,12 +5353,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
-		int target_ship_num = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
-
-			if (obj_type == OBJ_SHIP)
-				target_ship_num = Objects[target_objnum].instance;
 
 			if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_WEAPON) ) {
 				target_team = obj_team(&Objects[target_objnum]);
