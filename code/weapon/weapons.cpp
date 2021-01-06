@@ -4093,9 +4093,8 @@ void find_homing_object(object *weapon_objp, int num)
 				continue; 
 
 			homing_object_team = obj_team(objp);
-			bool can_lock_on_ship = objp->type != OBJ_SHIP || weapon_allowed_lock_restriction_object(wip, objp);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
-			if (can_lock_on_ship && can_attack)
+			if (weapon_allowed_lock_restriction_object(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
