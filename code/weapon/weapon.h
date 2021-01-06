@@ -677,7 +677,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 int weapon_get_max_missile_seekers(weapon_info *wip);
 
 // return if this weapon can lock on this target, based on its type, class, species or iff
-bool weapon_allowed_lock_restriction_object(weapon_info *wip, object* target);
+bool weapon_target_satisfies_lock_restrictions(weapon_info *wip, object* target);
 
 // return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
 bool weapon_has_iff_restrictions(weapon_info* wip);

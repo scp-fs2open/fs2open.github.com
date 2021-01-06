@@ -4094,7 +4094,7 @@ void find_homing_object(object *weapon_objp, int num)
 
 			homing_object_team = obj_team(objp);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
-			if (weapon_allowed_lock_restriction_object(wip, objp) && can_attack)
+			if (weapon_target_satisfies_lock_restrictions(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
@@ -5376,7 +5376,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		bool can_lock = (weapon_has_iff_restrictions(wip) && target_objnum >= 0) ? weapon_allowed_lock_restriction_object(wip, &Objects[target_objnum]) :
+		bool can_lock = (weapon_has_iff_restrictions(wip) && target_objnum >= 0) ? weapon_target_satisfies_lock_restrictions(wip, &Objects[target_objnum]) :
 			(!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor)));
 
 		// Cyborg17 - exclude all invalid object numbers here since in multi, the lock slots can get out of sync.
@@ -8686,7 +8686,7 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 }
 
 // returns whether a homing weapon can home on a particular ship
-bool weapon_allowed_lock_restriction_object(weapon_info* wip, object* target)
+bool weapon_target_satisfies_lock_restrictions(weapon_info* wip, object* target)
 {
 	if (target->type != OBJ_SHIP)
 		return true;
