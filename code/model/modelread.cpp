@@ -2722,6 +2722,9 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
 				pm->submodel[j].is_live_debris = 1;
+
+				// make sure live debris doesn't have a parent
+				pm->submodel[j].parent = -1;
 			}
 		}
 

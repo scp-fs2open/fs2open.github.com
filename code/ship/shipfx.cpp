@@ -285,7 +285,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *sub
 		shipfx_blow_up_model(ship_objp, psub->subobj_num, 50, &subobj_pos );
 
 		// create live debris objects, if any
-		// TODO:  some MULITPLAYER implcations here!!
+		// TODO:  some MULTIPLAYER implcations here!!
 		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f);
 		
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
