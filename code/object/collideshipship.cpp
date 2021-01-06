@@ -69,16 +69,14 @@ static bool check_for_docking_collision(object *objp1, object *objp2)
 	}
 
 
-	if (aip1->mode == AIM_DOCK) {
-		if (dock_check_find_docked_object(&Objects[aip1->goal_objnum], objp2)){
+	if (aip1->mode == AIM_DOCK && aip1->goal_objnum >= 0 && aip1->goal_objnum < MAX_OBJECTS) {
+		if (dock_check_find_docked_object(&Objects[aip1->goal_objnum], objp2))
 			return true;
-		}
 	}
 
-	if (aip2->mode == AIM_DOCK) {
-		if (dock_check_find_docked_object(&Objects[aip2->goal_objnum], objp1)){
+	if (aip2->mode == AIM_DOCK && aip2->goal_objnum >= 0 && aip2->goal_objnum < MAX_OBJECTS) {
+		if (dock_check_find_docked_object(&Objects[aip2->goal_objnum], objp1))
 			return true;
-		}
 	}
 
 	return false;
