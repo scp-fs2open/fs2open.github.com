@@ -4,6 +4,8 @@
 
 #include <mpark/variant.hpp>
 
+#include <ostream>
+
 namespace actions {
 namespace expression {
 
@@ -39,6 +41,8 @@ class Value {
 
 	friend bool operator==(const Value& lhs, const Value& rhs);
 	friend bool operator!=(const Value& lhs, const Value& rhs);
+
+	friend std::ostream& operator<<(std::ostream& os, const Value& value);
 
   private:
 	mpark::variant<mpark::monostate, int, float, vec3d, SCP_string> m_value;

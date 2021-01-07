@@ -13,7 +13,7 @@ class AbstractExpression {
 	AbstractExpression(antlr4::Token* token);
 	virtual ~AbstractExpression();
 
-	virtual Value execute() = 0;
+	virtual Value execute() const = 0;
 
 	virtual bool validate(antlr4::Parser* parser) = 0;
 

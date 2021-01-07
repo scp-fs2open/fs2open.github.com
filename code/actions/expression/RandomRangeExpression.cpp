@@ -39,7 +39,7 @@ RandomRangeExpression::RandomRangeExpression(antlr4::Token* token,
 }
 RandomRangeExpression::~RandomRangeExpression() = default;
 
-Value RandomRangeExpression::execute()
+Value RandomRangeExpression::execute() const
 {
 	const auto leftVal = m_leftExpression->execute();
 	const auto rightVal = m_rightExpression->execute();

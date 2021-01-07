@@ -10,7 +10,7 @@ LiteralExpression::LiteralExpression(antlr4::Token* token, Value literalValue)
 }
 LiteralExpression::~LiteralExpression() = default;
 
-Value LiteralExpression::execute()
+Value LiteralExpression::execute() const
 {
 	return m_literalValue;
 }

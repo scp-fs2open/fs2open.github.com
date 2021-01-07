@@ -50,6 +50,31 @@ bool operator!=(const Value& lhs, const Value& rhs)
 {
 	return !(rhs == lhs);
 }
+std::ostream& operator<<(std::ostream& os, const Value& value)
+{
+	os << "Value<";
+
+	switch (value.getType()) {
+	case ValueType::Invalid:
+		os << "INVALID";
+		break;
+	case ValueType::Integer:
+		os << value.get<int>();
+		break;
+	case ValueType::Float:
+		os << value.get<float>();
+		break;
+	case ValueType::Vector:
+		os << value.get<vec3d>();
+		break;
+	case ValueType::Identifier:
+		os << value.get<SCP_string>();
+		break;
+	}
+
+	os << ">";
+	return os;
+}
 
 } // namespace expression
 } // namespace actions

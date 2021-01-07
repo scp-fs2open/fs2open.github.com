@@ -12,7 +12,7 @@ class RandomRangeExpression : public AbstractExpression {
 		std::shared_ptr<AbstractExpression> rightExpression);
 	~RandomRangeExpression() override;
 
-	Value execute() override;
+	Value execute() const override;
 	bool validate(antlr4::Parser* parser) override;
 	void validationDone() override;
 
