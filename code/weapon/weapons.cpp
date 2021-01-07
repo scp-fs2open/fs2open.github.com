@@ -4093,9 +4093,8 @@ void find_homing_object(object *weapon_objp, int num)
 				continue; 
 
 			homing_object_team = obj_team(objp);
-			bool can_lock_on_ship = objp->type != OBJ_SHIP || weapon_can_lock_on_ship(wip, objp->instance);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
-			if (can_lock_on_ship && can_attack)
+			if (weapon_target_satisfies_lock_restrictions(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
@@ -5353,12 +5352,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
-		int target_ship_num = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
-
-			if (obj_type == OBJ_SHIP)
-				target_ship_num = Objects[target_objnum].instance;
 
 			if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_WEAPON) ) {
 				target_team = obj_team(&Objects[target_objnum]);
@@ -5381,7 +5376,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		bool can_lock = weapon_has_iff_restrictions(wip) && target_ship_num >= 0 ? weapon_can_lock_on_ship(wip, target_ship_num) :
+		bool can_lock = (weapon_has_iff_restrictions(wip) && target_objnum >= 0) ? weapon_target_satisfies_lock_restrictions(wip, &Objects[target_objnum]) :
 			(!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor)));
 
 		// Cyborg17 - exclude all invalid object numbers here since in multi, the lock slots can get out of sync.
@@ -8691,16 +8686,19 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 }
 
 // returns whether a homing weapon can home on a particular ship
-bool weapon_can_lock_on_ship(weapon_info* wip, int ship_num)
+bool weapon_target_satisfies_lock_restrictions(weapon_info* wip, object* target)
 {
+	if (target->type != OBJ_SHIP)
+		return true;
+
 	auto& restrictions = wip->ship_restrict;
 	// if you didn't specify any restrictions, you can always lock
 	if (restrictions.empty()) return true;
 
-	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
-	int class_num = Ships[ship_num].ship_info_index;
-	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
-	int iff_num = Ships[ship_num].team;
+	int type_num = Ship_info[Ships[target->instance].ship_info_index].class_type;
+	int class_num = Ships[target->instance].ship_info_index;
+	int species_num = Ship_info[Ships[target->instance].ship_info_index].species;
+	int iff_num = Ships[target->instance].team;
 
 	// otherwise, you're good as long as it matches one of the allowances in the restriction list
 	return std::any_of(restrictions.begin(), restrictions.end(),
