@@ -273,7 +273,7 @@ void techroom_unload_animation()
 {
 	//clear everything, just in case, it will get loaded when needed later
 	for (auto& list_entry : Weapon_list) {
-		if (list_entry.animation.type != BM_TYPE_NONE) {
+		if (list_entry.animation.type != BM_TYPE_NONE && list_entry.has_anim != 0) {
 			generic_anim_unload(&list_entry.animation);
 		}
 
@@ -284,7 +284,7 @@ void techroom_unload_animation()
 	}
 
 	for (auto & intel_entry : Intel_list) {
-		if (intel_entry.animation.type != BM_TYPE_NONE) {
+		if (intel_entry.animation.type != BM_TYPE_NONE && intel_entry.has_anim != 0) {
 			generic_anim_unload(&intel_entry.animation);
 		}
 
