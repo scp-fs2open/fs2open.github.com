@@ -4,10 +4,33 @@
 
 #include <mpark/variant.hpp>
 
-#include <ostream>
-
 namespace actions {
 namespace expression {
+
+namespace detail {
+template <typename ToType>
+struct implicit_conversion {
+	template <typename T>
+	ToType operator()(const T&)
+	{
+		throw std::runtime_error("Invalid implicit conversion.");
+	}
+};
+
+template<>
+struct implicit_conversion<float> {
+	inline float operator()(int val) {
+		return i2fl(val);
+	}
+
+	template <typename T>
+	float operator()(const T&)
+	{
+		throw std::runtime_error("Invalid implicit conversion.");
+	}
+};
+
+} // namespace detail
 
 enum class ValueType
 {
@@ -16,6 +39,26 @@ enum class ValueType
 	Float,
 	Vector,
 	Identifier,
+};
+
+template <typename T>
+struct ValueTypeTraits;
+
+template <>
+struct ValueTypeTraits<int> {
+	static constexpr ValueType type = ValueType::Integer;
+};
+template <>
+struct ValueTypeTraits<float> {
+	static constexpr ValueType type = ValueType::Float;
+};
+template <>
+struct ValueTypeTraits<vec3d> {
+	static constexpr ValueType type = ValueType::Vector;
+};
+template <>
+struct ValueTypeTraits<SCP_string> {
+	static constexpr ValueType type = ValueType::Identifier;
 };
 
 class Value {
@@ -34,9 +77,18 @@ class Value {
 	vec3d getVector() const;
 	SCP_string getIdentifier() const;
 
-	template<typename T>
-	const T& get() const {
-		return mpark::get<T>(m_value);
+	template <typename T>
+	T get() const
+	{
+		const auto currentType = getType();
+		const auto expectedType = ValueTypeTraits<T>::type;
+
+		if (currentType == expectedType) {
+			// No conversion necessary
+			return mpark::get<T>(m_value);
+		}
+
+		return mpark::visit(detail::implicit_conversion<T>{}, m_value);
 	}
 
 	friend bool operator==(const Value& lhs, const Value& rhs);

@@ -28,19 +28,19 @@ ValueType actions::expression::Value::getType() const
 
 int Value::getInteger() const
 {
-	return mpark::get<int>(m_value);
+	return get<int>();
 }
 float Value::getFloat() const
 {
-	return mpark::get<float>(m_value);
+	return get<float>();
 }
 vec3d Value::getVector() const
 {
-	return mpark::get<vec3d>(m_value);
+	return get<vec3d>();
 }
 SCP_string Value::getIdentifier() const
 {
-	return mpark::get<SCP_string>(m_value);
+	return get<SCP_string>();
 }
 bool operator==(const Value& lhs, const Value& rhs)
 {

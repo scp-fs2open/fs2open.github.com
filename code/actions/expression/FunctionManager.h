@@ -23,10 +23,12 @@ class FunctionManager {
 	FunctionManager(const FunctionManager&) = delete;
 	FunctionManager& operator=(const FunctionManager&) = delete;
 
-	FunctionManager(FunctionManager&&) = default;
-	FunctionManager& operator=(FunctionManager&&) = default;
+	FunctionManager(FunctionManager&&) noexcept = default;
+	FunctionManager& operator=(FunctionManager&&) noexcept = default;
 
-	void addOperator(SCP_string name, std::initializer_list<ValueType> parameterTypes, ValueType returnType,
+	void addOperator(const SCP_string& name,
+		std::initializer_list<ValueType> parameterTypes,
+		ValueType returnType,
 		FunctionImplementation implementation);
 
 	const FunctionDefinition* findOperator(const SCP_string& name, const SCP_vector<ValueType>& parameterTypes) const;

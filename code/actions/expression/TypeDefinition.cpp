@@ -4,19 +4,27 @@
 namespace actions {
 namespace expression {
 
-TypeDefinition TypeDefinition::s_integer("Integer");
+// Integers can be safely converted to floats (for the most part)
+TypeDefinition TypeDefinition::s_integer("Integer", {ValueType::Float});
 // No implicit conversions here
-TypeDefinition TypeDefinition::s_float("Float");
-TypeDefinition TypeDefinition::s_vector("Vector");
+TypeDefinition TypeDefinition::s_float("Float", {});
+TypeDefinition TypeDefinition::s_vector("Vector", {});
 // Identifiers are a technicality needed for making non-math values work but they have no further use other than their
 // string content
-TypeDefinition TypeDefinition::s_identifier("Identifier");
+TypeDefinition TypeDefinition::s_identifier("Identifier", {});
 
-TypeDefinition::TypeDefinition(SCP_string name) : m_name(std::move(name)) {}
+TypeDefinition::TypeDefinition(SCP_string name, SCP_vector<actions::expression::ValueType> allowedImplicitConversion)
+	: m_name(std::move(name)), m_allowedImplicitConversions(std::move(allowedImplicitConversion))
+{
+}
 
 const SCP_string& TypeDefinition::getName() const
 {
 	return m_name;
+}
+const SCP_vector<actions::expression::ValueType>& TypeDefinition::getAllowedImplicitConversions() const
+{
+	return m_allowedImplicitConversions;
 }
 const TypeDefinition& TypeDefinition::forValueType(ValueType type)
 {
@@ -35,5 +43,18 @@ const TypeDefinition& TypeDefinition::forValueType(ValueType type)
 	}
 }
 
+bool checkTypeWithImplicitConversion(ValueType currentType, ValueType expectedType)
+{
+	if (currentType == expectedType) {
+		// No need to consider implicit conversions;
+		return true;
+	}
+
+	const auto& currentTypeDef = TypeDefinition::forValueType(currentType);
+	const auto& allowedConversions = currentTypeDef.getAllowedImplicitConversions();
+
+	// For now, no transitiv conversions are allowed
+	return std::find(allowedConversions.cbegin(), allowedConversions.cend(), expectedType) != allowedConversions.cend();
+}
 } // namespace expression
 } // namespace actions
