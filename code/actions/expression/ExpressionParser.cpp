@@ -1,8 +1,8 @@
 
 #include "ExpressionParser.h"
 
+#include "FunctionCallExpression.h"
 #include "LiteralExpression.h"
-#include "OperatorCallExpression.h"
 #include "RandomRangeExpression.h"
 #include "VectorConstructorExpression.h"
 
@@ -51,8 +51,10 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 		const auto leftExpr = visit(context->expression(0)).as<std::shared_ptr<AbstractExpression>>();
 		const auto rightExpr = visit(context->expression(1)).as<std::shared_ptr<AbstractExpression>>();
 
-		auto operatorExpression =
-			std::make_shared<OperatorCallExpression>(operatorTok, operatorText, leftExpr, rightExpr);
+		auto operatorExpression = std::make_shared<FunctionCallExpression>(operatorTok,
+			true,
+			std::move(operatorText),
+			SCP_vector<std::shared_ptr<AbstractExpression>>{leftExpr, rightExpr});
 		return std::static_pointer_cast<AbstractExpression>(operatorExpression);
 	}
 	antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext* context) override

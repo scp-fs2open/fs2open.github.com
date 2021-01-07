@@ -1,68 +1,10 @@
 
 #include "actions/expression/ExpressionParser.h"
+#include "math/vecmat.h"
 
 #include <gtest/gtest.h>
 
 using namespace actions::expression;
-
-TEST(ExpressionParser, int_value_expression)
-{
-	ExpressionParser parser("5");
-
-	const auto expression = parser.parse();
-
-	ASSERT_NE(expression.get(), nullptr);
-
-	ASSERT_EQ(expression->getExpressionType(), ValueType::Integer);
-
-	// Check the value of the expression
-	ASSERT_EQ(expression->execute(), Value(5));
-}
-
-TEST(ExpressionParser, float_value_expression)
-{
-	ExpressionParser parser("8.0");
-
-	const auto expression = parser.parse();
-
-	ASSERT_NE(expression.get(), nullptr);
-
-	ASSERT_EQ(expression->getExpressionType(), ValueType::Float);
-
-	// Check the value of the expression
-	ASSERT_EQ(expression->execute(), Value(8.0f));
-}
-
-TEST(ExpressionParser, identifier_value_expression)
-{
-	ExpressionParser parser("This is an identifier ");
-
-	const auto expression = parser.parse();
-
-	ASSERT_NE(expression.get(), nullptr);
-
-	ASSERT_EQ(expression->getExpressionType(), ValueType::Identifier);
-
-	// Check the value of the expression
-	ASSERT_EQ(expression->execute(), Value("This is an identifier "));
-}
-
-TEST(ExpressionParser, vector_constructor)
-{
-	ExpressionParser parser("(3.3 13.8 (-3.9))");
-
-	const auto expression = parser.parse();
-
-	ASSERT_NE(expression.get(), nullptr);
-
-	ASSERT_EQ(expression->getExpressionType(), ValueType::Vector);
-
-	const auto result = expression->execute().getVector();
-
-	ASSERT_FLOAT_EQ(result.xyz.x, 3.3f);
-	ASSERT_FLOAT_EQ(result.xyz.y, 13.8f);
-	ASSERT_FLOAT_EQ(result.xyz.z, -3.9f);
-}
 
 using RandomRangeTestValues = std::tuple<SCP_string, ValueType, float /* lower limit */, float /* upper limit */>;
 
@@ -113,18 +55,17 @@ INSTANTIATE_TEST_SUITE_P(FloatTests,
 		RandomRangeTestValues("~(8.7 5.2)", ValueType::Float, 5.2f, 8.7f),
 		RandomRangeTestValues("~(-8.0 -5.0)", ValueType::Float, -8.0f, -5.0f)));
 
-using OperatorTestValues = std::tuple<SCP_string, ValueType, float>;
+using OperatorTestValues = std::tuple<SCP_string, Value>;
 
-class ExpressionOperatorTest : public testing::TestWithParam<OperatorTestValues> {
+class ExpressionExecutionTest : public testing::TestWithParam<OperatorTestValues> {
 };
 
-TEST_P(ExpressionOperatorTest, operator_execution)
+TEST_P(ExpressionExecutionTest, operator_execution)
 {
 	SCP_string expressionText;
-	ValueType expectedReturnType;
-	float expectedReturnVal;
+	Value expectedReturnValue;
 
-	std::tie(expressionText, expectedReturnType, expectedReturnVal) = GetParam();
+	std::tie(expressionText, expectedReturnValue) = GetParam();
 
 	ExpressionParser parser(expressionText);
 
@@ -132,29 +73,39 @@ TEST_P(ExpressionOperatorTest, operator_execution)
 
 	ASSERT_NE(expression.get(), nullptr);
 
-	ASSERT_EQ(expression->getExpressionType(), expectedReturnType);
+	ASSERT_EQ(expression->getExpressionType(), expectedReturnValue.getType());
 
-	float result;
-	if (expectedReturnType == ValueType::Integer) {
-		result = i2fl(expression->execute().getInteger());
+	const auto resultVal = expression->execute();
+
+	if (expectedReturnValue.getType() == actions::expression::ValueType::Float) {
+		ASSERT_FLOAT_EQ(resultVal.getFloat(), expectedReturnValue.getFloat());
 	} else {
-		result = expression->execute().getFloat();
+		ASSERT_EQ(resultVal, expectedReturnValue);
 	}
-
-	ASSERT_FLOAT_EQ(result, expectedReturnVal);
 }
 
-INSTANTIATE_TEST_SUITE_P(IntegerTests,
-	ExpressionOperatorTest,
-	testing::Values(OperatorTestValues("5 + -8", ValueType::Integer, -3.0f),
-		OperatorTestValues("5 - -8", ValueType::Integer, 13.0f)));
+INSTANTIATE_TEST_SUITE_P(LiteralTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("5", Value(5)),
+		OperatorTestValues("8.0", Value(8.0f)),
+		OperatorTestValues("This is an identifier ", Value("This is an identifier "))));
 
-INSTANTIATE_TEST_SUITE_P(FloatTests,
-	ExpressionOperatorTest,
-	testing::Values(OperatorTestValues("5.0 + -8.0", ValueType::Float, -3.0f),
-		OperatorTestValues("5.0 - -8.0", ValueType::Float, 13.0f)));
+INSTANTIATE_TEST_SUITE_P(VectorConstructorTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("(3.3 13.8 (-3.9))", Value(vm_vec_new(3.3f, 13.8f, -3.9f)))));
 
-using ParseFailureTestValues = std::tuple<SCP_string, ValueType, float>;
+INSTANTIATE_TEST_SUITE_P(IntegerOperatorTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("5 + -8", Value(-3)), OperatorTestValues("5 - -8", Value(13))));
+
+INSTANTIATE_TEST_SUITE_P(FloatOperatorTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("5.0 + -8.0", Value(-3.0f)), OperatorTestValues("5.0 - -8.0", Value(13.0f))));
+
+INSTANTIATE_TEST_SUITE_P(VectorOperatorTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("(1.0 2.0 3.0) + (3.0 2.0 1.0)", Value(vm_vec_new(4.0, 4.0f, 4.0f))),
+		OperatorTestValues("(4.0 4.0 4.0) - (3.0 2.0 1.0)", Value(vm_vec_new(1.0, 2.0f, 3.0f)))));
 
 class ExpressionParserFailureTest : public testing::TestWithParam<SCP_string> {
 };

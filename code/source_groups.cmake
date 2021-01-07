@@ -21,10 +21,12 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/ActionExpression.h
 	actions/expression/ExpressionParser.cpp
 	actions/expression/ExpressionParser.h
+	actions/expression/FunctionCallExpression.cpp
+	actions/expression/FunctionCallExpression.h
+	actions/expression/FunctionManager.cpp
+	actions/expression/FunctionManager.h
 	actions/expression/LiteralExpression.cpp
 	actions/expression/LiteralExpression.h
-	actions/expression/OperatorCallExpression.cpp
-	actions/expression/OperatorCallExpression.h
 	actions/expression/RandomRangeExpression.cpp
 	actions/expression/RandomRangeExpression.h
 	actions/expression/TypeDefinition.cpp

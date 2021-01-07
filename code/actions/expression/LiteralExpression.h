@@ -11,7 +11,7 @@ class LiteralExpression : public AbstractExpression {
 	LiteralExpression(antlr4::Token* token, Value literalValue);
 	~LiteralExpression() override;
 
-	Value execute() override;
+	Value execute() const override;
 	bool validate(antlr4::Parser* parser) override;
 
   protected:

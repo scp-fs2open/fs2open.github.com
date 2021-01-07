@@ -5,18 +5,11 @@
 namespace actions {
 namespace expression {
 
-struct FunctionDefinition {
-	ValueType returnType;
-
-	SCP_vector<ValueType> parameterTypes;
-};
-
 class TypeDefinition {
   public:
-	TypeDefinition(SCP_string name, SCP_unordered_map<SCP_string, SCP_vector<FunctionDefinition>> operators);
+	TypeDefinition(SCP_string name);
 
 	const SCP_string& getName() const;
-	const SCP_unordered_map<SCP_string, SCP_vector<FunctionDefinition>>& operators() const;
 
 	static const TypeDefinition& forValueType(ValueType type);
 
@@ -29,8 +22,6 @@ class TypeDefinition {
 
   private:
 	SCP_string m_name;
-
-	SCP_unordered_map<SCP_string, SCP_vector<FunctionDefinition>> m_operators;
 
 	static TypeDefinition s_integer;
 	static TypeDefinition s_float;

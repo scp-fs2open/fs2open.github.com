@@ -16,7 +16,7 @@ VectorConstructorExpression::VectorConstructorExpression(antlr4::Token* token,
 }
 VectorConstructorExpression::~VectorConstructorExpression() = default;
 
-Value VectorConstructorExpression::execute()
+Value VectorConstructorExpression::execute() const
 {
 	auto xValue = m_xExpression->execute();
 	auto yValue = m_yExpression->execute();
