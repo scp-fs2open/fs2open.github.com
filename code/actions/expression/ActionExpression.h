@@ -1,35 +1,12 @@
+#pragma once
 
 #include "AbstractExpression.h"
+#include "TypeDefinition.h"
 
 #include "parse/parselo.h"
 
-#pragma once
-
 namespace actions {
 namespace expression {
-
-namespace detail {
-template <typename T>
-struct ValueTypeTraits;
-
-template <>
-struct ValueTypeTraits<int> {
-	static constexpr ValueType type = ValueType::Integer;
-};
-template <>
-struct ValueTypeTraits<float> {
-	static constexpr ValueType type = ValueType::Float;
-};
-template <>
-struct ValueTypeTraits<vec3d> {
-	static constexpr ValueType type = ValueType::Vector;
-};
-template <>
-struct ValueTypeTraits<SCP_string> {
-	static constexpr ValueType type = ValueType::Identifier;
-};
-
-} // namespace detail
 
 class AbstractExpression;
 
@@ -60,7 +37,7 @@ class ActionExpression : public BaseActionExpression {
 
 		const auto returnVal = m_expression->execute();
 
-		return returnVal.get<T>();
+		return returnVal.template get<T>();
 	}
 
 	static ActionExpression<T> parseFromTable()
@@ -78,11 +55,11 @@ class ActionExpression : public BaseActionExpression {
 		auto type = expression->getExpressionType();
 
 		// Check if the type this evaluates to matches what we expect
-		if (type != detail::ValueTypeTraits<T>::type) {
+		if (!checkTypeWithImplicitConversion(type, ValueTypeTraits<T>::type)) {
 			error_display(0,
 				"Expression evaluates to type <%s> but <%s> was expected!",
 				getTypeName(type).c_str(),
-				getTypeName(detail::ValueTypeTraits<T>::type).c_str());
+				getTypeName(ValueTypeTraits<T>::type).c_str());
 			return ActionExpression<T>();
 		}
 

@@ -43,21 +43,21 @@ bool VectorConstructorExpression::validate(antlr4::Parser* parser)
 		return false;
 	}
 
-	if (m_xExpression->getExpressionType() != ValueType::Float) {
+	if (!checkTypeWithImplicitConversion(m_xExpression->getExpressionType(), ValueType::Float)) {
 		const auto& typeDef = TypeDefinition::forValueType(m_xExpression->getExpressionType());
 		parser->notifyErrorListeners(m_xExpression->getToken(),
 			"Invalid value type for vector constructor. Expected <Float>, got <" + typeDef.getName() + ">",
 			nullptr);
 		valid = false;
 	}
-	if (m_yExpression->getExpressionType() != ValueType::Float) {
+	if (!checkTypeWithImplicitConversion(m_yExpression->getExpressionType(), ValueType::Float)) {
 		const auto& typeDef = TypeDefinition::forValueType(m_yExpression->getExpressionType());
 		parser->notifyErrorListeners(m_yExpression->getToken(),
 			"Invalid value type for vector constructor. Expected <Float>, got <" + typeDef.getName() + ">",
 			nullptr);
 		valid = false;
 	}
-	if (m_zExpression->getExpressionType() != ValueType::Float) {
+	if (!checkTypeWithImplicitConversion(m_zExpression->getExpressionType(), ValueType::Float)) {
 		const auto& typeDef = TypeDefinition::forValueType(m_zExpression->getExpressionType());
 		parser->notifyErrorListeners(m_zExpression->getToken(),
 			"Invalid value type for vector constructor. Expected <Float>, got <" + typeDef.getName() + ">",

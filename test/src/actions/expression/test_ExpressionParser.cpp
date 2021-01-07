@@ -24,6 +24,10 @@ TEST_P(ExpressionRandomRangeTest, random_range_exec)
 
 	const auto expression = parser.parse();
 
+	if (!parser.getErrorText().empty()) {
+		std::cout << parser.getErrorText() << std::endl;
+	}
+
 	ASSERT_NE(expression.get(), nullptr);
 
 	ASSERT_EQ(expression->getExpressionType(), expectedReturnType);
@@ -55,6 +59,10 @@ INSTANTIATE_TEST_SUITE_P(FloatTests,
 		RandomRangeTestValues("~(8.7 5.2)", ValueType::Float, 5.2f, 8.7f),
 		RandomRangeTestValues("~(-8.0 -5.0)", ValueType::Float, -8.0f, -5.0f)));
 
+INSTANTIATE_TEST_SUITE_P(ImplicitConversionTest,
+	ExpressionRandomRangeTest,
+	testing::Values(RandomRangeTestValues("~(5 8) + 3.0", ValueType::Float, 8.0f, 12.0f)));
+
 using OperatorTestValues = std::tuple<SCP_string, Value>;
 
 class ExpressionExecutionTest : public testing::TestWithParam<OperatorTestValues> {
@@ -70,6 +78,10 @@ TEST_P(ExpressionExecutionTest, operator_execution)
 	ExpressionParser parser(expressionText);
 
 	const auto expression = parser.parse();
+
+	if (!parser.getErrorText().empty()) {
+		std::cout << parser.getErrorText() << std::endl;
+	}
 
 	ASSERT_NE(expression.get(), nullptr);
 
@@ -107,6 +119,19 @@ INSTANTIATE_TEST_SUITE_P(VectorOperatorTests,
 	testing::Values(OperatorTestValues("(1.0 2.0 3.0) + (3.0 2.0 1.0)", Value(vm_vec_new(4.0, 4.0f, 4.0f))),
 		OperatorTestValues("(4.0 4.0 4.0) - (3.0 2.0 1.0)", Value(vm_vec_new(1.0, 2.0f, 3.0f)))));
 
+INSTANTIATE_TEST_SUITE_P(ImplicitOperatorConversionTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("4 + 5.0", Value(9.0f)),
+		OperatorTestValues("5.0 + 4", Value(9.0f)),
+		OperatorTestValues("4 - 5.0", Value(-1.0f)),
+		OperatorTestValues("5.0 - 4", Value(1.0f))));
+
+INSTANTIATE_TEST_SUITE_P(ImplicitVectorConstructorConversionTests,
+	ExpressionExecutionTest,
+	testing::Values(OperatorTestValues("(1 2 3)", Value(vm_vec_new(1.0f, 2.0f, 3.0f))),
+		OperatorTestValues("(1.0 3.0 2)", Value(vm_vec_new(1.0f, 3.0f, 2.0f))),
+		OperatorTestValues("(1.0 2 + 3 3.0)", Value(vm_vec_new(1.0f, 5.0f, 3.0f)))));
+
 class ExpressionParserFailureTest : public testing::TestWithParam<SCP_string> {
 };
 
@@ -120,24 +145,12 @@ TEST_P(ExpressionParserFailureTest, test_parsing)
 
 	ASSERT_EQ(expression.get(), nullptr);
 	ASSERT_FALSE(parser.getErrorText().empty());
-
-	std::cout << parser.getErrorText() << std::endl;
 }
 
 INSTANTIATE_TEST_SUITE_P(SyntaxError,
 	ExpressionParserFailureTest,
 	testing::Values("(1 2)", "5. 0", "(1 + 2", "1 + 2)"));
-INSTANTIATE_TEST_SUITE_P(OperatorUnknown,
-	ExpressionParserFailureTest,
-	testing::Values("Test - asdf", "(1 2 3) + (4 5 6)"));
-INSTANTIATE_TEST_SUITE_P(OperatorInconsistentType,
-	ExpressionParserFailureTest,
-	testing::Values("4 + 5.0", "5.0 + 4", "4 - 5.0", "5.0 - 4"));
+INSTANTIATE_TEST_SUITE_P(OperatorUnknown, ExpressionParserFailureTest, testing::Values("Test - asdf"));
 INSTANTIATE_TEST_SUITE_P(VectorConstructorTest,
 	ExpressionParserFailureTest,
-	testing::Values("(1 2 3)",
-		"(1.0 3.0 2)",
-		"(~(1.0 2.0) ~(1 2) 3.0)",
-		"(1.0 2 + 3 3.0)",
-		"(Test 1.0 2.0)",
-		"((1.0 1.0 1.0) 1.0 2.0)"));
+	testing::Values("(Test 1.0 2.0)", "((1.0 1.0 1.0) 1.0 2.0)"));

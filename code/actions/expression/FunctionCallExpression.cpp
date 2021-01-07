@@ -63,8 +63,8 @@ bool FunctionCallExpression::validate(antlr4::Parser* parser)
 		}
 
 		parser->notifyErrorListeners(m_token,
-			"Could not find a definition for the operator '" + m_functionName + "' with parameters (" +
-				paramListStream.str() + ")",
+			SCP_string("Could not find a definition for the ") + (m_isOperator ? "operator" : "function") + " '" +
+				m_functionName + "' with parameters (" + paramListStream.str() + ")",
 			nullptr);
 		return false;
 	}

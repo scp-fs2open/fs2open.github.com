@@ -1,6 +1,8 @@
 
 #include "FunctionManager.h"
 
+#include "TypeDefinition.h"
+
 #include "math/vecmat.h"
 
 namespace actions {
@@ -35,24 +37,57 @@ const FunctionManager& FunctionManager::instance()
 	}();
 	return manager;
 }
-void FunctionManager::addOperator(SCP_string name,
+void FunctionManager::addOperator(const SCP_string& name,
 	std::initializer_list<ValueType> parameterTypes,
 	ValueType returnType,
 	FunctionImplementation implementation)
 {
-	m_operators[name].push_back({std::move(name), parameterTypes, returnType, std::move(implementation)});
+	m_operators[name].push_back({name, parameterTypes, returnType, std::move(implementation)});
+
+	std::cout << "Operators: " << m_operators.size() << std::endl;
+	std::cout << "Definitions for " << name << ": " << m_operators[name].size() << std::endl;
 }
 const FunctionDefinition* FunctionManager::findOperator(const SCP_string& name,
 	const SCP_vector<ValueType>& parameters) const
 {
+	std::cout << "Searching for " << name << std::endl;
+
 	const auto iter = m_operators.find(name);
 
 	if (iter == m_operators.end()) {
+		std::cout << "Could not find operator " << name << std::endl;
 		return nullptr;
 	}
 
+	// Prefer exact matches
 	for (const auto& funcDef : iter->second) {
 		if (funcDef.parameterTypes == parameters) {
+			std::cout << "Found exact match for " << name << std::endl;
+			return &funcDef;
+		}
+	}
+
+	// Now check if there are matches with implicit conversions
+	for (const auto& funcDef : iter->second) {
+		// Reject functions with different amount of elements
+		if (funcDef.parameterTypes.size() != parameters.size()) {
+			continue;
+		}
+
+		auto funcParamIter = funcDef.parameterTypes.cbegin();
+		auto actualParamIter = parameters.cbegin();
+
+		bool match = true;
+		for (; funcParamIter != funcDef.parameterTypes.cend(); ++funcParamIter, ++actualParamIter) {
+			if (!checkTypeWithImplicitConversion(*actualParamIter, *funcParamIter)) {
+				// Also doesn't match with implicit conversions
+				match = false;
+				break;
+			}
+		}
+
+		if (match) {
+			std::cout << "Found in-exact match for " << name << std::endl;
 			return &funcDef;
 		}
 	}
