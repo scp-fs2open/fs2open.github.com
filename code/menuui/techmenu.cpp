@@ -1193,29 +1193,14 @@ void techroom_lists_reset()
 
 	// This can be cleared immediately because there are no anims or bitmaps associated.
 	Ship_list.clear();
-
 	Ships_loaded = false;
 
-	for (auto & list_item : Weapon_list) {
-		if (list_item.animation.num_frames != 0) {
-			generic_anim_unload(&list_item.animation);
-		}
+	// now that we're sure all the bitmaps are released, clear the vectors.
+	Weapon_list.clear();
+	Weapons_loaded = false;
 
-		// now that we're sure all the bitmaps are released, clear the vectors.
-		Weapon_list.clear();
-		Weapons_loaded = false;
-
-		Intel_list.clear();
-		Intel_loaded = false;
-
-		// clear the current list of items
-		Current_list->clear();
-
-		// free all models in use before clearing the ship list.
-		model_free_all();
-		Ship_list.clear();
-		Ships_loaded = false;
-	}
+	Intel_list.clear();
+	Intel_loaded = false;
 }
 
 void techroom_close()
