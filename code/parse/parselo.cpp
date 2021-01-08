@@ -4004,12 +4004,12 @@ void sprintf(SCP_string &dest, const char *format, ...)
 }
 
 // Goober5000
-bool end_string_at_first_hash_symbol(char *src)
+bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash)
 {
 	char *p;
 	Assert(src);
 
-	p = get_pointer_to_first_hash_symbol(src);
+	p = get_pointer_to_first_hash_symbol(src, ignore_doubled_hash);
 	if (p)
 	{
 		while ((p != src) && (*(p-1) == ' '))
@@ -4023,9 +4023,9 @@ bool end_string_at_first_hash_symbol(char *src)
 }
 
 // Goober5000
-bool end_string_at_first_hash_symbol(SCP_string &src)
+bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 {
-	int index = get_index_of_first_hash_symbol(src);
+	int index = get_index_of_first_hash_symbol(src, ignore_doubled_hash);
 	if (index >= 0)
 	{
 		while (index > 0 && src[index-1] == ' ')
@@ -4039,24 +4039,73 @@ bool end_string_at_first_hash_symbol(SCP_string &src)
 }
 
 // Goober5000
-char *get_pointer_to_first_hash_symbol(char *src)
+char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash)
 {
 	Assert(src);
-	return strchr(src, '#');
+
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src; *ch; ++ch)
+		{
+			if (*ch == '#')
+			{
+				if (*(ch + 1) == '#')
+					++ch;
+				else
+					return ch;
+			}
+		}
+		return nullptr;
+	}
+	else
+		return strchr(src, '#');
 }
 
 // Goober5000
-const char *get_pointer_to_first_hash_symbol(const char *src)
+const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash)
 {
 	Assert(src);
-	return strchr(src, '#');
+
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src; *ch; ++ch)
+		{
+			if (*ch == '#')
+			{
+				if (*(ch + 1) == '#')
+					++ch;
+				else
+					return ch;
+			}
+		}
+		return nullptr;
+	}
+	else
+		return strchr(src, '#');
 }
 
 // Goober5000
-int get_index_of_first_hash_symbol(SCP_string &src)
+int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 {
-	size_t pos = src.find('#');
-	return (pos == SCP_string::npos) ? -1 : (int)pos;
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src.begin(); ch != src.end(); ++ch)
+		{
+			if (*ch == '#')
+			{
+				if ((ch + 1) != src.end() && *(ch + 1) == '#')
+					++ch;
+				else
+					return (int)std::distance(src.begin(), ch);
+			}
+		}
+		return -1;
+	}
+	else
+	{
+		size_t pos = src.find('#');
+		return (pos == SCP_string::npos) ? -1 : (int)pos;
+	}
 }
 
 // Goober5000

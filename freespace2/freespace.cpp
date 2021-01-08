@@ -1314,6 +1314,8 @@ void game_post_level_init()
 
 	freespace_mission_load_stuff();
 
+	mission_process_alt_types();
+
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
 		Script_system.SetHookObject("Player", Player_obj);

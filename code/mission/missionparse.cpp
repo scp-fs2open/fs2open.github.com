@@ -8085,6 +8085,33 @@ void mission_parse_reset_alt()
 	Mission_alt_type_count = 0;
 }
 
+// For compatibility purposes some mods want alt names to truncate at the hash symbol.  But we can't actually do that at mission load,
+// since we have to save them again in FRED.  So this function processes the names just before the mission starts.
+// To further complicate things, some mods actually want the hash to be displayed.  So this function uses the double-hash as an escape sequence for a single hash.
+void mission_process_alt_types()
+{
+	for (int i = 0; i < Mission_alt_type_count; ++i)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
+
+		// consolidate double hashes
+		auto src = Mission_alt_types[i];
+		auto dest = src;
+		while (*src)
+		{
+			if (*src == '#' && *(src + 1) == '#')
+				dest--;
+
+			++src;
+			++dest;
+
+			if (src != dest)
+				*dest = *src;
+		}
+	}
+}
+
 /**
  * Callsign stuff
  */
