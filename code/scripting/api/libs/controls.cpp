@@ -2,7 +2,8 @@
 //
 
 #include "controls.h"
-#include "enums.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/control_binding.h"
 
 #include "io/mouse.h"
 #include "io/cursor.h"
@@ -19,6 +20,33 @@ namespace api {
 
 //**********LIBRARY: Controls library
 ADE_LIB(l_Mouse, "Controls", "io", "Controls library");
+
+//****SUBLIBRARY: Controls/Keybindings
+ADE_LIB_DERIV(l_Control_Keybindings, "Keybinding", nullptr, nullptr, l_Mouse);
+
+ADE_INDEXER(l_Control_Keybindings, "string Name", "Gets handle to a keybinding", "keybinding", "Key binding handle, or invalid key binding handle if name is invalid")
+{
+	int idx = -1;
+
+	const char* name = nullptr;
+
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+	
+	if (name == nullptr)
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+
+	idx = ActionToVal(name);
+	
+	if (idx < 0 || idx >= IoActionId::CCFG_MAX)
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+	else
+		return ade_set_args(L, "o", l_ControlBinding.Set(idx));
+}
+ADE_FUNC(__len, l_Control_Keybindings, NULL, "Number of keybindings.", "number", "Number of keybindings in mission")
+{
+	return ade_set_args(L, "i", (int) IoActionId::CCFG_MAX);
+}
 
 ADE_FUNC(getMouseX, l_Mouse, NULL, "Gets Mouse X pos", "number", "Mouse x position, or 0 if mouse is not initialized yet")
 {

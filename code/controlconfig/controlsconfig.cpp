@@ -2466,7 +2466,7 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if (item.disabled)
+	if (item.disabled || item.locked)
 		return 0;
 
 	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
@@ -2535,17 +2535,21 @@ int check_control_used(int id, int key)
 
 int check_control(int id, int key) 
 {
-	if (check_control_used(id, key)) {
-		if (Ignored_keys[id]) {
-			if (Ignored_keys[id] > 0) {
-				Ignored_keys[id]--;
-			}
-			return 0;
-		}
-		return 1;
+	const bool is_control_used = check_control_used(id, key) != 0;
+	const bool is_ignored = Ignored_keys[id] != 0;
+
+	//Decrement Ignored_keys if key was pressed and is ignored
+	if (is_control_used && Ignored_keys[id] > 0) {
+		Ignored_keys[id]--;
 	}
 
-	if (Control_config[id].continuous_ongoing) {
+	bool control_triggered = is_control_used && !is_ignored;
+
+	//Only call lua in here when it's a continuous button
+	if (Control_config[id].type == CC_TYPE_CONTINUOUS)
+		control_triggered &= !control_run_lua(static_cast<IoActionId>(id), control_triggered ? 1 : 0);
+
+	if (!is_control_used && Control_config[id].continuous_ongoing) {
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
@@ -2556,7 +2560,7 @@ int check_control(int id, int key)
 		Control_config[id].continuous_ongoing = false;
 	}
 
-	return 0;
+	return control_triggered ? 1 : 0;
 }
 
 /**
@@ -2676,7 +2680,8 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	}
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
-		CCI & item = Control_config[action + JOY_AXIS_BEGIN];
+		const IoActionId action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
+		CCI & item = Control_config[action_id];
 
 		// Assume actions are all axis actions, no need to check
 		// Assumes all axes are uniquely bound to an action
@@ -2689,6 +2694,28 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		if (!item.second.empty()) {
 			scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
 		}
+
+		//Call Lua hooks
+		if (control_run_lua(action_id, axis_v[action])) {
+			Assert(item.type == CC_TYPE_AXIS_ABS || item.type == CC_TYPE_AXIS_REL);
+
+			switch (item.type) {
+			case CC_TYPE_AXIS_ABS:
+				axis_v[action] = item.used;
+				break;
+			case CC_TYPE_AXIS_REL:
+				axis_v[action] = 0;
+				break;
+			case CC_TYPE_AXIS_BTN_NEG:
+			case CC_TYPE_AXIS_BTN_POS:
+			default:
+				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
+				break;
+			}
+		}
+
+		//Store values for possible lua override
+		item.used = axis_v[action];
 	}
 }
 

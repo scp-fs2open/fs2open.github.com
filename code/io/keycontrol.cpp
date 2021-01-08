@@ -2314,7 +2314,7 @@ int button_function(int n)
 {
 	Assert(n >= 0);
 
-	if (Control_config[n].disabled)
+	if (Control_config[n].disabled || Control_config[n].locked)
 		return 0;
 
 	// check if the button has been set to be ignored by a SEXP
@@ -2327,6 +2327,12 @@ int button_function(int n)
 
 	//	No keys, not even targeting keys, when player in death roll.  He can press keys after he blows up.
 	if (Game_mode & GM_DEAD_DIED){
+		return 0;
+	}
+
+	//Keys can now be used. Execute ccd.tbl hooks
+	if (control_run_lua(static_cast<IoActionId>(n), 0)) {
+		//Lua told us to override
 		return 0;
 	}
 

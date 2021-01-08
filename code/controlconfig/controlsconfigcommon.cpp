@@ -23,6 +23,7 @@
 #include "localization/localize.h"
 #include "options/Option.h"
 #include "parse/parselo.h"
+#include "scripting/scripting.h"
 
 #include <map>
 
@@ -72,6 +73,13 @@ SCP_vector<CCI> Control_config;
 
 //! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings. [0] is the default preset.
 SCP_vector<CC_preset> Control_config_presets;
+
+struct LuaHook {
+	bool enabled = false;
+	luacpp::LuaFunction hook;
+	luacpp::LuaFunction override;
+};
+SCP_map<IoActionId, LuaHook> Lua_hooks;
 
 /**
  * Initializes the Control_config vector and the hardcoded defaults preset
@@ -693,7 +701,11 @@ void control_config_common_init()
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
-	
+
+	for (int i = 0; i < Action::NUM_VALUES; i++) {
+		Control_config[i + JOY_AXIS_BEGIN].used = 32768;
+	}
+
 	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
 	// preset we're currently using for .plr and .csg
 	// Load controlconfigdefaults.tbl overrides and mod presets
@@ -1156,6 +1168,144 @@ size_t find_control_by_text(SCP_string &text) {
 	return item_id;
 }
 
+/*
+* Button hooks can happen more than once a frame, and that is intended.
+* Axis hooks happen exactly once a frame.
+* But due to implementation, continuous hooks could happen an unspecified number of times. So we need to cache if a hook occurred, and what it's override setting was
+* Bit at IoActionId * 2 sets if this action has been run before, Bit at IoActionId * 2 + 1 sets the cached value
+*/
+class controls_lua_override_cache {
+	std::bitset<IoActionId::CCFG_MAX> lua_was_called; //!< The cache storing if an id had been cached before
+	std::bitset<IoActionId::CCFG_MAX> lua_override_cache; //!< The cache storing the actual cached value
+
+public:
+	/**
+	* @brief Resets the override cache and clears all values
+	*/
+	void reset() {
+		lua_was_called.reset();
+		lua_override_cache.reset();
+	}
+
+	/**
+	* @returns true if there is a cached value for this id, false otherwise
+	*/
+	bool isCached(IoActionId id) const {
+		return lua_was_called[id];
+	}
+
+	/**
+	* @returns the cached value for this id
+	*/
+	bool operator[](IoActionId id) const {
+		Assertion(isCached(id), "A lua override check for IoActionId %d's hook was requested, but the hook hasn't been cached.", id);
+		return lua_override_cache[id];
+	}
+
+	/**
+	* @brief Adds a new value to the cache
+	*/
+	void emplace(IoActionId id, bool override) {
+		lua_was_called[id] = true;
+		lua_override_cache[id] = override;
+	}
+
+} Controls_lua_override_cache;
+
+void control_reset_lua_cache() {
+	Controls_lua_override_cache.reset();
+}
+
+bool control_run_lua(IoActionId id, int value) {
+
+	auto hook_it = Lua_hooks.find(id);
+
+	if (hook_it == Lua_hooks.end() || !hook_it->second.enabled) {
+		return false;
+	}
+	
+	const LuaHook& hook = hook_it->second;
+	const bool isAxis = Control_config[id].is_axis();
+	const bool isContinuous = Control_config[id].type == CC_TYPE_CONTINUOUS;
+
+	if (isContinuous) {
+		if (Controls_lua_override_cache.isCached(id)) {
+			//Found a cached value. Return and stop evaluating
+			return Controls_lua_override_cache[id];
+		}
+
+		Script_system.SetHookVar("Pressed", 'b', value != 0);
+	}
+
+	//Load hv.Value if it is an Axis
+	if(isAxis)
+		Script_system.SetHookVar("Value", 'f', f2fl(value));
+
+	//Check Override if it exists
+	bool override = false;
+	if (hook.override.isValid()) {
+		auto return_vals = hook.override.call(Script_system.GetLuaSession());
+
+		if (return_vals.size() != 1) {
+			Warning(LOCATION,
+				"Wrong number of return values for Lua keybinding override '%s'! Expected 1, got " SIZE_T_ARG ".",
+				ValToAction(id),
+				return_vals.size());
+		}
+		else if (return_vals[0].getValueType() != luacpp::ValueType::BOOLEAN) {
+			Warning(LOCATION, "Wrong return type detected for Lua keybinding override '%s', expected a boolean.", ValToAction(id));
+		}
+		else {
+			override = return_vals[0].getValue<bool>();
+		}
+	}
+
+	//Run Main Hook
+	if (hook.hook.isValid()) {
+		hook.hook.call(Script_system.GetLuaSession());
+	}
+
+	if(isAxis)
+		Script_system.RemHookVars({ "Value" });
+
+	if (isContinuous) {
+		Script_system.RemHookVars({ "Pressed" });
+
+		Controls_lua_override_cache.emplace(id, override);
+	}
+
+	return override;
+}
+
+void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault) {
+	Control_config[id].scriptEnabledByDefault = enabledByDefault;
+
+	LuaHook* hook_entry = &Lua_hooks[static_cast<IoActionId>(id)];
+	
+	hook_entry->enabled = enabledByDefault;
+
+	if(!is_override)
+		hook_entry->hook = hook;
+	else
+		hook_entry->override = hook;
+}
+
+void control_reset_hook() {
+	for (auto& hook : Lua_hooks) {
+		hook.second.enabled = Control_config[hook.first].scriptEnabledByDefault;
+	}
+}
+
+void control_enable_hook(IoActionId id, bool enable) {
+	auto hook_it = Lua_hooks.find(id);
+
+	if (hook_it == Lua_hooks.end()) {
+		return;
+	}
+
+	hook_it->second.enabled = enable;
+}
+
 /**
  * Stuffs the CCF flags into the given char.  Needs item_id for validation
  */
@@ -1516,6 +1666,16 @@ void control_config_common_read_section(int s) {
 
 			if (optional_string("$Disable:")) {
 				stuff_boolean(&item->disabled);
+			}
+
+			if (optional_string("+Locked")) {
+				item->locked = true;
+			} else {
+				item->locked = false;
+			}
+
+			if (optional_string("Locked:")) {
+				stuff_boolean(&item->locked);
 			}
 		}
 	}
@@ -2467,6 +2627,8 @@ CCI& CCI::operator=(const CCI& A) {
 	type = A.type;
 	used = A.used;
 	disabled = A.disabled;
+	locked = A.locked;
+	scriptEnabledByDefault = A.scriptEnabledByDefault;
 	continuous_ongoing = A.continuous_ongoing;
 
 	return *this;

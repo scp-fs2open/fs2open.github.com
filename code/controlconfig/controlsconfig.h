@@ -12,6 +12,7 @@
 #define CONTROLS_CONFIG_H
 
 #include "globalincs/pstypes.h"
+#include "scripting/scripting.h"
 
 #define CONTROL_CONFIG_XSTR	507
 
@@ -543,8 +544,10 @@ public:
 	CC_type type;           //!< manner control should be checked in
 
 // Items used during gameplay
-	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
+	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp. For axes, this denotes the last frame's value
 	bool disabled = true;       //!< whether this action should be available at all
+	bool locked = false;		//!< whether this action will be triggered by the respectively bound key
+	bool scriptEnabledByDefault = false; //!< whether this binding will execute it's registered hooks if triggered. Resets each mission
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
 public:
@@ -773,6 +776,35 @@ void control_get_axes_readings(int *axis_v, float frame_time);
  * @details Updates the ::used timestamp, triggers a script hook, and marks ::continous_ongoing as true
  */
 void control_used(int id);
+
+/**
+ * @brief Runs a given controlbindings lua hook added in ccd.tbl
+ *
+ * @return Whether the control should be overridden
+ */
+bool control_run_lua(IoActionId id, int value);
+
+/**
+ * @brief Resets the cache for script evaluations for continuous buttons. Should be called once per frame.
+ *
+*/
+void control_reset_lua_cache();
+
+/**
+ * @brief Registers a new hook for the keybinding action system.
+ * Parameters set if it is a normal or an override function, as well as if it is enabled by default or needs to be enabled manually each mission
+ */
+void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault);
+
+/**
+ * @brief Enables or disables the respective Lua hook
+ */
+void control_enable_hook(IoActionId id, bool enable);
+
+/**
+ * @brief Resets every hooks enable state to the tabled value. Call on Mission start
+ */
+void control_reset_hook();
 
 /**
  * @brief Clears the bindings of all controls

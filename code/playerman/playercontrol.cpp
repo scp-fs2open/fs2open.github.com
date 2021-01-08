@@ -548,6 +548,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
+	control_reset_lua_cache();
 
 	// Camera & View controls
 	if ( Viewer_mode & VM_EXTERNAL ) {
