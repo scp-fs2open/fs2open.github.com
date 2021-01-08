@@ -899,9 +899,16 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			}
 			break;
 		case OBJ_WEAPON:
-			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min(modelnum, &targetp->orient, &targetp->pos, &x1, &y1, &x2, &y2);
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx, &targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int)vtx.screen.xyw.x;
+				y1 = y2 = (int)vtx.screen.xyw.y;
+			}
 			break;
 		case OBJ_ASTEROID:
 			pof = Asteroids[targetp->instance].asteroid_subtype;
