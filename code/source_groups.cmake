@@ -9,32 +9,41 @@ add_file_folder(""
 add_file_folder("Actions"
 	actions/Action.cpp
 	actions/Action.h
+	actions/ActionDefinition.cpp
+	actions/ActionDefinition.h
+	actions/ActionDefinitionManager.cpp
+	actions/ActionDefinitionManager.h
+	actions/BuiltinActionDefinition.cpp
+	actions/BuiltinActionDefinition.h
 	actions/common.h
 	actions/Program.cpp
 	actions/Program.h
 )
 
 add_file_folder("Actions\\\\Expression"
-	actions/expression/AbstractExpression.cpp
-	actions/expression/AbstractExpression.h
 	actions/expression/ActionExpression.cpp
 	actions/expression/ActionExpression.h
 	actions/expression/ExpressionParser.cpp
 	actions/expression/ExpressionParser.h
-	actions/expression/FunctionCallExpression.cpp
-	actions/expression/FunctionCallExpression.h
 	actions/expression/FunctionManager.cpp
 	actions/expression/FunctionManager.h
-	actions/expression/LiteralExpression.cpp
-	actions/expression/LiteralExpression.h
-	actions/expression/RandomRangeExpression.cpp
-	actions/expression/RandomRangeExpression.h
 	actions/expression/TypeDefinition.cpp
 	actions/expression/TypeDefinition.h
 	actions/expression/Value.cpp
 	actions/expression/Value.h
-	actions/expression/VectorConstructorExpression.cpp
-	actions/expression/VectorConstructorExpression.h
+)
+
+add_file_folder("Actions\\\\Expression\\\\Nodes"
+	actions/expression/nodes/AbstractExpression.cpp
+	actions/expression/nodes/AbstractExpression.h
+	actions/expression/nodes/FunctionCallExpression.cpp
+	actions/expression/nodes/FunctionCallExpression.h
+	actions/expression/nodes/LiteralExpression.cpp
+	actions/expression/nodes/LiteralExpression.h
+	actions/expression/nodes/RandomRangeExpression.cpp
+	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VectorConstructorExpression.cpp
+	actions/expression/nodes/VectorConstructorExpression.h
 )
 
 add_file_folder("Actions\\\\Types"
@@ -1509,6 +1518,7 @@ add_file_folder("Utils"
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
+	utils/join_string.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

@@ -3,6 +3,7 @@
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 AbstractExpression::AbstractExpression(antlr4::Token* token) : m_token(token) {}
 AbstractExpression::~AbstractExpression() = default;
@@ -19,10 +20,12 @@ ValueType AbstractExpression::getExpressionType() const
 	}
 	return m_cachedType;
 }
-void AbstractExpression::validationDone() {
+void AbstractExpression::validationDone()
+{
 	// This pointer will become invalid after this so reset it now to avoid issues
 	m_token = nullptr;
 }
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

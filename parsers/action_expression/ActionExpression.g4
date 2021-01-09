@@ -19,7 +19,7 @@ value_expression
 literal_expression
  : FLOAT
  | INT
- | IDENTIFIER
+ | STRING
  ;
 
 random_range_expression: RAND_L_PAREN expression expression R_PAREN;
@@ -41,8 +41,7 @@ RAND_L_PAREN: '~(';
 L_PAREN: '(';
 R_PAREN: ')';
 
-// Identifiers allow spaces to support simple cases where we only have a single identifier
-IDENTIFIER: [a-zA-Z][a-zA-Z0-9 ]*;
+STRING: '"' .*? '"';
 
 SPACE
  : [ \t\r\n] -> skip

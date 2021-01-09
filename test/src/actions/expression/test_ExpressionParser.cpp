@@ -100,7 +100,7 @@ INSTANTIATE_TEST_SUITE_P(LiteralTests,
 	ExpressionExecutionTest,
 	testing::Values(OperatorTestValues("5", Value(5)),
 		OperatorTestValues("8.0", Value(8.0f)),
-		OperatorTestValues("This is an identifier ", Value("This is an identifier "))));
+		OperatorTestValues("\"This is an identifier \"", Value("This is an identifier "))));
 
 INSTANTIATE_TEST_SUITE_P(VectorConstructorTests,
 	ExpressionExecutionTest,
@@ -150,7 +150,7 @@ TEST_P(ExpressionParserFailureTest, test_parsing)
 INSTANTIATE_TEST_SUITE_P(SyntaxError,
 	ExpressionParserFailureTest,
 	testing::Values("(1 2)", "5. 0", "(1 + 2", "1 + 2)"));
-INSTANTIATE_TEST_SUITE_P(OperatorUnknown, ExpressionParserFailureTest, testing::Values("Test - asdf"));
+INSTANTIATE_TEST_SUITE_P(OperatorUnknown, ExpressionParserFailureTest, testing::Values("\"Test\" - \"asdf\""));
 INSTANTIATE_TEST_SUITE_P(VectorConstructorTest,
 	ExpressionParserFailureTest,
-	testing::Values("(Test 1.0 2.0)", "((1.0 1.0 1.0) 1.0 2.0)"));
+	testing::Values("(\"Test\" 1.0 2.0)", "((1.0 1.0 1.0) 1.0 2.0)"));

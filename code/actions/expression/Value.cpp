@@ -20,7 +20,7 @@ ValueType actions::expression::Value::getType() const
 	case 3:
 		return ValueType::Vector;
 	case 4:
-		return ValueType::Identifier;
+		return ValueType::String;
 	default:
 		return ValueType::Invalid;
 	}
@@ -67,7 +67,7 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
 	case ValueType::Vector:
 		os << value.get<vec3d>();
 		break;
-	case ValueType::Identifier:
+	case ValueType::String:
 		os << value.get<SCP_string>();
 		break;
 	}

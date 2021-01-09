@@ -5,20 +5,34 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
+
+flagset<ProgramContextFlags> ParticleEffectAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{ProgramContextFlags::HasObject};
+}
+
+ParticleEffectAction::ParticleEffectAction(expression::TypedActionExpression<ValueType> effectExpression)
+	: m_effectExpression(std::move(effectExpression))
+{
+}
 ParticleEffectAction::~ParticleEffectAction() = default;
 
 ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 {
-	if (!_effectHandle.isValid()) {
+	auto effectIdx = particle::ParticleManager::get()->getEffectByName(m_effectExpression.execute());
+
+	if (!effectIdx.isValid()) {
 		// In case the parsing code failed
-		return ActionResult::Finished;
+		return ActionResult::Errored;
 	}
 
 	using namespace particle;
 
-	auto source = ParticleManager::get()->createSource(_effectHandle);
+	auto source = ParticleManager::get()->createSource(effectIdx);
 
 	vec3d local_pos;
 	matrix local_orient;
@@ -49,14 +63,6 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	source.finish();
 
 	return ActionResult::Finished;
-}
-
-void ParticleEffectAction::parseValues(const flagset<ProgramContextFlags>& parse_flags)
-{
-	if (!parse_flags[ProgramContextFlags::HasObject]) {
-		error_display(1, "The particle effect action requires a host object but in this context none is available!");
-	}
-	_effectHandle = particle::util::parseEffect();
 }
 
 std::unique_ptr<Action> ParticleEffectAction::clone() const

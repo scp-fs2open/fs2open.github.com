@@ -1,12 +1,13 @@
 
 #include "RandomRangeExpression.h"
 
-#include "TypeDefinition.h"
-
+#include "actions/expression/TypeDefinition.h"
 #include "utils/RandomRange.h"
 
 namespace actions {
 namespace expression {
+namespace nodes {
+
 namespace {
 
 template <typename T>
@@ -102,5 +103,6 @@ void RandomRangeExpression::validationDone()
 	m_rightExpression->validationDone();
 }
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

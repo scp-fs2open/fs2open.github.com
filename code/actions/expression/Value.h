@@ -38,7 +38,7 @@ enum class ValueType
 	Integer,
 	Float,
 	Vector,
-	Identifier,
+	String,
 };
 
 template <typename T>
@@ -58,7 +58,7 @@ struct ValueTypeTraits<vec3d> {
 };
 template <>
 struct ValueTypeTraits<SCP_string> {
-	static constexpr ValueType type = ValueType::Identifier;
+	static constexpr ValueType type = ValueType::String;
 };
 
 class Value {

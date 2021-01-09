@@ -13,7 +13,7 @@ class  ActionExpressionParser : public antlr4::Parser {
 public:
   enum {
     PLUS = 1, MINUS = 2, FLOAT = 3, INT = 4, RAND_L_PAREN = 5, L_PAREN = 6, 
-    R_PAREN = 7, IDENTIFIER = 8, SPACE = 9, OTHER = 10
+    R_PAREN = 7, STRING = 8, SPACE = 9, OTHER = 10
   };
 
   enum {
@@ -108,7 +108,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *FLOAT();
     antlr4::tree::TerminalNode *INT();
-    antlr4::tree::TerminalNode *IDENTIFIER();
+    antlr4::tree::TerminalNode *STRING();
 
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

@@ -7,16 +7,20 @@ namespace actions {
 namespace types {
 
 class SetDirectionAction : public Action {
-	expression::ActionExpression<vec3d> _newDirExpression;
-
   public:
+	using ValueType = vec3d;
+
+	static flagset<ProgramContextFlags> getRequiredExecutionContextFlags();
+
+	SetDirectionAction(expression::TypedActionExpression<ValueType> newDirExpression);
 	~SetDirectionAction() override;
 
 	ActionResult execute(ProgramLocals& locals) const override;
 
-	void parseValues(const flagset<ProgramContextFlags>& parse_flags) override;
-
 	std::unique_ptr<Action> clone() const override;
+
+  private:
+	expression::TypedActionExpression<ValueType> m_newDirExpression;
 };
 
 } // namespace types
