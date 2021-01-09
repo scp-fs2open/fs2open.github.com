@@ -3,6 +3,7 @@
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 LiteralExpression::LiteralExpression(antlr4::Token* token, Value literalValue)
 	: AbstractExpression(token), m_literalValue(std::move(literalValue))
@@ -24,5 +25,6 @@ ValueType LiteralExpression::determineReturnType() const
 	return m_literalValue.getType();
 }
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

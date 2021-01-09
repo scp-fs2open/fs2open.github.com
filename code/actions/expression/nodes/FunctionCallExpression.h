@@ -1,11 +1,13 @@
 #pragma once
 
 #include "AbstractExpression.h"
-#include "FunctionManager.h"
-#include "Value.h"
+
+#include "actions/expression/FunctionManager.h"
+#include "actions/expression/Value.h"
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 class FunctionCallExpression : public AbstractExpression {
   public:
@@ -31,5 +33,6 @@ class FunctionCallExpression : public AbstractExpression {
 	SCP_vector<std::shared_ptr<AbstractExpression>> m_parameterExpressions;
 };
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

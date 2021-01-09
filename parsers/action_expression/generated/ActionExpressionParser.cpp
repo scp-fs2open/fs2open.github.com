@@ -311,7 +311,7 @@ ActionExpressionParser::Value_expressionContext* ActionExpressionParser::value_e
     switch (_input->LA(1)) {
       case ActionExpressionParser::FLOAT:
       case ActionExpressionParser::INT:
-      case ActionExpressionParser::IDENTIFIER: {
+      case ActionExpressionParser::STRING: {
         enterOuterAlt(_localctx, 1);
         setState(35);
         literal_expression();
@@ -353,8 +353,8 @@ tree::TerminalNode* ActionExpressionParser::Literal_expressionContext::INT() {
   return getToken(ActionExpressionParser::INT, 0);
 }
 
-tree::TerminalNode* ActionExpressionParser::Literal_expressionContext::IDENTIFIER() {
-  return getToken(ActionExpressionParser::IDENTIFIER, 0);
+tree::TerminalNode* ActionExpressionParser::Literal_expressionContext::STRING() {
+  return getToken(ActionExpressionParser::STRING, 0);
 }
 
 
@@ -385,7 +385,7 @@ ActionExpressionParser::Literal_expressionContext* ActionExpressionParser::liter
     if (!((((_la & ~ 0x3fULL) == 0) &&
       ((1ULL << _la) & ((1ULL << ActionExpressionParser::FLOAT)
       | (1ULL << ActionExpressionParser::INT)
-      | (1ULL << ActionExpressionParser::IDENTIFIER))) != 0))) {
+      | (1ULL << ActionExpressionParser::STRING))) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -570,7 +570,7 @@ std::vector<std::string> ActionExpressionParser::_literalNames = {
 
 std::vector<std::string> ActionExpressionParser::_symbolicNames = {
   "", "PLUS", "MINUS", "FLOAT", "INT", "RAND_L_PAREN", "L_PAREN", "R_PAREN", 
-  "IDENTIFIER", "SPACE", "OTHER"
+  "STRING", "SPACE", "OTHER"
 };
 
 dfa::Vocabulary ActionExpressionParser::_vocabulary(_literalNames, _symbolicNames);

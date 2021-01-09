@@ -4,6 +4,7 @@
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 class RandomRangeExpression : public AbstractExpression {
   public:
@@ -24,5 +25,6 @@ class RandomRangeExpression : public AbstractExpression {
 	std::shared_ptr<AbstractExpression> m_rightExpression;
 };
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

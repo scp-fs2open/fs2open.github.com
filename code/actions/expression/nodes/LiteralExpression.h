@@ -1,10 +1,12 @@
 #pragma once
 
 #include "AbstractExpression.h"
-#include "Value.h"
+
+#include "actions/expression/Value.h"
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 class LiteralExpression : public AbstractExpression {
   public:
@@ -21,5 +23,6 @@ class LiteralExpression : public AbstractExpression {
 	Value m_literalValue;
 };
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

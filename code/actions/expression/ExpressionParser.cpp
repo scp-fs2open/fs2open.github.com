@@ -1,11 +1,10 @@
 
 #include "ExpressionParser.h"
 
-#include "FunctionCallExpression.h"
-#include "LiteralExpression.h"
-#include "RandomRangeExpression.h"
-#include "VectorConstructorExpression.h"
-
+#include "actions/expression/nodes/FunctionCallExpression.h"
+#include "actions/expression/nodes/LiteralExpression.h"
+#include "actions/expression/nodes/RandomRangeExpression.h"
+#include "actions/expression/nodes/VectorConstructorExpression.h"
 #include "libs/antlr/ErrorListener.h"
 
 PUSH_SUPPRESS_WARNINGS
@@ -48,38 +47,41 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 			operatorText = context->MINUS()->getText();
 		}
 
-		const auto leftExpr = visit(context->expression(0)).as<std::shared_ptr<AbstractExpression>>();
-		const auto rightExpr = visit(context->expression(1)).as<std::shared_ptr<AbstractExpression>>();
+		const auto leftExpr = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto rightExpr = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
 
-		auto operatorExpression = std::make_shared<FunctionCallExpression>(operatorTok,
+		auto operatorExpression = std::make_shared<nodes::FunctionCallExpression>(operatorTok,
 			true,
 			std::move(operatorText),
-			SCP_vector<std::shared_ptr<AbstractExpression>>{leftExpr, rightExpr});
-		return std::static_pointer_cast<AbstractExpression>(operatorExpression);
+			SCP_vector<std::shared_ptr<nodes::AbstractExpression>>{leftExpr, rightExpr});
+		return std::static_pointer_cast<nodes::AbstractExpression>(operatorExpression);
 	}
 	antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext* context) override
 	{
-		auto expression = std::make_shared<RandomRangeExpression>(context->RAND_L_PAREN()->getSymbol(),
-			visit(context->expression(0)).as<std::shared_ptr<AbstractExpression>>(),
-			visit(context->expression(1)).as<std::shared_ptr<AbstractExpression>>());
-		return std::static_pointer_cast<AbstractExpression>(expression);
+		auto expression = std::make_shared<nodes::RandomRangeExpression>(context->RAND_L_PAREN()->getSymbol(),
+			visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>(),
+			visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>());
+		return std::static_pointer_cast<nodes::AbstractExpression>(expression);
 	}
 	antlrcpp::Any visitLiteral_expression(ActionExpressionParser::Literal_expressionContext* context) override
 	{
-		std::shared_ptr<LiteralExpression> expression;
+		std::shared_ptr<nodes::LiteralExpression> expression;
 
 		if (context->FLOAT() != nullptr) {
-			expression = std::make_shared<LiteralExpression>(context->FLOAT()->getSymbol(),
+			expression = std::make_shared<nodes::LiteralExpression>(context->FLOAT()->getSymbol(),
 				Value(std::stof(context->FLOAT()->getText())));
 		} else if (context->INT() != nullptr) {
-			expression = std::make_shared<LiteralExpression>(context->INT()->getSymbol(),
+			expression = std::make_shared<nodes::LiteralExpression>(context->INT()->getSymbol(),
 				Value(std::stoi(context->INT()->getText())));
 		} else {
-			expression = std::make_shared<LiteralExpression>(context->IDENTIFIER()->getSymbol(),
-				Value(context->IDENTIFIER()->getText()));
+			const auto idText = context->STRING()->getText();
+
+			// Cut off the first and last characters since those are the < > braces
+			expression = std::make_shared<nodes::LiteralExpression>(context->STRING()->getSymbol(),
+				Value(idText.substr(1, idText.size() - 2)));
 		}
 
-		return std::static_pointer_cast<AbstractExpression>(expression);
+		return std::static_pointer_cast<nodes::AbstractExpression>(expression);
 	}
 	antlrcpp::Any visitParenthesis_expression(ActionExpressionParser::Parenthesis_expressionContext* context) override
 	{
@@ -91,16 +93,16 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 	}
 	antlrcpp::Any visitVec3d_constructor(ActionExpressionParser::Vec3d_constructorContext* context) override
 	{
-		auto xExpression = visit(context->expression(0)).as<std::shared_ptr<AbstractExpression>>();
-		auto yExpression = visit(context->expression(1)).as<std::shared_ptr<AbstractExpression>>();
-		auto zExpression = visit(context->expression(2)).as<std::shared_ptr<AbstractExpression>>();
+		auto xExpression = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		auto yExpression = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		auto zExpression = visit(context->expression(2)).as<std::shared_ptr<nodes::AbstractExpression>>();
 
-		auto expression = std::make_shared<VectorConstructorExpression>(context->L_PAREN()->getSymbol(),
+		auto expression = std::make_shared<nodes::VectorConstructorExpression>(context->L_PAREN()->getSymbol(),
 			xExpression,
 			yExpression,
 			zExpression);
 
-		return std::static_pointer_cast<AbstractExpression>(expression);
+		return std::static_pointer_cast<nodes::AbstractExpression>(expression);
 	}
 };
 
@@ -108,7 +110,7 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 
 ExpressionParser::ExpressionParser(SCP_string expressionText) : m_expressionText(std::move(expressionText)) {}
 
-std::shared_ptr<AbstractExpression> ExpressionParser::parse()
+std::shared_ptr<nodes::AbstractExpression> ExpressionParser::parse()
 {
 	antlr4::ANTLRInputStream input(m_expressionText);
 	ActionExpressionLexer lexer(&input);
@@ -122,11 +124,11 @@ std::shared_ptr<AbstractExpression> ExpressionParser::parse()
 
 	antlr4::tree::ParseTree* tree = parser.expression_main();
 
-	std::shared_ptr<AbstractExpression> exprReturn;
+	std::shared_ptr<nodes::AbstractExpression> exprReturn;
 	if (errListener.diagnostics.empty()) {
 		// Only do semantic checking if syntax is valid
 		ExpressionBuilderVisitor builder;
-		exprReturn = tree->accept(&builder).as<std::shared_ptr<AbstractExpression>>();
+		exprReturn = tree->accept(&builder).as<std::shared_ptr<nodes::AbstractExpression>>();
 
 		if (!exprReturn->validate(&parser)) {
 			exprReturn = nullptr;

@@ -4,23 +4,30 @@
 #include "math/vecmat.h"
 #include "parse/parselo.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
+
+flagset<ProgramContextFlags> SetDirectionAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{};
+}
+
+SetDirectionAction::SetDirectionAction(expression::TypedActionExpression<vec3d> newDirExpression)
+	: m_newDirExpression(std::move(newDirExpression))
+{
+}
 SetDirectionAction::~SetDirectionAction() = default;
 
 ActionResult SetDirectionAction::execute(ProgramLocals& locals) const
 {
-	auto dir = _newDirExpression.execute();
+	auto dir = m_newDirExpression.execute();
 
 	vm_vec_normalize_safe(&dir);
 
 	locals.direction = dir;
 	return ActionResult::Finished;
-}
-
-void SetDirectionAction::parseValues(const flagset<ProgramContextFlags>& /*parse_flags*/)
-{
-	_newDirExpression = expression::ActionExpression<vec3d>::parseFromTable();
 }
 
 std::unique_ptr<Action> SetDirectionAction::clone() const

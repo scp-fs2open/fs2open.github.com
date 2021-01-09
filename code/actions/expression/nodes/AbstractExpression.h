@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Value.h"
+#include "actions/expression/Value.h"
 
-#include <Token.h>
 #include <Parser.h>
+#include <Token.h>
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 class AbstractExpression {
   public:
@@ -31,5 +32,6 @@ class AbstractExpression {
 	mutable ValueType m_cachedType = ValueType::Invalid;
 };
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

@@ -1,10 +1,11 @@
 
 #include "VectorConstructorExpression.h"
 
-#include "TypeDefinition.h"
+#include "actions/expression/TypeDefinition.h"
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 VectorConstructorExpression::VectorConstructorExpression(antlr4::Token* token,
 	std::shared_ptr<AbstractExpression> xExpression,
@@ -81,5 +82,6 @@ void VectorConstructorExpression::validationDone()
 	m_zExpression->validationDone();
 }
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions

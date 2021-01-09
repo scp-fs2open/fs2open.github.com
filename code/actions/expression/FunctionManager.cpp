@@ -43,26 +43,19 @@ void FunctionManager::addOperator(const SCP_string& name,
 	FunctionImplementation implementation)
 {
 	m_operators[name].push_back({name, parameterTypes, returnType, std::move(implementation)});
-
-	std::cout << "Operators: " << m_operators.size() << std::endl;
-	std::cout << "Definitions for " << name << ": " << m_operators[name].size() << std::endl;
 }
 const FunctionDefinition* FunctionManager::findOperator(const SCP_string& name,
 	const SCP_vector<ValueType>& parameters) const
 {
-	std::cout << "Searching for " << name << std::endl;
-
 	const auto iter = m_operators.find(name);
 
 	if (iter == m_operators.end()) {
-		std::cout << "Could not find operator " << name << std::endl;
 		return nullptr;
 	}
 
 	// Prefer exact matches
 	for (const auto& funcDef : iter->second) {
 		if (funcDef.parameterTypes == parameters) {
-			std::cout << "Found exact match for " << name << std::endl;
 			return &funcDef;
 		}
 	}
@@ -87,7 +80,6 @@ const FunctionDefinition* FunctionManager::findOperator(const SCP_string& name,
 		}
 
 		if (match) {
-			std::cout << "Found in-exact match for " << name << std::endl;
 			return &funcDef;
 		}
 	}

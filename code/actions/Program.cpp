@@ -3,12 +3,7 @@
 
 #include "Action.h"
 
-#include "actions/types/MoveToSubmodel.h"
-#include "actions/types/ParticleEffectAction.h"
-#include "actions/types/PlaySoundAction.h"
-#include "actions/types/SetDirectionAction.h"
-#include "actions/types/SetPositionAction.h"
-#include "actions/types/WaitAction.h"
+#include "actions/ActionDefinitionManager.h"
 #include "executor/global_executors.h"
 #include "tracing/Monitor.h"
 #include "tracing/categories.h"
@@ -16,31 +11,6 @@
 
 namespace {
 using namespace actions;
-
-std::unique_ptr<Action> parse_action(const flagset<ProgramContextFlags>& context_flags)
-{
-	std::unique_ptr<Action> act;
-
-	if (optional_string("+Wait:")) {
-		act.reset(new types::WaitAction());
-	} else if (optional_string("+Set Position:")) {
-		act.reset(new types::SetPositionAction());
-	} else if (optional_string("+Set Direction:")) {
-		act.reset(new types::SetDirectionAction());
-	} else if (optional_string("+Start Particle Effect:")) {
-		act.reset(new types::ParticleEffectAction());
-	} else if (optional_string("+Play 3D Sound:")) {
-		act.reset(new types::PlaySoundAction());
-	} else if (optional_string("+Move To Subobject:")) {
-		act.reset(new types::MoveToSubmodel());
-	}
-
-	if (act) {
-		act->parseValues(context_flags);
-	}
-
-	return act;
-}
 
 tracing::Monitor<int> RunningProgramsMonitor("RunningPrograms", 0);
 
@@ -127,7 +97,7 @@ ProgramInstance Program::newInstance() const
 void Program::parseActions(const flagset<ProgramContextFlags>& context_flags)
 {
 	while (true) {
-		auto action = parse_action(context_flags);
+		auto action = ActionDefinitionManager::instance().parseAction(context_flags);
 
 		if (!action) {
 			break;

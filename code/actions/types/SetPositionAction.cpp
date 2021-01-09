@@ -3,19 +3,26 @@
 
 #include "parse/parselo.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
+
+flagset<ProgramContextFlags> SetPositionAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{};
+}
+
+SetPositionAction::SetPositionAction(expression::TypedActionExpression<ValueType> newPositionExpression)
+	: m_newPosExpression(std::move(newPositionExpression))
+{
+}
 SetPositionAction::~SetPositionAction() = default;
 
 ActionResult SetPositionAction::execute(ProgramLocals& locals) const
 {
-	locals.position = _newPosExpression.execute();
+	locals.position = m_newPosExpression.execute();
 	return ActionResult::Finished;
-}
-
-void SetPositionAction::parseValues(const flagset<ProgramContextFlags>& /*parse_flags*/)
-{
-	_newPosExpression = expression::ActionExpression<vec3d>::parseFromTable();
 }
 
 std::unique_ptr<Action> SetPositionAction::clone() const

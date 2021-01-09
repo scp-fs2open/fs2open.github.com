@@ -1,10 +1,12 @@
 #pragma once
 
 #include "AbstractExpression.h"
-#include "Value.h"
+
+#include "actions/expression/Value.h"
 
 namespace actions {
 namespace expression {
+namespace nodes {
 
 class VectorConstructorExpression : public AbstractExpression {
   public:
@@ -27,5 +29,6 @@ class VectorConstructorExpression : public AbstractExpression {
 	std::shared_ptr<AbstractExpression> m_zExpression;
 };
 
+} // namespace nodes
 } // namespace expression
 } // namespace actions
