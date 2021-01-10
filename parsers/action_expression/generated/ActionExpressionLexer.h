@@ -13,7 +13,7 @@ class  ActionExpressionLexer : public antlr4::Lexer {
 public:
   enum {
     PLUS = 1, MINUS = 2, FLOAT = 3, INT = 4, RAND_L_PAREN = 5, L_PAREN = 6, 
-    R_PAREN = 7, STRING = 8, SPACE = 9, OTHER = 10
+    R_PAREN = 7, IDENTIFIER = 8, DOT = 9, STRING = 10, SPACE = 11, OTHER = 12
   };
 
   ActionExpressionLexer(antlr4::CharStream *input);

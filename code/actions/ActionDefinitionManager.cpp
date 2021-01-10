@@ -15,7 +15,8 @@ namespace actions {
 namespace {
 
 void parseActionParameters(const SCP_vector<ActionParameter>& params,
-	SCP_unordered_map<SCP_string, expression::ActionExpression>& parameterExpressions)
+	SCP_unordered_map<SCP_string, expression::ActionExpression>& parameterExpressions,
+	const expression::ParseContext& context)
 {
 	// We do not impose a set order of the parameters so we need to do something similar to the outer loop and
 	// check for every possibility in a loop.
@@ -35,7 +36,8 @@ void parseActionParameters(const SCP_vector<ActionParameter>& params,
 			}
 
 			// We found our parameter!
-			parameterExpressions[parameter.name] = expression::ActionExpression::parseFromTable(parameter.type);
+			parameterExpressions[parameter.name] =
+				expression::ActionExpression::parseFromTable(parameter.type, context);
 			break;
 		}
 	}
@@ -69,7 +71,8 @@ void ActionDefinitionManager::addDefinition(std::unique_ptr<ActionDefinition> de
 {
 	m_definitions.push_back(std::move(def));
 }
-std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<ProgramContextFlags>& context_flags) const
+std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<ProgramContextFlags>& context_flags,
+	const expression::ParseContext& context) const
 {
 	// We search through all definitions for every time we want to check for an action. This is not the most efficient
 	// way to handle this since it results in an O(n^2) runtime. A better alternative would be to either construct a
@@ -90,9 +93,9 @@ std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<Progr
 		if (params.size() == 1) {
 			// Single parameters are expected to be placed directly after the action name
 			parameterExpressions[params.front().name] =
-				expression::ActionExpression::parseFromTable(params.front().type);
+				expression::ActionExpression::parseFromTable(params.front().type, context);
 		} else {
-			parseActionParameters(params, parameterExpressions);
+			parseActionParameters(params, parameterExpressions, context);
 
 			if (parameterExpressions.size() != params.size()) {
 				SCP_vector<ActionParameter> missingParameters;

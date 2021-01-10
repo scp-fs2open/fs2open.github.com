@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include "ParseContext.h"
+
 #include "actions/expression/nodes/AbstractExpression.h"
 
 namespace actions {
@@ -11,7 +13,7 @@ class ExpressionParser {
   public:
 	ExpressionParser(SCP_string expressionText);
 
-	std::shared_ptr<nodes::AbstractExpression> parse();
+	std::shared_ptr<nodes::AbstractExpression> parse(const ParseContext& context);
 
 	const SCP_string& getErrorText() const;
 

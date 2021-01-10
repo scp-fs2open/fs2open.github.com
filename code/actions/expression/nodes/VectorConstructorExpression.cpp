@@ -17,11 +17,11 @@ VectorConstructorExpression::VectorConstructorExpression(antlr4::Token* token,
 }
 VectorConstructorExpression::~VectorConstructorExpression() = default;
 
-Value VectorConstructorExpression::execute() const
+Value VectorConstructorExpression::execute(const ProgramVariables& variables) const
 {
-	auto xValue = m_xExpression->execute();
-	auto yValue = m_yExpression->execute();
-	auto zValue = m_zExpression->execute();
+	auto xValue = m_xExpression->execute(variables);
+	auto yValue = m_yExpression->execute(variables);
+	auto zValue = m_zExpression->execute(variables);
 
 	vec3d vecVal;
 
@@ -31,13 +31,13 @@ Value VectorConstructorExpression::execute() const
 
 	return Value(vecVal);
 }
-bool VectorConstructorExpression::validate(antlr4::Parser* parser)
+bool VectorConstructorExpression::validate(antlr4::Parser* parser, const ParseContext& context)
 {
 	bool valid = true;
 
-	valid &= m_xExpression->validate(parser);
-	valid &= m_yExpression->validate(parser);
-	valid &= m_zExpression->validate(parser);
+	valid &= m_xExpression->validate(parser, context);
+	valid &= m_yExpression->validate(parser, context);
+	valid &= m_zExpression->validate(parser, context);
 
 	if (!valid) {
 		// Exit early if there were errors since the values below are meaningless otherwise

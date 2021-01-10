@@ -1,5 +1,6 @@
 #pragma once
 
+#include "actions/expression/ParseContext.h"
 #include "actions/expression/Value.h"
 
 #include <Parser.h>
@@ -14,9 +15,9 @@ class AbstractExpression {
 	AbstractExpression(antlr4::Token* token);
 	virtual ~AbstractExpression();
 
-	virtual Value execute() const = 0;
+	virtual Value execute(const ProgramVariables& variables) const = 0;
 
-	virtual bool validate(antlr4::Parser* parser) = 0;
+	virtual bool validate(antlr4::Parser* parser, const ParseContext& context) = 0;
 
 	virtual void validationDone();
 

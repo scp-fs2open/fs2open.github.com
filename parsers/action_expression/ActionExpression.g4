@@ -6,6 +6,7 @@ expression
  : value_expression
  | random_range_expression
  | parenthesis_expression
+ | variable_reference_expression
  | expression ( PLUS | MINUS ) expression
  ;
 
@@ -21,6 +22,10 @@ literal_expression
  | INT
  | STRING
  ;
+
+// variable references are just a list of identifiers instead of being applied to expressions to avoid introducing types
+// for all the intermediate parts
+variable_reference_expression: IDENTIFIER (DOT IDENTIFIER)*;
 
 random_range_expression: RAND_L_PAREN expression expression R_PAREN;
 
@@ -40,6 +45,10 @@ RAND_L_PAREN: '~(';
 
 L_PAREN: '(';
 R_PAREN: ')';
+
+IDENTIFIER: [a-zA-Z][a-zA-Z0-9]*;
+
+DOT: '.';
 
 STRING: '"' .*? '"';
 

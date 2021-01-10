@@ -23,7 +23,7 @@ SCP_string join_range(TIter&& begin, TIter&& end, const SCP_string& joiner)
 template <typename TContainer>
 SCP_string join_container(TContainer& container, const SCP_string& joiner)
 {
-	return join_range(container.cbegin(), container.cend(), joiner);
+	return join_range(std::begin(container), std::end(container), joiner);
 }
 
 } // namespace util

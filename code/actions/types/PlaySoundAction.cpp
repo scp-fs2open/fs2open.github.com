@@ -44,13 +44,13 @@ ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 		local_orient = locals.localOrient;
 	}
 
-	local_pos += locals.position;
+	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
 
 	vec3d global_pos;
 	vm_vec_unrotate(&global_pos, &local_pos, &locals.host.objp->orient);
 	global_pos += locals.host.objp->pos;
 
-	const auto soundId = gamesnd_get_by_name(m_soundIdExpression.execute().c_str());
+	const auto soundId = gamesnd_get_by_name(m_soundIdExpression.execute(locals.variables).c_str());
 
 	// Sound is not attached to the host but the object sound system currently only supports persistent sounds
 	snd_play_3d(gamesnd_get_game_sound(soundId), &global_pos, &Eye_position);

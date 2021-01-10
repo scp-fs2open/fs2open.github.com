@@ -11,11 +11,11 @@ LiteralExpression::LiteralExpression(antlr4::Token* token, Value literalValue)
 }
 LiteralExpression::~LiteralExpression() = default;
 
-Value LiteralExpression::execute() const
+Value LiteralExpression::execute(const ProgramVariables& /*variables*/) const
 {
 	return m_literalValue;
 }
-bool LiteralExpression::validate(antlr4::Parser* /*parser*/)
+bool LiteralExpression::validate(antlr4::Parser* /*parser*/, const ParseContext& /*context*/)
 {
 	// Literals are always valid
 	return true;

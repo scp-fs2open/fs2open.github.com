@@ -94,10 +94,10 @@ ProgramInstance Program::newInstance() const
 	return ProgramInstance(this);
 }
 
-void Program::parseActions(const flagset<ProgramContextFlags>& context_flags)
+void Program::parseActions(const flagset<ProgramContextFlags>& context_flags, const expression::ParseContext& context)
 {
 	while (true) {
-		auto action = ActionDefinitionManager::instance().parseAction(context_flags);
+		auto action = ActionDefinitionManager::instance().parseAction(context_flags, context);
 
 		if (!action) {
 			break;
@@ -148,6 +148,7 @@ void ProgramSet::start(object* objp, const vec3d* local_pos, const matrix* local
 		instance.locals().localPosition = *local_pos;
 		instance.locals().localOrient = *local_orient;
 		instance.locals().hostSubobject = submodel;
+		instance.locals().variables = getDefaultTableVariables();
 
 		// Just use the executor system to take care of running this program
 		executor::OnSimulationExecutor->post(ProgramRunner(instance));
@@ -158,9 +159,11 @@ ProgramSet ProgramSet::parseProgramSet(const char* tag, const flagset<ProgramCon
 {
 	ProgramSet set(context_flags);
 
+	const auto parseContext = getTableParseContext();
+
 	while (optional_string(tag)) {
 		Program p;
-		p.parseActions(context_flags);
+		p.parseActions(context_flags, parseContext);
 
 		set._programs.push_back(std::move(p));
 	}

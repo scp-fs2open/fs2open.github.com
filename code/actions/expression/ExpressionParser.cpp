@@ -4,6 +4,7 @@
 #include "actions/expression/nodes/FunctionCallExpression.h"
 #include "actions/expression/nodes/LiteralExpression.h"
 #include "actions/expression/nodes/RandomRangeExpression.h"
+#include "actions/expression/nodes/VariableReferenceExpression.h"
 #include "actions/expression/nodes/VectorConstructorExpression.h"
 #include "libs/antlr/ErrorListener.h"
 
@@ -35,6 +36,9 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 		if (context->random_range_expression()) {
 			return visit(context->random_range_expression());
 		}
+		if (context->variable_reference_expression()) {
+			return visit(context->variable_reference_expression());
+		}
 
 		// This is an operator so treat it as one.
 		antlr4::Token* operatorTok;
@@ -55,6 +59,31 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 			std::move(operatorText),
 			SCP_vector<std::shared_ptr<nodes::AbstractExpression>>{leftExpr, rightExpr});
 		return std::static_pointer_cast<nodes::AbstractExpression>(operatorExpression);
+	}
+	antlrcpp::Any visitVariable_reference_expression(
+		ActionExpressionParser::Variable_reference_expressionContext* context) override
+	{
+		const auto identifiers = context->IDENTIFIER();
+
+		SCP_vector<SCP_string> partNames;
+		partNames.reserve(identifiers.size());
+
+		std::transform(identifiers.begin(),
+			identifiers.end(),
+			std::back_inserter(partNames),
+			[](antlr4::tree::TerminalNode* node) { return node->getText(); });
+
+		SCP_vector<antlr4::Token*> partTokens;
+		partTokens.reserve(identifiers.size());
+
+		std::transform(identifiers.begin(),
+			identifiers.end(),
+			std::back_inserter(partTokens),
+			[](antlr4::tree::TerminalNode* node) { return node->getSymbol(); });
+
+		auto expression =
+			std::make_shared<nodes::VariableReferenceExpression>(std::move(partNames), std::move(partTokens));
+		return std::static_pointer_cast<nodes::AbstractExpression>(expression);
 	}
 	antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext* context) override
 	{
@@ -110,7 +139,7 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 
 ExpressionParser::ExpressionParser(SCP_string expressionText) : m_expressionText(std::move(expressionText)) {}
 
-std::shared_ptr<nodes::AbstractExpression> ExpressionParser::parse()
+std::shared_ptr<nodes::AbstractExpression> ExpressionParser::parse(const ParseContext& context)
 {
 	antlr4::ANTLRInputStream input(m_expressionText);
 	ActionExpressionLexer lexer(&input);
@@ -130,7 +159,7 @@ std::shared_ptr<nodes::AbstractExpression> ExpressionParser::parse()
 		ExpressionBuilderVisitor builder;
 		exprReturn = tree->accept(&builder).as<std::shared_ptr<nodes::AbstractExpression>>();
 
-		if (!exprReturn->validate(&parser)) {
+		if (!exprReturn->validate(&parser, context)) {
 			exprReturn = nullptr;
 		} else {
 			exprReturn->validationDone();

@@ -18,7 +18,7 @@ SCP_string getTypeName(ValueType type)
 
 } // namespace
 
-ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType)
+ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType, const ParseContext& context)
 {
 	SCP_string expressionText;
 
@@ -26,7 +26,7 @@ ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType)
 
 	ExpressionParser parser(expressionText);
 
-	auto expression = parser.parse();
+	auto expression = parser.parse(context);
 
 	if (!expression) {
 		error_display(0, "Failed to parse action expression:\n%s", parser.getErrorText().c_str());
@@ -48,14 +48,14 @@ ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType)
 	return ActionExpression(expression);
 }
 
-Value ActionExpression::execute() const
+Value ActionExpression::execute(const ProgramVariables& variables) const
 {
 	// Do not crash on invalid expressions
 	if (!isValid()) {
 		return Value();
 	}
 
-	return m_expression->execute();
+	return m_expression->execute(variables);
 }
 bool ActionExpression::isValid() const
 {

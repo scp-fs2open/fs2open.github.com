@@ -13,13 +13,13 @@ class  ActionExpressionParser : public antlr4::Parser {
 public:
   enum {
     PLUS = 1, MINUS = 2, FLOAT = 3, INT = 4, RAND_L_PAREN = 5, L_PAREN = 6, 
-    R_PAREN = 7, STRING = 8, SPACE = 9, OTHER = 10
+    R_PAREN = 7, IDENTIFIER = 8, DOT = 9, STRING = 10, SPACE = 11, OTHER = 12
   };
 
   enum {
     RuleExpression_main = 0, RuleExpression = 1, RuleParenthesis_expression = 2, 
-    RuleValue_expression = 3, RuleLiteral_expression = 4, RuleRandom_range_expression = 5, 
-    RuleVec3d_constructor = 6
+    RuleValue_expression = 3, RuleLiteral_expression = 4, RuleVariable_reference_expression = 5, 
+    RuleRandom_range_expression = 6, RuleVec3d_constructor = 7
   };
 
   ActionExpressionParser(antlr4::TokenStream *input);
@@ -37,6 +37,7 @@ public:
   class Parenthesis_expressionContext;
   class Value_expressionContext;
   class Literal_expressionContext;
+  class Variable_reference_expressionContext;
   class Random_range_expressionContext;
   class Vec3d_constructorContext; 
 
@@ -61,6 +62,7 @@ public:
     Value_expressionContext *value_expression();
     Random_range_expressionContext *random_range_expression();
     Parenthesis_expressionContext *parenthesis_expression();
+    Variable_reference_expressionContext *variable_reference_expression();
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
     antlr4::tree::TerminalNode *PLUS();
@@ -116,6 +118,22 @@ public:
   };
 
   Literal_expressionContext* literal_expression();
+
+  class  Variable_reference_expressionContext : public antlr4::ParserRuleContext {
+  public:
+    Variable_reference_expressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
+    antlr4::tree::TerminalNode* IDENTIFIER(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DOT();
+    antlr4::tree::TerminalNode* DOT(size_t i);
+
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Variable_reference_expressionContext* variable_reference_expression();
 
   class  Random_range_expressionContext : public antlr4::ParserRuleContext {
   public:

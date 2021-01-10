@@ -40,10 +40,10 @@ RandomRangeExpression::RandomRangeExpression(antlr4::Token* token,
 }
 RandomRangeExpression::~RandomRangeExpression() = default;
 
-Value RandomRangeExpression::execute() const
+Value RandomRangeExpression::execute(const ProgramVariables& variables) const
 {
-	const auto leftVal = m_leftExpression->execute();
-	const auto rightVal = m_rightExpression->execute();
+	const auto leftVal = m_leftExpression->execute(variables);
+	const auto rightVal = m_rightExpression->execute(variables);
 
 	if (leftVal.getType() == ValueType::Integer) {
 		return executeHelper<int>(leftVal, rightVal);
@@ -51,12 +51,12 @@ Value RandomRangeExpression::execute() const
 		return executeHelper<float>(leftVal, rightVal);
 	}
 }
-bool RandomRangeExpression::validate(antlr4::Parser* parser)
+bool RandomRangeExpression::validate(antlr4::Parser* parser, const ParseContext& context)
 {
 	bool valid = true;
 
-	valid &= m_leftExpression->validate(parser);
-	valid &= m_rightExpression->validate(parser);
+	valid &= m_leftExpression->validate(parser, context);
+	valid &= m_rightExpression->validate(parser, context);
 
 	if (!valid) {
 		// Exit early if there were errors since the values below are meaningless otherwise

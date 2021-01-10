@@ -13,8 +13,8 @@ add_file_folder("Actions"
 	actions/ActionDefinition.h
 	actions/ActionDefinitionManager.cpp
 	actions/ActionDefinitionManager.h
-	actions/BuiltinActionDefinition.cpp
 	actions/BuiltinActionDefinition.h
+	actions/common.cpp
 	actions/common.h
 	actions/Program.cpp
 	actions/Program.h
@@ -27,6 +27,9 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/ExpressionParser.h
 	actions/expression/FunctionManager.cpp
 	actions/expression/FunctionManager.h
+	actions/expression/ParseContext.h
+	actions/expression/ProgramVariables.cpp
+	actions/expression/ProgramVariables.h
 	actions/expression/TypeDefinition.cpp
 	actions/expression/TypeDefinition.h
 	actions/expression/Value.cpp
@@ -42,6 +45,8 @@ add_file_folder("Actions\\\\Expression\\\\Nodes"
 	actions/expression/nodes/LiteralExpression.h
 	actions/expression/nodes/RandomRangeExpression.cpp
 	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VariableReferenceExpression.cpp
+	actions/expression/nodes/VariableReferenceExpression.h
 	actions/expression/nodes/VectorConstructorExpression.cpp
 	actions/expression/nodes/VectorConstructorExpression.h
 )

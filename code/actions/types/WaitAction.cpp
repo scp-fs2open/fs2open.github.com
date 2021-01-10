@@ -21,7 +21,7 @@ WaitAction::~WaitAction() = default;
 ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 {
 	if (!timestamp_valid(locals.waitTimestamp)) {
-		auto waitTime = _waitTimeExpression.execute();
+		auto waitTime = _waitTimeExpression.execute(locals.variables);
 
 		// Catch errors in the expression
 		if (waitTime < 0.001f) {
