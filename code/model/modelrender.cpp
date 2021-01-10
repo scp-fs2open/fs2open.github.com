@@ -1896,18 +1896,18 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 			bank->glow_timestamp=time;
 		}
 
-		if ( ( gpo && gpo->off_time_override ) ? gpo->off_time : bank->off_time ) {
-			if ( bank->is_on ) {
-				if( ((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) > ((time - ((gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time)) % (((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) + ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time))) ){
+		int on_time = (gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time;
+		int off_time = (gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time;
+		int disp_time = (gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time;
+
+
+		if (off_time) {
+			bool glow_state = ((time - disp_time) % (on_time + off_time)) < on_time;
+
+			if ( glow_state != bank->is_on )
 					bank->glow_timestamp = time;
-					bank->is_on = 0;
-				}
-			} else {
-				if( ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time) < ((time - ((gpo && gpo->disp_time_override)?gpo->disp_time:bank->disp_time)) % (((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time))) ){
-					bank->glow_timestamp = time;
-					bank->is_on = 1;
-				}
-			}
+			
+			bank->is_on = glow_state;
 		}
 	}
 }
