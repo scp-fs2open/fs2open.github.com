@@ -16,8 +16,8 @@ class VectorConstructorExpression : public AbstractExpression {
 		std::shared_ptr<AbstractExpression> zExpression);
 	~VectorConstructorExpression() override;
 
-	Value execute() const override;
-	bool validate(antlr4::Parser* parser) override;
+	Value execute(const ProgramVariables& variables) const override;
+	bool validate(antlr4::Parser* parser, const ParseContext& context) override;
 	void validationDone() override;
 
   protected:

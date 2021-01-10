@@ -35,6 +35,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitVariable_reference_expression(ActionExpressionParser::Variable_reference_expressionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext *ctx) override {
     return visitChildren(ctx);
   }

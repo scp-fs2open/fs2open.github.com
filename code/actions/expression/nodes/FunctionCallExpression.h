@@ -17,8 +17,8 @@ class FunctionCallExpression : public AbstractExpression {
 		SCP_vector<std::shared_ptr<AbstractExpression>> parameterExpressions);
 	~FunctionCallExpression() override;
 
-	Value execute() const override;
-	bool validate(antlr4::Parser* parser) override;
+	Value execute(const ProgramVariables& variables) const override;
+	bool validate(antlr4::Parser* parser, const ParseContext& context) override;
 	void validationDone() override;
 
   protected:

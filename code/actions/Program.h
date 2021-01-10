@@ -66,7 +66,7 @@ class Program {
 	 */
 	ProgramInstance newInstance() const;
 
-	void parseActions(const flagset<ProgramContextFlags>& context_flags);
+	void parseActions(const flagset<ProgramContextFlags>& context_flags, const expression::ParseContext& context);
 };
 
 /**

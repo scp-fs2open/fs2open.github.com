@@ -13,8 +13,8 @@ class LiteralExpression : public AbstractExpression {
 	LiteralExpression(antlr4::Token* token, Value literalValue);
 	~LiteralExpression() override;
 
-	Value execute() const override;
-	bool validate(antlr4::Parser* parser) override;
+	Value execute(const ProgramVariables& variables) const override;
+	bool validate(antlr4::Parser* parser, const ParseContext& context) override;
 
   protected:
 	ValueType determineReturnType() const override;

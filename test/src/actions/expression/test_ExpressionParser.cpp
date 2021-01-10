@@ -22,7 +22,7 @@ TEST_P(ExpressionRandomRangeTest, random_range_exec)
 
 	ExpressionParser parser(expressionText);
 
-	const auto expression = parser.parse();
+	const auto expression = parser.parse({});
 
 	if (!parser.getErrorText().empty()) {
 		std::cout << parser.getErrorText() << std::endl;
@@ -32,7 +32,7 @@ TEST_P(ExpressionRandomRangeTest, random_range_exec)
 
 	ASSERT_EQ(expression->getExpressionType(), expectedReturnType);
 
-	const auto resultVal = expression->execute();
+	const auto resultVal = expression->execute({});
 
 	float result;
 	if (expectedReturnType == ValueType::Integer) {
@@ -63,9 +63,9 @@ INSTANTIATE_TEST_SUITE_P(ImplicitConversionTest,
 	ExpressionRandomRangeTest,
 	testing::Values(RandomRangeTestValues("~(5 8) + 3.0", ValueType::Float, 8.0f, 12.0f)));
 
-using OperatorTestValues = std::tuple<SCP_string, Value>;
+using ExecutionTestValues = std::tuple<SCP_string, Value>;
 
-class ExpressionExecutionTest : public testing::TestWithParam<OperatorTestValues> {
+class ExpressionExecutionTest : public testing::TestWithParam<ExecutionTestValues> {
 };
 
 TEST_P(ExpressionExecutionTest, operator_execution)
@@ -75,9 +75,20 @@ TEST_P(ExpressionExecutionTest, operator_execution)
 
 	std::tie(expressionText, expectedReturnValue) = GetParam();
 
+	ParseContext context;
+	auto& testScope = context.variables.addScope("test");
+
+	testScope.addMember("test1", actions::expression::ValueType::Vector);
+	testScope.addMember("test2", actions::expression::ValueType::Float);
+
+	ProgramVariables variables;
+
+	variables.setValue({"test", "test1"}, Value(vm_vec_new(3.f, 4.f, 5.f)));
+	variables.setValue({"test", "test2"}, Value(8.f));
+
 	ExpressionParser parser(expressionText);
 
-	const auto expression = parser.parse();
+	const auto expression = parser.parse(context);
 
 	if (!parser.getErrorText().empty()) {
 		std::cout << parser.getErrorText() << std::endl;
@@ -87,7 +98,7 @@ TEST_P(ExpressionExecutionTest, operator_execution)
 
 	ASSERT_EQ(expression->getExpressionType(), expectedReturnValue.getType());
 
-	const auto resultVal = expression->execute();
+	const auto resultVal = expression->execute(variables);
 
 	if (expectedReturnValue.getType() == actions::expression::ValueType::Float) {
 		ASSERT_FLOAT_EQ(resultVal.getFloat(), expectedReturnValue.getFloat());
@@ -98,39 +109,44 @@ TEST_P(ExpressionExecutionTest, operator_execution)
 
 INSTANTIATE_TEST_SUITE_P(LiteralTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("5", Value(5)),
-		OperatorTestValues("8.0", Value(8.0f)),
-		OperatorTestValues("\"This is an identifier \"", Value("This is an identifier "))));
+	testing::Values(ExecutionTestValues("5", Value(5)),
+		ExecutionTestValues("8.0", Value(8.0f)),
+		ExecutionTestValues("\"This is an identifier \"", Value("This is an identifier "))));
 
 INSTANTIATE_TEST_SUITE_P(VectorConstructorTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("(3.3 13.8 (-3.9))", Value(vm_vec_new(3.3f, 13.8f, -3.9f)))));
+	testing::Values(ExecutionTestValues("(3.3 13.8 (-3.9))", Value(vm_vec_new(3.3f, 13.8f, -3.9f)))));
 
 INSTANTIATE_TEST_SUITE_P(IntegerOperatorTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("5 + -8", Value(-3)), OperatorTestValues("5 - -8", Value(13))));
+	testing::Values(ExecutionTestValues("5 + -8", Value(-3)), ExecutionTestValues("5 - -8", Value(13))));
 
 INSTANTIATE_TEST_SUITE_P(FloatOperatorTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("5.0 + -8.0", Value(-3.0f)), OperatorTestValues("5.0 - -8.0", Value(13.0f))));
+	testing::Values(ExecutionTestValues("5.0 + -8.0", Value(-3.0f)), ExecutionTestValues("5.0 - -8.0", Value(13.0f))));
 
 INSTANTIATE_TEST_SUITE_P(VectorOperatorTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("(1.0 2.0 3.0) + (3.0 2.0 1.0)", Value(vm_vec_new(4.0, 4.0f, 4.0f))),
-		OperatorTestValues("(4.0 4.0 4.0) - (3.0 2.0 1.0)", Value(vm_vec_new(1.0, 2.0f, 3.0f)))));
+	testing::Values(ExecutionTestValues("(1.0 2.0 3.0) + (3.0 2.0 1.0)", Value(vm_vec_new(4.0, 4.0f, 4.0f))),
+		ExecutionTestValues("(4.0 4.0 4.0) - (3.0 2.0 1.0)", Value(vm_vec_new(1.0, 2.0f, 3.0f)))));
 
 INSTANTIATE_TEST_SUITE_P(ImplicitOperatorConversionTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("4 + 5.0", Value(9.0f)),
-		OperatorTestValues("5.0 + 4", Value(9.0f)),
-		OperatorTestValues("4 - 5.0", Value(-1.0f)),
-		OperatorTestValues("5.0 - 4", Value(1.0f))));
+	testing::Values(ExecutionTestValues("4 + 5.0", Value(9.0f)),
+		ExecutionTestValues("5.0 + 4", Value(9.0f)),
+		ExecutionTestValues("4 - 5.0", Value(-1.0f)),
+		ExecutionTestValues("5.0 - 4", Value(1.0f))));
 
 INSTANTIATE_TEST_SUITE_P(ImplicitVectorConstructorConversionTests,
 	ExpressionExecutionTest,
-	testing::Values(OperatorTestValues("(1 2 3)", Value(vm_vec_new(1.0f, 2.0f, 3.0f))),
-		OperatorTestValues("(1.0 3.0 2)", Value(vm_vec_new(1.0f, 3.0f, 2.0f))),
-		OperatorTestValues("(1.0 2 + 3 3.0)", Value(vm_vec_new(1.0f, 5.0f, 3.0f)))));
+	testing::Values(ExecutionTestValues("(1 2 3)", Value(vm_vec_new(1.0f, 2.0f, 3.0f))),
+		ExecutionTestValues("(1.0 3.0 2)", Value(vm_vec_new(1.0f, 3.0f, 2.0f))),
+		ExecutionTestValues("(1.0 2 + 3 3.0)", Value(vm_vec_new(1.0f, 5.0f, 3.0f)))));
+
+INSTANTIATE_TEST_SUITE_P(VariableTests,
+	ExpressionExecutionTest,
+	testing::Values(ExecutionTestValues("(1 2 3) + test.test1", Value(vm_vec_new(4.f, 6.f, 8.f))),
+		ExecutionTestValues("test.test2", Value(8.0f))));
 
 class ExpressionParserFailureTest : public testing::TestWithParam<SCP_string> {
 };
@@ -141,7 +157,12 @@ TEST_P(ExpressionParserFailureTest, test_parsing)
 
 	ExpressionParser parser(expressionText);
 
-	const auto expression = parser.parse();
+	ParseContext context;
+	auto& testScope = context.variables.addScope("test");
+
+	testScope.addMember("test1", actions::expression::ValueType::Vector);
+
+	const auto expression = parser.parse(context);
 
 	ASSERT_EQ(expression.get(), nullptr);
 	ASSERT_FALSE(parser.getErrorText().empty());
@@ -154,3 +175,6 @@ INSTANTIATE_TEST_SUITE_P(OperatorUnknown, ExpressionParserFailureTest, testing::
 INSTANTIATE_TEST_SUITE_P(VectorConstructorTest,
 	ExpressionParserFailureTest,
 	testing::Values("(\"Test\" 1.0 2.0)", "((1.0 1.0 1.0) 1.0 2.0)"));
+INSTANTIATE_TEST_SUITE_P(VariableTest,
+	ExpressionParserFailureTest,
+	testing::Values("notTest", "test.invalid", "test.test1.wrong"));

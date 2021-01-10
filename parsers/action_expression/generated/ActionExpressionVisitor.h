@@ -29,6 +29,8 @@ public:
 
     virtual antlrcpp::Any visitLiteral_expression(ActionExpressionParser::Literal_expressionContext *context) = 0;
 
+    virtual antlrcpp::Any visitVariable_reference_expression(ActionExpressionParser::Variable_reference_expressionContext *context) = 0;
+
     virtual antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext *context) = 0;
 
     virtual antlrcpp::Any visitVec3d_constructor(ActionExpressionParser::Vec3d_constructorContext *context) = 0;

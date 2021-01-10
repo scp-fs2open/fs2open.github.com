@@ -23,7 +23,7 @@ ParticleEffectAction::~ParticleEffectAction() = default;
 
 ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 {
-	auto effectIdx = particle::ParticleManager::get()->getEffectByName(m_effectExpression.execute());
+	auto effectIdx = particle::ParticleManager::get()->getEffectByName(m_effectExpression.execute(locals.variables));
 
 	if (!effectIdx.isValid()) {
 		// In case the parsing code failed
@@ -55,10 +55,12 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 		local_orient = locals.localOrient;
 	}
 
-	local_pos += locals.position;
+	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
+
+	auto direction = locals.variables.getValue({"locals", "direction"}).getVector();
 
 	source.moveToObject(locals.host.objp, &local_pos);
-	source.setOrientationFromNormalizedVec(&locals.direction, true);
+	source.setOrientationFromNormalizedVec(&direction, true);
 
 	source.finish();
 

@@ -32,7 +32,7 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 	auto pmi = model_get_instance(instance);
 	auto pm = model_get(pmi->model_num);
 
-	const auto destinationSubObject = m_subObjectExpression.execute();
+	const auto destinationSubObject = m_subObjectExpression.execute(locals.variables);
 	bool goToParent = false;
 	if (destinationSubObject == "<parent>") {
 		goToParent = true;

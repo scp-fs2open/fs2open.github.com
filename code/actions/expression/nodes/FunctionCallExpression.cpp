@@ -17,7 +17,7 @@ FunctionCallExpression::FunctionCallExpression(antlr4::Token* token,
 }
 FunctionCallExpression::~FunctionCallExpression() = default;
 
-Value FunctionCallExpression::execute() const
+Value FunctionCallExpression::execute(const ProgramVariables& variables) const
 {
 	SCP_vector<Value> parameterValues;
 	parameterValues.reserve(m_parameterExpressions.size());
@@ -25,16 +25,16 @@ Value FunctionCallExpression::execute() const
 	std::transform(m_parameterExpressions.cbegin(),
 		m_parameterExpressions.cend(),
 		std::back_inserter(parameterValues),
-		[](const std::shared_ptr<AbstractExpression>& expression) { return expression->execute(); });
+		[&variables](const std::shared_ptr<AbstractExpression>& expression) { return expression->execute(variables); });
 
 	return m_functionDef->implementation(parameterValues);
 }
-bool FunctionCallExpression::validate(antlr4::Parser* parser)
+bool FunctionCallExpression::validate(antlr4::Parser* parser, const ParseContext& context)
 {
 	bool valid = true;
 
 	for (const auto& paramExpression : m_parameterExpressions) {
-		valid &= paramExpression->validate(parser);
+		valid &= paramExpression->validate(parser, context);
 	}
 
 	if (!valid) {

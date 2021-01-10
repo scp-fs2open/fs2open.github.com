@@ -21,7 +21,7 @@ SetPositionAction::~SetPositionAction() = default;
 
 ActionResult SetPositionAction::execute(ProgramLocals& locals) const
 {
-	locals.position = m_newPosExpression.execute();
+	locals.variables.setValue({"locals", "position"}, expression::Value(m_newPosExpression.execute(locals.variables)));
 	return ActionResult::Finished;
 }
 

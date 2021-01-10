@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ParseContext.h"
+#include "ProgramVariables.h"
 #include "TypeDefinition.h"
 
 #include "parse/parselo.h"
@@ -16,14 +18,14 @@ class ActionExpression {
   public:
 	ActionExpression() = default;
 
-	Value execute() const;
+	Value execute(const ProgramVariables& variables) const;
 
 	bool isValid() const;
 
 	template <typename T>
 	TypedActionExpression<T> asTyped() const;
 
-	static ActionExpression parseFromTable(ValueType expectedReturnType);
+	static ActionExpression parseFromTable(ValueType expectedReturnType, const ParseContext& context);
 
   protected:
 	explicit ActionExpression(std::shared_ptr<nodes::AbstractExpression> expression)
@@ -39,19 +41,19 @@ class TypedActionExpression {
   public:
 	explicit TypedActionExpression(ActionExpression expression) : m_expression(std::move(expression)) {}
 
-	T execute() const
+	T execute(const ProgramVariables& variables) const
 	{
 		// Do not crash on invalid expressions
 		if (!m_expression.isValid()) {
 			return T();
 		}
 
-		return m_expression.execute().template get<T>();
+		return m_expression.execute(variables).template get<T>();
 	}
 
-	static TypedActionExpression<T> parseFromTable()
+	static TypedActionExpression<T> parseFromTable(const ParseContext& context)
 	{
-		return ActionExpression::parseFromTable(ValueTypeTraits<T>::type).template asTyped<T>();
+		return ActionExpression::parseFromTable(ValueTypeTraits<T>::type, context).template asTyped<T>();
 	}
 
   private:

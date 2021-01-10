@@ -22,11 +22,11 @@ SetDirectionAction::~SetDirectionAction() = default;
 
 ActionResult SetDirectionAction::execute(ProgramLocals& locals) const
 {
-	auto dir = m_newDirExpression.execute();
+	auto dir = m_newDirExpression.execute(locals.variables);
 
 	vm_vec_normalize_safe(&dir);
 
-	locals.direction = dir;
+	locals.variables.setValue({"locals", "direction"}, expression::Value(dir));
 	return ActionResult::Finished;
 }
 
