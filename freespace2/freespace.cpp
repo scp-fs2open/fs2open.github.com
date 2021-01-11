@@ -4357,16 +4357,15 @@ int game_poll()
 {
 	if (!Cmdline_no_unfocus_pause)
 	{
-		if (!os_foreground()) {
+		// If we're in a single player game, pause it.  
+		// otherwise, ship interpolation will become inaccurate.
+		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
 			game_stop_time();
 			os_sleep(1);
 			game_start_time();
+			if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active())) {
+				game_process_pause_key();
 
-			// If we're in a single player game, pause it.
-			if (!(Game_mode & GM_MULTIPLAYER)){
-				if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()))	{
-					game_process_pause_key();
-				}
 			}
 		}
 	}
