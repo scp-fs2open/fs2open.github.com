@@ -1616,6 +1616,11 @@ void game_init()
 		outwnd_init();
 	}
 
+	// Cyborg17 -- This section used to be in game_main(), but in a section before outwnd_init()
+	if (Is_standalone){
+		nprintf(("Network", "Standalone running\n"));
+	}
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
@@ -6463,11 +6468,6 @@ int game_main(int argc, char *argv[])
 
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
-	}
-
-
-	if (Is_standalone){
-		nprintf(("Network", "Standalone running\n"));
 	}
 
 	game_init();
