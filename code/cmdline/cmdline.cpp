@@ -810,7 +810,7 @@ void os_validate_parms(int argc, char *argv[])
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
 					printf("Website: http://scp.indiegames.us\n");
-					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
+					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
 					// not the prettiest thing but the job gets done
