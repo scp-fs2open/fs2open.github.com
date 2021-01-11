@@ -4358,6 +4358,7 @@ int game_poll()
 	if (!Cmdline_no_unfocus_pause)
 	{
 		// If we're in a single player game, pause it.  
+		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
 		// otherwise, ship interpolation will become inaccurate.
 		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
 			game_stop_time();
