@@ -12517,11 +12517,42 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
+		if (MULTI_TEAM)
 		{
-			delay = aip->ai_shield_manage_delay;
+			int i;
+			for (i = 0; i < MAX_PLAYERS; i++) {
+				// quicker to look for the opposite team's captain than to check everyone's iff
+				if ((Net_players[i].flags & NETINFO_FLAG_TEAM_CAPTAIN) && !(Net_players[i].flags & NETINFO_FLAG_GAME_HOST)) 
+				{
+					break;
+				}
+			}
+
+			// something went wrong ... assume that it's not on someone's team.
+			if (i == MAX_PLAYERS || Net_players[i].p_info.p_objp == nullptr) 
+			{
+				delay = aip->ai_shield_manage_delay;		
+			}
+			else 
+			{
+				// if this ship is on neither player team.
+				if ((iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) && (iff_x_attacks_y(Net_players[i].p_info.p_objp->loadout_team, Ships[objp->instance].team))) 
+				{
+					delay = aip->ai_shield_manage_delay;
+				}
+				// if it gets here the ship is on either player team, so it needs to work the same as in singleplayer.
+				else 
+				{
+					delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2];
+				}
+			}
+
 		} 
-		else 
+		else if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
+		{
+			delay = aip->ai_shield_manage_delay;		
+		}
+		else
 		{
 			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2];
 		}
