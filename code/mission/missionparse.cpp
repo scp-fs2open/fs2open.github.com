@@ -1509,6 +1509,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+				bi->modelnum = -1;
+				bi->model_instance_num = -1;
 
 				// Goober5000 - import
 				if (flags & MPF_IMPORT_FSM)
