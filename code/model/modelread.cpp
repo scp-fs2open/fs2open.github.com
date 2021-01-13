@@ -4506,31 +4506,34 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-
 	flagset<Ship::Subsystem_Flags> empty;
+
 	for (int i = 0; i < sip->n_subsystems; ++i)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
-		if (msp->type == SUBSYSTEM_TURRET)
+
+		for (int j = 0; j < msp->n_triggers; ++j)
 		{
-			if (msp->subobj_num >= 0)
+			if (msp->triggers[j].type == AnimationTriggerType::Initial)
 			{
 				// special case for turrets
-				if (msp->n_triggers > 0)
-					pmi->submodel[msp->subobj_num].angs.h = msp->triggers[msp->n_triggers - 1].angle.xyz.y;
+				if (msp->type == SUBSYSTEM_TURRET)
+				{
+					if (msp->subobj_num >= 0)
+						pmi->submodel[msp->subobj_num].angs.h = msp->triggers[j].angle.xyz.y;
 
-				model_update_instance(pm, pmi, msp->subobj_num, empty);
-			}
-
-			if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-			{
-				// special case for turrets
-				if (msp->n_triggers > 0)
-					pmi->submodel[msp->turret_gun_sobj].angs.p = msp->triggers[msp->n_triggers - 1].angle.xyz.x;
-				
-				model_update_instance(pm, pmi, msp->turret_gun_sobj, empty);
+					if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
+						pmi->submodel[msp->turret_gun_sobj].angs.p = msp->triggers[j].angle.xyz.x;
+				}
+				// we can't support non-turrets, as in modelanim, because we need a ship subsystem but we don't actually have a ship
 			}
 		}
+
+		if (msp->subobj_num >= 0)
+			model_update_instance(pm, pmi, msp->subobj_num, empty);
+
+		if (msp->turret_gun_sobj >= 0)
+			model_update_instance(pm, pmi, msp->turret_gun_sobj, empty);
 	}
 }
 
