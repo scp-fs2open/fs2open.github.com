@@ -966,6 +966,7 @@ void pilotfile::csg_write_redalert()
 void pilotfile::csg_read_hud()
 {
 	int idx;
+	int strikes = 0;
 
 	// flags
 	HUD_config.show_flags = cfread_int(cfp);
@@ -986,10 +987,19 @@ void pilotfile::csg_read_hud()
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_config.main_color < 0 || HUD_config.main_color > HUD_COLOR_SIZE) {
+		Warning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		Warning(LOCATION, "Campaign file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+	}
+
+	if (strikes == 3) {
+		Warning(LOCATION, "Campaign file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_record_color(HUD_config.main_color);
