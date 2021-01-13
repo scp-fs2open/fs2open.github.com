@@ -4500,28 +4500,38 @@ void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float
 	smi->turn_accel = turn_accel;
 }
 
-// Sets the submodel instance data in a submodel (for all detail levels)
-// Techroom version uses two floats of setting rotation angles (for turrets)
-// instead of using larger but largely unused structures for storing the same data
-void model_set_instance_techroom(polymodel *pm, polymodel_instance *pmi, int sub_model_num, float angle_1, float angle_2)
+// Sets the submodel instance data when a tech room model instance is created.
+// This only needs to be done at creation, not every frame.
+void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 {
-	Assert( sub_model_num >= 0 );
-	Assert( sub_model_num < pm->n_models );
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
-	if ( sub_model_num < 0 ) return;
-	if ( sub_model_num >= pm->n_models ) return;
-	bsp_info *sm = &pm->submodel[sub_model_num];
-	auto smi = &pmi->submodel[sub_model_num];
+	flagset<Ship::Subsystem_Flags> empty;
+	for (int i = 0; i < sip->n_subsystems; ++i)
+	{
+		model_subsystem *msp = &sip->subsystems[i];
+		if (msp->type == SUBSYSTEM_TURRET)
+		{
+			if (msp->subobj_num >= 0)
+			{
+				// special case for turrets
+				if (msp->n_triggers > 0)
+					pmi->submodel[msp->subobj_num].angs.h = msp->triggers[msp->n_triggers - 1].angle.xyz.y;
 
-	// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
-	// the replacement model from being drawn by marking it as having been blown off
-	if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
-		pmi->submodel[sm->my_replacement].blown_off = true;
+				model_update_instance(pm, pmi, msp->subobj_num, empty);
+			}
+
+			if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
+			{
+				// special case for turrets
+				if (msp->n_triggers > 0)
+					pmi->submodel[msp->turret_gun_sobj].angs.p = msp->triggers[msp->n_triggers - 1].angle.xyz.x;
+				
+				model_update_instance(pm, pmi, msp->turret_gun_sobj, empty);
+			}
+		}
 	}
-
-	// Set the angles
-	smi->angs.p = angle_1;
-	smi->angs.h = angle_2;
 }
 
 void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)

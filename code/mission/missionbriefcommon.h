@@ -114,6 +114,7 @@ typedef struct brief_icon {
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
+	int		model_instance_num;
 	float		radius;
 	int		type;					// ICON_* defines from MissionBriefCommon.h
 	int		bitmap_id;

@@ -22,6 +22,7 @@
 #include "model/model_flags.h"
 
 class object;
+class ship_info;
 class model_render_params;
 
 extern flag_def_list model_render_flags[];
@@ -968,7 +969,7 @@ extern void model_clear_instance(int model_num);
 extern void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance_techroom(polymodel *pm, polymodel_instance *pmi, int submodel_num, float angle_1, float angle_2);
+extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_num);
 
 void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);

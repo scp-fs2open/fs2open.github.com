@@ -463,6 +463,7 @@ void mission_brief_common_reset()
 					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
 					Briefings[i].stages[j].icons->ship_class = -1;
 					Briefings[i].stages[j].icons->modelnum = -1;
+					Briefings[i].stages[j].icons->model_instance_num = -1;
 					Briefings[i].stages[j].icons->bitmap_id = -1;
 				}
 
