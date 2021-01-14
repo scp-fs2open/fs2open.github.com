@@ -1509,6 +1509,8 @@ void hud_config_close()
 	if (HC_background_bitmap_mask != -1) {
 		bm_release(HC_background_bitmap_mask);
 	}
+
+	HUD_config_inited = 0;
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
@@ -1557,7 +1559,7 @@ void hud_config_backup()
 
 void hud_config_as_observer(ship *shipp,ai_info *aif)
 {
-	// store the current hus
+	// store the current hud
 	hud_config_backup();
 
 	// bash these values so the HUD is not offset incorrectly
