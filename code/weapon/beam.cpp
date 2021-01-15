@@ -1139,15 +1139,16 @@ void beam_move_all_post()
 		}
 
 		// add tube light for the beam
-		if (moveup->objp != NULL)
+		if (moveup->objp != NULL) {
 			//assume we are in the waiting phases of a type D beam
 			type_d_wait = 0;
 			//test that assumption
-			if(moveup->type == BEAM_TYPE_D)
+			if (moveup->type == BEAM_TYPE_D)
 				beam_type_d_get_status(moveup, &type_d_index, &type_d_wait);
 			//if it remains true, create a tube light.
-			if(type_d_wait==0)
+			if (type_d_wait == 0)
 				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
+		}
 
 		// stop shooting?
 		if(bf_status <= 0){
