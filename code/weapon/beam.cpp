@@ -168,6 +168,8 @@ void beam_type_c_move(beam *b);
 
 // type D functions
 void beam_type_d_move(beam *b);
+// stuffs the index of the current pulse in shot_index
+// stuffs 0 in fire_wait if the beam is active, 1 if it is between pulses
 void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait);
 
 // type e functions
@@ -1037,6 +1039,7 @@ void beam_move_all_post()
 	beam *next_one;	
 	int bf_status;	
 	beam_weapon_info *bwi;
+	int type_d_index, type_d_wait = 0;
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
@@ -1136,8 +1139,15 @@ void beam_move_all_post()
 		}
 
 		// add tube light for the beam
-		if(moveup->objp != NULL)
-			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
+		if (moveup->objp != NULL)
+			//assume we are in the waiting phases of a type D beam
+			type_d_wait = 0;
+			//test that assumption
+			if(moveup->type == BEAM_TYPE_D)
+				beam_type_d_get_status(moveup, &type_d_index, &type_d_wait);
+			//if it remains true, create a tube light.
+			if(type_d_wait==0)
+				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
 
 		// stop shooting?
 		if(bf_status <= 0){
