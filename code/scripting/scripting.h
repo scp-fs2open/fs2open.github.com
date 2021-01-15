@@ -5,6 +5,7 @@
 #include "globalincs/pstypes.h"
 
 #include "graphics/2d.h"
+#include "scripting/ade.h"
 #include "scripting/ade_args.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
@@ -158,7 +159,7 @@ public:
 //**********Main script_state function
 class script_state
 {
-private:
+  private:
 	char StateName[32];
 
 	int Langs;
@@ -173,14 +174,16 @@ private:
 
 	// Stores references to the Lua values for the hook variables. Uses a raw reference since we do not need the more
 	// advanced features of LuaValue
-	SCP_unordered_map<SCP_string, luacpp::LuaReference> HookVariableValues;
-private:
+	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
+	// hook is called from within another script (e.g. calls to createShip)
+	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 
-	void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc);
+	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
+		const scripting::DocumentationErrorReporter& errorReporter);
 
 	//Internal Lua helper functions
 	void EndLuaFrame();
@@ -209,7 +212,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	scripting::ScriptingDocumentation OutputDocumentation();
+	scripting::ScriptingDocumentation OutputDocumentation(const scripting::DocumentationErrorReporter& errorReporter);
 
 	//***Moves data
 	//void MoveData(script_state &in);
@@ -221,7 +224,7 @@ public:
 	void RemHookVar(const char *name);
 	void RemHookVars(std::initializer_list<SCP_string> names);
 
-	const SCP_unordered_map<SCP_string, luacpp::LuaReference>& GetHookVariableReferences();
+	const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& GetHookVariableReferences();
 
 	//***Hook creation functions
 	template <typename T>
@@ -266,7 +269,7 @@ void script_state::SetHookVar(const char *name, char format, T&& value)
 		auto reference = luacpp::UniqueLuaReference::create(LuaState);
 		lua_pop(LuaState, 1); // Remove object value from the stack
 
-		HookVariableValues[name] = std::move(reference);
+		HookVariableValues[name].push_back(std::move(reference));
 	}
 }
 

@@ -395,7 +395,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
-	if ( Player->target_is_dying <= 0 ) {
+	if ( Player->target_is_dying <= 0 || (Player_ai->target_objnum >= 0 && targetp != &Objects[Player_ai->target_objnum])) {
 		int modelnum;
 
 		switch ( targetp->type ) {

@@ -74,6 +74,7 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 			if(dist > lightRadius) {
 				discard;
 			}
+			attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
 		} else if (lightType == LT_CONE) {
 			float coneDot = dot(normalize(-lightDir), coneDir);
 			if(dualCone) {

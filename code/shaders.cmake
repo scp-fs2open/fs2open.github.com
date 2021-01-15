@@ -6,7 +6,9 @@ set(LEGACY_SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/def_files/data/effects")
 set(SHADERS
 	${SHADER_DIR}/default-material.frag
 	${SHADER_DIR}/default-material.vert
-	)
+	${SHADER_DIR}/vulkan.frag
+	${SHADER_DIR}/vulkan.vert
+)
 
 target_sources(code PRIVATE ${SHADERS})
 source_group("Graphics\\Shaders" FILES ${SHADERS})
@@ -41,8 +43,8 @@ foreach (_shader ${SHADERS})
 
 		add_custom_command(OUTPUT "${_spirvFile}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${_depFileDir}"
-			COMMAND glslc "${_shader}" -o "${_spirvFile}" -O -g "-I${SHADER_DIR}" "-I${LEGACY_SHADER_DIR}" -MD -MF
-			"${_depFile}" -MT "${_relativeSpirvPath}" -Werror
+			COMMAND glslc "${_shader}" -o "${_spirvFile}" --target-env=vulkan1.0 -O -g "-I${SHADER_DIR}"
+				"-I${LEGACY_SHADER_DIR}" -MD -MF "${_depFile}" -MT "${_relativeSpirvPath}" -Werror -x glsl
 			MAIN_DEPENDENCY "${shader}"
 			COMMENT "Compiling shader ${_fileName}"
 			${DEPFILE_PARAM}

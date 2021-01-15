@@ -24,6 +24,7 @@
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "network//multi_obj.h"
 #include "object/deadobjectdock.h"
 #include "object/objcollide.h"
 #include "object/object.h"
@@ -765,7 +766,13 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			}
 
 			// fire non-streaming primaries here
-			ship_fire_primary( objp, 0 );
+			// Cyborg17, this is where the inaccurate multi shots are being shot... 
+			// so let's let the new system take over instead by excluding client player shots
+			// on the server.
+			if (!(MULTIPLAYER_MASTER) || (objp == Player_obj)) {
+				ship_fire_primary(objp, 0);
+			}
+			
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
@@ -780,8 +787,10 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	}
 
 	// single player and multiplayer masters do all of the following
-	if ( !MULTIPLAYER_CLIENT ) {		
-		if ( ci.fire_secondary_count ) {
+	if ( !MULTIPLAYER_CLIENT 
+		// Cyborg17 - except clients now fire dumbfires for rollback on the server
+		|| !(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].is_homing())) {		
+		if (ci.fire_secondary_count) {
    			if ( !ship_start_secondary_fire(objp) ) {
 				ship_fire_secondary( objp );
 			}
@@ -1594,6 +1603,11 @@ void obj_move_all(float frametime)
 	// do post-collision stuff for beam weapons
 	beam_move_all_post();
 
+	// Cyborg17 - Update the multi record on multi with these new positions. Clients need to get updated, too.
+	if (MULTIPLAYER_MASTER) {
+		multi_ship_record_update_all();
+	}
+
 	// update artillery locking info now
 	ship_update_artillery_lock();
 
@@ -2022,6 +2036,44 @@ int object_get_model(const object *objp)
 
 	return -1;
 }
+
+int object_get_model_instance(const object *objp)
+{
+	switch (objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return asp->model_instance_num;
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_instance_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return shipp->model_instance_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return wp->model_instance_num;
+		}
+		case OBJ_JUMP_NODE:
+		{
+			CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+			Assertion(jnp != nullptr, "Could not find jump node!");
+			return jnp->GetPolymodelInstanceNum();
+		}
+		default:
+			break;
+	}
+
+	return -1;
+}
+
 bool obj_compare(object* left, object* right) {
 	if (left == right) {
 		// Same pointer

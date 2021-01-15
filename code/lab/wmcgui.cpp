@@ -2385,6 +2385,9 @@ Checkbox::Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*
 
 	//Set the type
 	Type = GT_CHECKBOX;
+
+	Sip = nullptr;
+	Wip = nullptr;
 }
 
 int Checkbox::DoRefreshSize()

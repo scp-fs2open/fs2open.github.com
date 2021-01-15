@@ -173,7 +173,7 @@ ADE_FUNC(createSurfaceNormal,
 
 ADE_FUNC(findIntersection,
 	l_Base,
-	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
 	ade_type_info({ "vector", "number" }),
 	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
@@ -205,7 +205,7 @@ ADE_FUNC(findIntersection,
 
 ADE_FUNC(findPointOnLineNearestSkewLine,
 	l_Base,
-	"vector line1-point1, vector line1-point2, vector line2-point1, vector line2-point2",
+	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space).  (The lines are assumed to extend infinitely in both directions; the point will not necessarily be between the other points.)",
 	"vector",
 	"The closest point, or NIL if a handle is invalid")
@@ -229,7 +229,22 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
+ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flFrametime);
+}
+
+ADE_FUNC(getRealFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take in real time. Not affected by time compression.", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flRealframetime);
+}
+
+ADE_FUNC_DEPRECATED(getFrametime, l_Base, 
+	"[boolean adjustForTimeCompression]", 
+	"Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", 
+	"number", "Frame time (seconds)", 
+	gameversion::version(20, 2, 0, 0),
+	"The parameter of this function is inverted from the naming (passing true returns non-adjusted time). Please use either getMissionFrametime() or getRealFrametime().")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);

@@ -29,8 +29,6 @@ int Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
-#define MAX_FIREBALLS	200
-
 #define MAX_WARP_LOD	0
 
 fireball Fireballs[MAX_FIREBALLS];

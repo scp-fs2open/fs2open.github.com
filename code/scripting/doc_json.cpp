@@ -96,6 +96,13 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 			"parameters",
 			parameterTypes);
 	}
+	case ade_type_info_type::Varargs: {
+		return json_pack("{ssso}",
+			"type",
+			"varargs",
+			"baseType",
+			json_doc_generate_return_type(type_info.elements().front()));
+	}
 	}
 
 	UNREACHABLE("Unknown type type!");

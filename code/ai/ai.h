@@ -183,6 +183,7 @@ typedef struct ai_class {
 
 //	Submode definitions.
 //	Note: These need to be renamed to be of the form: AIS_mode_xxxx
+// Cyborg17 -- If you add submodes for AI_CHASE, you *have to* add entries to Submode_text[] in aicode.cpp
 #define	SM_CONTINUOUS_TURN	1	// takes parm: vector_id {0..3 = right, -right, up, -up}
 #define	SM_ATTACK				2
 #define	SM_EVADE_SQUIGGLE		3
@@ -471,8 +472,8 @@ typedef struct ai_info {
 	fix		avoid_check_timestamp;			//	timestamp at which to next check for having to avoid ship
 
 	vec3d	big_collision_normal;			// Global normal of collision with big ship.  Helps find direction to fly away from big ship.  Set for each collision.
-	vec3d	big_recover_pos_1;				//	Global point to fly towards when recovering from collision with a big ship, stage 1.
-	vec3d	big_recover_pos_2;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
+	vec3d	big_recover_1_direction;		//	A relative direction to fly towards when recovering from collision with a big ship, stage 1.
+	vec3d	big_recover_2_pos;				//	Global point to fly towards when recovering from collision with a big ship, stage 2.
 	int		big_recover_timestamp;			//	timestamp at which it's OK to re-enter stage 1.
 
 	int		abort_rearm_timestamp;			//	time at which this rearm should be aborted in a multiplayer game.
@@ -486,7 +487,8 @@ typedef struct ai_info {
 
 	flagset<AI::Maneuver_Override_Flags>	ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
-	int		ai_override_timestamp;		// mark for when to end the current override
+	int		ai_override_lat_timestamp;		// mark for when to end the current lateral maneuver override
+	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
 } ai_info;

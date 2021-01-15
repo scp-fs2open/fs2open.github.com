@@ -1233,21 +1233,8 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		return;
 	}
 
-#ifndef NDEBUG
-	if (RAND_MAX < nv)
-	{
-		static int submodel_get_two_random_points_warned = false;
-		if (!submodel_get_two_random_points_warned)
-		{
-			polymodel *pm = model_get(model_num);
-			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-			submodel_get_two_random_points_warned = true;
-		}
-	}
-#endif
-
-	int vn1 = myrand() % nv;
-	int vn2 = myrand() % nv;
+	int vn1 = rand32() % nv;
+	int vn2 = rand32() % nv;
 
 	*v1 = *Interp_verts[vn1];
 	*v2 = *Interp_verts[vn2];
@@ -1292,17 +1279,6 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-#ifndef NDEBUG
-		if (RAND_MAX < nv)
-		{
-			static int submodel_get_two_random_points_warned = false;
-			if (!submodel_get_two_random_points_warned)
-			{
-				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-				submodel_get_two_random_points_warned = true;
-			}
-		}
-#endif
 		int seed_num = seed == -1 ? rand32() : seed;
 		int vn1 = static_rand(seed_num) % nv;
 		int vn2 = static_rand(seed_num) % nv;
@@ -2485,7 +2461,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
 		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
 	} else {
-		pm->shield.buffer_id = -1;
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
 	}
 }
 

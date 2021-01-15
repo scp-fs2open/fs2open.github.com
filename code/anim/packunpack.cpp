@@ -151,14 +151,21 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 			bit_16 = (ushort)pix;
 			break;
 		case 8:
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use value in the range [0, 15] where 15 wraps
-			// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
-			// needs to be adjusted here. By muliplying the value with 17 the original range [0, 15] is mapped to [0, 255]
-			if (pix >= 15) {
-				bit_8 = 0;
-			} else {
-				bit_8 = (ubyte)(pix * 17);
+			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
+			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
+			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
+			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
+			// transparent background.
+			if (pix > 15) {
+				bit_8 = 255;
 			}
+			else if (pix == 15) {
+				bit_8 = 18;
+			}
+			else {
+				bit_8 = (ubyte)(pix * 18);
+			}
+
 			break;
 		default:
 			Int3();
@@ -242,14 +249,21 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 			bit_16 = (ushort)pix;
 			break;
 		case 8 :
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use value in the range [0, 15] where 15 wraps
-			// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
-			// needs to be adjusted here. By muliplying the value with 17 the original range [0, 15] is mapped to [0, 255]
-			if (pix >= 15) {
-				bit_8 = 0;
-			} else {
-				bit_8 = (ubyte)(pix * 17);
+			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
+			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
+			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
+			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
+			// transparent background.
+			if (pix > 15) {
+				bit_8 = 255;
 			}
+			else if (pix == 15) {
+				bit_8 = 18;
+			}
+			else {
+				bit_8 = (ubyte)(pix * 18);
+			}
+
 			break;
 		default :
 			Int3();			

@@ -55,7 +55,7 @@ namespace Weapon {
 		No_emp_kill,						// though weapon has hitpoints it can not be disabled by EMP
 		Variable_lead_homing,				// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 		Untargeted_heat_seeker,				// forces heat seeker to lose target immeadiately (and acquire a random new one)
-		Hard_target_bomb,					// removes the radius doubling effect bombs have for collisions
+		No_radius_doubling,					// removes the radius doubling effect bombs have for collisions
 		Non_subsys_homing,					// spreads fired missiles around the target ships hull
 		No_life_lost_if_missed,				// prevents game from shortening the lifeleft of the missed but still homing missiles
 		Custom_seeker_str,					// sets the game to use custom seeker strengths instead of default values
@@ -83,6 +83,8 @@ namespace Weapon {
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
 		Has_display_name,					// Goober5000
+		No_impact_spew,						// Goober5000
+		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 
         NUM_VALUES
 	};
@@ -106,6 +108,7 @@ namespace Weapon {
 	FLAG_LIST(Burst_Flags) {
 		Fast_firing,
 		Random_length,
+		Resets,
 
 		NUM_VALUES
 	};
