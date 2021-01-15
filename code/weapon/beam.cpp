@@ -1039,7 +1039,6 @@ void beam_move_all_post()
 	beam *next_one;	
 	int bf_status;	
 	beam_weapon_info *bwi;
-	int type_d_index, type_d_wait = 0;
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
@@ -1139,15 +1138,23 @@ void beam_move_all_post()
 		}
 
 		// add tube light for the beam
-		if (moveup->objp != NULL) {
-			//assume we are in the waiting phases of a type D beam
-			type_d_wait = 0;
-			//test that assumption
-			if (moveup->type == BEAM_TYPE_D)
-				beam_type_d_get_status(moveup, &type_d_index, &type_d_wait);
-			//if it remains true, create a tube light.
-			if (type_d_wait == 0)
-				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
+		if (moveup->objp != nullptr) {
+			if (moveup->type == BEAM_TYPE_D) {
+
+				//we only use the second variable but we need two pointers to pass.
+				int type_d_index, type_d_waiting = 0;
+
+				beam_type_d_get_status(moveup, &type_d_index, &type_d_waiting);
+
+				//create a tube light only if we are not waiting between shots
+				if (type_d_waiting == 0) {
+					beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, nullptr);
+				}
+			}
+			else
+			{
+				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, nullptr);
+			}
 		}
 
 		// stop shooting?
