@@ -43,7 +43,7 @@
 
 #define NUM_BUTTONS	16
 #define NUM_TABS		3
-#define LIST_BUTTONS_MAX	50
+#define LIST_BUTTONS_MAX	42
 
 #define SHIPS_DATA_MODE		(1<<0)
 #define WEAPONS_DATA_MODE	(1<<1)
@@ -430,7 +430,7 @@ void tech_common_render()
 	y = 0;
 	z = List_offset;
 	while (y + font_height <= Tech_list_coords[gr_screen.res][SHIP_H_COORD]) {
-		if ((z - List_offset) >= LIST_BUTTONS_MAX || z >= static_cast<int>(Current_list->size())) {
+		if (z >= static_cast<int>(Current_list->size())) {
 			break;
 		}
 
