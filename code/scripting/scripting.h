@@ -18,6 +18,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
+class Hook;
 }
 
 struct image_desc
@@ -67,9 +68,7 @@ enum ConditionalType {
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
-	CHA_DEATH,
 	CHA_ONFRAME,
-	CHA_COLLIDESHIP,
 	CHA_COLLIDEWEAPON,
 	CHA_COLLIDEDEBRIS,
 	CHA_COLLIDEASTEROID,
@@ -244,7 +243,7 @@ public:
 	int RunBytecode(script_function& hd);
 	bool IsOverride(script_hook &hd);
 	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
-	bool IsConditionOverride(int action, object *objp=NULL);
+	bool IsConditionOverride(int action, object* objp = NULL);
 
 	void RunInitFunctions();
 

@@ -15,6 +15,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/objs/vecmath.h"
 #include "weapon/weapon.h"
 

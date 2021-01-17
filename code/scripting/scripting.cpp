@@ -61,7 +61,6 @@ class BuiltinHook : public scripting::HookBase {
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Game Init",			CHA_GAMEINIT ),
 	std::make_shared<BuiltinHook>("On Splash Screen",		CHA_SPLASHSCREEN ),
 	std::make_shared<BuiltinHook>("On State Start",			CHA_ONSTATESTART ),
 	std::make_shared<BuiltinHook>("On Action",				CHA_ONACTION ),
@@ -74,12 +73,10 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On State End",			CHA_ONSTATEEND ),
 	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
 	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
-	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
 	std::make_shared<BuiltinHook>("On Weapon Collision",	CHA_COLLIDEWEAPON ),
 	std::make_shared<BuiltinHook>("On Debris Collision",	CHA_COLLIDEDEBRIS ),
 	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
 	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
-	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
 	std::make_shared<BuiltinHook>("On Mission End",			CHA_MISSIONEND ),
 	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
 	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),

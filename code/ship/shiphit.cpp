@@ -39,7 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/hook_api.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
@@ -1604,16 +1604,17 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
-	{
+	auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+		scripting::hook_param("Ship", 'o', ship_objp),
+		scripting::hook_param("Killer", 'o', other_obj),
+		scripting::hook_param("Hitpos",
+			'o',
+			scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+			hitpos != nullptr));
+
+	if (scripting::hooks::OnDeath->isOverride(onDeathParamList)) {
 		//WMC - Do scripting stuff
-		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-		if (hitpos)
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship", "Killer"});
-		if (hitpos)
-			Script_system.RemHookVar("Hitpos");
+		scripting::hooks::OnDeath->run(onDeathParamList);
 		return;
 	}
 
@@ -1753,13 +1754,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		ship_maybe_lament();
 	}
 
-	Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-	if (hitpos)
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars({"Self", "Ship", "Killer"});
-	if (hitpos)
-		Script_system.RemHookVar("Hitpos");
+	scripting::hooks::OnDeath->run(onDeathParamList);
 }
 
 // function to simply explode a ship where it is currently at

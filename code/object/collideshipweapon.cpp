@@ -18,6 +18,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -436,10 +437,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
 		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 
-		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		bool weapon_override = scripting::hooks::OnShipCollision->isOverride(
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+				scripting::hook_param("Object", 'o', ship_objp),
+				scripting::hook_param("Ship", 'o', ship_objp),
+				scripting::hook_param("Weapon", 'o', weapon_objp),
+				scripting::hook_param("Hitpos", 'o', mc.hit_point_world)),
+			weapon_objp);
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
@@ -460,10 +464,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 		if ((weapon_override && !ship_override) || (!weapon_override && !ship_override))
 		{
-			Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+			scripting::hooks::OnShipCollision->run(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', ship_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)),
+				weapon_objp);
 		}
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {

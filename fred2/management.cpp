@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -466,7 +467,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	GameInitHook->run();
 
 	return true;
 }
