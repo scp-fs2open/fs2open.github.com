@@ -525,119 +525,6 @@ void batching_add_beam_internal(primitive_batch *batch, int texture, vec3d *star
 	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
 }
 
-void batching_add_laser_headon_internal(primitive_batch* batch, int texture, vec3d* p0, vec3d* p1, float rad, int r, int g, int b, float offset)
-{
-	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
-
-	rad *= 0.5f;
-
-	vec3d uvec, fvec, rvec, center, reye, pos;
-
-
-	vm_vec_sub(&fvec, p0, p1);
-	pos = fvec * offset;
-	pos += *p1;
-	vm_vec_normalize_safe(&fvec);
-
-	vm_vec_sub(&reye, &Eye_position, &pos);
-	vm_vec_normalize(&reye);
-
-	// compute the up vector
-	vm_vec_cross(&uvec, &fvec, &reye);
-	vm_vec_normalize_safe(&uvec);
-	// ... the forward vector
-	vm_vec_cross(&fvec, &uvec, &reye);
-	vm_vec_normalize_safe(&fvec);
-	// now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_cross(&rvec, &uvec, &fvec);
-
-	// Now have uvec, which is up vector and rvec which is the normal
-	// of the face.
-
-	vec3d start, end;
-
-	vm_vec_scale_add(&start, &pos, &fvec, -rad);
-	vm_vec_scale_add(&end, &pos, &fvec, rad);
-
-	vec3d vecs[4];
-	batch_vertex verts[6];
-
-	vm_vec_scale_add(&vecs[0], &end, &uvec, rad);
-	vm_vec_scale_add(&vecs[1], &start, &uvec, rad);
-	vm_vec_scale_add(&vecs[2], &start, &uvec, -rad);
-	vm_vec_scale_add(&vecs[3], &end, &uvec, -rad);
-
-	/*
-
-	vm_vec_sub(&fvec, p0, p1);
-	vm_vec_normalize_safe(&fvec);
-
-	vm_vec_avg(&center, p0, p1); // needed for the return value only
-	vm_vec_sub(&reye, &Eye_position, &center);
-	vm_vec_normalize(&reye);
-
-	// compute the up vector
-	vm_vec_cross(&uvec, &fvec, &reye);
-	vm_vec_normalize_safe(&uvec);
-	// ... the forward vector
-	// now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_cross(&rvec, &uvec, &fvec);
-
-	// Now have uvec, which is up vector and rvec which is the normal
-	// of the face.
-
-	vec3d vecs[4];
-	batch_vertex verts[6];
-
-	vec3d ul, ur, bl, br;
-	ul = ur = bl = br = vmd_zero_vector;
-	ur += uvec;  ur += rvec; ur *= rad;
-	ul += uvec;  ul -= rvec; ul *= rad;
-	br -= uvec;  br += rvec; br *= rad;
-	bl -= uvec;  bl -= rvec; bl *= rad;
-
-	vecs[0] = center + ur;
-	vecs[1] = center + ul;
-	vecs[2] = center - bl;
-	vecs[3] = center - br;
-	*/
-
-	verts[0].position = vecs[0];
-	verts[1].position = vecs[1];
-	verts[2].position = vecs[2];
-
-	verts[3].position = vecs[0];
-	verts[4].position = vecs[2];
-	verts[5].position = vecs[3];
-
-	verts[0].tex_coord.xyz.x = 1.0f;
-	verts[0].tex_coord.xyz.y = 0.0f;
-	verts[1].tex_coord.xyz.x = 0.0f;
-	verts[1].tex_coord.xyz.y = 0.0f;
-	verts[2].tex_coord.xyz.x = 0.0f;
-	verts[2].tex_coord.xyz.y = 1.0f;
-
-	verts[3].tex_coord.xyz.x = 1.0f;
-	verts[3].tex_coord.xyz.y = 0.0f;
-	verts[4].tex_coord.xyz.x = 0.0f;
-	verts[4].tex_coord.xyz.y = 1.0f;
-	verts[5].tex_coord.xyz.x = 1.0f;
-	verts[5].tex_coord.xyz.y = 1.0f;
-
-	auto array_index = texture - batch->get_render_info().texture;
-	for (auto& vert : verts) {
-		vert.r = (ubyte)r;
-		vert.g = (ubyte)g;
-		vert.b = (ubyte)b;
-		vert.a = 255;
-
-		vert.tex_coord.xyz.z = (float)array_index;
-	}
-
-	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
-	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
-}
-
 void batching_add_laser_internal(primitive_batch *batch, int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
@@ -825,7 +712,7 @@ void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float
 	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.0f);
 }
 
-void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b, int texture2, float tex2_offset)
+void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b, int texture2)
 {
 	if (texture < 0) {
 		Int3();
@@ -844,7 +731,7 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 		vec3d cross;
 		vm_vec_cross(&cross, &reye, &fvec);
 		float angle = vm_vec_mag(&cross);
-		angle = sqrtf(angle);
+		angle = powf(angle, 0.4f);
 
 		r2 = (int)(r2 * (1 - angle));         g2 = (int)(g2 * (1 - angle));        b2 = ((int)b2 * (1 - angle));
 		r  = (int)(r  * angle);   g  = (int)(g * angle);   b  = ((int)b  * angle);
@@ -855,7 +742,9 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 
 		batch = batching_find_batch(texture2, batch_info::FLAT_EMISSIVE);
 
-		batching_add_laser_headon_internal(batch, texture2, p0, p1, (width1 + width2) / 2, r2, g2, b2, tex2_offset);
+		batching_add_laser_internal(batch, texture, p0, (width1 + width2) / 2, p1, (width1 + width2) / 2, r2, g2, b2);
+
+		//batching_add_laser_headon_internal(batch, texture2, p0, p1, (width1 + width2) / 2, r2, g2, b2, tex2_offset);
 	} else {
 		primitive_batch* batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 

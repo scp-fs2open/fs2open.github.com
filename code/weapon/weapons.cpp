@@ -1080,9 +1080,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	if (optional_string("@Leaser Head-on Offset:"))
-		stuff_float(&wip->laser_headon_offset);
-
 	if(optional_string("@Laser Color:"))
 	{
 		// This might be confusing at first glance. If we're a modular table (!first_time),
@@ -7891,7 +7888,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
 				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 
-					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame, wip->laser_headon_offset);
+					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame);
 			}			
 
 			// maybe draw laser glow bitmap
@@ -8116,7 +8113,6 @@ void weapon_info::reset()
 	generic_anim_init(&this->laser_bitmap);
 	generic_anim_init(&this->laser_glow_bitmap);
 	generic_anim_init(&this->laser_headon_bitmap);
-	this->laser_headon_offset = 0.5f;
 
 	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
