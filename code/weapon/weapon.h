@@ -118,6 +118,7 @@ typedef struct weapon {
 	// laser stuff
 	float	laser_bitmap_frame;				// used to keep track of which frame the animation should be on
 	float	laser_glow_bitmap_frame;		// used to keep track of which frame the glow animation should be on
+	float   laser_headon_bitmap_frame;
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
@@ -286,6 +287,8 @@ struct weapon_info
 
 	generic_anim laser_bitmap;				// bitmap for a laser
 	generic_anim laser_glow_bitmap;			// optional laser glow bitmap
+	generic_anim laser_headon_bitmap;
+	float laser_headon_offset;
 
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors

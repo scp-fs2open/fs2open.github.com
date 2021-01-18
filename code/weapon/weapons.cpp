@@ -1068,6 +1068,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("@Laser Head-on Bitmap:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if (wip->render_type != WRT_LASER) {
+			mprintf(("WARNING:  Laser Head-on bitmap specified on non-LASER type weapon (%s)!\n", wip->name));
+			Int3();
+		}
+		else {
+			generic_anim_init(&wip->laser_headon_bitmap, fname);
+		}
+	}
+
+	if (optional_string("@Leaser Head-on Offset:"))
+		stuff_float(&wip->laser_headon_offset);
+
 	if(optional_string("@Laser Color:"))
 	{
 		// This might be confusing at first glance. If we're a modular table (!first_time),
@@ -3458,6 +3473,11 @@ void weapon_release_bitmaps()
 				bm_release(wip->laser_glow_bitmap.first_frame);
 				wip->laser_glow_bitmap.first_frame = -1;
 			}
+			
+			if (wip->laser_headon_bitmap.first_frame >= 0) {
+				bm_release(wip->laser_headon_bitmap.first_frame);
+				wip->laser_headon_bitmap.first_frame = -1;
+			}
 		}
 
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -3560,6 +3580,20 @@ void weapon_load_bitmaps(int weapon_index)
 			else if ( generic_anim_load(&wip->laser_glow_bitmap) ) {
 				mprintf(("Could not find a usable glow bitmap for '%s'!\n", wip->name));
 				Warning(LOCATION, "Could not find a usable glow bitmap (%s) for weapon '%s'!\n", wip->laser_glow_bitmap.filename, wip->name);
+			}
+		}
+
+		if (strlen(wip->laser_headon_bitmap.filename)) {
+			wip->laser_headon_bitmap.first_frame = bm_load(wip->laser_headon_bitmap.filename);
+
+			if (wip->laser_headon_bitmap.first_frame >= 0) {
+				wip->laser_headon_bitmap.num_frames = 1;
+				wip->laser_headon_bitmap.total_time = 1;
+			}
+			// fall back to an animated type
+			else if (generic_anim_load(&wip->laser_headon_bitmap)) {
+				mprintf(("Could not find a usable cross section bitmap for '%s'!\n", wip->name));
+				Warning(LOCATION, "Could not find a usable cross section bitmap (%s) for weapon '%s'!\n", wip->laser_headon_bitmap.filename, wip->name);
 			}
 		}
 	}
@@ -5666,6 +5700,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// init the laser info
 	wp->laser_bitmap_frame = 0.0f;
 	wp->laser_glow_bitmap_frame = 0.0f;
+	wp->laser_headon_bitmap_frame = 0.0f;
 
 	// init the weapon state
 	wp->weapon_state = WeaponState::INVALID;
@@ -6916,6 +6951,7 @@ void weapons_page_in()
 			{
 				bm_page_in_texture( wip->laser_bitmap.first_frame );
 				bm_page_in_texture( wip->laser_glow_bitmap.first_frame );
+				bm_page_in_texture (wip->laser_headon_bitmap.first_frame );
 
 				break;
 			}
@@ -7103,6 +7139,7 @@ bool weapon_page_in(int weapon_type)
 		{
 			bm_page_in_texture(wip->laser_bitmap.first_frame);
 			bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
+			bm_page_in_texture(wip->laser_headon_bitmap.first_frame);
 
 			break;
 		}
@@ -7829,6 +7866,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			int alpha = 255;
 			int framenum = 0;
+			int headon_framenum = 0;
 
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
@@ -7839,6 +7877,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
+				if (wip->laser_headon_bitmap.num_frames > 1) {
+					wp->laser_headon_bitmap_frame += flFrametime;
+
+					headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+				}
+
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
@@ -7846,7 +7890,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
-				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
+				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 
+					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame, wip->laser_headon_offset);
 			}			
 
 			// maybe draw laser glow bitmap
@@ -8070,6 +8115,8 @@ void weapon_info::reset()
 
 	generic_anim_init(&this->laser_bitmap);
 	generic_anim_init(&this->laser_glow_bitmap);
+	generic_anim_init(&this->laser_headon_bitmap);
+	this->laser_headon_offset = 0.5f;
 
 	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
