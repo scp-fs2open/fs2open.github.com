@@ -723,18 +723,21 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 		
 		vec3d fvec, center, reye;
 		vm_vec_sub(&fvec, p0, p1);
-		vm_vec_normalize_safe(&fvec);
+		float length = vm_vec_normalize_safe(&fvec);
 
 		vm_vec_avg(&center, p0, p1);
 		vm_vec_sub(&reye, &Eye_position, &center);
 		vm_vec_normalize(&reye);
-		vec3d cross;
-		vm_vec_cross(&cross, &reye, &fvec);
-		float angle = vm_vec_mag(&cross);
-		angle = powf(angle, 0.4f);
+		float ang = vm_vec_delta_ang_norm(&reye, &fvec, nullptr);
 
-		r2 = (int)(r2 * (1 - angle));         g2 = (int)(g2 * (1 - angle));        b2 = ((int)b2 * (1 - angle));
-		r  = (int)(r  * angle);   g  = (int)(g * angle);   b  = ((int)b  * angle);
+		float head = (width1 + width2) * cosf(ang);
+		float side = length * sinf(ang);
+		float head_side_total = head + side;
+		head /= head_side_total;
+		side /= head_side_total;
+
+		r2 = (int)(r2 * head);   g2 = (int)(g2 * head);  b2 = ((int)b2 * head);
+		r  = (int)(r  * side);   g  = (int)(g * side);   b  = ((int)b  * side);
 
 		primitive_batch* batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
