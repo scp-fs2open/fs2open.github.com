@@ -1797,6 +1797,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if ( optional_string("+End Alpha:") )
 			stuff_float(&ti->a_end);
 
+		if (optional_string("+Alpha Decay Exponent:"))
+			stuff_float(&ti->a_decay_exponent);
+
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
@@ -8185,6 +8188,7 @@ void weapon_info::reset()
 	this->tr_info.a_end = 1.0f;
 	this->tr_info.max_life = 1.0f;
 	this->tr_info.spread = 0.0f;
+	this->tr_info.a_decay_exponent = 1.0f;
 	this->tr_info.stamp = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;

@@ -212,10 +212,16 @@ void trail_render( trail * trailp )
 		}
 
 		w = trailp->val[n] * w_size + ti->w_start;
+
+		float fade = trailp->val[n];
+		
+		if (trailp->info.a_decay_exponent != 1.0f)
+			fade = powf(trailp->val[n], trailp->info.a_decay_exponent);
+
 		if (init_fade_out != 1.0f) {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
 		} else {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
 
 		if ( i == 0 )	{

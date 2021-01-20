@@ -25,6 +25,7 @@ typedef struct trail_info {
 	float w_end;			// ending width
 	float a_start;			// starting alpha
 	float a_end;			// ending alpha
+	float a_decay_exponent; // applied to val to determine final alpha
 	float max_life;		// max_life for a section
 	int stamp;				// spew timestamp
 	generic_bitmap texture;	// texture to use for trail
