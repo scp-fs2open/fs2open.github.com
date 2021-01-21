@@ -10657,10 +10657,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if ( by_sexp ) {
 		if (sip_orig->num_primary_banks > sip->num_primary_banks) {
 			sp->weapons.current_primary_bank = 0;
+			sp->weapons.previous_primary_bank = 0;
 		}
 
 		if (sip_orig->num_secondary_banks > sip->num_secondary_banks) {
 			sp->weapons.current_secondary_bank = 0;
+			sp->weapons.previous_secondary_bank = 0;
 		}
 
 		// While we're at it, let's copy over the ETS settings too
