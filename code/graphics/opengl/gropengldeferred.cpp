@@ -133,9 +133,6 @@ void gr_opengl_deferred_lighting_finish()
 	size_t num_data_elements = 0;
 	for (auto& l : Lights) {
 		++num_data_elements;
-		if (l.type == Light_Type::Tube) {
-			++num_data_elements;
-		}
 	}
 
 	// Get a uniform buffer for our data
@@ -235,20 +232,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.z = length;
 
 				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
-
-				// Tube lights consist of two different types of lights with almost the same properties
-				light_data = uniformAligner.addTypedElement<deferred_light_data>();
-				light_data->diffuseLightColor = diffuse;
-				light_data->specLightColor = spec;
-
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
-
-				light_data->lightRadius = l.radb * 1.5f;
-				light_data->lightType = LT_POINT;
-
-				light_data->scale.xyz.x = l.radb * 1.53f;
-				light_data->scale.xyz.y = l.radb * 1.53f;
-				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
 			}
 			}
@@ -290,14 +273,6 @@ void gr_opengl_deferred_lighting_finish()
 				vm_vector_2_matrix(&orient, &a, NULL, NULL);
 
 				gr_opengl_draw_deferred_light_cylinder(&l.vec2, &orient);
-				++element_index;
-
-				// The next two draws use the same uniform block element
-				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
-
-				gr_opengl_draw_deferred_light_sphere(&l.vec);
-				gr_opengl_draw_deferred_light_sphere(&l.vec2);
 				++element_index;
 				break;
 			default:
