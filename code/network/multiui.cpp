@@ -2799,6 +2799,7 @@ void multi_sg_init_gamenet()
 	// assign my player struct and other data	
 	Net_player->flags |= (NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING);
 	Net_player->s_info.voice_token_timestamp = -1;	
+	Net_player->s_info.player_collision_timestamp = -1;
 
 	// if we're supposed to flush our cache directory, do so now
 	if(Net_player->p_info.options.flags & MLO_FLAG_FLUSH_CACHE){
