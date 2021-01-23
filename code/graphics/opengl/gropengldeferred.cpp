@@ -226,6 +226,10 @@ void gr_opengl_deferred_lighting_finish()
 				vec3d a;
 				vm_vec_sub(&a, &l.vec, &l.vec2);
 				auto length = vm_vec_mag(&a);
+				//Tube light volumes must be extended past the length of their requested light vector
+				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+				//origin we must extend it here. Later the position will be adjusted as well.
+				length += light_data->lightRadius * 2.0f;
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
@@ -267,12 +271,17 @@ void gr_opengl_deferred_lighting_finish()
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
 				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
-				vec3d a;
+				vec3d dir, newPos;
 				matrix orient;
-				vm_vec_sub(&a, &l.vec, &l.vec2);
-				vm_vector_2_matrix(&orient, &a, NULL, NULL);
-
-				gr_opengl_draw_deferred_light_cylinder(&l.vec2, &orient);
+				vm_vec_sub(&dir, &l.vec, &l.vec2);
+				vm_vector_2_matrix(&orient, &dir, NULL, NULL);
+				//Tube light volumes must be extended past the length of their requested light vector
+				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+				//origin we must extend it, which has been done above, and then move it backwards one radius.
+				vm_vec_normalize(&dir);
+				//1.5 multiplier matches scaling used earlier to scale light radius for all tubes
+				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
+				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
 				break;
 			default:
