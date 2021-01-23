@@ -907,19 +907,28 @@ ADE_FUNC(createShip,
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx >= 0) {
+		auto shipp = &Ships[Objects[obj_idx].instance];
+
 		if (team >= 0) {
-			Ships[Objects[obj_idx].instance].team = team;
+			shipp->team = team;
 		}
 
 		model_page_in_textures(Ship_info[sclass].model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
 
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(shipp->ship_name)) {
+			shipp->display_name = shipp->ship_name;
+			end_string_at_first_hash_symbol(shipp->display_name);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
+
 		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
 		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
