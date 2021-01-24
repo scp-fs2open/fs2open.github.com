@@ -130,10 +130,7 @@ void gr_opengl_deferred_lighting_finish()
 	using namespace graphics;
 
 	// We need to precompute how many elements we are going to need
-	size_t num_data_elements = 0;
-	for (auto& l : Lights) {
-		++num_data_elements;
-	}
+	size_t num_data_elements = Lights.size();
 
 	// Get a uniform buffer for our data
 	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
