@@ -44,6 +44,9 @@ int collide_debris_ship( obj_pair * pair )
 	Assert( pdebris->type == OBJ_DEBRIS );
 	Assert( pship->type == OBJ_SHIP );
 
+	if (reject_due_collision_groups(pdebris, pship))
+		return 0;
+
 	// don't check collision if it's our own debris and we are dying
 	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags[Ship::Ship_Flags::Dying]) )
 		return 0;
