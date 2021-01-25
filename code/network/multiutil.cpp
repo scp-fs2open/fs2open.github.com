@@ -800,7 +800,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 	Net_players[net_player_num].reliable_socket = PSNET_INVALID_SOCKET;
 	Net_players[net_player_num].s_info.kick_timestamp = -1;
 	Net_players[net_player_num].s_info.voice_token_timestamp = -1;
-	Net_players[net_player_num].s_info.player_collision_timestamp = -1;
+	Net_players[net_player_num].s_info.player_collision_timestamp = timestamp(0);
 	Net_players[net_player_num].s_info.tracker_security_last = -1;
 	Net_players[net_player_num].s_info.target_objnum = -1;
 	Net_players[net_player_num].s_info.accum_buttons = 0;
