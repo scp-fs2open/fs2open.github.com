@@ -219,14 +219,14 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,                 -1, -1,           0, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
-const char *Scan_code_text_german[] = {
+const char* Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
+	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\xc3\xbc""cktaste",		"Tab", // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
+	"O",				"P",				"\xc3\x9c",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
 
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\xc3\x96",
+	"\xc3\x84",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
 	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
 	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
 
@@ -261,7 +261,7 @@ const char *Scan_code_text_german[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_german[] = {
+const char* Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
@@ -270,20 +270,20 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-const char *Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
+const char* Scan_code_text_french[] = {
+	"",				"\xc3\x89""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
+	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\xc3\xa9""che Ret.",			"Tab",  // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
+	"O",				"P",				"[",				"]",				"Entr\xc3\xa9""e",			"Ctrl Gauche",			"A",				"S",
 
 	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
 	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
+	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\xc3\xa9"" *",
 	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
 
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
-	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
-	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
+	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\xc3\xa9"" 7",
+	"Pav\xc3\xa9"" 8",			"Pav\xc3\xa9"" 9",			"Pav\xc3\xa9"" -",			"Pav\xc3\xa9"" 4",			"Pav\xc3\xa9"" 5",			"Pav\xc3\xa9"" 6",			"Pav\xc3\xa9"" +",			"Pav\xc3\xa9"" 1",
+	"Pav\xc3\xa9"" 2",			"Pav\xc3\xa9"" 3",			"Pav\xc3\xa9"" 0",			"Pav\xc3\xa9"" .",			"",				"",				"",				"F11",
 	"F12",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -294,16 +294,16 @@ const char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
+	"",				"",				"",				"",				"Pav\xc3\xa9"" Entr",			"Ctrl Droite",		"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
+	"",				"",				"",				"",				"",				"Pav\xc3\xa9"" /",			"",				"Impr \xc3\xa9""cran",
 	"Alt",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
-	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
+	"Fl\xc3\xa9""che Haut",			"Page Haut",			"",				"Fl\xc3\xa9""che Gauche",			"",				"Fl\xc3\xa9""che Droite",			"",			"Fin",
+	"Fl\xc3\xa9""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -312,16 +312,16 @@ const char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_french[] = {
+const char* Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",		"Bouton 32",		"Chapeau Arri\xc3\xa8""re",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char *Scan_code_text_polish[] = {
+const char* Scan_code_text_polish[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -353,8 +353,8 @@ const char *Scan_code_text_polish[] = {
 	"Alt",			"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
+	"Kursor G\xc3\xb3""ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
+	"Kursor D\xc3\xb3\xc5\x82",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -363,17 +363,17 @@ const char *Scan_code_text_polish[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_polish[] = {
+const char* Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
+	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		"Hat Prz\xc3\xb3""d",	"Hat Lewo",		"Hat Prawo"
 };
 
 //!	This is the text that is displayed on the screen for the keys a player selects
-const char *Scan_code_text_english[] = {
+const char* Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -415,7 +415,7 @@ const char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_english[] = {
+const char* Joy_button_text_english[] = {
 	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
 	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
