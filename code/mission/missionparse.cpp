@@ -1509,6 +1509,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+				bi->modelnum = -1;
+				bi->model_instance_num = -1;
 
 				// Goober5000 - import
 				if (flags & MPF_IMPORT_FSM)
@@ -2320,7 +2322,8 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				ptr->submodel_info_1.blown_off = 1;
+				if (ptr->submodel_instance_1 != nullptr)
+					ptr->submodel_instance_1->blown_off = true;
 			}
 			else
 			{
@@ -2333,7 +2336,6 @@ int parse_create_object_sub(p_object *p_objp)
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
 
-		ptr->turret_best_weapon = -1;
 		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
 		ptr->turret_animation_done_time = 0;
 	}
@@ -2447,7 +2449,7 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!object_is_docked(p_objp) || (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]))
 		{
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
-				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
 		// also add this ship to the multi ship tracking and interpolation struct
 		multi_ship_record_add_ship(objnum);
@@ -3366,6 +3368,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = false;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, p_objp->name);
@@ -3539,12 +3543,11 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
+				shipfx_blow_up_model(objp, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
-				auto sip = &Ships[objp->instance];
-				ship_add_exited_ship(sip, Ship::Exit_Flags::Destroyed);
+				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
@@ -8082,6 +8085,33 @@ void mission_parse_remove_alt(const char *name)
 void mission_parse_reset_alt()
 {
 	Mission_alt_type_count = 0;
+}
+
+// For compatibility purposes some mods want alt names to truncate at the hash symbol.  But we can't actually do that at mission load,
+// since we have to save them again in FRED.  So this function processes the names just before the mission starts.
+// To further complicate things, some mods actually want the hash to be displayed.  So this function uses the double-hash as an escape sequence for a single hash.
+void mission_process_alt_types()
+{
+	for (int i = 0; i < Mission_alt_type_count; ++i)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
+
+		// consolidate double hashes
+		auto src = Mission_alt_types[i];
+		auto dest = src;
+		while (*src)
+		{
+			if (*src == '#' && *(src + 1) == '#')
+				dest--;
+
+			++src;
+			++dest;
+
+			if (src != dest)
+				*dest = *src;
+		}
+	}
 }
 
 /**

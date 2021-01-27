@@ -65,9 +65,10 @@ class player;
 // version 50 - 7/27/2020 IPv6
 // version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
 // version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// version 53 - 12/2/2020 big set of packet fixes/upgrades
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							52
+#define MULTI_FS_SERVER_VERSION							53
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -364,8 +365,6 @@ class player;
 #define STATS_DOGFIGHT_KILLS		3			// same as mission kills, but also sends per-player kills
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
-
-#define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
@@ -761,7 +760,7 @@ extern int Multi_button_info_ok;										// flag saying it is ok to apply criti
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying
 
 // low level networking vars
-extern int HEADER_LENGTH;												// 1 byte (packet type)
+#define HEADER_LENGTH	1											// 1 byte (packet type)
 
 // misc data
 extern active_game* Active_game_head;								// linked list of active games displayed on Join screen

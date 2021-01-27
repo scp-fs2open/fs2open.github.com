@@ -891,6 +891,11 @@ ship_subsys *Players_targeted_subsys;
 int Players_target_timestamp;
 int Players_mlocked_timestamp;
 
+// for sexp_fade
+static int Fade_out_r = 0;
+static int Fade_out_g = 0;
+static int Fade_out_b = 0;
+
 // for play-music - Goober5000
 SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
 
@@ -1198,6 +1203,11 @@ void init_sexp()
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
 	Sexp_nodes[Locked_sexp_true].value = SEXP_KNOWN_TRUE;
+
+	// init fade_out colors
+	Fade_out_r = 0;
+	Fade_out_g = 0;
+	Fade_out_b = 0;
 }
 
 void sexp_shutdown() {
@@ -12675,7 +12685,11 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	Assertion(shipp != nullptr && ss != nullptr, "Ship and subsys must not be null!");
 	Assertion(assign_percent != nullptr || repair_percent != nullptr || sabotage_percent != nullptr, "Either assign_percent or repair_percent or sabotage_percent must not be null!");
 
-	bool originally_zero = (ss->current_hits <= 0 || ss->submodel_info_1.blown_off || ss->submodel_info_2.blown_off);
+	bool originally_zero = (ss->current_hits <= 0);
+	if (ss->submodel_instance_1 && ss->submodel_instance_1->blown_off)
+		originally_zero = true;
+	if (ss->submodel_instance_2 && ss->submodel_instance_2->blown_off)
+		originally_zero = true;
 
 	if (assign_percent != nullptr)
 	{
@@ -12721,8 +12735,10 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		ss->submodel_info_1.blown_off = 0;
-		ss->submodel_info_2.blown_off = 0;
+		if (ss->submodel_instance_1)
+			ss->submodel_instance_1->blown_off = false;
+		if (ss->submodel_instance_2)
+			ss->submodel_instance_2->blown_off = false;
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -12741,8 +12757,14 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 					// found parent?
 					if (parent_ss->system_info->subobj_num == parent_subobj)
 					{
+						bool parent_destroyed = (parent_ss->current_hits <= 0);
+						if (parent_ss->submodel_instance_1 && parent_ss->submodel_instance_1->blown_off)
+							parent_destroyed = true;
+						if (parent_ss->submodel_instance_2 && parent_ss->submodel_instance_2->blown_off)
+							parent_destroyed = true;
+
 						// if the parent subobject was destroyed...
-						if (parent_ss->current_hits <= 0 || parent_ss->submodel_info_1.blown_off || parent_ss->submodel_info_2.blown_off)
+						if (parent_destroyed)
 						{
 							// ...repair the parent in the same way
 							set_subsys_strength_and_maybe_ancestors(shipp, parent_ss, pm, assign_percent, repair_percent, sabotage_percent, do_submodel_repair, repair_ancestors);
@@ -17616,8 +17638,10 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 		// copy
 		target_ss->max_hits = source_ss->max_hits;
 		target_ss->current_hits = source_ss->current_hits;
-		target_ss->submodel_info_1.blown_off = source_ss->submodel_info_1.blown_off;
-		target_ss->submodel_info_2.blown_off = source_ss->submodel_info_2.blown_off;
+		if (target_ss->submodel_instance_1 && source_ss->submodel_instance_1)
+			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
+		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
+			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
 	}
 }
 
@@ -18937,13 +18961,13 @@ void sexp_reverse_rotating_subsystem(int node)
 	{
 		// get the rotating subsystem
 		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
-		if (rotate == nullptr)
+		if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 			continue;
 
 		// switch direction of rotation
 		rotate->turn_rate *= -1.0f;
-		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
-		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->current_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->desired_turn_rate *= -1.0f;
 	}
 }
 
@@ -18962,7 +18986,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// get the rotating subsystem
 	auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(n));
-	if (rotate == nullptr)
+	if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 		return;
 	n = CDR(n);
 
@@ -18970,7 +18994,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 	if (is_nan || is_nan_forever)
 		return;
-	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+	rotate->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
@@ -18979,10 +19003,10 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		if (is_nan || is_nan_forever)
 			return;
-		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
+		rotate->submodel_instance_1->turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
+		rotate->submodel_instance_1->current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)
@@ -21073,10 +21097,6 @@ void sexp_fade(bool fade_in, int duration, ubyte R, ubyte G, ubyte B)
 	}
 }
 
-static int Fade_out_r = -1;
-static int Fade_out_g = -1;
-static int Fade_out_b = -1;
-
 void sexp_fade(int n, bool fade_in)
 {
 	int duration = 0, R, G, B;
@@ -21116,11 +21136,11 @@ void sexp_fade(int n, bool fade_in)
 			R = 255;
 			G = B = 0;
 		}
-		// default: fade black
+		// default: fade black or previous fadeout color
 		else
 		{
-			// Mantis #2944: if we're fading in, and we previously faded out to some specific color, use that same color to fade in
-			if (fade_in && (Fade_out_r >= 0) && (Fade_out_g >= 0) && (Fade_out_b >= 0))
+			// Mantis #2944: if we're fading in, use the same color we used to fade out with
+			if (fade_in)
 			{
 				R = Fade_out_r;
 				G = Fade_out_g;
@@ -21133,8 +21153,9 @@ void sexp_fade(int n, bool fade_in)
 		}
 	}
 
-	// Mantis #2944, if we're fading out to some specific color, save that color
-	if (!fade_in && ((R > 0) || (G > 0) || (B > 0)))
+	// Mantis #2944
+	// If we're fading out, save its color so we can fade-in with the same color
+	if (!fade_in)
 	{
 		Fade_out_r = R;
 		Fade_out_g = G;

@@ -774,8 +774,11 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
+		auto pmi = model_get_instance(debrisp->model_instance_num);
+		auto pm = model_get(pmi->model_num);
+
 		// This calls the colour that doesn't get reset
-		submodel_render_immediate( &render_info, debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos);
+		submodel_render_immediate( &render_info, pm, pmi, debrisp->submodel_num, &target_objp->orient, &obj_pos);
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);

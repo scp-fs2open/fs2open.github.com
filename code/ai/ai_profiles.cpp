@@ -446,6 +446,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
 
+				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
+
 				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
 				{
@@ -463,7 +465,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
-				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turred_tagged_only_targeting);
+				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
 				set_flag(profile, "$aspect bomb invulnerability fix:", AI::Profile_Flags::Aspect_invulnerability_fix);
 

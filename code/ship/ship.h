@@ -100,7 +100,10 @@ public:
 	int num_tertiary_banks;
 
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
+
+	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
+	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -131,7 +134,7 @@ public:
 	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
-	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
+	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank -- Every time the secondary bank changes, this must change too!
 	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank
 	int secondary_next_slot[MAX_SHIP_SECONDARY_BANKS];			// Next slot to fire in the bank
 	int secondary_bank_rearm_time[MAX_SHIP_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
@@ -146,6 +149,7 @@ public:
 	int ai_class;
 
 	flagset<Ship::Weapon_Flags> flags;
+
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
 	EModelAnimationPosition secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
@@ -340,7 +344,6 @@ public:
 	//or higher, an index into the turret weapons is considered to be an index into the secondary weapons
 	//for much of the code. See turret_next_weap_fire_stamp.
 
-	int		turret_best_weapon;				// best weapon for current target; index into prim/secondary banks
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
@@ -375,8 +378,8 @@ public:
 	// angles and if it is blown off or not.
 	// There are 2 of these because turrets need one for the turret and one for the barrel.
 	// Things like radar dishes would only use one.
-	submodel_instance_info	submodel_info_1;		// Instance data for main turret or main object
-	submodel_instance_info	submodel_info_2;		// Instance data for turret guns, if there is one
+	submodel_instance *submodel_instance_1;		// Instance data for main turret or main object
+	submodel_instance *submodel_instance_2;		// Instance data for turret guns, if there is one
 
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
@@ -1608,12 +1611,6 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-// These two functions transfer instance specific angle
-// data into and out of the model structure, which contains
-// angles, but not for each instance of model being used. See
-// the actual functions in ship.cpp for more details.
-extern void ship_model_start(object *objp);
-extern void ship_model_stop(object *objp);
 void ship_model_update_instance(object *objp);
 
 //============================================

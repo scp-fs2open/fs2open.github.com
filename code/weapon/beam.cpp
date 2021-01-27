@@ -407,7 +407,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->current_width_factor = wip->b_info.beam_initial_width;	
+	new_item->current_width_factor = wip->b_info.beam_initial_width < 0.1f ? 0.1f : wip->b_info.beam_initial_width;
 	new_item->team = (firing_ship == NULL) ? fire_info->team : static_cast<char>(firing_ship->team);
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
@@ -501,17 +501,7 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// if we're a multiplayer master - send a packet
 	if (MULTIPLAYER_MASTER) {
-		int bank_point = -1;
-
-		if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
-			// magic numbers suck, be we need to make sure that we are always below UCHAR_MAX (255)
-			Assert( fire_info->point <= 25 );
-			Assert( fire_info->bank <= 5 );
-
-			bank_point = (fire_info->point * 10) + fire_info->bank;
-		}
-
-		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, fire_info->bfi_flags, bank_point);
+		send_beam_fired_packet(fire_info, &new_item->binfo);
 	}
 
 	// start the warmup phase
@@ -597,7 +587,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->framecount = 0;
 	new_item->flags = 0;
 	new_item->shot_index = 0;
-	new_item->current_width_factor = wip->b_info.beam_initial_width;
+	new_item->current_width_factor = wip->b_info.beam_initial_width < 0.1f ? 0.1f : wip->b_info.beam_initial_width;
 	new_item->team = (char)firing_ship->team;
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
@@ -808,7 +798,7 @@ void beam_type_a_move(beam *b)
 }
 
 // move a type B beam weapon
-#define BEAM_T(b)						( ((b->binfo.delta_ang / b->life_total) * (b->life_total - b->life_left)) / b->binfo.delta_ang )
+#define BEAM_T(b)						((b->life_total - b->life_left) / b->life_total)
 void beam_type_b_move(beam *b)
 {		
 	vec3d actual_dir;
@@ -2149,8 +2139,6 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		vm_vec_sub(&b->binfo.dir_b, &oct2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
 
-		// delta angle
-		b->binfo.delta_ang = fl_abs(vm_vec_delta_ang_norm(&b->binfo.dir_a, &b->binfo.dir_b, NULL));
 		break;
 
 	// nothing for this beam - its very special case

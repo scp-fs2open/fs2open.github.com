@@ -540,10 +540,12 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float t;
 	vec3d t0,t1,t2;
@@ -551,10 +553,10 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	vm_vec_copy_normalize(&t0,v0);
 	vm_vec_copy_normalize(&t1,v1);
 
-	if (NULL == fvec) {
+	if (uvec == nullptr) {
 		t = vm_vec_delta_ang_norm(&t0, &t1, NULL);
 	} else {
-		vm_vec_copy_normalize(&t2,fvec);
+		vm_vec_copy_normalize(&t2,uvec);
 		t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
 	}
 
@@ -562,16 +564,38 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 }
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float a;
 	vec3d t;
 
 	a = acosf(vm_vec_dot(v0,v1));
 
-	if (fvec) {
+	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
+			a = -a;
+		}
+	}
+
+	return a;
+}
+
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
+{
+	float a, dot;
+	vec3d t;
+
+	// to avoid round-off errors...
+	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
+	dot = vm_vec_dot(v0, v1);
+	CLAMP(dot, -1.0f, 1.0f);
+
+	a = acosf(dot);
+
+	if (uvec) {
+		vm_vec_cross(&t,v0,v1);
+		if ( vm_vec_dot(&t,uvec) < 0.0 ) {
 			a = -a;
 		}
 	}

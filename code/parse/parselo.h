@@ -67,11 +67,11 @@ extern int Token_found_flag;
 #define SEXP_ERROR_CHECK_MODE		2
 
 // Goober5000 - this seems to be a pretty universal function
-extern bool end_string_at_first_hash_symbol(char *src);
-extern bool end_string_at_first_hash_symbol(SCP_string &src);
-extern char *get_pointer_to_first_hash_symbol(char *src);
-extern const char *get_pointer_to_first_hash_symbol(const char *src);
-extern int get_index_of_first_hash_symbol(SCP_string &src);
+extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
+extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
+extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
+extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 
 // white space
 extern int is_white_space(char ch);
