@@ -5076,16 +5076,19 @@ void evade_weapon()
 		return;
 	} else if (dot_from_enemy > 0.7f) {
 		bool should_afterburn = dist < 200.0f;
+		int aburn_time = F1_0 / 2;
 
 		// within 200m bad, within 1.5 seconds good
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance])
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) {
 			should_afterburn = dist < weapon_objp->phys_info.speed * 1.5f;
+			aburn_time = F1_0 + F1_0 / 2;
+		}
 
 		if (should_afterburn) {
 			if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 				if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 					afterburners_start(Pl_objp);
-					aip->afterburner_stop_time = Missiontime + F1_0 + F1_0 / 2;
+					aip->afterburner_stop_time = Missiontime + aburn_time;
 				}
 			}
 		}
