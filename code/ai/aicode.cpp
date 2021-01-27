@@ -5077,7 +5077,8 @@ void evade_weapon()
 	} else if (dot_from_enemy > 0.7f) {
 		bool should_afterburn = dist < 200.0f;
 
-		if (true) 
+		// within 200m bad, within 1.5 seconds good
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance])
 			should_afterburn = dist < weapon_objp->phys_info.speed * 1.5f;
 
 		if (should_afterburn) {
@@ -5089,7 +5090,9 @@ void evade_weapon()
 			}
 		}
 
-		if (true) {
+		// Fancy (read: effective) dodging
+		// Try to go perpindicular to the incoming missile, and pick the quickest direction to get there
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) {
 			vec3d avoid_point;
 			vm_project_point_onto_plane(&avoid_point, &vec_from_enemy, &Pl_objp->orient.vec.fvec, &vmd_zero_vector);
 			vm_vec_normalize(&avoid_point);
@@ -5099,7 +5102,6 @@ void evade_weapon()
 
 			turn_towards_point(Pl_objp, &avoid_point, NULL, 0.0f);
 		}
-
 		//	If we're sort of pointing towards it...
 		else if ((dot_to_enemy < -0.5f) || (dot_to_enemy > 0.5f)) {
 			float rdot;
@@ -12372,8 +12374,6 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 	if (!shipp->cmeasure_count)
 		return;
 
-	return;
-
 	if ( !timestamp_elapsed(shipp->cmeasure_fire_stamp) )
 		return;
 
@@ -12393,7 +12393,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 		dist = vm_vec_dist(&objp->pos, &weapon_objp->pos);
 
 		bool in_countermeasure_range = dist < weapon_objp->phys_info.speed * 2.0f;
-		if (true)
+
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance])
 			in_countermeasure_range = dist < Weapon_info[shipp->current_cmeasure].cm_effective_rad;
 
 		if ( in_countermeasure_range ) {
@@ -12602,13 +12603,16 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 			vec3d v2m;
 			float dist = vm_vec_normalized_dir(&v2m, &objp->pos, &missile_objp->pos);
 
-			if (true && vm_vec_dot(&v2m, &missile_objp->orient.vec.fvec) < 0.5f ) {
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance] 
+				&& vm_vec_dot(&v2m, &missile_objp->orient.vec.fvec) < 0.5f ) {
+				// don't bother if the missile isn't actually coming towards us
 				aip->nearest_locked_object = -1;
 				return;
 			}
 
-			float evade_dist_scalar = true ? 2.0f : 4.0f;
-			float evade_distance = 2.0f  * vm_vec_mag_quick(&missile_objp->phys_info.vel);			
+			// evade missiles 4 seconds away normally, 2 seconds away with the flag (evading too early is a thing!)
+			float evade_dist_scalar = The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance] ? 2.0f : 4.0f;
+			float evade_distance = evade_dist_scalar * vm_vec_mag_quick(&missile_objp->phys_info.vel);
 			if (dist < evade_distance) {
 				switch (aip->mode) {
 				//	If in AIM_STRAFE mode, don't evade if parent of weapon is targeted ship.
@@ -12623,10 +12627,11 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_CHASE:
 					//	Don't always go into evade weapon mode.  Usually, a countermeasure gets launched.
 					// If low on countermeasures, more likely to try to evade.  If 8+, never evade due to low cmeasures.
+					// Asteroth - If Improved_missile_avoidance, always evade!! Don't assume anything else will save you
 					if (((((Missiontime >> 18) ^ OBJ_INDEX(objp)) & 3) == 0) || 
 						(objp->phys_info.speed < 40.0f) ||
 						(frand() < 1.0f - (float) shipp->cmeasure_count/8.0f ||
-						true)) {
+						The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance])) {
 						if (aip->submode != SM_ATTACK_FOREVER) {	//	SM_ATTACK_FOREVER means engines blown.
 							aip->submode = SM_EVADE_WEAPON;
 							aip->submode_start_time = Missiontime;
