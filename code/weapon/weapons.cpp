@@ -1813,6 +1813,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			generic_bitmap_init(&ti->texture, fname);
 		}
 
+		if (optional_string("+Bitmap Stretch:")) {
+			stuff_float(&ti->texture_stretch);
+			if (ti->texture_stretch == 0.0f) {
+				Warning(LOCATION, "Trail bitmap stretch of weapon %s cannot be 0.  Setting to 1.\n", wip->name);
+				ti->texture_stretch = 1.0f;
+			}
+		}
+
 		if ( optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ti->n_fade_out_sections);
 		}

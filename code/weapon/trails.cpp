@@ -249,7 +249,7 @@ void trail_render( trail * trailp )
 		top.a = bot.a = l;	
 
 		if (i > 0) {
-			float U = i2fl(i);
+			float U = i2fl(n) / trailp->info.texture_stretch;
 
 			if (i == num_sections-1) {
 				// Last one...
