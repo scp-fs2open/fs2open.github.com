@@ -1797,8 +1797,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if ( optional_string("+End Alpha:") )
 			stuff_float(&ti->a_end);
 
-		if (optional_string("+Alpha Decay Exponent:"))
+		if (optional_string("+Alpha Decay Exponent:")) {
 			stuff_float(&ti->a_decay_exponent);
+			if (ti->a_decay_exponent < 0.0f) {
+				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Reseting to 1.\n", wip->name);
+				ti->a_decay_exponent = 1.0f;
+			}
+		}
 
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
