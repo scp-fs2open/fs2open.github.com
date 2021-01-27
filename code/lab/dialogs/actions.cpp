@@ -13,12 +13,16 @@ void destroy_subsystem(Tree* caller) {
 		auto subsys_index = 0;
 		while (ssp != END_OF_LIST(&sp->subsys_list)) {
 			if (subsys_index == selected_subsys_index) {
+				ssp->current_hits = 0;
 				do_subobj_destroyed_stuff(sp, ssp, nullptr);
 			}
 
 			ssp = GET_NEXT(ssp);
 			++subsys_index;
 		}
+
+		// recalculate when done
+		ship_recalc_subsys_strength(sp);
 	}
 }
 

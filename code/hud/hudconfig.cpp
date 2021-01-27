@@ -566,7 +566,7 @@ typedef struct hc_col {
 	ubyte	r, g, b;
 } hc_col;
 
-hc_col HC_colors[3] =
+hc_col HC_colors[HUD_COLOR_SIZE] =
 {
 	{0, 255, 0},		// Green - get RGB from Adam so it matches palette?-??.pcx
 	{67, 123, 203},	// Blue - get RGB from Adam so it matches palette?-??.pcx

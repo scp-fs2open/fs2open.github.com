@@ -1027,7 +1027,8 @@ int EditorViewport::drag_objects(int x, int y)
 	}
 	*/
 
-	if (!query_valid_object(editor->currentObject))
+	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
+	if (!query_valid_object(editor->currentObject) || Lookat_mode)
 		return -1;
 
 	if (Dup_drag == 1

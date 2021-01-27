@@ -68,11 +68,13 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 	ship *shipp = &Ships[pship_obj->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 	float damage;
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_find_world_dir(&worldNormal, &hit_dir, shipp->model_instance_num, submodel_num, &pship_obj->orient);
+	model_instance_find_world_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);

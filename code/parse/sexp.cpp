@@ -350,6 +350,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -890,6 +891,11 @@ ship_subsys *Players_targeted_subsys;
 int Players_target_timestamp;
 int Players_mlocked_timestamp;
 
+// for sexp_fade
+static int Fade_out_r = 0;
+static int Fade_out_g = 0;
+static int Fade_out_b = 0;
+
 // for play-music - Goober5000
 SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
 
@@ -1197,6 +1203,11 @@ void init_sexp()
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
 	Sexp_nodes[Locked_sexp_true].value = SEXP_KNOWN_TRUE;
+
+	// init fade_out colors
+	Fade_out_r = 0;
+	Fade_out_g = 0;
+	Fade_out_b = 0;
 }
 
 void sexp_shutdown() {
@@ -9517,7 +9528,7 @@ int eval_cond(int n)
 
 // Goober5000
 // NOTE: if you change this function, check to see if the following function should also be changed!
-int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
 	int val, num_valid_arguments;
 	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
@@ -9541,9 +9552,6 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// flush conditional to avoid short-circuiting
-			flush_sexp_tree(condition_node);
-
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 			val = eval_sexp(condition_node);
@@ -9587,12 +9595,14 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		n = CDR(n);
 	}
 
+	int count = 0;
 	// now we write from the temporary store into the real one, reversing the order. We do this because 
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
-	while (!Applicable_arguments_temp.empty())
+	while (!Applicable_arguments_temp.empty() && (threshold == -1 || count < threshold))
 	{
 		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
 		Applicable_arguments_temp.pop_back(); 
+		++count;
 	}
 
 	return num_valid_arguments;
@@ -9623,9 +9633,6 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &
 	{
 		// since we can't see or modify the validity, assume all are valid
 		{
-			// flush conditional to avoid short-circuiting
-			flush_sexp_tree(condition_node);
-
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.push_back(argument);
 			val = eval_sexp(condition_node);
@@ -9835,9 +9842,8 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	val = SEXP_FALSE;
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
-		// flush stuff
+		// ensure special argument list is empty
 		Sexp_applicable_argument_list.clear_nesting_level();
-		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
@@ -9888,9 +9894,8 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	// Only execute if the argument is valid (if all nodes were invalid we would still reach this point)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
-		// flush stuff
+		// ensure special argument list is empty
 		Sexp_applicable_argument_list.clear_nesting_level();
-		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
@@ -10079,6 +10084,38 @@ int eval_for_players(int arg_handler_node, int condition_node)
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else
+		return SEXP_FALSE;
+}
+
+// MageKing17 - this is sort of a cross between any-of, number-of, and in-sequence
+int eval_first_of(int arg_handler_node, int condition_node)
+{
+	bool is_nan, is_nan_forever;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// the arguments should just be data, not operators, so we can skip the CAR
+	n = CDR(arg_handler_node);
+
+	// the first argument is the number threshold
+	threshold = eval_num(n, is_nan, is_nan_forever);
+	n = CDR(n);
+
+	// test the whole argument list
+	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false, threshold);
+
+	// we check for NaN after the conditions are evaluated, just as the logical operators evaluate all their conditions
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
@@ -10282,6 +10319,7 @@ bool is_blank_of_op(int op_const)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FIRST_OF:
 			return true;
 
 		default:
@@ -12647,7 +12685,11 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	Assertion(shipp != nullptr && ss != nullptr, "Ship and subsys must not be null!");
 	Assertion(assign_percent != nullptr || repair_percent != nullptr || sabotage_percent != nullptr, "Either assign_percent or repair_percent or sabotage_percent must not be null!");
 
-	bool originally_zero = (ss->current_hits <= 0 || ss->submodel_info_1.blown_off || ss->submodel_info_2.blown_off);
+	bool originally_zero = (ss->current_hits <= 0);
+	if (ss->submodel_instance_1 && ss->submodel_instance_1->blown_off)
+		originally_zero = true;
+	if (ss->submodel_instance_2 && ss->submodel_instance_2->blown_off)
+		originally_zero = true;
 
 	if (assign_percent != nullptr)
 	{
@@ -12693,8 +12735,10 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		ss->submodel_info_1.blown_off = 0;
-		ss->submodel_info_2.blown_off = 0;
+		if (ss->submodel_instance_1)
+			ss->submodel_instance_1->blown_off = false;
+		if (ss->submodel_instance_2)
+			ss->submodel_instance_2->blown_off = false;
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -12713,8 +12757,14 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 					// found parent?
 					if (parent_ss->system_info->subobj_num == parent_subobj)
 					{
+						bool parent_destroyed = (parent_ss->current_hits <= 0);
+						if (parent_ss->submodel_instance_1 && parent_ss->submodel_instance_1->blown_off)
+							parent_destroyed = true;
+						if (parent_ss->submodel_instance_2 && parent_ss->submodel_instance_2->blown_off)
+							parent_destroyed = true;
+
 						// if the parent subobject was destroyed...
-						if (parent_ss->current_hits <= 0 || parent_ss->submodel_info_1.blown_off || parent_ss->submodel_info_2.blown_off)
+						if (parent_destroyed)
 						{
 							// ...repair the parent in the same way
 							set_subsys_strength_and_maybe_ancestors(shipp, parent_ss, pm, assign_percent, repair_percent, sabotage_percent, do_submodel_repair, repair_ancestors);
@@ -17588,8 +17638,10 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 		// copy
 		target_ss->max_hits = source_ss->max_hits;
 		target_ss->current_hits = source_ss->current_hits;
-		target_ss->submodel_info_1.blown_off = source_ss->submodel_info_1.blown_off;
-		target_ss->submodel_info_2.blown_off = source_ss->submodel_info_2.blown_off;
+		if (target_ss->submodel_instance_1 && source_ss->submodel_instance_1)
+			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
+		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
+			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
 	}
 }
 
@@ -18277,7 +18329,7 @@ void sexp_turret_change_weapon(int node)
 	}
 	else if (sec_slot)
 	{
-		if (sec_slot > MAX_SHIP_PRIMARY_BANKS) {
+		if (sec_slot > MAX_SHIP_SECONDARY_BANKS) {
 			return;
 		}
 
@@ -18909,13 +18961,13 @@ void sexp_reverse_rotating_subsystem(int node)
 	{
 		// get the rotating subsystem
 		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
-		if (rotate == nullptr)
+		if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 			continue;
 
 		// switch direction of rotation
 		rotate->turn_rate *= -1.0f;
-		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
-		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->current_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->desired_turn_rate *= -1.0f;
 	}
 }
 
@@ -18934,7 +18986,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// get the rotating subsystem
 	auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(n));
-	if (rotate == nullptr)
+	if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 		return;
 	n = CDR(n);
 
@@ -18942,7 +18994,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 	if (is_nan || is_nan_forever)
 		return;
-	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+	rotate->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
@@ -18951,10 +19003,10 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		if (is_nan || is_nan_forever)
 			return;
-		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
+		rotate->submodel_instance_1->turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
+		rotate->submodel_instance_1->current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)
@@ -21045,10 +21097,6 @@ void sexp_fade(bool fade_in, int duration, ubyte R, ubyte G, ubyte B)
 	}
 }
 
-static int Fade_out_r = -1;
-static int Fade_out_g = -1;
-static int Fade_out_b = -1;
-
 void sexp_fade(int n, bool fade_in)
 {
 	int duration = 0, R, G, B;
@@ -21088,11 +21136,11 @@ void sexp_fade(int n, bool fade_in)
 			R = 255;
 			G = B = 0;
 		}
-		// default: fade black
+		// default: fade black or previous fadeout color
 		else
 		{
-			// Mantis #2944: if we're fading in, and we previously faded out to some specific color, use that same color to fade in
-			if (fade_in && (Fade_out_r >= 0) && (Fade_out_g >= 0) && (Fade_out_b >= 0))
+			// Mantis #2944: if we're fading in, use the same color we used to fade out with
+			if (fade_in)
 			{
 				R = Fade_out_r;
 				G = Fade_out_g;
@@ -21105,8 +21153,9 @@ void sexp_fade(int n, bool fade_in)
 		}
 	}
 
-	// Mantis #2944, if we're fading out to some specific color, save that color
-	if (!fade_in && ((R > 0) || (G > 0) || (B > 0)))
+	// Mantis #2944
+	// If we're fading out, save its color so we can fade-in with the same color
+	if (!fade_in)
 	{
 		Fade_out_r = R;
 		Fade_out_g = G;
@@ -23094,29 +23143,32 @@ int eval_sexp(int cur_node, int referenced_node)
 	Assert( (type == SEXP_LIST) || (type == SEXP_ATOM) );
 
 	// trap known true and known false sexpressions.  We don't trap on SEXP_NAN sexpressions since
-	// they may yet evaluate to true or false.
+	// they may yet evaluate to true or false. If the sexp depends on the special argument,
+	// we can't 'know' its value so we skip this behaviour.
 
 	// we want to log event values for KNOWN_X or FOREVER_X before returning
-	if (Log_event && ((Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) || (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER))) {
-		// if this is a node that has been assigned the value by short-circuiting,
-		// it might not be the operator that returned the value
-		int op_index = get_operator_index(cur_node);
-		if (op_index < 0)
-			op_index = get_operator_index(CAR(cur_node));
+	if (!special_argument_appears_in_sexp_tree(cur_node)) {
+		if (Log_event && ((Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) || (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER))) {
+			// if this is a node that has been assigned the value by short-circuiting,
+			// it might not be the operator that returned the value
+			int op_index = get_operator_index(cur_node);
+			if (op_index < 0)
+				op_index = get_operator_index(CAR(cur_node));
 
-		// log the known value
-		add_to_event_log_buffer(op_index, Sexp_nodes[cur_node].value);
-	}
+			// log the known value
+			add_to_event_log_buffer(op_index, Sexp_nodes[cur_node].value);
+		}
 
-	// now do a quick return whether or not we log, per the comment above about trapping known sexpressions
-	if (Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) {
-		return SEXP_TRUE;
-	}
-	else if (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) {
-		return SEXP_FALSE;
-	}
-	else if (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER) {
-		return SEXP_FALSE;
+		// now do a quick return whether or not we log, per the comment above about trapping known sexpressions
+		if (Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) {
+			return SEXP_TRUE;
+		}
+		else if (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) {
+			return SEXP_FALSE;
+		}
+		else if (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER) {
+			return SEXP_FALSE;
+		}
 	}
 
 	if (Sexp_nodes[cur_node].first != -1) {
@@ -23657,6 +23709,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_FOR_PLAYERS:
 				sexp_val = eval_for_players( cur_node, referenced_node );
+				break;
+
+			// MageKing17
+			case OP_FIRST_OF:
+				sexp_val = eval_first_of( cur_node, referenced_node );
 				break;
 
 			// Karajorma
@@ -26374,6 +26431,7 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FIRST_OF:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default: {
@@ -27091,6 +27149,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
+		case OP_FIRST_OF:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
@@ -31418,6 +31477,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
+
+	// MageKing17
+	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Up to [number] of the supplied arguments can satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used. Essentially the same as any-of, but with a cap on the number of arguments that can be evaluated in a single call.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tMaximum number of arguments that can be evaluated in a call.\r\n"
+		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"

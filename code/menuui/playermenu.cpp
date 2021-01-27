@@ -327,7 +327,7 @@ void player_select_init()
 
 // if we found a pilot
 	if ( player_select_get_last_pilot_info() ) {
-		if (Player_select_last_is_multi && !Networking_disabled) {
+		if (Player_select_last_is_multi) {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -689,10 +689,6 @@ void player_select_button_pressed(int n)
 
 	case MULTI_BUTTON:
 		Player_select_autoaccept = 0;
-		if ( Networking_disabled ) {
-			game_feature_disabled_popup();
-			break;
-		}
 
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {

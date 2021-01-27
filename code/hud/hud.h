@@ -275,6 +275,7 @@ public:
 	bool isActive();
 	
 	void updateColor(int r, int g, int b, int a = 255);
+	const color& getColor();
 	void lockConfigColor(bool lock);
 	void sexpLockConfigColor(bool lock);
 	void updateActive(bool show);

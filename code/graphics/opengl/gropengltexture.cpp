@@ -1534,19 +1534,24 @@ static fbo_t* opengl_get_fbo(int id) {
 }
 
 static fbo_t* opengl_get_free_fbo() {
+	fbo_t* fbo = nullptr;
+
 	for (auto& target : RenderTarget) {
 		if (target.fbo_id < 0) {
 			// This slot is free
-			return &target;
+			fbo = &target;
 		}
 	}
 
-	RenderTarget.push_back(fbo_t());
-	auto& last = RenderTarget.back();
-	last.fbo_id = next_fbo_id;
+	if (fbo == nullptr) {
+		RenderTarget.push_back(fbo_t());
+		fbo = &RenderTarget.back();
+	}
+	
+	fbo->fbo_id = next_fbo_id;
 	++next_fbo_id;
 
-	return &RenderTarget.back();
+	return fbo;
 }
 
 static void opengl_free_fbo_slot(int id) {

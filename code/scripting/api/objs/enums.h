@@ -95,8 +95,11 @@ const int32_t LE_ASF_VOICE                   = 82;
 const int32_t LE_CONTEXT_VALID               = 83;
 const int32_t LE_CONTEXT_SUSPENDED           = 84;
 const int32_t LE_CONTEXT_INVALID             = 85;
+const int32_t LE_FIREBALL_MEDIUM_EXPLOSION   = 86;
+const int32_t LE_FIREBALL_LARGE_EXPLOSION    = 87;
+const int32_t LE_FIREBALL_WARP_EFFECT        = 88;
 
-const int ENUM_NEXT_INDEX = 86; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 89; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
