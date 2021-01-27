@@ -2413,6 +2413,9 @@ int beam_collide_ship(obj_pair *pair)
 		return 0;
 	}
 
+	if (reject_due_collision_groups(pair->a, pair->b))
+		return 0;
+
 	// get the beam
 	Assert(pair->a->instance >= 0);
 	Assert(pair->a->type == OBJ_BEAM);
@@ -2460,9 +2463,6 @@ int beam_collide_ship(obj_pair *pair)
 		return 1;
 	ship_objp = pair->b;
 	shipp = &Ships[ship_objp->instance];
-
-	if (reject_due_collision_groups(weapon_objp, ship_objp))
-		return 0;
 
 	if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1])
 		return 0;
@@ -2882,6 +2882,9 @@ int beam_collide_debris(obj_pair *pair)
 	if(pair == NULL){
 		return 0;
 	}
+
+	if (reject_due_collision_groups(pair->a, pair->b))
+		return 0;
 
 	// get the beam
 	Assert(pair->a->instance >= 0);

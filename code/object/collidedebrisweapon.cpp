@@ -34,6 +34,9 @@ int collide_debris_weapon( obj_pair * pair )
 	Assert( pdebris->type == OBJ_DEBRIS );
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
+	if (reject_due_collision_groups(pdebris, weapon_obj))
+		return 0;
+
 	// first check the bounding spheres of the two objects.
 	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
 	if (hit) {
