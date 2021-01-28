@@ -135,15 +135,15 @@ extern bool Snapshot_all_events;
 
 
 // only used in FRED
-struct event_comment
+struct event_annotation
 {
 	void *handle = nullptr;			// the handle of the tree node in the event editor.  This is an HTREEITEM in FRED and TBD in qtFRED.
 	int item_image = -1;			// the previous image of the tree node (replaced by a comment icon when there is a comment)
-	SCP_list<int> path;				// a way to find the node that the comment represents:
+	SCP_list<int> path;				// a way to find the node that the annotation represents:
 									// the first number is the event, the second number is the node on the first layer, etc.
 	SCP_string comment;
 };
-extern SCP_vector<event_comment> Event_comments;
+extern SCP_vector<event_annotation> Event_annotations;
 
 
 // prototypes

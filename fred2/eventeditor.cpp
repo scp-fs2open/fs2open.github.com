@@ -203,17 +203,17 @@ BOOL event_editor::OnInitDialog()
 		r = FALSE;
 	}
 
-	// determine all the handles for event comments
-	for (auto &ec : Event_comments)
+	// determine all the handles for event annotations
+	for (auto &ea : Event_annotations)
 	{
-		auto h = traverse_path(ec);
+		auto h = traverse_path(ea);
 		if (h)
 		{
-			ec.handle = h;
-			event_comment_swap_image(&m_event_tree, h, ec);
+			ea.handle = h;
+			event_annotation_swap_image(&m_event_tree, h, ea);
 		}
 		else
-			Warning(LOCATION, "Could not find event for comment!\n%s", ec.comment.c_str());
+			Warning(LOCATION, "Could not find event for annotation!");
 	}
 
 	// ---------- end of event initialization ----------
@@ -563,13 +563,13 @@ void event_editor::OnOk()
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
-	// determine all the paths for event comments
-	for (auto &ec : Event_comments)
+	// determine all the paths for event annotations
+	for (auto &ea : Event_annotations)
 	{
-		ec.path.clear();
-		if (ec.handle)
-			populate_path(ec, (HTREEITEM)ec.handle);
-		ec.handle = nullptr;
+		ea.path.clear();
+		if (ea.handle)
+			populate_path(ea, (HTREEITEM)ea.handle);
+		ea.handle = nullptr;
 	}
 
 	theApp.record_window_data(&Events_wnd_data, this);
@@ -1629,23 +1629,23 @@ void event_editor::OnDblclkMessageList()
 	}
 }
 
-int event_comment_lookup(HTREEITEM handle)
+int event_annotation_lookup(HTREEITEM handle)
 {
-	for (size_t i = 0; i < Event_comments.size(); ++i)
+	for (size_t i = 0; i < Event_annotations.size(); ++i)
 	{
-		if (Event_comments[i].handle == handle)
+		if (Event_annotations[i].handle == handle)
 			return (int)i;
 	}
 
 	return -1;
 }
 
-void event_comment_swap_image(event_sexp_tree *tree, HTREEITEM handle, int comment_index)
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index)
 {
-	event_comment_swap_image(tree, handle, Event_comments[comment_index]);
+	event_annotation_swap_image(tree, handle, Event_annotations[annotation_index]);
 }
 
-void event_comment_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_comment &ec)
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea)
 {
 	// see if this node is a top-level event - if so, don't mess with the image
 	if (!tree->GetParentItem(handle))
@@ -1657,12 +1657,12 @@ void event_comment_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_com
 	// if tree node already has the comment image, replace it with the old one
 	if (nImage == BITMAP_COMMENT)
 	{
-		nImage = ec.item_image;
+		nImage = ea.item_image;
 	}
 	// if tree has its normal image, store it and use the comment image
 	else
 	{
-		ec.item_image = nImage;
+		ea.item_image = nImage;
 		nImage = BITMAP_COMMENT;
 	}
 
@@ -1725,23 +1725,26 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	if (h)
 	{
-		int ec = event_comment_lookup(h);
+		int ea = event_annotation_lookup(h);
 
-		if (ec >= 0)
+		if (ea >= 0)
 		{
-			strTipText = Event_comments[ec].comment.c_str();
+			strTipText = Event_annotations[ea].comment.c_str();
 
+			if (!strTipText.IsEmpty())
+			{
 #ifndef _UNICODE
-			if (pNMHDR->code == TTN_NEEDTEXTA)
-				lstrcpyn(pTTTA->szText, strTipText, 80);
-			else
-				_mbstowcsz(pTTTW->szText, strTipText, 80);
+				if (pNMHDR->code == TTN_NEEDTEXTA)
+					lstrcpyn(pTTTA->szText, strTipText, 80);
+				else
+					_mbstowcsz(pTTTW->szText, strTipText, 80);
 #else
-			if (pNMHDR->code == TTN_NEEDTEXTA)
-				_wcstombsz(pTTTA->szText, strTipText, 80);
-			else
-				lstrcpyn(pTTTW->szText, strTipText, 80);
+				if (pNMHDR->code == TTN_NEEDTEXTA)
+					_wcstombsz(pTTTA->szText, strTipText, 80);
+				else
+					lstrcpyn(pTTTW->szText, strTipText, 80);
 #endif
+			}
 		}
 	}
 
@@ -1756,10 +1759,10 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	CString old_text = _T("");
 	CString new_text;
 
-	int i = event_comment_lookup(h);
+	int i = event_annotation_lookup(h);
 	if (i >= 0)
 	{
-		old_text = (CString)Event_comments[i].comment.c_str();
+		old_text = (CString)Event_annotations[i].comment.c_str();
 		dlg.SetText(old_text);
 	}
 
@@ -1773,8 +1776,8 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	{
 		if (i >= 0)
 		{
-			event_comment_swap_image(this, h, i);
-			Event_comments.erase(Event_comments.begin() + i);
+			event_annotation_swap_image(this, h, i);
+			Event_annotations.erase(Event_annotations.begin() + i);
 		}
 		return;
 	}
@@ -1786,16 +1789,16 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	// adding a comment
 	if (i < 0)
 	{
-		i = (int)Event_comments.size();
-		Event_comments.emplace_back();
-		event_comment_swap_image(this, h, i);
-		Event_comments[i].handle = h;
+		i = (int)Event_annotations.size();
+		Event_annotations.emplace_back();
+		event_annotation_swap_image(this, h, i);
+		Event_annotations[i].handle = h;
 	}
 
-	Event_comments[i].comment = new_text;
+	Event_annotations[i].comment = new_text;
 }
 
-void event_editor::populate_path(event_comment &ec, HTREEITEM h)
+void event_editor::populate_path(event_annotation &ea, HTREEITEM h)
 {
 	HTREEITEM parent = m_event_tree.GetParentItem(h);
 
@@ -1808,8 +1811,8 @@ void event_editor::populate_path(event_comment &ec, HTREEITEM h)
 			++child_num;
 
 		// push the number and iterate up
-		ec.path.push_front(child_num);
-		populate_path(ec, parent);
+		ea.path.push_front(child_num);
+		populate_path(ea, parent);
 	}
 	// if this has no parent, it's an event, so find out which event it is
 	else
@@ -1817,30 +1820,30 @@ void event_editor::populate_path(event_comment &ec, HTREEITEM h)
 		int event_num = get_event_num(h);
 		if (event_num >= 0)
 		{
-			ec.path.push_front(event_num);
+			ea.path.push_front(event_num);
 		}
 		else
 		{
-			Warning(LOCATION, "Could not find event for comment!\n%s", ec.comment.c_str());
-			ec.path.clear();
+			Warning(LOCATION, "Could not find event for this handle!\n");
+			ea.path.clear();
 		}
 	}
 }
 
-HTREEITEM event_editor::traverse_path(const event_comment &ec)
+HTREEITEM event_editor::traverse_path(const event_annotation &ea)
 {
-	if (ec.path.empty())
+	if (ea.path.empty())
 		return nullptr;
 
-	int event_num = ec.path.front();
+	int event_num = ea.path.front();
 	HTREEITEM h = get_event_handle(event_num);
 	if (!h)
 		return nullptr;
 
-	if (ec.path.size() > 1)
+	if (ea.path.size() > 1)
 	{
-		auto it = ec.path.begin();
-		for (++it; it != ec.path.end(); ++it)
+		auto it = ea.path.begin();
+		for (++it; it != ea.path.end(); ++it)
 		{
 			int child_num = *it;
 

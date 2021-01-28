@@ -1937,15 +1937,15 @@ int CFred_mission_save::save_events()
 		}
 
 		// save event comments
-		if (Mission_save_format != FSO_FORMAT_RETAIL && !Event_comments.empty())
+		if (Mission_save_format != FSO_FORMAT_RETAIL && !Event_annotations.empty())
 		{
 			bool at_least_one = false;
-			fso_comment_push(";;FSO 20.1.0;;");
+			fso_comment_push(";;FSO 21.0.0;;");
 
-			// see if there is a comment for this event
-			for (const auto &ec : Event_comments)
+			// see if there is an annotation for this event
+			for (const auto &ea : Event_annotations)
 			{
-				if (!ec.path.empty() && ec.path.front() == i)
+				if (!ea.path.empty() && ea.path.front() == i)
 				{
 					if (!at_least_one)
 					{
@@ -1961,7 +1961,7 @@ int CFred_mission_save::save_events()
 					else
 						fout_version("\n+Comment:");
 
-					auto copy = ec.comment;
+					auto copy = ea.comment;
 					lcl_fred_replace_stuff(copy);
 					fout(" %s", copy.c_str());
 
@@ -1971,7 +1971,7 @@ int CFred_mission_save::save_events()
 						fout_version("\n$end_multi_text");
 				}
 
-				if (ec.path.size() > 1)
+				if (ea.path.size() > 1)
 				{
 					if (optional_string_fred("+Path:", "$Formula:"))
 						parse_comments();
@@ -1979,8 +1979,8 @@ int CFred_mission_save::save_events()
 						fout_version("\n+Path:");
 
 					bool comma = false;
-					auto it = ec.path.begin();
-					for (++it; it != ec.path.end(); ++it)
+					auto it = ea.path.begin();
+					for (++it; it != ea.path.end(); ++it)
 					{
 						if (comma)
 							fout(",");

@@ -34,9 +34,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-int event_comment_lookup(HTREEITEM handle);
-void event_comment_swap_image(event_sexp_tree *tree, HTREEITEM handle, int comment_index);
-void event_comment_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_comment &ec);
+int event_annotation_lookup(HTREEITEM handle);
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,8 +66,8 @@ public:
 	int select_sexp_node;
 	event_editor(CWnd* pParent = NULL);   // standard constructor
 
-	void populate_path(event_comment &ec, HTREEITEM h);
-	HTREEITEM traverse_path(const event_comment &ec);
+	void populate_path(event_annotation &ea, HTREEITEM h);
+	HTREEITEM traverse_path(const event_annotation &ea);
 
 // Dialog Data
 	//{{AFX_DATA(event_editor)

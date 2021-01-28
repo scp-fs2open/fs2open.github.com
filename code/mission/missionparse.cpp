@@ -5075,11 +5075,11 @@ void parse_event(mission * /*pm*/)
 		// comments are only used in FRED
 		if (Fred_running) {
 			while (optional_string("+Comment:")) {
-				event_comment ec;
-				stuff_string(ec.comment, F_MULTITEXT);
-				lcl_replace_stuff(ec.comment, true);
+				event_annotation ea;
+				stuff_string(ea.comment, F_MULTITEXT);
+				lcl_replace_stuff(ea.comment, true);
 
-				ec.path.push_back(Num_mission_events);
+				ea.path.push_back(Num_mission_events);
 
 				if (optional_string("+Path:")) {
 					int num;
@@ -5088,11 +5088,11 @@ void parse_event(mission * /*pm*/)
 						if (stuff_int_optional(&num, true) != 2) {
 							break;
 						}
-						ec.path.push_back(num);
+						ea.path.push_back(num);
 					}
 				}
 
-				Event_comments.push_back(std::move(ec));
+				Event_annotations.push_back(std::move(ea));
 			}
 			required_string("$Comments End");
 		} else {
