@@ -1118,7 +1118,7 @@ public:
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
 	gamesnd_id		debris_explosion_sound;
-	char			generic_debris_pof_file[MAX_FILENAME_LEN];
+	char			generic_debris_pof_file[MAX_FILENAME_LEN]; // smaller debris bits thrown around willy-nilly on death
 	int				generic_debris_model_num;
 	int				generic_debris_num_submodels;
 	float			generic_debris_spew_num;

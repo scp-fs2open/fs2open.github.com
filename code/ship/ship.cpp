@@ -3162,6 +3162,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				WarningEx(LOCATION, "Ship %s\nGeneric Debris POF file \"%s\" invalid!", sip->name, temp);
 		}
 
+		if (optional_string("+Generic Debris Spew Num:")) {
+			stuff_float(&(sip->generic_debris_spew_num));
+			if (sip->generic_debris_spew_num < 0.0f) {
+				Warning(LOCATION, "Generic Debris Spew Num for %s '%s' cannot be below 0.", info_type_name, sip->name);
+				sip->generic_debris_spew_num = 0.0f;
+			}
+		}
+
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
