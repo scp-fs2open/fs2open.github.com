@@ -2099,7 +2099,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
 
-	int seed = bwi->beam_flags[Weapon::Beam_Flags::Burst_share_random] ? burst_seed : rand32();
+	int seed = bwi->flags[Weapon::Beam_Info_Flags::Burst_share_random] ? burst_seed : rand32();
 
 	// generate the proper amount of directional vectors
 	switch(b->type){
