@@ -3474,7 +3474,7 @@ int CFred_mission_save::save_objects()
 			fso_comment_push(";;FSO 3.6.8;;");
 
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii) {
-				if (!stricmp(shipp->ship_name, ii->ship_name)) {
+				if (!stricmp(shipp->ship_name, ii->ship_name) && !(ii->from_table)) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);

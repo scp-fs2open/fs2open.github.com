@@ -296,15 +296,19 @@ int lzw_expand( ubyte *outputbuf, ubyte *inputbuf )
 void add_join_request(ubyte *data, int *size, join_request *jr)
 {
 	int packet_size = *size;
-	join_request jr_tmp;
 
-	memcpy(&jr_tmp, jr, sizeof(join_request));
-
-	jr_tmp.tracker_id = INTEL_INT(jr->tracker_id);
-	jr_tmp.player_options.flags = INTEL_INT(jr->player_options.flags);
-	jr_tmp.player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level);
-
-	ADD_DATA(jr_tmp);
+	ADD_STRING(jr->passwd);
+	ADD_STRING(jr->callsign);
+	ADD_STRING(jr->image_filename);
+	ADD_STRING(jr->squad_filename);
+	ADD_DATA(jr->player_rank);
+	ADD_DATA(jr->flags);
+	ADD_INT(jr->tracker_id);
+	ADD_INT(jr->player_options.flags);
+	ADD_INT(jr->player_options.obj_update_level);
+	ADD_DATA(jr->version);
+	ADD_DATA(jr->comp_version);
+	ADD_STRING(jr->pxo_squad_name);
 
 	*size = packet_size;
 }
@@ -314,11 +318,18 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 {
 	int offset = *size;
 
-	GET_DATA(*jr);
-
-	jr->tracker_id = INTEL_INT(jr->tracker_id); //-V570
-	jr->player_options.flags = INTEL_INT(jr->player_options.flags); //-V570
-	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level); //-V570
+	GET_STRING(jr->passwd);
+	GET_STRING(jr->callsign);
+	GET_STRING(jr->image_filename);
+	GET_STRING(jr->squad_filename);
+	GET_DATA(jr->player_rank);
+	GET_DATA(jr->flags);
+	GET_INT(jr->tracker_id);
+	GET_INT(jr->player_options.flags);
+	GET_INT(jr->player_options.obj_update_level);
+	GET_DATA(jr->version);
+	GET_DATA(jr->comp_version);
+	GET_STRING(jr->pxo_squad_name);
 
 	*size = offset;
 }
@@ -610,7 +621,7 @@ struct fs2_game_chat_packet
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, int server_msg)
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, ubyte server_msg)
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
@@ -622,7 +633,7 @@ void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_
 	ADD_SHORT(from->player_id);
 
 	// add the message mode and if in MSG_TARGET mode, add who the target is
-	ADD_INT(server_msg);
+	ADD_DATA(server_msg);
 	mode = (ubyte)msg_mode;	
 	ADD_DATA(mode);
 	switch(mode){
@@ -715,8 +726,8 @@ void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_
 void process_game_chat_packet( ubyte *data, header *hinfo )
 {
 	int offset;
-	ubyte mode;
-	int color_index,player_index,to_player_index,should_display,server_msg;	
+	ubyte mode, server_msg;
+	int color_index, player_index, to_player_index, should_display;
 	char msg[MULTI_MSG_MAX_TEXT_LEN+CALLSIGN_LEN+2];
 	char expr[255];
 	short from, to;
@@ -727,7 +738,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	GET_SHORT(from);
 	
 	// determine if this is a server message
-	GET_INT(server_msg);
+	GET_DATA(server_msg);
 
 	// get the mode
 	GET_DATA(mode);
@@ -1034,7 +1045,8 @@ void send_new_player_packet(int new_player_num,net_player *target)
 	BUILD_HEADER( NOTIFY_NEW_PLAYER );
 
 	// add the new player's info
-	ADD_INT(new_player_num);
+	val = static_cast<ubyte>(new_player_num);
+	ADD_DATA(val);
 //	ADD_DATA(Net_players[new_player_num].p_info.addr);
 	add_net_addr(data, &packet_size, &Net_players[new_player_num].p_info.addr);
 	ADD_SHORT(Net_players[new_player_num].player_id);
@@ -1061,20 +1073,20 @@ void send_new_player_packet(int new_player_num,net_player *target)
 void process_new_player_packet(ubyte* data, header* hinfo)
 {
 	int already_in_game = 0;
-	int offset, new_player_num,player_num,new_flags;
+	int offset, player_num, new_flags;
 	net_addr new_addr;	
 	char new_player_name[CALLSIGN_LEN+2] = "";
 	char new_player_image[MAX_FILENAME_LEN+1] = "";
 	char new_player_squad[MAX_FILENAME_LEN+1] = "";
 	char new_player_pxo_squad[LOGIN_LEN+1] = "";
 	char notify_string[256];
-	ubyte team;
+	ubyte team, new_player_num;
 	short new_id;
 
 	offset = HEADER_LENGTH;
 
 	// get the new players information
-	GET_INT(new_player_num);
+	GET_DATA(new_player_num);
 //	GET_DATA(new_addr);
 	get_net_addr(data, &offset, &new_addr);
 	GET_SHORT(new_id);
@@ -1194,7 +1206,7 @@ struct fs2_accept_player_data
 void send_accept_player_data( net_player *npp, int is_ingame )
 {
 	int packet_size;	
-	int i;
+	uint8_t i;
 	ubyte data[MAX_PACKET_SIZE], stop;
 
 	BUILD_HEADER(ACCEPT_PLAYER_DATA);
@@ -1216,7 +1228,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 		ADD_DATA(stop);
 
 		// add the player's number
-		ADD_INT(i);		
+		ADD_DATA(i);
 
 		// add the player's address
 	//	ADD_DATA(Net_players[i].p_info.addr);
@@ -1266,7 +1278,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 // process the player data from the server
 void process_accept_player_data( ubyte *data, header *hinfo )
 {
-	int offset, player_num, player_slot_num, new_flags;
+	int offset, player_slot_num, new_flags;
 	char name[CALLSIGN_LEN + 1] = "";
 	char image_name[MAX_FILENAME_LEN + 1] = "";
 	char squad_name[MAX_FILENAME_LEN + 1] = "";
@@ -1275,6 +1287,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 	net_addr addr;
 	ubyte stop;
 	ushort ig_signature;
+	uint8_t player_num;
 
 	offset = HEADER_LENGTH;
 
@@ -1284,7 +1297,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		Assert(player_slot_num != -1);
 
 		// get the player's number
-		GET_INT(player_num);
+		GET_DATA(player_num);
 
 		// add the player's address
 	//	GET_DATA(addr);
@@ -1497,7 +1510,8 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	ADD_INT(Game_skill_level);
 
 	// add this guys player num 
-	ADD_INT(new_player_num);
+	val = static_cast<ubyte>(new_player_num);
+	ADD_DATA(val);
 
 	// add his player id
 	ADD_SHORT(Net_players[new_player_num].player_id);
@@ -1544,8 +1558,8 @@ extern int Select_default_ship;
 
 void process_accept_packet(ubyte* data, header* hinfo)
 {
-	int code, my_player_num, offset;
-	ubyte val,team = 0;
+	int code, offset;
+	ubyte val, team = 0, my_player_num;
 	short player_id;
 	
 	// get the accept code
@@ -1591,7 +1605,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	}
 
 	// get my netplayer number
-	GET_INT(my_player_num);
+	GET_DATA(my_player_num);
 
 	// get my id #
 	GET_SHORT(player_id);
@@ -1856,9 +1870,11 @@ void send_game_active_packet(net_addr* addr)
 	val = MULTI_FS_SERVER_COMPATIBLE_VERSION;
 	ADD_DATA(val);
 
-	ADD_STRING(Netgame.name);
-	ADD_STRING(Netgame.mission_name);
-	ADD_STRING(Netgame.title);	
+	// use 4-byte version of *_STRING to remain compatible with older builds
+	ADD_STRING_32(Netgame.name);
+	ADD_STRING_32(Netgame.mission_name);
+	ADD_STRING_32(Netgame.title);
+
 	val = (ubyte)multi_num_players();
 	ADD_DATA(val);
 	
@@ -1945,9 +1961,11 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 	GET_DATA(ag.version);
 	GET_DATA(ag.comp_version);
 
-	GET_STRING(ag.name);
-	GET_STRING(ag.mission_name);
-	GET_STRING(ag.title);	
+	// use 4-byte version of *_STRING to remain compatible with older builds
+	GET_STRING_32(ag.name);
+	GET_STRING_32(ag.mission_name);
+	GET_STRING_32(ag.title);
+
 	GET_DATA(val);
 	ag.num_players = val;
 	GET_USHORT(ag.flags);
@@ -1962,6 +1980,10 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 
 	// if this is a compatible version, and our modes are compatible, register it
 	if ( (ag.version == MULTI_FS_SERVER_VERSION) && modes_compatible ) {
+		if (gameseq_get_state() == GS_STATE_MULTI_JOIN_GAME) {
+			multi_join_maybe_update_selected(&ag);
+		}
+
 		multi_update_active_games(&ag);
 	}
 }
@@ -2174,76 +2196,98 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 
 */
 // send a request or a reply for mission description, if code == 0, request, if code == 1, reply
+// Cyborg17 - Now recursive for longer descriptions!
 void send_netgame_descript_packet(net_addr *addr, int code)
 {
-	ubyte data[MAX_PACKET_SIZE],val;
-	int desc_len;
+	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
 
-	// build the header
-	BUILD_HEADER(UPDATE_DESCRIPT);
+	// Get this out of the way, because we don't want to waste our time if the addr is bad.
+	if (addr == nullptr) {
+		UNREACHABLE("Net address not specified!");
+		return;
+	}
 
-	val = (ubyte)code;
-	ADD_DATA(val);	
+	// if we are the client requesting, just send
+	if ( !code ) {
+		// build the header
+		BUILD_HEADER(UPDATE_DESCRIPT);
 
-	if(code == 1){
-		// add as much of the description as we dare
-		desc_len = (int)strlen(The_mission.mission_desc);
-		if(desc_len > MAX_PACKET_SIZE - 10){
-			desc_len = MAX_PACKET_SIZE - 10;
-			ADD_INT(desc_len);
-			memcpy(data+packet_size, The_mission.mission_desc, desc_len);
-			packet_size += desc_len;
-		} else {
-			ADD_STRING(The_mission.mission_desc);
-		}
-	} 
-	
-	Assert(addr != NULL);
-	if(addr != NULL){
+		ubyte val = 0;
+		ADD_DATA(val);
+
 		psnet_send(addr, data, packet_size);
+	}
+	// otherwise, break up description string if necessary and send to client
+	else {
+		extern SCP_string Multi_netgame_common_description;
+
+		SCP_string message;
+		const size_t MAX_LEN = MAX_PACKET_SIZE - HEADER_LENGTH - 10;
+		const size_t desc_len = Multi_netgame_common_description.length();
+		size_t desc_offset = 0;
+
+		ubyte index = 1;	// to indicate which message index this is for concatenation - 1, 2, ...
+
+		do {
+			message = Multi_netgame_common_description.substr(desc_offset, std::min(desc_len, MAX_LEN));
+
+			BUILD_HEADER(UPDATE_DESCRIPT);
+
+			ADD_DATA(index);
+			ADD_STRING_16(message.c_str());
+
+			psnet_send(addr, data, packet_size);
+
+			++index;
+			desc_offset += message.length();
+		} while (desc_offset < desc_len);
 	}
 }
 
 // process an incoming netgame description packet
 void process_netgame_descript_packet( ubyte *data, header *hinfo )
 {
-	int offset,state;
-	ubyte code;	
-	char mission_desc[MISSION_DESC_LENGTH+2];
+	int offset, state;
+	ubyte code;
 	net_addr addr;
 
 	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 
 	// read this game into a temporary structure
 	offset = HEADER_LENGTH;
-	GET_DATA(code);	
-	
+	GET_DATA(code);
+
 	// if this is a request for mission description
 	if(code == 0){
 		if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 			PACKET_SET_SIZE();
 			return;
-		}		
+		}
 
 		// send an update to this guy
 		send_netgame_descript_packet(&addr, 1);
-	} else {	
-		memset(mission_desc,0,MISSION_DESC_LENGTH+2);		
-		GET_STRING(mission_desc);
+	}
+	// otherwise 'code' will be an index indicating the message number - 1, 2, ...
+	else {
+		char message[MAX_PACKET_SIZE];
 
-		// only display if we're in the proper state
+		GET_STRING_16(message);
+
+		// only display if we're in the proper state, since the client doesn't
+		// decide when this packet arrives
 		state = gameseq_get_state();
-		switch(state){
-		case GS_STATE_MULTI_JOIN_GAME:
-		case GS_STATE_MULTI_CLIENT_SETUP:			
-		case GS_STATE_MULTI_HOST_SETUP:
-			multi_common_set_text(mission_desc);
-			break;
+
+		switch (state) {
+			case GS_STATE_MULTI_JOIN_GAME:
+			case GS_STATE_MULTI_CLIENT_SETUP:
+			case GS_STATE_MULTI_HOST_SETUP:
+				multi_mission_desciption_set(message, code);
+				break;
 		}
 	}
 
-	PACKET_SET_SIZE();	
+	PACKET_SET_SIZE();
 }
 
 // broadcast a query for active games. TCP will either request from the MT or from the specified list
@@ -2293,12 +2337,6 @@ void process_game_query(ubyte*  /*data*/, header* hinfo)
 
 	PACKET_SET_SIZE();
 
-	// check to be sure that we don't capture our own broadcast message
-	fill_net_addr(&addr, hinfo->addr, hinfo->port);
-	if ( psnet_is_local_addr(&addr) ) {
-		return;
-	}
-
 	// if I am not a server of a game, don't send a reply!!!
 	if ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
 		return;
@@ -2307,6 +2345,12 @@ void process_game_query(ubyte*  /*data*/, header* hinfo)
 	// if the game options are being selected, then ignore the request
 	// also, if Netgame.max_players == -1, the host has not chosen a mission yet and we should wait
 	if((Netgame.game_state == NETGAME_STATE_STD_HOST_SETUP) || (Netgame.game_state == NETGAME_STATE_HOST_SETUP) || (Netgame.game_state == 0) || (Netgame.max_players == -1)){
+		return;
+	}
+
+	// check to be sure that we don't capture our own broadcast message
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
+	if ( psnet_is_local_addr(&addr) ) {
 		return;
 	}
 
@@ -2655,15 +2699,17 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating a ship should be created
-void send_ship_create_packet( object *objp, int is_support )
+void send_ship_create_packet( object *objp, bool is_support )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
+	ubyte val;
 
 	// We will pass the ship to create by name.
 	BUILD_HEADER(SHIP_CREATE);
 	ADD_USHORT(objp->net_signature);
-	ADD_INT( is_support );
+	val = is_support ? 1 : 0;
+	ADD_DATA(val);
 	if ( is_support ){
 		ADD_VECTOR( objp->pos );
 	}
@@ -2675,15 +2721,16 @@ void send_ship_create_packet( object *objp, int is_support )
 // process a packet indicating a ship should be created
 void process_ship_create_packet( ubyte *data, header *hinfo )
 {
-	int offset, objnum, is_support;
+	int offset, objnum;
 	ushort signature;
 	p_object *objp;
 	vec3d pos = ZERO_VECTOR;
+	ubyte is_support;
 
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 	offset = HEADER_LENGTH;
 	GET_USHORT(signature);
-	GET_INT( is_support );
+	GET_DATA(is_support);
 	if ( is_support ){
 		GET_VECTOR( pos );
 	}
@@ -2951,7 +2998,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
 	object *objp;
 	ushort target_net_signature;
-	char t_subsys;
+	int s_index;
 	ai_info *aip;
 
 	// Assert ( starting_count < UCHAR_MAX );
@@ -2995,15 +3042,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 
 	// add the ship's target and any targeted subsystem
 	target_net_signature = 0;
-	t_subsys = -1;
+	s_index = -1;
 	if ( aip->target_objnum != -1) {
 		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			int s_index;
-
 			s_index = ship_get_index_from_subsys( aip->targeted_subsys, aip->target_objnum );
-			Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-			t_subsys = (char)s_index;
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
@@ -3013,7 +3056,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	}
 
 	ADD_USHORT( target_net_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 
 	// just send this packet to everyone, then bail if an AI ship fired.
 	if ( !(objp->flags[Object::Object_Flags::Player_ship]) ) {		
@@ -3053,7 +3096,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	// add the targeting information so that the player's weapons will always home on the correct
 	// ship
 	ADD_USHORT( target_net_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 	
 	multi_io_send_reliable(&Net_players[net_player_num], data, packet_size);
 }
@@ -3066,7 +3109,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	ubyte sinfo, current_bank;
 	object* objp, *target_objp;
 	ship *shipp;
-	char t_subsys;
+	short t_subsys;
 	ai_info *aip;
 	ship_subsys *targeted_subsys_save;
 
@@ -3081,7 +3124,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_DATA( sinfo );			// includes flags and the secondary bank.
 
 		GET_USHORT( target_net_signature );
-		GET_DATA( t_subsys );
+		GET_SHORT( t_subsys );
 
 		PACKET_SET_SIZE();
 
@@ -3101,7 +3144,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		GET_DATA( sinfo );
 
 		GET_USHORT( target_net_signature );
-		GET_DATA( t_subsys );
+		GET_SHORT( t_subsys );
 
 		PACKET_SET_SIZE();
 
@@ -3224,11 +3267,10 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 {
 	int packet_size;
 	ushort pnet_signature;
-	ubyte data[MAX_PACKET_SIZE], cindex;
+	ubyte data[MAX_PACKET_SIZE];
 	object *objp;
 	ubyte has_sig = 0;
 	ship_subsys *ssp;
-	short val;
 
 	// sanity
 	if((weapon_objnum < 0) || (Objects[weapon_objnum].type != OBJ_WEAPON) || (Objects[weapon_objnum].instance < 0) || (Weapons[Objects[weapon_objnum].instance].weapon_info_index < 0)){
@@ -3244,9 +3286,6 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	Assert( subsys_index < UCHAR_MAX );
-	cindex = (ubyte)subsys_index;
-
 	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
 	if(ssp == NULL){
 		return;
@@ -3260,11 +3299,25 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	if(has_sig){		
 		ADD_USHORT( objp->net_signature );
 	}
-	ADD_DATA( cindex );
-	val = (short)ssp->submodel_info_1.angs.h;
-	ADD_SHORT( val );
-	val = (short)ssp->submodel_info_2.angs.p;
-	ADD_SHORT( val );	
+	ADD_SHORT( static_cast<short>(Weapons[objp->instance].weapon_info_index) );
+	ADD_SHORT( static_cast<short>(subsys_index) );
+
+	// where we might accidentally dereference nullptrs, send 0 instead
+	constexpr float ZERO_VALUE = 0.0f;
+
+	if (ssp->submodel_instance_1 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+	}
+	else {
+		ADD_FLOAT( ZERO_VALUE );
+	}
+
+	if (ssp->submodel_instance_2 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+	}
+	else {
+		ADD_FLOAT(ZERO_VALUE);
+	}
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3274,17 +3327,17 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 // process a packet indicating a turret has been fired
 void process_turret_fired_packet( ubyte *data, header *hinfo )
 {
-	int offset, weapon_objnum, wid = -1;
+	int offset, weapon_objnum;
 	ushort pnet_signature, wnet_signature;
 	vec3d pos, temp;
 	matrix orient;
 	vec3d o_fvec;
-	ubyte turret_index;
+	short turret_index, wid;
 	object *objp;
 	ship_subsys *ssp;
 	ubyte has_sig = 0;
 	ship *shipp;
-	short pitch, heading;	
+	float pitch, heading;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3296,10 +3349,16 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	} else {
 		wnet_signature = 0;
 	}
-	GET_DATA( turret_index );
-	GET_SHORT( heading );
-	GET_SHORT( pitch );	
+	GET_SHORT( wid );
+	GET_SHORT( turret_index );
+	GET_FLOAT( heading );
+	GET_FLOAT( pitch );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
+
+	// if we don't have a valid weapon index then bail
+	if ( (wid < 0) || (wid >= weapon_info_size()) ) {
+		return;
+	}
 
 	// find the object
 	objp = multi_get_network_object( pnet_signature );
@@ -3324,18 +3383,15 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
-	if (ssp->weapons.num_primary_banks > 0) {
-		wid = ssp->weapons.primary_bank_weapons[0];
-	} else if (ssp->weapons.num_secondary_banks > 0) {
-		wid = ssp->weapons.secondary_bank_weapons[0];
-	}
-
-	if (wid < 0)
-		return;
-
 	// bash the position and orientation of the turret
-	ssp->submodel_info_1.angs.h = (float)heading;
-	ssp->submodel_info_2.angs.p = (float)pitch;
+	// but only if the submodels are not null
+	if (ssp->submodel_instance_1 != nullptr) {
+		ssp->submodel_instance_1->angs.h = heading;
+	}
+	
+	if (ssp->submodel_instance_2 != nullptr) {
+		ssp->submodel_instance_2->angs.p = pitch;
+	}
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
@@ -3348,7 +3404,6 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 
 	if (weapon_objnum != -1) {
-		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}		
@@ -4036,6 +4091,7 @@ void send_netplayer_slot_packet()
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size,idx;
 	ubyte stop;
+	char val;
 
 	packet_size = 0;
 	stop = 0xff;
@@ -4045,8 +4101,9 @@ void send_netplayer_slot_packet()
 			ADD_DATA(stop);
 			ADD_SHORT(Net_players[idx].player_id);  
 			ADD_USHORT(Objects[Net_players[idx].m_player->objnum].net_signature);
-			ADD_INT(Net_players[idx].p_info.ship_class);
-			ADD_INT(Net_players[idx].p_info.ship_index);			
+			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_class));
+			val = static_cast<char>(Net_players[idx].p_info.ship_index);
+			ADD_DATA(val);
 		}
 	}
 	stop = 0x0;
@@ -4063,11 +4120,12 @@ void send_netplayer_slot_packet()
 void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 {
 	int offset;
-	int player_num,ship_class,ship_index;
+	int player_num;
+	char ship_index;
 	ushort net_sig;
 	object *objp;	
 	ubyte stop;
-	short player_id;
+	short player_id, ship_class;
 	
 	offset = HEADER_LENGTH;	
 
@@ -4078,8 +4136,8 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 	while(stop != 0x0){
 		GET_SHORT(player_id);
 		GET_USHORT(net_sig);
-		GET_INT(ship_class);
-		GET_INT(ship_index);
+		GET_SHORT(ship_class);
+		GET_DATA(ship_index);
 		player_num = find_player_id(player_id);
 		if(player_num < 0){
 			nprintf(("Network","Error looking up player for object/slot assignment!!\n"));
@@ -4191,6 +4249,7 @@ void send_ship_status_packet(net_player *pl, button_info *bi, int id)
 	int idx, temp;
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
+	uint8_t num_fields = 0;
 
 	if(pl == NULL){
 		return;
@@ -4198,7 +4257,16 @@ void send_ship_status_packet(net_player *pl, button_info *bi, int id)
 
 	BUILD_HEADER(SHIP_STATUS_CHANGE);
 	ADD_INT(id);
-	for(idx=0;idx<NUM_BUTTON_FIELDS;idx++){
+
+	for (num_fields = NUM_BUTTON_FIELDS; num_fields > 0; num_fields--) {
+		if (bi->status[num_fields-1]) {
+			break;
+		}
+	}
+
+	ADD_DATA(num_fields);
+
+	for (idx = 0; idx < num_fields; idx++) {
 		temp = bi->status[idx];
 		ADD_INT(temp);
 	}
@@ -4218,6 +4286,7 @@ void process_ship_status_packet(ubyte *data, header *hinfo)
 	int player_num,unique_id;
 	button_info bi;
 	int i_tmp;
+	uint8_t num_fields = 0;
 	
 	offset = HEADER_LENGTH;
 
@@ -4226,10 +4295,15 @@ void process_ship_status_packet(ubyte *data, header *hinfo)
 	
 	// read the button-info
 	GET_INT(unique_id);	
-		
-	for(idx=0;idx<NUM_BUTTON_FIELDS;idx++){
+
+	GET_DATA(num_fields);
+
+	for (idx = 0; idx < num_fields; idx++) {
 		GET_INT(i_tmp);
-		bi.status[idx] = i_tmp;
+
+		if (idx < NUM_BUTTON_FIELDS) {
+			bi.status[idx] = i_tmp;
+		}
 	}
 
 	PACKET_SET_SIZE();
@@ -4272,7 +4346,7 @@ void send_player_order_packet(int type, int index, int cmd)
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte val;
 	ushort target_net_signature;
-	char t_subsys;
+	int s_index = -1;
 	int packet_size = 0;
 
 	BUILD_HEADER(PLAYER_ORDER_PACKET);
@@ -4295,16 +4369,12 @@ void send_player_order_packet(int type, int index, int cmd)
 
 	ADD_USHORT( target_net_signature );
 
-	t_subsys = -1;
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
-		int s_index;
-
 		s_index = ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
-		Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-		t_subsys = (char)s_index;
 	}
-	ADD_DATA(t_subsys);
-   
+
+	ADD_SHORT(static_cast<short>(s_index));
+
 	multi_io_send_reliable(Net_player, data, packet_size);
 }
 
@@ -4317,7 +4387,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 {
 	int offset, player_num, command, index = 0, tobjnum_save;	
 	ushort target_net_signature;
-	char t_subsys, type;
+	char type;
+	short t_subsys;
 	object *objp, *target_objp;
 	ai_info *aip;
 	ship *shipp;
@@ -4336,7 +4407,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	GET_INT( command );
 	GET_USHORT( target_net_signature );
-	GET_DATA( t_subsys );
+	GET_SHORT( t_subsys );
 
 	PACKET_SET_SIZE();	
 
@@ -5461,7 +5532,7 @@ void send_wss_update_packet(int team_num,ubyte *wss_data,int size)
 	ADD_DATA(team);
 
 	// add the data block size
-	ADD_INT(size);
+	ADD_USHORT(static_cast<ushort>(size));
 	
 	// add the data itself
 	memcpy(data + packet_size,wss_data,size);
@@ -5480,14 +5551,15 @@ void send_wss_update_packet(int team_num,ubyte *wss_data,int size)
 void process_wss_update_packet(ubyte *data, header *hinfo)
 {		
 	ubyte team;
-	int size,player_index,idx;
+	ushort size;
+	int player_index, idx;
 	int offset = HEADER_LENGTH;
 
 	// get the team/pool #
 	GET_DATA(team);
 
 	// get the data size
-	GET_INT(size);		
+	GET_USHORT(size);
 
 	// if we're the standalone, then we should be routing this data to all the other clients
 	if(Game_mode & GM_STANDALONE_SERVER){
@@ -5616,6 +5688,7 @@ void send_player_settings_packet(net_player *p)
 	ubyte stop;
 	int idx;
 	int packet_size = 0;
+	char val;
 
 	// build the header
 	BUILD_HEADER(PLAYER_SETTINGS);
@@ -5630,8 +5703,9 @@ void send_player_settings_packet(net_player *p)
 			// break the p_info structure by member, so we don't overwrite any absolute pointers
 			// ADD_DATA(Net_players[idx].p_info);
 			ADD_INT(Net_players[idx].p_info.team);
-			ADD_INT(Net_players[idx].p_info.ship_index);
-			ADD_INT(Net_players[idx].p_info.ship_class);
+			val = static_cast<char>(Net_players[idx].p_info.ship_index);
+			ADD_DATA(val);
+			ADD_SHORT(static_cast<short>(Net_players[idx].p_info.ship_class));
 		}
 	}
 	// add the stop byte
@@ -5652,6 +5726,8 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 	net_player_info bogus,*ptr;
 	short player_id;
 	ubyte stop;
+	short ship_class;
+	char ship_index;
 
 	offset = HEADER_LENGTH;
 
@@ -5670,8 +5746,10 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 		}
 		
 		GET_INT(ptr->team);
-		GET_INT(ptr->ship_index);
-		GET_INT(ptr->ship_class);
+		GET_DATA(ship_index);
+		ptr->ship_index = ship_index;
+		GET_SHORT(ship_class);
+		ptr->ship_class = ship_class;
 		
 		// next stop byte
 		GET_DATA(stop);
@@ -5785,7 +5863,6 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	int idx, player_index;
 	int packet_size = 0;
 	int ship_count;
-	short val_short;
 
 	BUILD_HEADER(POST_SYNC_DATA);
 
@@ -5841,8 +5918,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_USHORT( Objects[so->objnum].net_signature );
 		
 		// add the ship info index 
-		val = (ubyte)(shipp->ship_info_index);
-		ADD_DATA(val);		
+		ADD_SHORT(static_cast<short>(shipp->ship_info_index));
 
 		// add the ships's team select index
 		val = (ubyte)shipp->ts_index;
@@ -5872,46 +5948,37 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_USHORT( Objects[so->objnum].net_signature );		
 
 		// add number of primary and secondary banks
-		bval = (char)(shipp->weapons.num_primary_banks);
+		bval = static_cast<char>(shipp->weapons.num_primary_banks);
 		ADD_DATA(bval);
-		bval = (char)(shipp->weapons.num_secondary_banks);
+		bval = static_cast<char>(shipp->weapons.num_secondary_banks);
 		ADD_DATA(bval);
 
 		// add weapon bank status
-		bval = (char)(shipp->weapons.current_primary_bank);
-		if(pl != NULL){
+		bval = static_cast<char>(shipp->weapons.current_primary_bank);
+		if (pl != nullptr) {
 			pl->s_info.cur_primary_bank = bval;
 		}
 		// Assert(bval != -1);
 		ADD_DATA(bval);
 
-		bval = (char)(shipp->weapons.current_secondary_bank);
-		if(pl != NULL){
+		bval = static_cast<char>(shipp->weapons.current_secondary_bank);
+		if (pl != nullptr) {
 			pl->s_info.cur_secondary_bank = bval;
 		}
 		// Assert(bval != -1);
 		ADD_DATA(bval);
-						
+
 		// primary weapon info
-		val = (ubyte)(shipp->weapons.primary_bank_weapons[0]);
-		ADD_DATA(val);
-		val = (ubyte)(shipp->weapons.primary_bank_weapons[1]);
-		ADD_DATA(val);
+		for (idx = 0; idx < shipp->weapons.num_primary_banks; idx++) {
+			ADD_SHORT(static_cast<short>(shipp->weapons.primary_bank_weapons[idx]));
+		}
 
 		// secondary weapon info
-		val_short = (short)(shipp->weapons.secondary_bank_weapons[0]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.secondary_bank_ammo[0]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.secondary_bank_weapons[1]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.secondary_bank_ammo[1]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.secondary_bank_weapons[2]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.secondary_bank_ammo[2]);
-		ADD_SHORT(val_short);		
-		
+		for (idx = 0; idx < shipp->weapons.num_secondary_banks; idx++) {
+			ADD_SHORT(static_cast<short>(shipp->weapons.secondary_bank_weapons[idx]));
+			ADD_SHORT(static_cast<short>(shipp->weapons.secondary_bank_ammo[idx]));
+		}
+
 		// send primary and secondary weapon link status
 		val = 0x0;
 		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
@@ -5975,15 +6042,15 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 
 void process_post_sync_data_packet(ubyte *data, header *hinfo)
 {
-	ubyte val, sinfo_index, ts_index;
+	ubyte val, ts_index;
 	char b;
 	ushort net_sig, ship_ets, sval;
 	ship *shipp;
 	object *objp;
-	int idx;
+	int idx, j;
 	int offset = HEADER_LENGTH;
 	int ship_count;
-	short val_short;
+	short val_short, sinfo_index;
 
 	// packet routing information
 	GET_DATA(val);
@@ -6033,7 +6100,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 	for(idx=0; idx<ship_count; idx++){	
 		// get the object's net signature
 		GET_USHORT(net_sig);
-		GET_DATA(sinfo_index);
+		GET_SHORT(sinfo_index);
 		GET_DATA(ts_index);
 
 		// attempt to get the object
@@ -6069,11 +6136,11 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		// get number of primary and secondary banks;
 		GET_DATA(b);
 		Assert( b != -1 );
-		shipp->weapons.num_primary_banks = (int)b;
+		shipp->weapons.num_primary_banks = static_cast<int>(b);
 
 		GET_DATA(b);
 		Assert( b != -1 );
-		shipp->weapons.num_secondary_banks = (int)b;
+		shipp->weapons.num_secondary_banks = static_cast<int>(b);
 
 		// get bank selection info
 		GET_DATA(b);
@@ -6088,28 +6155,21 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		}
 		shipp->weapons.current_secondary_bank = (int)b;		
 
-			// primary weapon info
-		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[0] = ((val == 255) ? -1 : static_cast<int>(val));
-
-		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[1] = ((val == 255) ? -1 : static_cast<int>(val));
+		// primary weapon info
+		for (j = 0; j < shipp->weapons.num_primary_banks; j++) {
+			GET_SHORT(val_short);
+			shipp->weapons.primary_bank_weapons[j] = static_cast<int>(val_short);
+			shipp->weapons.primary_bank_start_ammo[j] = (int)std::lround(Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[j] / Weapon_info[shipp->weapons.primary_bank_weapons[j]].cargo_size);
+		}
 
 		// secondary weapon info
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_weapons[0] = (int)val_short;
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_ammo[0] = (int)val_short;
-
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_weapons[1] = (int)val_short;
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_ammo[1] = (int)val_short;
-
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_weapons[2] = (int)val_short;
-		GET_SHORT(val_short);
-		shipp->weapons.secondary_bank_ammo[2] = (int)val_short;
+		for (j = 0; j < shipp->weapons.num_secondary_banks; j++) {
+			GET_SHORT(val_short);
+			shipp->weapons.secondary_bank_weapons[j] = static_cast<int>(val_short);
+			GET_SHORT(val_short);
+			shipp->weapons.secondary_bank_ammo[j] = static_cast<int>(val_short);
+			shipp->weapons.secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[shipp->ship_info_index].secondary_bank_ammo_capacity[j] / Weapon_info[shipp->weapons.secondary_bank_weapons[j]].cargo_size);
+		}
 
 		// other flags
 		val = 0x0;
@@ -6191,20 +6251,22 @@ void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_req
 	// case 2 for the standalone is below (as normal)
 
 	// add all the slots
+	val = MULTI_TS_NUM_SHIP_SLOTS;
+	ADD_DATA(val);
+
+	val = MAX_SHIP_WEAPONS;
+	ADD_DATA(val);
+
 	for(idx=0;idx<MULTI_TS_NUM_SHIP_SLOTS;idx++){
 		// add the ship class
-		val = (ubyte)Wss_slots_teams[team_num][idx].ship_class;
-		ADD_DATA(val);
+		val_short = static_cast<short>(Wss_slots_teams[team_num][idx].ship_class);
+		ADD_SHORT(val_short);
 
-		// add the weapons
+		// add the weapons and counts
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			val_short = (short)Wss_slots_teams[team_num][idx].wep[i];
+			val_short = static_cast<short>(Wss_slots_teams[team_num][idx].wep[i]);
 			ADD_SHORT(val_short);
-		}
-
-		// add the weapon counts
-		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			val_short = (short)Wss_slots_teams[team_num][idx].wep_count[i];
+			val_short = static_cast<short>(Wss_slots_teams[team_num][idx].wep_count[i]);
 			ADD_SHORT(val_short);
 		}
 	}
@@ -6240,10 +6302,10 @@ void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_req
 
 void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 {
-	ubyte val,team_num,final;
-	int idx,i;
+	ubyte val, team_num, final, num_ship_slots, num_ship_weapons;
+	int idx ,i, j;
 	int offset = HEADER_LENGTH;
-	short val_short;
+	short val_short, b1, b2;
 
 	// packet routing information
 	GET_DATA(val);
@@ -6264,23 +6326,36 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 	}	
 
 	// read in all the slot data
-	for(idx=0;idx<MULTI_TS_NUM_SHIP_SLOTS;idx++){
-		memset(&Wss_slots_teams[team_num][idx],0,sizeof(wss_unit));
+	GET_DATA(num_ship_slots);
+	GET_DATA(num_ship_weapons);
 
+	// reset unit data
+	for (i = 0; i < MAX_WSS_SLOTS; i++) {
+		Wss_slots_teams[team_num][i].ship_class = -1;
+
+		for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+			Wss_slots_teams[team_num][i].wep[j] = -1;
+			Wss_slots_teams[team_num][i].wep_count[j] = 0;
+		}
+	}
+
+	for (idx = 0; idx < num_ship_slots; idx++) {
 		// get the ship class
-		GET_DATA(val);
-		Wss_slots_teams[team_num][idx].ship_class = (int)val;
+		GET_SHORT(val_short);
 
-		// get the weapons
-		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			GET_SHORT(val_short);
-			Wss_slots_teams[team_num][idx].wep[i] = (int)val_short;
-		} 
+		if (idx < MAX_WSS_SLOTS) {
+			Wss_slots_teams[team_num][idx].ship_class = val_short;
+		}
 
-		// get the weapon counts
-		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			GET_SHORT(val_short);
-			Wss_slots_teams[team_num][idx].wep_count[i] = (int)val_short;
+		// get the weapons and counts
+		for (i = 0; i < num_ship_weapons; i++) {
+			GET_SHORT(b1);
+			GET_SHORT(b2);
+
+			if ( (idx < MAX_WSS_SLOTS) && (i < MAX_SHIP_WEAPONS) ) {
+				Wss_slots_teams[team_num][idx].wep[i] = b1;
+				Wss_slots_teams[team_num][idx].wep_count[i] = b2;
+			}
 		}
 	}
 	PACKET_SET_SIZE();
@@ -6395,11 +6470,13 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 	}
 }
 
-void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target, short offset)
+#define MAX_SHIPS_PER_PACKET	((MAX_PACKET_SIZE-21)/static_cast<int>(sizeof(std::int32_t)))
+
+void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target, const int offset, const int count)
 {
 	scoring_struct *sc;
 	ubyte data[MAX_PACKET_SIZE], val;
-	int idx;		
+	int idx, len;
 	int packet_size = 0;
 
 	ushort u_tmp;
@@ -6421,12 +6498,10 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
-
-		idx = 0; 
-		while(idx<MAX_SHIP_CLASSES)
-		{
-			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, (short)idx);
-			idx += MAX_SHIPS_PER_PACKET; 
+		idx = 0;
+		while (idx < MAX_SHIP_CLASSES) {
+			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+			idx += MAX_SHIPS_PER_PACKET;
 		}
 
 		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
@@ -6459,12 +6534,10 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_MISSION:	
 		// mission OKkills	
-
-		idx = 0; 
-		while(idx<MAX_SHIP_CLASSES)
-		{
-			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, (short)idx);
-			idx += MAX_SHIPS_PER_PACKET; 
+		idx = 0;
+		while (idx < MAX_SHIP_CLASSES) {
+			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+			idx += MAX_SHIPS_PER_PACKET;
 		}
 	
 		ADD_INT(sc->m_score);
@@ -6489,6 +6562,8 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		break;		
 
 	case STATS_DOGFIGHT_KILLS:
+		val = MAX_PLAYERS;
+		ADD_DATA(val);
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			u_tmp = (ushort)sc->m_dogfight_kills[idx];
 			ADD_USHORT(u_tmp);
@@ -6499,18 +6574,24 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		break;
 	
 	case STATS_MISSION_CLASS_KILLS:
-		ADD_SHORT(offset);
-		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
-		{
-			ADD_INT(sc->m_okKills[idx]);			
+		len = std::min(count, MAX_SHIPS_PER_PACKET);
+
+		ADD_USHORT(static_cast<ushort>(offset));
+		ADD_USHORT(static_cast<ushort>(len));
+
+		for (idx = offset; idx < len; idx++) {
+			ADD_INT(sc->m_okKills[idx]);
 		}
 		break;
 		
 	case STATS_ALLTIME_KILLS:
-		ADD_SHORT(offset);
-		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
-		{
-			ADD_INT(sc->kills[idx]);			
+		len = std::min(count, MAX_SHIPS_PER_PACKET);
+
+		ADD_USHORT(static_cast<ushort>(offset));
+		ADD_USHORT(static_cast<ushort>(len));
+
+		for (idx = offset; idx < len; idx++) {
+			ADD_INT(sc->kills[idx]);
 		}
 		break;
 	}
@@ -6536,13 +6617,15 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 void process_player_stats_block_packet(ubyte *data, header *hinfo)
 {
-	ubyte val;
+	ubyte val, num_players;
 	int player_num,idx;
 	scoring_struct *sc,bogus;
 	short player_id;
 	int offset = HEADER_LENGTH;
 	ushort u_tmp, num_medals;
 	int i_tmp;
+	ushort si_offset, si_count;
+
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -6562,23 +6645,29 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// get the stats code
 	GET_DATA(val);	
 	switch(val){
-	short si_offset;
-
 	case STATS_ALLTIME_KILLS:
-		GET_SHORT(si_offset);
-		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
-		{
+		GET_USHORT(si_offset);
+		GET_USHORT(si_count);
+
+		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
-			sc->kills[idx] = i_tmp;
+
+			if (idx < MAX_SHIP_CLASSES) {
+				sc->kills[idx] = i_tmp;
+			}
 		}
 		break;
 
 	case STATS_MISSION_CLASS_KILLS:
-		GET_SHORT(si_offset);
-		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
-		{
+		GET_USHORT(si_offset);
+		GET_USHORT(si_count);
+
+		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
-			sc->m_okKills[idx] = i_tmp;
+
+			if (idx < MAX_SHIP_CLASSES) {
+				sc->m_okKills[idx] = i_tmp;
+			}
 		}
 		break;
 
@@ -6588,9 +6677,12 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		// read in the stats
 		GET_USHORT( num_medals );
 
-		for (idx=0; (idx < Num_medals) && (idx < num_medals); idx++) {
+		for (idx = 0; idx < num_medals; idx++) {
 			GET_INT(i_tmp);
-			sc->medal_counts[idx] = i_tmp;
+
+			if (idx < Num_medals) {
+				sc->medal_counts[idx] = i_tmp;
+			}
 		}
 
 		GET_INT(sc->score);
@@ -6643,11 +6735,18 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		if(player_num >= 0){
 			ml_printf("Dogfight stats for %s", Net_players[player_num].m_player->callsign);
 		}
-		for(idx=0; idx<MAX_PLAYERS; idx++){
+
+		GET_DATA(num_players);
+
+		for (idx = 0; idx < num_players; idx++) {
 			GET_USHORT(u_tmp);
-			sc->m_dogfight_kills[idx] = u_tmp;
-			if(player_num >= 0){				
-				ml_printf("%d", Net_players[player_num].m_player->stats.m_dogfight_kills[idx]);
+
+			if (idx < MAX_PLAYERS) {
+				sc->m_dogfight_kills[idx] = u_tmp;
+
+				if (player_num >= 0) {
+					ml_printf("%d", Net_players[player_num].m_player->stats.m_dogfight_kills[idx]);
+				}
 			}
 		}
 		GET_INT(sc->m_kill_count);
@@ -7002,13 +7101,13 @@ void send_client_update_packet(net_player *pl)
 	// if paused, add the net address of the guy who paused
 	if(val & UPDATE_IS_PAUSED){
 		Assert(Multi_pause_pauser != NULL);
-		ADD_DATA(Multi_pause_pauser->player_id);
+		ADD_SHORT(Multi_pause_pauser->player_id);
 	}
 
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats, n_quadrants;
+		ubyte percent, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7044,8 +7143,7 @@ void send_client_update_packet(net_player *pl)
 
 		// also write out the number of subsystems.  We do this because the client might not know
 		// about the object he is getting data for.  (i.e. he killed the object already).
-		ns = (ubyte)sip->n_subsystems;
-		ADD_DATA( ns );
+		ADD_USHORT(static_cast<ushort>(sip->n_subsystems));
 
 		// now the subsystems.
 		for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
@@ -7063,9 +7161,11 @@ void send_client_update_packet(net_player *pl)
 		ADD_FLOAT(shipp->weapon_energy);
 
 		// add his secondary bank ammo
-		ADD_INT(shipp->weapons.num_secondary_banks);
+		val = static_cast<ubyte>(shipp->weapons.num_secondary_banks);
+		ADD_DATA(val);
+
 		for(i=0; i<shipp->weapons.num_secondary_banks; i++){
-			ADD_INT(shipp->weapons.secondary_bank_ammo[i]);
+			ADD_SHORT(static_cast<short>(shipp->weapons.secondary_bank_ammo[i]));
 		}
 	}
 
@@ -7082,8 +7182,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 	short pauser;
 	int player_index;
 	int is_paused, have_hull_info;
-	int ammo_count;
-	int ammo[10];
+	ubyte ammo_count;
+	short ammo[MAX_SHIP_SECONDARY_BANKS];
 	float weapon_energy;
 	int offset = HEADER_LENGTH;
 
@@ -7109,12 +7209,14 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
 		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
 		int i;
+		ushort n_subsystems;
+		short s_val;
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
@@ -7128,7 +7230,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		}
 
 		// get the data for the subsystems
-		GET_DATA( n_subsystems );
+		GET_USHORT( n_subsystems );
 		for ( i = 0; i < n_subsystems; i++ ){
 			GET_DATA(ub_tmp);
 			subsystem_percent[i] = ub_tmp;
@@ -7140,9 +7242,17 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		GET_FLOAT(weapon_energy);
 		
 		// add his secondary bank ammo
-		GET_INT(ammo_count);
+		GET_DATA(ammo_count);
 		for(i=0; i<ammo_count; i++){
-			GET_INT(ammo[i]);
+			GET_SHORT(s_val);
+
+			if (i < MAX_SHIP_SECONDARY_BANKS) {
+				ammo[i] = s_val;
+			}
+		}
+
+		if (ammo_count > MAX_SHIP_SECONDARY_BANKS) {
+			ammo_count = MAX_SHIP_SECONDARY_BANKS;
 		}
 
 		// assign the above information to my ship, assuming that I can find it!  Ingame joiners might get this
@@ -7319,7 +7429,7 @@ void process_debrief_info( ubyte *data, header *hinfo )
 void send_homing_weapon_info( int weapon_num )
 {
 	ubyte data[MAX_PACKET_SIZE];
-	char t_subsys;
+	int s_index;
 	int packet_size;
 	object *homing_object;
 	ushort homing_signature;
@@ -7332,7 +7442,7 @@ void send_homing_weapon_info( int weapon_num )
 		return;
 
 	// default the subsystem
-	t_subsys = -1;
+	s_index = -1;
 
 	// get the homing signature.  If this weapon isn't homing on anything, then sent 0 as the
 	// homing signature.
@@ -7343,18 +7453,14 @@ void send_homing_weapon_info( int weapon_num )
 
 		// get the subsystem index.
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
-			int s_index;
-
 			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
-			Assert( s_index < CHAR_MAX );			// better be less than this!!!!
-			t_subsys = (char)s_index;
 		}
 	}
 
 	BUILD_HEADER(HOMING_WEAPON_UPDATE);
 	ADD_USHORT( Objects[wp->objnum].net_signature );
 	ADD_USHORT( homing_signature );
-	ADD_DATA( t_subsys );
+	ADD_SHORT( static_cast<short>(s_index) );
 	
 	multi_io_send_to_all(data, packet_size);
 }
@@ -7365,7 +7471,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 {
 	int offset;
 	ushort weapon_signature, homing_signature;
-	char h_subsys;
+	short h_subsys;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
 
@@ -7374,7 +7480,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	// get the data for the packet
 	GET_USHORT( weapon_signature );
 	GET_USHORT( homing_signature );
-	GET_DATA( h_subsys );
+	GET_SHORT( h_subsys );
 	PACKET_SET_SIZE();
 
 	// deal with changing this weapons homing information
@@ -7873,74 +7979,108 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point)
+void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *override)
 {
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;	
+	ubyte data[MAX_PACKET_SIZE], val;
+	int packet_size = 0;
 	short u_beam_info;
-	char subsys_index;
-	beam_info b_info;
-	ushort target_sig;
+	int shooter_subsys_index = -1, target_subsys_index = -1;
+	ushort target_sig, shooter_sig;
 
 	// only the server should ever be doing this
 	Assert(MULTIPLAYER_MASTER);
 
 	// setup outgoing data
-	Assert(shooter != NULL);
-	Assert(turret != NULL);
-	Assert(override != NULL);
-	if((shooter == NULL) || (turret == NULL) || (override == NULL)){
+	Assert(override != nullptr);
+
+	if (override == nullptr) {
 		return;
 	}
 
-	if (!(bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
-		Assert(target != NULL);
-		if (target == NULL) {
+	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
+		Assertion(fire_info->bank >= 0, "Bank for fighter BEAM is invalid!");
+		Assertion(fire_info->point >= 0, "Bank point for fighter BEAM is invalid!");
+
+		if ( (fire_info->bank < 0) || (fire_info->point < 0) ) {
+			return;
+		}
+	} else if (fire_info->shooter && fire_info->turret) {
+		shooter_subsys_index = ship_get_index_from_subsys(fire_info->turret, OBJ_INDEX(fire_info->shooter));
+
+		Assertion(shooter_subsys_index >= 0, "BEAM fired from unknown subsystem!");
+		Assertion(shooter_subsys_index < SHRT_MAX, "BEAM fired from a subsystem beyond max limits!");
+
+		if (shooter_subsys_index < 0) {
 			return;
 		}
 	}
 
-	target_sig = (target) ? target->net_signature : 0;
+	shooter_sig = (fire_info->shooter) ? fire_info->shooter->net_signature : 0;
+	target_sig = (fire_info->target) ? fire_info->target->net_signature : 0;
 
-	u_beam_info = (short)beam_info_index;
-
-	if (bfi_flags & BFIF_IS_FIGHTER_BEAM) {
-		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
-		subsys_index = (char)bank_point;
-	} else {
-		subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter));
+	if (fire_info->target && fire_info->target_subsys) {
+		target_subsys_index = ship_get_index_from_subsys(fire_info->target_subsys, OBJ_INDEX(fire_info->target));
 	}
 
-	Assert(subsys_index >= 0);
-	if (subsys_index < 0) {
-		return;
-	}
-
-	// swap the beam_info override info into little endian byte order
-	b_info.dir_a.xyz.x = INTEL_FLOAT(&override->dir_a.xyz.x);
-	b_info.dir_a.xyz.y = INTEL_FLOAT(&override->dir_a.xyz.y);
-	b_info.dir_a.xyz.z = INTEL_FLOAT(&override->dir_a.xyz.z);
-
-	b_info.dir_b.xyz.x = INTEL_FLOAT(&override->dir_b.xyz.x);
-	b_info.dir_b.xyz.y = INTEL_FLOAT(&override->dir_b.xyz.y);
-	b_info.dir_b.xyz.z = INTEL_FLOAT(&override->dir_b.xyz.z);
-
-	b_info.delta_ang = INTEL_FLOAT(&override->delta_ang);
-	b_info.shot_count = override->shot_count;
-
-	for (int i = 0; i < b_info.shot_count; i++) {
-		b_info.shot_aim[i] = INTEL_FLOAT(&override->shot_aim[i]);
-	}
+	u_beam_info = static_cast<short>(fire_info->beam_info_index);
 
 	// build the header
 	BUILD_HEADER(BEAM_FIRED);
-	ADD_USHORT(shooter->net_signature);
-	ADD_DATA(subsys_index);
+
+	ADD_USHORT(shooter_sig);
 	ADD_USHORT(target_sig);
 	ADD_SHORT(u_beam_info);
-	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
-//	ADD_DATA(bfi_flags);	// this breaks the protocol but is here in case we decided to do that in the future - taylor
-//	ADD_DATA(target_pos);	// ditto - Goober5000
+	ADD_INT(fire_info->bfi_flags);
+	ADD_SHORT(static_cast<short>(shooter_subsys_index));
+	ADD_SHORT(static_cast<short>(target_subsys_index));
+
+	val = static_cast<ubyte>(fire_info->fire_method);
+	ADD_DATA(val);
+
+	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
+		ADD_SHORT(static_cast<short>(fire_info->bank));
+		ADD_SHORT(static_cast<short>(fire_info->point));
+	}
+
+	// override info
+	{
+		// dir_a
+		ADD_FLOAT(override->dir_a.xyz.x);
+		ADD_FLOAT(override->dir_a.xyz.y);
+		ADD_FLOAT(override->dir_a.xyz.z);
+		// dir_b
+		ADD_FLOAT(override->dir_b.xyz.x);
+		ADD_FLOAT(override->dir_b.xyz.y);
+		ADD_FLOAT(override->dir_b.xyz.z);
+		// rot_axis
+		ADD_FLOAT(override->rot_axis.xyz.x);
+		ADD_FLOAT(override->rot_axis.xyz.y);
+		ADD_FLOAT(override->rot_axis.xyz.z);
+
+		ADD_DATA(override->shot_count);
+
+		for (auto i = 0; i < override->shot_count; i++) {
+			ADD_FLOAT(override->shot_aim[i]);
+		}
+	}
+
+	if (fire_info->bfi_flags & BFIF_TARGETING_COORDS) {
+		// target 1
+		ADD_FLOAT(fire_info->target_pos1.xyz.x);
+		ADD_FLOAT(fire_info->target_pos1.xyz.y);
+		ADD_FLOAT(fire_info->target_pos1.xyz.z);
+		// target 2
+		ADD_FLOAT(fire_info->target_pos2.xyz.x);
+		ADD_FLOAT(fire_info->target_pos2.xyz.y);
+		ADD_FLOAT(fire_info->target_pos2.xyz.z);
+	}
+
+	if (fire_info->bfi_flags & BFIF_FLOATING_BEAM) {
+		ADD_FLOAT(fire_info->starting_pos.xyz.x);
+		ADD_FLOAT(fire_info->starting_pos.xyz.y);
+		ADD_FLOAT(fire_info->starting_pos.xyz.z);
+		ADD_DATA(fire_info->team);
+	}
 
 	// send to all clients	
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -7950,110 +8090,131 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 {
 	int i, offset;
 	ushort shooter_sig, target_sig;
-	char subsys_index;
+	short shooter_subsys_index, target_subsys_index;
 	short u_beam_info;
 	beam_info b_info;
 	beam_fire_info fire_info;
-//	ubyte fighter_beam = 0;
+	float shot_aim;
+	short bank = -1, point = -1;
+	ubyte val;
 
 	// only clients should ever get this
 	Assert(MULTIPLAYER_CLIENT);
 
-	// read in packet data
-	offset = HEADER_LENGTH;
-	GET_USHORT(shooter_sig);
-	GET_DATA(subsys_index);
-	GET_USHORT(target_sig);
-	GET_SHORT(u_beam_info);
-	GET_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
-//	GET_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
-	PACKET_SET_SIZE();
-
-	// swap the beam_info override info into native byte order
-	b_info.dir_a.xyz.x = INTEL_FLOAT(&b_info.dir_a.xyz.x);
-	b_info.dir_a.xyz.y = INTEL_FLOAT(&b_info.dir_a.xyz.y);
-	b_info.dir_a.xyz.z = INTEL_FLOAT(&b_info.dir_a.xyz.z);
-	
-	b_info.dir_b.xyz.x = INTEL_FLOAT(&b_info.dir_b.xyz.x);
-	b_info.dir_b.xyz.y = INTEL_FLOAT(&b_info.dir_b.xyz.y);
-	b_info.dir_b.xyz.z = INTEL_FLOAT(&b_info.dir_b.xyz.z);
-	
-	b_info.delta_ang = INTEL_FLOAT(&b_info.delta_ang);
-	
-	for (i = 0; i < b_info.shot_count; i++) {
-		b_info.shot_aim[i] = INTEL_FLOAT(&b_info.shot_aim[i]);
-	}
-
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 
-	// lookup all relevant data
-	fire_info.beam_info_index = (int)u_beam_info;
-	fire_info.shooter = NULL;
-	fire_info.target = NULL;
-	fire_info.turret = NULL;
-	fire_info.target_subsys = NULL;
-	fire_info.beam_info_override = NULL;		
-	fire_info.shooter = multi_get_network_object(shooter_sig);
-	fire_info.target = multi_get_network_object(target_sig);
-	fire_info.beam_info_override = &b_info;
-	fire_info.accuracy = 1.0f;
+	// read in packet data
+	offset = HEADER_LENGTH;
 
-	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance >= MAX_SHIPS)){
-		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
-		return;
-	}
+	GET_USHORT(shooter_sig);
+	GET_USHORT(target_sig);
+	GET_SHORT(u_beam_info);
+	GET_INT(fire_info.bfi_flags);
+	GET_SHORT(shooter_subsys_index);
+	GET_SHORT(target_subsys_index);
 
-	ship *shipp = &Ships[fire_info.shooter->instance];
-
-	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( Ship_info[shipp->ship_info_index].is_fighter_bomber() ) {
-		// make sure the beam is a primary weapon and not attached to a turret or something
-		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
-			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
-				fire_info.bfi_flags |= BFIF_IS_FIGHTER_BEAM;
-			}
-		}
-	}
-
-	if ( !(fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) && (fire_info.target == NULL) ) {
-		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
-		return;
-	}
+	GET_DATA(val);
+	fire_info.fire_method = val;
 
 	if (fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) {
-		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
-		float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
+		GET_SHORT(bank);
+		GET_SHORT(point);
+	}
 
-		int bank = (ubyte)subsys_index % 10;
-		int point = (ubyte)subsys_index / 10;
+	// override info
+	{
+		// dir_a
+		GET_FLOAT(b_info.dir_a.xyz.x);
+		GET_FLOAT(b_info.dir_a.xyz.y);
+		GET_FLOAT(b_info.dir_a.xyz.z);
+		// dir_b
+		GET_FLOAT(b_info.dir_b.xyz.x);
+		GET_FLOAT(b_info.dir_b.xyz.y);
+		GET_FLOAT(b_info.dir_b.xyz.z);
+		// rot_axis
+		GET_FLOAT(b_info.rot_axis.xyz.x);
+		GET_FLOAT(b_info.rot_axis.xyz.y);
+		GET_FLOAT(b_info.rot_axis.xyz.z);
 
-		fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+		GET_DATA(b_info.shot_count);
 
-		shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
-		shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
-		shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
-		shipp->beam_sys_info.model_num = Ship_info[shipp->ship_info_index].model_num;
-		shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
-		shipp->beam_sys_info.turret_num_firing_points = 1;
-		shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
-		shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
-		shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+		for (i = 0; i < b_info.shot_count; i++) {
+			GET_FLOAT(shot_aim);
 
-		shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
-		shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
-		shipp->fighter_beam_turret_data.current_hits = 1.0;
-		shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+			if (i < MAX_BEAM_SHOTS) {
+				b_info.shot_aim[i] = shot_aim;
+			}
+		}
 
-		fire_info.turret = &shipp->fighter_beam_turret_data;
-		fire_info.bank = bank;
-		fire_info.fire_method = BFM_FIGHTER_FIRED;
-	} else {
-		fire_info.turret = ship_get_indexed_subsys(shipp, (int)subsys_index);
-		fire_info.fire_method = BFM_TURRET_FIRED;
+		fire_info.beam_info_override = &b_info;
+	}
 
-		if (fire_info.turret == NULL) {
-			nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
-			return;
+	if (fire_info.bfi_flags & BFIF_TARGETING_COORDS) {
+		// target 1
+		GET_FLOAT(fire_info.target_pos1.xyz.x);
+		GET_FLOAT(fire_info.target_pos1.xyz.y);
+		GET_FLOAT(fire_info.target_pos1.xyz.z);
+		// target 2
+		GET_FLOAT(fire_info.target_pos2.xyz.x);
+		GET_FLOAT(fire_info.target_pos2.xyz.y);
+		GET_FLOAT(fire_info.target_pos2.xyz.z);
+	}
+
+	if (fire_info.bfi_flags & BFIF_FLOATING_BEAM) {
+		GET_FLOAT(fire_info.starting_pos.xyz.x);
+		GET_FLOAT(fire_info.starting_pos.xyz.y);
+		GET_FLOAT(fire_info.starting_pos.xyz.z);
+		GET_DATA(fire_info.team);
+	}
+
+	PACKET_SET_SIZE();
+
+	fire_info.beam_info_index = u_beam_info;
+	fire_info.shooter = multi_get_network_object(shooter_sig);
+	fire_info.target = multi_get_network_object(target_sig);
+
+	if ( fire_info.target && (target_subsys_index >= 0) ) {
+		ship *targetp = &Ships[fire_info.target->instance];
+		fire_info.target_subsys = ship_get_indexed_subsys(targetp, target_subsys_index);
+	}
+
+	if ( fire_info.shooter && (fire_info.shooter->type == OBJ_SHIP) ) {
+		ship *shipp = &Ships[fire_info.shooter->instance];
+
+		if (fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) {
+			Assertion(bank >= 0, "Fighter BEAM bank is invalid!");
+			Assertion(point >= 0, "Fighter BEAM point is invalid!");
+
+			if ( (bank < 0) || (point < 0) ) {
+				nprintf(("Network", "Couldn't get firing point for fighter BEAM weapon!\n"));
+				return;
+			}
+
+			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
+
+			fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+
+			shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
+			shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+			shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+			shipp->beam_sys_info.model_num = Ship_info[shipp->ship_info_index].model_num;
+			shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
+			shipp->beam_sys_info.turret_num_firing_points = 1;
+			shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
+			shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
+			shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+
+			shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+			shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+			shipp->fighter_beam_turret_data.current_hits = 1.0;
+			shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+
+			fire_info.turret = &shipp->fighter_beam_turret_data;
+			fire_info.bank = bank;
+			fire_info.point = point;
+		} else if (shooter_subsys_index >= 0) {
+			fire_info.turret = ship_get_indexed_subsys(shipp, shooter_subsys_index);
 		}
 	}
 
@@ -8265,10 +8426,9 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 {
 	int packet_size;
 	ushort pnet_signature;
-	ubyte data[MAX_PACKET_SIZE], cindex;
+	ubyte data[MAX_PACKET_SIZE];
 	object *objp;	
 	ship_subsys *ssp;
-	short val;
 
 	// sanity
 	if((weapon_objnum < 0) || (Objects[weapon_objnum].type != OBJ_WEAPON) || (Objects[weapon_objnum].instance < 0) || (Weapons[Objects[weapon_objnum].instance].weapon_info_index < 0)){
@@ -8280,9 +8440,6 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	Assert( subsys_index < UCHAR_MAX );
-	cindex = (ubyte)subsys_index;
-
 	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
 	if(ssp == NULL){
 		return;
@@ -8292,11 +8449,26 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	BUILD_HEADER(FLAK_FIRED);	
 	packet_size += multi_pack_unpack_position(1, data + packet_size, &objp->orient.vec.fvec);	
 	ADD_USHORT( pnet_signature );		
-	ADD_DATA( cindex );
-	val = (short)ssp->submodel_info_1.angs.h;
-	ADD_SHORT( val );
-	val = (short)ssp->submodel_info_2.angs.p;
-	ADD_SHORT( val );	
+	ADD_SHORT( static_cast<short>(Weapons[Objects[weapon_objnum].instance].weapon_info_index) );
+	ADD_SHORT( static_cast<short>(subsys_index) );
+	
+	// where we might accidentally dereference nullptrs, send 0 instead
+	constexpr float ZERO_VALUE = 0.0f;
+
+	// ensure a nullptr is not dereferenced for the next two values.
+	if (ssp->submodel_instance_1 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+	}
+	else {
+		ADD_FLOAT( ZERO_VALUE );
+	}
+	
+	if (ssp->submodel_instance_2 != nullptr) {
+		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+	}
+	else {
+		ADD_FLOAT(ZERO_VALUE);
+	}
 	ADD_FLOAT( flak_range );
 	
 	multi_io_send_to_all(data, packet_size);
@@ -8306,27 +8478,33 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 void process_flak_fired_packet(ubyte *data, header *hinfo)
 {
-	int offset, weapon_objnum, wid = -1;
+	int offset, weapon_objnum;
 	ushort pnet_signature;
 	vec3d pos, dir;
 	matrix orient;
 	vec3d o_fvec;
-	ubyte turret_index;
+	short turret_index, wid;
 	object *objp;
 	ship_subsys *ssp;	
 	ship *shipp;
-	short pitch, heading;
+	float pitch, heading;
 	float flak_range;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
 	offset += multi_pack_unpack_position(0, data + offset, &o_fvec);
 	GET_USHORT( pnet_signature );
-	GET_DATA( turret_index );
-	GET_SHORT( heading );
-	GET_SHORT( pitch );	
+	GET_SHORT( wid );
+	GET_SHORT( turret_index );
+	GET_FLOAT( heading );
+	GET_FLOAT( pitch );
 	GET_FLOAT( flak_range );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
+
+	// if we don't have a valid weapon index then bail
+	if ( (wid < 0) || (wid >= weapon_info_size()) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak]) ) {
+		return;
+	}
 
 	// find the object
 	objp = multi_get_network_object( pnet_signature );
@@ -8351,19 +8529,14 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	if (ssp->weapons.num_primary_banks > 0) {
-		wid = ssp->weapons.primary_bank_weapons[0];
-	} else if (ssp->weapons.num_secondary_banks > 0) {
-		wid = ssp->weapons.secondary_bank_weapons[0];
+	// bash the position and orientation of the turret, if it's not a nulltpr
+	if (ssp->submodel_instance_1 != nullptr) {
+		ssp->submodel_instance_1->angs.h = heading;
 	}
 
-	if((wid < 0) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak])){
-		return;
+	if (ssp->submodel_instance_2 != nullptr) {
+		ssp->submodel_instance_2->angs.p = pitch;
 	}
-
-	// bash the position and orientation of the turret
-	ssp->submodel_info_1.angs.h = (float)heading;
-	ssp->submodel_info_2.angs.p = (float)pitch;
 
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
@@ -8371,7 +8544,6 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// create the weapon object	
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 	if (weapon_objnum != -1) {
-		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
@@ -8557,15 +8729,16 @@ void process_bytes_recvd_packet(ubyte *data, header *hinfo)
 }
 
 // host transfer
-void send_host_captain_change_packet(short player_id, int captain_change)
+void send_host_captain_change_packet(short player_id, bool captain_change)
 {
-	ubyte data[MAX_PACKET_SIZE];
+	ubyte data[MAX_PACKET_SIZE], val;
 	int packet_size = 0;
 
 	// build the packet
 	BUILD_HEADER(TRANSFER_HOST);
 	ADD_SHORT(player_id);
-	ADD_INT(captain_change);
+	val = captain_change ? 1 : 0;
+	ADD_DATA(val);
 
 	// send to all
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8574,12 +8747,13 @@ void send_host_captain_change_packet(short player_id, int captain_change)
 void process_host_captain_change_packet(ubyte *data, header *hinfo)
 {
 	int offset = HEADER_LENGTH;
-	int idx, found_player, captain_change;
+	int idx, found_player;
 	short player_id;
+	ubyte captain_change;
 
 	// get the player id
 	GET_SHORT(player_id);
-	GET_INT(captain_change);
+	GET_DATA(captain_change);
 	PACKET_SET_SIZE();
 
 	// captain change
@@ -8696,26 +8870,26 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
-	int i;
-	ushort val; 
 
 	Assert (MULTIPLAYER_MASTER);
+
 	// must have a bare minimum of OP, COUNT and TERMINATOR
-	if (num_ubytes < 9) {
+	if (num_ubytes < MIN_SEXP_PACKET_SIZE) {
 		Warning(LOCATION, "Invalid call to send_sexp_packet. Not enough data included!"); 
 		return; 
 	}
-	
+
+	const int max_size = MAX_PACKET_SIZE - HEADER_LENGTH - static_cast<int>(sizeof(ushort));
+
+	if (num_ubytes > max_size) {
+		Warning(LOCATION, "Invalid call to send_sexp_packet. Too much data included!");
+		return;
+	}
+
 	BUILD_HEADER(SEXP);
 
-	val = (ushort)num_ubytes;
-	ADD_USHORT(val);
-
-	for (i =0; i < num_ubytes; i++) {
-		Assert (packet_size < MAX_PACKET_SIZE); 
-		data[packet_size] = sexp_packet[i]; 
-		packet_size++; 
-	}
+	ADD_USHORT(static_cast<ushort>(num_ubytes));
+	ADD_DATA_BLOCK(sexp_packet, num_ubytes);
 
 	// send to all
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8724,16 +8898,11 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 void process_sexp_packet(ubyte *data, header *hinfo)
 {
 	int offset = HEADER_LENGTH;
-	int i;
 	ushort num_ubytes;
 	ubyte received_packet[MAX_PACKET_SIZE]; 
 
-	// get the number of bytes of data in the packet
 	GET_USHORT(num_ubytes);
-
-	for (i=0; i < num_ubytes; i++) {
-		GET_DATA(received_packet[i]); 
-	}
+	GET_DATA_BLOCK(received_packet, num_ubytes);
 
 	PACKET_SET_SIZE();
 

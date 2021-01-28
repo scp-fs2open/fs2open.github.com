@@ -145,7 +145,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				// is this other submodel a child of the one being destroyed?
 				if (pm->submodel[ssp->system_info->subobj_num].parent == psub->subobj_num) {
 					// is it not yet destroyed?  (this is a valid check because we already know there is a submodel)
-					if (!ssp->submodel_info_1.blown_off) {
+					if (!ssp->submodel_instance_1->blown_off) {
 						// then destroy it first
 						ssp->current_hits = 0;
 						do_subobj_destroyed_stuff(ship_p, ssp, nullptr, no_explosion);
@@ -308,11 +308,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
 			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion);
-			subsys->submodel_info_1.blown_off = true;
+			subsys->submodel_instance_1->blown_off = true;
 		}
 
 		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
-			subsys->submodel_info_2.blown_off = true;
+			subsys->submodel_instance_2->blown_off = true;
 		}
 	}
 
@@ -522,6 +522,9 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		}
 	}
 
+	polymodel_instance *pmi = nullptr;
+	polymodel *pm = nullptr;
+
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
 	int	count = 0;
@@ -557,7 +560,11 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 				// Special case:
 				// if the subsystem is a turret and the hit submodel is its barrel,
 				// get the distance between the hit and the turret barrel center
-				find_submodel_instance_world_point(&g_subobj_pos, ship_p->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				if (pmi == nullptr) {
+					pmi = model_get_instance(ship_p->model_instance_num);
+					pm = model_get(pmi->model_num);
+				}
+				find_submodel_instance_world_point(&g_subobj_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
 				// Damage attenuation range of barrel radius * 2 makes full damage
@@ -1110,6 +1117,8 @@ static int choose_next_spark(object *ship_objp, vec3d *hitpos)
 	vec3d world_hitpos[MAX_SHIP_HITS];
 	spark_pair spark_pairs[MAX_SPARK_PAIRS];
 	ship *shipp = &Ships[ship_objp->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	// only choose next spark when all slots are full
 	Assert(get_max_sparks(ship_objp) == Ships[ship_objp->instance].num_hits);
@@ -1124,7 +1133,7 @@ static int choose_next_spark(object *ship_objp, vec3d *hitpos)
 	// get the world hitpos for all sparks
 	for (spark_num=0; spark_num<num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num != -1) {
-			model_instance_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, shipp->model_instance_num, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
+			model_instance_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
 		} else {
 			// rotate sparks correctly with current ship orient
 			vm_vec_unrotate(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, &ship_objp->orient);
@@ -1203,6 +1212,8 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 	vec3d	tempv;
 	ship	*shipp = &Ships[ship_objp->instance];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	polymodel *pm = nullptr;
+	polymodel_instance *pmi = nullptr;
 
 	int n, max_sparks;
 
@@ -1224,21 +1235,22 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 	bool instancing = false;
 	// decide whether to do instancing
 	if (submodel_num != -1) {
-		polymodel *pm = model_get(sip->model_num);
+		pm = model_get(sip->model_num);
 		if (pm->detail[0] != submodel_num) {
 			// submodel is not hull
 			// OPTIMIZE ... check if submodel can not rotate
 			instancing = true;
+			pmi = model_get_instance(shipp->model_instance_num);
 		}
 	}
 
 	if (instancing) {
 		// get the hit position in the subobject RF
 		vec3d temp_zero, temp_x, temp_y, temp_z;
-		model_instance_find_world_point(&temp_zero, &vmd_zero_vector, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_x, &vmd_x_vector, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_y, &vmd_y_vector, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_z, &vmd_z_vector, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_zero, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_x, &vmd_x_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_y, &vmd_y_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_z, &vmd_z_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// find submodel x,y,z axes
 		vm_vec_sub2(&temp_x, &temp_zero);

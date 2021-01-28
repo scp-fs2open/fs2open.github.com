@@ -274,7 +274,6 @@ cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
 cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
 cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
-cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
 cmdline_parm weapon_spew("-weaponspew", nullptr, AT_STRING);			// Cmdline_spew_weapon_stats
 cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
@@ -287,7 +286,6 @@ char *Cmdline_game_password = NULL;
 char *Cmdline_rank_above = NULL;
 char *Cmdline_rank_below = NULL;
 int Cmdline_cd_check = 1;
-int Cmdline_client_dodamage = 0;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -812,7 +810,7 @@ void os_validate_parms(int argc, char *argv[])
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
 					printf("Website: http://scp.indiegames.us\n");
-					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
+					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
 					// not the prettiest thing but the job gets done
@@ -1661,12 +1659,6 @@ bool SetCmdlineParams()
 	// see if the multilog flag was set
 	if ( multilog_arg.found() ){
 		Cmdline_multi_log = 1;
-	}	
-
-
-	// maybe use old-school client damage
-	if(client_dodamage.found()){
-		Cmdline_client_dodamage = 1;
 	}	
 
 	// spew pof info

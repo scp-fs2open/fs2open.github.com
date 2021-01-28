@@ -2036,6 +2036,44 @@ int object_get_model(const object *objp)
 
 	return -1;
 }
+
+int object_get_model_instance(const object *objp)
+{
+	switch (objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return asp->model_instance_num;
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_instance_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return shipp->model_instance_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return wp->model_instance_num;
+		}
+		case OBJ_JUMP_NODE:
+		{
+			CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+			Assertion(jnp != nullptr, "Could not find jump node!");
+			return jnp->GetPolymodelInstanceNum();
+		}
+		default:
+			break;
+	}
+
+	return -1;
+}
+
 bool obj_compare(object* left, object* right) {
 	if (left == right) {
 		// Same pointer

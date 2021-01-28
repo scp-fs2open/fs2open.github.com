@@ -2161,7 +2161,7 @@ int multi_ts_get_dnd_type(int from_type,int  /*from_index*/,int to_type,int to_i
 void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int ship_class,int player_index)
 {
 	int size,update;
-	ubyte wss_data[MAX_PACKET_SIZE-20];	
+	ubyte wss_data[MAX_PACKET_SIZE];
 	net_player *pl;
 	
 	// determine what kind of operation this is
@@ -2803,8 +2803,7 @@ void send_pslot_update_packet(int team,int code, interface_snd_id sound)
 				ADD_DATA(val);
 
 				// add the ship class
-				val = (ubyte)Wss_slots_teams[team][idx].ship_class;
-				ADD_DATA(val);
+				ADD_SHORT(static_cast<short>(Wss_slots_teams[team][idx].ship_class));
 
 				// add the objnum we're working with
 				i_tmp = Multi_ts_team[team].multi_ts_objnum[idx];
@@ -2863,7 +2862,8 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	int player_index,idx,team,code,objnum;
 	short sound_id;
 	short player_id;
-	ubyte stop,val,slot_num,ship_class;
+	ubyte stop, val, slot_num;
+	short ship_class;
 
 	my_index = Net_player->p_info.ship_index;
 
@@ -2927,7 +2927,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 			GET_DATA(slot_num);
 
 			// get the ship class
-			GET_DATA(ship_class);
+			GET_SHORT(ship_class);
 
 			// get the objnum
 			GET_INT(objnum);
@@ -2946,9 +2946,9 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 				} 
 				// if we found him, assign him to this ship
 				else {
-					Net_players[player_index].p_info.ship_class = (int)ship_class;
+					Net_players[player_index].p_info.ship_class = ship_class;
 					Net_players[player_index].p_info.ship_index = (int)slot_num;
-					multi_assign_player_ship(player_index,&Objects[objnum],(int)ship_class);				
+					multi_assign_player_ship(player_index, &Objects[objnum], ship_class);
 
 					// ui stuff
 					Multi_ts_team[team].multi_ts_player[slot_num] = &Net_players[player_index];
