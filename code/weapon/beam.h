@@ -184,7 +184,8 @@ typedef struct beam {
 	int Beam_muzzle_stamp;
 	int firingpoint;
 
-	float		beam_width;
+	float		beam_collide_width;
+	float		beam_light_width;
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
