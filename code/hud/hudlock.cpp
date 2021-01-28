@@ -337,6 +337,8 @@ void HudGaugeLock::render(float frametime)
 		Lock_gauge.sx = sx - Lock_gauge_half_w;
 		Lock_gauge.sy = sy - Lock_gauge_half_h;
 		if( current_lock->locked ){
+			current_lock->lock_gauge_time_elapsed = 0.0f;
+			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
 			hud_anim_render(&Lock_gauge, 0.0f, 1);
 		} else {
 			// manually track the animation time, since we may have more than one lock
@@ -959,7 +961,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1027,7 +1029,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}

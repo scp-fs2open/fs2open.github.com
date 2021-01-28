@@ -2838,6 +2838,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = true;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, sip->name);
@@ -6402,6 +6404,9 @@ void ship_weapon::clear()
     {
         primary_bank_weapons[i] = -1;
 
+		primary_bank_external_model_instance[i] = -1;
+		primary_bank_model_instance_check[i] = false;
+
         next_primary_fire_stamp[i] = timestamp(0);
         last_primary_fire_stamp[i] = timestamp(-1);
         last_primary_fire_sound_stamp[i] = timestamp(0);
@@ -6804,8 +6809,8 @@ void ship_subsys::clear()
 
     weapons.clear();
 
-	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
-	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
+	submodel_instance_1 = nullptr;
+	submodel_instance_2 = nullptr;
 
 	disruption_timestamp = timestamp(0);
 
@@ -6862,6 +6867,12 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		return 0;
 	}
 
+	// make sure we set up the model instance properly
+	// (we need this to have been done already so we can link the submodels with the subsystems)
+	Assert(shipp->model_instance_num >= 0);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+	Assert(pmi->model_num == sinfo->model_num);
+
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
 		model_system = &(sinfo->subsystems[i]);
@@ -6878,8 +6889,15 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->clear();									// initialize it to a known blank slate
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
-
 		ship_system->parent_objnum = objnum;
+
+		// link the submodel instance info
+		if (model_system->subobj_num >= 0) {
+			ship_system->submodel_instance_1 = &pmi->submodel[model_system->subobj_num];
+		}
+		if ((model_system->subobj_num != model_system->turret_gun_sobj) && (model_system->turret_gun_sobj >= 0)) {
+			ship_system->submodel_instance_2 = &pmi->submodel[model_system->turret_gun_sobj];
+		}
 
 		// if the table has set an name copy it
 		if (ship_system->system_info->alt_sub_name[0] != '\0') {
@@ -7098,8 +7116,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		// turn_rate, turn_accel
 		float turn_accel = 0.5f;
-		model_clear_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
-		model_clear_instance_info(&ship_system->submodel_info_2);
+		if (ship_system->submodel_instance_1 != nullptr)
+			model_set_submodel_turn_info(ship_system->submodel_instance_1, model_system->turn_rate, turn_accel);
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
         model_system->flags.remove(Model::Subsystem_Flags::Turret_matrix);
@@ -7571,6 +7589,13 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 	
 	model_delete_instance(shipp->model_instance_num);
+
+	// free up any weapon model instances
+	for (int i = 0; i < shipp->weapons.num_primary_banks; ++i)
+	{
+		if (shipp->weapons.primary_bank_external_model_instance[i] >= 0)
+			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
+	}
 }
 
 /**
@@ -8205,7 +8230,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				// Gets two random points on the surface of a submodel
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
-				model_find_world_point(&outpnt, &pnt1, sip->model_num, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_find_world_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.1f;
 				
@@ -8294,6 +8319,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 			shipp->pre_death_explosion_happened=1;		// Mark this event as having occurred
 
 			polymodel *pm = model_get(sip->model_num);
+			polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 			// Start shockwave for ship with propagating explosion, do now for timing
 			if ( ship_get_exp_propagates(shipp) ) {
@@ -8319,7 +8345,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
-				model_find_world_point(&outpnt, &tmp, pm->id, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_find_world_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.40f;
 
@@ -8489,7 +8515,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				return;
 			} 
 
-			shipfx_blow_up_model(objp, sip->model_num, 0, 20, &objp->pos );
+			shipfx_blow_up_model(objp, 0, 20, &objp->pos);
 
 			// do all accounting for respawning client and server side here.
 			if(objp == Player_obj) {				
@@ -9774,6 +9800,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	shipp->clear();
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+
+	shipp->model_instance_num = model_create_instance(true, sip->model_num);
+
 	if(strlen(sip->cockpit_pof_file))
 	{
 		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
@@ -9912,8 +9941,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ct_ship_create(shipp);
 
 	model_anim_set_initial_states(shipp);
-
-	shipp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	// Add this ship to Ship_obj_list
 	shipp->ship_list_index = ship_obj_list_add(objnum);
@@ -10283,6 +10310,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
 
+	// create new model instance data
+	// note: this is needed for both subsystem stuff and submodel animation stuff
+	sp->model_instance_num = model_create_instance(true, sip->model_num);
+
 	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
 	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
 		sp->warpin_params_index = sip->warpin_params_index;
@@ -10618,9 +10649,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (!Fred_running)
 		ship_assign_sound(sp);
 	
-	// create new model instance data
-	sp->model_instance_num = model_create_instance(true, sip->model_num);
-
 	// Valathil - Reinitialize collision checks
 	obj_remove_collider(OBJ_INDEX(objp));
 	obj_add_collider(OBJ_INDEX(objp));
@@ -10629,10 +10657,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if ( by_sexp ) {
 		if (sip_orig->num_primary_banks > sip->num_primary_banks) {
 			sp->weapons.current_primary_bank = 0;
+			sp->weapons.previous_primary_bank = 0;
 		}
 
 		if (sip_orig->num_secondary_banks > sip->num_secondary_banks) {
 			sp->weapons.current_secondary_bank = 0;
+			sp->weapons.previous_secondary_bank = 0;
 		}
 
 		// While we're at it, let's copy over the ETS settings too
@@ -13329,80 +13359,12 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 	} else {
 		// Submodel subsystems may require a more complicated calculation
 
-		find_submodel_instance_world_point(pos, Ships[objp->instance].model_instance_num, mss->subobj_num, &objp->orient, &objp->pos);
+		auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+		auto pm = model_get(pmi->model_num);
+		find_submodel_instance_world_point(pos, pm, pmi, mss->subobj_num, &objp->orient, &objp->pos);
 	}
 
 	return 1;
-}
-
-//=================================================
-// Takes all the angle info from the ship structure and stuffs it
-// into the model data so that the model code has all the correct
-// angles and stuff that it needs.    This is a poorly designed 
-// system that should be re-engineered so that all the model functions
-// accept a list of angles and everyone passes them through, but
-// that would require some major code revision.
-// So, anytime you are using a model that has rotating parts, you
-// need to do a ship_model_start before any model_ functions are
-// called and a ship_model_stop after you're done.   Even for 
-// collision detection and stuff, not just rendering.
-// See John for details.
-
-void ship_model_start(object *objp)
-{
-	model_subsystem	*psub;
-	ship		*shipp;
-	ship_subsys	*pss;
-	int model_num;
-
-	shipp = &Ships[objp->instance];
-	model_num = Ship_info[shipp->ship_info_index].model_num;
-
-	// First clear all the angles in the model to zero
-	model_clear_instance(model_num);
-
-	// Go through all subsystems and bash the model angles for all 
-	// the subsystems that need it.
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-		switch (psub->type) {
-			case SUBSYSTEM_RADAR:
-			case SUBSYSTEM_NAVIGATION:
-			case SUBSYSTEM_COMMUNICATION:
-			case SUBSYSTEM_UNKNOWN:
-			case SUBSYSTEM_ENGINE:
-			case SUBSYSTEM_SENSORS:
-			case SUBSYSTEM_WEAPONS:
-			case SUBSYSTEM_SOLAR:
-			case SUBSYSTEM_GAS_COLLECT:
-			case SUBSYSTEM_ACTIVATION:
-			case SUBSYSTEM_TURRET:
-				break;
-			default:
-				Error(LOCATION, "Illegal subsystem type.\n");
-		}
-
-		if ( psub->subobj_num >= 0 )	{
-			model_set_instance(model_num, psub->subobj_num, &pss->submodel_info_1, &pss->flags );
-		}
-
-		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, &pss->flags );
-		}
-	}
-}
-
-/**
- * Clears all the instance specific stuff out of the model info
- */
-void ship_model_stop(object *objp)
-{
-	Assert(objp != NULL);
-	Assert(objp->instance >= 0);
-	Assert(objp->type == OBJ_SHIP);
-
-	// Then, clear all the angles in the model to zero
-	model_clear_instance(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 }
 
 /**
@@ -13413,17 +13375,14 @@ void ship_model_update_instance(object *objp)
 	model_subsystem	*psub;
 	ship		*shipp;
 	ship_subsys	*pss;
-	int model_instance_num;
 
 	Assert(objp != NULL);
 	Assert(objp->instance >= 0);
 	Assert(objp->type == OBJ_SHIP);
 
 	shipp = &Ships[objp->instance];
-	model_instance_num = shipp->model_instance_num;
-
-	// Then, clear all the angles in the model to zero
-	model_clear_submodel_instances(model_instance_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
@@ -13446,19 +13405,19 @@ void ship_model_update_instance(object *objp)
 		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1, pss->flags );
+			model_update_instance(pm, pmi, psub->subobj_num, pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
+			model_update_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
 		}
 	}
 
 	// Handle intrinsic rotations for this ship
-	model_do_intrinsic_rotations(model_instance_num);
+	model_do_intrinsic_rotations(shipp->model_instance_num);
 
 	// preprocess subobject orientations for collision detection
-	model_collide_preprocess(&objp->orient, model_instance_num);
+	model_collide_preprocess(&objp->orient, pm, pmi);
 }
 
 /**
@@ -13568,7 +13527,8 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
 
 	ship *shipp = &Ships[obj->instance];
-	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
 	if ( shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
@@ -13579,10 +13539,10 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
-	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
+	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
-		find_submodel_instance_point_orient(eye_pos, eye_orient, shipp->model_instance_num, ep->parent, &ep->pnt, &vmd_identity_matrix);
+		find_submodel_instance_point_orient(eye_pos, eye_orient, pm, pmi, ep->parent, &ep->pnt, &vmd_identity_matrix);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
 		vm_vec_add2(eye_pos, &obj->pos);
@@ -13590,7 +13550,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 		matrix tempmat = *eye_orient;
 		vm_matrix_x_matrix(eye_orient, &obj->orient, &tempmat);
 	} else {
-		model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
+		model_instance_find_world_point( eye_pos, &ep->pnt, shipp->model_instance_num, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
 		*eye_orient = obj->orient;
 	}
 
@@ -17324,7 +17284,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	if (jettison_new)
 	{
 		// new method uses dockpoint normals and user-specified force
-		extern void find_adjusted_dockpoint_info(vec3d * global_dock_point, matrix * dock_orient, object * objp, polymodel * pm, int modelnum, int submodel, int dock_index);
+		extern void find_adjusted_dockpoint_info(vec3d * global_dock_point, matrix * dock_orient, object * objp, polymodel * pm, int submodel, int dock_index);
 		extern int find_parent_rotating_submodel(polymodel *pm, int dock_index);
 
 		int model_num = Ship_info[shipp->ship_info_index].model_num;
@@ -17332,7 +17292,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 		int docker_rotating_submodel = find_parent_rotating_submodel(pm, docker_index);
 		matrix dock_orient;
 
-		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, model_num, docker_rotating_submodel, docker_index);
+		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, docker_rotating_submodel, docker_index);
 
 		// set for relative separation speed (see also do_dying_undock_physics)
 		vm_vec_copy_scale(&impulse, &dock_orient.vec.fvec, jettison_speed * cargo_objp->phys_info.mass);
@@ -18014,9 +17974,9 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 
 	// if we got this far, we can rotate - so choose which method to use
 	if (psub->flags[Model::Subsystem_Flags::Stepped_rotate]	) {
-		submodel_stepped_rotate(psub, &pss->submodel_info_1);
+		submodel_stepped_rotate(psub, pss->submodel_instance_1);
 	} else {
-		submodel_rotate(psub, &pss->submodel_info_1 );
+		submodel_rotate(psub, pss->submodel_instance_1 );
 	}
 }
 
@@ -19270,20 +19230,49 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
-		if ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) {
+		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 			continue;
 		}
 
-		w_bank *bank = &model_get(sip->model_num)->gun_banks[i];
+		// Lazily create the model instance here, if we need to.  The ideal place to put this
+		// would be in parse_object_create_sub, but the player can alter the ship loadout
+		// after that function runs.
+		if (!swp->primary_bank_model_instance_check[i])
+		{
+			auto pm = model_get(wip->external_model_num);
+
+			// create a model instance only if at least one submodel has gun rotation
+			for (int mn = 0; mn < pm->n_models; mn++)
+			{
+				if (pm->submodel[mn].gun_rotation)
+				{
+					swp->primary_bank_external_model_instance[i] = model_create_instance(false, wip->external_model_num);
+					break;
+				}
+			}
+
+			swp->primary_bank_model_instance_check[i] = true;
+		}
+
+		auto bank = &model_get(sip->model_num)->gun_banks[i];
+
+		if ( swp->primary_bank_external_model_instance[i] >= 0 )
+		{
+			auto pmi = model_get_instance(swp->primary_bank_external_model_instance[i]);
+			auto pm = model_get(pmi->model_num);
+
+			// spin the submodels by the gun rotation
+			for (int mn = 0; mn < pm->n_models; ++mn)
+			{
+				if (pm->submodel[mn].gun_rotation)
+					pmi->submodel[mn].angs.b = shipp->primary_rotate_ang[i];
+			}
+		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
-			pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
-
-
-			model_render_queue(ship_render_info, scene, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
-			pm->gun_submodel_rotation = 0.0f;
+			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &vmd_identity_matrix, &bank->pnt[k]);
 		}
 	}
 
@@ -19448,13 +19437,17 @@ void ship_render(object* obj, model_draw_list* scene)
 		}
 	}
 
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
 	model_clear_instance(sip->model_num);
+	model_instance_clear_arcs(pm, pmi);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
 			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
-				model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 			}
 		}
 	}

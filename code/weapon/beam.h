@@ -45,7 +45,7 @@ struct vec3d;
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	
-	float				delta_ang;							// angle between dir_a and dir_b
+	vec3d			rot_axis;
 	ubyte				shot_count;							// # of shots	
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
