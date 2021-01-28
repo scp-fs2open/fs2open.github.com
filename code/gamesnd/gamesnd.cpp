@@ -315,6 +315,12 @@ gamesnd_id gamesnd_get_by_name(const char* name)
 			}
 
 			auto& entry = Snd.sound_entries.front();
+
+			if (entry.filename[0] == '\0') {
+				// Ignore empty sounds
+				continue;
+			}
+
 			char *p = strrchr( entry.filename, '.' );
 			if(p == NULL)
 			{
