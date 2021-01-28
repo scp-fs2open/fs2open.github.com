@@ -5103,7 +5103,7 @@ void evade_weapon()
 				vm_vec_negate(&avoid_point);
 			vm_vec_scale_add(&avoid_point, &Pl_objp->pos, &avoid_point, 200.0f);
 
-			turn_towards_point(Pl_objp, &avoid_point, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &avoid_point, nullptr, 0.0f);
 		}
 		//	If we're sort of pointing towards it...
 		else if ((dot_to_enemy < -0.5f) || (dot_to_enemy > 0.5f)) {
