@@ -4532,7 +4532,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 			// add this missile to nearest_locked_object if its the closest
 			// with the flag, only do it if its also mostly pointed at its target
-			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance) && 
+			if (((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) && 
 				(!(The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
 				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
