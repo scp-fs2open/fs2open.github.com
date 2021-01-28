@@ -12294,9 +12294,9 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		//changed this from 4 to custom number defined in tables
 		if (wip->multi_lock) {
 			if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
-				shipp->num_corkscrew_to_fire = (int)shipp->missile_locks_firing.size();
+				shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
 			else // AI ships
-				shipp->num_corkscrew_to_fire = (int)aip->ai_missile_locks_firing.size();
+				shipp->num_corkscrew_to_fire = (ubyte)aip->ai_missile_locks_firing.size();
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
 		}

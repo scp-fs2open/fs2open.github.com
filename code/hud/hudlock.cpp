@@ -407,7 +407,7 @@ DCF_BOOL(nebula_sec_range, Nebula_sec_range);
 // Determine if point to lock on is in range
 int hud_lock_target_in_range()
 {
-	vec3d		target_world_pos, vec_to_target;
+	vec3d		target_world_pos;
 	object		*targetp;
 
 	if ( !hud_lock_has_homing_point() ) {
@@ -776,16 +776,13 @@ void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float
 	Assert( lock->obj->type == OBJ_SHIP );
 
 	ship *sp = &Ships[lock->obj->instance];
-	ship_subsys	*ss;
 
 	float ss_dot;
-	vec3d ss_pos;
-	vec3d vec_to_target;
 
 	int current_num_locks = 0;
 
 	if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
-		for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
+		for (ship_subsys* ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
 
 			if (!weapon_multilock_can_lock_on_subsys(Player_obj, lock->obj, ss, wip, &ss_dot))
 				continue;
@@ -823,10 +820,7 @@ void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float
 void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 {
 	object *A;
-	vec3d vec_to_target;
 	float dot;
-
-	ship *sp;
 
 	size_t i = 0;
 
@@ -1378,7 +1372,7 @@ void hud_calculate_lock_slot_position(lock_info *current_lock, float frametime)
 // Determine if point to lock on is in range
 int hud_lock_target_in_range(lock_info *lock_slot)
 {
-	vec3d		target_world_pos, vec_to_target;
+	vec3d		target_world_pos;
 
 	if ( lock_slot == nullptr || lock_slot->obj == nullptr) {
 		return 0;

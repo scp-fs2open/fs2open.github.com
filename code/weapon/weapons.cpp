@@ -8727,8 +8727,6 @@ bool weapon_has_iff_restrictions(weapon_info* wip)
 
 bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos)
 {
-	int target_in_range = true;
-
 	vec3d vec_to_target;
 	vm_vec_sub(&vec_to_target, target_world_pos, &shooter->pos);
 	float dist_to_target = vm_vec_mag(&vec_to_target);
@@ -8751,7 +8749,7 @@ bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3
 	return dist_to_target <= weapon_range;
 }
 
-bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* dot) {
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* out_dot) {
 
 	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
 		return false;
@@ -8764,9 +8762,12 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 
 	vec3d vec_to_target;
 	vm_vec_normalized_dir(&vec_to_target, &ss_pos, &shooter->pos);
-	*dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+	float dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
 
-	if (*dot < wip->lock_fov)
+	if (out_dot != nullptr)
+		*out_dot = dot;
+
+	if (dot < wip->lock_fov)
 		return false;
 
 	vec3d gsubpos;
@@ -8776,7 +8777,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	return ship_subsystem_in_sight(target, target_subsys, &shooter->pos, &gsubpos) == 1;
 }
 
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* dot) {
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
 	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
 	if (target_objp->type != OBJ_SHIP)
 		return false;
@@ -8801,9 +8802,12 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 
 	vec3d vec_to_target;
 	vm_vec_normalized_dir(&vec_to_target, &target_objp->pos, &shooter->pos);
-	*dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+	float dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
 
-	if (*dot < wip->lock_fov)
+	if (out_dot != nullptr)
+		*out_dot = dot;
+
+	if (dot < wip->lock_fov)
 		return false;
 
 	return weapon_target_satisfies_lock_restrictions(wip, target_objp);
