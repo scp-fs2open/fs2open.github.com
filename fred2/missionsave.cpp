@@ -1936,7 +1936,7 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		// save event comments
+		// save event annotations
 		if (Mission_save_format != FSO_FORMAT_RETAIL && !Event_annotations.empty())
 		{
 			bool at_least_one = false;
@@ -1945,17 +1945,20 @@ int CFred_mission_save::save_events()
 			// see if there is an annotation for this event
 			for (const auto &ea : Event_annotations)
 			{
-				if (!ea.path.empty() && ea.path.front() == i)
-				{
-					if (!at_least_one)
-					{
-						if (optional_string_fred("$Comments Start", "$Formula:"))
-							parse_comments();
-						else
-							fout_version("\n$Comments Start");
-						at_least_one = true;
-					}
+				if (ea.path.empty() || ea.path.front() != i)
+					continue;
 
+				if (!at_least_one)
+				{
+					if (optional_string_fred("$Annotations Start", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$Annotations Start");
+					at_least_one = true;
+				}
+
+				if (!ea.comment.empty())
+				{
 					if (optional_string_fred("+Comment:", "$Formula:"))
 						parse_comments();
 					else
@@ -1990,10 +1993,10 @@ int CFred_mission_save::save_events()
 				}
 			}
 
-			if (optional_string_fred("$Comments End", "$Formula:"))
+			if (optional_string_fred("$Annotations End", "$Formula:"))
 				parse_comments();
 			else
-				fout_version("\n$Comments End");
+				fout_version("\n$Annotations End");
 
 			fso_comment_pop();
 		}
