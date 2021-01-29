@@ -1247,7 +1247,7 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 	}
 }
 
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2)
+void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1279,8 +1279,9 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-		int vn1 = rand32() % nv;
-		int vn2 = rand32() % nv;
+		int seed_num = seed == -1 ? rand32() : seed;
+		int vn1 = static_rand(seed_num) % nv;
+		int vn2 = static_rand(seed_num) % nv;
 
 		*v1 = tree->point_list[vn1];
 		*v2 = tree->point_list[vn2];

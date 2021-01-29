@@ -103,6 +103,12 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
+flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
+	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false }
+};
+
+const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
+
 weapon_explosions Weapon_explosions;
 
 SCP_vector<lod_checker> LOD_checker;
@@ -2575,6 +2581,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->piercing_impact_effect = ParticleManager::get()->
 					addEffect(piercingEffect);
 			}
+		}
+
+		if (optional_string("+Beam Flags:")) {
+			parse_string_flag_list(wip->b_info.flags, Beam_info_flags, Num_beam_info_flags, nullptr);
 		}
 
 		// beam sections
@@ -8269,6 +8279,7 @@ void weapon_info::reset()
 	this->b_info.range = BEAM_FAR_LENGTH;
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;
+	this->b_info.flags.reset();
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);

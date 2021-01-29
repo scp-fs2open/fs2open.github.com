@@ -25,6 +25,7 @@
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "math/fvi.h"
+#include "math/staticrand.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -152,7 +153,7 @@ void beam_delete(beam *b);
 void beam_handle_collisions(beam *b);
 
 // fills in binfo
-void beam_get_binfo(beam *b, float accuracy, int num_shots);
+void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed);
 
 // aim the beam (setup last_start and last_shot - the endpoints). also recalculates object collision info
 void beam_aim(beam *b);
@@ -470,7 +471,7 @@ int beam_fire(beam_fire_info *fire_info)
 	if(fire_info->beam_info_override != NULL){
 		new_item->binfo = *fire_info->beam_info_override;
 	} else {
-		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots);			// to fill in b_info	- the set of directional aim vectors
+		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots, fire_info->burst_seed);			// to fill in b_info	- the set of directional aim vectors
 	}	
 
     flagset<Object::Object_Flags> default_flags;
@@ -2050,7 +2051,7 @@ void beam_recalc_sounds(beam *b)
 // -----------------------------===========================------------------------------
 
 // fills in binfo
-void beam_get_binfo(beam *b, float accuracy, int num_shots)
+void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 {
 	vec3d p2;
 	int model_num, idx;
@@ -2098,6 +2099,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
 
+	int seed = bwi->flags[Weapon::Beam_Info_Flags::Burst_share_random] ? burst_seed : rand32();
+
 	// generate the proper amount of directional vectors
 	switch(b->type){
 	// pick an accuracy. beam will be properly aimed at actual fire time
@@ -2117,7 +2120,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 			vm_vec_zero(&b->binfo.dir_b);
 		} else {
 			// get random model points, this is useful for big ships, because we never miss when shooting at them
-			submodel_get_two_random_points_better(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b);
+			submodel_get_two_random_points_better(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b, seed);
 		}
 		break;
 
@@ -2128,7 +2131,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 			oct1 = b->target_pos1;
 			oct2 = b->target_pos2;
 		} else {
-			beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);
+			beam_get_octant_points(model_num, b->target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &oct1, &oct2);
 		}
 
 		// point 1
