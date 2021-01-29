@@ -356,7 +356,7 @@ void gr_opengl_set_clear_color(int r, int g, int b)
 	gr_init_color(&gr_screen.current_clear_color, r, g, b);
 }
 
-int gr_opengl_set_color_buffer(int mode)
+void gr_opengl_set_color_buffer(int mode)
 {
 	bvec4 enabled;
 
@@ -367,9 +367,6 @@ int gr_opengl_set_color_buffer(int mode)
 	}
 
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-
-	// Check if all channels are active
-	return enabled.x && enabled.y && enabled.z && enabled.w;
 }
 
 int gr_opengl_zbuffer_get()
@@ -449,16 +446,9 @@ void gr_opengl_stencil_clear()
 	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
-int gr_opengl_alpha_mask_set(int mode, float alpha)
+void gr_opengl_alpha_mask_set(float alpha)
 {
-	if ( mode ) {
-		GL_alpha_threshold = alpha;
-	} else {
-		GL_alpha_threshold = 0.0f;
-	}
-
-	// alpha masking is deprecated
-	return mode;
+	GL_alpha_threshold = alpha;
 }
 
 void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
@@ -829,7 +819,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bm_create				= gr_opengl_bm_create;
 	gr_screen.gf_bm_init				= gr_opengl_bm_init;
 	gr_screen.gf_bm_page_in_start		= gr_opengl_bm_page_in_start;
-	gr_screen.gf_bm_data				= gr_opengl_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 

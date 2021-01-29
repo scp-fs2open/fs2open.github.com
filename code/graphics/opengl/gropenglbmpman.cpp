@@ -116,30 +116,16 @@ int gr_opengl_bm_make_render_target(int handle, int *width, int *height, int *bp
 	return 0;
 }
 
-int gr_opengl_bm_set_render_target(int n, int face)
+void gr_opengl_bm_set_render_target(int n, int face)
 {
-	if ( Cmdline_no_fbo ) {
-		return 0;
-	}
-
 	if (n == -1) {
 		opengl_set_render_target(-1);
-		return 1;
+		return;
 	}
 
 	auto entry = bm_get_entry(n);
 
 	int is_static = (entry->type == BM_TYPE_RENDER_TARGET_STATIC);
 
-	if ( opengl_set_render_target(n, face, is_static) ) {
-		return 1;
-	}
-
-	return 0;
-}
-
-bool gr_opengl_bm_data(int  /*n*/, bitmap*  /*bm*/)
-{
-	// Do nothing here
-	return true;
+	opengl_set_render_target(n, face, is_static);
 }

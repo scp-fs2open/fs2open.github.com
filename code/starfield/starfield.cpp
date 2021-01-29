@@ -1556,11 +1556,7 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	int saved_gr_zbuffering = gr_zbuffer_get();
-
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
-	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
+	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT | MR_NO_ZBUFFER;
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
@@ -1617,7 +1613,6 @@ void subspace_render()
 	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
 
 	Interp_subspace = 0;
-	gr_zbuffer_set(saved_gr_zbuffering);
 }
 
 void stars_draw_stars()
@@ -1812,9 +1807,6 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
 
-	int gr_zbuffering_save = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
 	Rendering_to_env = env;
 
 	if (show_subspace)
@@ -1862,7 +1854,6 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 		stars_draw_bitmaps( show_suns );
 	}
 
-	gr_zbuffer_set( gr_zbuffering_save );
 	Rendering_to_env = 0;
 }
 
@@ -2193,7 +2184,7 @@ void stars_draw_background()
 
 	// draw the model at the player's eye with no z-buffering
 	render_info.set_alpha(1.0f);
-	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
+	render_info.set_flags(Nmodel_flags | MR_SKYBOX | MR_NO_ZBUFFER);
 
 	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }

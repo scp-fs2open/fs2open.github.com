@@ -522,10 +522,6 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		DeletionCache.pop_back();
 	}
 
-	// save zbuffer so that we can reset it after drawing (FIXME: this could probably be done better)
-	int saved_zbuf = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
 	//Draw now. This prevents problems from an object deleting itself or moving around in the list
 	cgp = (GUIObject*)GET_FIRST(&Guiobjects);
 
@@ -538,9 +534,6 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 
 		cgp = (GUIObject*)GET_NEXT(cgp);
 	}
-
-	// reset zbuffer to saved value
-	gr_zbuffer_set(saved_zbuf);
 
 	if(SomethingPressed) {
 		return GSOF_SOMETHINGPRESSED;

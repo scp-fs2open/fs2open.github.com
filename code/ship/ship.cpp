@@ -7480,8 +7480,6 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 		return -1;
 	}
 	gr_push_debug_group("Render cockpit display");
-	
-	int cull = gr_set_cull(0);
 
 	gr_clear();
 	
@@ -7494,8 +7492,6 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 		gr_set_bitmap(display->background);
 		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
 	}
-
-	gr_set_cull(cull);
 
 	return display->target;
 }
@@ -7518,14 +7514,12 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 
 	cockpit_display* display = &Player_displays[cockpit_display_num];
 
-	int cull = gr_set_cull(0);
 	if ( display->foreground >= 0 ) {
 		gr_reset_clip();
 		gr_set_bitmap(display->foreground);
 		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
 	}
 
-	gr_set_cull(cull);
 	bm_set_render_target(-1);
 
 	gr_pop_debug_group();

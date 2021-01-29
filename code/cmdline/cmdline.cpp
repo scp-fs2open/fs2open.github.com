@@ -209,11 +209,8 @@ Flag exe_params[] =
 	{ "-nomovies",			"Disable video playback",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
-	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_fbo", },
-	{ "-disable_pbo",		"Disable OpenGL Pixel Buffer Objects",		true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_pbo", },
 	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ati_swap", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
-	{ "-mipmap",			"Enable mipmapping",						true,	0,									EASY_DEFAULT | EASY_HI_MEM_OFF,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_geo_effects", },
@@ -340,7 +337,6 @@ cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 float Cmdline_clip_dist = Default_min_draw_distance;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
-int Cmdline_mipmap = 0;
 int Cmdline_glow = 1;
 int Cmdline_noscalevid = 0;
 int Cmdline_spec = 1;
@@ -424,9 +420,6 @@ bool Cmdline_portable_mode = false;
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
-cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
-cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
-cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
@@ -443,8 +436,6 @@ cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
-int Cmdline_no_fbo = 0;
-int Cmdline_no_pbo = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_drawelements = 0;
@@ -538,6 +529,9 @@ cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", 
 cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NONE);
 cmdline_parm deprecated_no_emissive_arg("-no_emissive_light", "Deprecated", AT_NONE);
 cmdline_parm deprecated_postprocess_arg("-post_process", "Deprecated", AT_NONE);
+cmdline_parm deprecated_no_fbo_arg("-disable_fbo", NULL, AT_NONE);
+cmdline_parm deprecated_no_pbo_arg("-disable_pbo", NULL, AT_NONE);
+cmdline_parm deprecated_mipmap_arg("-mipmap", NULL, AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -550,6 +544,9 @@ bool Cmdline_deprecated_brief_lighting = 0;
 bool Cmdline_deprecated_missile_lighting = false;
 bool Cmdline_deprecated_cache_bitmaps = false;
 bool Cmdline_deprecated_postprocess = false;
+bool Cmdline_deprecated_no_fbo = false;
+bool Cmdline_deprecated_no_pbo = false;
+bool Cmdline_deprecated_mipmap = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -627,6 +624,18 @@ void cmdline_debug_print_cmdline()
 
 	if (Cmdline_deprecated_postprocess) {
 		mprintf(("Deprecated flag '-post_process' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_no_fbo) {
+		mprintf(("Deprecated flag '-disable_fpo' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_no_pbo) {
+		mprintf(("Deprecated flag '-disable_pbo' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_mipmap) {
+		mprintf(("Deprecated flag '-mipmap' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1797,10 +1806,6 @@ bool SetCmdlineParams()
 		Motion_debris_enabled = false;
 	}
 
-	if( mipmap_arg.found() ) {
-		Cmdline_mipmap = 1;
-	}
-
 	if( stats_arg.found() ) {
 		Cmdline_show_stats = 1;
 	}
@@ -1938,11 +1943,6 @@ bool SetCmdlineParams()
 		Cmdline_output_sexp_info = true;
 	}
 
-	if ( no_pbo_arg.found() )
-	{
-		Cmdline_no_pbo = 1;
-	}
-
 	if ( no_drawrangeelements.found() )
 	{
 		Cmdline_drawelements = 1;
@@ -2002,10 +2002,6 @@ bool SetCmdlineParams()
 
 	if(dis_weapons.found())
 		Cmdline_dis_weapons = 1;
-
-	if ( no_fbo_arg.found() ) {
-		Cmdline_no_fbo = 1;
-	}
 
 	if ( emissive_arg.found() ) {
 		Cmdline_emissive = 1;
@@ -2251,7 +2247,17 @@ bool SetCmdlineParams()
 			}
 		}
 	}
- 
+
+	if (deprecated_no_pbo_arg.found()) {
+		Cmdline_deprecated_no_pbo = 1;
+	}
+	if (deprecated_no_fbo_arg.found()) {
+		Cmdline_deprecated_no_fbo = 1;
+	}
+	if (deprecated_mipmap_arg.found()) {
+		Cmdline_deprecated_mipmap = 1;
+	}
+
 	return true; 
 }
 
