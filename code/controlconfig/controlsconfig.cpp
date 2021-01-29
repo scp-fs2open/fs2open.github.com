@@ -821,7 +821,7 @@ int control_config_do_reset()
 	// first, determine how many bindings need to be changed
 	for (size_t e = 0; e < Control_config.size(); ++e) {
 		auto item = Control_config[e];
-		auto default_item = Control_config_presets[Defaults_cycle_pos].bindings[i];
+		auto default_item = Control_config_presets[Defaults_cycle_pos].bindings[e];
 
 		if (item.disabled) {
 			// skip
