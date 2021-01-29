@@ -1170,11 +1170,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// angle-based damage multiplier
 	if (optional_string("$Angle of Incidence Damage Multiplier:")) {
-		if (optional_string("+Max:")) {
-			stuff_float(&wip->damage_incidence_max);
-		}
 		if (optional_string("+Min:")) {
 			stuff_float(&wip->damage_incidence_min);
+		}
+		if (optional_string("+Max:")) {
+			stuff_float(&wip->damage_incidence_max);
 		}
 	}
 	
