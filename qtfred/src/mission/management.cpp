@@ -15,6 +15,7 @@
 #include <sound/audiostr.h>
 #include <project.h>
 #include <scripting/scripting.h>
+#include <scripting/global_hooks.h>
 #include <hud/hudsquadmsg.h>
 #include <globalincs/alphacolors.h>
 
@@ -255,7 +256,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::ScriptingInitHook);
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	GameInitHook->run();
 
 	return true;
 }

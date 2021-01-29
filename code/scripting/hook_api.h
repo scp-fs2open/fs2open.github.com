@@ -11,6 +11,7 @@ namespace scripting {
 
 namespace detail {
 ade_odata_setter<object_h> convert_arg_type(object* objp);
+ade_odata_setter<vec3d> convert_arg_type(vec3d vec);
 
 template <typename T>
 T&& convert_arg_type(T&& arg)
@@ -23,9 +24,10 @@ struct HookParameterInstance {
 	SCP_string name;
 	char type = '\0';
 	T value;
+	bool enabled = true;
 
-	HookParameterInstance(SCP_string name_, char type_, T value_)
-		: name(std::move(name_)), type(type_), value(std::move(value_))
+	HookParameterInstance(SCP_string name_, char type_, T&& value_, bool enabled_)
+		: name(std::move(name_)), type(type_), value(std::forward<T>(value_)), enabled(enabled_)
 	{
 	}
 };
@@ -38,6 +40,11 @@ struct SetSingleHookVarHelper {
 	template <typename T>
 	void operator()(HookParameterInstance<T>&& instance)
 	{
+		// If a parameter is not enabled, skip it
+		if (!instance.enabled) {
+			return;
+		}
+
 		paramNames.push_back(instance.name);
 
 		Script_system.SetHookVar(instance.name.c_str(),
@@ -63,13 +70,13 @@ struct HookParameterInstanceList {
 } // namespace detail
 
 template <typename T>
-detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T value_)
+detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T&& value_, bool enabled = true)
 {
-	return detail::HookParameterInstance<T>(std::move(name_), type_, std::move(value_));
+	return detail::HookParameterInstance<T>(std::move(name_), type_, std::forward<T>(value_), enabled);
 }
 
 template <typename... Args>
-detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>... params)
+detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>&&... params)
 {
 	return detail::HookParameterInstanceList<Args...>(std::move(params)...);
 }
@@ -127,8 +134,8 @@ class Hook : public HookBase {
 
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-			object* objp                                        = nullptr,
-			int more_data                                       = 0) const
+		object* objp = nullptr,
+		int more_data = 0) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
@@ -169,7 +176,7 @@ class OverridableHook : public Hook {
 
 	template <typename... Args>
 	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-					object* objp                                        = nullptr) const
+		object* objp = nullptr) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);

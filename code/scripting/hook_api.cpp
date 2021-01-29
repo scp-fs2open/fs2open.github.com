@@ -2,7 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <utility>
+#include "scripting/api/objs/vecmath.h"
 
 namespace scripting {
 
@@ -54,6 +54,10 @@ namespace detail {
 ade_odata_setter<object_h> convert_arg_type(object* objp)
 {
 	return ade_object_to_odata(objp != nullptr ? OBJ_INDEX(objp) : -1);
+}
+ade_odata_setter<vec3d> convert_arg_type(vec3d vec)
+{
+	return scripting::api::l_Vector.Set(vec);
 }
 } // namespace detail
 

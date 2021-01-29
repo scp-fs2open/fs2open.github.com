@@ -32,7 +32,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "ship/ship.h"
@@ -1459,9 +1459,8 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
 
-		Script_system.SetHookObject("Self", pasteroid_obj);
-		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
-		{
+		if (!scripting::hooks::OnDeath->isOverride(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)))) {
 			pasteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
@@ -1565,8 +1564,8 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
-		Script_system.RemHookVar("Self");
+		scripting::hooks::OnDeath->run(
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)));
 	}
 }
 
