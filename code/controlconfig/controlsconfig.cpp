@@ -819,8 +819,8 @@ int control_config_do_reset()
 	Undo_stack stack;
 
 	// first, determine how many bindings need to be changed
-	for (i = 0; i < Control_config.size(); ++i) {
-		auto item = Control_config[i];
+	for (size_t e = 0; e < Control_config.size(); ++e) {
+		auto item = Control_config[e];
 		auto default_item = Control_config_presets[Defaults_cycle_pos].bindings[i];
 
 		if (item.disabled) {
