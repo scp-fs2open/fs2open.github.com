@@ -3879,7 +3879,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_alpha_decay_exponent);
 			if (sip->afterburner_trail_alpha_decay_exponent < 0.0f) {
-				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Reseting to 1.\n", sip->name);
+				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Resetting to 1.\n", sip->name);
 				sip->afterburner_trail_alpha_decay_exponent = 1.0f;
 			}
 		}
@@ -4304,7 +4304,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (optional_string("+Alpha Decay Exponent:")) {
 			stuff_float(&ci->a_decay_exponent);
 			if (ci->a_decay_exponent < 0.0f) {
-				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Reseting to 1.\n", sip->name);
+				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Resetting to 1.\n", sip->name);
 				ci->a_decay_exponent = 1.0f;
 			}
 		}

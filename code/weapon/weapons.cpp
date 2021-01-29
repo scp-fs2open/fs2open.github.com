@@ -1366,7 +1366,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nResetting value to default.", wip->name);
 					wip->seeker_strength = 3.0f;
 				}
 			}
