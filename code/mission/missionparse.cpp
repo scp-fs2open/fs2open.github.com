@@ -5070,6 +5070,37 @@ void parse_event(mission * /*pm*/)
 			}
 		}
 	}
+
+	if (optional_string("$Annotations Start")) {
+		// annotations are only used in FRED
+		if (Fred_running) {
+			while (check_for_string("+Comment:")) {
+				event_annotation ea;
+				ea.path.push_back(Num_mission_events);
+
+				if (optional_string("+Comment:")) {
+					stuff_string(ea.comment, F_MULTITEXT);
+					lcl_replace_stuff(ea.comment, true);
+				}
+
+				if (optional_string("+Path:")) {
+					int num;
+					while (true) {
+						ignore_gray_space();
+						if (stuff_int_optional(&num, true) != 2) {
+							break;
+						}
+						ea.path.push_back(num);
+					}
+				}
+
+				Event_annotations.push_back(std::move(ea));
+			}
+			required_string("$Annotations End");
+		} else {
+			skip_to_string("$Annotations End");
+		}
+	}
 }
 
 void parse_events(mission *pm)

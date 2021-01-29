@@ -100,8 +100,8 @@ ubyte lcl_get_font_index(int font_num);
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
 // Goober5000
-void lcl_replace_stuff(char *text, size_t max_len);
-void lcl_replace_stuff(SCP_string &text);
+void lcl_replace_stuff(char *text, size_t max_len, bool force = false);
+void lcl_replace_stuff(SCP_string &text, bool force = false);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, size_t max_len);

@@ -30,6 +30,7 @@
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "localization/fhash.h"
+#include "localization/localize.h"
 #include "math/vecmat.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -1935,7 +1936,70 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		fso_comment_pop();
+		// save event annotations
+		if (Mission_save_format != FSO_FORMAT_RETAIL && !Event_annotations.empty())
+		{
+			bool at_least_one = false;
+			fso_comment_push(";;FSO 21.0.0;;");
+
+			// see if there is an annotation for this event
+			for (const auto &ea : Event_annotations)
+			{
+				if (ea.path.empty() || ea.path.front() != i)
+					continue;
+
+				if (!at_least_one)
+				{
+					if (optional_string_fred("$Annotations Start", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$Annotations Start");
+					at_least_one = true;
+				}
+
+				if (!ea.comment.empty())
+				{
+					if (optional_string_fred("+Comment:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Comment:");
+
+					auto copy = ea.comment;
+					lcl_fred_replace_stuff(copy);
+					fout(" %s", copy.c_str());
+
+					if (optional_string_fred("$end_multi_text", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$end_multi_text");
+				}
+
+				if (ea.path.size() > 1)
+				{
+					if (optional_string_fred("+Path:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Path:");
+
+					bool comma = false;
+					auto it = ea.path.begin();
+					for (++it; it != ea.path.end(); ++it)
+					{
+						if (comma)
+							fout(",");
+						comma = true;
+						fout(" %d", *it);
+					}
+				}
+			}
+
+			if (optional_string_fred("$Annotations End", "$Formula:"))
+				parse_comments();
+			else
+				fout_version("\n$Annotations End");
+
+			fso_comment_pop();
+		}
 	}
 
 	fso_comment_pop(true);
