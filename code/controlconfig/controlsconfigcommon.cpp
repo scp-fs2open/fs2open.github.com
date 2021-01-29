@@ -846,7 +846,7 @@ SCP_map<SCP_string, IoActionId> mActionToVal;
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
 */
-void LoadEnumsIntoKeyMap(void) {
+void LoadEnumsIntoKeyMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_KEY_MAP(Enum) mKeyNameToVal[#Enum] = (Enum);
 
@@ -982,7 +982,7 @@ void LoadEnumsIntoKeyMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Types enumerations into mCCTypeNameToVal
  */
-void LoadEnumsIntoCCTypeMap(void) {
+void LoadEnumsIntoCCTypeMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
 
@@ -994,7 +994,7 @@ void LoadEnumsIntoCCTypeMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Tabs enumerations into mCCTabNameToVal
  */
-void LoadEnumsIntoCCTabMap(void) {
+void LoadEnumsIntoCCTabMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
 
@@ -1009,7 +1009,7 @@ void LoadEnumsIntoCCTabMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the IoActionId enums into mActionToVal
  */
-void LoadEnumsIntoActionMap(void) {
+void LoadEnumsIntoActionMap() {
 #define ADD_ENUM_TO_ACTION_MAP(Enum) mActionToVal[#Enum] = (Enum);
 	ADD_ENUM_TO_ACTION_MAP(TARGET_NEXT)
 	ADD_ENUM_TO_ACTION_MAP(TARGET_PREV)

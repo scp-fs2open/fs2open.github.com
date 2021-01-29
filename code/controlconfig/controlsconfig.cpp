@@ -1419,7 +1419,7 @@ void control_config_draw_selected_preset() {
 	// Draw the string
 	int font_height = gr_get_font_height();
 	int w;
-	gr_get_string_size(&w, NULL, preset_str.c_str());
+	gr_get_string_size(&w, nullptr, preset_str.c_str());
 	gr_set_color_fast(&Color_text_normal);
 
 	if (gr_screen.res == GR_640) {

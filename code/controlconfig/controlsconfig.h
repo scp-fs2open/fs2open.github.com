@@ -337,10 +337,8 @@ public:
 
 // Items used during gameplay
 	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
-	bool disabled;              //!< whether this action should be available at all
+	bool disabled = true;       //!< whether this action should be available at all
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
-
-	CCI() : disabled(true) {};
 };
 
 /*!
