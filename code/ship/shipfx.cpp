@@ -1957,14 +1957,14 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			}
 
 			if (sip->generic_debris_model_num >= 0) {
-				// spawn a bunch of debris peices, first determine the cross sectional average position to be the force explosion center
+				// spawn a bunch of debris pieces, first determine the cross sectional average position to be the force explosion center
 				vec3d local_xc_rand, local_xc_avg, xc_rand, xc_avg;
 				submodel_get_cross_sectional_avg_pos(sip->model_num, -1, half_ship->cur_clip_plane_pt, &local_xc_avg);
 				vm_vec_unrotate(&xc_avg, &local_xc_avg, &half_ship->orient);
 				vm_vec_add2(&xc_avg, &orig_ship_world_center);
-				float num_debris = sip->generic_debris_spew_num * (Detail.num_small_debris / 4);
+				float num_debris = sip->generic_debris_spew_num * (Detail.num_small_debris / 4.0f);
 				for (int i = 0; i < num_debris; i++) {
-					// then get random positions on the cross section and spawn the peices there
+					// then get random positions on the cross section and spawn the pieces there
 					submodel_get_cross_sectional_random_pos(sip->model_num, -1, half_ship->cur_clip_plane_pt, &local_xc_rand);
 					vm_vec_unrotate(&xc_rand, &local_xc_rand, &half_ship->orient);
 					vm_vec_add2(&xc_rand, &orig_ship_world_center);

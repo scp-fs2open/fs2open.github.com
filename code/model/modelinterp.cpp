@@ -1292,7 +1292,7 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 {
 	polymodel* pm = model_get(model_num);
 
-	if (pm != NULL) {
+	if (pm != nullptr) {
 		if (submodel_num < 0) {
 			submodel_num = pm->detail[0];
 		}
@@ -1309,7 +1309,7 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_avg_pos!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_avg_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
 			vm_vec_zero(pos);
@@ -1335,7 +1335,7 @@ void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, fl
 {
 	polymodel* pm = model_get(model_num);
 
-	if (pm != NULL) {
+	if (pm != nullptr) {
 		if (submodel_num < 0) {
 			submodel_num = pm->detail[0];
 		}
@@ -1352,7 +1352,7 @@ void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, fl
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_random_pos!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_random_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
 			vm_vec_zero(pos);

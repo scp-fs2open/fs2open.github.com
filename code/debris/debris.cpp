@@ -430,7 +430,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		if (vaporize) {
 			dist /= 2.0f;
 		}
-		if ( dist > source_obj->radius * 200.0f ) {
+		if ( dist > source_obj->radius * 20.0f ) {
 			return NULL;
 		}
 	}

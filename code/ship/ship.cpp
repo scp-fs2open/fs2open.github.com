@@ -3165,10 +3165,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 
 		if (optional_string("+Generic Debris Spew Num:")) {
-			stuff_float(&(sip->generic_debris_spew_num));
-			if (sip->generic_debris_spew_num < 0.0f) {
+			stuff_int(&(sip->generic_debris_spew_num));
+			if (sip->generic_debris_spew_num < 0) {
 				Warning(LOCATION, "Generic Debris Spew Num for %s '%s' cannot be below 0.", info_type_name, sip->name);
-				sip->generic_debris_spew_num = 0.0f;
+				sip->generic_debris_spew_num = 0;
 			}
 		}
 
@@ -9864,7 +9864,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	}
 
 	if (strlen(sip->generic_debris_pof_file)) {
-		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, NULL);
+		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, nullptr);
 		if (sip->generic_debris_model_num >= 0) {
 			polymodel* pm = model_get(sip->generic_debris_model_num);
 			sip->generic_debris_num_submodels = pm->n_models;
