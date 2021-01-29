@@ -777,7 +777,6 @@ int control_config_clear_all()
 
 		j++;
 	}
-	Assert(j == total);	// Er, how did we miss saving an item?
 	Undo_controls.save_stack(stack);
 
 	for (auto &item : Control_config) {
@@ -820,8 +819,16 @@ int control_config_do_reset()
 	Undo_stack stack;
 
 	// first, determine how many bindings need to be changed
-	for (auto &item : Control_config) {
-		if ((item.key_id != item.key_default) || (item.joy_id != item.joy_default)) {
+	for (i = 0; i < Control_config.size(); ++i) {
+		auto item = Control_config[i];
+		auto default_item = Control_config_presets[Defaults_cycle_pos].bindings[i];
+
+		if (item.disabled) {
+			// skip
+			continue;
+		}
+
+		if ((item.key_id != default_item.first.btn) || (item.joy_id != default_item.second.btn)) {
 			total++;
 		}
 	}

@@ -1242,6 +1242,7 @@ void control_config_common_read_section(int s) {
 	if (optional_string("$Name:")) {
 		SCP_string name;
 		stuff_string_line(name);
+		drop_leading_white_space(name);
 		new_preset.name = name;
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [&name](CC_preset& S) {return S.name == name;});
@@ -1325,6 +1326,7 @@ void control_config_common_read_section(int s) {
 
 			if (optional_string("$Text:")) {
 				stuff_string(item->text, F_NAME);
+				item->indexXSTR = 0;
 			}
 
 			if (optional_string("$Has XStr:")) {
