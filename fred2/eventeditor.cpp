@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
 	//{{AFX_MSG_MAP(event_sexp_tree)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
+	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDraw)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1753,11 +1754,11 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	if (h)
 	{
-		int ea = event_annotation_lookup(h);
+		int ea_idx = event_annotation_lookup(h);
 
-		if (ea >= 0)
+		if (ea_idx >= 0)
 		{
-			strTipText = Event_annotations[ea].comment.c_str();
+			strTipText = Event_annotations[ea_idx].comment.c_str();
 
 			if (!strTipText.IsEmpty())
 			{
@@ -1779,6 +1780,46 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	*pResult = 0;
 
 	return TRUE;    // message was handled
+}
+
+// color stuff is based on example at
+// https://stackoverflow.com/questions/2119717/changing-the-color-of-a-selected-ctreectrl-item
+
+void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMTVCUSTOMDRAW *pcd = (NMTVCUSTOMDRAW *)pNMHDR;
+	switch (pcd->nmcd.dwDrawStage)
+	{
+		case CDDS_PREPAINT:
+			*pResult = CDRF_NOTIFYITEMDRAW;
+			break;
+
+		case CDDS_ITEMPREPAINT:
+		{
+			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
+
+			if (hItem)
+			{
+				int ea_idx = event_annotation_lookup(hItem);
+				if (ea_idx >= 0)
+				{
+					auto ea = &Event_annotations[ea_idx];
+
+					// contrast color calculation taken from here:
+					// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
+					if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
+						pcd->clrText = RGB(0, 0, 0);
+					else
+						pcd->clrText = RGB(255, 255, 255);
+
+					pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+				}
+			}
+
+			*pResult = CDRF_DODEFAULT;
+			break;
+		}
+	}
 }
 
 void event_sexp_tree::edit_comment(HTREEITEM h)
@@ -1847,7 +1888,8 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 	Event_annotations[i].g = GetGValue(new_color);
 	Event_annotations[i].b = GetBValue(new_color);
 
-	SetBkColor(new_color);
+	// This is needed otherwise the color won't change until the user clicks something
+	RedrawWindow();
 }
 
 void event_sexp_tree::edit_indent(HTREEITEM h, bool increase)

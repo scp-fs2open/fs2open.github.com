@@ -32,6 +32,7 @@ public:
 
 protected:
 	virtual void PreSubclassWindow();
+	virtual void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 };
