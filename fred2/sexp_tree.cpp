@@ -5548,8 +5548,8 @@ sexp_list_item *sexp_tree::get_listing_opf_priority()
 {
 	sexp_list_item head;
 
-	head.add_data("High");
 	head.add_data("Normal");
+	head.add_data("High");
 	head.add_data("Low");
 	return head.next;
 }

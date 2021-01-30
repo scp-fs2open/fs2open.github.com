@@ -31773,6 +31773,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but may not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
@@ -33423,7 +33426,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
-		"successive messages."},
+		"successive messages.\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but may not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+		},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
