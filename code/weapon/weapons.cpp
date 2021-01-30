@@ -4531,16 +4531,19 @@ void weapon_home(object *obj, int num, float frame_time)
 	//	See if this weapon is the nearest homing object to the object it is homing on.
 	//	If so, update some fields in the target object's ai_info.
 	if (hobjp != &obj_used_list) {
-		float	dist;
-
-		dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
 
 		if (hobjp->type == OBJ_SHIP) {
 			ai_info	*aip;
 
 			aip = &Ai_info[Ships[hobjp->instance].ai_index];
 
-			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) {
+			vec3d target_vector;
+			float dist = vm_vec_normalized_dir(&target_vector, &hobjp->pos, &obj->pos);
+
+			// add this missile to nearest_locked_object if its the closest
+			// with the flag, only do it if its also mostly pointed at its target
+			if (((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) && 
+				(!(The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
 				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
