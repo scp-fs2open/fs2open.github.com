@@ -99,7 +99,7 @@ struct primitive_batch_item {
 
 struct primitive_batch_buffer {
 	vertex_layout layout;
-	int buffer_num;
+	gr_buffer_handle buffer_num;
 
 	void* buffer_ptr;
 	size_t buffer_size;

@@ -9,7 +9,6 @@
 #define IDD_ABOUTBOX                    100
 #define ID_MY_STATUS_BAR                101
 #define IDD_VOICE_MANAGER               102
-#define IDD_BRIEFING_PERSONAS           103
 #define IDR_MAINFRAME                   128
 #define IDR_MAINMENU                    128
 #define IDR_FREDTYPE                    129
@@ -123,6 +122,7 @@
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
 #define IDD_WARP_PARAMS                 320
+#define IDB_COMMENT                     322
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1189,6 +1189,7 @@
 #define ID_ADD                          32839
 #define ID_ADD_PLUS                     32840
 #define ID_ADD_MINUS                    32841
+#define ID_EDIT_COMMENT                 32845
 #define ID_ADD_DESTROY                  32846
 #define ID_ADD_DESTROY_WING             32847
 #define ID_ADD_DISABLE                  32848
@@ -1415,7 +1416,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        322
+#define _APS_NEXT_RESOURCE_VALUE        325
 #define _APS_NEXT_COMMAND_VALUE         33100
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105

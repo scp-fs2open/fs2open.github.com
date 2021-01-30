@@ -1509,6 +1509,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+				bi->modelnum = -1;
+				bi->model_instance_num = -1;
 
 				// Goober5000 - import
 				if (flags & MPF_IMPORT_FSM)
@@ -2320,7 +2322,8 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				ptr->submodel_info_1.blown_off = 1;
+				if (ptr->submodel_instance_1 != nullptr)
+					ptr->submodel_instance_1->blown_off = true;
 			}
 			else
 			{
@@ -2333,7 +2336,6 @@ int parse_create_object_sub(p_object *p_objp)
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
 
-		ptr->turret_best_weapon = -1;
 		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
 		ptr->turret_animation_done_time = 0;
 	}
@@ -2447,8 +2449,10 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!object_is_docked(p_objp) || (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]))
 		{
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
-				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
+		// also add this ship to the multi ship tracking and interpolation struct
+		multi_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
@@ -2914,6 +2918,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
+	// save current team for loadout purposes, so that in multi we always respawn
+	// from the original loadout slot even if the team changes
+	p_objp->loadout_team = p_objp->team;
+
 	if (optional_string("$Team Color Setting:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
@@ -3360,6 +3368,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = false;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, p_objp->name);
@@ -3533,12 +3543,11 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
+				shipfx_blow_up_model(objp, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
-				auto sip = &Ships[objp->instance];
-				ship_add_exited_ship(sip, Ship::Exit_Flags::Destroyed);
+				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
@@ -4190,7 +4199,18 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+			bool needs_display_name;
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
+
+			// set up display name if we need to
+			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+			if (needs_display_name)
+			{
+				p_objp->display_name = p_objp->name;
+				end_string_at_first_hash_symbol(p_objp->display_name);
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
 			if (!ship_registry_get(p_objp->name))
@@ -4389,6 +4409,17 @@ void parse_wing(mission *pm)
 
 	required_string("$Name:");
 	stuff_string(wingp->name, F_NAME, NAME_LENGTH);
+
+	// quickly look through the squadron wing names to see if we have to warn the modder about this mission
+	// to avoid them avoid the multi missing wing bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		for (int j = 0; j < MAX_SQUADRON_WINGS; j++) {
+			if (!strcmp(wingp->name, Squadron_wing_names[j])) {
+				Squadron_wing_names_found[j] = true;
+			}
+		}
+	}
+
 	wingnum = find_wing_name(wingp->name);
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
@@ -4712,14 +4743,45 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
-void parse_wings(mission *pm)
+void parse_wings(mission* pm)
 {
+	// reset this for the missing wing bug.
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		Squadron_wing_names_found[i] = false;
+	}
+
 	required_string("#Wings");
 	while (required_string_either("#Events", "$Name:"))
 	{
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
+	}
+
+	bool found = false;
+
+	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
+
+	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
+	// for now TvT mission do not have enough player wings to be affected by this bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		do {
+			found = false;
+			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
+			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
+				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
+				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
+					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					char temp_chars[NAME_LENGTH];
+					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
+					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					strcpy_s(Squadron_wing_names[i], temp_chars);
+					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
+					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
+					found = true;
+				}
+			}
+		} while (found);
 	}
 }
 
@@ -5006,6 +5068,37 @@ void parse_event(mission * /*pm*/)
 					event->mission_log_flags |= add_flag;
 				}
 			}
+		}
+	}
+
+	if (optional_string("$Annotations Start")) {
+		// annotations are only used in FRED
+		if (Fred_running) {
+			while (check_for_string("+Comment:")) {
+				event_annotation ea;
+				ea.path.push_back(Num_mission_events);
+
+				if (optional_string("+Comment:")) {
+					stuff_string(ea.comment, F_MULTITEXT);
+					lcl_replace_stuff(ea.comment, true);
+				}
+
+				if (optional_string("+Path:")) {
+					int num;
+					while (true) {
+						ignore_gray_space();
+						if (stuff_int_optional(&num, true) != 2) {
+							break;
+						}
+						ea.path.push_back(num);
+					}
+				}
+
+				Event_annotations.push_back(std::move(ea));
+			}
+			required_string("$Annotations End");
+		} else {
+			skip_to_string("$Annotations End");
 		}
 	}
 }
@@ -8023,6 +8116,33 @@ void mission_parse_remove_alt(const char *name)
 void mission_parse_reset_alt()
 {
 	Mission_alt_type_count = 0;
+}
+
+// For compatibility purposes some mods want alt names to truncate at the hash symbol.  But we can't actually do that at mission load,
+// since we have to save them again in FRED.  So this function processes the names just before the mission starts.
+// To further complicate things, some mods actually want the hash to be displayed.  So this function uses the double-hash as an escape sequence for a single hash.
+void mission_process_alt_types()
+{
+	for (int i = 0; i < Mission_alt_type_count; ++i)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
+
+		// consolidate double hashes
+		auto src = Mission_alt_types[i];
+		auto dest = src;
+		while (*src)
+		{
+			if (*src == '#' && *(src + 1) == '#')
+				dest--;
+
+			++src;
+			++dest;
+
+			if (src != dest)
+				*dest = *src;
+		}
+	}
 }
 
 /**

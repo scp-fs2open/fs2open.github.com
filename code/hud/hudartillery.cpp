@@ -425,6 +425,7 @@ void ssm_process()
 								fire_info.starting_pos = moveup->sinfo.start_pos[idx];
 								fire_info.beam_info_index = si->weapon_info_index;
 								fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
+								fire_info.fire_method = BFM_SUBSPACE_STRIKE;
 								fire_info.burst_index = i;
 
 								// Fill target_pos but DONT turn on BFIF_TARGETING_COORDS

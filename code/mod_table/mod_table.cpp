@@ -60,6 +60,7 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
+bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
@@ -571,6 +572,13 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$AI use framerate independent turning:")) {
 			stuff_boolean(&Framerate_independent_turning);
 		}
+		
+		if (optional_string("+AI respect tabled turn time and rotdamp:")) {
+			stuff_boolean(&Ai_respect_tabled_turntime_rotdamp);
+			if (!Framerate_independent_turning) {
+				Warning(LOCATION, "\'AI respect tabled turn time and rotdamp\' requires \'AI use framerate independent turning\' in order to function.\n");
+			}
+		}
 
 		required_string("#END");
 	}
@@ -646,7 +654,8 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
-	Framerate_independent_turning = false;
+	Framerate_independent_turning = true;
+	Ai_respect_tabled_turntime_rotdamp = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi

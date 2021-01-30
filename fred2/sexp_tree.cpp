@@ -652,6 +652,12 @@ void sexp_tree::right_clicked(int mode)
 			}
 		}
 
+		// comments only work in the event editor
+		if (m_mode == MODE_EVENTS)
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_ENABLED);
+		else
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_GRAYED);
+
 		/*
 		Goober5000 - allow variables in all modes;
 		the restriction seems unnecessary IMHO
@@ -1409,6 +1415,11 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
+void sexp_tree::edit_comment(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
 // given a tree node, returns the argument type it should be.
 int sexp_tree::query_node_argument_type(int node)
 {
@@ -1969,7 +1980,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				*modified = 1;
 				EditLabel(item_handle);
 			}
+			return 1;
 
+		case ID_EDIT_COMMENT:
+			edit_comment(item_handle);
 			return 1;
 	
 		case ID_REPLACE_NUMBER:
@@ -2303,7 +2317,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			return 0;
 
 		case OPF_ANYTHING:
-			item->set_data("<any data>");
+			if (Operators[op].value == OP_INVALIDATE_ARGUMENT || Operators[op].value == OP_VALIDATE_ARGUMENT)
+				item->set_data(SEXP_ARGUMENT_STRING);	// this is almost always what you want for these sexps
+			else
+				item->set_data("<any data>");
 			return 0;
 
 		case OPF_NUMBER:
@@ -3871,6 +3888,10 @@ void sexp_tree::setup(CEdit *ptr)
 			pimagelist->Add(&bitmap, (COLORREF) 0xFF00FF);
 			bitmap.DeleteObject();
 		}
+
+		bitmap.LoadBitmap(IDB_COMMENT);
+		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
+		bitmap.DeleteObject();
 
 		SetImageList(pimagelist, TVSIL_NORMAL);
 	}

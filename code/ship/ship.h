@@ -100,7 +100,10 @@ public:
 	int num_tertiary_banks;
 
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
+
+	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
+	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -131,7 +134,7 @@ public:
 	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
-	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
+	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank -- Every time the secondary bank changes, this must change too!
 	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank
 	int secondary_next_slot[MAX_SHIP_SECONDARY_BANKS];			// Next slot to fire in the bank
 	int secondary_bank_rearm_time[MAX_SHIP_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
@@ -141,19 +144,19 @@ public:
 	int tertiary_bank_capacity;		// Max number of shots in bank
 	int tertiary_bank_rearm_time;	// timestamp which indicates when bank can get new something (used for ammopod or boostpod)
 
-	int last_fired_weapon_index;		//	Index of last fired secondary weapon.  Used for remote detonates.
-	int last_fired_weapon_signature;	//	Signature of last fired weapon.
+	int remote_detonaters_active;
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
 
 	flagset<Ship::Weapon_Flags> flags;
+
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
 	EModelAnimationPosition secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
-	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
@@ -315,7 +318,8 @@ typedef struct lock_info {
 	bool need_new_start_pos;
 	bool target_in_lock_cone;
 
-	int locked_timestamp;
+	float lock_gauge_time_elapsed;
+	float lock_anim_time_elapsed;
 } lock_info;
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
@@ -344,7 +348,6 @@ public:
 	//or higher, an index into the turret weapons is considered to be an index into the secondary weapons
 	//for much of the code. See turret_next_weap_fire_stamp.
 
-	int		turret_best_weapon;				// best weapon for current target; index into prim/secondary banks
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
@@ -379,8 +382,8 @@ public:
 	// angles and if it is blown off or not.
 	// There are 2 of these because turrets need one for the turret and one for the barrel.
 	// Things like radar dishes would only use one.
-	submodel_instance_info	submodel_info_1;		// Instance data for main turret or main object
-	submodel_instance_info	submodel_info_2;		// Instance data for turret guns, if there is one
+	submodel_instance *submodel_instance_1;		// Instance data for main turret or main object
+	submodel_instance *submodel_instance_2;		// Instance data for turret guns, if there is one
 
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
@@ -564,8 +567,6 @@ public:
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
-	float	*shield_integrity;					//	Integrity at each triangle in shield mesh.
-
 	// ETS fields
 	int	shield_recharge_index;			// index into array holding the shield recharge rate
 	int	weapon_recharge_index;			// index into array holding the weapon recharge rate
@@ -578,7 +579,9 @@ public:
 	int	reinforcement_index;				// index into reinforcement struct or -1
 	
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
-													// as afterburner_fuel_capacity in ship_info).
+												// as afterburner_fuel_capacity in ship_info).
+	float   afterburner_last_engage_fuel;      // the fuel level when the afterburners were last engaged
+	int   afterburner_last_end_time;         // timestamp when the ship last stopped its afterburner
 
 	int cmeasure_count;						//	Number of charges of countermeasures this ship can hold.
 	int current_cmeasure;					//	Currently selected countermeasure.
@@ -660,9 +663,6 @@ public:
 	fix	time_first_tagged;
 	float level2_tag_total;							// total tag time
 	float level2_tag_left;							// total tag remaining	
-
-	// old-style object update stuff
-	np_update		np_updates[MAX_PLAYERS];	// for both server and client
 
 	// lightning timestamp
 	int lightning_stamp;
@@ -765,8 +765,8 @@ public:
 	inline bool cannot_warp_flags() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
 	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
-	const char* get_display_name();
-	bool has_display_name();
+	const char* get_display_name() const;
+	bool has_display_name() const;
 
 	void apply_replacement_textures(SCP_vector<texture_replace> &replacements);
 };
@@ -1086,11 +1086,13 @@ public:
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
+	bool explosion_splits_ship;				// If true, then the ship 'splits in two' when it blows up
 	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
 	float prop_exp_rad_mult;				// propagating explosions radius multiplier
 	float death_roll_r_mult;
 	float death_fx_r_mult;
 	float death_roll_time_mult;
+	float death_roll_rotation_mult;
 	float death_roll_xrotation_cap;         // max rotation around x-axis in radians-per-sec (aka pitch)
 	float death_roll_yrotation_cap;         // max rotation around y-axis in radians-per-sec (aka yaw)
 	float death_roll_zrotation_cap;         // max rotation around z-axis in radians-per-sec (aka roll)
@@ -1136,12 +1138,23 @@ public:
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
+	// Fields for tuning the ETS' direct shield<->weapon transfer feature
+	float		shield_weap_amount;				// fraction of shield capacity to transfer
+	float		shield_weap_efficiency;			// efficiency multiplier for output into weapons capacitor
+	float		shield_weap_speed;				// rate that energy will be added to the weap capacitor
+	float		weap_shield_amount;				// ...
+	float		weap_shield_efficiency;			// ditto, but reverse the direction
+	float		weap_shield_speed;				// ...
+
 	// Afterburner fields
 	vec3d		afterburner_max_vel;				//	max velocity of the ship in the linear directions when afterburners are engaged -- read from ships.tbl
 	float		afterburner_forward_accel;		// forward acceleration with afterburner engaged
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
+	float       afterburner_min_start_fuel;     // must have at least this much fuel to start
+	float       afterburner_min_fuel_to_burn;   // consumes at least this much fuel before allowing to stop
+	float       afterburner_cooldown_time;      // minimum time between last afterburner finish and next start
 	//SparK: reverse afterburner
 	float		afterburner_max_reverse_vel;
 	float		afterburner_reverse_accel;
@@ -1233,6 +1246,7 @@ public:
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
 	float afterburner_trail_life;
+	float afterburner_trail_spread;
 	int afterburner_trail_faded_out_sections;
 
 	// thruster particles
@@ -1342,8 +1356,8 @@ public:
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
 
-	const char* get_display_name();
-	bool has_display_name();
+	const char* get_display_name() const;
+	bool has_display_name() const;
 
 private:
 	void move(ship_info&& other);
@@ -1446,6 +1460,7 @@ extern int TVT_wings[MAX_TVT_WINGS];
 
 extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
+extern bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
@@ -1525,11 +1540,10 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
-extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);
-extern int ship_fire_secondary(object * objp, int allow_swarm = 0 );
+extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0, bool rollback_shot = false);
+extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);
-
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 
 // for special targeting lasers
@@ -1575,8 +1589,7 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
 // for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
-
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.
@@ -1602,12 +1615,6 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-// These two functions transfer instance specific angle
-// data into and out of the model structure, which contains
-// angles, but not for each instance of model being used. See
-// the actual functions in ship.cpp for more details.
-extern void ship_model_start(object *objp);
-extern void ship_model_stop(object *objp);
 void ship_model_update_instance(object *objp);
 
 //============================================

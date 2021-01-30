@@ -12,10 +12,12 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "anim/packunpack.h"
 #include "globalincs/globals.h"
+
+#include "anim/packunpack.h"
 #include "graphics/generic.h"
 #include "hud/hud.h"
+#include "utils/unicode.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -112,6 +114,7 @@ typedef struct brief_icon {
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
+	int		model_instance_num;
 	float		radius;
 	int		type;					// ICON_* defines from MissionBriefCommon.h
 	int		bitmap_id;
@@ -320,5 +323,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void cmd_brief_reset();
 
 int brief_time_to_advance(int stage_num);
+
+bool brief_verify_color_tag(unicode::codepoint_t color_tag);
 
 #endif

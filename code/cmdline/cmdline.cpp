@@ -188,6 +188,7 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
+	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
 
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
@@ -273,7 +274,6 @@ cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
 cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
 cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
-cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
 cmdline_parm weapon_spew("-weaponspew", nullptr, AT_STRING);			// Cmdline_spew_weapon_stats
 cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
@@ -286,7 +286,6 @@ char *Cmdline_game_password = NULL;
 char *Cmdline_rank_above = NULL;
 char *Cmdline_rank_below = NULL;
 int Cmdline_cd_check = 1;
-int Cmdline_client_dodamage = 0;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -382,6 +381,7 @@ cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdlin
 cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
@@ -389,6 +389,7 @@ int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
+int Cmdline_no_screenshake = 0;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -809,7 +810,7 @@ void os_validate_parms(int argc, char *argv[])
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
 					printf("Website: http://scp.indiegames.us\n");
-					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
+					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
 					// not the prettiest thing but the job gets done
@@ -1660,12 +1661,6 @@ bool SetCmdlineParams()
 		Cmdline_multi_log = 1;
 	}	
 
-
-	// maybe use old-school client damage
-	if(client_dodamage.found()){
-		Cmdline_client_dodamage = 1;
-	}	
-
 	// spew pof info
 	if(pof_spew.found()){
 		Cmdline_spew_pof_info = 1;
@@ -1840,6 +1835,10 @@ bool SetCmdlineParams()
 		Cmdline_autopilot_interruptable = 0;
 	}
 
+	if ( no_screenshake.found() ) {
+		Cmdline_no_screenshake = 1;
+	}
+	
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}

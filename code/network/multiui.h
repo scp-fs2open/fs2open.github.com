@@ -22,6 +22,7 @@ struct net_addr;
 
 void multi_common_add_text(const char *txt,int auto_scroll = 0);
 void multi_common_set_text(const char *str,int auto_scroll = 0);
+void multi_mission_desciption_set(const char* str_in, int index);
 
 // time between sending refresh packets to known servers
 #define MULTI_JOIN_REFRESH_TIME			45000			
@@ -111,6 +112,7 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time);
 void multi_join_reset_join_stamp();
 void multi_join_clear_game_list();
 void multi_join_notify_new_game();
+void multi_join_maybe_update_selected(active_game *game);
 
 void multi_start_game_init();
 void multi_start_game_do();

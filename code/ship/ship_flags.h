@@ -121,6 +121,7 @@ namespace Ship {
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
 		Has_display_name,			// Goober5000
+		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 
 		NUM_VALUES
 
@@ -194,6 +195,7 @@ namespace Ship {
 		Dont_clamp_max_velocity,		// Goober5000
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
+		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
 
 		NUM_VALUES
 	};

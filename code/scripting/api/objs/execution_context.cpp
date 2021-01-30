@@ -24,7 +24,7 @@ ADE_FUNC(determineState,
 	l_ExecutionContext,
 	nullptr,
 	"Determines the current state of the context.",
-	"enum",
+	"enumeration",
 	"One of the CONTEXT_ enumerations")
 {
 	execution_context_h* context = nullptr;

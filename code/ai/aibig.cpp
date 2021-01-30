@@ -370,7 +370,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 	float		dot = 1.0f, min_dot;
 	object	*target_objp;
 
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	auto shipp = &Ships[Pl_objp->instance];
+	aip = &Ai_info[shipp->ai_index];
     
 	if ( aip->target_objnum < 0 )
 		return 0;
@@ -382,7 +383,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		float			dist;
 
 		// Get models of both source and target
-		polymodel *pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
+		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+		polymodel_instance *pmi = model_get_instance( shipp->model_instance_num );
 		polymodel *pm_t = model_get( Ship_info[Ships[target_objp->instance].ship_info_index].model_num );
 
 		// Necessary sanity check
@@ -403,8 +405,8 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 			aip->path_subsystem_next_check = timestamp(1500);
 
 			// get world pos of eye (stored in geye)
-			ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-			model_find_world_point( &geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos );
+			ep = &(pm->view_positions[shipp->current_viewpoint]);
+			model_instance_find_world_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -737,7 +739,7 @@ void ai_big_chase_ct()
 extern void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
 extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
 extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
-extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
+extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f);
 
 extern void maybe_cheat_fire_synaptic(object *objp);
 

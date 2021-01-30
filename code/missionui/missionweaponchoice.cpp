@@ -1638,6 +1638,12 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
  */
 void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 {
+	auto sip = &Ship_info[ship_class];
+
+	// if we have *no* allowed weapon list, weapons are unrestricted
+	if (sip->allowed_weapons.weapon_and_flags.empty())
+		return;
+
 	int i, check_flag;
 	for ( i=0; i < MAX_SHIP_WEAPONS; i++ )
 	{
@@ -1645,12 +1651,12 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-		check_flag = Ship_info[ship_class].allowed_weapons[wep[i]];
+		check_flag = sip->allowed_weapons[wep[i]];
 
 		// possibly change flag if it's restricted
-		if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i]))
+		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[i]))
 		{
-			check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i][wep[i]];
+			check_flag = sip->allowed_bank_restricted_weapons[i][wep[i]];
 		}
 
 
@@ -3420,6 +3426,7 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
+			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}
@@ -3852,7 +3859,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	if ( update ) {
 		if ( MULTIPLAYER_HOST ) {
 			int size;
-			ubyte wss_data[MAX_PACKET_SIZE-20];
+			ubyte wss_data[MAX_PACKET_SIZE];
 
 			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);			
 			Assert(pl != NULL);

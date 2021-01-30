@@ -121,6 +121,8 @@ QString node_image_to_resource_name(NodeImage image) {
 		return ":/images/data90.png";
 	case NodeImage::DATA_95:
 		return ":/images/data95.png";
+	case NodeImage::COMMENT:
+		return ":/images/comment.png";
 	}
 	return ":/images/bitmap1.png";
 }
@@ -1025,7 +1027,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		return 0;
 
 	case OPF_ANYTHING:
-		item->set_data("<any data>");
+		if (Operators[op].value == OP_INVALIDATE_ARGUMENT || Operators[op].value == OP_VALIDATE_ARGUMENT)
+			item->set_data(SEXP_ARGUMENT_STRING);	// this is almost always what you want for these sexps
+		else
+			item->set_data("<any data>");
 		return 0;
 
 	case OPF_NUMBER:

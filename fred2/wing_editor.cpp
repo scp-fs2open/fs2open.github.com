@@ -712,6 +712,8 @@ int wing_editor::update_data(int redraw)
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
 					wing_bash_ship_name(buf, str, i + 1);
 					rename_ship(Wings[cur_wing].ship_index[i], buf);
+					// clear display name if we have one hanging around
+					Ships[Wings[cur_wing].ship_index[i]].flags.remove(Ship::Ship_Flags::Has_display_name);
 				}
 			}
 

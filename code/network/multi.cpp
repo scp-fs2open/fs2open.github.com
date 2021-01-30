@@ -52,6 +52,7 @@
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
+#include "network/multi_mdns.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -106,9 +107,6 @@ int Multi_mission_loaded = 0;										// flag, so that we don't load the missio
 int Ingame_join_net_signature = -1;								// signature for the player obj for use when joining ingame
 int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical button info on a client machine
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
-
-// low level networking vars
-int HEADER_LENGTH;													// 1 byte (packet type)
 
 // misc data
 active_game* Active_game_head;									// linked list of active games displayed on Join screen
@@ -211,6 +209,7 @@ void multi_vars_init()
 	Next_asteroid_signature = ASTEROID_SIG_MIN;
 	Next_non_perm_signature = NPERM_SIG_MIN;   
 	Next_debris_signature = DEBRIS_SIG_MIN;
+	Next_waypoint_signature = WAYPOINT_SIG_MIN;
 	
 	// server-client critical stuff
 	Multi_button_info_ok = 0;
@@ -855,6 +854,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_NEW_primary_fired_packet(data, header_info);
 			break;
 
+		case LINEAR_WEAPON_FIRED:
+			process_non_homing_fired_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -1246,7 +1249,11 @@ void multi_do_frame()
 				// reset timestamp
 				Next_bytes_time = (int) time(NULL);				
 			}
-		} else {			
+		} else {
+
+			// right before sending new positions, we should do any rollback shots and resimulation
+			multi_ship_record_do_rollback();
+
 			// sending new objects from here is dependent on having objects only created after
 			// the game is done moving the objects.  I think that I can enforce this.				
 			multi_oo_process();			
@@ -1298,6 +1305,11 @@ void multi_do_frame()
 	// process any tracker messages
 	multi_fs_tracker_process();
 
+	// Cyborg17 update the new frame recording system for accurate client shots, needs to go after most everything else in multi.
+	if (Game_mode & GM_IN_MISSION) {
+		multi_ship_record_increment_frame();
+	}
+
 	// if on the standalone, do any gui stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
@@ -1311,6 +1323,11 @@ void multi_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1411,6 +1428,11 @@ void multi_pause_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1449,8 +1471,6 @@ void standalone_main_init()
 	}
 #endif // ifdef _WIN32
 
-	HEADER_LENGTH = 1;		
-	
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
 	memset( &Netgame, 0, sizeof(Netgame) );	
@@ -1540,6 +1560,11 @@ void standalone_main_init()
 	// setup port forwarding
 	multi_port_forward_init();
 
+	// setup mdns
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_init();
+	}
+
 	// login to game tracker
 	std_tracker_login();
 
@@ -1579,6 +1604,11 @@ void standalone_main_do()
 
    // process/renew port mapping
    multi_port_forward_do();
+
+	// handle mdns messages
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_do();
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -1594,6 +1624,9 @@ void standalone_main_close()
 
 	// remove port forwarding
 	multi_port_forward_close();
+
+	// stop mdns
+	multi_mdns_service_close();
 }
 
 void multi_standalone_reset_all()
@@ -1769,9 +1802,6 @@ void multi_reset_timestamps()
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)
 	std_reset_timestamps();
-
-	// initialize all object update timestamps
-	multi_oo_gameplay_init();
 }
 
 // netgame debug flags for debug console stuff

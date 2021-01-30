@@ -42,17 +42,24 @@ struct vec3d;
 
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
-	vec3d			dir_a, dir_b;					// direction vectors for beams	
-	float			delta_ang;						// angle between dir_a and dir_b
-	ubyte			shot_count;						// # of shots	
-	float			shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit
-	vec3d           rot_axis;                       // only used by type 5 beams, dir_a and dir_b may be rotated on this axis continuously
+	vec3d			dir_a, dir_b;						// direction vectors for beams	
+	vec3d			rot_axis;
+	ubyte				shot_count;							// # of shots	
+	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
 
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
 #define BFIF_FORCE_FIRING		(1<<1)
 #define BFIF_TARGETING_COORDS	(1<<2)
 #define BFIF_FLOATING_BEAM		(1<<3)
+
+// to ensure validity of fire_info, the related fields MUST be provided
+#define BFM_TURRET_FIRED         0   // objp, subsys, target
+#define BFM_TURRET_FORCE_FIRED   1   // objp, subsys, target OR target_pos
+#define BFM_FIGHTER_FIRED        2   // objp, subsys
+#define BFM_SPAWNED              3   // starting pos, target OR target_pos
+#define BFM_SEXP_FLOATING_FIRED  4   // starting pos, target OR target_pos
+#define BFM_SUBSPACE_STRIKE      5   // starting pos, target
 
 // pass to beam fire 
 typedef struct beam_fire_info {
@@ -73,6 +80,7 @@ typedef struct beam_fire_info {
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
 	int burst_seed;								// used for sharing random targets if part of the same burst
+	int  fire_method;
 	float per_burst_rotation;                         // for type 5 beams
 	int burst_index;
 } beam_fire_info;
@@ -183,10 +191,10 @@ typedef struct beam {
 	bool rotates;
 } beam;
 
-extern beam Beams[MAX_BEAMS];				// all beams
+extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
-#define BEAM_INDEX(beam)			(int)((beam) - Beams)
+#define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS

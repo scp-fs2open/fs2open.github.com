@@ -66,7 +66,7 @@ GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
 
-int Transform_buffer_handle = -1;
+gr_buffer_handle Transform_buffer_handle;
 
 SCP_unordered_map<vertex_layout, GLuint> Stored_vertex_arrays;
 
@@ -190,12 +190,12 @@ static GLenum convertComparisionFunction(ComparisionFunction func) {
 	return mode;
 }
 
-int opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint usage)
+gr_buffer_handle opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
 
 	Assertion(usage != BufferUsageHint::PersistentMapping || GLAD_GL_ARB_buffer_storage != 0,
-	          "Persistent mapping is not supported by this OpenGL implementation!");
+		"Persistent mapping is not supported by this OpenGL implementation!");
 
 	opengl_buffer_object buffer_obj;
 
@@ -208,17 +208,17 @@ int opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint us
 
 	GL_buffer_objects.push_back(buffer_obj);
 
-	return (int)(GL_buffer_objects.size() - 1);
+	return gr_buffer_handle((int)(GL_buffer_objects.size() - 1));
 }
 
-void opengl_bind_buffer_object(int handle)
+void opengl_bind_buffer_object(gr_buffer_handle handle)
 {
 	GR_DEBUG_SCOPE("Bind buffer handle");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	switch ( buffer_obj.type ) {
 	case GL_ARRAY_BUFFER:
@@ -239,28 +239,29 @@ void opengl_bind_buffer_object(int handle)
 		break;
 	}
 }
-GLuint opengl_buffer_get_id(GLenum expected_type, int handle) {
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+GLuint opengl_buffer_get_id(GLenum expected_type, gr_buffer_handle handle)
+{
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object& buffer_obj = GL_buffer_objects[handle.value()];
 
 	Assertion(expected_type == buffer_obj.type, "Expected buffer type did not match the actual buffer type!");
 
 	return buffer_obj.buffer_id;
 }
 
-void gr_opengl_update_buffer_data(int handle, size_t size, const void* data)
+void gr_opengl_update_buffer_data(gr_buffer_handle handle, size_t size, const void* data)
 {
 	// This has to be verified by the caller or else we will run into OPenGL errors
 	Assertion(size > 0, "Buffer updates must include some data!");
 
 	GR_DEBUG_SCOPE("Update buffer data");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	opengl_bind_buffer_object(handle);
 
@@ -277,14 +278,14 @@ void gr_opengl_update_buffer_data(int handle, size_t size, const void* data)
 	GL_vertex_data_in += buffer_obj.size;
 }
 
-void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, const void* data)
+void gr_opengl_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
 {
 	GR_DEBUG_SCOPE("Update buffer data with offset");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	Assertion(buffer_obj.usage != BufferUsageHint::PersistentMapping,
 	          "Persistently mapped buffers may not be updated!");
@@ -293,14 +294,14 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 
 	glBufferSubData(buffer_obj.type, offset, size, data);
 }
-void* gr_opengl_map_buffer(int handle)
+void* gr_opengl_map_buffer(gr_buffer_handle handle)
 {
 	GR_DEBUG_SCOPE("Map buffer");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	auto& buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
 	          "Buffer mapping is only supported for persistently mapped buffers!");
@@ -310,14 +311,14 @@ void* gr_opengl_map_buffer(int handle)
 	return glMapBufferRange(buffer_obj.type, 0, buffer_obj.size,
 	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 }
-void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size)
+void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size)
 {
 	GR_DEBUG_SCOPE("Flush mapped buffer");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	auto& buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
 	          "Buffer mapping is only supported for persistently mapped buffers!");
@@ -327,16 +328,16 @@ void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size)
 	glFlushMappedBufferRange(buffer_obj.type, offset, size);
 }
 
-void gr_opengl_delete_buffer(int handle)
+void gr_opengl_delete_buffer(gr_buffer_handle handle)
 {
 	if (GL_buffer_objects.size() == 0) return;
 
 	GR_DEBUG_SCOPE("Deleting buffer");
 
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
+	Assert(handle.isValid());
+	Assert((size_t)handle.value() < GL_buffer_objects.size());
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle.value()];
 
 	// de-bind the buffer point so we can clear the recorded state.
 	switch ( buffer_obj.type ) {
@@ -367,21 +368,20 @@ void gr_opengl_delete_buffer(int handle)
 	glDeleteBuffers(1, &buffer_obj.buffer_id);
 }
 
-int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
+gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
 {
 	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage), usage);
 }
 
-void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
+void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer) {
 	GR_DEBUG_SCOPE("Bind uniform buffer range");
 
 	GLuint buffer_handle = 0;
 
-	if (buffer != -1) {
-		Assert(buffer >= 0);
-		Assert((size_t)buffer < GL_buffer_objects.size());
+	if (buffer.isValid()) {
+		Assert((size_t)buffer.value() < GL_buffer_objects.size());
 
-		opengl_buffer_object &buffer_obj = GL_buffer_objects[buffer];
+		opengl_buffer_object &buffer_obj = GL_buffer_objects[buffer.value()];
 
 		Assertion(buffer_obj.type == GL_UNIFORM_BUFFER, "Only uniform buffers are valid for this function!");
 		buffer_handle = buffer_obj.buffer_id;
@@ -391,15 +391,15 @@ void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset,
 					  static_cast<GLsizeiptr>(size));
 }
 
-int opengl_create_texture_buffer_object()
+gr_buffer_handle opengl_create_texture_buffer_object()
 {
 	// create the buffer
-	int buffer_object_handle =
-	    opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
+	auto buffer_object_handle =
+		opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
 
 	opengl_check_for_errors();
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[buffer_object_handle];
+	opengl_buffer_object& buffer_obj = GL_buffer_objects[buffer_object_handle.value()];
 
 	// create the texture
 	glGenTextures(1, &buffer_obj.texture);
@@ -416,13 +416,13 @@ int opengl_create_texture_buffer_object()
 
 void gr_opengl_update_transform_buffer(void* data, size_t size)
 {
-	if ( Transform_buffer_handle < 0 || size <= 0 ) {
+	if (!Transform_buffer_handle.isValid() || size <= 0) {
 		return;
 	}
 
 	gr_opengl_update_buffer_data(Transform_buffer_handle, size, data);
 
-	opengl_buffer_object &buffer_obj = GL_buffer_objects[Transform_buffer_handle];
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[Transform_buffer_handle.value()];
 
 	// need to rebind the buffer object to the texture buffer after it's been updated.
 	// didn't have to do this on AMD and Nvidia drivers but Intel drivers seem to want it.
@@ -432,17 +432,17 @@ void gr_opengl_update_transform_buffer(void* data, size_t size)
 
 GLuint opengl_get_transform_buffer_texture()
 {
-	if ( Transform_buffer_handle < 0 ) {
+	if (!Transform_buffer_handle.isValid()) {
 		return 0;
 	}
 
-	return GL_buffer_objects[Transform_buffer_handle].texture;
+	return GL_buffer_objects[Transform_buffer_handle.value()].texture;
 }
 
 void opengl_destroy_all_buffers()
 {
 	for ( uint i = 0; i < GL_buffer_objects.size(); i++ ) {
-		gr_opengl_delete_buffer(i);
+		gr_opengl_delete_buffer(gr_buffer_handle(i));
 	}
 
 	GL_vertex_buffers_in_use = 0;
@@ -587,24 +587,24 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 
 	opengl_tnl_set_model_material(material_info);
 
-	GLubyte *ibuffer = reinterpret_cast<GLubyte*>(vert_source->Index_offset);
+	auto ibuffer = reinterpret_cast<GLubyte*>(vert_source->Index_offset);
 
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
 	Assert(vert_source);
-	Assertion(vert_source->Vbuffer_handle >= 0, "The vertex data must be located in a GPU buffer!");
-	Assertion(vert_source->Ibuffer_handle >= 0, "The index values must be located in a GPU buffer!");
+	Assertion(vert_source->Vbuffer_handle.isValid(), "The vertex data must be located in a GPU buffer!");
+	Assertion(vert_source->Ibuffer_handle.isValid(), "The index values must be located in a GPU buffer!");
 
 	// basic setup of all data
 	opengl_bind_vertex_layout(bufferp->layout,
-							  opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
-							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
+		opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
+		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
 
 	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
-	if ( !GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map ) {
+	if (!GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-										  (GLsizei) datap->n_verts,
-										  element_type,
+			(GLsizei)datap->n_verts,
+			element_type,
 										  ibuffer + datap->index_offset,
 										  4,
 										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
