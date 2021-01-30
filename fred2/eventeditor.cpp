@@ -204,16 +204,21 @@ BOOL event_editor::OnInitDialog()
 	}
 
 	// determine all the handles for event annotations
+	event_annotation default_ea;
 	for (auto &ea : Event_annotations)
 	{
 		auto h = traverse_path(ea);
 		if (h)
 		{
 			ea.handle = h;
-			event_annotation_swap_image(&m_event_tree, h, ea);
+			if (!ea.comment.empty())
+				event_annotation_swap_image(&m_event_tree, h, ea);
 		}
 		else
-			Warning(LOCATION, "Could not find event for annotation!");
+		{
+			// event was probably deleted; clear the annotation so it will be deleted later
+			ea = default_ea;
+		}
 	}
 
 	// ---------- end of event initialization ----------
@@ -563,7 +568,9 @@ void event_editor::OnOk()
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
-	// determine all the paths for event annotations
+	event_annotation_prune();
+
+	// determine all the paths for the annotations that we want to keep
 	for (auto &ea : Event_annotations)
 	{
 		ea.path.clear();
@@ -827,6 +834,8 @@ void event_editor::OnCancel()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
+	event_annotation_prune();
+
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
@@ -850,6 +859,8 @@ void event_editor::OnClose()
 			return;
 		}
 	}
+
+	event_annotation_prune();
 	
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -1629,6 +1640,23 @@ void event_editor::OnDblclkMessageList()
 	}
 }
 
+void event_annotation_prune()
+{
+	event_annotation default_ea;
+
+	Event_annotations.erase(
+		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [default_ea](const event_annotation &ea)
+		{
+			return ea.comment == default_ea.comment
+				&& ea.indent_modifier == default_ea.indent_modifier
+				&& ea.r == default_ea.r
+				&& ea.g == default_ea.g
+				&& ea.b == default_ea.b;
+		}),
+		Event_annotations.end()
+	);
+}
+
 int event_annotation_lookup(HTREEITEM handle)
 {
 	for (size_t i = 0; i < Event_annotations.size(); ++i)
@@ -1755,47 +1783,75 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 void event_sexp_tree::edit_comment(HTREEITEM h)
 {
-	TextViewDlg dlg;
 	CString old_text = _T("");
 	CString new_text;
 
 	int i = event_annotation_lookup(h);
 	if (i >= 0)
-	{
 		old_text = (CString)Event_annotations[i].comment.c_str();
-		dlg.SetText(old_text);
-	}
 
+	TextViewDlg dlg;
+	dlg.SetText(old_text);
 	dlg.SetCaption("Enter a comment");
 	dlg.SetEditable(true);
 	dlg.DoModal();
 	dlg.GetText(new_text);
 
-	// removing a comment
-	if (new_text.IsEmpty())
-	{
-		if (i >= 0)
-		{
-			event_annotation_swap_image(this, h, i);
-			Event_annotations.erase(Event_annotations.begin() + i);
-		}
-		return;
-	}
-
 	// comment is unchanged
 	if (new_text == old_text)
 		return;
 
-	// adding a comment
+	// maybe add the annotation
 	if (i < 0)
 	{
 		i = (int)Event_annotations.size();
 		Event_annotations.emplace_back();
-		event_annotation_swap_image(this, h, i);
 		Event_annotations[i].handle = h;
 	}
 
 	Event_annotations[i].comment = new_text;
+
+	// see if we are either adding a new comment or removing an existing comment
+	// if so, change the icon
+	if (old_text.IsEmpty() || new_text.IsEmpty())
+		event_annotation_swap_image(this, h, i);
+}
+
+void event_sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	COLORREF old_color = RGB(255, 255, 255);
+	COLORREF new_color;
+
+	int i = event_annotation_lookup(h);
+	if (i >= 0)
+		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);
+
+	CColorDialog dlg(old_color);
+	if (dlg.DoModal() != IDOK)
+		return;
+	new_color = dlg.GetColor();
+
+	// color is unchanged
+	if (new_color == old_color)
+		return;
+
+	// maybe add the annotation
+	if (i < 0)
+	{
+		i = (int)Event_annotations.size();
+		Event_annotations.emplace_back();
+		Event_annotations[i].handle = h;
+	}
+
+	Event_annotations[i].r = GetRValue(new_color);
+	Event_annotations[i].g = GetGValue(new_color);
+	Event_annotations[i].b = GetBValue(new_color);
+
+	SetBkColor(new_color);
+}
+
+void event_sexp_tree::edit_indent(HTREEITEM h, bool increase)
+{
 }
 
 void event_editor::populate_path(event_annotation &ea, HTREEITEM h)

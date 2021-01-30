@@ -652,11 +652,21 @@ void sexp_tree::right_clicked(int mode)
 			}
 		}
 
-		// comments only work in the event editor
+		// annotations only work in the event editor
 		if (m_mode == MODE_EVENTS)
+		{
 			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_ENABLED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_ENABLED);
+			menu.EnableMenuItem(ID_EDIT_INDENT1, MF_ENABLED);
+			menu.EnableMenuItem(ID_EDIT_INDENT2, MF_ENABLED);
+		}
 		else
+		{
 			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_INDENT1, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_INDENT2, MF_GRAYED);
+		}
 
 		/*
 		Goober5000 - allow variables in all modes;
@@ -1420,6 +1430,16 @@ void sexp_tree::edit_comment(HTREEITEM h)
 	// Not implemented in the base class
 }
 
+void sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
+void sexp_tree::edit_indent(HTREEITEM h, bool increase)
+{
+	// Not implemented in the base class
+}
+
 // given a tree node, returns the argument type it should be.
 int sexp_tree::query_node_argument_type(int node)
 {
@@ -1985,7 +2005,16 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		case ID_EDIT_COMMENT:
 			edit_comment(item_handle);
 			return 1;
-	
+
+		case ID_EDIT_BG_COLOR:
+			edit_bg_color(item_handle);
+			return 1;
+
+		case ID_EDIT_INDENT1:
+		case ID_EDIT_INDENT2:
+			edit_indent(item_handle, id == ID_EDIT_INDENT1);
+			return 1;
+
 		case ID_REPLACE_NUMBER:
 			expand_operator(item_index);
 			replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));

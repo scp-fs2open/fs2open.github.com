@@ -155,6 +155,8 @@ public:
 	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
 	virtual void edit_comment(HTREEITEM h);
+	virtual void edit_bg_color(HTREEITEM h);
+	virtual void edit_indent(HTREEITEM h, bool increase);
 	int identify_arg_type(int node);
 	int count_args(int node);
 	void right_clicked(int mode = 0);
