@@ -3399,6 +3399,12 @@ void beam_handle_collisions(beam *b)
 
 							float damage = real_damage * attenuation;
 
+							int dmg_type_idx = wi->damage_type_idx;
+							
+							weapon_info* trgt_wip = &Weapon_info[Weapons[trgt->instance].weapon_info_index];
+							if (trgt_wip->armor_type_idx != -1)
+								damage = Armor_types[trgt_wip->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f, true);
+
 							trgt->hull_strength -= damage;
 
 							if (trgt->hull_strength < 0) {
