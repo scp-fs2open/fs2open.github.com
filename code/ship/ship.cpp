@@ -13399,9 +13399,6 @@ void ship_model_update_instance(object *objp)
 
 	// Handle intrinsic rotations for this ship
 	model_do_intrinsic_rotations(shipp->model_instance_num);
-
-	// preprocess subobject orientations for collision detection
-	model_collide_preprocess(&objp->orient, pm, pmi);
 }
 
 /**
@@ -19251,7 +19248,11 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			for (int mn = 0; mn < pm->n_models; ++mn)
 			{
 				if (pm->submodel[mn].gun_rotation)
-					pmi->submodel[mn].angs.b = shipp->primary_rotate_ang[i];
+				{
+					angles angs = vmd_zero_angles;
+					angs.b = shipp->primary_rotate_ang[i];
+					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
+				}
 			}
 		}
 

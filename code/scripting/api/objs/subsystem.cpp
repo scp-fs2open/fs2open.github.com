@@ -111,15 +111,17 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if (sso->ss->submodel_instance_1 == nullptr)
+	auto smi = sso->ss->submodel_instance_1;
+	if (smi == nullptr)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_instance_1->angs = *mh->GetAngles();
+		smi->canonical_prev_orient = smi->canonical_orient;
+		smi->canonical_orient = *mh->GetMatrix();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_instance_1->angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
 ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret gun", "orientation", "Gun orientation, or null orientation if handle is invalid")
@@ -132,15 +134,17 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if (sso->ss->submodel_instance_2 == nullptr)
+	auto smi = sso->ss->submodel_instance_2;
+	if (smi == nullptr)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_instance_2->angs = *mh->GetAngles();
+		smi->canonical_prev_orient = smi->canonical_orient;
+		smi->canonical_orient = *mh->GetMatrix();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_instance_2->angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")

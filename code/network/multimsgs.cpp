@@ -3306,14 +3306,14 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	constexpr float ZERO_VALUE = 0.0f;
 
 	if (ssp->submodel_instance_1 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+		ADD_FLOAT( ssp->submodel_instance_1->cur_angle );
 	}
 	else {
 		ADD_FLOAT( ZERO_VALUE );
 	}
 
 	if (ssp->submodel_instance_2 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+		ADD_FLOAT( ssp->submodel_instance_2->cur_angle );
 	}
 	else {
 		ADD_FLOAT(ZERO_VALUE);
@@ -3337,7 +3337,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	ship_subsys *ssp;
 	ubyte has_sig = 0;
 	ship *shipp;
-	float pitch, heading;
+	float angle1, angle2;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3351,8 +3351,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_FLOAT( heading );
-	GET_FLOAT( pitch );
+	GET_FLOAT( angle1 );
+	GET_FLOAT( angle2 );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3386,11 +3386,11 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// bash the position and orientation of the turret
 	// but only if the submodels are not null
 	if (ssp->submodel_instance_1 != nullptr) {
-		ssp->submodel_instance_1->angs.h = heading;
+		ssp->submodel_instance_1->cur_angle = angle1;
 	}
 	
 	if (ssp->submodel_instance_2 != nullptr) {
-		ssp->submodel_instance_2->angs.p = pitch;
+		ssp->submodel_instance_2->cur_angle = angle2;
 	}
 
 	// get the world position of the weapon
@@ -8457,14 +8457,14 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 	// ensure a nullptr is not dereferenced for the next two values.
 	if (ssp->submodel_instance_1 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+		ADD_FLOAT( ssp->submodel_instance_1->cur_angle );
 	}
 	else {
 		ADD_FLOAT( ZERO_VALUE );
 	}
 	
 	if (ssp->submodel_instance_2 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+		ADD_FLOAT( ssp->submodel_instance_2->cur_angle );
 	}
 	else {
 		ADD_FLOAT(ZERO_VALUE);
@@ -8487,7 +8487,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	object *objp;
 	ship_subsys *ssp;	
 	ship *shipp;
-	float pitch, heading;
+	float angle1, angle2;
 	float flak_range;
 
 	// get the data for the turret fired packet
@@ -8496,8 +8496,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_USHORT( pnet_signature );
 	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_FLOAT( heading );
-	GET_FLOAT( pitch );
+	GET_FLOAT( angle1 );
+	GET_FLOAT( angle2 );
 	GET_FLOAT( flak_range );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
@@ -8531,11 +8531,11 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 
 	// bash the position and orientation of the turret, if it's not a nulltpr
 	if (ssp->submodel_instance_1 != nullptr) {
-		ssp->submodel_instance_1->angs.h = heading;
+		ssp->submodel_instance_1->cur_angle = angle1;
 	}
 
 	if (ssp->submodel_instance_2 != nullptr) {
-		ssp->submodel_instance_2->angs.p = pitch;
+		ssp->submodel_instance_2->cur_angle = angle2;
 	}
 
 	// get the world position of the weapon
