@@ -131,9 +131,7 @@ void swarm_create(object* objp, swarm_info* swarmp)
 {
 	swarmp->change_timestamp = 1;
 	swarmp->homing_objnum = -1;
-
-	int sig = (Game_mode & GM_MULTIPLAYER ? objp->net_signature : objp->signature);
-	swarmp->zig_direction = golden_ratio_rand(sig) * PI2;
+	swarmp->zig_direction = golden_ratio_rand() * PI2;
 
 	vm_vec_zero(&swarmp->offset);
 
@@ -241,7 +239,7 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 			// depending on the signature, switch every 3, 4, or 5 zig zags
 			if (zigs_zagged % (mod_signature + 3)) { 
 				// angle change!
-				swarmp->zig_direction = golden_ratio_rand((Game_mode & GM_MULTIPLAYER ? objp->net_signature : objp->signature) + zigs_zagged) * PI2;
+				swarmp->zig_direction = golden_ratio_rand() * PI2;
 			} else // otherwise go 180 degrees off of what you were before
 				swarmp->zig_direction += PI;
 

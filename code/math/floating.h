@@ -115,6 +115,6 @@ extern float fl_roundoff(float x, int multiple);
 
 const float GOLDEN_RATIO = 0.618033989f;
 
-float golden_ratio_rand(int seed = -1);
+float golden_ratio_rand();
 
 #endif
