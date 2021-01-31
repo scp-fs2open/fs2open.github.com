@@ -462,55 +462,6 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
-//	Stuff a floating point value pointed at by Mp.
-//	Advances past float characters.
-int stuff_float_temp(float *f, bool optional)
-{
-	char *str_start = Mp;
-	char *str_end;
-
-	// since strtof ignores white space anyway, might as well make it explicit
-	ignore_white_space();
-
-	auto result = strtof(Mp, &str_end);
-	bool success = false, comma = false;
-	int retval = 0;
-
-	// no float found?
-	if (result == 0.0f && str_end == Mp)
-	{
-		if (!optional)
-			error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
-	}
-	else
-	{
-		*f = result;
-		success = true;
-	}
-
-	if (success)
-		Mp = str_end;
-
-	if (*Mp == ',')
-	{
-		comma = true;
-		Mp++;
-	}
-
-	if (optional && !success)
-		Mp = str_start;
-
-	if (success)
-		retval = 2;
-	else if (optional)
-		retval = comma ? 1 : 0;
-	else
-		skip_token();
-
-	diag_printf("Stuffed float: %f\n", *f);
-	return retval;
-}
-
 // routine to parse out a vec3d from a user property field of an object
 bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 {
@@ -543,11 +494,11 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 		}
 
 		// get comma-separated floats
-		if (stuff_float_temp(&f1, true) != 2)
+		if (stuff_float(&f1, true) != 2)
 			break;
-		if (stuff_float_temp(&f2, true) != 2)
+		if (stuff_float(&f2, true) != 2)
 			break;
-		if (stuff_float_temp(&f3, true) != 2)
+		if (stuff_float(&f3, true) != 2)
 			break;
 
 		if (require_brackets)
