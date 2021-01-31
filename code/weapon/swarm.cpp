@@ -118,7 +118,7 @@ void swarm_maybe_fire_missile(int shipnum)
 }
 
 // if it can't home on something, just set target dead ahead
-void swarm_set_defaut_target_pos(object* objp, swarm_info* swarmp) {
+void swarm_set_default_target_pos(object* objp, swarm_info* swarmp) {
 	vm_vec_scale_add(&swarmp->current_target, &objp->pos, &objp->orient.vec.fvec, SWARM_CONE_LENGTH);
 }
 
@@ -131,10 +131,13 @@ void swarm_create(object* objp, swarm_info* swarmp)
 {
 	swarmp->change_timestamp = 1;
 	swarmp->homing_objnum = -1;
-	swarmp->zig_direction = golden_ratio_rand() * PI2;
+
+	int sig = (Game_mode & GM_MULTIPLAYER ? objp->net_signature : objp->signature);
+	swarmp->zig_direction = golden_ratio_rand(sig) * PI2;
+
 	vm_vec_zero(&swarmp->offset);
 
-	swarm_set_defaut_target_pos(objp, swarmp);
+	swarm_set_default_target_pos(objp, swarmp);
 }
 
 // ------------------------------------------------------------------
@@ -163,7 +166,7 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 	if ( swarmp->homing_objnum != -1 && hobjp == &obj_used_list ) {
 		swarmp->change_timestamp = 1;
 		swarmp->homing_objnum = -1;
-		swarm_set_defaut_target_pos(objp, swarmp);
+		swarm_set_default_target_pos(objp, swarmp);
 	}
 
 	if ( hobjp != &obj_used_list ) {
@@ -176,9 +179,9 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 		int zig_zag_time = fl2i(SWARM_CHANGE_DIR_TIME + SWARM_TIME_VARIANCE * (frand() - 0.5f) * 2);
 		swarmp->change_timestamp = timestamp(zig_zag_time);
 
-		if (hobjp != &obj_used_list &&
-			f2fl(Missiontime - wp->creation_time) > 0.5f &&
-			f2fl(Missiontime - wp->creation_time) > wip->free_flight_time)
+		float missile_age = f2fl(Missiontime - wp->creation_time);
+
+		if (hobjp != &obj_used_list && missile_age > 0.5f && missile_age > wip->free_flight_time)
 		{
 			// This is a copy of the relevant bits near the end of weapon_home() to make missiles lead their targets
 			// note that if the swarm missile has a target_lead_scaler of 0 this is equivalent to retail behavior (no leading)
@@ -232,10 +235,14 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 			// Radius around the target pos. Shortens as the missiles get closer to the target.
 			radius = tanf(angle_offset) * target_dist;
 
-			// calculate the angle around our target
-			if (frand() < 0.3f) // maybe go to a different angle
-				swarmp->zig_direction = golden_ratio_rand() * PI2;
-			else // otherwise go 180 degrees off of what you were before
+			// maybe zig zag to a different angle
+			int zigs_zagged = (int)(missile_age * (1 / (SWARM_CHANGE_DIR_TIME / 1000.0f)));
+			int mod_signature = (Game_mode && GM_MULTIPLAYER ? objp->net_signature : objp->signature) % 3;
+			// depending on the signature, switch every 3, 4, or 5 zig zags
+			if (zigs_zagged % (mod_signature + 3)) { 
+				// angle change!
+				swarmp->zig_direction = golden_ratio_rand((Game_mode & GM_MULTIPLAYER ? objp->net_signature : objp->signature) + zigs_zagged) * PI2;
+			} else // otherwise go 180 degrees off of what you were before
 				swarmp->zig_direction += PI;
 
 			// then rotate by it 
