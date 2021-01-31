@@ -5087,7 +5087,7 @@ void parse_event(mission * /*pm*/)
 					int num;
 					while (true) {
 						ignore_gray_space();
-						if (stuff_int_optional(&num, true) != 2) {
+						if (stuff_int_optional(&num) != 2) {
 							break;
 						}
 						ea.path.push_back(num);
