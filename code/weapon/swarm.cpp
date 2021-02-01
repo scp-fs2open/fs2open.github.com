@@ -235,7 +235,7 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 
 			// maybe zig zag to a different angle
 			int zigs_zagged = (int)(missile_age * (1 / (SWARM_CHANGE_DIR_TIME / 1000.0f)));
-			int mod_signature = (Game_mode && GM_MULTIPLAYER ? objp->net_signature : objp->signature) % 3;
+			int mod_signature = (Game_mode & GM_MULTIPLAYER ? objp->net_signature : objp->signature) % 3;
 			// depending on the signature, switch every 3, 4, or 5 zig zags
 			if (zigs_zagged % (mod_signature + 3)) { 
 				// angle change!

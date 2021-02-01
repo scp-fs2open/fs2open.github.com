@@ -6084,9 +6084,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				{
 					//Deal with swarm weapons
 					if (wp->swarm_info_ptr != nullptr) {
-						swarm_info* swarmp = wp->swarm_info_ptr.get();
-
-						weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+						weapon_set_tracking_info(weapon_objnum, parent_num, wp->swarm_info_ptr->homing_objnum, 1, wp->homing_subsys);
 					} else {
 						weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
 					}
