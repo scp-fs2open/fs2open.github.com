@@ -6076,7 +6076,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				// fire the beam
 				beam_fire(&fire_info);
 			} else {
-				vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
+				vm_vector_2_matrix(&orient, &tvec, nullptr, nullptr);
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
