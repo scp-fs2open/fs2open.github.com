@@ -1993,10 +1993,13 @@ int CFred_mission_save::save_events()
 				}
 			}
 
-			if (optional_string_fred("$Annotations End", "$Formula:"))
-				parse_comments();
-			else
-				fout_version("\n$Annotations End");
+			if (at_least_one)
+			{
+				if (optional_string_fred("$Annotations End", "$Formula:"))
+					parse_comments();
+				else
+					fout_version("\n$Annotations End");
+			}
 
 			fso_comment_pop();
 		}
