@@ -4210,7 +4210,14 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 
 	key = pTVKeyDown->wVKey;
 
-	// we're not currently editing their text
+	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
+	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
+	// despite considerable research and effort.  So this achieves the same result by just catching
+	// the shortcut keys instead of the messages they produce.  Unfortunately one still hears an error
+	// beep caused by the fumbled WM_CUT, WM_COPY, or WM_PASTE message landing somewhere unknown.
+	// 
+	// Only capture keys on the nodes when we're not currently editing their text
+	//
 	if (GetEditControl() == nullptr)
 	{
 		if (GetKeyState(VK_CONTROL) & 0x8000)
