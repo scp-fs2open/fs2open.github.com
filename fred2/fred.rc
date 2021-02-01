@@ -211,7 +211,7 @@ BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
         END
         MENUITEM SEPARATOR
-        MENUITEM "&Run FreeSpace\tAlt+R",       32985
+        MENUITEM "&Run FreeSpace",       32985
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 57616, GRAYED
         MENUITEM SEPARATOR
@@ -443,8 +443,6 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Edit Comment",                ID_EDIT_COMMENT, GRAYED
         MENUITEM "Edit Background Color",       ID_EDIT_BG_COLOR, GRAYED
-        MENUITEM "Increase Indent\tCtrl+Right", ID_EDIT_INDENT1, GRAYED
-        MENUITEM "Decrease Indent\tCtrl+Left",  ID_EDIT_INDENT2, GRAYED
         MENUITEM SEPARATOR
         MENUITEM "Cut\tCtrl+X",                 ID_EDIT_CUT, GRAYED
         MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
@@ -461,7 +459,7 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Add Paste",                   ID_EDIT_PASTE_SPECIAL, GRAYED
+        MENUITEM "Add Paste\tCtrl+P",               ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
@@ -560,93 +558,86 @@ END
 
 IDR_MAINFRAME ACCELERATORS
 BEGIN
-    "1",            ID_SPEED1,              VIRTKEY, NOINVERT
-    "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
-    "1",            ID_ROT1,                VIRTKEY, SHIFT, NOINVERT
-    "2",            ID_SPEED2,              VIRTKEY, NOINVERT
-    "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
-    "2",            ID_ROT2,                VIRTKEY, SHIFT, NOINVERT
-    "3",            ID_SPEED3,              VIRTKEY, NOINVERT
-    "3",            ID_GROUP3,              VIRTKEY, CONTROL, NOINVERT
-    "3",            ID_ROT3,                VIRTKEY, SHIFT, NOINVERT
-    "3",            ID_EDIT_POPUP_SHOW_COMPASS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "4",            ID_SPEED5,              VIRTKEY, NOINVERT
-    "4",            ID_GROUP4,              VIRTKEY, CONTROL, NOINVERT
-    "4",            ID_ROT4,                VIRTKEY, SHIFT, NOINVERT
-    "5",            ID_SPEED8,              VIRTKEY, NOINVERT
-    "5",            ID_GROUP5,              VIRTKEY, CONTROL, NOINVERT
-    "5",            ID_ROT5,                VIRTKEY, SHIFT, NOINVERT
-    "6",            ID_SPEED10,             VIRTKEY, NOINVERT
-    "6",            ID_GROUP6,              VIRTKEY, CONTROL, NOINVERT
-    "7",            ID_SPEED50,             VIRTKEY, NOINVERT
-    "7",            ID_GROUP7,              VIRTKEY, CONTROL, NOINVERT
-    "8",            ID_SPEED100,            VIRTKEY, NOINVERT
-    "8",            ID_GROUP8,              VIRTKEY, CONTROL, NOINVERT
-    "9",            ID_GROUP9,              VIRTKEY, CONTROL, NOINVERT
-    "A",            ID_ASTEROID_EDITOR,     VIRTKEY, SHIFT, NOINVERT
-    "B",            ID_EDITORS_BRIEFING,    VIRTKEY, SHIFT, NOINVERT
-    "B",            ID_SHOW_STARFRIELD,     VIRTKEY, SHIFT, ALT, NOINVERT
-    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    "C",            ID_EDITORS_CMD_BRIEF,   VIRTKEY, SHIFT, NOINVERT
-    "C",            ID_SHOW_COORDINATES,    VIRTKEY, SHIFT, ALT, NOINVERT
-    "D",            ID_SHOW_DISTANCES,      VIRTKEY, NOINVERT
-    "D",            ID_DISBAND_WING,        VIRTKEY, CONTROL, NOINVERT
-    "D",            ID_EDITORS_DEBRIEFING,  VIRTKEY, SHIFT, NOINVERT
-    "D",            ID_DUMP_STATS,          VIRTKEY, SHIFT, CONTROL, NOINVERT
-    "E",            ID_EDITORS_EVENTS,      VIRTKEY, SHIFT, NOINVERT
-    "F",            IDD_FICTION_VIEWER,     VIRTKEY, SHIFT, NOINVERT
-    "G",            ID_EDITORS_GOALS,       VIRTKEY, SHIFT, NOINVERT
-    "G",            ID_VIEW_GRID,           VIRTKEY, SHIFT, ALT, NOINVERT
-    "H",            ID_SELECT_LIST,         VIRTKEY, NOINVERT
-    "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
-    "H",            ID_SHOW_HORIZON,        VIRTKEY, SHIFT, ALT, NOINVERT
-    "I",            ID_EDITORS_BG_BITMAPS,  VIRTKEY, SHIFT, NOINVERT
-    "I",            ID_EDIT_POPUP_SHOW_SHIP_ICONS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "K",            ID_NEXT_SUBSYS,         VIRTKEY, NOINVERT
-    "K",            ID_CANCEL_SUBSYS,       VIRTKEY, ALT, NOINVERT
-    "K",            ID_PREV_SUBSYS,         VIRTKEY, SHIFT, NOINVERT
-    "L",            ID_LEVEL_OBJ,           VIRTKEY, NOINVERT
     "L",            ID_ALIGN_OBJ,           VIRTKEY, CONTROL, NOINVERT
-    "M",            ID_SELECT_AND_MOVE,     VIRTKEY, NOINVERT
-    "M",            ID_EDIT_POPUP_SHOW_SHIP_MODELS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
-    "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
-    "O",            ID_EDITORS_ORIENT,      VIRTKEY, SHIFT, NOINVERT
-    "O",            ID_VIEW_OUTLINES,       VIRTKEY, SHIFT, ALT, NOINVERT
-    "P",            ID_SAVE_CAMERA,         VIRTKEY, CONTROL, NOINVERT
-    "P",            ID_EDITORS_PLAYER,      VIRTKEY, SHIFT, NOINVERT
-    "P",            ID_SHOW_GRID_POSITIONS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "R",            ID_RESTORE_CAMERA,      VIRTKEY, CONTROL, NOINVERT
-    "R",            ID_RUN_FREESPACE,       VIRTKEY, ALT, NOINVERT
-    "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
-    "S",            ID_SELECT,              VIRTKEY, NOINVERT
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
-    "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
+    "A",            ID_ASTEROID_EDITOR,     VIRTKEY, SHIFT, NOINVERT
+    "K",            ID_CANCEL_SUBSYS,       VIRTKEY, ALT, NOINVERT
+    VK_F1,          ID_CONTEXT_HELP,        VIRTKEY, SHIFT, NOINVERT
     "T",            ID_CONTROL_OBJ,         VIRTKEY, NOINVERT
-    "V",            ID_LOOKAT_OBJ,          VIRTKEY, CONTROL, NOINVERT
-    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    "D",            ID_DISBAND_WING,        VIRTKEY, CONTROL, NOINVERT
+    "D",            ID_DUMP_STATS,          VIRTKEY, SHIFT, CONTROL, NOINVERT
     VK_DELETE,      ID_EDIT_DELETE,         VIRTKEY, NOINVERT
     VK_DELETE,      ID_EDIT_DELETE_WING,    VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
-    VK_F1,          ID_CONTEXT_HELP,        VIRTKEY, SHIFT, NOINVERT
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_EDIT_POPUP_SHOW_COMPASS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "I",            ID_EDIT_POPUP_SHOW_SHIP_ICONS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "M",            ID_EDIT_POPUP_SHOW_SHIP_MODELS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
+    "I",            ID_EDITORS_BG_BITMAPS,  VIRTKEY, SHIFT, NOINVERT
+    "B",            ID_EDITORS_BRIEFING,    VIRTKEY, SHIFT, NOINVERT
+    "C",            ID_EDITORS_CMD_BRIEF,   VIRTKEY, SHIFT, NOINVERT
+    "D",            ID_EDITORS_DEBRIEFING,  VIRTKEY, SHIFT, NOINVERT
+    "E",            ID_EDITORS_EVENTS,      VIRTKEY, SHIFT, NOINVERT
+    "F",            ID_EDITORS_FICTION,     VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_EDITORS_GOALS,       VIRTKEY, SHIFT, NOINVERT
+    "O",            ID_EDITORS_ORIENT,      VIRTKEY, SHIFT, NOINVERT
+    "P",            ID_EDITORS_PLAYER,      VIRTKEY, SHIFT, NOINVERT
+    "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
+    "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
+    "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
+    "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
+    "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
+    "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
+    "3",            ID_GROUP3,              VIRTKEY, CONTROL, NOINVERT
+    "4",            ID_GROUP4,              VIRTKEY, CONTROL, NOINVERT
+    "5",            ID_GROUP5,              VIRTKEY, CONTROL, NOINVERT
+    "6",            ID_GROUP6,              VIRTKEY, CONTROL, NOINVERT
+    "7",            ID_GROUP7,              VIRTKEY, CONTROL, NOINVERT
+    "8",            ID_GROUP8,              VIRTKEY, CONTROL, NOINVERT
+    "9",            ID_GROUP9,              VIRTKEY, CONTROL, NOINVERT
+    "L",            ID_LEVEL_OBJ,           VIRTKEY, NOINVERT
+    "R",            ID_LOOKAT_OBJ,          VIRTKEY, ALT, NOINVERT
+    "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
     VK_SPACE,       ID_MISC_STATISTICS,     VIRTKEY, ALT, NOINVERT
     VK_TAB,         ID_NEXT_OBJ,            VIRTKEY, NOINVERT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
+    "K",            ID_NEXT_SUBSYS,         VIRTKEY, NOINVERT
     VK_TAB,         ID_PREV_OBJ,            VIRTKEY, CONTROL, NOINVERT
-    "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
-    "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
-    "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
+    "K",            ID_PREV_SUBSYS,         VIRTKEY, SHIFT, NOINVERT
+    "R",            ID_RESTORE_CAMERA,      VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_ROT1,                VIRTKEY, SHIFT, NOINVERT
+    "2",            ID_ROT2,                VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_ROT3,                VIRTKEY, SHIFT, NOINVERT
+    "4",            ID_ROT4,                VIRTKEY, SHIFT, NOINVERT
+    "5",            ID_ROT5,                VIRTKEY, SHIFT, NOINVERT
     "X",            ID_ROTATE_LOCALLY,      VIRTKEY, NOINVERT
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
-    "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
-    "Z",            ID_ZOOM_SELECTED,       VIRTKEY, ALT, NOINVERT
+    "P",            ID_SAVE_CAMERA,         VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_SELECT,              VIRTKEY, NOINVERT
+    "M",            ID_SELECT_AND_MOVE,     VIRTKEY, NOINVERT
+    "H",            ID_SELECT_LIST,         VIRTKEY, NOINVERT
+    "C",            ID_SHOW_COORDINATES,    VIRTKEY, SHIFT, ALT, NOINVERT
+    "D",            ID_SHOW_DISTANCES,      VIRTKEY, NOINVERT
+    "P",            ID_SHOW_GRID_POSITIONS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "H",            ID_SHOW_HORIZON,        VIRTKEY, SHIFT, ALT, NOINVERT
+    "B",            ID_SHOW_STARFRIELD,     VIRTKEY, SHIFT, ALT, NOINVERT
+    "1",            ID_SPEED1,              VIRTKEY, NOINVERT
+    "6",            ID_SPEED10,             VIRTKEY, NOINVERT
+    "8",            ID_SPEED100,            VIRTKEY, NOINVERT
+    "2",            ID_SPEED2,              VIRTKEY, NOINVERT
+    "3",            ID_SPEED3,              VIRTKEY, NOINVERT
+    "4",            ID_SPEED5,              VIRTKEY, NOINVERT
+    "7",            ID_SPEED50,             VIRTKEY, NOINVERT
+    "5",            ID_SPEED8,              VIRTKEY, NOINVERT
+    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_VIEW_GRID,           VIRTKEY, SHIFT, ALT, NOINVERT
+    "O",            ID_VIEW_OUTLINES,       VIRTKEY, SHIFT, ALT, NOINVERT
     "Z",            ID_ZOOM_EXTENTS,        VIRTKEY, SHIFT, NOINVERT
+    "Z",            ID_ZOOM_SELECTED,       VIRTKEY, ALT, NOINVERT
 END
 
 IDR_ACC_CAMPAIGN ACCELERATORS
@@ -3110,8 +3101,6 @@ BEGIN
     ID_ADD_MINUS            "Evaluates to difference between first subexpression and remaining subexpressions"
     ID_EDIT_COMMENT         "Change the comment associated with this item"
     ID_EDIT_BG_COLOR        "Change the background color displayed for this item"
-    ID_EDIT_INDENT1         "Increase the indentation of this item"
-    ID_EDIT_INDENT2         "Decrease the indentation of this item"
 END
 
 STRINGTABLE
@@ -3170,7 +3159,7 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Ctrl+V)"
+    ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Alt+R)"
 END
 
 STRINGTABLE

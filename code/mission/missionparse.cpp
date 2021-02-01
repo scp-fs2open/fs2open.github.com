@@ -5074,13 +5074,23 @@ void parse_event(mission * /*pm*/)
 	if (optional_string("$Annotations Start")) {
 		// annotations are only used in FRED
 		if (Fred_running) {
-			while (check_for_string("+Comment:")) {
+			while (check_for_string("+Comment:") || check_for_string("+Background Color:")) {
 				event_annotation ea;
 				ea.path.push_back(Num_mission_events);
 
 				if (optional_string("+Comment:")) {
 					stuff_string(ea.comment, F_MULTITEXT);
 					lcl_replace_stuff(ea.comment, true);
+				}
+
+				if (optional_string("+Background Color:")) {
+					stuff_ubyte(&ea.r);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.g);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.b);
 				}
 
 				if (optional_string("+Path:")) {

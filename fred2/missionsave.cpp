@@ -1941,6 +1941,7 @@ int CFred_mission_save::save_events()
 		{
 			bool at_least_one = false;
 			fso_comment_push(";;FSO 21.0.0;;");
+			event_annotation default_ea;
 
 			// see if there is an annotation for this event
 			for (const auto &ea : Event_annotations)
@@ -1957,7 +1958,7 @@ int CFred_mission_save::save_events()
 					at_least_one = true;
 				}
 
-				if (!ea.comment.empty())
+				if (ea.comment != default_ea.comment)
 				{
 					if (optional_string_fred("+Comment:", "$Formula:"))
 						parse_comments();
@@ -1972,6 +1973,16 @@ int CFred_mission_save::save_events()
 						parse_comments();
 					else
 						fout_version("\n$end_multi_text");
+				}
+
+				if (ea.r != default_ea.r || ea.g != default_ea.g || ea.b != default_ea.b)
+				{
+					if (optional_string_fred("+Background Color:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Background Color:");
+
+					fout(" %d, %d, %d", ea.r, ea.g, ea.b);
 				}
 
 				if (ea.path.size() > 1)

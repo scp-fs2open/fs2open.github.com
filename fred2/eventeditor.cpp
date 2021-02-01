@@ -1649,7 +1649,6 @@ void event_annotation_prune()
 		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [default_ea](const event_annotation &ea)
 		{
 			return ea.comment == default_ea.comment
-				&& ea.indent_modifier == default_ea.indent_modifier
 				&& ea.r == default_ea.r
 				&& ea.g == default_ea.g
 				&& ea.b == default_ea.b;
@@ -1890,10 +1889,6 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 
 	// This is needed otherwise the color won't change until the user clicks something
 	RedrawWindow();
-}
-
-void event_sexp_tree::edit_indent(HTREEITEM h, bool increase)
-{
 }
 
 void event_editor::populate_path(event_annotation &ea, HTREEITEM h)

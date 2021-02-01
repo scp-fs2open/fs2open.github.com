@@ -28,7 +28,6 @@ public:
 
 	void edit_comment(HTREEITEM h);
 	void edit_bg_color(HTREEITEM h);
-	void edit_indent(HTREEITEM h, bool increase);
 
 protected:
 	virtual void PreSubclassWindow();
