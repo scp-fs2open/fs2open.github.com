@@ -201,6 +201,7 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	flagset<Weapon::Beam_Info_Flags> flags;
 } beam_weapon_info;
 
 typedef struct particle_spew_info {	//this will be used for multi spews
@@ -306,6 +307,8 @@ struct weapon_info
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
+	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
+	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -676,8 +679,8 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);
 
-// return if this weapon can lock on this ship, based on its type, class, species or iff
-bool weapon_can_lock_on_ship(weapon_info *wip, int ship_num);
+// return if this weapon can lock on this target, based on its type, class, species or iff
+bool weapon_target_satisfies_lock_restrictions(weapon_info *wip, object* target);
 
 // return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
 bool weapon_has_iff_restrictions(weapon_info* wip);

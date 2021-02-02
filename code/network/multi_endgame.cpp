@@ -25,6 +25,7 @@
 #include "network/multi_portfwd.h"
 #include "hud/hudconfig.h"
 #include "network/multi_fstracker.h"
+#include "network/multi_mdns.h"
 
 
 // ----------------------------------------------------------------------------------------------------------
@@ -377,6 +378,9 @@ void multi_endgame_cleanup()
 
 		// stop port forwarding
 		multi_port_forward_close();
+
+		// stop mdns
+		multi_mdns_service_close();
 
 		// if we're in Parallax Online mode, log back in there	
 		if (Multi_options_g.pxo == 1) {

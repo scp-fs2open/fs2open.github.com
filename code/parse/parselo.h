@@ -67,11 +67,11 @@ extern int Token_found_flag;
 #define SEXP_ERROR_CHECK_MODE		2
 
 // Goober5000 - this seems to be a pretty universal function
-extern bool end_string_at_first_hash_symbol(char *src);
-extern bool end_string_at_first_hash_symbol(SCP_string &src);
-extern char *get_pointer_to_first_hash_symbol(char *src);
-extern const char *get_pointer_to_first_hash_symbol(const char *src);
-extern int get_index_of_first_hash_symbol(SCP_string &src);
+extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
+extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
+extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
+extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 
 // white space
 extern int is_white_space(char ch);
@@ -138,11 +138,12 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
-extern void stuff_float(float *f);
-extern int stuff_float_optional(float *f, bool raw = false);
-extern int stuff_int_optional(int *i, bool raw = false);
-extern void stuff_int(int *i);
+extern int stuff_float(float *f, bool optional = false);
+extern int stuff_int(int *i, bool optional = false);
+extern int stuff_long(long *l, bool optional = false);
 extern void stuff_ubyte(ubyte *i);
+extern int stuff_int_optional(int *i);
+extern int stuff_float_optional(float *f);
 extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
@@ -184,25 +185,16 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n
     return num_strings;
 }
 
-extern bool atol2(long *out);
 template<class T>
 void stuff_flagset(T *dest) {
-    long l;
-    bool success = atol2(&l);
+    long l = 0;
+    stuff_long(&l);
 
 	if (l < 0) {
 		error_display(0, "Expected flagset value but got negative value %lu!\n", l);
 		l = 0;
 	}
     dest->from_u64((std::uint64_t) l);
-
-    if (!success)
-        skip_token();
-    else
-        Mp += strspn(Mp, "+-0123456789");
-
-    if (*Mp == ',')
-        Mp++;
 
     diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }

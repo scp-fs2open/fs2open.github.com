@@ -1170,50 +1170,28 @@ NoHit:
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
-		angles angs;
+		matrix instance_orient;
 		bool blown_off;
 		bool collision_checked;
 		bsp_info * csm = &Mc_pm->submodel[i];
 		
 		if ( Mc_pmi ) {
-			angs = Mc_pmi->submodel[i].angs;
+			instance_orient = Mc_pmi->submodel[i].canonical_orient;
 			blown_off = Mc_pmi->submodel[i].blown_off;
 			collision_checked = Mc_pmi->submodel[i].collision_checked;
 		} else {
-			angs = csm->angs;
-			blown_off = csm->blown_off ? true : false;
+			instance_orient = vmd_identity_matrix;
+			blown_off = false;
 			collision_checked = false;
 		}
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
 		if ( !blown_off && !collision_checked && !csm->no_collisions )	{
-			if ( Mc_pmi ) {
-				Mc_orient = Mc_pmi->submodel[i].mc_orient;
-				Mc_base = Mc_pmi->submodel[i].mc_base;
-				vm_vec_add2(&Mc_base, Mc->pos);
-			} else {
-				//instance for this subobject
-				matrix tm = IDENTITY_MATRIX;
+			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
+			vm_vec_add2(&Mc_base, &saved_base);
 
-				vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient );
-				vm_vec_add2(&Mc_base, &saved_base );
-
-				if( vm_matrix_same(&tm, &csm->orientation)) {
-					// if submodel orientation matrix is identity matrix then don't bother with matrix ops
-					vm_angles_2_matrix(&tm, &angs);
-				} else {
-					matrix rotation_matrix = csm->orientation;
-					vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
-
-					matrix inv_orientation;
-					vm_copy_transpose(&inv_orientation, &csm->orientation);
-
-					vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
-				}
-
-				vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
-			}
+			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);
 
 			mc_check_subobj( i );
 		}
@@ -1330,9 +1308,7 @@ int model_collide(mc_info *mc_info_obj)
 				mc_check_subobj(Mc_pm->detail[0]);
 			}
 		} else {
-			if ( !Mc_pm->submodel[Mc_pm->detail[0]].blown_off ) {
-				mc_check_subobj(Mc_pm->detail[0]);
-			}
+			mc_check_subobj(Mc_pm->detail[0]);
 		}
 	}
 
@@ -1345,71 +1321,12 @@ int model_collide(mc_info *mc_info_obj)
 			vm_vec_add2(&Mc->hit_point_world, Mc->pos);
 		} else {
 			if ( Mc_pmi ) {
-				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_instance_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc_pmi, Mc->hit_submodel, Mc->orient, Mc->pos);
 			} else {
-				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc->hit_submodel, Mc->orient, Mc->pos);
 			}
 		}
 	}
 
-
 	return Mc->num_hits;
-
-}
-
-void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm,  polymodel_instance *pmi, int subobj_num)
-{
-	submodel_instance *smi = &pmi->submodel[subobj_num];
-
-	smi->mc_base = *pos;
-	smi->mc_orient = *orient;
-
-	int i = pm->submodel[subobj_num].first_child;
-
-	while ( i >= 0 ) {
-		angles angs = pmi->submodel[i].angs;
-		bsp_info * csm = &pm->submodel[i];
-
-		matrix tm = IDENTITY_MATRIX;
-
-		vm_vec_unrotate(pos, &csm->offset, &smi->mc_orient );
-		vm_vec_add2(pos, &smi->mc_base);
-
-		if( vm_matrix_same(&tm, &csm->orientation)) {
-			// if submodel orientation matrix is identity matrix then don't bother with matrix ops
-			vm_angles_2_matrix(&tm, &angs);
-		} else {
-			matrix rotation_matrix = csm->orientation;
-			vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
-
-			matrix inv_orientation;
-			vm_copy_transpose(&inv_orientation, &csm->orientation);
-
-			vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
-		}
-
-		vm_matrix_x_matrix(orient, &smi->mc_orient, &tm);
-
-		model_collide_preprocess_subobj(pos, orient, pm, pmi, i);
-
-		i = csm->next_sibling;
-	}
-}
-
-void model_collide_preprocess(matrix *orient, int model_instance_num, int detail_num)
-{
-	polymodel_instance	*pmi;
-	polymodel *pm;
-
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
-
-	matrix current_orient;
-	vec3d current_pos;
-
-	current_orient = *orient;
-
-	vm_vec_zero(&current_pos);
-
-	model_collide_preprocess_subobj(&current_pos, &current_orient, pm, pmi, pm->detail[detail_num]);
 }

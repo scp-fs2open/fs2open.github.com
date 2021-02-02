@@ -597,9 +597,9 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 
 // externalization of table/mission files ----------------------- 
 
-void lcl_replace_stuff(char *text, size_t max_len)
+void lcl_replace_stuff(char *text, size_t max_len, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
 	Assert(text);	// Goober5000
@@ -618,16 +618,17 @@ void lcl_replace_stuff(char *text, size_t max_len)
 // now will also replace $quote with double quotation marks
 // now will also replace $semicolon with semicolon mark
 // now will also replace $slash and $backslash
-void lcl_replace_stuff(SCP_string &text)
+void lcl_replace_stuff(SCP_string &text, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
-	if (Player != NULL)
+	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
 		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
 	}
+
 	replace_all(text, "$quote", "\"");
 	replace_all(text, "$semicolon", ";");
 	replace_all(text, "$slash", "/");

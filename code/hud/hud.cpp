@@ -1613,6 +1613,8 @@ void hud_render_preprocess(float frametime)
 	}
 
 	if ( hud_disabled() ) {
+		// if the hud is disabled, we still need to make sure that the indicators are properly handled
+		hud_do_lock_indicators(flFrametime);
 		return;
 	}
 

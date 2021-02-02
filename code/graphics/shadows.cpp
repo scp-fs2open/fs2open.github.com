@@ -482,13 +482,16 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 					continue;
 				}
 								
+				auto pmi = model_get_instance(db->model_instance_num);
+				auto pm = model_get(pmi->model_num);
+
 				objp = &Objects[db->objnum];
 
 				model_render_params render_info;
 
 				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
 
-				submodel_render_queue(&render_info, &scene, db->model_num, db->submodel_num, &objp->orient, &objp->pos);
+				submodel_render_queue(&render_info, &scene, pm, pmi, db->submodel_num, &objp->orient, &objp->pos);
 			}
 			break; 
 		}

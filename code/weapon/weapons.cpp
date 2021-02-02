@@ -103,6 +103,12 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
+flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
+	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false }
+};
+
+const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
+
 weapon_explosions Weapon_explosions;
 
 SCP_vector<lod_checker> LOD_checker;
@@ -1165,6 +1171,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		} else if (optional_string_either("+Min Damage:", "+Max Damage:")) {
 			Warning(LOCATION, "+Min Damage: and +Max Damage: in %s are deprecated, please change to +Attenuation Damage:.", wip->name);
 			stuff_float(&wip->atten_damage);
+		}
+	}
+
+	// angle-based damage multiplier
+	if (optional_string("$Angle of Incidence Damage Multiplier:")) {
+		if (optional_string("+Min:")) {
+			stuff_float(&wip->damage_incidence_min);
+		}
+		if (optional_string("+Max:")) {
+			stuff_float(&wip->damage_incidence_max);
 		}
 	}
 	
@@ -2575,6 +2591,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->piercing_impact_effect = ParticleManager::get()->
 					addEffect(piercingEffect);
 			}
+		}
+
+		if (optional_string("+Beam Flags:")) {
+			parse_string_flag_list(wip->b_info.flags, Beam_info_flags, Num_beam_info_flags, nullptr);
 		}
 
 		// beam sections
@@ -4093,9 +4113,8 @@ void find_homing_object(object *weapon_objp, int num)
 				continue; 
 
 			homing_object_team = obj_team(objp);
-			bool can_lock_on_ship = objp->type != OBJ_SHIP || weapon_can_lock_on_ship(wip, objp->instance);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
-			if (can_lock_on_ship && can_attack)
+			if (weapon_target_satisfies_lock_restrictions(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
@@ -4522,16 +4541,19 @@ void weapon_home(object *obj, int num, float frame_time)
 	//	See if this weapon is the nearest homing object to the object it is homing on.
 	//	If so, update some fields in the target object's ai_info.
 	if (hobjp != &obj_used_list) {
-		float	dist;
-
-		dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
 
 		if (hobjp->type == OBJ_SHIP) {
 			ai_info	*aip;
 
 			aip = &Ai_info[Ships[hobjp->instance].ai_index];
 
-			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) {
+			vec3d target_vector;
+			float dist = vm_vec_normalized_dir(&target_vector, &hobjp->pos, &obj->pos);
+
+			// add this missile to nearest_locked_object if its the closest
+			// with the flag, only do it if its also mostly pointed at its target
+			if (((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) && 
+				(!(The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
 				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
@@ -5353,12 +5375,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
-		int target_ship_num = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
-
-			if (obj_type == OBJ_SHIP)
-				target_ship_num = Objects[target_objnum].instance;
 
 			if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_WEAPON) ) {
 				target_team = obj_team(&Objects[target_objnum]);
@@ -5381,7 +5399,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		bool can_lock = weapon_has_iff_restrictions(wip) && target_ship_num >= 0 ? weapon_can_lock_on_ship(wip, target_ship_num) :
+		bool can_lock = (weapon_has_iff_restrictions(wip) && target_objnum >= 0) ? weapon_target_satisfies_lock_restrictions(wip, &Objects[target_objnum]) :
 			(!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor)));
 
 		// Cyborg17 - exclude all invalid object numbers here since in multi, the lock slots can get out of sync.
@@ -8096,6 +8114,8 @@ void weapon_info::reset()
 	this->damage = 0.0f;
 	this->damage_time = -1.0f;
 	this->atten_damage = -1.0f;
+	this->damage_incidence_max = 1.0f;
+	this->damage_incidence_min = 1.0f;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
@@ -8274,6 +8294,7 @@ void weapon_info::reset()
 	this->b_info.range = BEAM_FAR_LENGTH;
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;
+	this->b_info.flags.reset();
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
@@ -8417,12 +8438,14 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			// doubled damage is handled strangely...
 			float hull_multiplier = 1.0f;
+			float shield_multiplier = 1.0f;
 			float subsys_multiplier = 1.0f;
 
 			// area effect?
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
 			{
 				hull_multiplier = 2.0f;
+				shield_multiplier = 2.0f;
 
 				// shockwave?
 				if (wi.shockwave.speed > 0.0f)
@@ -8431,9 +8454,20 @@ void weapon_spew_stats(WeaponSpewType type)
 				}
 			}
 
-			mprintf(("%.2f,%.2f,", hull_multiplier * damage * wi.armor_factor, hull_multiplier * damage * wi.armor_factor * fire_rate));
-			mprintf(("%.2f,%.2f,", hull_multiplier * damage * wi.shield_factor, hull_multiplier * damage * wi.shield_factor * fire_rate));
-			mprintf(("%.2f,%.2f,", subsys_multiplier * damage * wi.subsystem_factor, subsys_multiplier * damage * wi.subsystem_factor * fire_rate));
+			// puncture?
+			if (wi.wi_flags[Weapon::Info_Flags::Puncture])
+				hull_multiplier /= 4;
+
+			// beams ignore factors unless specified
+			float armor_factor = wi.armor_factor;
+			float shield_factor = wi.shield_factor;
+			float subsys_factor = wi.subsystem_factor;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam] && !Beams_use_damage_factors)
+				armor_factor = shield_factor = subsys_factor = 1.0f;
+
+			mprintf(("%.2f,%.2f,", hull_multiplier * damage * armor_factor, hull_multiplier * damage * armor_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", shield_multiplier * damage * shield_factor, shield_multiplier * damage * shield_factor * fire_rate));
+			mprintf(("%.2f,%.2f,", subsys_multiplier * damage * subsys_factor, subsys_multiplier * damage * subsys_factor * fire_rate));
 
 			mprintf(("%.2f,", wi.energy_consumed / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", wi.fire_wait, fire_rate));
@@ -8468,12 +8502,14 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			// doubled damage is handled strangely...
 			float hull_multiplier = 1.0f;
+			float shield_multiplier = 1.0f;
 			float subsys_multiplier = 1.0f;
 
 			// area effect?
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
 			{
 				hull_multiplier = 2.0f;
+				shield_multiplier = 2.0f;
 
 				// shockwave?
 				if (wi.shockwave.speed > 0.0f)
@@ -8482,8 +8518,12 @@ void weapon_spew_stats(WeaponSpewType type)
 				}
 			}
 
+			// puncture?
+			if (wi.wi_flags[Weapon::Info_Flags::Puncture])
+				hull_multiplier /= 4;
+
 			mprintf(("%.2f,%.2f,", hull_multiplier * wi.damage * wi.armor_factor, hull_multiplier * wi.damage * wi.armor_factor / wi.fire_wait));
-			mprintf(("%.2f,%.2f,", hull_multiplier * wi.damage * wi.shield_factor, hull_multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
+			mprintf(("%.2f,%.2f,", shield_multiplier * wi.damage * wi.shield_factor, shield_multiplier * wi.damage * wi.shield_factor / wi.fire_wait));
 			mprintf(("%.2f,%.2f,", subsys_multiplier * wi.damage * wi.subsystem_factor, subsys_multiplier * wi.damage * wi.subsystem_factor / wi.fire_wait));
 
 			mprintf((","));	// no power use for secondaries
@@ -8542,12 +8582,14 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			// doubled damage is handled strangely...
 			float hull_multiplier = 1.0f;
+			float shield_multiplier = 1.0f;
 			float subsys_multiplier = 1.0f;
 
 			// area effect?
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
 			{
 				hull_multiplier = 2.0f;
+				shield_multiplier = 2.0f;
 
 				// shockwave?
 				if (wi.shockwave.speed > 0.0f)
@@ -8556,10 +8598,21 @@ void weapon_spew_stats(WeaponSpewType type)
 				}
 			}
 
+			// puncture?
+			if (wi.wi_flags[Weapon::Info_Flags::Puncture])
+				hull_multiplier /= 4;
+
+			// beams ignore factors unless specified
+			float armor_factor = wi.armor_factor;
+			float shield_factor = wi.shield_factor;
+			float subsys_factor = wi.subsystem_factor;
+			if (wi.wi_flags[Weapon::Info_Flags::Beam] && !Beams_use_damage_factors)
+				armor_factor = shield_factor = subsys_factor = 1.0f;
+
 			mprintf(("\tDPS: "));
-			mprintf(("%.0f Hull, ", hull_multiplier * damage * wi.armor_factor * fire_rate));
-			mprintf(("%.0f Shield, ", hull_multiplier * damage * wi.shield_factor * fire_rate));
-			mprintf(("%.0f Subsystem\n", subsys_multiplier * damage * wi.subsystem_factor * fire_rate));
+			mprintf(("%.0f Hull, ", hull_multiplier * damage * armor_factor * fire_rate));
+			mprintf(("%.0f Shield, ", shield_multiplier * damage * shield_factor * fire_rate));
+			mprintf(("%.0f Subsystem\n", subsys_multiplier * damage * subsys_factor * fire_rate));
 
 			char watts[NAME_LENGTH];
 			sprintf(watts, "%.1f", wi.energy_consumed * fire_rate);
@@ -8590,12 +8643,14 @@ void weapon_spew_stats(WeaponSpewType type)
 
 			// doubled damage is handled strangely...
 			float hull_multiplier = 1.0f;
+			float shield_multiplier = 1.0f;
 			float subsys_multiplier = 1.0f;
 
 			// area effect?
 			if (wi.shockwave.inner_rad > 0.0f || wi.shockwave.outer_rad > 0.0f)
 			{
 				hull_multiplier = 2.0f;
+				shield_multiplier = 2.0f;
 
 				// shockwave?
 				if (wi.shockwave.speed > 0.0f)
@@ -8604,9 +8659,13 @@ void weapon_spew_stats(WeaponSpewType type)
 				}
 			}
 
+			// puncture?
+			if (wi.wi_flags[Weapon::Info_Flags::Puncture])
+				hull_multiplier /= 4;
+
 			mprintf(("\tDamage: "));
 			mprintf(("%.0f Hull, ", hull_multiplier * wi.damage * wi.armor_factor));
-			mprintf(("%.0f Shield, ", hull_multiplier * wi.damage * wi.shield_factor));
+			mprintf(("%.0f Shield, ", shield_multiplier * wi.damage * wi.shield_factor));
 			mprintf(("%.0f Subsystem\n", subsys_multiplier * wi.damage * wi.subsystem_factor));
 
 			char wait[NAME_LENGTH];
@@ -8653,16 +8712,19 @@ int weapon_get_max_missile_seekers(weapon_info *wip)
 }
 
 // returns whether a homing weapon can home on a particular ship
-bool weapon_can_lock_on_ship(weapon_info* wip, int ship_num)
+bool weapon_target_satisfies_lock_restrictions(weapon_info* wip, object* target)
 {
+	if (target->type != OBJ_SHIP)
+		return true;
+
 	auto& restrictions = wip->ship_restrict;
 	// if you didn't specify any restrictions, you can always lock
 	if (restrictions.empty()) return true;
 
-	int type_num = Ship_info[Ships[ship_num].ship_info_index].class_type;
-	int class_num = Ships[ship_num].ship_info_index;
-	int species_num = Ship_info[Ships[ship_num].ship_info_index].species;
-	int iff_num = Ships[ship_num].team;
+	int type_num = Ship_info[Ships[target->instance].ship_info_index].class_type;
+	int class_num = Ships[target->instance].ship_info_index;
+	int species_num = Ship_info[Ships[target->instance].ship_info_index].species;
+	int iff_num = Ships[target->instance].team;
 
 	// otherwise, you're good as long as it matches one of the allowances in the restriction list
 	return std::any_of(restrictions.begin(), restrictions.end(),

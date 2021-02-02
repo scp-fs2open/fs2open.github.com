@@ -133,6 +133,7 @@ namespace AI {
 		nonshielded_ships_can_manage_ets,
 		Better_collision_avoidance,
 		Require_exact_los,
+		Improved_missile_avoidance,
 
 		NUM_VALUES
 	};
