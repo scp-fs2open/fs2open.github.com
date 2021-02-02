@@ -33,6 +33,7 @@ namespace Ship {
         Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
         No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
 		Forced_target,				// The turrets current target is being forced by SEXP, and won't let it go until it dies or is cleared by SEXP
+		Forced_subsys_target,		// The turrets current subsystem target is being forced by SEXP, implies Forced_target
 
 		NUM_VALUES
 	};
