@@ -1173,6 +1173,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_float(&wip->atten_damage);
 		}
 	}
+
+	// angle-based damage multiplier
+	if (optional_string("$Angle of Incidence Damage Multiplier:")) {
+		if (optional_string("+Min:")) {
+			stuff_float(&wip->damage_incidence_min);
+		}
+		if (optional_string("+Max:")) {
+			stuff_float(&wip->damage_incidence_max);
+		}
+	}
 	
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
@@ -8104,6 +8114,8 @@ void weapon_info::reset()
 	this->damage = 0.0f;
 	this->damage_time = -1.0f;
 	this->atten_damage = -1.0f;
+	this->damage_incidence_max = 1.0f;
+	this->damage_incidence_min = 1.0f;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
