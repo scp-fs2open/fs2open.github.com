@@ -18874,8 +18874,6 @@ void sexp_turret_set_forced_target(int node, bool targeting_subsys)
 
 void sexp_turret_clear_forced_target(int node)
 {
-	bool is_nan, is_nan_forever;
-
 	// get ship
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || !ship_entry->shipp) {
