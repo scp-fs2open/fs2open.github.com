@@ -520,14 +520,21 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->second_order_lead_predict_factor = 0;
 					}
 				}
+				if (optional_string("$ships with no shields can manage ETS:"))
+				{
+					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
+					bool temp;
+					stuff_boolean(&temp);
+                    profile->flags.set(AI::Profile_Flags::all_nonshielded_ships_can_manage_ets, temp);
+				}
 
                 set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
-				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
 
-				set_flag(profile, "fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
 
 				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
 
