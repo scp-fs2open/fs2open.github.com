@@ -2176,10 +2176,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 					case OP_IS_IN_TURRET_FOV:
+					case OP_TURRET_SET_FORCED_TARGET:
 						ship_index = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
+					case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 						if(argnum == 1){
 							ship_index = CDR(op_node);
 						} else {
@@ -18826,34 +18828,32 @@ void sexp_turret_set_target_priorities(int node)
 
 void sexp_turret_set_forced_target(int node, bool targeting_subsys)
 {
-	bool is_nan, is_nan_forever;
-
-	// get ship
-	auto ship_entry = eval_ship(node);
-	if (!ship_entry || !ship_entry->shipp) {
-		return;
-	}
-
 	// get target
-	node = CDR(node);
 	auto target = eval_ship(node);
 	if (!target || !target->shipp)
 		return;
 	node = CDR(node);
 
 	// maybe get target subsys
+	ship_subsys* target_subsys = nullptr;
 	if (targeting_subsys) {
-		node = CDR(node);
-		auto target_subsys = ship_get_subsys(target->shipp, CTEXT(node));
+		target_subsys = ship_get_subsys(target->shipp, CTEXT(node));
 		if (target_subsys == nullptr)
 			return;
 		node = CDR(node);
 	}
 
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+	node = CDR(node);
+
 	while (node >= 0)
 	{
 		// get the turret
-		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
 		if (turret != nullptr)
 		{
 			turret->turret_enemy_objnum = OBJ_INDEX(target->objp);
@@ -18862,7 +18862,7 @@ void sexp_turret_set_forced_target(int node, bool targeting_subsys)
 			turret->targeted_subsys = nullptr;
 
 			if (targeting_subsys) {
-				turret->targeted_subsys = turret;
+				turret->targeted_subsys = target_subsys;
 				turret->flags.set(Ship::Subsystem_Flags::Forced_subsys_target);
 			}
 		}
@@ -28073,10 +28073,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			}
 			else if (argnum == 1) {
-				return OPF_SHIP;
+				return OPF_SUBSYSTEM;
 			}
 			else if (argnum == 2) {
-				return OPF_SUBSYSTEM;
+				return OPF_SHIP;
 			}
 			else {
 				return OPF_SUBSYSTEM;
@@ -33278,16 +33278,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_TURRET_SET_FORCED_TARGET, "turret-set-forced-target\r\n"
 		"\tForces one or more turrets to target a specific ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
 		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
-		"\t1: Ship turrets are on\r\n"
-		"\t2: Ship to target\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Ship turrets are on\r\n"
 		"\trest: Turrets to set\r\n" },
 	
 	{ OP_TURRET_SET_FORCED_SUBSYS_TARGET, "turret-set-forced-subsys-target\r\n"
-		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
+		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this subsystem target until destroyed or cleared by turret-clear-forced-target\r\n"
 		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
-		"\t1: Ship turrets are on\r\n"
-		"\t2: Ship to target\r\n"
-		"\t3: Subsystem to target\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Subsystem to target\r\n"
+		"\t3: Ship turrets are on\r\n"
 		"\trest: Turrets to set\r\n" },
 
 	{ OP_TURRET_CLEAR_FORCED_TARGET, "turret-clear-forced-target\r\n"

@@ -4947,6 +4947,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_MISSILE_LOCKED:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_TURRET_SET_FORCED_TARGET:
 			// iterate to the next field
 			child = tree_nodes[child].next;
 			break;
@@ -4996,6 +4997,16 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			break;
+
+		// this sexp checks the third entry, but only for the 4th argument
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (arg_index >= 3) {
+				child = tree_nodes[child].next;
+				Assert(child >= 0);
+				child = tree_nodes[child].next;
+			}
+			break;
+
 	}
 
 	// now find the ship and add all relevant subsystems

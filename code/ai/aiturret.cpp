@@ -2468,6 +2468,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 			return;
 	}
 
+	// if we've got Forced_subsys_target targeted_subsys *really* shouldnt be null but just in case...
+	if (ss->flags[Ship::Subsystem_Flags::Forced_subsys_target] && ss->targeted_subsys != nullptr) {
+		if (ss->targeted_subsys->current_hits <= 0.0f) {
+			ss->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
+			ss->flags.remove(Ship::Subsystem_Flags::Forced_target);
+		}
+	}
+
 	//	Maybe pick a new enemy, unless targeting has been taken over by scripting
 	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override && !(ss->flags[Ship::Subsystem_Flags::Forced_target])) {
 		Num_find_turret_enemy++;
@@ -2492,12 +2500,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		if (ss->turret_enemy_objnum != -1) {
 			float	dot = 1.0f;
 			lep = &Objects[ss->turret_enemy_objnum];
-
-			// if we've got Forced_subsys_target targeted_subsys *really* shouldnt be null but just in case...
-			if (ss->flags[Ship::Subsystem_Flags::Forced_subsys_target] && ss->targeted_subsys != nullptr) {
-				if (ss->targeted_subsys->current_hits <= 0.0f)
-					ss->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
-			}
 
 			if (( lep->type == OBJ_SHIP ) && !(ss->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
