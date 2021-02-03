@@ -212,10 +212,14 @@ void ai_manage_ets(object* obj)
 		return;
 
 	// check if weapons or engines are not being used. If so, don't allow energy management.
+	if (!ship_info_p->max_speed || !ship_info_p->max_weapon_reserve) {
+		return;
+	}
+
 	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
-	if ( !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve || 
-		(!ship_p->ship_max_shield_strength && !aip->ai_profile_flags[AI::Profile_Flags::nonshielded_ships_can_manage_ets]) ) {
-			return;
+	if (!ship_p->ship_max_shield_strength && !(aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets] || 
+		(ship_info_p->is_fighter_bomber() && aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) {
+		return;
 	}
 
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
