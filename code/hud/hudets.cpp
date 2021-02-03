@@ -217,8 +217,8 @@ void ai_manage_ets(object* obj)
 	}
 
 	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
-	if (!ship_p->ship_max_shield_strength && !(aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets] || 
-		(ship_info_p->is_fighter_bomber() && aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) {
+	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets]) || 
+		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
 		return;
 	}
 
