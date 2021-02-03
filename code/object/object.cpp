@@ -933,13 +933,8 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}			
 
-			// in multiplayer, if this object was just updatd (i.e. clients send their own positions),
-			// then reset the flag and don't move the object.
-            if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
-				objp->flags.remove(Object::Object_Flags::Just_updated);
-			} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		// simulate the physics
-			}
+			// simulate the physics
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1580,10 +1575,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-
-		// unflag all objects as being updates
-        objp->flags.remove(Object::Object_Flags::Just_updated);
-
 		objp = GET_NEXT(objp);
 	}
 
@@ -1809,7 +1800,6 @@ void obj_observer_move(float frame_time)
 	ft = flFrametime;
 	obj_move_call_physics( objp, ft );
 	obj_move_all_post(objp, frame_time);
-	objp->flags.remove(Object::Object_Flags::Just_updated);
 }
 
 /**
