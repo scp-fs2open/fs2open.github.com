@@ -16,7 +16,7 @@ UniformBuffer::UniformBuffer(UniformBufferManager* parent, size_t parent_offset,
 }
 UniformBuffer::~UniformBuffer() = default;
 void UniformBuffer::submitData() { _parent->submitData(_aligner.getData(), _aligner.getSize(), _parent_offset); }
-int UniformBuffer::bufferHandle() { return _buffer_handle; }
+gr_buffer_handle UniformBuffer::bufferHandle() { return _buffer_handle; }
 size_t UniformBuffer::getBufferOffset(size_t localOffset) { return _parent_offset + localOffset; }
 size_t UniformBuffer::getAlignerElementOffset(size_t index) { return getBufferOffset(_aligner.getOffset(index)); }
 size_t UniformBuffer::getCurrentAlignerOffset() { return getBufferOffset(_aligner.getCurrentOffset()); }

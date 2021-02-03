@@ -26,12 +26,11 @@ XSTR(
 "Baz desc", 3005)
 $end_multi_text
 
-; use the same name,... as above, it doesn't matter
 $Entry:
-$Name: XSTR("Baz name",3004)
-$Anim: Baz anim
+$Name: XSTR("Qux name",-1)
+$Anim: Qux anim
 $AlwaysInTechRoom: -43
 $Description:
 XSTR(
-"Baz desc", 3005)
+"Qux desc", -1)
 $end_multi_text

@@ -202,7 +202,7 @@ UI_INPUTBOX Om_tracker_squad_name;
 static int Om_tracker_focus = 0;
 
 // ip address list vars
-#define IP_STRING_LEN								255
+#define IP_STRING_LEN								60
 #define MAX_IP_ADDRS									100
 
 #define IP_CONFIG_FNAME								NOX("Tcp.cfg")
@@ -1289,7 +1289,7 @@ char Ip_str[IP_STRING_LEN+1];
 int Ip_validated_already = 0;
 int options_multi_verify_ip()
 {
-	int result;
+	bool result;
 
 	if(!Ip_validated_already){
 		// see if its a valid ip address

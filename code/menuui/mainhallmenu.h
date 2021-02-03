@@ -46,9 +46,9 @@ public:
 	SCP_vector<SCP_string> cheat_anim_to;
 
 	// minimum resolution and aspect ratio needed to display this main hall
-	int min_width;
-	int min_height;
-	float min_aspect_ratio;
+	int min_width = 0;
+	int min_height = 0;
+	float min_aspect_ratio = 0.0f;
 
 	// bitmap and mask
 	SCP_string bitmap;
@@ -60,16 +60,16 @@ public:
 
 	// help overlay
 	SCP_string help_overlay_name;
-	int help_overlay_resolution_index;
+	int help_overlay_resolution_index = 0;
 
 	// zoom area
-	int zoom_area_width;
-	int zoom_area_height;
+	int zoom_area_width = -1;
+	int zoom_area_height = -1;
 
 	// intercom defines -------------------
 
 	// # of intercom sounds
-	int num_random_intercom_sounds;
+	int num_random_intercom_sounds = 0;
 
 	// random (min/max) delays between playing intercom sounds
 	SCP_vector<SCP_vector<int> > intercom_delay;
@@ -84,7 +84,7 @@ public:
 	// misc animations --------------------
 
 	// # of misc animations
-	int num_misc_animations;
+	int num_misc_animations = 0;
 
 	// filenames of the misc animations
 	SCP_vector<SCP_string> misc_anim_name;
@@ -123,7 +123,7 @@ public:
 	// door animations --------------------
 
 	// # of door animations
-	int num_door_animations;
+	int num_door_animations = 0;
 
 	// filenames of the door animations
 	SCP_vector<SCP_string> door_anim_name;
@@ -141,18 +141,18 @@ public:
 	// region descriptions ----------------
 
 	// font used for the tooltips, version number, etc.
-	int font;
+	int font = font::FONT1;
 
 	// action
 	SCP_vector<main_hall_region> regions;
 	
-	bool default_readyroom;
+	bool default_readyroom = true;
 
 	// num pixels shader is above/below tooltip text
-	int tooltip_padding;
+	int tooltip_padding = -1;
 
 	// y coord of where to draw tooltip text
-	int region_yval;
+	int region_yval = -1;
 
 };
 

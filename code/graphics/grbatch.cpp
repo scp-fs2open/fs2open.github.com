@@ -553,12 +553,12 @@ void geometry_batcher::load_buffer(effect_vertex* buffer, int *n_verts)
 	*n_verts = *n_verts + verts_to_render;
 }
 
-void geometry_batcher::render_buffer(int  /*buffer_handle*/, int  /*flags*/)
+void geometry_batcher::render_buffer(gr_buffer_handle  /*buffer_handle*/, int  /*flags*/)
 {
 
 }
 
-void geometry_shader_batcher::render_buffer(int  /*buffer_handle*/, int  /*flags*/)
+void geometry_shader_batcher::render_buffer(gr_buffer_handle /*buffer_handle*/, int  /*flags*/)
 {
 
 }
@@ -957,7 +957,7 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 	return 0;
 }
 
-void batch_render_lasers(int buffer_handle)
+void batch_render_lasers(gr_buffer_handle buffer_handle)
 {
 	for (auto &bi : geometry_map) {
 
@@ -969,7 +969,7 @@ void batch_render_lasers(int buffer_handle)
 
 		Assert( bi.second.texture >= 0 );
 		gr_set_bitmap(bi.second.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-		if ( buffer_handle >= 0 ) {
+		if (buffer_handle.isValid()) {
 			bi.second.batch.render_buffer(buffer_handle, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT | TMAP_FLAG_EMISSIVE);
 		} else {
 			bi.second.batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT | TMAP_FLAG_EMISSIVE);
@@ -992,7 +992,7 @@ void batch_load_buffer_lasers(effect_vertex* buffer, int *n_verts)
 	}
 }
 
-void batch_render_geometry_map_bitmaps(int buffer_handle)
+void batch_render_geometry_map_bitmaps(gr_buffer_handle buffer_handle)
 {
 	for (auto &bi : geometry_map) {
 
@@ -1004,7 +1004,7 @@ void batch_render_geometry_map_bitmaps(int buffer_handle)
 
 		Assert( bi.second.texture >= 0 );
 		gr_set_bitmap(bi.second.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi.second.alpha);
-		if ( buffer_handle >= 0 ) {
+		if (buffer_handle.isValid()) {
 			bi.second.batch.render_buffer(buffer_handle, bi.second.tmap_flags);
 		} else {
 			bi.second.batch.render( bi.second.tmap_flags);
@@ -1012,7 +1012,7 @@ void batch_render_geometry_map_bitmaps(int buffer_handle)
 	}
 }
 
-void batch_render_geometry_shader_map_bitmaps(int buffer_handle)
+void batch_render_geometry_shader_map_bitmaps(gr_buffer_handle buffer_handle)
 {
 	for (auto &bi : geometry_shader_map) {
 
@@ -1058,9 +1058,9 @@ void batch_load_buffer_geometry_shader_map_bitmaps(particle_pnt* buffer, size_t 
 	}
 }
 
-void geometry_batch_render(int stream_buffer)
+void geometry_batch_render(gr_buffer_handle stream_buffer)
 {
-	if ( stream_buffer < 0 ) {
+	if (!stream_buffer.isValid()) {
 		return;
 	}
 
@@ -1083,9 +1083,9 @@ void geometry_batch_render(int stream_buffer)
 	batch_render_geometry_shader_map_bitmaps(stream_buffer);
 }
 
-void batch_render_all(int stream_buffer)
+void batch_render_all(gr_buffer_handle stream_buffer)
 {
-	if ( stream_buffer >= 0 ) {
+	if (stream_buffer.isValid()) {
 		// need to get vertex size
 		int n_to_render = batch_get_size();
 		int n_verts = 0;
@@ -1194,7 +1194,7 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 	return 0;
 }
 
-void batch_render_distortion_map_bitmaps(int buffer_handle)
+void batch_render_distortion_map_bitmaps(gr_buffer_handle buffer_handle)
 {
 	for (auto &bi : distortion_map) {
 
@@ -1207,7 +1207,7 @@ void batch_render_distortion_map_bitmaps(int buffer_handle)
 		Assert( bi.second.texture >= 0 );
 		gr_set_bitmap(bi.second.texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, bi.second.alpha);
 
-		if ( buffer_handle >= 0 ) {
+		if (buffer_handle.isValid()) {
 			bi.second.batch.render_buffer(buffer_handle, bi.second.tmap_flags);
 		} else {
 			bi.second.batch.render( bi.second.tmap_flags);

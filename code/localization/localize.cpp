@@ -190,20 +190,46 @@ void parse_stringstbl_quick(const char *filename)
 
 				if (!Unicode_text_mode) {
 					required_string("+Special Character Index:");
-					stuff_ubyte(&language.special_char_indexes[0]);
-					for (i = 1; i < LCL_MAX_FONTS; ++i) {
+					ubyte special_char;
+					stuff_ubyte(&special_char);
+
+					if (language.special_char_indexes.empty()){
+						language.special_char_indexes.push_back(special_char);
+					}
+					else {
+						language.special_char_indexes[0] = special_char;
+					}
+
+					for (i = 1; i < LCL_MIN_FONTS; ++i) {
 						// default to "none"/0 except for font03 which defaults to 176
 						// NOTE: fonts.tbl may override these values
 						if (i == font::FONT3) {
-							language.special_char_indexes[i] = 176;
+							special_char = 176;
+						} else {
+							special_char = 0;
+						}
+
+						// if more than one language is defined, the vector may not be increased to this size already.
+						if (i < (int)language.special_char_indexes.size()) {
+							language.special_char_indexes[i] = special_char;
+						} else {
+							language.special_char_indexes.push_back(special_char);
+						}
+
+					}
+				} else {
+					if (optional_string("+Special Character Index:")) {
+						ubyte temp_index;
+						stuff_ubyte(&temp_index);
+					}
+
+					// Set all indices to valid values
+					for (i = 0; i < LCL_MIN_FONTS; ++i) {
+						if (i >= (int)language.special_char_indexes.size()) {
+							language.special_char_indexes.push_back(0);
 						} else {
 							language.special_char_indexes[i] = 0;
 						}
-					}
-				} else {
-					// Set all indices to valid values
-					for (i = 0; i < LCL_MAX_FONTS; ++i) {
-						language.special_char_indexes[i] = 0;
 					}
 				}
 
@@ -521,8 +547,8 @@ ubyte lcl_get_font_index(int font_num)
 		// we just return 0 to signify that there are no special characters in this font
 		return 0;
 	} else {
-		Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+		Assertion((lang >= 0) && (lang < (int)Lcl_languages.size()), "Current language %d is not valid, can't get font indexes. This is a coder error, please report.", lang);
+		Assertion((font_num >= 0) && (font_num < (int)Lcl_languages[lang].special_char_indexes.size()), "Passed an invalid font index, %d. This is a coder error, please report.", font_num);
 
 		return Lcl_languages[lang].special_char_indexes[font_num];
 	}
@@ -571,9 +597,9 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 
 // externalization of table/mission files ----------------------- 
 
-void lcl_replace_stuff(char *text, size_t max_len)
+void lcl_replace_stuff(char *text, size_t max_len, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
 	Assert(text);	// Goober5000
@@ -592,16 +618,17 @@ void lcl_replace_stuff(char *text, size_t max_len)
 // now will also replace $quote with double quotation marks
 // now will also replace $semicolon with semicolon mark
 // now will also replace $slash and $backslash
-void lcl_replace_stuff(SCP_string &text)
+void lcl_replace_stuff(SCP_string &text, bool force)
 {
-	if (Fred_running)
+	if (Fred_running && !force)
 		return;
 
-	if (Player != NULL)
+	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
 		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
 	}
+
 	replace_all(text, "$quote", "\"");
 	replace_all(text, "$semicolon", ";");
 	replace_all(text, "$slash", "/");
@@ -712,8 +739,8 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		return false;
 	}
 	
-	// if the localization file is not open, or there's no entry, return the original string
-	if ( !Xstr_inited || (str_id < 0) ) {
+	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == LCL_UNTRANSLATED) ) {
 		if ( strlen(text_str) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
@@ -770,7 +797,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	if (in.compare(0, 4, "XSTR")) {
+	if (strnicmp(in.c_str(), "XSTR", 4) != 0) {
 		// NOT an XSTR() tag
 		out = in;
 

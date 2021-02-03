@@ -16,8 +16,13 @@
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "mod_table/mod_table.h"
+#include "network/multi_endgame.h"
+#include "network/multiteamselect.h"
 #include "parse/parselo.h"
 #include "sound/audiostr.h"
 #include "utils/encoding.h"
@@ -281,6 +286,11 @@ void fiction_viewer_init()
 	if (!mission_has_fiction())
 		return;
 
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+	}
+
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
@@ -373,7 +383,7 @@ void fiction_viewer_init()
 	{
 		audiostream_play(Fiction_viewer_voice, Master_voice_volume, 0);
 	}
-	
+
 	Fiction_viewer_inited = 1;
 }
 
@@ -424,8 +434,13 @@ void fiction_viewer_do_frame(float frametime)
 	switch (k)
 	{
 		case KEY_ESC:
-			common_music_close();
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			if (Game_mode & GM_MULTIPLAYER) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_ALL);
+			} else {
+				common_music_close();
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 			return;
 	}
 

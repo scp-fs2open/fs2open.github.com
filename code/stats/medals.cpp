@@ -191,7 +191,7 @@ medal_stuff::medal_stuff()
 	voice_base[0] = '\0';
 }
 
-const char* medal_stuff::get_display_string() {
+const char* medal_stuff::get_display_name() const {
 	if (!alt_name.empty()) {
 		return alt_name.c_str();
 	} else {
@@ -715,7 +715,7 @@ int medal_main_do()
 
 		default:
 			if (Player_score->medal_counts[region] > 0) {
-				blit_label(Medals[region].get_display_string(), Player_score->medal_counts[region]);
+				blit_label(Medals[region].get_display_name(), Player_score->medal_counts[region]);
 			}
 			break;
 	} // end switch

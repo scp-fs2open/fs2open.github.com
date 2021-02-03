@@ -169,7 +169,7 @@ int ade_index_handler(lua_State* L) {
 	}
 	lua_pop(L, 1);    //WMC - metatable
 
-	if (type_name != NULL) {
+	if (type_name != nullptr) {
 		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring(L, key_ldx), type_name);
 	} else {
 		LuaError(L, "Could not find index '%s'", lua_tostring(L, key_ldx));
@@ -332,10 +332,8 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 		}
 
 		if (data_ldx != INT_MAX) {
-			//WMC - Cannot delete libs and stuff off here.
-			if (p_amt_ldx != LUA_GLOBALSINDEX) {
-				cleanup_items++;
-			}
+			// Remove data once we are done
+			cleanup_items++;
 
 			//WMC - Handle virtual variables by getting their table
 			if (Type == 'v') {
@@ -499,7 +497,8 @@ size_t ade_table_entry::AddSubentry(ade_table_entry& n_ate) {
 	return new_idx;
 }
 
-std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
+std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
 	using namespace scripting;
 
@@ -564,6 +563,10 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 					overloadArgList.arguments.push_back(std::move(argCopy));
 				}
 			} else {
+				if (errorReporter) {
+					errorReporter(arg_parser.getErrorMessage());
+				}
+
 				overloadArgList.simple.assign(overload);
 			}
 
@@ -622,7 +625,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 	}
 
 	for (uint32_t i = 0; i < Num_subentries; i++) {
-		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement());
+		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement(errorReporter));
 	}
 
 	return element;

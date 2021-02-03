@@ -35,8 +35,6 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
-#include "graphics/opengl/gropenglshader.h"
-#include "graphics/opengl/gropenglpostprocessing.h"
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
@@ -123,6 +121,8 @@ QString node_image_to_resource_name(NodeImage image) {
 		return ":/images/data90.png";
 	case NodeImage::DATA_95:
 		return ":/images/data95.png";
+	case NodeImage::COMMENT:
+		return ":/images/comment.png";
 	}
 	return ":/images/bitmap1.png";
 }
@@ -717,14 +717,54 @@ int sexp_tree::query_node_argument_type(int node) {
 	return query_operator_argument_type(op_num, argnum);
 }
 
+//
+// See https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C++
+//
+template<typename T>
+typename T::size_type GeneralizedLevensteinDistance(const T &source,
+	const T &target,
+	typename T::size_type insert_cost = 1,
+	typename T::size_type delete_cost = 1,
+	typename T::size_type replace_cost = 1) {
+	if (source.size() > target.size()) {
+		return GeneralizedLevensteinDistance(target, source, delete_cost, insert_cost, replace_cost);
+	}
+
+	using TSizeType = typename T::size_type;
+	const TSizeType min_size = source.size(), max_size = target.size();
+	std::vector<TSizeType> lev_dist(min_size + 1);
+
+	lev_dist[0] = 0;
+	for (TSizeType i = 1; i <= min_size; ++i) {
+		lev_dist[i] = lev_dist[i - 1] + delete_cost;
+	}
+
+	for (TSizeType j = 1; j <= max_size; ++j) {
+		TSizeType previous_diagonal = lev_dist[0], previous_diagonal_save;
+		lev_dist[0] += insert_cost;
+
+		for (TSizeType i = 1; i <= min_size; ++i) {
+			previous_diagonal_save = lev_dist[i];
+			if (source[i - 1] == target[j - 1]) {
+				lev_dist[i] = previous_diagonal;
+			}
+			else {
+				lev_dist[i] = std::min(std::min(lev_dist[i - 1] + delete_cost, lev_dist[i] + insert_cost), previous_diagonal + replace_cost);
+			}
+			previous_diagonal = previous_diagonal_save;
+		}
+	}
+
+	return lev_dist[min_size];
+}
+
 // Look for the valid operator that is the closest match for 'str' and return the operator
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-SCP_string sexp_tree::match_closest_operator(const char* str, int node) {
+SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node) {
 	int z, i, op, arg_num, opf, opr;
-	SCP_string sub_best;
-	SCP_string best;
+	int min = -1, best = -1;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -738,46 +778,22 @@ SCP_string sexp_tree::match_closest_operator(const char* str, int node) {
 
 	// determine which argument we are of the parent
 	arg_num = find_argument_number(z, node);
+	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
 
-	opf = query_operator_argument_type(op, arg_num); // check argument type at this position
-	opr = query_operator_return_type(op);
 	for (i = 0; i < (int) Operators.size(); i++) {
-		if (sexp_query_type_match(opf, opr)) {
-			if ((stricmp(str, Operators[i].text.c_str()) <= 0) && (stricmp(str, best.c_str()) < 0)) {
-				best = Operators[i].text;
-			}
+		opr = query_operator_return_type(i);			// figure out which type this operator returns
 
-			if (stricmp(Operators[i].text.c_str(), sub_best.c_str()) > 0) {
-				sub_best = Operators[i].text;
+		if (sexp_query_type_match(opf, opr)) {
+			int dist = (int)GeneralizedLevensteinDistance(str, Operators[i].text, 2, 2, 3);
+			if (min < 0 || dist < min) {
+				min = dist;
+				best = i;
 			}
 		}
 	}
 
-	if (best.empty()) {
-		best = sub_best;
-	}  // no best found, use our plan #2 best found.
-
-	Assert(!best.empty());  // we better have some valid operator at this point.
-	return best;
-
-/*	char buf[256];
-	int child;
-
-	if (tree_nodes[node].flags == EDITABLE)  // data
-		node = tree_nodes[node].parent;
-
-	if (node != -1) {
-		child = tree_nodes[node].child;
-		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
-			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
-			SetItemText(tree_nodes[node].handle, buf);
-			tree_nodes[node].flags = OPERAND | EDITABLE;
-			tree_nodes[child].flags = COMBINED;
-			DeleteItem(tree_nodes[child].handle);
-			tree_nodes[child].handle = NULL;
-			return;
-		}
-	}*/
+	Assert(best >= 0);  // we better have some valid operator at this point.
+	return Operators[best].text;
 }
 
 // adds to or replaces (based on passed in flag) the current operator
@@ -1011,7 +1027,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		return 0;
 
 	case OPF_ANYTHING:
-		item->set_data("<any data>");
+		if (Operators[op].value == OP_INVALIDATE_ARGUMENT || Operators[op].value == OP_VALIDATE_ARGUMENT)
+			item->set_data(SEXP_ARGUMENT_STRING);	// this is almost always what you want for these sexps
+		else
+			item->set_data("<any data>");
 		return 0;
 
 	case OPF_NUMBER:
@@ -1443,6 +1462,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_TEAM_COLOR:
 	case OPF_GAME_SND:
 	case OPF_FIREBALL:
+	case OPF_SPECIES:
 		return 1;
 
 	case OPF_SHIP:
@@ -2999,6 +3019,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_fireball();
 		break;
 
+	case OPF_SPECIES:
+		list = get_listing_opf_species();
+		break;
+
 	default:
 		Int3();  // unknown OPF code
 		list = NULL;
@@ -4204,11 +4228,10 @@ sexp_list_item* sexp_tree::get_listing_opf_weapon_name() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_intel_name() {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Intel_info_size; i++) {
-		head.add_data(Intel_info[i].name);
+	for (auto &ii : Intel_info) {
+		head.add_data(ii.name);
 	}
 
 	return head.next;
@@ -4217,8 +4240,8 @@ sexp_list_item* sexp_tree::get_listing_opf_intel_name() {
 sexp_list_item* sexp_tree::get_listing_opf_ship_class_name() {
 	sexp_list_item head;
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		head.add_data(it->name);
+	for (auto &si : Ship_info) {
+		head.add_data(si.name);
 	}
 
 	return head.next;
@@ -4395,7 +4418,7 @@ sexp_list_item* sexp_tree::get_listing_opf_post_effect() {
 	sexp_list_item head;
 
 	SCP_vector<SCP_string> ppe_names;
-	get_post_process_effect_names(ppe_names);
+	gr_get_post_process_effect_names(ppe_names);
 	for (i = 0; i < ppe_names.size(); i++) {
 		head.add_data_dup(ppe_names[i].c_str());
 	}
@@ -4539,6 +4562,16 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 		if (strlen(unique_id) > 0)
 			head.add_data(unique_id);
 	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &species : Species_info)
+		head.add_data(species.species_name);
 
 	return head.next;
 }
@@ -5552,14 +5585,9 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	bool update_node = true;
 	uint node;
 
-	modified();
 	if (str.isEmpty()) {
 		return;
 	}
-
-	// let's make sure we aren't introducing any invalid characters, per Mantis #2893
-	SCP_string replaced_str = str.toStdString();
-	lcl_fred_replace_stuff(replaced_str);
 
 	for (node = 0; node < tree_nodes.size(); node++) {
 		if (tree_nodes[node].handle == item) {
@@ -5577,12 +5605,15 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		auto op = match_closest_operator(replaced_str.c_str(), node);
+		auto op = match_closest_operator(str.toStdString(), node);
 		if (op.empty()) {
 			return;
 		}    // Goober5000 - avoids crashing
 
-		item->setText(0, QString::fromStdString(op));
+		// use the text of the operator we found
+		str = QString::fromStdString(op);
+		item->setText(0, str);
+
 		setCurrentItemIndex(node);
 		int op_num = get_operator_index(op.c_str());
 		if (op_num >= 0) {
@@ -5591,8 +5622,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 			update_node = false;
 		}
 	}
-
-		// gotta sidestep Goober5000's number hack and check entries are actually positive.
+	// gotta sidestep Goober5000's number hack and check entries are actually positive.
 	else if (tree_nodes[node].type & SEXPT_NUMBER) {
 		if (query_node_argument_type(node) == OPF_POSITIVE) {
 			int val = str.toInt();
@@ -5610,8 +5640,12 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	}
 
 	if (update_node) {
+		modified();
 		strncpy(tree_nodes[node].text, str.toStdString().c_str(), len);
 		tree_nodes[node].text[len] = 0;
+
+		// let's make sure we aren't introducing any invalid characters, per Mantis #2893
+		lcl_fred_replace_stuff(tree_nodes[node].text, TOKEN_LENGTH - 1);
 	} else {
 		item->setText(0, QString::fromUtf8(tree_nodes[node].text, len));
 	}

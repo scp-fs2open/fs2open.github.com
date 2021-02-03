@@ -105,8 +105,16 @@ bool dock_check_find_direct_docked_object(object *objp, object *other_objp)
 
 bool dock_check_find_docked_object(object *objp, object *other_objp)
 {
-	Assert(objp != NULL);
-	Assert(other_objp != NULL);
+	Assert(objp != nullptr);
+	Assert(objp->signature > 0);
+	Assert(other_objp != nullptr);
+	Assert(other_objp->signature > 0);
+
+
+	if (!(objp != nullptr && objp->signature > 0))
+		return false;
+	if (!(other_objp != nullptr && other_objp->signature > 0))
+		return false;
 
 	dock_function_info dfi;
 	dfi.parameter_variables.objp_value = other_objp;
@@ -249,8 +257,8 @@ float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, a
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -301,8 +309,8 @@ float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type ax
 			return 0.0f;
 	}
 
-	// rotate and move the endpoint to go through the axis of the actual object
-	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	// move the endpoint to go through the axis of the actual object
+	vm_vec_unrotate(&world_line_end, &local_line_end, &objp->orient);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
 	// now we have a unit vector starting at the object's position and pointing along the chosen axis
@@ -343,7 +351,9 @@ float dock_calc_docked_speed(object *objp)
 //		dest		=>		output matrix
 //		objp		=>		one of the objects in the assembly
 //		center 		=>		center of mass of the assembly in world coords ( use dock_calc_docked_center_of_mass to find it )
-void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
+// Returns whether or not was successful (in case some or all of the matrices were uninvertable or too close to it)
+// If not successful, dest will have NaN or infinity, use at your own risk!
+bool dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 {
 	Assertion((dest != nullptr) && (objp != nullptr) && (center != nullptr), "dock_calc_total_moi invalid argument(s)");
 
@@ -354,6 +364,8 @@ void dock_calc_total_moi(matrix* dest, object* objp, vec3d *center)
 	dfi.maintained_variables.matrix_value = dest;
 
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_moi_helper);
+
+	return is_valid_matrix(dest);
 }
 
 // This ship is the only ship NOT moved by docking AI to keep everyone together
@@ -379,32 +391,31 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* rel_world_hit_pos, object* objp)
+void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* world_hit_pos, object* objp)
 {
-	Assertion((objp != nullptr) && (impulse != nullptr) && (rel_world_hit_pos != nullptr),
+	Assertion((objp != nullptr) && (impulse != nullptr) && (world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
 
 	//	Detect null vector.
 	if (whack_below_limit(impulse))
 		return;
 
-	vec3d world_center_of_mass;
-	vec3d world_hit_pos;
-
-	// calc world hit pos of the hit ship
-	vm_vec_add(&world_hit_pos, rel_world_hit_pos, &objp->pos);
-
 	// calc overall world center-of-mass of all ships
+	vec3d world_center_of_mass;
 	float total_mass = dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
 	vec3d hit_pos;
 	// the new hitpos is the vector from world center-of-mass to world hitpos
-	vm_vec_sub(&hit_pos, &world_hit_pos, &world_center_of_mass);
+	vm_vec_sub(&hit_pos, world_hit_pos, &world_center_of_mass);
 
 	matrix moi, inv_moi;
 	// calculate the effective inverse MOI for the docked composite object about its center of mass
-	dock_calc_total_moi(&moi, objp, &world_center_of_mass);
-	vm_inverse_matrix(&inv_moi, &moi);
+	if (dock_calc_total_moi(&moi, objp, &world_center_of_mass)) {
+		vm_inverse_matrix(&inv_moi, &moi);
+	}
+	else { // Just in case anything funky happened (usually due to some of the input matrices being non-invertable or too close to it)
+		inv_moi = vmd_zero_matrix;
+	}
 
 	// calculate the angular_impulse about the center of mass in world coords
 	vec3d angular_impulse;
@@ -725,7 +736,7 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// calculate square of distance to line
@@ -774,7 +785,7 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 	for (i = 0; i < 6; i++)
 	{
 		// calculate position of point
-		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_unrotate(&world_point, &local_point[i], &objp->orient);
 		vm_vec_add2(&world_point, &objp->pos);
 
 		// find the nearest point along the line
@@ -841,7 +852,11 @@ void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 	// So for each part:
 
 	// We invert the inverse MOI to get an MOI in the local frame
-	vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv);
+	if (!vm_inverse_matrix(&local_moi, &objp->phys_info.I_body_inv)) {
+		// This is done on purpose to indicate a zero inv_moi
+		infop->maintained_variables.matrix_value->a1d[0] = NAN;
+		return;
+	}
 
 	// We calculate the inverse of the orientation matrix (which is also the transpose)
 	vm_copy_transpose(&unorient, &objp->orient);

@@ -403,6 +403,7 @@ void mission_hotkey_maybe_save_sets()
 	int i;
 	htarget_list	*hitem, *plist;
 	HK_save_info *hkp;
+	bool found_player_hotkey;
 
 	if ( !timestamp_elapsed(Mission_hotkey_save_timestamp) ) {
 		mission_hotkey_maybe_restore();
@@ -424,6 +425,14 @@ void mission_hotkey_maybe_save_sets()
 		// get the list.  do nothing if list is empty
 		plist = &(Player->keyed_targets[i]);
 		if ( EMPTY(plist) )
+			continue;
+
+		found_player_hotkey = false;
+		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) )
+			if (hitem->how_added == HOTKEY_USER_ADDED)
+				found_player_hotkey = true;
+
+		if (!found_player_hotkey)
 			continue;
 
 		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
@@ -628,12 +637,13 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 		// add it if the teams match or if the IFF says to
 		if (add_it) {
-			hotkey_line_add_sorted(shipp->get_display_string(), HOTKEY_LINE_SHIP, shipnum, start);
+			hotkey_line_add_sorted(shipp->get_display_name(), HOTKEY_LINE_SHIP, shipnum, start);
 		}
 	}
 
 	for (i=0; i<Num_wings; i++) {
 		bool add_it;
+		char wing_name[NAME_LENGTH];
 
 		// the wing has to be valid
 		if (Wings[i].current_count && Wings[i].ship_index[Wings[i].special_ship] >= 0) {
@@ -673,12 +683,15 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			if ( j < Wings[i].current_count )
 				continue;
 
-			z = hotkey_line_add_sorted(Wings[i].name, HOTKEY_LINE_WING, i, start);
+			strcpy_s(wing_name, Wings[i].name);
+			end_string_at_first_hash_symbol(wing_name);
+
+			z = hotkey_line_add_sorted(wing_name, HOTKEY_LINE_WING, i, start);
 			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
 					s = Wings[i].ship_index[j];
 					if (!Ships[s].is_dying_or_departing()) {
-						z = hotkey_line_insert(z + 1, Ships[s].get_display_string(), HOTKEY_LINE_SUBSHIP, s);
+						z = hotkey_line_insert(z + 1, Ships[s].get_display_name(), HOTKEY_LINE_SUBSHIP, s);
 					}
 				}
 			}
@@ -1286,7 +1299,6 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 	
 		// draw ship/wing name
 		strcpy_s(buf, Hotkey_lines[line].label.c_str());
-		end_string_at_first_hash_symbol(buf);
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent
 			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));

@@ -7,6 +7,8 @@ simple_type
  | NIL
  ;
 
+varargs_or_simple_type: simple_type VARARGS_SPECIFIER?;
+
 func_arg: type ID;
 
 func_arglist
@@ -17,7 +19,7 @@ func_arglist
 function_type: FUNCTION L_PAREN func_arglist R_PAREN ARROW type;
 
 type
- : simple_type
+ : varargs_or_simple_type
  | function_type
  | type (TYPE_ALT type)+ // Alternative types
  ;
@@ -59,6 +61,8 @@ TRUE: 'true';
 FALSE: 'false';
 
 FUNCTION: 'function';
+
+VARARGS_SPECIFIER: '...';
 
 NUMBER
  : '-'? (

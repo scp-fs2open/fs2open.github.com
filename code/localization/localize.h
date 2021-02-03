@@ -31,13 +31,13 @@
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
 
-#define LCL_MAX_FONTS					5
+#define LCL_MIN_FONTS					3
 
 // language info table
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
-	ubyte special_char_indexes[LCL_MAX_FONTS];			// where in the font do we have the special characters for this language
+	SCP_vector<ubyte> special_char_indexes;				// where in the font do we have the special characters for this language
 														// note: treats 0 as "none" since a zero offset in a font makes no sense
 														// i.e. all the normal chars start at zero
 	int checksum;										// used for language auto-detection
@@ -100,8 +100,8 @@ ubyte lcl_get_font_index(int font_num);
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
 // Goober5000
-void lcl_replace_stuff(char *text, size_t max_len);
-void lcl_replace_stuff(SCP_string &text);
+void lcl_replace_stuff(char *text, size_t max_len, bool force = false);
+void lcl_replace_stuff(SCP_string &text, bool force = false);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, size_t max_len);

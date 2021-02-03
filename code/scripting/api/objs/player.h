@@ -7,9 +7,11 @@ namespace scripting {
 namespace api {
 
 class player_h {
+	bool _owned = false;
 	player *_plr = nullptr;
   public:
 	player_h();
+	player_h(player* plr);
 	player_h(const player& plr);
 
 	player_h(const player_h&) = delete;

@@ -53,9 +53,9 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA		9
-//Therefore NEXT DEFINE should be 9+12 or 21
-
+#define BITMAP_NUMBERED_DATA	9
+// There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
+#define BITMAP_COMMENT			29
 
 
 // tree behavior modes (or tree subtype)
@@ -154,6 +154,7 @@ public:
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
+	virtual void edit_comment(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);
 	void right_clicked(int mode = 0);
@@ -175,7 +176,7 @@ public:
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const char *str, int node);
+	SCP_string match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
 	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -234,7 +235,6 @@ public:
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
 	sexp_list_item *get_listing_opf_variable_names();
-	sexp_list_item *get_listing_opf_variable_type();
 	sexp_list_item *get_listing_opf_skybox_model();
 	sexp_list_item *get_listing_opf_skybox_flags();
 	sexp_list_item *get_listing_opf_background_bitmap();
@@ -278,6 +278,7 @@ public:
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
+	sexp_list_item *get_listing_opf_species();
 
 	int m_mode;
 	int item_index;

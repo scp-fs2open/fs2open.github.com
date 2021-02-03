@@ -11,15 +11,18 @@
 #endif
 
 #include "scpui/rocket_ui.h"
+
 #include "cfile/cfile.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
-#include "scpui/RocketFileInterface.h"
-#include "scpui/RocketRenderingInterface.h"
 #include "scpui/IncludeNodeHandler.h"
+#include "scpui/RocketFileInterface.h"
+#include "scpui/RocketLuaSystemInterface.h"
+#include "scpui/RocketRenderingInterface.h"
 #include "scpui/RocketSystemInterface.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/elements/AnimationElement.h"
+#include "scpui/elements/ScrollingTextElement.h"
 #include "scripting/scripting.h"
 
 // Our Assert conflicts with the definitions inside libRocket
@@ -116,6 +119,14 @@ void load_fonts()
 	for (auto& name : files) {
 		// The file extension gets removed by CFile
 		FontDatabase::LoadFontFace((name + ".ttf").c_str());
+	}
+
+	files.clear();
+	cf_get_file_list(files, CF_TYPE_FONT, "*.otf");
+
+	for (auto& name : files) {
+		// The file extension gets removed by CFile
+		FontDatabase::LoadFontFace((name + ".otf").c_str());
 	}
 }
 
@@ -526,7 +537,10 @@ void initialize()
 	Rocket::Controls::Initialise();
 
 	Rocket::Core::Factory::RegisterElementInstancer("ani", new ElementInstancerGeneric<elements::AnimationElement>())
-	    ->RemoveReference();
+		->RemoveReference();
+	Rocket::Core::Factory::RegisterElementInstancer("scrollingText",
+		new ElementInstancerGeneric<elements::ScrollingTextElement>())
+		->RemoveReference();
 
 	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
 
@@ -539,7 +553,8 @@ void initialize()
 	}
 
 	// Initialise the Lua interface
-	Rocket::Core::Lua::Interpreter::Initialise(Script_system.GetLuaSession());
+	Rocket::Core::Lua::Interpreter::Initialise(Script_system.GetLuaSession(),
+		std::unique_ptr<Rocket::Core::Lua::LuaSystemInterface>(new RocketLuaSystemInterface()));
 	Rocket::Controls::Lua::RegisterTypes(Rocket::Core::Lua::Interpreter::GetLuaState());
 
 	load_fonts();

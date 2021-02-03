@@ -42,7 +42,7 @@
 #define vm_mat_zero(m) (vm_vec_zero(&(m)->vec.rvec), vm_vec_zero(&(m)->vec.uvec), vm_vec_zero(&(m)->vec.fvec))
 
 /*
-//macro set set a matrix to the identity. Note: NO RETURN VALUE
+//macro to set a matrix to the identity. Note: NO RETURN VALUE
 #define vm_set_identity(m) do {m->rvec.x = m->uvec.y = m->fvec.z = (float)1.0;	\
 										m->rvec.y = m->rvec.z = \
 										m->uvec.x = m->uvec.z = \
@@ -224,13 +224,16 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d *p
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec);
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *fvec);
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *uvec);
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
 matrix *vm_angles_2_matrix(matrix *m, const angles *a);
@@ -353,8 +356,8 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
  * @param[out] s  If successful, s is the scalar of v0
  * @param[in]  p0 Reference point for line 1
  * @param[in]  p1 Reference point for line 2
- * @param[in]  v0 Direction vector for line 1
- * @param[in]  v1 Direction vector for line 2
+ * @param[in]  v0 Direction vector for line 1 (must be normalized)
+ * @param[in]  v1 Direction vector for line 2 (must be normalized)
  *
  * @returns  0 If successful, or
  * @returns -1 If colinear, or
@@ -363,6 +366,23 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
  * @note If you want the coords of the intersection, scale v0 by s, then add p0.
  */
 int find_intersection(float *s, const vec3d* p0, const vec3d* p1, const vec3d* v0, const vec3d* v1);
+
+/**
+ * Finds the point on line 1 closest to line 2 when the lines are skew (non-intersecting in 3D space)
+ *
+ * @param[out] dest The closest point
+ * @param[in]  p1 Reference point for line 1
+ * @param[in]  d1 Direction vector for line 1 (must be normalized)
+ * @param[in]  p2 Reference point for line 2
+ * @param[in]  d2 Direction vector for line 2 (must be normalized)
+ *
+ * @note Algorithm from Wikipedia: https://en.wikipedia.org/wiki/Skew_lines#Formulas
+ */
+void find_point_on_line_nearest_skew_line(vec3d *dest, const vec3d *p1, const vec3d *d1, const vec3d *p2, const vec3d *d2);
+
+// normalizes only if the vector's magnitude is above an optionally specified threshold, defaulting to 10 times machine epsilon
+// returns whether or not it normalized
+bool vm_maybe_normalize(vec3d* dst, const vec3d* src, float threshold = std::numeric_limits<float>::epsilon() * 10.f);
 
 float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2);
 
@@ -410,19 +430,21 @@ int vm_vec_same(const vec3d *v1, const vec3d *v2);
 // see if two matrices are identical
 int vm_matrix_same(matrix *m1, matrix *m2);
 
-//	Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
+// Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next_orientation valid at time delta_t.
-void vm_matrix_interpolate(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_matrix_interpolate" in retail 
+void vm_angular_move_matrix(const matrix *goal_orient, const matrix *start_orient, const vec3d *rotvel_in, float delta_t,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *rotvel_limit, const vec3d *acc_limit, bool no_directional_bias, bool force_no_overshoot = false);
 
-//	Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
+// Interpolate from a start forward vec toward a goal forward vec, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
 // Subject to constaints on rotational velocity and angular accleleration.
 // Returns next forward vec valid at time delta_t.
-void vm_forward_interpolate(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot=0);
+// called "vm_forward_interpolate" in retail 
+void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, const vec3d *rotvel_in, float delta_t, float delta_bank,
+		matrix *next_orient, vec3d *rotvel_out, const vec3d *vel_limit, const vec3d *acc_limit, bool no_directional_bias);
 
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
@@ -440,10 +462,10 @@ vec3d* vm_rotate_vec_to_world(vec3d *world_vec, const vec3d *body_vec, const mat
 void vm_estimate_next_orientation(const matrix *last_orient, const matrix *current_orient, matrix *next_orient);
 
 //	Return true if all elements of *vec are legal, that is, not a NAN.
-int is_valid_vec(const vec3d *vec);
+bool is_valid_vec(const vec3d *vec);
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
-int is_valid_matrix(const matrix *m);
+bool is_valid_matrix(const matrix *m);
 
 // Finds the rotation matrix corresponding to a rotation of theta about axis u
 void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
@@ -458,13 +480,13 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float 
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matrix *orient = NULL);
 void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_angle, const matrix *orient = NULL);
 
-// given a start vector, an orientation and a radius, give a point on the plane of the circle
-// if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge);
+// given a start vector, an orientation, and a radius, generate a point on the plane of the circle
+// if on_edge is true, the point will be on the edge of the circle
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge);
 
-// given a start vector, an orientation, and a radius, give a point in a spherical volume
-// if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, int on_edge);
+// given a start vector and a radius, generate a point in a spherical volume
+// if on_surface is true, the point will be on the surface of the sphere
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
@@ -523,6 +545,15 @@ vec3d vm_vec4_to_vec3(const vec4& vec);
  * @return The 4 component vector
  */
 vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
+
+// calculates the best rvec to match another orient while maintaining a given fvec
+void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
+
+// Cyborg17 - Rotational interpolation between two angle structs in radians, given a rotational velocity, in radians.
+// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f.
+// rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
+// You will get strange results otherwise.
+void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }

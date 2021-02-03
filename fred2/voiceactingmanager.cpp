@@ -540,7 +540,8 @@ void VoiceActingManager::export_one_message(MMessage *message)
 
 /** Passed sender string will have either have the senders name
 or '\<none\>'*/
-void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMessage *message) {
+void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMessage *message)
+{
 	Assert( sender != NULL );
 	Assert( message != NULL );
 
@@ -578,10 +579,11 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMes
 		{
 			hud_stuff_ship_class(sender, shipp);
 		}
-		// use the regular sender text
+		// use the regular sender display name
 		else
 		{
-			end_string_at_first_hash_symbol(sender);
+			strncpy(sender, shipp->get_display_name(), NAME_LENGTH);
+			sender[NAME_LENGTH] = 0;
 		}
 	}
 }

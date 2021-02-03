@@ -96,6 +96,13 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 			"parameters",
 			parameterTypes);
 	}
+	case ade_type_info_type::Varargs: {
+		return json_pack("{ssso}",
+			"type",
+			"varargs",
+			"baseType",
+			json_doc_generate_return_type(type_info.elements().front()));
+	}
 	}
 
 	UNREACHABLE("Unknown type type!");
@@ -106,7 +113,7 @@ static json_t* json_doc_function_signature(const SCP_vector<scripting::argument_
 	json_t* arr = json_array();
 
 	for (const auto& arg : args) {
-		json_array_append(arr,
+		json_array_append_new(arr,
 			json_pack("{sosssssbss}",
 				"type",
 				json_doc_generate_return_type(arg.type),

@@ -704,8 +704,13 @@ brief_icon *brief_get_closeup_icon()
 // stop showing the closeup view of an icon
 void brief_turn_off_closeup_icon()
 {
-	// turn off closup
+	// turn off closeup
 	if ( Closeup_icon != NULL ) {
+		if (Closeup_icon->model_instance_num >= 0) {
+			model_delete_instance(Closeup_icon->model_instance_num);
+			Closeup_icon->model_instance_num = -1;
+		}
+
 		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
 		Closeup_icon = NULL;
 		Closeup_close_button.disable();
@@ -1075,7 +1080,7 @@ void brief_render_closeup(int ship_class, float frametime)
 		render_info.set_flags(MR_AUTOCENTER);
 	}
 
-	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
+	model_render_immediate( &render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos );
 
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, neb_restore);
 
@@ -1198,28 +1203,6 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 	Closeup_x1 = (int)std::lround(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f);
 }
 
-void brief_get_closeup_ship_modelnum(brief_icon *ci)
-{
-	object	*objp;
-	ship		*sp;
-
-	// find the model number for the ship to display
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-
-		if ( objp == &obj_used_list || objp->type != OBJ_SHIP ) {
-			continue;
-		}
-		
-		sp = &Ships[objp->instance];
-		if ( sp->ship_info_index == ci->ship_class ) {
-			ci->ship_class = sp->ship_info_index;
-			ci->modelnum = Ship_info[sp->ship_info_index].model_num;
-			ci->radius = objp->radius;
-			break;
-		}
-	}
-}
-
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
@@ -1234,6 +1217,7 @@ int brief_setup_closeup(brief_icon *bi)
 	Closeup_icon = bi;
 	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
+	Closeup_icon->model_instance_num = -1;
 
 	Closeup_one_revolution_time = ONE_REV_TIME;
 
@@ -1270,14 +1254,10 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_zoom = 0.5f;
 		break;
 	default:
-		brief_get_closeup_ship_modelnum(Closeup_icon);
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label,(sip->alt_name[0]) ? sip->alt_name : sip->name);
-
-		// cut any text off after (and including) '#' char
-		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
+		strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
 		// Goober5000 - wcsaga doesn't want this
 		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
@@ -1287,12 +1267,17 @@ int brief_setup_closeup(brief_icon *bi)
 		break;
 	}
 	
-	if ( Closeup_icon->modelnum == -1 ) {
+	if ( Closeup_icon->modelnum < 0 ) {
 		if ( sip == NULL ) {
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			Closeup_icon->model_instance_num = model_create_instance(true, Closeup_icon->modelnum);
+			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
+	}
+
+	if ( Closeup_icon->modelnum >= 0 ) {
 		Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
 	}
 
@@ -1853,7 +1838,7 @@ void briefing_stop_music(bool fade)
 	}
 }
 
-void briefing_load_music(char* fname)
+void briefing_load_music(const char* fname)
 {
 	if ( Cmdline_freespace_no_music ) {
 		return;

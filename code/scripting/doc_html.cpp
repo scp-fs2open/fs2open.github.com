@@ -161,6 +161,12 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info)
 			}
 			fputs(">", fp);
 		}
+		break;
+	}
+	case ade_type_info_type::Varargs: {
+		ade_output_type_link(fp, type_info.elements().front());
+		fputs("...", fp);
+		break;
 	}
 	}
 }

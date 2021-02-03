@@ -34,7 +34,6 @@ bool Env_cubemap_drawn = false;
 int Multi_ping_timestamp = -1;
 int Sun_drew = 0;
 float Sun_spot = 0.0f;
-int Networking_disabled = 0;
 bool running_unittests = false;
 
 void init_ets(class object*){}

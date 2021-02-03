@@ -16,8 +16,6 @@
 
 // Help overlays
 //
-#define	MAX_HELP_OVERLAYS				30
-
 #define	SS_OVERLAY						"ship"	// ship selection help
 #define	WL_OVERLAY						"weapon"	// weapons loadout help
 #define	BR_OVERLAY						"briefing"	// briefing help

@@ -446,6 +446,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
 
+				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
+
 				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
 				{
@@ -463,7 +465,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
-				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turred_tagged_only_targeting);
+				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
 				set_flag(profile, "$aspect bomb invulnerability fix:", AI::Profile_Flags::Aspect_invulnerability_fix);
 
@@ -511,7 +513,23 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_boolean(&temp);
                     profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, !temp);
 				}
+				if (optional_string("$lead indicator second-order prediction factor:")) {
+					stuff_float(&profile->second_order_lead_predict_factor);
+					if (profile->second_order_lead_predict_factor > 1 || profile->second_order_lead_predict_factor < 0) {
+						mprintf(("Warning: \"$lead indicator second-order prediction factor\" must be 0 - 1, resetting to 0.\"\n"));
+						profile->second_order_lead_predict_factor = 0;
+					}
+				}
 
+                set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
+
+				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
+
+				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+
+				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -588,6 +606,7 @@ void ai_profile_t::reset()
 	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
+	second_order_lead_predict_factor = 0;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -659,6 +678,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+		flags.set(AI::Profile_Flags::nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {

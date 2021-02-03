@@ -232,9 +232,10 @@ char *next_tokens()
 //	an error reporting function takes?
 int get_line_num()
 {
-	int	count = 1;
-	int	incomment = 0;
-	int	multiline = 0;
+	int		count = 1;
+	bool	inquote = false;
+	int		incomment = false;
+	int		multiline = false;
 	char	*stoploc;
 	char	*p;
 
@@ -243,28 +244,33 @@ int get_line_num()
 
 	while (p < stoploc)
 	{
-		if (*p == '\0')
-			Warning(LOCATION, "Unexpected end-of-file while looking for error line!");
+		if (*p == '\0') {
+			Warning(LOCATION, "Unexpected end-of-file while looking for line number!");
+			break;
+		}
 
-		if ( !incomment && (*p == COMMENT_CHAR) )
-			incomment = 1;
+		if ( !incomment && (*p == '\"') )
+			inquote = !inquote;
+
+		if ( !incomment && !inquote && (*p == COMMENT_CHAR) )
+			incomment = true;
 
 		if ( !incomment && (*p == '/') && (*(p+1) == '*') ) {
-			multiline = 1;
-			incomment = 1;
+			multiline = true;
+			incomment = true;
 		}
 
 		if ( incomment )
 			stoploc++;
 
 		if ( multiline && (*(p-1) == '*') && (*p == '/') ) {
-			multiline = 0;
-			incomment = 0;
+			multiline = false;
+			incomment = false;
 		}
 
 		if (*p++ == EOLN) {
 			if ( !multiline && incomment )
-				incomment = 0;
+				incomment = false;
 			count++;
 		}
 	}
@@ -2411,135 +2417,173 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
-static bool atof2(float *out)
-{
-	ignore_white_space();
-	char ch = *Mp;
-
-	if ((ch != '.') && (ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
-		error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
-		*out = 0.0f;
-		return false;
-	}
-
-	*out = (float) atof(Mp);
-	return true;
-}
-
-static bool atoi2(int *out)
-{
-	ignore_white_space();
-	char ch = *Mp;
-
-	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
-		error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
-		*out = 0;
-		return false;
-	}
-
-	*out = atoi(Mp);
-	return true;
-}
-
-bool atol2(long *out)
-{
-    ignore_white_space();
-    char ch = *Mp;
-
-    if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
-        error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
-        *out = 0;
-        return false;
-    }
-
-    *out = atol(Mp);
-    return true;
-}
-
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
-void stuff_float(float *f)
+int stuff_float(float *f, bool optional)
 {
-	bool success = atof2(f);
+	char *str_start = Mp;
+	char *str_end;
 
-	if (!success)
-		skip_token();
+	// since strtof ignores white space anyway, might as well make it explicit
+	ignore_white_space();
+
+	auto result = strtof(Mp, &str_end);
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no float found?
+	if (result == 0.0f && str_end == Mp)
+	{
+		if (!optional)
+			error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
+	}
 	else
-		Mp += strspn(Mp, "+-0123456789.");
+	{
+		*f = result;
+		success = true;
+	}
 
-	if (*Mp ==',')
+	if (success)
+		Mp = str_end;
+
+	if (*Mp == ',')
+	{
+		comma = true;
 		Mp++;
+	}
+
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+		retval = 2;
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
 
 	diag_printf("Stuffed float: %f\n", *f);
-}
-
-int stuff_float_optional(float *f, bool raw)
-{
-	bool comma = false;
-
-	if (!raw)
-		ignore_white_space();
-
-	auto skip_len = strspn(Mp, "+-0123456789.");
-	if(*(Mp+skip_len) == ',') {
-		comma = true;
-	}
-
-	if(skip_len == 0)
-	{
-		if(comma) {
-			Mp++;
-			return 1;
-		} else {
-			return 0;
-		}
-	}
-
-	stuff_float(f);
-	return 2;
+	return retval;
 }
 
 //	Stuff an integer value pointed at by Mp.
 //	Advances past integer characters.
-void stuff_int(int *i)
+int stuff_int(int *i, bool optional)
 {
-	bool success = atoi2(i);
+	char *str_start = Mp;
 
-	if (!success)
-		skip_token();
+	// since atoi ignores white space anyway, might as well make it explicit
+	ignore_white_space();
+
+	// this is a bit cumbersome
+	size_t span;
+	if (*Mp == '+' || *Mp == '-')
+		span = strspn(Mp + 1, "0123456789") + 1;
 	else
-		Mp += strspn(Mp, "+-0123456789");
+		span = strspn(Mp, "0123456789");
 
-	if (*Mp ==',')
+	auto result = atoi(Mp);
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no int found?
+	if (result == 0 && span == 0)
+	{
+		if (!optional)
+			error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
+	}
+	else
+	{
+		*i = result;
+		success = true;
+	}
+
+	if (success)
+		Mp += span;
+
+	if (*Mp == ',')
+	{
+		comma = true;
 		Mp++;
+	}
 
-	diag_printf("Stuffed int: %i\n", *i);
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+		retval = 2;
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
+
+	diag_printf("Stuffed int: %d\n", *i);
+	return retval;
 }
 
-int stuff_int_optional(int *i, bool raw)
+//	Stuff a long value pointed at by Mp.
+//	Advances past integer characters.
+int stuff_long(long *l, bool optional)
 {
-	bool comma = false;
+	char *str_start = Mp;
 
-	if (!raw)
-		ignore_white_space();
+	// since atol ignores white space anyway, might as well make it explicit
+	ignore_white_space();
 
-	auto skip_len = strspn(Mp, "+-0123456789");
-	if(*(Mp+skip_len) == ',') {
-		comma = true;
-	}
+	// this is a bit cumbersome
+	size_t span;
+	if (*Mp == '+' || *Mp == '-')
+		span = strspn(Mp + 1, "0123456789") + 1;
+	else
+		span = strspn(Mp, "0123456789");
 
-	if(skip_len == 0)
+	auto result = atol(Mp);
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no long found?
+	if (result == 0 && span == 0)
 	{
-		if(comma) {
-			Mp++;
-			return 1;
-		} else {
-			return 0;
-		}
+		if (!optional)
+			error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
+	}
+	else
+	{
+		*l = result;
+		success = true;
 	}
 
-	stuff_int(i);
-	return 2;
+	if (success)
+		Mp += span;
+
+	if (*Mp == ',')
+	{
+		comma = true;
+		Mp++;
+	}
+
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+		retval = 2;
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
+
+	diag_printf("Stuffed long: %ld\n", *l);
+	return retval;
+}
+
+int stuff_float_optional(float *f)
+{
+	return stuff_float(f, true);
+}
+
+int stuff_int_optional(int *i)
+{
+	return stuff_int(i, true);
 }
 
 int stuff_int_or_variable (int &i, bool positive_value = false);
@@ -2772,24 +2816,13 @@ int stuff_bool_list(bool *blp, int max_bools)
 }
 
 
-//	Stuff an integer value pointed at by Mp.
+//	Stuff an integer value (cast to a ubyte) pointed at by Mp.
 //	Advances past integer characters.
 void stuff_ubyte(ubyte *i)
 {
 	int temp;
-	bool success = atoi2(&temp);
-
+	stuff_int(&temp);
 	*i = (ubyte)temp;
-
-	if (!success)
-		skip_token();
-	else
-		Mp += strspn(Mp, "+-0123456789");
-
-	if (*Mp == ',')
-		Mp++;
-
-	diag_printf("Stuffed byte: %i\n", *i);
 }
 
 int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
@@ -3082,6 +3115,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 
 			clean_loadout_list_entry();
 			continue;
+		}
+		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[index].maximum_children_spawned > 300)){
+			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[index].name);
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
@@ -3468,36 +3504,45 @@ void display_parse_diagnostics()
 // NULL is returned.
 char *split_str_once(char *src, int max_pixel_w)
 {
-	char *brk = NULL;
-	int i, w, len, last_was_white = 0;
+	char *brk = nullptr;
+	int i, w, len;
+	bool last_was_white = false;
 
 	Assert(src);
 	Assert(max_pixel_w > 0);
 
-	gr_get_string_size(&w, NULL, src);
+	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
-		return NULL;  // string doesn't require a cut
+		return nullptr;  // string doesn't require a cut
 	}
 
 	len = (int)strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, NULL, src, i);
-		if ( w > max_pixel_w )
-			break;
+		gr_get_string_size(&w, nullptr, src, i);
 
-		if (src[i] == '\n') {  // reached natural end of line
-			src[i] = 0;
-			return src + i + 1;
+		if (w <= max_pixel_w) {
+			if (src[i] == '\n') {  // reached natural end of line
+				src[i] = 0;
+				return src + i + 1;
+			}
 		}
 
 		if (is_white_space(src[i])) {
-			if (!last_was_white)
-				brk = src + i;
+			if (!last_was_white) {
+				// only update the line break if:
+				// a) we don't have a line break yet;
+				// b) we're still within the required real estate
+				// (basically we want the latest line break that doesn't go off the edge of the screen,
+				// but if the *first* line break is off the end of the screen, we want that)
+				if (brk == nullptr || w <= max_pixel_w) {
+					brk = src + i;
+				}
+			}
 
-			last_was_white = 1;
+			last_was_white = true;
 
 		} else {
-			last_was_white = 0;
+			last_was_white = false;
 		}
 	}
 
@@ -3518,7 +3563,7 @@ char *split_str_once(char *src, int max_pixel_w)
 		src++;
 
 	if (!*src)
-		return NULL;  // end of the string anyway
+		return nullptr;  // end of the string anyway
 
 	if (*src == '\n')
 		src++;
@@ -3986,12 +4031,12 @@ void sprintf(SCP_string &dest, const char *format, ...)
 }
 
 // Goober5000
-bool end_string_at_first_hash_symbol(char *src)
+bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash)
 {
 	char *p;
 	Assert(src);
 
-	p = get_pointer_to_first_hash_symbol(src);
+	p = get_pointer_to_first_hash_symbol(src, ignore_doubled_hash);
 	if (p)
 	{
 		while ((p != src) && (*(p-1) == ' '))
@@ -4005,9 +4050,9 @@ bool end_string_at_first_hash_symbol(char *src)
 }
 
 // Goober5000
-bool end_string_at_first_hash_symbol(SCP_string &src)
+bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 {
-	int index = get_index_of_first_hash_symbol(src);
+	int index = get_index_of_first_hash_symbol(src, ignore_doubled_hash);
 	if (index >= 0)
 	{
 		while (index > 0 && src[index-1] == ' ')
@@ -4021,24 +4066,73 @@ bool end_string_at_first_hash_symbol(SCP_string &src)
 }
 
 // Goober5000
-char *get_pointer_to_first_hash_symbol(char *src)
+char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash)
 {
 	Assert(src);
-	return strchr(src, '#');
+
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src; *ch; ++ch)
+		{
+			if (*ch == '#')
+			{
+				if (*(ch + 1) == '#')
+					++ch;
+				else
+					return ch;
+			}
+		}
+		return nullptr;
+	}
+	else
+		return strchr(src, '#');
 }
 
 // Goober5000
-const char *get_pointer_to_first_hash_symbol(const char *src)
+const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash)
 {
 	Assert(src);
-	return strchr(src, '#');
+
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src; *ch; ++ch)
+		{
+			if (*ch == '#')
+			{
+				if (*(ch + 1) == '#')
+					++ch;
+				else
+					return ch;
+			}
+		}
+		return nullptr;
+	}
+	else
+		return strchr(src, '#');
 }
 
 // Goober5000
-int get_index_of_first_hash_symbol(SCP_string &src)
+int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 {
-	size_t pos = src.find('#');
-	return (pos == SCP_string::npos) ? -1 : (int)pos;
+	if (ignore_doubled_hash)
+	{
+		for (auto ch = src.begin(); ch != src.end(); ++ch)
+		{
+			if (*ch == '#')
+			{
+				if ((ch + 1) != src.end() && *(ch + 1) == '#')
+					++ch;
+				else
+					return (int)std::distance(src.begin(), ch);
+			}
+		}
+		return -1;
+	}
+	else
+	{
+		size_t pos = src.find('#');
+		return (pos == SCP_string::npos) ? -1 : (int)pos;
+	}
 }
 
 // Goober5000

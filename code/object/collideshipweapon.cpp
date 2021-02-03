@@ -18,6 +18,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
@@ -67,11 +68,13 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 	ship *shipp = &Ships[pship_obj->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 	float damage;
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_find_world_dir(&worldNormal, &hit_dir, shipp->model_instance_num, submodel_num, &pship_obj->orient);
+	model_instance_find_world_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
@@ -86,6 +89,15 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		damage = wip->damage;
 	}
 
+	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
+		float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
+
+		if (dot < 0.0f)
+			dot = 0.0f;
+
+		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
+	}
+
 	// deterine whack whack
 	float		blast = wip->mass;
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
@@ -96,7 +108,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, hitpos, quadrant_num);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num);
 		}
 	}	
 
@@ -115,7 +127,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	// don't apply whack for multiplayer_client from laser - will occur with pain packet
 	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) ) {		
 		// apply a whack		
-		ship_apply_whack( &force, hitpos, pship_obj );
+		ship_apply_whack( &force, world_hitpos, pship_obj );
 	}
 
 	// Add impact decal
@@ -353,13 +365,37 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		hull_collision = model_collide(&mc_hull);
 	}
 
+	// check if the hit point is beyond the clip plane when warping out.
+	if (hull_collision || shield_collision) {
+		WarpEffect* warp_effect = nullptr;
+
+		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr) 
+			warp_effect = shipp->warpout_effect;
+		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
+			warp_effect = shipp->warpin_effect;
+
+		bool hull_no_collide, shield_no_collide;
+		hull_no_collide = shield_no_collide = false;
+		if (warp_effect != nullptr) {
+			hull_no_collide = point_is_clipped_by_warp(&mc_hull.hit_point_world, warp_effect);
+			shield_no_collide = point_is_clipped_by_warp(&mc_shield.hit_point_world, warp_effect);
+		}
+
+		if (hull_no_collide)
+			hull_collision = 0;
+		if (shield_no_collide)
+			shield_collision = 0;
+	}
+
 	if (shield_collision) {
 		// pick out the shield quadrant
 		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num))
+		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num)) {
 			quadrant_num = -1;
+			shield_collision = 0;
+		}
 
 		// see if we hit the shield
 		if (quadrant_num >= 0) {
@@ -370,43 +406,25 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
-			if (wip->wi_flags[Weapon::Info_Flags::Pierce_shields])
+			if (wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) {
 				quadrant_num = -1;
-			else
-				valid_hit_occurred = 1;
+				shield_collision = 0;
+			}
 		}
 	}
 
 	// see which impact we use
-	if (shield_collision && valid_hit_occurred)
+	if (shield_collision)
 	{
 		memcpy(&mc, &mc_shield, sizeof(mc_info));
 		Assert(quadrant_num >= 0);
+		valid_hit_occurred = 1;
 	}
 	else if (hull_collision)
 	{
 		memcpy(&mc, &mc_hull, sizeof(mc_info));
 		valid_hit_occurred = 1;
 	}
-
-    // check if the hit point is beyond the clip plane when warping out.
-    if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) &&
-        (shipp->warpout_effect) &&
-        (valid_hit_occurred))
-    {
-        vec3d warp_pnt, hit_direction;
-        matrix warp_orient;
-
-        shipp->warpout_effect->getWarpPosition(&warp_pnt);
-        shipp->warpout_effect->getWarpOrientation(&warp_orient);
-
-        vm_vec_sub(&hit_direction, &mc.hit_point_world, &warp_pnt);
-
-        if (vm_vec_dot(&hit_direction, &warp_orient.vec.fvec) < 0.0f)
-        {
-             valid_hit_occurred = 0;
-        }
-    }
 
 	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame
 	if (next_hit && valid_hit_occurred) {
@@ -423,12 +441,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
 
 		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
+		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
+		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 
 		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
+		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
+		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
@@ -439,15 +459,21 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
-		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-		if(!(weapon_override && !ship_override))
+		if (!(weapon_override && !ship_override))
+		{
+			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, wp->weapon_info_index);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
+			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		}
 
-		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+		if ((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+		{
+			Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
 			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars(4, "Self", "Object", "Ship", "Weapon");
+			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		}
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {
@@ -487,6 +513,11 @@ int collide_ship_weapon( obj_pair * pair )
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	ship_info *sip = &Ship_info[Ships[ship->instance].ship_info_index];
+
+	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
+	if ( (Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(ship)) ) {
+		return 0;
+	}
 
 	// Don't check collisions for player if past first warpout stage.
 	if ( Player->control_mode > PCM_WARPOUT_STAGE1)	{

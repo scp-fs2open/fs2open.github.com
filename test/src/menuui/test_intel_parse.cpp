@@ -29,21 +29,28 @@ class IntelParseTest : public test::FSTestFixture {
 
 // Commonly used expected intel data entries.
 static intel_data expected_foo = {
-	"Foo name default", // XSTR id 3000
-	"Foo desc default", // XSTR id 3001
+	"Foo name", // XSTR id 3000
+	"Foo desc", // XSTR id 3001
 	"Foo anim",
 	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 };
 static intel_data expected_bar = {
-	"Bar name default", // XSTR id 3002
-	"Bar desc default", // XSTR id 3003
+	"Bar name", // XSTR id 3002
+	"Bar desc", // XSTR id 3003
 	"Bar anim",
 	0
 };
 static intel_data expected_baz = {
-	"Baz name default", // XSTR id 3004
-	"Baz desc default", // XSTR id 3005
+	"Baz name", // XSTR id 3004
+	"Baz desc", // XSTR id 3005
 	"Baz anim",
+	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+};
+
+static intel_data expected_qux = {
+	"Qux name", // No XSTR
+	"Qux desc", // No XSTR
+	"Qux anim",
 	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 };
 
@@ -51,7 +58,7 @@ static intel_data expected_baz = {
 static void test_intel_data_equal(const intel_data& i1, const intel_data& i2)
 {
 	EXPECT_STREQ(i1.name, i2.name);
-	EXPECT_STREQ(i1.desc, i2.desc);
+	EXPECT_STREQ(i1.desc.c_str(), i2.desc.c_str());
 	EXPECT_STREQ(i1.anim_filename, i2.anim_filename);
 	EXPECT_EQ(i1.flags, i2.flags);
 }
@@ -68,21 +75,21 @@ static void test_intel_data_equal(const intel_data& i1, const intel_data& i2)
 TEST_F(IntelParseTest, missing_file) {
 	techroom_intel_init();
 
-	EXPECT_EQ(Intel_info_size, 0);
+	EXPECT_EQ(intel_info_size(), 0);
 }
 
 // The same with an empty file.
 TEST_F(IntelParseTest, empty_file) {
 	techroom_intel_init();
 
-	EXPECT_EQ(Intel_info_size, 0);
+	EXPECT_EQ(intel_info_size(), 0);
 }
 
 // The same with only white space.
 TEST_F(IntelParseTest, only_white_space) {
 	techroom_intel_init();
 
-	EXPECT_EQ(Intel_info_size, 0);
+	EXPECT_EQ(intel_info_size(), 0);
 }
 
 // A single valid entry.
@@ -91,7 +98,7 @@ TEST_F(IntelParseTest, single) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -113,7 +120,7 @@ TEST_F(IntelParseTest, single_translate) {
 		IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 	};
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected, Intel_info[0]);
 }
@@ -123,7 +130,7 @@ TEST_F(IntelParseTest, single_translate) {
 TEST_F(IntelParseTest, invalid_start) {
 	techroom_intel_init();
 
-	EXPECT_EQ(Intel_info_size, 0);
+	EXPECT_EQ(intel_info_size(), 0);
 }
 
 // A valid entry followed by rubbish on the same line, followed by
@@ -133,7 +140,7 @@ TEST_F(IntelParseTest, invalid_end_same_line) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -145,7 +152,7 @@ TEST_F(IntelParseTest, invalid_end_new_line) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -156,23 +163,11 @@ TEST_F(IntelParseTest, three) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 3);
+	ASSERT_EQ(intel_info_size(), 3);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 	test_intel_data_equal(expected_bar, Intel_info[1]);
 	test_intel_data_equal(expected_baz, Intel_info[2]);
-}
-
-// Two identical entries are allowed.
-TEST_F(IntelParseTest, identical) {
-	SCOPED_TRACE("identical");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(Intel_info_size, 2);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-	test_intel_data_equal(expected_foo, Intel_info[1]);
 }
 
 // A valid entry followed by one with a missing $:Entry line.
@@ -182,7 +177,7 @@ TEST_F(IntelParseTest, missing_entry) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -194,7 +189,7 @@ TEST_F(IntelParseTest, missing_name) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -206,7 +201,7 @@ TEST_F(IntelParseTest, missing_anim) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -218,7 +213,7 @@ TEST_F(IntelParseTest, missing_always_techroom) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -230,7 +225,7 @@ TEST_F(IntelParseTest, missing_description) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -243,7 +238,7 @@ TEST_F(IntelParseTest, missing_description_2) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -255,7 +250,7 @@ TEST_F(IntelParseTest, missing_end_multi_text) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -266,7 +261,7 @@ TEST_F(IntelParseTest, stray_hash_end) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
@@ -277,12 +272,12 @@ TEST_F(IntelParseTest, always_techroom_values) {
 
 	techroom_intel_init();
 
-	ASSERT_EQ(Intel_info_size, 4);
+	ASSERT_EQ(intel_info_size(), 4);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 	test_intel_data_equal(expected_bar, Intel_info[1]);
 	test_intel_data_equal(expected_baz, Intel_info[2]);
-	test_intel_data_equal(expected_baz, Intel_info[3]);
+	test_intel_data_equal(expected_qux, Intel_info[3]);
 }
 
 // Data must be in the correct order.
@@ -291,7 +286,7 @@ TEST_F(IntelParseTest, wrong_order) {
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 
-	ASSERT_EQ(Intel_info_size, 1);
+	ASSERT_EQ(intel_info_size(), 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }

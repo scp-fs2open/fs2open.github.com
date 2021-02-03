@@ -18,7 +18,7 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     XCODE_RET=${PIPESTATUS[0]}
     if [ "$XCODE_RET" -ne "0" ]; then
         tar -cvzf build.log.tar.gz build.log
-        curl --upload-file build.log.tar.gz "https://transfer.sh/build.log.tar.gz"
+        curl --upload-file build.log.tar.gz "https://keep.sh"
         exit $XCODE_RET
     fi
 elif [ "$TRAVIS_OS_NAME" = "windows" ]; then

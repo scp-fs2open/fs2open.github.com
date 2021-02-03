@@ -463,6 +463,7 @@ void mission_brief_common_reset()
 					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
 					Briefings[i].stages[j].icons->ship_class = -1;
 					Briefings[i].stages[j].icons->modelnum = -1;
+					Briefings[i].stages[j].icons->model_instance_num = -1;
 					Briefings[i].stages[j].icons->bitmap_id = -1;
 				}
 
@@ -1862,7 +1863,7 @@ void brief_camera_move(float frametime, int  /*stage_num*/)
 
 	// Update orientation
 	if ( (Elapsed_time < Total_move_time) ) {
-		vm_matrix_interpolate(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit);
+		vm_angular_move_matrix(&Target_cam_orient, &Current_cam_orient, &W_init, frametime, &result, &w_out, &Vel_limit, &Acc_limit, false);
 		Current_cam_orient = result;
 		W_init = w_out;
 	}

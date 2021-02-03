@@ -17,6 +17,7 @@
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
 #include <localization/fhash.h>
+#include <localization/localize.h>
 #include <mission/missionbriefcommon.h>
 #include <mission/missioncampaign.h>
 #include <mission/missiongoals.h>
@@ -1735,7 +1736,73 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		fso_comment_pop();
+		// save event annotations
+		if (save_format != MissionFormat::RETAIL && !Event_annotations.empty())
+		{
+			bool at_least_one = false;
+			fso_comment_push(";;FSO 21.0.0;;");
+
+			// see if there is an annotation for this event
+			for (const auto &ea : Event_annotations)
+			{
+				if (ea.path.empty() || ea.path.front() != i)
+					continue;
+
+				if (!at_least_one)
+				{
+					if (optional_string_fred("$Annotations Start", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$Annotations Start");
+					at_least_one = true;
+				}
+
+				if (!ea.comment.empty())
+				{
+					if (optional_string_fred("+Comment:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Comment:");
+
+					auto copy = ea.comment;
+					lcl_fred_replace_stuff(copy);
+					fout(" %s", copy.c_str());
+
+					if (optional_string_fred("$end_multi_text", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$end_multi_text");
+				}
+
+				if (ea.path.size() > 1)
+				{
+					if (optional_string_fred("+Path:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Path:");
+
+					bool comma = false;
+					auto it = ea.path.begin();
+					for (++it; it != ea.path.end(); ++it)
+					{
+						if (comma)
+							fout(",");
+						comma = true;
+						fout(" %d", *it);
+					}
+				}
+			}
+
+			if (at_least_one)
+			{
+				if (optional_string_fred("$Annotations End", "$Formula:"))
+					parse_comments();
+				else
+					fout_version("\n$Annotations End");
+			}
+
+			fso_comment_pop();
+		}
 	}
 
 	fso_comment_pop(true);
@@ -2698,17 +2765,23 @@ int CFred_mission_save::save_objects()
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
-		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
+		fout(" %s\t\t;! Object #%d", shipp->ship_name, i);
 
 		// Display name
+		// The display name is only written if there was one at the start to avoid introducing inconsistencies
 		if (save_format != MissionFormat::RETAIL && shipp->has_display_name()) {
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			fout("\n$Display name:");
-			fout_ext(" ", "%s", shipp->display_name.c_str());
-			fout("\n");
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, shipp->ship_name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (strcmp(shipp->get_display_name(), truncated_name) != 0) {
+				fout("\n$Display name:");
+				fout_ext(" ", "%s", shipp->display_name.c_str());
+			}
 		}
 
-		required_string_fred("$Class:");
+		required_string_fred("\n$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[shipp->ship_info_index].name);
 
@@ -3389,7 +3462,8 @@ int CFred_mission_save::save_objects()
 
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin();
 				 ii != Fred_texture_replacements.end(); ++ii) {
-				if (!stricmp(shipp->ship_name, ii->ship_name)) {
+				// Only look at this entry if it's not from the table. Table entries will just be read by FSO.
+				if (!stricmp(shipp->ship_name, ii->ship_name) && !(ii->from_table)) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
@@ -4097,7 +4171,21 @@ int CFred_mission_save::save_wings()
 
 		required_string_fred("$Special Ship:");
 		parse_comments();
-		fout(" %d\t\t;! %s\n", Wings[i].special_ship, Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+		fout(" %d\t\t;! %s", Wings[i].special_ship, Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+
+		if (save_format != MissionFormat::RETAIL) {
+			if (Wings[i].formation >= 0 && Wings[i].formation < (int)Wing_formations.size())
+			{
+				if (optional_string_fred("+Formation:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation:");
+				}
+
+				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+		}
 
 		required_string_fred("$Arrival Location:");
 		parse_comments();

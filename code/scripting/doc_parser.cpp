@@ -104,6 +104,10 @@ class BaseVisitor : public ArgumentListVisitor {
 	{
 		throw std::runtime_error("Unhandled node encountered!");
 	}
+	antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext* /*context*/) override
+	{
+		throw std::runtime_error("Unhandled node encountered!");
+	}
 };
 
 class ValueVisitor : public BaseVisitor {
@@ -151,7 +155,17 @@ class TypeVisitor : public BaseVisitor {
 			return ade_type_info(context->ID()->getText());
 		}
 	}
-	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override {
+	antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext* context) override
+	{
+		auto retType = visit(context->simple_type()).as<ade_type_info>();
+		if (context->VARARGS_SPECIFIER() != nullptr) {
+			return ade_type_info(ade_type_varargs(std::move(retType)));
+		}
+		return retType;
+	}
+
+	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override
+	{
 		return visitChildren(context);
 	}
 
@@ -284,7 +298,14 @@ class TypeCheckVisitor : public BaseVisitor {
 
 		return antlrcpp::Any();
 	}
-	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override { return visitChildren(context); }
+	antlrcpp::Any visitType(ArgumentListParser::TypeContext* context) override
+	{
+		return visitChildren(context);
+	}
+	antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext* context) override
+	{
+		return visitChildren(context);
+	}
 
 	antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext* context) override
 	{
@@ -358,21 +379,18 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 
 	// If there were errors, output them
 	if (!errListener.diagnostics.empty()) {
-		mprintf(("Scripting documentation: Error while parsing\n"));
-
+		SCP_stringstream outStream;
 		for (const auto& diag : errListener.diagnostics) {
 			SCP_string tokenUnderline;
 			if (diag.tokenLength > 1) {
 				tokenUnderline = SCP_string(diag.tokenLength - 1, '~');
 			}
-			mprintf(("%s\n%s^%s\n%s\n",
-				argumentList.c_str(),
-				SCP_string(diag.columnInLine, ' ').c_str(),
-				tokenUnderline.c_str(),
-				diag.errorMessage.c_str()));
+			outStream << argumentList << "\n"
+					  << SCP_string(diag.columnInLine, ' ') << "^" << tokenUnderline << "\n"
+					  << diag.errorMessage << "\n";
 		}
 
-		mprintf(("(This is only relevant for coders)\n\n"));
+		_errorMessage = outStream.str();
 	} else {
 		// Only look at the parameters if we know that we have valid input to avoid some of the error handling while
 		// traversing the parse tree
@@ -384,6 +402,13 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 
 	return errListener.diagnostics.empty();
 }
-const SCP_vector<scripting::argument_def>& argument_list_parser::getArgList() const { return _argList; }
+const SCP_vector<scripting::argument_def>& argument_list_parser::getArgList() const
+{
+	return _argList;
+}
+const SCP_string& argument_list_parser::getErrorMessage() const
+{
+	return _errorMessage;
+}
 
 } // namespace scripting

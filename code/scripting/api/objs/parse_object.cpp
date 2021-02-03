@@ -55,9 +55,12 @@ ADE_VIRTVAR(
 
 	if (ADE_SETTING_VAR) {
 		poh->getObject()->display_name = newName;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		poh->getObject()->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name, newName[0] != 0);
 	}
 
-	return ade_set_args(L, "s", poh->getObject()->get_display_string());
+	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
 ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object will arrive.", "vector",

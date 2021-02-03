@@ -105,6 +105,9 @@ public:
 	float bay_arrive_speed_mult;
 	float bay_depart_speed_mult;
 
+	// How much 0-1 of a second-order lead prediction factor to add to lead indicators. Affects only the HUD indicator, and autoaim.
+	float second_order_lead_predict_factor;
+
     void reset();
 };
 

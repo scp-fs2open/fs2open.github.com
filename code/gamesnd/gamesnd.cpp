@@ -288,7 +288,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 
 	for(SCP_vector<game_snd>::const_iterator snd = sounds.begin(); snd != sounds.end(); ++snd)
 	{
-		if (snd->name == name)
+		if (!stricmp(snd->name.c_str(), name))
 		{
 			return i;
 		}
@@ -417,8 +417,9 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
-	if(optional_string(tag))
+bool parse_game_sound(const char* tag, gamesnd_id* idx_dest)
+{
+	if (optional_string(tag))
 	{
 		SCP_string buf;
 		stuff_string(buf, F_NAME);
@@ -426,10 +427,13 @@ void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
 		*idx_dest = gamesnd_get_by_name(buf.c_str());
 
 		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
-		if (!idx_dest->isValid() && buf != "-1") {
-			error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
-		}
+		if (idx_dest->isValid() || buf == "-1")
+			return true;
+		
+		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
 	}
+
+	return false;
 }
 
 /**
@@ -659,11 +663,9 @@ void parse_gamesnd_old(game_snd* gs)
 		{
 			int temp_min, temp_max;
 
-			ignore_gray_space();
-			if (stuff_int_optional(&temp_min, true) == 2)
+			if (stuff_int_optional(&temp_min) == 2)
 			{
-				ignore_gray_space();
-				if (stuff_int_optional(&temp_max, true) == 2)
+				if (stuff_int_optional(&temp_max) == 2)
 				{
 					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
@@ -677,8 +679,7 @@ void parse_gamesnd_old(game_snd* gs)
 	}
 
 	// check for extra values per Mantis #2408
-	ignore_gray_space();
-	if (stuff_int_optional(&temp, true) == 2)
+	if (stuff_int_optional(&temp) == 2)
 	{
 		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
 	}

@@ -1719,9 +1719,13 @@ void CShipEditorDlg::OnDeleteShip()
 
 void CShipEditorDlg::OnShipTbl()
 {
-	text_view_dlg dlg;
+	TextViewDlg dlg;
 
-	dlg.set(m_ship_class);
+	if (m_ship_class < 0)
+		return;
+	auto sip = &Ship_info[m_ship_class];
+
+	dlg.LoadShipsTblText(sip);
 	dlg.DoModal();
 }
 

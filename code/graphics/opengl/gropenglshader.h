@@ -70,6 +70,8 @@ struct opengl_shader_type_t {
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
+
+	bool spirv_shader; // Specified if this shader was generated from SPIR-V
 };
 
 struct opengl_shader_variant_t {

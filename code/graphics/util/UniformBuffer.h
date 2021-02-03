@@ -20,7 +20,7 @@ class UniformBuffer {
 	UniformBufferManager* _parent = nullptr;
 	size_t _parent_offset         = 0;
 
-	int _buffer_handle = -1;
+	gr_buffer_handle _buffer_handle;
 
 	UniformAligner _aligner;
 
@@ -44,7 +44,7 @@ class UniformBuffer {
 	 * @brief Gets the buffer handle for use with gr_bind_uniform_buffer.
 	 * @return The buffer handle
 	 */
-	int bufferHandle();
+	gr_buffer_handle bufferHandle();
 
 	/**
 	 * @brief Submits the data from the uniform aligner to the underlying buffer object.

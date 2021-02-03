@@ -5,13 +5,16 @@ in vec2 vertTexCoord;
 
 out vec2 fragTexCoord;
 out vec4 fragColor;
+out vec2 fragScreenPosition;
 
 layout (std140) uniform genericData {
-	mat4 modelViewMatrix;
 	mat4 projMatrix;
 
+	vec2 offset;
 	bool textured;
 	int baseMapIndex;
+
+	float horizontalSwipeOffset;
 };
 
 void main()
@@ -19,5 +22,8 @@ void main()
 	fragTexCoord = vertTexCoord;
 	fragColor = vertColor;
 
-	gl_Position = projMatrix * modelViewMatrix * vec4(vertPosition, 0.0, 1.0);
+	vec4 position = vec4(vertPosition + offset, 0.0, 1.0);
+
+	fragScreenPosition = position.xy;
+	gl_Position = projMatrix * position;
 }

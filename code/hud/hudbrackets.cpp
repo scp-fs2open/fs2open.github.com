@@ -395,7 +395,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
-	if ( Player->target_is_dying <= 0 ) {
+	if ( Player->target_is_dying <= 0 || (Player_ai->target_objnum >= 0 && targetp != &Objects[Player_ai->target_objnum])) {
 		int modelnum;
 
 		switch ( targetp->type ) {
@@ -646,9 +646,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				tinfo_name = XSTR("Debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].get_display_string());
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
+				tinfo_name = Weapon_info[Weapons[t_objp->instance].weapon_info_index].get_display_name();
 				break;
 			case OBJ_ASTEROID:
 				switch(Asteroids[t_objp->instance].asteroid_type) {

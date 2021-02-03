@@ -22,10 +22,10 @@ ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", Weapon_info[idx].get_display_string());
+	return ade_set_args(L, "s", Weapon_info[idx].get_display_name());
 }
 
-ADE_FUNC(__eq, l_Weaponclass, "weaponclass, weaponclass", "Checks if the two classes are equal", "boolean", "true if equal false otherwise")
+ADE_FUNC(__eq, l_Weaponclass, "weaponclass, weaponclass", "Checks if the two classes are equal", "boolean", "true if equal, false otherwise")
 {
 	int idx1,idx2;
 	if(!ade_get_args(L, "oo", l_Weaponclass.Get(&idx1), l_Weaponclass.Get(&idx2)))
@@ -50,8 +50,10 @@ ADE_VIRTVAR(Name, l_Weaponclass, "string", "Weapon class name. This is the possi
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Weapon_info[idx].name, s, sizeof(Weapon_info[idx].name)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Weapon_info[idx].name);
+		strncpy(Weapon_info[idx].name, s, len);
+		Weapon_info[idx].name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].name);
@@ -68,10 +70,12 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		strncpy(Weapon_info[idx].alt_name, s, sizeof(Weapon_info[idx].alt_name)-1);
+		auto len = sizeof(Weapon_info[idx].display_name);
+		strncpy(Weapon_info[idx].display_name, s, len);
+		Weapon_info[idx].display_name[len - 1] = 0;
 	}
 
-	return ade_set_args(L, "s", Weapon_info[idx].alt_name);
+	return ade_set_args(L, "s", Weapon_info[idx].display_name);
 }
 
 ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Weapon class title, or empty string if handle is invalid")
@@ -84,8 +88,10 @@ ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Wea
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Weapon_info[idx].title, s, sizeof(Weapon_info[idx].title)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Weapon_info[idx].title);
+		strncpy(Weapon_info[idx].title, s, len);
+		Weapon_info[idx].title[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].title);
@@ -105,15 +111,15 @@ ADE_VIRTVAR(Description, l_Weaponclass, "string", "Weapon class description stri
 
 	if(ADE_SETTING_VAR) {
 		vm_free(wip->desc);
-		if(s != NULL) {
+		if(s != nullptr) {
 			wip->desc = (char*)vm_malloc(strlen(s)+1);
 			strcpy(wip->desc, s);
 		} else {
-			wip->desc = NULL;
+			wip->desc = nullptr;
 		}
 	}
 
-	if(wip->desc != NULL)
+	if(wip->desc != nullptr)
 		return ade_set_args(L, "s", wip->desc);
 	else
 		return ade_set_args(L, "s", "");
@@ -129,8 +135,10 @@ ADE_VIRTVAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title", "stri
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Weapon_info[idx].tech_title, s, sizeof(Weapon_info[idx].tech_title)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Weapon_info[idx].tech_title);
+		strncpy(Weapon_info[idx].tech_title, s, len);
+		Weapon_info[idx].tech_title[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].tech_title);
@@ -146,8 +154,10 @@ ADE_VIRTVAR(TechAnimationFilename, l_Weaponclass, "string", "Weapon class animat
 	if(idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Weapon_info[idx].tech_anim_filename, s, sizeof(Weapon_info[idx].tech_anim_filename)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Weapon_info[idx].tech_anim_filename);
+		strncpy(Weapon_info[idx].tech_anim_filename, s, len);
+		Weapon_info[idx].tech_anim_filename[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].tech_anim_filename);
@@ -167,15 +177,15 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 
 	if(ADE_SETTING_VAR) {
 		vm_free(wip->tech_desc);
-		if(s != NULL) {
+		if(s != nullptr) {
 			wip->tech_desc = (char*)vm_malloc(strlen(s)+1);
 			strcpy(wip->tech_desc, s);
 		} else {
-			wip->tech_desc = NULL;
+			wip->tech_desc = nullptr;
 		}
 	}
 
-	if(wip->tech_desc != NULL)
+	if(wip->tech_desc != nullptr)
 		return ade_set_args(L, "s", wip->tech_desc);
 	else
 		return ade_set_args(L, "s", "");
@@ -184,7 +194,7 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model, or invalid model handle if weaponclass handle is invalid")
 {
 	int weapon_info_idx=-1;
-	model_h *mdl = NULL;
+	model_h *mdl = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weaponclass.Get(&weapon_info_idx), l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
@@ -411,6 +421,23 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is visible in the tech room", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Weapon_info[idx].wi_flags.set(Weapon::Info_Flags::In_tech_database, new_value);
+	}
+
+	return ade_set_args(L, "b", Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]);
 }
 
 ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")

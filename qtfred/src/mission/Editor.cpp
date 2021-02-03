@@ -278,15 +278,14 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
 		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
 			if (Ships[objp->instance].alt_type_index >= 0) {
-				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+				strcpy_s(Fred_alt_names[objp->instance], mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index));
 
 				// also zero it
 				Ships[objp->instance].alt_type_index = -1;
 			}
 
 			if (Ships[objp->instance].callsign_index >= 0) {
-				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index,
-													Fred_callsigns[objp->instance]);
+				strcpy_s(Fred_callsigns[objp->instance], mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index));
 
 				// also zero it
 				Ships[objp->instance].callsign_index = -1;
@@ -495,6 +494,8 @@ void Editor::clearMission() {
 	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
+
+	Event_annotations.clear();
 
 	mission_parse_reset_alt();        // alternate ship type names
 	mission_parse_reset_callsign();

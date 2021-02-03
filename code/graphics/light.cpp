@@ -7,13 +7,17 @@
  *
 */
 
-#include <math/bitarray.h>
-#include "cmdline/cmdline.h"
-#include "globalincs/pstypes.h"
-#include "graphics/2d.h"
 #include "light.h"
+
+#include "globalincs/pstypes.h"
+
 #include "matrix.h"
+
+#include "cmdline/cmdline.h"
+#include "graphics/2d.h"
+#include "math/bitarray.h"
 #include "render/3d.h"
+#include "util/uniform_structs.h"
 
 // Structures
 struct gr_light
@@ -331,4 +335,10 @@ void gr_set_ambient_light(int red, int green, int blue) {
 	gr_light_ambient[3] = 1.0f;
 
 	gr_calculate_ambient_factor();
+}
+
+void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {
+	Assertion(sizeof(gr_light_uniforms) <= buffer_size, "Insufficient buffer supplied.");
+
+	memcpy(reinterpret_cast<graphics::model_light*>(data_out), gr_light_uniforms, sizeof(gr_light_uniforms));
 }

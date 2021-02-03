@@ -128,7 +128,7 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
-	sw->num_objs_hit = 0;
+	sw->obj_sig_hitlist.clear();
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
 
@@ -246,7 +246,6 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	shockwave	*sw;
 	object		*objp;
 	float			blast,damage;
-	int			i;
 
 	Assertion(shockwave_objp->type == OBJ_SHOCKWAVE, "shockwave_move() called on an object of type %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", shockwave_objp->type, OBJ_SHOCKWAVE);
 	Assertion(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES, "shockwave_move() called on an object with an instance of %d (should be 0-%d); get a coder!\n", shockwave_objp->instance, MAX_SHOCKWAVES - 1);
@@ -285,7 +284,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
+			if (!Shockwaves_always_damage_bombs && !(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 
@@ -297,14 +296,17 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			}
 		}
 
-		// only apply damage to a ship once from a shockwave
-		for ( i = 0; i < sw->num_objs_hit; i++ ) {
-			if ( objp->signature == sw->obj_sig_hitlist[i] ){
+		bool found_in_list = false;
+
+		// only apply damage to an object once from a shockwave
+		for (auto & comparison : sw->obj_sig_hitlist) {
+			if ( (objp->signature == comparison.first) && (objp->type == comparison.second) ){
+				found_in_list = true;
 				break;
 			}
 		}
 
-		if ( i < sw->num_objs_hit ){
+		if (found_in_list) {
 			continue;
 		}
 
@@ -312,17 +314,16 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			continue;
 		}
 
-		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage
-		Assert(sw->num_objs_hit < SW_MAX_OBJS_HIT);
-		if ( sw->num_objs_hit >= SW_MAX_OBJS_HIT) {
-			sw->num_objs_hit--;
-		}
-
 		weapon_info* wip = NULL;
+		
+		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage 
+		// but only add non-ships to the list if the Game_settings flag is set
+		if (objp->type == OBJ_SHIP || Shockwaves_damage_all_obj_types_once) {
+			sw->obj_sig_hitlist.emplace_back(objp->signature, objp->type);
+		}
 
 		switch(objp->type) {
 		case OBJ_SHIP:
-			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
 			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
@@ -708,6 +709,7 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
+	sci->damage_overidden = false;
 }
 
 /**

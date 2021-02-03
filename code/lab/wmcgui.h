@@ -6,7 +6,7 @@
  * create based on the source.
  *
  */
-
+#pragma once
 
 
 #include "globalincs/alphacolors.h"
@@ -425,7 +425,6 @@ class Window : public GUIObject
 	bitmap_rect_list CaptionRectList;
 
 	shader WindowShade;
-
 protected:
 	void DoDraw(float frametime) override;
 	void DoMove(int dx, int dy) override;
@@ -434,10 +433,11 @@ protected:
 	int DoMouseDown(float frametime) override;
 	int DoMouseUp(float frametime) override;
 	int DoMouseOut(float frametime) override;
-	bool HasChildren(){return NOT_EMPTY(&Children);}
+	bool HasChildren() { return NOT_EMPTY(&Children); }
 
 public:
-	Window(const SCP_string &in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
+	Window(const SCP_string& in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
+
 	void SetCaption(const SCP_string &in_caption){Caption = in_caption;}
 	void ClearContent();
 };

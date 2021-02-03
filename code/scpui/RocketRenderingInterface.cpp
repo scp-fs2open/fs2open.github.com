@@ -44,10 +44,10 @@ RocketRenderingInterface::RocketRenderingInterface()
 
 RocketRenderingInterface::~RocketRenderingInterface()
 {
-	if (vertex_stream_buffer >= 0) {
+	if (vertex_stream_buffer.isValid()) {
 		gr_delete_buffer(vertex_stream_buffer);
 	}
-	if (index_stream_buffer >= 0) {
+	if (index_stream_buffer.isValid()) {
 		gr_delete_buffer(index_stream_buffer);
 	}
 }
@@ -143,15 +143,11 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 
 	std::unique_ptr<Texture> tex(new Texture());
 	// If there is a file that ends with an animation extension, try to load that
-	if (generic_anim_exists(filename.c_str())) {
-		// Load as animation
-		generic_anim_init(&tex->animation, filename);
-		if (generic_anim_stream(&tex->animation) == 0) {
-			tex->is_animation = true;
+	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, true) == 0) {
+		tex->is_animation = true;
 
-			texture_dimensions.x = tex->animation.width;
-			texture_dimensions.y = tex->animation.height;
-		}
+		texture_dimensions.x = tex->animation.width;
+		texture_dimensions.y = tex->animation.height;
 	}
 
 	if (!tex->is_animation) {
@@ -252,8 +248,11 @@ float RocketRenderingInterface::GetPixelsPerInch()
 #endif
 }
 
-void RocketRenderingInterface::renderGeometry(int vertex_buffer, int index_buffer, int num_elements, int bitmap,
-                                              const Rocket::Core::Vector2f& translation)
+void RocketRenderingInterface::renderGeometry(gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer,
+	int num_elements,
+	int bitmap,
+	const Rocket::Core::Vector2f& translation)
 {
 	interface_material material;
 
@@ -261,7 +260,7 @@ void RocketRenderingInterface::renderGeometry(int vertex_buffer, int index_buffe
 	transl.x = translation.x + renderOffset.x;
 	transl.y = translation.y + renderOffset.y;
 
-	material_set_rocket_interface(&material, bitmap, transl);
+	material_set_rocket_interface(&material, bitmap, transl, horizontal_swipe_offset);
 
 	gr_render_rocket_primitives(&material, PRIM_TYPE_TRIS, &layout, num_elements, vertex_buffer, index_buffer);
 }
@@ -287,6 +286,9 @@ void RocketRenderingInterface::advanceAnimation(Rocket::Core::TextureHandle hand
 	extras.draw = false; // We only want to advance the time but not actually render the animation
 
 	generic_anim_render(&tex->animation, advanceTime, -1, -1, false, &extras);
+}
+void RocketRenderingInterface::setHorizontalSwipeOffset(float value) {
+	horizontal_swipe_offset = value;
 }
 
 } // namespace scpui

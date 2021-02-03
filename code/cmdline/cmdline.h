@@ -30,7 +30,6 @@ extern char *Cmdline_game_password;
 extern char *Cmdline_rank_above;
 extern char *Cmdline_rank_below;
 extern int Cmdline_cd_check;
-extern int Cmdline_client_dodamage;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;
@@ -67,6 +66,7 @@ extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
+extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
@@ -89,6 +89,7 @@ extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_warp_flash;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
+extern int Cmdline_no_screenshake;
 
 // Audio related
 extern int Cmdline_voice_recognition;

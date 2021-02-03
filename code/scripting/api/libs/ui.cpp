@@ -2,17 +2,23 @@
 //
 #include "ui.h"
 
+#include "globalincs/alphacolors.h"
+
 #include "cmdline/cmdline.h"
+#include "gamesnd/eventmusic.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
+#include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
+#include "missionui/missionscreencommon.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/cmd_brief.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -48,8 +54,12 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(enableInput, l_UserInterface, "Rocket::Context context", "Enables input for the specified libRocket context",
-         "boolean", "true if successfull")
+ADE_FUNC(enableInput,
+	l_UserInterface,
+	"any context /* A libRocket Context value */",
+	"Enables input for the specified libRocket context",
+	"boolean",
+	"true if successfull")
 {
 	using namespace Rocket::Core;
 
@@ -77,11 +87,12 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(playElementSound, l_UserInterface,
-         "Rocket::Element element, string event, string state = \"\""
-         "",
-         "Plays an element specific sound with an optional state for differentiating different UI states.", "boolean",
-         "true if a sound was played, false otherwise")
+ADE_FUNC(playElementSound,
+	l_UserInterface,
+	"any element /* A libRocket element */, string event, string state = \"\"",
+	"Plays an element specific sound with an optional state for differentiating different UI states.",
+	"boolean",
+	"true if a sound was played, false otherwise")
 {
 	using namespace Rocket::Core;
 	const char* event;
@@ -379,6 +390,46 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
+ADE_VIRTVAR(ColorTags,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"The available tagged colors",
+	ade_type_map("string", "color"),
+	"A mapping from tag string to color value")
+{
+	using namespace luacpp;
+
+	LuaTable mapping = LuaTable::create(L);
+
+	for (const auto& tagged : Tagged_Colors) {
+		SCP_string tag;
+		tag.resize(1, tagged.first);
+
+		mapping.addValue(tag, l_Color.Set(*tagged.second));
+	}
+
+	return ade_set_args(L, "t", mapping);
+}
+
+ADE_VIRTVAR(DefaultTextColorTag,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Gets the default color tag string for the command briefing. Index into ColorTags.",
+	"string",
+	"The default color tag")
+{
+	SCP_string tagStr;
+
+	auto defaultColor = default_command_briefing_color;
+
+	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
+		defaultColor = Color_Tags[0];
+	}
+	tagStr.resize(1, defaultColor);
+
+	return ade_set_args(L, "s", tagStr);
+}
+
 ADE_FUNC(getBriefing,
 	l_UserInterface_CmdBrief,
 	nullptr,
@@ -388,6 +439,11 @@ ADE_FUNC(getBriefing,
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
 	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
+}
+
+ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
 }
 
 } // namespace api

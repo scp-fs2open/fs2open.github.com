@@ -68,6 +68,7 @@
 #include "network/multi_sw.h"
 #include "menuui/mainhallmenu.h"
 #include "debugconsole/console.h"
+#include "network/multi_mdns.h"
 
 #include <algorithm>
 
@@ -107,6 +108,14 @@ const int MULTI_PING_MIN_ONE_SECOND = 1000;
 
 char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
 char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_LENGTH];
+
+// Labels for Mission description
+static const char* PRE_CAMPAIGN_DESC =	"Campaign Description:\n";
+static const char* PRE_MISSION_DESC  =	"First Mission:\n";
+static const char* DOUBLE_NEW_LINE   =  "\n\n";
+
+SCP_string Multi_netgame_common_description;
+static SCP_vector<SCP_string> Multi_received_mission_description;
 
 int Multi_common_top_text_line = -1;		// where to start displaying from
 int Multi_common_num_text_lines = 0;		// how many lines we have
@@ -192,6 +201,32 @@ void multi_common_add_text(const char *str,int auto_scroll)
 		multi_common_move_to_bottom();
 	}
 }
+
+void multi_mission_desciption_set(const char* str_in, int msg_index)
+{
+	if ( !str_in || (msg_index < 1) ) {
+		return;
+	}
+
+	while (static_cast<size_t>(msg_index) > Multi_received_mission_description.size()) {
+		Multi_received_mission_description.push_back("");
+	}
+
+	auto index = static_cast<size_t>(msg_index - 1);
+
+	Multi_received_mission_description[index] = str_in;
+
+	// who cares if we don't *yet* have everything for a split second and will look weird
+	// for that tiny period of time, just "KISS"
+	SCP_string text;
+
+	for (const auto &msg : Multi_received_mission_description) {
+		text += msg;
+	}
+
+	multi_common_set_text(text.c_str());
+}
+
 
 void multi_common_split_text()
 {
@@ -718,6 +753,7 @@ int Multi_join_should_send = -1;
 // master tracker details
 int Multi_join_frame_count;						// keep a count of frames displayed
 int Multi_join_mt_tried_verify;					// already tried verifying the pilot with the tracker
+bool Multi_already_tried_stats_submit;
 
 // data stuff for auto joining a game
 #define MULTI_AUTOJOIN_JOIN_STAMP		2000
@@ -822,24 +858,12 @@ void multi_join_game_init()
 	Assert( Game_mode & GM_MULTIPLAYER );
 	Assert( Net_player != NULL );
 
-	switch (Multi_options_g.protocol) {	
-	case NET_TCP:
-		ADDRESS_LENGTH = IP_ADDRESS_LENGTH;		
-		PORT_LENGTH = IP_PORT_LENGTH;			
-		break;
-
-	default :
-		Int3();
-	} // end switch
-	
-	HEADER_LENGTH = 1;
-
 	memset( &Netgame, 0, sizeof(Netgame) );
 
 	multi_level_init();		
 	Net_player->flags |= NETINFO_FLAG_DO_NETWORKING;	
 	Net_player->m_player = Player;
-	memcpy(&Net_player->p_info.addr,&Psnet_my_addr,sizeof(net_addr));
+	memcpy(&Net_player->p_info.addr, &Psnet_my_addr, sizeof(Net_player->p_info.addr));
 
 	// check for the existence of a CD
 	multi_common_verify_cd();
@@ -938,26 +962,9 @@ void multi_join_game_init()
 	// if starting a network game, then go to the create game screen
 	if ( Cmdline_start_netgame ) {
 		multi_join_create_game();		
-	} else if ( Cmdline_connect_addr != NULL ) {
-		char *p;
-		short port_num;
-		int ip_addr;
-
+	} else if (Cmdline_connect_addr != nullptr) {
 		// joining a game.  Send a join request to the given IP address, and wait for the return.
-		memset( &Multi_autojoin_addr, 0, sizeof(net_addr) );
-		Multi_autojoin_addr.type = NET_TCP;
-
-		// create the address, looking out for port number at the end
-		port_num = DEFAULT_GAME_PORT;
-		p = strrchr(Cmdline_connect_addr, ':');
-		if ( p ) {
-			*p = '\0';
-			p++;
-			port_num = (short)atoi(p);
-		}
-		ip_addr = inet_addr(Cmdline_connect_addr);
-		memcpy(Multi_autojoin_addr.addr, &ip_addr, 4);
-		Multi_autojoin_addr.port = port_num;
+		psnet_string_to_addr(Cmdline_connect_addr, &Multi_autojoin_addr);
 
 		send_server_query(&Multi_autojoin_addr);
 		Multi_autojoin_query_stamp = timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
@@ -983,22 +990,12 @@ void multi_join_clear_game_list()
 
 void multi_join_game_do_frame()
 {
-
 	// Because we can get to here through the options screen, we may have PXO games enabled when we're not connected.
 	// So we should go back and connect if that's true.
 	if ((Multi_options_g.pxo == 1) && !multi_fs_tracker_inited()) {
 		gameseq_post_event(GS_EVENT_PXO);
 		return;
 	}
-
-	// check the status of our reliable socket.  If not valid, popup error and return to main menu
-	// I put this code here to avoid nasty gameseq issues with states.  Also, we will have nice
-	// background for the popup
-	if ( !psnet_rel_check() ) {
-		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("Network Error.  Try exiting and restarting FreeSpace to clear the error.  Otherwise, please reboot your machine.",756));
-		gameseq_post_event(GS_EVENT_MAIN_MENU);
-		return;
-	}	
 
 	// return here since we will be moving to the next stage anyway -- I don't want to see the backgrounds of
 	// all the screens for < 1 second for every screen we automatically move to.
@@ -1149,9 +1146,16 @@ void multi_join_game_close()
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_join_bitmap_fname[gr_screen.res]));
 	}
 
+	// clear descriptions
+	Multi_netgame_common_description.clear();
+	Multi_received_mission_description.clear();
+
 	// free up the active game list
 	multi_free_active_games();
-	
+
+	// cancel mdns queries
+	multi_mdns_query_close();
+
 	// destroy the UI_WINDOW
 	Multi_join_window.destroy();
 }
@@ -1495,18 +1499,20 @@ void multi_join_load_tcp_addrs()
 			nprintf(("Network","Invalid ip string (%s)\n",line));
 		} else {			 
 			// copy the server ip address
-			memset(&addr,0,sizeof(net_addr));
-			addr.type = NET_TCP;
-			psnet_string_to_addr(&addr,line);
-			if ( addr.port == 0 ){
+			if ( !psnet_string_to_addr(line, &addr) ) {
+				continue;
+			}
+
+			if (addr.port == 0) {
 				addr.port = DEFAULT_GAME_PORT;
 			}
 
 			// create a new server item on the list
 			item = multi_new_server_item();
-			if(item != NULL){
-				memcpy(&item->server_addr,&addr,sizeof(net_addr));
-			}			
+
+			if (item != nullptr) {
+				memcpy(&item->server_addr, &addr, sizeof(item->server_addr));
+			}
 		}
 	}
 
@@ -1535,6 +1541,11 @@ void multi_join_do_netstuff()
 		} else {
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
 		}		
+	}
+
+	// if we're doing local broadcast then check broadcast queries
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+		multi_mdns_query_do();
 	}
 
 	// check to see if we've been accepted.  If so, put up message saying so
@@ -1645,6 +1656,27 @@ void multi_join_process_select()
 			multi_join_button_pressed(MJ_ACCEPT);
 		}
 	}
+}
+
+// maybe update selected game's description
+void multi_join_maybe_update_selected(active_game *game)
+{
+	if ( !game || !Multi_join_selected_item ) {
+		return;
+	}
+
+	// if not our selected game, bail
+	if( !psnet_same(&Multi_join_selected_item->server_addr, &game->server_addr) ) {
+		return;
+	}
+
+	// if the mission hasn't changed, bail
+	if ( !strcmp(Multi_join_selected_item->mission_name, game->mission_name) ) {
+		return;
+	}
+
+	// send a mission description request to this guy
+	send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0);
 }
 
 // return game n (0 based index)
@@ -1937,7 +1969,7 @@ void multi_join_send_join_request(int as_observer)
 	memcpy(&Multi_join_request.player_options,&Player->m_local_options,sizeof(multi_local_options));
 			
 	// set the server address for the netgame
-	memcpy(&Netgame.server_addr,&Multi_join_selected_item->server_addr,sizeof(net_addr));
+	memcpy(&Netgame.server_addr, &Multi_join_selected_item->server_addr, sizeof(Netgame.server_addr));
 
 	// send a join request to the guy
 	send_join_packet(&Multi_join_selected_item->server_addr,&Multi_join_request);
@@ -2694,10 +2726,10 @@ void multi_sg_init_gamenet()
 		Multi_sg_netgame = &Multi_sg_netgame_temp;
 
 		// NETLOG
-		in_addr temp_addr;
-		memcpy(&temp_addr.s_addr, &Netgame.server_addr, 4);
-		char *server_addr = inet_ntoa(temp_addr);				
-		ml_printf(NOX("Starting netgame as Host on Standalone server : %s"), (server_addr == NULL) ? NOX("Unknown") : server_addr);
+		char server_addr[INET6_ADDRSTRLEN];
+		psnet_addr_to_string(&Netgame.server_addr, server_addr, INET6_ADDRSTRLEN);
+
+		ml_printf(NOX("Starting netgame as Host on Standalone server : %s"), (server_addr[0]) ? NOX("Unknown") : server_addr);
 	}
 	
 	Net_player->tracker_player_id = Multi_tracker_id;
@@ -4154,6 +4186,11 @@ void multi_create_init_as_server()
 
 	// setup port forwarding
 	multi_port_forward_init();
+
+	// setup mdns
+	if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+		multi_mdns_service_init();
+	}
 }
 
 // if on a standalone
@@ -4782,12 +4819,13 @@ void multi_create_list_select_item(int n)
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-				
+
 				Assert(ng->max_players > 0);
 				strcpy_s(ng->title,The_mission.name);								
 
 				// set the information area text
-				multi_common_set_text(The_mission.mission_desc);
+				Multi_netgame_common_description = The_mission.mission_desc;
+				multi_common_set_text(Multi_netgame_common_description.c_str());
 			}
 			// if we're on the standalone, send a request for the description
 			else {
@@ -4807,15 +4845,18 @@ void multi_create_list_select_item(int n)
 			}
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
+			char* first_mission = nullptr;
+			mission* mp = &The_mission;
+
 			// if not on the standalone server
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				// get the campaign info				
-				memset(title,0,NAME_LENGTH+1);
-				if(!mission_campaign_get_info(ng->campaign_name,title,&campaign_type,&max_players, &campaign_desc)) {
-					memset(ng->campaign_name,0,NAME_LENGTH+1);
+				memset(title, 0, sizeof(title));
+				// get the campaign info
+				if ( !mission_campaign_get_info(ng->campaign_name, title, &campaign_type, &max_players, &campaign_desc, &first_mission) ) {
+					memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
 					ng->max_players = 0;
 				}
-				// if we successfully got the # of players
+				// if we successfully got the info
 				else {
 					memset(ng->title,0,NAME_LENGTH+1);
 					strcpy_s(ng->title,title);
@@ -4825,19 +4866,41 @@ void multi_create_list_select_item(int n)
 				nprintf(("Network","MC MAX PLAYERS : %d\n",ng->max_players));
 
 				// set the information area text
-				// multi_common_set_text(ng->title);
-				if (campaign_desc != NULL)
-				{
-					multi_common_set_text(campaign_desc);
+				// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
+				Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
+
+				if (campaign_desc) {
+					Multi_netgame_common_description += campaign_desc;
+				} else {
+					Multi_netgame_common_description += "No description available.";
 				}
-				else 
-				{
-					multi_common_set_text("");
+
+				Multi_netgame_common_description += DOUBLE_NEW_LINE;
+				Multi_netgame_common_description += PRE_MISSION_DESC;
+
+				int rc = get_mission_info(first_mission, mp, true);
+
+				if ( !rc && strlen(mp->mission_desc) ) {
+					Multi_netgame_common_description += mp->mission_desc;
+				} else {
+					Multi_netgame_common_description += "No description available.";
 				}
-			}
-			// if on the standalone server, send a request for the description
-			else {
-				// no descriptions currently kept for campaigns
+
+				multi_common_set_text(Multi_netgame_common_description.c_str());
+
+				// free the malloc'ed strings from mission_campaign_get_info()
+				if (campaign_desc != nullptr) {
+					vm_free(campaign_desc);
+				}
+
+				if (first_mission != nullptr) {
+					vm_free(first_mission);
+				}
+
+			// standalones should now be able to request the info.
+			} else {
+				send_netgame_descript_packet(&Netgame.server_addr, 0);
+				multi_common_set_text("");
 			}
 
 			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
@@ -6658,7 +6721,11 @@ void multi_game_client_setup_init()
 	multi_common_notify_init();
 
 	// initialize the common mission info display area.
-	multi_common_set_text("");	
+	multi_common_set_text("");
+
+	// reset the multi description
+	Multi_netgame_common_description.clear();
+	Multi_received_mission_description.clear();
 
 	// use the common interface palette
 	multi_common_set_palette();	
@@ -7771,6 +7838,18 @@ void multi_sync_blit_screen_all()
 				// display the text
 				multi_sync_display_status(txt,count);
 				break;
+			case NETPLAYER_STATE_FICTION_VIEWER:
+				multi_sync_display_status(XSTR("Fiction Viewer", -1), count);
+				break;
+			case NETPLAYER_STATE_CUTSCENE:
+				multi_sync_display_status(XSTR("Cutscene", -1), count);
+				break;
+			case NETPLAYER_STATE_CMD_BRIEFING:
+				multi_sync_display_status(XSTR("Command Briefing", -1), count);
+				break;
+			case NETPLAYER_STATE_RED_ALERT:
+				multi_sync_display_status(XSTR("Red Alert", -1), count);
+				break;
 			default :
 				nprintf(("Network","Unhandled player state : %d !\n",Net_players[idx].state));
 				break;
@@ -8601,6 +8680,7 @@ void multi_debrief_init()
 
 	Multi_debrief_time = 0.0f;
 	Multi_debrief_resend_time = 10.0f;
+	Multi_already_tried_stats_submit = false;
 	
 	// do this to notify the standalone or the normal server that we're in the debrief state and ready to receive packets
 	if (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
@@ -8712,8 +8792,9 @@ void multi_debrief_accept_hit()
 			if (MULTI_IS_TRACKER_GAME) {
 				// if not on standalone, send stats
 				if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-					if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+					if (!(Multi_already_tried_stats_submit)) {
 						int stats_saved = multi_fs_tracker_store_stats();
+						Multi_already_tried_stats_submit = true;
 
 						if (stats_saved) {
 							Netgame.flags |= NG_FLAG_STORED_MT_STATS;
@@ -8778,8 +8859,9 @@ void multi_debrief_esc_hit()
 		if((Multi_debrief_stats_accept_code != -1) || (MULTI_IS_TRACKER_GAME)){
 			// if not on standalone, maybe send stats
 			if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && MULTI_IS_TRACKER_GAME ) {
-				if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+				if (!(Multi_already_tried_stats_submit) ) {
 					int stats_saved = multi_fs_tracker_store_stats();
+					Multi_already_tried_stats_submit = true;
 
 					if (stats_saved) {
 						Netgame.flags |= NG_FLAG_STORED_MT_STATS;

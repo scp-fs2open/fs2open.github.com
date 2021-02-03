@@ -29,8 +29,6 @@ int Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
-#define MAX_FIREBALLS	200
-
 #define MAX_WARP_LOD	0
 
 fireball Fireballs[MAX_FIREBALLS];
@@ -385,10 +383,15 @@ void fireball_parse_tbl()
 	parse_modular_table(NOX("*-fbl.tbm"), parse_fireball_tbl);
 
 	// fill in extra LOD filenames
-	for (int i = 0; i < Num_fireball_types; i++)
+	for (auto &fi: Fireball_info)
 	{
-		for (int j = 1; j < Fireball_info[i].lod_count; j++)
-			sprintf( Fireball_info[i].lod[j].filename, "%s_%d", Fireball_info[i].lod[0].filename, j);
+		if (fi.lod_count > 1)
+		{
+			auto lod0 = fi.lod[0].filename;
+
+			for (int j = 1; j < fi.lod_count; ++j)
+				sprintf(fi.lod[j].filename, "%s_%d", lod0, j);
+		}
 	}
 
 	fireballs_parsed = true;

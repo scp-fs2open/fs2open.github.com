@@ -36,8 +36,7 @@ int ai_get_slot(int shipnum)
 			return i;
 		}
 
-	Warning( LOCATION, "Couldn't get AI slot" );
-	Int3();
+	Error( LOCATION, "Couldn't get AI slot, please tell a coder!");
 
 	return -1;
 }

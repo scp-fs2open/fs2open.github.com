@@ -81,12 +81,26 @@ namespace
 			return false;
 		}
 
-		if (e.button.button == SDL_BUTTON_LEFT)
-			mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_MIDDLE)
-			mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_RIGHT)
-			mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+		switch (e.button.button) {
+			case SDL_BUTTON_LEFT:
+				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_RIGHT:
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_MIDDLE:
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X1:
+				mouse_mark_button(MOUSE_X1_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X2:
+				mouse_mark_button(MOUSE_X2_BUTTON, e.button.state);
+				break;
+			default:
+				// SDL gave us an unknown button. Just log it
+				mprintf(("Unknown SDL button %i", e.button.button));
+		}
 
 		return true;
 	}

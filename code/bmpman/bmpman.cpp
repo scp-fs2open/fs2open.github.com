@@ -81,6 +81,8 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
+SCP_map<int,ubyte*> bm_lookup_cache;
+
 /**
  * How much RAM bmpman can use for textures.
  *
@@ -155,16 +157,20 @@ bitmap_lookup::bitmap_lookup(int bitmap_num):
 	Width = be->bm.w;
 	Height = be->bm.h;
 
-	Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
 
-	gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+	auto cache_search = bm_lookup_cache.find(bitmap_num);
+	if (cache_search == bm_lookup_cache.end()) {
+		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+
+		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+	} else {
+		Bitmap_data = cache_search->second;
+	}
 }
 
 bitmap_lookup::~bitmap_lookup()
 {
-	if ( Bitmap_data != NULL ) {
-		vm_free(Bitmap_data);
-	}
 }
 
 bool bitmap_lookup::valid()
@@ -188,10 +194,17 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 3]) / 255.0f;
 }
 
+void clear_bm_lookup_cache() {
+	for(auto &iter: bm_lookup_cache) {
+		free(iter.second);
+	}
+	bm_lookup_cache.clear();
+}
+
 /**
  * Converts the bitmap referenced by bmp to the type specified by flags
  */
-static void bm_convert_format(bitmap *bmp, ubyte flags);
+static void bm_convert_format(bitmap *bmp, ushort flags);
 
 /**
  * Frees a bitmap's data if it can
@@ -571,7 +584,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	return n;
 }
 
-void bm_convert_format(bitmap *bmp, ubyte flags) {
+void bm_convert_format(bitmap *bmp, ushort flags) {
 	int idx;
 
 	// no transparency for 24 bpp images
@@ -836,7 +849,7 @@ void bm_get_frame_usage(int *ntotal, int *nnew) {
 #endif
 }
 
-int bm_get_info(int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps) {
+int bm_get_info(int handle, int *w, int * h, ushort* flags, int *nframes, int *fps) {
 	bitmap * bmp;
 
 	if (!bm_inited) return -1;
@@ -961,6 +974,9 @@ int bm_is_compressed(int num) {
 	case BM_TYPE_DXT5:
 		return DDS_DXT5;
 
+	case BM_TYPE_BC7:
+		return DDS_BC7;
+
 	case BM_TYPE_CUBEMAP_DXT1:
 		return DDS_CUBEMAP_DXT1;
 
@@ -1032,6 +1048,10 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 
 		case DDS_DXT5:
 			*c_type = BM_TYPE_DXT5;
+			break;
+
+		case DDS_BC7:
+			*c_type = BM_TYPE_BC7;
 			break;
 
 		case DDS_UNCOMPRESSED:
@@ -1300,7 +1320,7 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 /**
 * Lock an image files data into memory
 */
-static int bm_load_image_data(int handle, int bpp, ubyte flags, bool nodebug)
+static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 {
 	BM_TYPE c_type = BM_TYPE_NONE;
 	int true_bpp;
@@ -1376,6 +1396,7 @@ static int bm_load_image_data(int handle, int bpp, ubyte flags, bool nodebug)
 		case BM_TYPE_DXT1:
 		case BM_TYPE_DXT3:
 		case BM_TYPE_DXT5:
+		case BM_TYPE_BC7:
 		case BM_TYPE_CUBEMAP_DDS:
 		case BM_TYPE_CUBEMAP_DXT1:
 		case BM_TYPE_CUBEMAP_DXT3:
@@ -1815,7 +1836,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	if (!res.found)
 		return -1;
 
-	CFILE *test = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, dir_type);
+	CFILE *test = cfopen_special(res, "rb", dir_type);
 
 	if (test != NULL) {
 		if (img_cfp != NULL)
@@ -1825,11 +1846,11 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	}
 
 	// umm, that's not good...
-	Warning(LOCATION, "Could not open file %s!", res.full_name.c_str());
+	Warning(LOCATION, "Could not open file %s!", real_filename);
 	return -1;
 }
 
-bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
+bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 	bitmap			*bmp;
 
 	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
@@ -1851,7 +1872,7 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 			Assert(bpp == 8);
 		} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 			Assert(bpp >= 16);  // cheating but bpp passed isn't what we normally end up with
-		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5)) {
+		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5) || (flags & BMP_TEX_BC7)) {
 			Assert(bpp >= 16); // cheating but bpp passed isn't what we normally end up with
 		} else if (flags & BMP_TEX_CUBEMAP) {
 			Assert((be->type == BM_TYPE_CUBEMAP_DDS) ||
@@ -1930,7 +1951,7 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 	return bmp;
 }
 
-void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, ubyte flags) {
+void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, ushort flags) {
 	anim				*the_anim;
 	anim_instance	*the_anim_instance;
 	bitmap			*bm;
@@ -2056,7 +2077,7 @@ void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, ubyt
 }
 
 
-void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte /*flags*/) {
+void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort /*flags*/) {
 	auto be = &bs->entry;
 	int first_frame = be->info.ani.first_frame;
 	auto first_entry = bm_get_entry(first_frame);
@@ -2106,7 +2127,7 @@ void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte /
 }
 
 
-void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ubyte /*flags*/) {
+void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /*flags*/) {
 	ubyte *data = NULL;
 	int error;
 	ubyte dds_bpp = 0;
@@ -2170,7 +2191,7 @@ void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ubyte /*
 #endif
 }
 
-void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte /*flags*/) {
+void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort /*flags*/) {
 	ubyte *data = NULL;
 	int d_size = 0;
 	int jpg_error = JPEG_ERROR_INVALID;
@@ -2217,7 +2238,7 @@ void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte /*flag
 #endif
 }
 
-void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
 	ubyte *data;
 	int pcx_error;
 	char filename[MAX_FILENAME_LEN];
@@ -2262,7 +2283,7 @@ void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags)
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ubyte /*flags*/) {
+void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /*flags*/) {
 	ubyte *data = NULL;
 	//assume 32 bit - libpng should expand everything
 	int d_size;
@@ -2307,7 +2328,7 @@ void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ubyte /*
 #endif
 }
 
-void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
 	ubyte *data = NULL;
 	int byte_size;
 	char filename[MAX_FILENAME_LEN];
@@ -2366,7 +2387,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags)
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
 	auto be = &bs->entry;
 
 	// Unload any existing data
@@ -2648,6 +2669,10 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 			frame_entry->used_flags = BMP_TEX_DXT5;
 			continue;
 
+		case BM_TYPE_BC7:
+			frame_entry->used_flags = BMP_TEX_BC7;
+			continue;
+
 		case BM_TYPE_CUBEMAP_DXT1:
 		case BM_TYPE_CUBEMAP_DXT3:
 		case BM_TYPE_CUBEMAP_DXT5:
@@ -2687,6 +2712,10 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 
 		case BM_TYPE_DXT5:
 			entry->used_flags = BMP_TEX_DXT5;
+			continue;
+
+		case BM_TYPE_BC7:
+			entry->used_flags = BMP_TEX_BC7;
 			continue;
 
 		case BM_TYPE_CUBEMAP_DXT1:
@@ -2823,6 +2852,28 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	return 1;
+}
+
+bool bm_release_rendertarget(int handle) {
+	Assert(handle >= 0);
+
+	bitmap_entry* be = bm_get_entry(handle);
+
+	if (be->type == BM_TYPE_NONE) {
+		return false;	// Already been released?
+	}
+
+	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release_rendertarget()\n", be->handle, handle, be->filename);
+	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
+
+	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
+		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
+		return false;
+	}
+
+	gr_bm_free_data(bm_get_slot(handle), false);
+
+	return true;
 }
 
 int bm_reload(int bitmap_handle, const char* filename) {

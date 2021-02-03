@@ -54,7 +54,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s", Ships[objh->objp->instance].ship_name);
 			break;
 		case OBJ_WEAPON:
-			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].get_display_string());
+			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].get_display_name());
 			break;
 		default:
 			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
@@ -271,6 +271,40 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	}
 
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
+}
+
+ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	object_h *objh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		objh->objp->collision_group_id |= (1 << group);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this object from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	object_h *objh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		objh->objp->collision_group_id &= ~(1 << group);
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")

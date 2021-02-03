@@ -36,6 +36,7 @@ void ScriptingTestFixture::EvalTestScript() {
 	content.resize(length);
 
 	auto read = cfread(&content[0], 1, length, fp);
+	cfclose(fp);
 
 	if (read != length) {
 		FAIL() << "Failed to read test file!";
