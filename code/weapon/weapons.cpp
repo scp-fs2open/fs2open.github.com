@@ -216,11 +216,14 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
 
-//default time of a homing weapon to not home
+//default time of a homing missile to not home
 #define HOMING_DEFAULT_FREE_FLIGHT_TIME	0.5f
 
 // default percentage of max speed to coast at during freeflight
 const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
+
+//default time of a homing primary to not home
+#define HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME	0.0f
 
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
@@ -1559,6 +1562,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->ship_restrict_strings.emplace_back(LockRestrictionType::IFF, name);
 		}
 
+		if (subtype == WP_LASER && !wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
+			Warning(LOCATION, "Homing primary %s must be a heat seeker. Setting to heat", wip->name);
+			wip->wi_flags.remove(Weapon::Info_Flags::Homing_aspect);
+			wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
+			wip->wi_flags.set(Weapon::Info_Flags::Homing_heat);
+		}
 	}
 
 	// swarm missiles
@@ -1598,7 +1607,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
 	} else if(first_time && is_homing) {
-		wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
+		if (subtype == WP_LASER) {
+			wip->free_flight_time = HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME;
+		}
+		else {
+			wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
+		}
 	}
 
 	if (optional_string("$Free Flight Speed:")) {
@@ -4688,7 +4702,8 @@ void weapon_home(object *obj, int num, float frame_time)
             (old_dot < wip->fov) &&
             (wp->lifeleft > 0.01f) &&
             (wp->homing_object != &obj_used_list) &&
-            (wp->homing_object->type == OBJ_SHIP))
+            (wp->homing_object->type == OBJ_SHIP) && 
+            (wip->subtype != WP_LASER))				
         {
             wp->lifeleft = 0.01f;
         }
@@ -4722,7 +4737,8 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Control speed based on dot product to goal.  If close to straight ahead, move
 		//	at max speed, else move slower based on how far from ahead.
-		if (old_dot < 0.90f) {
+		//	Asteroth - but not for homing primaries
+		if (old_dot < 0.90f && wip->subtype != WP_LASER) {
 			obj->phys_info.speed = MAX(0.2f, old_dot* (float) fabs(old_dot));
 			if (obj->phys_info.speed < max_speed*0.75f)
 				obj->phys_info.speed = max_speed*0.75f;
@@ -5648,7 +5664,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// check if laser or dumbfire missile
 	// set physics flag to allow optimization
-	if ((wip->subtype == WP_LASER) || ((wip->subtype == WP_MISSILE) && !(wip->is_homing()) && wip->acceleration_time == 0.0f)) {
+	if (((wip->subtype == WP_LASER) || (wip->subtype == WP_MISSILE)) && !(wip->is_homing()) && wip->acceleration_time == 0.0f) {
 		// set physics flag
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
