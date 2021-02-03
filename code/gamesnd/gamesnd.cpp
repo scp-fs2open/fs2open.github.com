@@ -303,6 +303,10 @@ gamesnd_id gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
 
+	// empty name is not valid!
+	if (name == nullptr || name[0] == '\0')
+		return gamesnd_id(-1);
+
 	int index = gamesnd_lookup_name(name, Snds);
 
 	if (index < 0)
