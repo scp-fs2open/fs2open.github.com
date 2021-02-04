@@ -12412,16 +12412,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			//	For ships on player's team, check if modder wants default constant chance to fire or value from specific AI class profile.
 			//	For enemies, use value from specific AI class profile (usually increasing chance with higher skill level).
-			if (shipp->team == Player_ship->team) {
-				// check if modder wants friendly AI to use AI profile or main profile
-				ai_info* aip = &Ai_info[Ships[objp->instance].ai_index];
-				if (aip->ai_profile_flags[AI::Profile_Flags::Friendlies_use_countermeasure_firechance]) {
-					// use AI profile chance
-					fire_chance = aip->ai_cmeasure_fire_chance;
-				} else {
-					// use default constant chance
-					fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
-				}
+			if ( (shipp->team == Player_ship->team) && !(aip->ai_profile_flags[AI::Profile_Flags::Friendlies_use_countermeasure_firechance]) ) {
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			} else {
 				fire_chance = aip->ai_cmeasure_fire_chance;
 			}
