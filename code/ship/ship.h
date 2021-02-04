@@ -1240,8 +1240,11 @@ public:
 
 	// optional afterburner trail values
 	generic_bitmap afterburner_trail;
+	float afterburner_trail_tex_stretch;
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
+	float afterburner_trail_alpha_end_factor;
+	float afterburner_trail_alpha_decay_exponent;
 	float afterburner_trail_life;
 	float afterburner_trail_spread;
 	int afterburner_trail_faded_out_sections;
