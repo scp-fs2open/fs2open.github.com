@@ -10765,7 +10765,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		return 0;
 	}
 
-	shipp->cmeasure_fire_stamp = timestamp(CMEASURE_WAIT);	//	Can launch every half second.
+	shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
 #ifndef NDEBUG
 	if (Weapon_energy_cheat) {
 		shipp->cmeasure_count++;

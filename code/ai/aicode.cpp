@@ -12398,9 +12398,10 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 		dist = vm_vec_dist(&objp->pos, &weapon_objp->pos);
 
 		bool in_countermeasure_range = dist < weapon_objp->phys_info.speed * 2.0f;
+		weapon_info *cmeasure = &Weapon_info[shipp->current_cmeasure];
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance])
-			in_countermeasure_range = dist < Weapon_info[shipp->current_cmeasure].cm_effective_rad;
+			in_countermeasure_range = dist < cmeasure->cm_effective_rad;
 
 		if ( in_countermeasure_range ) {
 	
@@ -12409,12 +12410,21 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			float	fire_chance;
 
-			//	For ships on player's team, have constant, average chance to fire.
-			//	For enemies, increasing chance with higher skill level.
-			if (shipp->team == Player_ship->team)
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
-			else
+			//	For ships on player's team, check if modder wants default constant chance to fire or value from specific AI class profile.
+			//	For enemies, use value from specific AI class profile (usually increasing chance with higher skill level).
+			if (shipp->team == Player_ship->team) {
+				// check if modder wants friendly AI to use AI profile or main profile
+				ai_info* aip = &Ai_info[Ships[objp->instance].ai_index];
+				if (aip->ai_profile_flags[AI::Profile_Flags::Friendlies_use_countermeasure_firechance]) {
+					// use AI profile chance
+					fire_chance = aip->ai_cmeasure_fire_chance;
+				} else {
+					// use default constant chance
+					fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
+				}
+			} else {
 				fire_chance = aip->ai_cmeasure_fire_chance;
+			}
 
 			//	Decrease chance to fire at lower ai class (SUSHI: Only if autoscale is on)
 			if (aip->ai_class_autoscale)
@@ -12422,14 +12432,23 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			float r = frand();
 			if (fire_chance < r) {
-				shipp->cmeasure_fire_stamp = timestamp(CMEASURE_WAIT + (int) (fire_chance*2000));		//	Wait 1/2 second (CMEASURE_WAIT) + additional delay to decrease chance of firing very soon.
+				int fail_delay;
+				// check if modder wants to use firewait for fail delay, or default
+				if (cmeasure->cmeasure_faildelay_equals_firewait) {
+					// use firewait as delay
+					fail_delay = cmeasure->cmeasure_firewait;
+				} else {
+					//	use default to wait firwait + additional delay to decrease chance of firing very soon.
+					fail_delay = cmeasure->cmeasure_firewait + (int) (fire_chance*2000);
+				}
+				shipp->cmeasure_fire_stamp = timestamp(fail_delay);		
 				return;
 			}
 
 			if (weapon_objp->type == OBJ_WEAPON) {
 				if (weapon_objp->instance >= 0) {
 					ship_launch_countermeasure(objp);
-					shipp->cmeasure_fire_stamp = timestamp(2*CMEASURE_WAIT);
+					shipp->cmeasure_fire_stamp = timestamp(cmeasure->cmeasure_firewait*cmeasure->cmeasure_sucess_delay_multiplier);
 					return;
 				}
 			}

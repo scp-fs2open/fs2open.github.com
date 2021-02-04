@@ -2339,6 +2339,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Pulse Interval:")) {
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
+
+		if (optional_string("+Use Fire Wait:")) {
+			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		}
+
+		if (optional_string("+Fail Delay Equals Fire Wait:")) {
+			stuff_boolean(&wip->cmeasure_faildelay_equals_firewait);
+		}
+
+		if (optional_string("+Successful Launch Delay Multiplier:")) {
+			stuff_int(&wip->cmeasure_sucess_delay_multiplier);
+		}
+
 	}
 
 	// beam weapon optional stuff
@@ -8355,6 +8368,10 @@ void weapon_info::reset()
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
 	this->cm_kill_single = false;
 	this->cmeasure_timer_interval = 0;
+	this->cmeasure_firewait = CMEASURE_WAIT;
+	this->cmeasure_sucess_delay_multiplier = 2;
+	this->cmeasure_use_firewait = false;
+	this->cmeasure_faildelay_equals_firewait = false;
 
 	this->weapon_submodel_rotate_accell = 10.0f;
 	this->weapon_submodel_rotate_vel = 0.0f;
