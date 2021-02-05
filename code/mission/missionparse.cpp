@@ -2463,14 +2463,14 @@ int parse_create_object_sub(p_object *p_objp)
 		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars({"Ship", "Parent"});
-	}
 
-	if (Game_mode & GM_IN_MISSION && Ship_info[shipp->ship_info_index].is_big_or_huge()) {
-		float mission_time = f2fl(Missiontime);
-		int minutes = (int)(mission_time / 60);
-		int seconds = (int)mission_time % 60;
+		if (Ship_info[shipp->ship_info_index].is_big_or_huge() && !brought_in_docked_wing) {
+			float mission_time = f2fl(Missiontime);
+			int minutes = (int)(mission_time / 60);
+			int seconds = (int)mission_time % 60;
 
-		mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+		}
 	}
 
 	return objnum;
