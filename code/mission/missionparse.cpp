@@ -2457,23 +2457,20 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
 	// If the ship is in a wing, but the wing is docked then addition of bool brought_in_docked_wing accounts for that status --wookieejedi
-	if (Game_mode & GM_IN_MISSION) {
+	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
+		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-		if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
-			float mission_time = f2fl(Missiontime);
-			int minutes = (int)(mission_time / 60);
-			int seconds = (int)mission_time % 60;
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+		Script_system.RemHookVars({"Ship", "Parent"});
+	}
 
-			mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-		}
+	if (Game_mode & GM_IN_MISSION && Ship_info[shipp->ship_info_index].is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
 
-		if ((shipp->wingnum == -1) || (brought_in_docked_wing)) {
-			object* anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
-
-			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-			Script_system.RemHookVars({"Ship", "Parent"});
-		}
+		mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
 	}
 
 	return objnum;
