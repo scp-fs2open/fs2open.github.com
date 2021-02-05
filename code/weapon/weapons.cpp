@@ -2350,7 +2350,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (delay_multiplier > 0) {
 				wip->cmeasure_failure_delay_multiplier_ai = delay_multiplier;
 			} else {
-				mprintf(("Warning: \"+Failure Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier));
+				Warning(LOCATION,"\"+Failure Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
 			}
 		}
 
@@ -2360,7 +2360,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (delay_multiplier > 0) {
 				wip->cmeasure_sucess_delay_multiplier_ai = delay_multiplier;
 			} else {
-				mprintf(("Warning: \"+Successful Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier));
+				Warning(LOCATION, "\"+Successful Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
 			}
 		}
 
