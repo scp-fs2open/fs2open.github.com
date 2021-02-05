@@ -12425,10 +12425,10 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			float r = frand();
 			if (fire_chance < r) {
 				int fail_delay;
-				// check if modder wants to use firewait for fail delay, or default
-				if (cmeasure->cmeasure_faildelay_equals_firewait) {
+				// check if modder wants to use custom fail delay, or default
+				if (cmeasure->cmeasure_failure_delay_multiplier_ai >= 0) {
 					// use firewait as delay
-					fail_delay = cmeasure->cmeasure_firewait;
+					fail_delay = cmeasure->cmeasure_firewait * cmeasure->cmeasure_failure_delay_multiplier_ai;
 				} else {
 					//	use default to wait firwait + additional delay to decrease chance of firing very soon.
 					fail_delay = cmeasure->cmeasure_firewait + (int) (fire_chance*2000);
@@ -12440,7 +12440,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			if (weapon_objp->type == OBJ_WEAPON) {
 				if (weapon_objp->instance >= 0) {
 					ship_launch_countermeasure(objp);
-					shipp->cmeasure_fire_stamp = timestamp(cmeasure->cmeasure_firewait*cmeasure->cmeasure_sucess_delay_multiplier);
+					shipp->cmeasure_fire_stamp = timestamp(cmeasure->cmeasure_firewait * cmeasure->cmeasure_sucess_delay_multiplier_ai);
 					return;
 				}
 			}
