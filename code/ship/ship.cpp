@@ -7910,31 +7910,27 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 	}
 
-#ifndef NDEBUG
-	switch (cleanup_mode) {
-	case SHIP_DESTROYED:
-		nprintf(("Alan", "SHIP DESTROYED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DEPARTED:
-	case SHIP_DEPARTED_WARP:
-	case SHIP_DEPARTED_BAY:
-		nprintf(("Alan", "SHIP DEPARTED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DESTROYED_REDALERT:
-		nprintf(("Alan", "SHIP REDALERT DESTROYED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DEPARTED_REDALERT:
-		nprintf(("Alan", "SHIP REDALERT DEPARTED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_VANISHED:
-		nprintf(("Alan", "SHIP VANISHED: %s'\n'", shipp->ship_name));
-		break;
-	default:
-		// Can't Happen, but we should've already caught this
-		UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
-		break;
+	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);  
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		switch (cleanup_mode) {
+		case SHIP_DESTROYED:
+			mprintf(("%s destroyed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		case SHIP_DEPARTED:
+		case SHIP_DEPARTED_WARP:
+		case SHIP_DEPARTED_BAY:
+			mprintf(("%s departed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		case SHIP_VANISHED:
+			mprintf(("%s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		default:
+			break;
+		}
 	}
-#endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
