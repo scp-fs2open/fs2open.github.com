@@ -31,7 +31,7 @@ struct vec3d;
 #define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
 #define BEAM_TYPE_D					3				// similar to the type A beams, but takes multiple shots and "chases" fighters around
 #define BEAM_TYPE_E					4				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
-#define BEAM_TYPE_F					5				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
+#define BEAM_TYPE_F					5				// SCP type, highly flexible and configurable
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
@@ -65,7 +65,7 @@ typedef struct beam_info {
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vec3d			local_fire_postion;		// offset from the center of the object (for targeting lasers only)
+	vec3d			local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	ship_subsys		*turret;						// where he's shooting from
 	float			accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// who's getting shot

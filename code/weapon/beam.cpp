@@ -420,8 +420,8 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->firingpoint = (fire_info->bfi_flags & BFIF_FLOATING_BEAM) ? -1 : fire_info->turret->turret_next_fire_pos;
 	new_item->beam_width = wip->b_info.beam_width;
 	new_item->last_start = fire_info->starting_pos;
-	new_item->type5_rot_speed = wip->b_info.bpi.continuous_rot;
-	new_item->rotates = wip->b_info.beam_type == BEAM_TYPE_F && wip->b_info.bpi.continuous_rot_axis != AXIS_UNSPECIFIED;
+	new_item->type5_rot_speed = wip->b_info.t5info.continuous_rot;
+	new_item->rotates = wip->b_info.beam_type == BEAM_TYPE_F && wip->b_info.t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED;
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
@@ -476,8 +476,8 @@ int beam_fire(beam_fire_info *fire_info)
 		new_item->binfo = *fire_info->beam_info_override;
 	} else {
 		float burst_rot = 0.0f;
-		if (new_item->type == BEAM_TYPE_F && !wip->b_info.bpi.burst_rot_pattern.empty()) {
-			burst_rot = wip->b_info.bpi.burst_rot_pattern[fire_info->burst_index];
+		if (new_item->type == BEAM_TYPE_F && !wip->b_info.t5info.burst_rot_pattern.empty()) {
+			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index];
 		}
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
 	}	
@@ -2289,7 +2289,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		// Get our two starting points
 		if (usable_target) {
 			// set up our two kinds of random points if needed
-			if (bwi->bpi.start_pos == POS_RANDOM_INSIDE || bwi->bpi.end_pos == POS_RANDOM_INSIDE) {
+			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_INSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_INSIDE) {
 				vec3d temp1, temp2;
 				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2, seed);
 				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
@@ -2297,62 +2297,65 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				rand1_on += b->target->pos;
 				rand2_on += b->target->pos;
 			}
-			if (bwi->bpi.start_pos == POS_RANDOM_OUTSIDE || bwi->bpi.end_pos == POS_RANDOM_OUTSIDE)
+			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_OUTSIDE)
 				beam_get_octant_points(model_num, usable_target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &rand1_off, &rand2_off);
 
 			// get start and end points
-			switch (bwi->bpi.start_pos) {
-				case POS_CENTER:
+			switch (bwi->t5info.start_pos) {
+				case Type5BeamPos::CENTER:
 					pos1 = b->target->pos;
 					break;
-				case POS_RANDOM_INSIDE:
+				case Type5BeamPos::RANDOM_INSIDE:
 					pos1 = rand1_on;
 					break;
-				case POS_RANDOM_OUTSIDE:
+				case Type5BeamPos::RANDOM_OUTSIDE:
 					pos1 = rand1_off;
+				default:
+					// the other cases dont matter
 			}
 
 
-			if (bwi->bpi.no_translate || bwi->bpi.end_pos == POS_SAME_RANDOM)
+			if (bwi->t5info.no_translate || bwi->t5info.end_pos == Type5BeamPos::SAME_RANDOM)
 				pos2 = pos1;
 			else {
-				switch (bwi->bpi.end_pos) {
-					case POS_CENTER:
+				switch (bwi->t5info.end_pos) {
+					case Type5BeamPos::CENTER:
 						pos2 = b->target->pos;
 						break;
-					case POS_RANDOM_INSIDE:
+					case Type5BeamPos::RANDOM_INSIDE:
 						pos2 = rand2_on;
 						break;
-					case POS_RANDOM_OUTSIDE:
+					case Type5BeamPos::RANDOM_OUTSIDE:
 						pos2 = rand2_off;
+					default:
+						// the other cases dont matter
 				}
 			}
 
 			// set rot_axis if its center
-			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) 
+			if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::CENTER)
 				rot_axis = b->target->pos;
-			if (bwi->bpi.per_burst_rot_axis == AXIS_CENTER)
+			if (bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::CENTER)
 				per_burst_rot_axis = b->target->pos;
-			if (bwi->bpi.burst_rot_axis == AXIS_CENTER)
+			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = b->target->pos;
 			
 		} else { 
-			vec3d center;
-			vm_vec_zero(&center);
-			// if we have no target let's act as though we're shooting at something with a 300m radius 800m away
-			if (bwi->bpi.start_pos != POS_CENTER)
+			vec3d center; vm_vec_zero(&center);
+			// if we have no target let's act as though we're shooting at something with a 300m radius 300m away
+			if (bwi->t5info.start_pos != Type5BeamPos::CENTER)
 				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
 
-			if (bwi->bpi.end_pos != POS_CENTER)
+			if (bwi->t5info.end_pos != Type5BeamPos::CENTER)
 				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
 
-			if (bwi->bpi.no_translate || bwi->bpi.end_pos == POS_SAME_RANDOM)
+			if (bwi->t5info.no_translate || bwi->t5info.end_pos == Type5BeamPos::SAME_RANDOM)
 				pos2 = pos1;
 
 			pos1 *= 300.f;
 			pos2 *= 300.f;
 			vec3d move_forward;
-			vm_vec_make(&move_forward, 0.f, 0.f, 800.f);
+			vm_vec_make(&move_forward, 0.f, 0.f, 300.f);
 			center += move_forward;
 			pos1 += move_forward;
 			pos2 += move_forward;
@@ -2365,31 +2368,31 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			center += b->objp->pos;
 
 			// set rot_axis if its center
-			if (bwi->bpi.continuous_rot_axis == AXIS_CENTER) 
+			if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::CENTER)
 				rot_axis = center;
-			if (bwi->bpi.per_burst_rot_axis == AXIS_CENTER) 
+			if (bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::CENTER)
 				per_burst_rot_axis = center;
-			if (bwi->bpi.burst_rot_axis == AXIS_CENTER) 
+			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = center;
 
 		}
 		// OKAY DONE WITH THE INITIAL SET UP
 
 		// set rot_axis if its one of the before offset points
-		if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_NO_OFFSET || bwi->bpi.continuous_rot_axis == AXIS_ENDPOS_NO_OFFSET)
-			rot_axis = bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_NO_OFFSET ? pos1 : pos2;
-		if (bwi->bpi.per_burst_rot_axis == AXIS_STARTPOS_NO_OFFSET || bwi->bpi.per_burst_rot_axis == AXIS_ENDPOS_NO_OFFSET)
-			per_burst_rot_axis = bwi->bpi.per_burst_rot_axis == AXIS_STARTPOS_NO_OFFSET ? pos1 : pos2;
-		if (bwi->bpi.burst_rot_axis == AXIS_STARTPOS_NO_OFFSET || bwi->bpi.burst_rot_axis == AXIS_ENDPOS_NO_OFFSET)
-			burst_rot_axis = bwi->bpi.burst_rot_axis == AXIS_STARTPOS_NO_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET || bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::ENDPOS_NO_OFFSET)
+			rot_axis = bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET || bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::ENDPOS_NO_OFFSET)
+			per_burst_rot_axis = bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET || bwi->t5info.burst_rot_axis == Type5BeamRotAxis::ENDPOS_NO_OFFSET)
+			burst_rot_axis = bwi->t5info.burst_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET ? pos1 : pos2;
 
 		// now the offsets
-		float scale_factor = (bwi->bpi.target_scale_positions && b->target != nullptr) ? b->target->radius : 300.f;
-		vec3d offset = bwi->bpi.start_pos_offset;
+		float scale_factor = (bwi->t5info.target_scale_positions && b->target != nullptr) ? b->target->radius : 300.f;
+		vec3d offset = bwi->t5info.start_pos_offset;
 		offset *= scale_factor;
 
 		// switch to the target's orient if applicable
-		if (bwi->bpi.target_orient_positions && b->target != nullptr)
+		if (bwi->t5info.target_orient_positions && b->target != nullptr)
 			orient = b->target->orient;
 
 		// maybe add some random
@@ -2398,9 +2401,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
 		random_offset *= static_randf_range(rand32(), 0.f, 1.f); // to get the inside of the sphere too
 		random_offset *= scale_factor;
-		random_offset.xyz.x *= bwi->bpi.start_pos_rand.xyz.x;
-		random_offset.xyz.y *= bwi->bpi.start_pos_rand.xyz.y;
-		random_offset.xyz.z *= bwi->bpi.start_pos_rand.xyz.z;
+		random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
+		random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
+		random_offset.xyz.z *= bwi->t5info.start_pos_rand.xyz.z;
 		offset += random_offset;
 
 		// then unrotate by it to get the world orientation
@@ -2409,19 +2412,19 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		pos1 += rotated_offset;
 
 		// end pos offset
-		if (bwi->bpi.no_translate)
+		if (bwi->t5info.no_translate)
 			pos2 = pos1;
 		else {
-			offset = bwi->bpi.end_pos_offset;
+			offset = bwi->t5info.end_pos_offset;
 			offset *= scale_factor;
 
 			// randomness
 			static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
 			random_offset *= static_randf_range(rand32(), 0.f, 1.f);
 			random_offset *= scale_factor;
-			random_offset.xyz.x *= bwi->bpi.start_pos_rand.xyz.x;
-			random_offset.xyz.y *= bwi->bpi.start_pos_rand.xyz.y;
-			random_offset.xyz.z *= bwi->bpi.start_pos_rand.xyz.z;
+			random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
+			random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
+			random_offset.xyz.z *= bwi->t5info.start_pos_rand.xyz.z;
 			offset += random_offset;
 
 			// rotate
@@ -2430,12 +2433,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		}
 
 		// finally grab the last cases for rot_axis
-		if (bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_OFFSET || bwi->bpi.continuous_rot_axis == AXIS_ENDPOS_OFFSET)
-			rot_axis = bwi->bpi.continuous_rot_axis == AXIS_STARTPOS_OFFSET ? pos1 : pos2;
-		if (bwi->bpi.per_burst_rot_axis == AXIS_STARTPOS_OFFSET || bwi->bpi.per_burst_rot_axis == AXIS_ENDPOS_OFFSET)
-			per_burst_rot_axis = bwi->bpi.per_burst_rot_axis == AXIS_STARTPOS_OFFSET ? pos1 : pos2;
-		if (bwi->bpi.burst_rot_axis == AXIS_STARTPOS_OFFSET || bwi->bpi.burst_rot_axis == AXIS_ENDPOS_OFFSET)
-			burst_rot_axis = bwi->bpi.burst_rot_axis == AXIS_STARTPOS_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET || bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::ENDPOS_OFFSET)
+			rot_axis = bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET || bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::ENDPOS_OFFSET)
+			per_burst_rot_axis = bwi->t5info.per_burst_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET ? pos1 : pos2;
+		if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET || bwi->t5info.burst_rot_axis == Type5BeamRotAxis::ENDPOS_OFFSET)
+			burst_rot_axis = bwi->t5info.burst_rot_axis == Type5BeamRotAxis::STARTPOS_OFFSET ? pos1 : pos2;
 
 		// normalize the vectors
 		vec3d per_burst_rot_axis_direction, burst_rot_axis_direction;
@@ -2446,7 +2449,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		vm_vec_sub(&burst_rot_axis_direction, &burst_rot_axis, &turret_point);
 		vm_vec_normalize(&burst_rot_axis_direction);
 
-		if (bwi->bpi.continuous_rot_axis != AXIS_UNSPECIFIED) {
+		if (bwi->t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED) {
 			vm_vec_sub(&b->binfo.rot_axis, &rot_axis, &turret_point);
 			vm_vec_normalize(&b->binfo.rot_axis);
 		}
@@ -2459,10 +2462,10 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 		vec3d zero_vec = vmd_zero_vector;
 		// and finally rotate around the per_burst and burst rot_axes
-		if (bwi->bpi.per_burst_rot_axis != AXIS_UNSPECIFIED) {
+		if (bwi->t5info.per_burst_rot_axis != Type5BeamRotAxis::UNSPECIFIED) {
 			// negative means random
 			float per_burst_rot = per_burst_shot_rotation;
-			if (per_burst_shot_rotation < 0)
+			if (per_burst_rot < 0)
 				per_burst_rot = static_randf_range(seed, 0.f, PI2);
 
 			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
@@ -2470,9 +2473,11 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_rot_point_around_line(&b->binfo.rot_axis, &b->binfo.rot_axis, per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
 		}
 
-		if (bwi->bpi.burst_rot_axis != AXIS_UNSPECIFIED) {
+		if (bwi->t5info.burst_rot_axis != Type5BeamRotAxis::UNSPECIFIED) {
 			// negative means random
-			float burst_rot = burst_shot_rotation < 0 ? frand_range(0.f, PI2) : burst_shot_rotation;
+			float burst_rot = burst_shot_rotation;
+			if (burst_rot < 0.0f)
+				burst_rot = frand_range(0.f, PI2);
 
 			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    burst_rot, &zero_vec, &burst_rot_axis_direction);
 			vm_rot_point_around_line(&b->binfo.dir_b,    &b->binfo.dir_b,    burst_rot, &zero_vec, &burst_rot_axis_direction);

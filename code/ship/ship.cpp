@@ -11338,7 +11338,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 			swp->burst_seed[bank_to_fire] = rand32();
 			// only used by type 5 beams
 			if (swp->burst_counter[bank_to_fire] == 0) {
-				swp->per_burst_rot += winfo_p->b_info.bpi.per_burst_rot;
+				swp->per_burst_rot += winfo_p->b_info.t5info.per_burst_rot;
 				if (swp->per_burst_rot > PI2)
 					swp->per_burst_rot -= PI2;
 			}

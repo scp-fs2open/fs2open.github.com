@@ -1845,7 +1845,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		int old_burst_counter = swp->burst_counter[weapon_num];
 		// only used by type 5 beams
 		if (turret->weapons.burst_counter[weapon_num] == 0) {
-			swp->per_burst_rot += wip->b_info.bpi.per_burst_rot;
+			swp->per_burst_rot += wip->b_info.t5info.per_burst_rot;
 			if (swp->per_burst_rot > PI2)
 				swp->per_burst_rot -= PI2;
 		}

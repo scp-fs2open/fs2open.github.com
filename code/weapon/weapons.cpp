@@ -2586,156 +2586,157 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("$Type 5 Beam Options:")) {
 
 			char temp_type[NAME_LENGTH];
-			beam_pattern_info* bpi = &wip->b_info.bpi;
+			type5_beam_info* t5info = &wip->b_info.t5info;
 
 			if (optional_string("+Start Position:")) {
 				stuff_string(temp_type, F_NAME, NAME_LENGTH);
 					if (!stricmp(temp_type, NOX("RANDOM ON SHIP"))) {
-						bpi->start_pos = POS_RANDOM_INSIDE;
+						t5info->start_pos = Type5BeamPos::RANDOM_INSIDE;
 					}
 					else if (!stricmp(temp_type, NOX("RANDOM OFF SHIP"))) {
-						bpi->start_pos = POS_RANDOM_OUTSIDE;
+						t5info->start_pos = Type5BeamPos::RANDOM_OUTSIDE;
 					}
 					else if (!stricmp(temp_type, NOX("CENTER"))) {
-						bpi->start_pos = POS_CENTER;
+						t5info->start_pos = Type5BeamPos::CENTER;
+					}
+					else if (!stricmp(temp_type, NOX("SAME RANDOM"))) {
+						Warning(LOCATION, "'SAME RANDOM' is not applicable for start position on beam %s!", wip->name);
 					}
 					else {
-						// TODO safety
+						Warning(LOCATION, "Invalid start position on beam %s!\n Options are: 'RANDOM ON SHIP', 'RANDOM OFF SHIP', 'CENTER''", wip->name);
 					}
 			}
 
 			if (optional_string("+Start Position Offset:")) {
-				stuff_vec3d(&bpi->start_pos_offset);
+				stuff_vec3d(&t5info->start_pos_offset);
 			}
 
 			if (optional_string("+Start Position Randomness:")) {
-				stuff_vec3d(&bpi->start_pos_rand);
+				stuff_vec3d(&t5info->start_pos_rand);
 			}
 
 			if (optional_string("+End Position:")) {
 				stuff_string(temp_type, F_NAME, NAME_LENGTH);
 				if (!stricmp(temp_type, NOX("RANDOM ON SHIP"))) {
-					bpi->end_pos = POS_RANDOM_INSIDE;
-					bpi->no_translate = false;
+					t5info->end_pos = Type5BeamPos::RANDOM_INSIDE;
+					t5info->no_translate = false;
 				}
 				else if (!stricmp(temp_type, NOX("RANDOM OFF SHIP"))) {
-					bpi->end_pos = POS_RANDOM_OUTSIDE;
-					bpi->no_translate = false;
+					t5info->end_pos = Type5BeamPos::RANDOM_OUTSIDE;
+					t5info->no_translate = false;
 				}
 				else if (!stricmp(temp_type, NOX("CENTER"))) {
-					bpi->end_pos = POS_CENTER;
-					bpi->no_translate = false;
+					t5info->end_pos = Type5BeamPos::CENTER;
+					t5info->no_translate = false;
 				}
 				else if (!stricmp(temp_type, NOX("SAME RANDOM"))) {
-					bpi->end_pos = POS_SAME_RANDOM;
+					t5info->end_pos = Type5BeamPos::SAME_RANDOM;
 					// offset could still be different so this counts as translating
-					bpi->no_translate = false;
+					t5info->no_translate = false;
 				}
 				else {
-					// TODO safety
+					Warning(LOCATION, "Invalid end position on beam %s!\n Options are: 'RANDOM ON SHIP', 'RANDOM OFF SHIP', 'CENTER', 'SAME RANDOM'", wip->name);
 				}
 			}
 
 			if (optional_string("+End Position Offset:")) {
-				stuff_vec3d(&bpi->end_pos_offset);
+				stuff_vec3d(&t5info->end_pos_offset);
 			}
 
 			if (optional_string("+End Position Randomness:")) {
-				stuff_vec3d(&bpi->end_pos_rand);
+				stuff_vec3d(&t5info->end_pos_rand);
 			}
 
 			if (optional_string("+Orient Offsets to Target:")) {
-				stuff_boolean(&bpi->target_orient_positions);
+				stuff_boolean(&t5info->target_orient_positions);
 			}
 
 			if (optional_string("+Scale Offsets to Target:")) {
-				stuff_boolean(&bpi->target_scale_positions);
+				stuff_boolean(&t5info->target_scale_positions);
 			}
 
 			if (optional_string("+Continuous Rotation:")) {
-				stuff_float(&bpi->continuous_rot);
-				bpi->continuous_rot *= (PI / 180.f);
+				stuff_float(&t5info->continuous_rot);
+				t5info->continuous_rot *= (PI / 180.f);
 			}
 
 			if (optional_string("+Continuous Rotation Axis:")) {
 				stuff_string(temp_type, F_NAME, NAME_LENGTH);
 				if (!stricmp(temp_type, NOX("CENTER"))) {
-					bpi->continuous_rot_axis = AXIS_CENTER;
+					t5info->continuous_rot_axis = Type5BeamRotAxis::CENTER;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION BEFORE OFFSET"))) {
-					bpi->continuous_rot_axis = AXIS_ENDPOS_NO_OFFSET;
+					t5info->continuous_rot_axis = Type5BeamRotAxis::ENDPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION BEFORE OFFSET"))) {
-					bpi->continuous_rot_axis = AXIS_STARTPOS_NO_OFFSET;
+					t5info->continuous_rot_axis = Type5BeamRotAxis::STARTPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION AFTER OFFSET"))) {
-					bpi->continuous_rot_axis = AXIS_ENDPOS_OFFSET;
+					t5info->continuous_rot_axis = Type5BeamRotAxis::ENDPOS_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
-					bpi->continuous_rot_axis = AXIS_STARTPOS_OFFSET;
+					t5info->continuous_rot_axis = Type5BeamRotAxis::STARTPOS_OFFSET;
 				}
 				else {
-					// TODO safety
+					Warning(LOCATION, "Invalid continuous rotation axis on beam %s!\n Options are: 'CENTER', 'END POSITION BEFORE OFFSET', 'START POSITION BEFORE OFFSET', 'END POSITION AFTER OFFSET', 'START POSITION AFTER OFFSET'", wip->name);
 				}
 			}
 
 			if (optional_string("+Burst Rotation Pattern:")) {
-				stuff_float_list(bpi->burst_rot_pattern);
-				for (int i = 0; i < bpi->burst_rot_pattern.size(); i++) {
-					bpi->burst_rot_pattern[i] *= (PI / 180.f);
+				stuff_float_list(t5info->burst_rot_pattern);
+				for (int i = 0; i < t5info->burst_rot_pattern.size(); i++) {
+					t5info->burst_rot_pattern[i] *= (PI / 180.f);
 				}
 			}
 
 			if (optional_string("+Burst Rotation Axis:")) {
 				stuff_string(temp_type, F_NAME, NAME_LENGTH);
 				if (!stricmp(temp_type, NOX("CENTER"))) {
-					bpi->burst_rot_axis = AXIS_CENTER;
+					t5info->burst_rot_axis = Type5BeamRotAxis::CENTER;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION BEFORE OFFSET"))) {
-					bpi->burst_rot_axis = AXIS_ENDPOS_NO_OFFSET;
+					t5info->burst_rot_axis = Type5BeamRotAxis::ENDPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION BEFORE OFFSET"))) {
-					bpi->burst_rot_axis = AXIS_STARTPOS_NO_OFFSET;
+					t5info->burst_rot_axis = Type5BeamRotAxis::STARTPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION AFTER OFFSET"))) {
-					bpi->burst_rot_axis = AXIS_ENDPOS_OFFSET;
+					t5info->burst_rot_axis = Type5BeamRotAxis::ENDPOS_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
-					bpi->burst_rot_axis = AXIS_STARTPOS_OFFSET;
+					t5info->burst_rot_axis = Type5BeamRotAxis::STARTPOS_OFFSET;
 				}
 				else {
-					// TODO safety
+					Warning(LOCATION, "Invalid burst rotation axis on beam %s!\n Options are: 'CENTER', 'END POSITION BEFORE OFFSET', 'START POSITION BEFORE OFFSET', 'END POSITION AFTER OFFSET', 'START POSITION AFTER OFFSET'", wip->name);
 				}
 			}
 
 			if (optional_string("+Per Burst Rotation:")) {
-				stuff_float(&bpi->per_burst_rot);
-				bpi->per_burst_rot *= (PI / 180.f);
+				stuff_float(&t5info->per_burst_rot);
+				t5info->per_burst_rot *= (PI / 180.f);
 			}
 
 			if (optional_string("+Per Burst Rotation Axis:")) {
 				stuff_string(temp_type, F_NAME, NAME_LENGTH);
 				if (!stricmp(temp_type, NOX("CENTER"))) {
-					bpi->per_burst_rot_axis = AXIS_CENTER;
+					t5info->per_burst_rot_axis = Type5BeamRotAxis::CENTER;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION BEFORE OFFSET"))) {
-					bpi->per_burst_rot_axis = AXIS_ENDPOS_NO_OFFSET;
+					t5info->per_burst_rot_axis = Type5BeamRotAxis::ENDPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION BEFORE OFFSET"))) {
-					bpi->per_burst_rot_axis = AXIS_STARTPOS_NO_OFFSET;
+					t5info->per_burst_rot_axis = Type5BeamRotAxis::STARTPOS_NO_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("END POSITION AFTER OFFSET"))) {
-					bpi->per_burst_rot_axis = AXIS_ENDPOS_OFFSET;
+					t5info->per_burst_rot_axis = Type5BeamRotAxis::ENDPOS_OFFSET;
 				}
 				else if (!stricmp(temp_type, NOX("START POSITION AFTER OFFSET"))) {
-					bpi->per_burst_rot_axis = AXIS_STARTPOS_OFFSET;
+					t5info->per_burst_rot_axis = Type5BeamRotAxis::STARTPOS_OFFSET;
 				}
 				else {
-					// TODO safety
+					Warning(LOCATION, "Invalid per burst rotation axis on beam %s!\n Options are: 'CENTER', 'END POSITION BEFORE OFFSET', 'START POSITION BEFORE OFFSET', 'END POSITION AFTER OFFSET', 'START POSITION AFTER OFFSET'", wip->name);
 				}
 			}
-
-			// rotation after offset
 		}
 
 		if (optional_string("+Beam Flags:")) {
@@ -6244,7 +6245,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				fire_info.burst_index = j;
 				// we would normally accumulate this per burst rotation, which we can't do
 				// but we still need to do this once for the beam because it could be a negative, randomizing rotation
-				fire_info.per_burst_rotation = child_wip->b_info.bpi.per_burst_rot;
+				fire_info.per_burst_rotation = child_wip->b_info.t5info.per_burst_rot;
 
 				// fire the beam
 				beam_fire(&fire_info);
@@ -8447,21 +8448,21 @@ void weapon_info::reset()
 	this->b_info.flags.reset();
 
 	// type 5 beam stuff
-	this->b_info.bpi.no_translate = true;
-	this->b_info.bpi.start_pos = POS_CENTER;
-	this->b_info.bpi.end_pos = POS_CENTER;
-	vm_vec_zero(&this->b_info.bpi.start_pos_offset);
-	vm_vec_zero(&this->b_info.bpi.end_pos_offset);
-	vm_vec_zero(&this->b_info.bpi.start_pos_rand);
-	vm_vec_zero(&this->b_info.bpi.end_pos_rand);
-	this->b_info.bpi.target_orient_positions = false;
-	this->b_info.bpi.target_scale_positions = false;
-	this->b_info.bpi.continuous_rot = 0.f;
-	this->b_info.bpi.continuous_rot_axis = AXIS_UNSPECIFIED;
-	this->b_info.bpi.per_burst_rot = 0.f;
-	this->b_info.bpi.per_burst_rot_axis = AXIS_UNSPECIFIED;
-	this->b_info.bpi.burst_rot_pattern.clear();
-	this->b_info.bpi.burst_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.no_translate = true;
+	this->b_info.t5info.start_pos = POS_CENTER;
+	this->b_info.t5info.end_pos = POS_CENTER;
+	vm_vec_zero(&this->b_info.t5info.start_pos_offset);
+	vm_vec_zero(&this->b_info.t5info.end_pos_offset);
+	vm_vec_zero(&this->b_info.t5info.start_pos_rand);
+	vm_vec_zero(&this->b_info.t5info.end_pos_rand);
+	this->b_info.t5info.target_orient_positions = false;
+	this->b_info.t5info.target_scale_positions = false;
+	this->b_info.t5info.continuous_rot = 0.f;
+	this->b_info.t5info.continuous_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.per_burst_rot = 0.f;
+	this->b_info.t5info.per_burst_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.burst_rot_pattern.clear();
+	this->b_info.t5info.burst_rot_axis = AXIS_UNSPECIFIED;
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);

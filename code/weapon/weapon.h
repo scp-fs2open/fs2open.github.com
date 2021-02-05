@@ -175,27 +175,26 @@ typedef struct beam_weapon_section_info {
 	generic_anim texture;					// texture anim/bitmap
 } beam_weapon_section_info;
 
-typedef enum beam_pattern_rot_axis {
-	AXIS_STARTPOS_OFFSET,
-	AXIS_ENDPOS_OFFSET, 
-	AXIS_STARTPOS_NO_OFFSET,
-	AXIS_ENDPOS_NO_OFFSET,
-	AXIS_CENTER,
-	AXIS_UNSPECIFIED
-} beam_pattern_rot_axis;
+enum class Type5BeamRotAxis {
+	STARTPOS_OFFSET,
+	ENDPOS_OFFSET, 
+	STARTPOS_NO_OFFSET,
+	ENDPOS_NO_OFFSET,
+	CENTER,
+	UNSPECIFIED
+};
 
-typedef enum beam_pattern_position {
-	POS_RANDOM_OUTSIDE,
-	POS_RANDOM_INSIDE,
-	POS_CENTER,
-	POS_STARTPOS,
-	POS_SAME_RANDOM
-} beam_pattern_position;
+enum class Type5BeamPos {
+	RANDOM_OUTSIDE,
+	RANDOM_INSIDE,
+	CENTER,
+	SAME_RANDOM
+};
 
-typedef struct beam_pattern_info {
+typedef struct type5_beam_info {
 	bool no_translate;                           // true if the end pos parameters were left unspecified
-	beam_pattern_position start_pos;             // whether it starts from the center or a type 0 or 1 beam kind of random
-	beam_pattern_position end_pos;               // same as above but but with an extra 'same random as start' option
+	Type5BeamPos start_pos;             // whether it starts from the center or a type 0 or 1 beam kind of random
+	Type5BeamPos end_pos;               // same as above but but with an extra 'same random as start' option
 	vec3d start_pos_offset;                      // position simply added to start pos (possibly manipulated by the bools below)
 	vec3d end_pos_offset;                        // position simply added to end pos (possibly manipulated by the bools below)
 	vec3d start_pos_rand;                        // same as above but a randomly chosen between defined value for each axis and its negative
@@ -204,13 +203,13 @@ typedef struct beam_pattern_info {
 	bool target_scale_positions;                 // if true, offsets are scaled by target radius, else its a fixed span from the shooters pov
 	                                             // regardless of distance
 	float continuous_rot;                        // radians per sec rotation over beam lifetime
-	beam_pattern_rot_axis continuous_rot_axis;   // axis to do ^^ on
+	Type5BeamRotAxis continuous_rot_axis;   // axis to do ^^ on
 	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire 
 	                                             // this many beams simultaneously with the defined rotations
-	beam_pattern_rot_axis burst_rot_axis;        // axis to do ^^ on
+	Type5BeamRotAxis burst_rot_axis;        // axis to do ^^ on
 	float per_burst_rot;                         // radians to rotate for each burst, or each shot if no burst
-	beam_pattern_rot_axis per_burst_rot_axis;    // axis to do ^^ on
-} beam_pattern_info;
+	Type5BeamRotAxis per_burst_rot_axis;    // axis to do ^^ on
+} type5_beam_info;
 
 typedef struct beam_weapon_info {
 	int beam_type;						// beam type
@@ -241,7 +240,7 @@ typedef struct beam_weapon_info {
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
 	flagset<Weapon::Beam_Info_Flags> flags;
-	beam_pattern_info bpi;              // type 5 beams only
+	type5_beam_info t5info;              // type 5 beams only
 } beam_weapon_info;
 
 typedef struct particle_spew_info {	//this will be used for multi spews

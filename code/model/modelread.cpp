@@ -3892,7 +3892,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 	// by extracting them from the of_dst vector.
 	// Call this the desired_angles
 	angles desired_angles;
-	//vm_extract_angles_vector(&desired_angles, &of_dst);
+//  vm_extract_angles_vector(&desired_angles, &of_dst);
 	
 	if (reset == false) {
 		desired_angles.p = acosf(of_dst.xyz.z);

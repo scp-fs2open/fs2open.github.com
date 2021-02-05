@@ -3134,7 +3134,6 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 	return count;
 }
 
-//Stuffs an integer list like stuff_int_list.
 size_t stuff_float_list(SCP_vector<float>& flp)
 {
 	ignore_white_space();
