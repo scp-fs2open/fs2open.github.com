@@ -1674,6 +1674,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					{
 						base->movement_axis_id = MOVEMENT_AXIS_Y;
 						base->movement_axis = vmd_y_vector;
+						base->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
 						model_maybe_adjust_movement_axis(base);
 					}
 
@@ -1682,6 +1683,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					{
 						gun->movement_axis_id = MOVEMENT_AXIS_X;
 						gun->movement_axis = vmd_x_vector;
+						gun->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
 						model_maybe_adjust_movement_axis(gun);
 					}
 				}
