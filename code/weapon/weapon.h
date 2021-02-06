@@ -471,6 +471,10 @@ struct weapon_info
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
+	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
+	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
+	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;

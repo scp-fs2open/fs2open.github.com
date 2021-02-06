@@ -135,6 +135,7 @@ namespace AI {
 		Better_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,
+		Friendlies_use_countermeasure_firechance,
 
 		NUM_VALUES
 	};

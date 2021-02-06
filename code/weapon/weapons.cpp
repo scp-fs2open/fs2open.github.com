@@ -2355,6 +2355,31 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Pulse Interval:")) {
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
+
+		if (optional_string("+Use Fire Wait:")) {
+			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		}
+
+		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {
+			int delay_multiplier;
+			stuff_int(&delay_multiplier);
+			if (delay_multiplier > 0) {
+				wip->cmeasure_failure_delay_multiplier_ai = delay_multiplier;
+			} else {
+				Warning(LOCATION,"\"+Failure Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
+			}
+		}
+
+		if (optional_string("+Successful Launch Delay Multiplier for AI:")) {
+			int delay_multiplier;
+			stuff_int(&delay_multiplier);
+			if (delay_multiplier > 0) {
+				wip->cmeasure_sucess_delay_multiplier_ai = delay_multiplier;
+			} else {
+				Warning(LOCATION, "\"+Successful Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
+			}
+		}
+
 	}
 
 	// beam weapon optional stuff
@@ -8372,6 +8397,10 @@ void weapon_info::reset()
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
 	this->cm_kill_single = false;
 	this->cmeasure_timer_interval = 0;
+	this->cmeasure_firewait = CMEASURE_WAIT;
+	this->cmeasure_use_firewait = false;
+	this->cmeasure_failure_delay_multiplier_ai = -1;
+	this->cmeasure_sucess_delay_multiplier_ai = 2;
 
 	this->weapon_submodel_rotate_accell = 10.0f;
 	this->weapon_submodel_rotate_vel = 0.0f;
