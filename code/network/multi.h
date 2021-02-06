@@ -253,6 +253,7 @@ class player;
 #define REINFORCEMENT_AVAIL		0xDB		// a reinforcement is available
 #define LIGHTNING_PACKET			0xDC		// lightning bolt packet for multiplayer nebula
 #define BYTES_SENT					0xDD		// how much data we've sent/received
+#define WEAPON_KILL					0xDE		// get rid of this weapon on the client.
 
 #define GAME_ACTIVE					0xE1		// info on an active game server
 #define GAME_QUERY					0xE2		// request for a list of active game servers
