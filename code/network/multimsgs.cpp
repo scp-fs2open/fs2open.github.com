@@ -2700,6 +2700,75 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	}
 }
 
+constexpr int WK_FLAGS_WEAPON_WEAPON = (1<<0);
+
+//simply removes the weapon from existence on the client.
+void send_weapon_kill_packet(object* objp)
+{
+	Assert(objp != nullptr);
+	Assert(objp->type == OBJ_WEAPON);
+	Assert(MULTIPLAYER_MASTER);
+
+	if (objp == nullptr || objp->type != OBJ_WEAPON || MULTIPLAYER_CLIENT) {
+		return;
+	}
+
+	ubyte data[MAX_PACKET_SIZE], flags = 0;
+	int packet_size;
+	
+	BUILD_HEADER(WEAPON_KILL);
+
+	ADD_USHORT(objp->net_signature);
+	if (objp->instance > -1) {
+		if (Weapons[objp->instance].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+			flags |= WK_FLAGS_WEAPON_WEAPON;
+	}
+
+	ADD_DATA(flags);
+
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_weapon_kill_packet(ubyte *data, header *hinfo )
+{
+	// only masters should receive this packet.
+	Assert(MULTIPLAYER_CLIENT);
+
+	int offset = HEADER_LENGTH;
+	ushort missile_net_signature;
+	ubyte flags;
+
+	GET_USHORT(missile_net_signature);
+	GET_DATA(flags);
+	PACKET_SET_SIZE();
+
+	// get the object pointer for the missile
+	object* missile = multi_get_network_object(missile_net_signature);
+
+	// make sure it's valid before implementing.
+	if (missile == nullptr || missile->type != OBJ_WEAPON || missile->instance < 0) {
+		return;
+	}
+	
+	// set any optional packets.
+	if (flags & WK_FLAGS_WEAPON_WEAPON) {
+		Weapons[missile->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+	}
+	
+	Weapons[missile->instance].lifeleft = -1.0f;
+	if (Weapon_info[Weapons[missile->instance].weapon_info_index].weapon_hitpoints > 0.0f) {
+		missile->hull_strength = -1.0f;
+	}
+
+	// kill the weapon!
+	if (Weapon_info[Weapons[missile->instance].weapon_info_index].subtype & WP_MISSILE) {
+		weapon_detonate(missile);
+	}
+	else {
+		missile->flags.set(Object::Object_Flags::Should_be_dead);
+	}
+}
+
 // send a packet indicating a ship should be created
 void send_ship_create_packet( object *objp, bool is_support )
 {
@@ -7428,11 +7497,12 @@ void process_debrief_info( ubyte *data, header *hinfo )
 	debrief_set_multi_clients( stage_counts[Net_player->p_info.team], stages[Net_player->p_info.team] );
 }
 
+constexpr ubyte HWIF_BIG_UPDATE = (1 << 0);
 // sends homing information to all clients.  We only need signature and num_missiles (because of hornets).
 // sends homing_object and homing_subsystem to all clients.
 void send_homing_weapon_info( int weapon_num )
 {
-	ubyte data[MAX_PACKET_SIZE];
+	ubyte data[MAX_PACKET_SIZE], flags = 0;
 	int s_index;
 	int packet_size;
 	object *homing_object;
@@ -7461,11 +7531,26 @@ void send_homing_weapon_info( int weapon_num )
 		}
 	}
 
+	if (!wp->weapon_flags[Weapon::Weapon_Flags::Multi_Update_Sent] || IS_MAT_NULL(&Objects[wp->objnum].phys_info.ai_desired_orient)) {
+		flags |= HWIF_BIG_UPDATE;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_Update_Sent);
+	}
+
 	BUILD_HEADER(HOMING_WEAPON_UPDATE);
+	ADD_DATA(flags);
 	ADD_USHORT( Objects[wp->objnum].net_signature );
 	ADD_USHORT( homing_signature );
 	ADD_SHORT( static_cast<short>(s_index) );
-	
+	ADD_VECTOR( wp->homing_pos);
+
+	if (flags & HWIF_BIG_UPDATE) {
+		fix current_lifetime = Missiontime - wp->creation_time;
+		ADD_DATA(current_lifetime);
+		ADD_VECTOR(Objects[wp->objnum].pos);
+		ADD_FLOAT(wp->launch_speed);
+		ADD_ORIENT(Objects[wp->objnum].orient);
+	}
+
 	multi_io_send_to_all(data, packet_size);
 }
 
@@ -7473,23 +7558,37 @@ void send_homing_weapon_info( int weapon_num )
 // packet contains information for multiple weapons (like hornets).
 void process_homing_weapon_info( ubyte *data, header *hinfo )
 {
+	ubyte flags;
 	int offset;
+	fix missile_lifetime;
 	ushort weapon_signature, homing_signature;
 	short h_subsys;
+	float launch_speed;
+	vec3d missile_pos, homing_goal;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
+	matrix orient_in;
 
 	offset = HEADER_LENGTH;
 
 	// get the data for the packet
+	GET_DATA(flags);
 	GET_USHORT( weapon_signature );
 	GET_USHORT( homing_signature );
 	GET_SHORT( h_subsys );
+	GET_VECTOR( homing_goal );
+
+	if (flags & HWIF_BIG_UPDATE) {
+		GET_DATA(missile_lifetime);
+		GET_VECTOR(missile_pos);
+		GET_FLOAT(launch_speed);
+		GET_ORIENT(orient_in);
+	}
 	PACKET_SET_SIZE();
 
 	// deal with changing this weapons homing information
 	weapon_objp = multi_get_network_object( weapon_signature );
-	if ( weapon_objp == NULL ) {
+	if ( weapon_objp == nullptr ) {
 		nprintf(("Network", "Couldn't find weapon object for homing update -- skipping update\n"));
 		return;
 	}
@@ -7498,29 +7597,41 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 
 	// be sure that we can find these weapons and 
 	homing_object = multi_get_network_object( homing_signature );
-	if ( homing_object == NULL ) {
+	if ( homing_object == nullptr ) {
+		wp->homing_object = &obj_used_list;
+		wp->homing_subsys = nullptr;
+		wp->target_num = -1;
+		wp->target_sig = -1;
+
 		nprintf(("Network", "Couldn't find homing object for homing update\n"));
+
 		return;
-	}
-
+	} 
+	
 	if ( homing_object->type == OBJ_WEAPON ) {
-		auto flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+		auto flags_check = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
-	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
-
-		if ( !((flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
+		if ( !((flags_check[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}
 	}
 
 	wp->homing_object = homing_object;
-	wp->homing_subsys = NULL;
+	wp->homing_subsys = nullptr;
 	wp->target_num = OBJ_INDEX(homing_object);
 	wp->target_sig = homing_object->signature;
+	wp->homing_pos = homing_goal;
 	if ( h_subsys != -1 ) {
 		Assert( homing_object->type == OBJ_SHIP );
 		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
+	}
+
+	if (flags & HWIF_BIG_UPDATE) {
+		wp->creation_time = Missiontime + missile_lifetime;
+		weapon_objp->pos = missile_pos;
+		weapon_objp->orient = orient_in;
+		wp->launch_speed = launch_speed;
 	}
 
 	if ( homing_object->type == OBJ_SHIP ) {
