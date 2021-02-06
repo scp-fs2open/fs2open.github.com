@@ -591,6 +591,22 @@ ADE_FUNC(getNormalized,
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(projectParallel,
+	l_Vector,
+	"vector unitVector",
+	"Returns a projection of the vector along a unit vector.  The unit vector MUST be normalized.",
+	"vector",
+	"The projected vector, or NIL if a handle is invalid")
+{
+	vec3d *src, *unit;
+	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&unit)))
+		return ADE_RETURN_NIL;
+
+	vec3d dest;
+	vm_vec_projection_parallel(&dest, src, unit);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
 ADE_FUNC(projectOntoPlane,
 	l_Vector,
 	"vector surfaceNormal",
