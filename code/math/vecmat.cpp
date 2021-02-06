@@ -100,7 +100,7 @@ float atan2_safe(float y, float x)
 float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_vec), "unit_vec must be normalized!");
 
 	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
@@ -115,7 +115,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_normal), "unit_normal must be normalized!");
 
 	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
@@ -132,7 +132,7 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
-	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(plane_normal), "plane_normal must be normalized!");
 
 	D = -vm_vec_dot(plane_point, plane_normal);
 	dist = vm_vec_dot(point, plane_normal) + D;
@@ -386,6 +386,12 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	t1 = vm_vec_mag(&t);
 
 	return t1;
+}
+
+bool vm_vec_is_normalized(const vec3d *v)
+{
+	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
+	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
 }
 
 //normalize a vector. returns mag of source vec (always greater than zero)
