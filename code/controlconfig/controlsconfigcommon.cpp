@@ -85,6 +85,10 @@ void control_config_common_init_bindings() {
 	Builder.start()
 	// Note: when adding new controls, group them according to the tab they would show up on.
 	// action_id, key_default, joy_default, tab, XStR index, Text, CC_Type
+
+	// Note: when adding new controls, if a control does nothing in retail data, it should be disabled by default.  The controls config menu
+	// is cluttered enough as is, don't need to mess it up any more. --z64
+
 	// Ship targeting
 	(TARGET_NEXT,                                         KEY_T, -1, TARGET_TAB, 1, "Target Next Ship",                      CC_TYPE_TRIGGER)
 	(TARGET_PREV,                           KEY_SHIFTED | KEY_T, -1, TARGET_TAB, 1, "Target Previous Ship",                  CC_TYPE_TRIGGER)
