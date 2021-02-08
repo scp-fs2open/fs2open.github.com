@@ -433,7 +433,7 @@ int beam_fire(beam_fire_info *fire_info)
 		vm_vec_zero(&new_item->target_pos2);
 	}
 
-	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
+	for (int i : new_item->beam_section_frame)
 		new_item->beam_section_frame[i] = 0.0f;
 
 	// beam collision and light width
