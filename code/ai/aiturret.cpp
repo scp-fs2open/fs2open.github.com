@@ -2237,6 +2237,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 	{
 		ss->turret_enemy_objnum = -1;
 		lep = nullptr;
+		ss->flags.remove(Ship::Subsystem_Flags::Forced_target);
+		ss->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
 	}
 
 	Assert((shipp->objnum >= 0) && (shipp->objnum < MAX_OBJECTS));
@@ -2455,8 +2457,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 
 	//none of our guns can hit the enemy, so find a new enemy
 	if (num_valid == 0) {
-		ss->turret_enemy_objnum = -1;
-		ss->turret_time_enemy_in_range = 0.0f;
+		if (!ss->flags[Ship::Subsystem_Flags::Forced_target]) {
+			ss->turret_enemy_objnum = -1;
+			ss->turret_time_enemy_in_range = 0.0f;
+		}
 
 		// in the original code, we returned where the "tentative return" variable was set,
 		// so return for real now, since we don't have a reason to remain in the function
@@ -2464,8 +2468,16 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 			return;
 	}
 
+	// if we've got Forced_subsys_target targeted_subsys *really* shouldnt be null but just in case...
+	if (ss->flags[Ship::Subsystem_Flags::Forced_subsys_target] && ss->targeted_subsys != nullptr) {
+		if (ss->targeted_subsys->current_hits <= 0.0f) {
+			ss->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
+			ss->flags.remove(Ship::Subsystem_Flags::Forced_target);
+		}
+	}
+
 	//	Maybe pick a new enemy, unless targeting has been taken over by scripting
-	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override ) {
+	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override && !(ss->flags[Ship::Subsystem_Flags::Forced_target])) {
 		Num_find_turret_enemy++;
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum);
 
@@ -2738,7 +2750,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		{
 			// If nothing is OK to fire (lost track of the target?) 
 			// reset the target (so we don't continue to track what we can't hit)
-			if (tp->flags[Model::Subsystem_Flags::Turret_only_target_if_can_fire])
+			if (tp->flags[Model::Subsystem_Flags::Turret_only_target_if_can_fire] && !(ss->flags[Ship::Subsystem_Flags::Forced_target]))
 			{
 				ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
 				ss->turret_time_enemy_in_range = 0.0f;
@@ -2773,7 +2785,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 			}
 		}
 	}
-	else
+	else if (!(ss->flags[Ship::Subsystem_Flags::Forced_target]))
 	{
 		// Lost him!
 		ss->turret_enemy_objnum = -1;		//	Reset enemy objnum, find a new one next frame.
