@@ -70,6 +70,7 @@ public:
 	game_snd snd_flyby_bomber;
 
 	int bii_index[MIN_BRIEF_ICONS];
+	int borrows_bii_index_species;   // species that this species borrows all of its briefing icons from, -1 if none
 
 	// countermeasures by species
 	char cmeasure_name[NAME_LENGTH];
@@ -82,6 +83,7 @@ public:
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
+		borrows_bii_index_species = -1;
 	}
 };
 

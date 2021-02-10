@@ -328,6 +328,14 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
+			if (optional_string("$Borrows Briefing Icons from:")) {
+				char temp_name[NAME_LENGTH];
+				stuff_string(temp_name, F_NAME, NAME_LENGTH);
+				int idx = species_info_lookup(temp_name);
+				if (idx >= 0)
+					species->borrows_bii_index_species = idx;
+			}
+
 
 			// don't add new entry if this is just a modified one
 			if (!no_create)
