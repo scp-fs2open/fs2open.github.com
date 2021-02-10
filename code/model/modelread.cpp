@@ -126,7 +126,7 @@ int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 
 
-// Goober5000 - reimplementation of Bobboau's $dumb_rotation feature in a way that works with the rest of the model instance system
+// Goober5000 - reimplementation of Bobboau's $dumb_rotation and $look_at features in a way that works with the rest of the model instance system
 // note: since these data types are only ever used in this file, they don't need to be in model.h
 
 class intrinsic_rotation
@@ -693,6 +693,13 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
 		}
 	}
+	// Look-At subsystem
+	else if ((p = strstr(props, "$look_at")) != nullptr) {
+		// no special subsystem handling needed here, but make sure we didn't specify both methods
+		if (prop_string(props, nullptr, "$rotate") >= 0) {
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, model_get(model_num)->filename);
+		}
+	}
 	// Rotating subsystem
 	else if ((idx = prop_string(props, &p, "$rotate_time", "$rotate_rate", "$rotate")) >= 0) {
         subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
@@ -1180,6 +1187,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	len = cfread_int(fp);
 	next_chunk = cftell(fp) + len;
 
+	// keep track of any look_at submodels we might notice
+	SCP_vector<SCP_string> look_at_submodel_names;
+
 	while (!cfeof(fp)) {
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
@@ -1434,14 +1444,41 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				if ( ( p = strstr(props, "$look_at")) != NULL ) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
-//					TODO: put this in a temp map and post-process it; no need to store the look_at name in the submodel
-//					get_user_prop_value(p+9, pm->submodel[n].look_at);
-					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
-					
+				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
+				if ((p = strstr(props, "$look_at")) != nullptr) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+
+					// we need to work out the correct subobject number later, after all subobjects have been processed
+					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
+
+					char submodel_name[MAX_NAME_LEN];
+					get_user_prop_value(p + 9, submodel_name);
+					look_at_submodel_names.push_back(submodel_name);
 				} else {
-					pm->submodel[n].look_at_num = -1; // No look_at
+					pm->submodel[n].look_at_submodel = -1; // No look_at
+				}
+
+				// optional extra property for look_at
+				if ((p = strstr(props, "$look_at_offset")) != nullptr) {
+					auto offset = (float)atof(p + 16);
+
+					// model property is specified in degrees, so convert it
+					offset = fl_radians(offset);
+
+					// check range (the angle is now in radians)
+					if (offset < -PI2 || offset > PI2) {
+						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", pm->submodel[n].name, pm->filename);
+						offset = -1.0f;
+					}
+					// make the angle positive, since negative angles will be set at first look_at call
+					else if (offset < 0.0f) {
+						offset += PI2;
+					}
+
+					pm->submodel[n].look_at_offset = offset;
+				} else {
+					pm->submodel[n].look_at_offset = -1.0f;
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
@@ -1694,7 +1731,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 					}
 					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 					}
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 				}
@@ -2443,7 +2480,38 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		id = cfread_int(fp);
 		len = cfread_int(fp);
 		next_chunk = cftell(fp) + len;
+	}
 
+	// Now that we've processed all the chunks, resolve the look_at submodels if we have any
+	if (!look_at_submodel_names.empty()) {
+		for (i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].look_at_submodel >= 0) {
+				const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
+
+				// search for this submodel name among all submodels
+				for (j = 0; j < pm->n_models; j++) {
+					if (!stricmp(submodel_name, pm->submodel[j].name)) {
+						nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
+
+						// set the correct submodel reference, and set the char* to null as a found-flag
+						pm->submodel[i].look_at_submodel = j;
+						submodel_name = nullptr;
+						break;
+					}
+				}
+
+				// did we fail to find it?
+				if (submodel_name != nullptr) {
+					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
+					pm->submodel[i].look_at_submodel = -1;
+				}
+				// are we navel-gazing?
+				else if (pm->submodel[i].look_at_submodel == i) {
+					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
+					pm->submodel[i].look_at_submodel = -1;
+				}
+			}
+		}
 	}
 
 #ifndef NDEBUG
@@ -2953,6 +3021,7 @@ int model_create_instance(bool is_ship, int model_num)
 
 		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+				// note: dumb_turn_rate will be 0.0f for look_at
 				intrinsic_rotate.add_submodel(i, &pmi->submodel[i], pm->submodel[i].dumb_turn_rate);
 			}
 		}
@@ -3407,7 +3476,7 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 }
 
 
-// Given a rotating submodel, find the ship and world axes of rotation.
+// Given a rotating submodel, find the local and world axes of rotation.
 void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
 {
 	Assert(pm->id == pmi->model_num);
@@ -3550,115 +3619,61 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 	submodel_canonicalize(sm, smi, true);
 }
 
-void submodel_look_at(polymodel *pm, int mn)
+// Instantly rotate a submodel (around its axis of rotation) so that it is oriented toward its look_at_submodel.
+// Uses the same pointing logic as in model_rotate_gun
+void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 {
-	SCP_UNUSED(pm);
-	SCP_UNUSED(mn);
-	// To be reimplemented
-	/*
-	bsp_info * sm;
+	vec3d world_axis, world_pos, dst, planar_dst, dir, rotated_vec;
 
-	if ( mn < 0 ) {
-		return;
+	auto sm = &pm->submodel[submodel_num];
+	auto smi = &pmi->submodel[submodel_num];
+
+	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(sm->look_at_submodel >= 0);
+
+	// save last angles
+	smi->prev_angle = smi->cur_angle;
+	smi->canonical_prev_orient = smi->canonical_orient;
+
+	//------------
+	// Calculate the destination point in world coordinates
+	model_instance_find_world_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
+
+	//------------
+	// Project the destination point onto the submodel base plane
+	model_instance_find_world_dir(&world_axis, &sm->movement_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+
+	vm_project_point_onto_plane(&planar_dst, &dst, &world_axis, &world_pos);
+
+	//------------
+	// Calculate angle to rotate towards projected point
+	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
+	vm_vec_sub(&dir, &planar_dst, &world_pos);
+	vm_vec_normalize(&dir);
+	smi->cur_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+
+	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
+	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
+	if (sm->look_at_offset < 0.0f)
+	{
+		sm->look_at_offset = -(smi->cur_angle);
+
+		// ensure the offset is in the proper range (see submodel_canonicalize)
+		while (sm->look_at_offset > PI2)
+			sm->look_at_offset -= PI2;
+		while (sm->look_at_offset < 0.0f)
+			sm->look_at_offset += PI2;
 	}
+	smi->cur_angle += sm->look_at_offset;
 
-	sm = &pm->submodel[mn];
-	angles *angs = &pm->submodel[mn].angs;
+	// calculate turn rate
+	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
+	if (abs(smi->cur_angle - smi->prev_angle) < PI)
+		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
 
-	if ( sm->movement_type != MOVEMENT_TYPE_LOOK_AT ) {
-		return;
-	}
-
-	vec3d other, mp;
-
-	int pmn = pm->id;
-
-	// VA - Run this bit only once for each look_at enabled submodel, to correctly associate the name given in the $look_at: property with the number of that named subobject
-	if (sm->look_at_num == -2) {
-		// Search through submodels for the look_at target name
-		for (int i = 0; i < pm->n_models; i++) {
-			if (!strcmp(sm->look_at, pm->submodel[i].name))  {
-				sm->look_at_num = i; // Found it
-				nprintf(("Model", "NOTE: Matched $look_at: target <%s> with subobject id %d\n", sm->look_at, i));
-				break; 
-			}
-		}
-
-		if (sm->look_at_num == -2) {
-			Warning( LOCATION, "Invalid submodel name given in $look_at: property in model file <%s>. (%s looking for %s)\n", pm->filename, pm->submodel->name, sm->look_at );
-			sm->look_at_num = -1; // Set to -1 to not break stuff
-		}
-	}
-
-	model_find_world_point(&mp, &vmd_zero_vector, pmn, sm->look_at_num, &vmd_identity_matrix, &vmd_zero_vector);
-	world_find_real_model_point(&other, &mp, pm, mn, &vmd_identity_matrix, &vmd_zero_vector);
-
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&mp, &other, &pm->submodel[mn].orientation);
-	} else {
-		mp = other;
-	}
-
-	vec3d	d, l;
-	model_find_submodel_offset(&d, pmn, mn);
-	model_find_submodel_offset(&l, pmn, sm->look_at_num);
-	vm_vec_sub(&other, &l, &d);
-
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&l, &other, &pm->submodel[mn].orientation);
-	} else {
-		l = other;
-	}
-
-	float *a;
-	int axis;
-
-	switch( sm->movement_axis ) {
-		default:
-		case MOVEMENT_AXIS_X:
-			l.xyz.x = 0;
-			mp.xyz.x = 0;
-			a = &angs->p;
-			axis = 0;
-			break;
-
-		case MOVEMENT_AXIS_Y:
-			l.xyz.y = 0;
-			mp.xyz.y = 0;
-			a = &angs->h;
-			axis = 1;
-			break;
-
-		case MOVEMENT_AXIS_Z:
-			l.xyz.z = 0;
-			mp.xyz.z = 0;
-			a = &angs->b;
-			axis = 2;
-			break;
-	}
-
-	vm_vec_normalize(&mp);
-	vm_vec_normalize(&l);
-
-	vec3d c;
-	vm_vec_cross(&c, &l, &mp);
-	float dot=vm_vec_dot(&l,&mp);
-	if (dot>=0.0f) {
-		*a = asinf(c.a1d[axis]);
-	} else {
-		*a = PI-asinf(c.a1d[axis]);
-	}
-
-	if (*a > PI2 ) {
-		*a -= PI2;
-	} else { if (*a < 0.0f )
-		*a += PI2;
-	}
-
-	for (int k=0; k<sm->num_details; k++ ) {
-		pm->submodel[sm->details[k]].angs = *angs;
-	}
-	*/
+	// and now set the other submodel fields
+	submodel_canonicalize(sm, smi, true);
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
@@ -4479,14 +4494,14 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 	Assert(pm != nullptr);
 	flagset<Ship::Subsystem_Flags> empty;
 
-	// Handle all submodels which have $dumb_rotate
+	// Handle all submodels which have intrinsic rotation
 	for (auto submodel_num: ir->submodel_list)
 	{
-		bsp_info *sm = &pm->submodel[submodel_num];
-		submodel_instance *smi = &pmi->submodel[submodel_num];
-
 		// First, calculate the angles for the rotation
-		submodel_rotate(sm, smi);
+		if (pm->submodel[submodel_num].look_at_submodel >= 0)
+			submodel_look_at(pm, pmi, submodel_num);
+		else
+			submodel_rotate(&pm->submodel[submodel_num], &pmi->submodel[submodel_num]);
 
 		// Now actually rotate the submodel instance
 		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
@@ -4537,25 +4552,6 @@ void model_do_intrinsic_rotations(int model_instance_num)
 			}
 		}
 	}
-}
-
-void model_do_children_look_at(polymodel * pm, int mn)
-{
-	while ( mn >= 0 ) {
-		submodel_look_at(pm, mn);
-		if (pm->submodel[mn].first_child >-1) { 
-			model_do_children_look_at(pm, pm->submodel[mn].first_child);
-		}
-		mn = pm->submodel[mn].next_sibling;
-	}
-}
-
-void model_do_look_at(int pn)
-{
-	polymodel * pm;
-	pm = model_get(pn);
-	int mn = pm->detail[0];
-	model_do_children_look_at(pm,mn);
 }
 
 // Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity

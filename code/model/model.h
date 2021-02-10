@@ -40,7 +40,6 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
 #define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
-#define MOVEMENT_TYPE_LOOK_AT			5	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -282,8 +281,7 @@ public:
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
-		nocollide_this_only(false), collide_invisible(false), attach_thrusters(false), dumb_turn_rate(0.0f),
-		look_at_num(-1)
+		nocollide_this_only(false), collide_invisible(false), attach_thrusters(false)
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
@@ -360,8 +358,10 @@ public:
 	bool	collide_invisible;		//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
-	float	dumb_turn_rate;			//Bobboau
-	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
+
+	float	dumb_turn_rate = 0.0f;		//Bobboau
+	int		look_at_submodel = -1;		//VA - number of the submodel to be looked at by this submodel (-1 if none)
+	float	look_at_offset = -1.0f;		//angle in radians that the submodel should be turned from its initial orientation to be considered "looking at" something (-1 if set on first eval)
 };
 
 #define MP_TYPE_UNUSED 0
@@ -1237,8 +1237,6 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
-
-void model_do_look_at(int model_num); //Bobboau
 
 void model_do_intrinsic_rotations(int model_instance_num = -1);
 
