@@ -27,13 +27,16 @@ public:
 	BOOL OnToolTipText(UINT id, NMHDR * pNMHDR, LRESULT *pResult);
 
 	void edit_comment(HTREEITEM h);
+	void edit_bg_color(HTREEITEM h);
 
 protected:
 	virtual void PreSubclassWindow();
+	virtual void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 
 	DECLARE_MESSAGE_MAP()
 };
 
+void event_annotation_prune();
 int event_annotation_lookup(HTREEITEM handle);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);

@@ -1189,7 +1189,8 @@
 #define ID_ADD                          32839
 #define ID_ADD_PLUS                     32840
 #define ID_ADD_MINUS                    32841
-#define ID_EDIT_COMMENT                 32845
+#define ID_EDIT_COMMENT                 32842
+#define ID_EDIT_BG_COLOR                32843
 #define ID_ADD_DESTROY                  32846
 #define ID_ADD_DESTROY_WING             32847
 #define ID_ADD_DISABLE                  32848
@@ -1417,7 +1418,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        325
-#define _APS_NEXT_COMMAND_VALUE         33100
+#define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

@@ -142,6 +142,9 @@ struct event_annotation
 	SCP_list<int> path;				// a way to find the node that the annotation represents:
 									// the first number is the event, the second number is the node on the first layer, etc.
 	SCP_string comment;
+	ubyte r = 255;
+	ubyte g = 255;
+	ubyte b = 255;
 };
 extern SCP_vector<event_annotation> Event_annotations;
 
