@@ -332,22 +332,17 @@ void brief_icon_parse_cleanup() {
 			}
 		}
 		
-		if (missing_icon_species)
+		if (missing_icon_species) {
 			errormsg += spinfo.species_name;
+			errormsg += "\n";
+		}
+			
 	}
 
 	if (missing_icons) {
-		errormsg += "\nAn exact list of the missing entries has been logged.";
+		errormsg += "An exact list of the missing entries has been logged.";
 		Warning(LOCATION, "%s", errormsg.c_str());
 	}
-	/*
-	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
-
-	if (!optional_string("#End")) {
-		Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
-		skip_to_start_of_string("#End");
-		required_string("#End");
-	}*/
 }
 
 // --------------------------------------------------------------------------------------
@@ -356,7 +351,6 @@ void brief_icon_parse_cleanup() {
 //
 void brief_parse_icon_tbl(const char* filename)
 {
-	int icon;
 	size_t species;
 	char name[MAX_FILENAME_LEN];
 
@@ -422,7 +416,9 @@ void brief_parse_icon_tbl(const char* filename)
 		else { // old style
 			for (int icon_type = 0; icon_type < (int)MIN_BRIEF_ICONS; icon_type++) {
 				for (species = 0; species < unique_icons_species.size(); species++) {
-					Species_info[unique_icons_species[species]].bii_index[icon_type] = add_briefing_icons();
+					// if this check isn't true we're missing entries and will complain about it later in brief_icon_parse_cleanup()
+					if (check_for_string("$Name:"))
+						Species_info[unique_icons_species[species]].bii_index[icon_type] = add_briefing_icons();
 				}
 			}
 

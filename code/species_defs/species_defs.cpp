@@ -334,6 +334,10 @@ void parse_species_tbl(const char *filename)
 				int idx = species_info_lookup(temp_name);
 				if (idx >= 0)
 					species->borrows_bii_index_species = idx;
+				else {
+					Warning(LOCATION, "Species %s for '$Borrows Briefing Icons from' in Species %s is either invalid or not yet parsed."
+									  "The Species doing the borrowing must be defined after the Species it is borrowing from\n", temp_name, species->species_name);
+				}
 			}
 
 
