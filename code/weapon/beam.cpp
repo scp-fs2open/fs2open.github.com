@@ -433,8 +433,8 @@ int beam_fire(beam_fire_info *fire_info)
 		vm_vec_zero(&new_item->target_pos2);
 	}
 
-	for (int i : new_item->beam_section_frame)
-		new_item->beam_section_frame[i] = 0.0f;
+	for (float &frame : new_item->beam_section_frame)
+		frame = 0.0f;
 
 	// beam collision and light width
 	if (wip->b_info.beam_width > 0.0f) {
@@ -1683,12 +1683,12 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	}
 
 	// sanity
-	Assert(bm != NULL);
-	if(bm == NULL){
+	Assert(bm != nullptr);
+	if(bm == nullptr){
 		return;
 	}
-	Assert(objp != NULL);
-	if(objp == NULL){
+	Assert(objp != nullptr);
+	if(objp == nullptr){
 		return;
 	}
 	Assert(bm->weapon_info_index >= 0);
