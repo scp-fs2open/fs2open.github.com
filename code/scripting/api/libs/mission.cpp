@@ -913,7 +913,9 @@ ADE_FUNC(createShip,
 			shipp->team = team;
 		}
 
-		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+		ship_info* sip = &Ship_info[sclass];
+
+		model_page_in_textures(sip->model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
 
@@ -924,7 +926,7 @@ ADE_FUNC(createShip,
 			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
 		}
 
-		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+		if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
@@ -933,6 +935,14 @@ ADE_FUNC(createShip,
 		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
 		Script_system.RemHookVars({"Ship", "Parent"});
+
+		if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
+			float mission_time = f2fl(Missiontime);
+			int minutes = (int)(mission_time / 60);
+			int seconds = (int)mission_time % 60;
+
+			mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
