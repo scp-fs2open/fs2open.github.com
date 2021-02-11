@@ -922,6 +922,15 @@ void message_training_queue_check()
 	if (Training_failure)
 		return;
 
+	// don't pre-empt any voice files that are playing
+	for (int i = 0; i < Num_messages_playing; ++i)
+	{
+		if ((Playing_messages[i].wave.isValid()) && (snd_time_remaining(Playing_messages[i].wave) > 250))
+			return;
+	}
+	if (fsspeech_playing())
+		return;
+
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
 			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
