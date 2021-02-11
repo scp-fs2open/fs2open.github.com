@@ -303,7 +303,7 @@ int add_briefing_icons() {
 
 	Briefing_icon_info.push_back(bii);
 
-	return Briefing_icon_info.size() - 1;
+	return (int)Briefing_icon_info.size() - 1;
 }
 
 void brief_icon_parse_cleanup() {
@@ -316,7 +316,7 @@ void brief_icon_parse_cleanup() {
 		int lender_species = spinfo.borrows_bii_index_species;
 
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
-			spinfo.bii_index[i] = Species_info[lender_species].bii_index[i];
+			spinfo.bii_indices[i] = Species_info[lender_species].bii_indices[i];
 		}
 	}
 
@@ -326,7 +326,7 @@ void brief_icon_parse_cleanup() {
 	for (species_info spinfo : Species_info) {
 		bool missing_icon_species = false;
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
-			if (spinfo.bii_index[i] < 0) {
+			if (spinfo.bii_indices[i] < 0) {
 				mprintf(("Species %s missing %s icon\n", spinfo.species_name, Icon_names[i]));
 				missing_icons = missing_icon_species = true;
 			}
@@ -398,7 +398,7 @@ void brief_parse_icon_tbl(const char* filename)
 						Warning(LOCATION, "Icon Type %s is invalid, in icons.tbl.", name);
 					}
 
-					int &existing_bii_index = Species_info[spinfo_index].bii_index[icon_type];
+					int &existing_bii_index = Species_info[spinfo_index].bii_indices[icon_type];
 
 					if (existing_bii_index >= 0) { // overwriting
 						briefing_icon_info bii = parse_briefing_icons();
@@ -414,11 +414,11 @@ void brief_parse_icon_tbl(const char* filename)
 			}
 		}
 		else { // old style
-			for (int icon_type = 0; icon_type < (int)MIN_BRIEF_ICONS; icon_type++) {
+			for (int icon_type = 0; icon_type < MIN_BRIEF_ICONS; icon_type++) { // NOLINT(modernize-loop-convert)
 				for (species = 0; species < unique_icons_species.size(); species++) {
 					// if this check isn't true we're missing entries and will complain about it later in brief_icon_parse_cleanup()
 					if (check_for_string("$Name:"))
-						Species_info[unique_icons_species[species]].bii_index[icon_type] = add_briefing_icons();
+						Species_info[unique_icons_species[species]].bii_indices[icon_type] = add_briefing_icons();
 				}
 			}
 
@@ -683,7 +683,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	if (sip->species < 0)
 		return NULL;
 
-	int bii_index = Species_info[sip->species].bii_index[bi->type];
+	int bii_index = Species_info[sip->species].bii_indices[bi->type];
 	if (bii_index < 0)
 		return NULL;
 

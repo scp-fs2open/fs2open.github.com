@@ -69,7 +69,7 @@ public:
 	game_snd snd_flyby_fighter;
 	game_snd snd_flyby_bomber;
 
-	int bii_index[MIN_BRIEF_ICONS];
+	int bii_indices[MIN_BRIEF_ICONS];
 	int borrows_bii_index_species;   // species that this species borrows all of its briefing icons from, -1 if none
 
 	// countermeasures by species
@@ -79,7 +79,7 @@ public:
 	species_info()
 	{
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
-			bii_index[i] = -1;
+			bii_indices[i] = -1;
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
