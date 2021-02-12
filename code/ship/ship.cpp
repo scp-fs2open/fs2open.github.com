@@ -17286,10 +17286,11 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	{
 		// multiplayer version behaves differently.  Depending on mode:
 		// 1) coop mode -- only available to friendly
-		// 2) team v team mode -- availble to either side
+		// 2) team v team mode -- Cyborg17 Has an incomplete implementation for now.  Enemy teams can basically "steal" the opponent's SS and break multi.
+		//    A fix is on the todo list.
 		// 3) dogfight -- never
 
-		if(Netgame.type_flags & NG_TYPE_DOGFIGHT)
+		if(!MULTI_COOP)
 		{
 			return 0;
 		}
