@@ -26,6 +26,7 @@
 #define LCL_POLISH						3
 
 #define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
+#define LCL_RETAIL_HYBRID				11	// ditto; this is the weird retail behavior where internal is translated but external isn't
 #define	LCL_DEFAULT						0
 
 // for language name strings
@@ -69,6 +70,10 @@ extern bool *Lcl_unexpected_tstring_check;
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
 //
+
+// get an index we can use to look into the array, since we now have three different ways of using English
+// (translated, untranslated, and hybrid: internal translated, external untranslated)
+int lcl_get_current_lang_index();
 
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang = -1);
