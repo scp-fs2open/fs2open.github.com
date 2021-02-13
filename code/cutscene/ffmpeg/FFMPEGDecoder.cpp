@@ -286,7 +286,7 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 
 	if (status->subtitleStream == nullptr) {
 		// We don't have an external subtitle stream or loading from that file has failed
-		auto& current_language = Lcl_languages[Lcl_current_lang == LCL_UNTRANSLATED ? LCL_DEFAULT : Lcl_current_lang];
+		auto& current_language = Lcl_languages[lcl_get_current_lang_index()];
 		for (uint32_t i = 0; i < ctx->nb_streams; ++i) {
 			auto test_stream = ctx->streams[i];
 
@@ -428,7 +428,7 @@ std::unique_ptr<InputStream> openInputStream(const SCP_string& name) {
 
 std::unique_ptr<InputStream> openSubtitleStream(const SCP_string& name)
 {
-	auto& current_language = Lcl_languages[Lcl_current_lang == LCL_UNTRANSLATED ? LCL_DEFAULT : Lcl_current_lang];
+	auto& current_language = Lcl_languages[lcl_get_current_lang_index()];
 
 	for (auto ext : CHECKED_SUBT_EXTENSIONS) {
 		SCP_string fileName;

@@ -1451,7 +1451,7 @@ size_t find_control_by_text(SCP_string& text) {
  *
  * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification
  */
-void control_config_common_read_section(int s) {
+void control_config_common_read_section(int s, bool first_override) {
 	CC_preset new_preset;
 
 	// Init the new preset with the default (which is the 0th element Control_config_preset vector
@@ -1486,7 +1486,11 @@ void control_config_common_read_section(int s) {
 		}
 
 	} else {
-		new_preset.name = "<unnamed preset>";
+		if (first_override) {
+			new_preset.name = "default";
+		} else {
+			new_preset.name = "<unnamed preset>";
+		}
 	}
 
 	// Read the section
@@ -1610,10 +1614,14 @@ void control_config_common_read_tbl() {
 	reset_parse();
 
 	// start parsing
+	bool found_override = false;
 	int s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	while (s != -1) {
 		// Found section header, parse it
-		control_config_common_read_section(s);
+		control_config_common_read_section(s, s == 0 && !found_override);
+		if (s == 0 && !found_override) {
+			found_override = true;
+		}
 
 		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	}
