@@ -777,6 +777,12 @@ add_file_folder("mod_table"
 )
 
 # Model files
+add_file_folder("Model\\\\OpenGEX"
+	model/OpenGEX/OpenGEX.h
+	model/OpenGEX/OpenGEX.cpp
+)
+
+# Model files
 add_file_folder("Model"
 	model/model.h
 	model/modelanim.cpp
@@ -921,6 +927,55 @@ add_file_folder("Object"
 add_file_folder("Observer"
 	observer/observer.cpp
 	observer/observer.h
+)
+
+add_file_folder("OpenDDL"
+    openddl/TSAlgebra.cpp
+    openddl/TSAlgebra.h
+    openddl/TSArray.h
+    openddl/TSBasic.h
+    openddl/TSBivector3D.cpp
+    openddl/TSBivector3D.h
+    openddl/TSBivector4D.h
+    openddl/TSColor.cpp
+    openddl/TSColor.h
+    openddl/TSData.cpp
+    openddl/TSData.h
+    openddl/TSHalf.cpp
+    openddl/TSHalf.h
+    openddl/TSList.cpp
+    openddl/TSList.h
+    openddl/TSMap.cpp
+    openddl/TSMap.h
+    openddl/TSMath.cpp
+    openddl/TSMath.h
+    openddl/TSMatrix2D.cpp
+    openddl/TSMatrix2D.h
+    openddl/TSMatrix3D.cpp
+    openddl/TSMatrix3D.h
+    openddl/TSMatrix4D.cpp
+    openddl/TSMatrix4D.h
+    openddl/TSOpenDDL.cpp
+    openddl/TSOpenDDL.h
+    openddl/TSPlatform.h
+    openddl/TSQuaternion.cpp
+    openddl/TSQuaternion.h
+    openddl/TSSimd.h
+    openddl/TSString.cpp
+    openddl/TSString.h
+    openddl/TSText.cpp
+    openddl/TSText.h
+    openddl/TSTools.cpp
+    openddl/TSTools.h
+    openddl/TSTree.cpp
+    openddl/TSTree.h
+    openddl/TSTrivector4D.h
+    openddl/TSVector2D.cpp
+    openddl/TSVector2D.h
+    openddl/TSVector3D.cpp
+    openddl/TSVector3D.h
+    openddl/TSVector4D.cpp
+    openddl/TSVector4D.h
 )
 
 add_file_folder("Options"
