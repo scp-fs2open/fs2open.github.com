@@ -1,6 +1,6 @@
 #include "parse/parse_manager.h"
 
-class ai_class_info_parse_items : table_manager{
-public:
-	ai_class_info_parse_items();
-};
+extern table_manager Ai_class_parse_items;
+
+// Populate the list of options for ship_info parsing
+void init_ai_class_parse_items();

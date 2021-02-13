@@ -1,10 +1,7 @@
 #include "parse/parse_manager.h"
 
-class ship_info_parse_items : table_manager {
-public:
-	ship_info_parse_items();
+extern table_manager Ship_info_parse_items;
 
-	void dump_to_file();
-};
-
+// Populate the list of options for ship_info parsing
+void init_ship_info_parse_items();
 
