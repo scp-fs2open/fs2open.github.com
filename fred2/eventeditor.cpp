@@ -141,7 +141,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_EVENT_TREE, OnEndlabeleditEventTree)
 	ON_BN_CLICKED(IDC_BUTTON_NEW_EVENT, OnButtonNewEvent)
 	ON_BN_CLICKED(IDC_DELETE, OnDelete)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	ON_WM_CLOSE()
 	ON_NOTIFY(TVN_SELCHANGED, IDC_EVENT_TREE, OnSelchangedEventTree)
 	ON_EN_UPDATE(IDC_REPEAT_COUNT, OnUpdateRepeatCount)
@@ -156,7 +156,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
 	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
-	ON_BN_CLICKED(ID_CANCEL, OnCancel)
+	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
 	ON_LBN_DBLCLK(IDC_MESSAGE_LIST, OnDblclkMessageList)
@@ -425,6 +425,24 @@ void event_editor::OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item);
 }
 
+// This is needed as a HACK around default MFC standard
+// It is not required, but overrides default MFC and links no errors without.
+// (Specifically, this overrides the MFC behavior so that pressing Enter doesn't close the dialog)
+void event_editor::OnOK()
+{
+	HWND h;
+	CWnd *w;
+
+	save();
+	w = GetFocus();
+	if (w) {
+		h = w->m_hWnd;
+		GetDlgItem(IDC_EVENT_TREE)->SetFocus();
+		::SetFocus(h);
+	}
+	((CListBox *)GetDlgItem(IDC_MESSAGE_LIST))->SetCurSel(m_cur_msg);
+}
+
 int event_editor::query_modified()
 {
 	int i;
@@ -500,7 +518,7 @@ int event_editor::query_modified()
 	return 0;
 }
 
-void event_editor::OnOk()
+void event_editor::OnButtonOk()
 {
 	char buf[256], names[2][MAX_MISSION_EVENTS][NAME_LENGTH];
 	int i, count;
@@ -829,8 +847,13 @@ void event_editor::OnDelete()
 	}
 }
 
-// this is called the clicking the ID_CANCEL button
+// this is called when you hit the escape key..
 void event_editor::OnCancel()
+{
+}
+
+// this is called the clicking the ID_CANCEL button
+void event_editor::OnButtonCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
@@ -856,7 +879,7 @@ void event_editor::OnClose()
 		}
 
 		if (z == IDYES) {
-			OnOk();
+			OnButtonOk();
 			return;
 		}
 	}
