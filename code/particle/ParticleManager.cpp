@@ -250,7 +250,12 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 
 		// UGH, HACK! To implement the source wrapper we need constant pointers to all sources.
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
-		m_sources.reserve(m_sources.size() + childEffects.size());
+		if (m_processingSources) {
+			// If we are already in our onFrame, we need to apply the hack to the right vector though
+			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+		} else {
+			m_sources.reserve(m_sources.size() + childEffects.size());
+		}
 
 		for (auto& effect : childEffects) {
 			ParticleSource* source = createSource();

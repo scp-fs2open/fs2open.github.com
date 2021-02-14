@@ -107,7 +107,7 @@ public:
 		save(_data, _cont);
 	};
 
-	~Undo_item() {
+	~Undo_item() override {
 		if (data != nullptr) {
 			delete data;
 		}
@@ -119,7 +119,7 @@ public:
 	 * @returns A pair of const void* referencing the affected item and its container (if it was provided)
 	 * @details swaps the data with the destination's, effectively making an undo item into a redo item, and vice versa
 	 */
-	std::pair<const void*, const void*> restore() {
+	std::pair<const void*, const void*> restore() override {
 		Assert((dest != nullptr) && (data != nullptr));
 
 		std::swap(*static_cast<T*>(dest),*static_cast<T*>(data));
@@ -159,7 +159,7 @@ public:
 
 	Undo_stack(size_t size);
 
-	~Undo_stack();
+	~Undo_stack() override;
 
 	/*!
 	 * @brief Restores all items within the undo stack
@@ -168,7 +168,7 @@ public:
 	 * 
 	 * @returns A pair of references to the last item restored
 	 */
-	std::pair<const void*, const void*> restore();
+	std::pair<const void*, const void*> restore() override;
 
 	/*!
 	 * @brief Saves the item onto the undo stack

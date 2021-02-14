@@ -85,6 +85,10 @@ void control_config_common_init_bindings() {
 	Builder.start()
 	// Note: when adding new controls, group them according to the tab they would show up on.
 	// action_id, key_default, joy_default, tab, XStR index, Text, CC_Type
+
+	// Note: when adding new controls, if a control does nothing in retail data, it should be disabled by default.  The controls config menu
+	// is cluttered enough as is, don't need to mess it up any more. --z64
+
 	// Ship targeting
 	(TARGET_NEXT,                                         KEY_T, -1, TARGET_TAB, 1, "Target Next Ship",                      CC_TYPE_TRIGGER)
 	(TARGET_PREV,                           KEY_SHIFTED | KEY_T, -1, TARGET_TAB, 1, "Target Previous Ship",                  CC_TYPE_TRIGGER)
@@ -145,15 +149,15 @@ void control_config_common_init_bindings() {
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
 	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
-	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS, true)
-	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER, true)
+	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS)
+	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER)
 
 	// weapons
 	(FIRE_PRIMARY,                                    KEY_LCTRL,  0, WEAPON_TAB, 1, "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS)
 	(FIRE_SECONDARY,                               KEY_SPACEBAR,  1, WEAPON_TAB, 1, "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS)
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
-	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER, true)
+	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -189,8 +193,8 @@ void control_config_common_init_bindings() {
 	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
-	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER, true)
-	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER, true)
+	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER)
+	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER)
 
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
@@ -215,8 +219,8 @@ void control_config_common_init_bindings() {
 
 	// Navigation and Autopilot
 	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER)
-	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER, true)
-	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER, true)
+	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
+	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER)
 
 	// Escort
 	(ADD_REMOVE_ESCORT,                       KEY_ALTED | KEY_E, -1, COMPUTER_TAB, 1, "Add or Remove Escort",   CC_TYPE_TRIGGER)
@@ -413,14 +417,14 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-const char *Scan_code_text_german[] = {
+const char* Scan_code_text_german_u[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
+	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\xc3\xbc""cktaste",		"Tab", // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
+	"O",				"P",				"\xc3\x9c",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
 
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\xc3\x96",
+	"\xc3\x84",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
 	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
 	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
 
@@ -455,7 +459,7 @@ const char *Scan_code_text_german[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_german[] = {
+const char* Joy_button_text_german_u[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
@@ -464,20 +468,20 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-const char *Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
+const char* Scan_code_text_french_u[] = {
+	"",				"\xc3\x89""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
+	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\xc3\xa9""che Ret.",			"Tab",  // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
+	"O",				"P",				"[",				"]",				"Entr\xc3\xa9""e",			"Ctrl Gauche",			"A",				"S",
 
 	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
 	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
+	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\xc3\xa9"" *",
 	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
 
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
-	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
-	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
+	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\xc3\xa9"" 7",
+	"Pav\xc3\xa9"" 8",			"Pav\xc3\xa9"" 9",			"Pav\xc3\xa9"" -",			"Pav\xc3\xa9"" 4",			"Pav\xc3\xa9"" 5",			"Pav\xc3\xa9"" 6",			"Pav\xc3\xa9"" +",			"Pav\xc3\xa9"" 1",
+	"Pav\xc3\xa9"" 2",			"Pav\xc3\xa9"" 3",			"Pav\xc3\xa9"" 0",			"Pav\xc3\xa9"" .",			"",				"",				"",				"F11",
 	"F12",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -488,16 +492,16 @@ const char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
+	"",				"",				"",				"",				"Pav\xc3\xa9"" Entr",			"Ctrl Droite",		"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
+	"",				"",				"",				"",				"",				"Pav\xc3\xa9"" /",			"",				"Impr \xc3\xa9""cran",
 	"Alt",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
-	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
+	"Fl\xc3\xa9""che Haut",			"Page Haut",			"",				"Fl\xc3\xa9""che Gauche",			"",				"Fl\xc3\xa9""che Droite",			"",			"Fin",
+	"Fl\xc3\xa9""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -506,16 +510,16 @@ const char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_french[] = {
+const char* Joy_button_text_french_u[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",		"Bouton 32",		"Chapeau Arri\xc3\xa8""re",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char *Scan_code_text_polish[] = {
+const char* Scan_code_text_polish_u[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -547,8 +551,8 @@ const char *Scan_code_text_polish[] = {
 	"Alt",			"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
+	"Kursor G\xc3\xb3""ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
+	"Kursor D\xc3\xb3\xc5\x82",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 
 	"",				"",				"",				"",				"",				"",				"",				"",
@@ -557,17 +561,17 @@ const char *Scan_code_text_polish[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_polish[] = {
+const char* Joy_button_text_polish_u[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
+	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		"Hat Prz\xc3\xb3""d",	"Hat Lewo",		"Hat Prawo"
 };
 
 //!	This is the text that is displayed on the screen for the keys a player selects
-const char *Scan_code_text_english[] = {
+const char* Scan_code_text_english_u[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -609,7 +613,212 @@ const char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_english[] = {
+const char* Joy_button_text_english_u[] = {
+	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
+	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
+	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
+	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
+	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
+	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
+};
+
+const char* Scan_code_text_german[] = {
+	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
+	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
+	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
+	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
+
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
+	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
+	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
+	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
+
+	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Rollen",			"Num 7",
+	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
+	"Num 2",			"Num 3",			"Num 0",			"Num ,",			"",				"",				"",				"F11",
+	"F12",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"Num Eingabe",			"Strg Rechts",			"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"Num /",			"",				"Druck",
+	"Alt",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"Num Lock",			"",				"Pos 1",
+	"Pfeil Hoch",			"Bild Hoch",			"",				"Pfeil Links",			"",				"Pfeil Rechts",			"",				"Ende",
+	"Pfeil Runter", 			"Bild Runter",			"Einfg",			"Entf",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+};
+
+const char* Joy_button_text_german[] = {
+	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
+	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
+	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
+	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
+	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
+	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+};
+
+const char* Scan_code_text_french[] = {
+	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
+	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
+	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
+	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
+
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
+	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
+	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
+	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
+
+	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
+	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
+	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
+	"F12",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
+	"Alt",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
+	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
+	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+};
+
+const char* Joy_button_text_french[] = {
+	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
+	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
+	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
+	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
+	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
+	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+};
+
+const char* Scan_code_text_polish[] = {
+	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
+	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
+	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
+	"O",				"P",				"[",				"]",				"Enter",			"Lewy Ctrl",	"A",				"S",
+
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
+	"'",				"`",				"LShift",			"\\",				"Z",				"X",				"C",				"V",
+	"B",				"N",				"M",				",",				".",				"/",				"PShift",			"Num *",
+	"Alt",			"Spacja",		"CapsLock",	"F1",				"F2",				"F3",				"F4",				"F5",
+
+	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scrlock",	"Num 7",
+	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
+	"Num 2",			"Num 3",			"Num 0",			"Num .",			"",				"",				"",				"F11",
+	"F12",			"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"Num Enter",	"Prawy Ctrl",	"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"Num /",			"",				"PrntScr",
+	"Alt",			"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
+	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
+	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+};
+
+const char* Joy_button_text_polish[] = {
+	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
+	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
+	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
+	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
+	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
+	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
+};
+
+//!	This is the text that is displayed on the screen for the keys a player selects
+const char* Scan_code_text_english[] = {
+	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
+	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
+	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
+	"O",				"P",				"[",				"]",				"Enter",			"Left Ctrl",	"A",				"S",
+
+	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
+	"'",				"`",				"Shift",			"\\",				"Z",				"X",				"C",				"V",
+	"B",				"N",				"M",				",",				".",				"/",				"Shift",			"Pad *",
+	"Alt",			"Spacebar",		"Caps Lock",	"F1",				"F2",				"F3",				"F4",				"F5",
+
+	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scroll Lock",	"Pad 7",
+	"Pad 8",			"Pad 9",			"Pad -",			"Pad 4",			"Pad 5",			"Pad 6",			"Pad +",			"Pad 1",
+	"Pad 2",			"Pad 3",			"Pad 0",			"Pad .",			"",				"",				"",				"F11",
+	"F12",			"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"Pad Enter",	"Right Ctrl",	"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"Pad /",			"",				"Print Scrn",
+	"Alt",			"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
+	"Up Arrow",		"Page Up",		"",				"Left Arrow",	"",				"Right Arrow",	"",				"End",
+	"Down Arrow",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+	"",				"",				"",				"",				"",				"",				"",				"",
+};
+
+const char* Joy_button_text_english[] = {
 	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
 	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
@@ -807,19 +1016,44 @@ void control_config_common_init()
 	}
 
 	control_config_common_load_overrides();
-	if(Lcl_gr){
-		Scan_code_text = Scan_code_text_german;
-		Joy_button_text = Joy_button_text_german;
-	} else if(Lcl_fr){
-		Scan_code_text = Scan_code_text_french;
-		Joy_button_text = Joy_button_text_french;
-	} else if(Lcl_pl){
-		Scan_code_text = Scan_code_text_polish;
-		Joy_button_text = Joy_button_text_polish;
-	} else {
-		Scan_code_text = Scan_code_text_english;
-		Joy_button_text = Joy_button_text_english;
+
+	if (Unicode_text_mode) {
+		if (Lcl_gr) {
+			Scan_code_text = Scan_code_text_german_u;
+			Joy_button_text = Joy_button_text_german_u;
+		}
+		else if (Lcl_fr) {
+			Scan_code_text = Scan_code_text_french_u;
+			Joy_button_text = Joy_button_text_french_u;
+		}
+		else if (Lcl_pl) {
+			Scan_code_text = Scan_code_text_polish_u;
+			Joy_button_text = Joy_button_text_polish_u;
+		}
+		else {
+			Scan_code_text = Scan_code_text_english_u;
+			Joy_button_text = Joy_button_text_english_u;
+		}
 	}
+	else {
+		if (Lcl_gr) {
+			Scan_code_text = Scan_code_text_german;
+			Joy_button_text = Joy_button_text_german;
+		}
+		else if (Lcl_fr) {
+			Scan_code_text = Scan_code_text_french;
+			Joy_button_text = Joy_button_text_french;
+		}
+		else if (Lcl_pl) {
+			Scan_code_text = Scan_code_text_polish;
+			Joy_button_text = Joy_button_text_polish;
+		}
+		else {
+			Scan_code_text = Scan_code_text_english;
+			Joy_button_text = Joy_button_text_english;
+		}
+	}
+
 }
 
 /*
@@ -845,7 +1079,7 @@ SCP_map<SCP_string, IoActionId> mActionToVal;
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
 */
-void LoadEnumsIntoKeyMap(void) {
+void LoadEnumsIntoKeyMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_KEY_MAP(Enum) mKeyNameToVal[#Enum] = (Enum);
 
@@ -981,7 +1215,7 @@ void LoadEnumsIntoKeyMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Types enumerations into mCCTypeNameToVal
  */
-void LoadEnumsIntoCCTypeMap(void) {
+void LoadEnumsIntoCCTypeMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
 
@@ -993,7 +1227,7 @@ void LoadEnumsIntoCCTypeMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Tabs enumerations into mCCTabNameToVal
  */
-void LoadEnumsIntoCCTabMap(void) {
+void LoadEnumsIntoCCTabMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
 
@@ -1008,7 +1242,7 @@ void LoadEnumsIntoCCTabMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the IoActionId enums into mActionToVal
  */
-void LoadEnumsIntoActionMap(void) {
+void LoadEnumsIntoActionMap() {
 #define ADD_ENUM_TO_ACTION_MAP(Enum) mActionToVal[#Enum] = (Enum);
 	ADD_ENUM_TO_ACTION_MAP(TARGET_NEXT)
 	ADD_ENUM_TO_ACTION_MAP(TARGET_PREV)
@@ -1216,7 +1450,7 @@ size_t find_control_by_text(SCP_string& text) {
  *
  * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification
  */
-void control_config_common_read_section(int s) {
+void control_config_common_read_section(int s, bool first_override) {
 	CC_preset new_preset;
 
 	// Init the new preset with the default (which is the 0th element Control_config_preset vector
@@ -1241,6 +1475,7 @@ void control_config_common_read_section(int s) {
 	if (optional_string("$Name:")) {
 		SCP_string name;
 		stuff_string_line(name);
+		drop_leading_white_space(name);
 		new_preset.name = name;
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [&name](CC_preset& S) {return S.name == name;});
@@ -1250,7 +1485,11 @@ void control_config_common_read_section(int s) {
 		}
 
 	} else {
-		new_preset.name = "<unnamed preset>";
+		if (first_override) {
+			new_preset.name = "default";
+		} else {
+			new_preset.name = "<unnamed preset>";
+		}
 	}
 
 	// Read the section
@@ -1327,6 +1566,7 @@ void control_config_common_read_section(int s) {
 
 			if (optional_string("$Text:")) {
 				stuff_string(item->text, F_NAME);
+				item->indexXSTR = 0;
 			}
 
 			if (optional_string("$Has XStr:")) {
@@ -1376,10 +1616,14 @@ void control_config_common_read_tbl() {
 	reset_parse();
 
 	// start parsing
+	bool found_override = false;
 	int s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	while (s != -1) {
 		// Found section header, parse it
-		control_config_common_read_section(s);
+		control_config_common_read_section(s, s == 0 && !found_override);
+		if (s == 0 && !found_override) {
+			found_override = true;
+		}
 
 		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	}

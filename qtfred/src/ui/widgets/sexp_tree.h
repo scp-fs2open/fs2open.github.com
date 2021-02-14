@@ -90,6 +90,7 @@ enum class NodeImage {
 	DATA_85,
 	DATA_90,
 	DATA_95,
+	COMMENT,
 };
 
 /**

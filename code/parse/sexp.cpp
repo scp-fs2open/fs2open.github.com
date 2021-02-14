@@ -519,6 +519,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-turret-target-order",		OP_SHIP_TURRET_TARGET_ORDER,			1,	1+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "turret-set-forced-target",	    OP_TURRET_SET_FORCED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
+	{ "turret-set-forced-subsys-target",OP_TURRET_SET_FORCED_SUBSYS_TARGET,		4,	INT_MAX,	SEXP_ACTION_OPERATOR, },  // Asteroth
+	{ "turret-clear-forced-target",	    OP_TURRET_CLEAR_FORCED_TARGET,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
 	{ "turret-set-primary-ammo",		OP_TURRET_SET_PRIMARY_AMMO,				4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
@@ -2173,10 +2176,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 					case OP_IS_IN_TURRET_FOV:
+					case OP_TURRET_SET_FORCED_TARGET:
 						ship_index = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
+					case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 						if(argnum == 1){
 							ship_index = CDR(op_node);
 						} else {
@@ -12685,7 +12690,11 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	Assertion(shipp != nullptr && ss != nullptr, "Ship and subsys must not be null!");
 	Assertion(assign_percent != nullptr || repair_percent != nullptr || sabotage_percent != nullptr, "Either assign_percent or repair_percent or sabotage_percent must not be null!");
 
-	bool originally_zero = (ss->current_hits <= 0 || ss->submodel_info_1.blown_off || ss->submodel_info_2.blown_off);
+	bool originally_zero = (ss->current_hits <= 0);
+	if (ss->submodel_instance_1 && ss->submodel_instance_1->blown_off)
+		originally_zero = true;
+	if (ss->submodel_instance_2 && ss->submodel_instance_2->blown_off)
+		originally_zero = true;
 
 	if (assign_percent != nullptr)
 	{
@@ -12731,8 +12740,10 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		ss->submodel_info_1.blown_off = false;
-		ss->submodel_info_2.blown_off = false;
+		if (ss->submodel_instance_1)
+			ss->submodel_instance_1->blown_off = false;
+		if (ss->submodel_instance_2)
+			ss->submodel_instance_2->blown_off = false;
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -12751,8 +12762,14 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 					// found parent?
 					if (parent_ss->system_info->subobj_num == parent_subobj)
 					{
+						bool parent_destroyed = (parent_ss->current_hits <= 0);
+						if (parent_ss->submodel_instance_1 && parent_ss->submodel_instance_1->blown_off)
+							parent_destroyed = true;
+						if (parent_ss->submodel_instance_2 && parent_ss->submodel_instance_2->blown_off)
+							parent_destroyed = true;
+
 						// if the parent subobject was destroyed...
-						if (parent_ss->current_hits <= 0 || parent_ss->submodel_info_1.blown_off || parent_ss->submodel_info_2.blown_off)
+						if (parent_destroyed)
 						{
 							// ...repair the parent in the same way
 							set_subsys_strength_and_maybe_ancestors(shipp, parent_ss, pm, assign_percent, repair_percent, sabotage_percent, do_submodel_repair, repair_ancestors);
@@ -15870,6 +15887,14 @@ void sexp_ship_create(int n)
 
 	ship_set_warp_effects(&Objects[objnum]);
 
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(shipp->ship_name))
+	{
+		shipp->display_name = shipp->ship_name;
+		end_string_at_first_hash_symbol(shipp->display_name);
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
@@ -15878,6 +15903,14 @@ void sexp_ship_create(int n)
 	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
 	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 	Script_system.RemHookVars({"Ship", "Parent"});
+
+	if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+	}
 }
 
 // Goober5000
@@ -17626,8 +17659,10 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 		// copy
 		target_ss->max_hits = source_ss->max_hits;
 		target_ss->current_hits = source_ss->current_hits;
-		target_ss->submodel_info_1.blown_off = source_ss->submodel_info_1.blown_off;
-		target_ss->submodel_info_2.blown_off = source_ss->submodel_info_2.blown_off;
+		if (target_ss->submodel_instance_1 && source_ss->submodel_instance_1)
+			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
+		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
+			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
 	}
 }
 
@@ -18799,6 +18834,78 @@ void sexp_turret_set_target_priorities(int node)
 	}
 }
 
+void sexp_turret_set_forced_target(int node, bool targeting_subsys)
+{
+	// get target
+	auto target = eval_ship(node);
+	if (!target || !target->shipp)
+		return;
+	node = CDR(node);
+
+	// maybe get target subsys
+	ship_subsys* target_subsys = nullptr;
+	if (targeting_subsys) {
+		target_subsys = ship_get_subsys(target->shipp, CTEXT(node));
+		if (target_subsys == nullptr)
+			return;
+		node = CDR(node);
+	}
+
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+	node = CDR(node);
+
+	while (node >= 0)
+	{
+		// get the turret
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = OBJ_INDEX(target->objp);
+			turret->turret_enemy_sig = target->objp->signature;
+			turret->flags.set(Ship::Subsystem_Flags::Forced_target);
+			turret->targeted_subsys = nullptr;
+
+			if (targeting_subsys) {
+				turret->targeted_subsys = target_subsys;
+				turret->flags.set(Ship::Subsystem_Flags::Forced_subsys_target);
+			}
+		}
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_clear_forced_target(int node)
+{
+	// get ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
+		return;
+	}
+
+	//Set range
+	while (node >= 0)
+	{
+		// get the subsystem
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = -1;
+			turret->targeted_subsys = nullptr;
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_target);
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
+		}
+
+		// next
+		node = CDR(node);
+	}
+}
+
 void sexp_ship_turret_target_order(int node)
 {
 	int oindex;
@@ -18947,13 +19054,13 @@ void sexp_reverse_rotating_subsystem(int node)
 	{
 		// get the rotating subsystem
 		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
-		if (rotate == nullptr)
+		if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 			continue;
 
 		// switch direction of rotation
 		rotate->turn_rate *= -1.0f;
-		rotate->submodel_info_1.current_turn_rate *= -1.0f;
-		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->current_turn_rate *= -1.0f;
+		rotate->submodel_instance_1->desired_turn_rate *= -1.0f;
 	}
 }
 
@@ -18972,7 +19079,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// get the rotating subsystem
 	auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(n));
-	if (rotate == nullptr)
+	if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
 		return;
 	n = CDR(n);
 
@@ -18980,7 +19087,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 	if (is_nan || is_nan_forever)
 		return;
-	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+	rotate->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
@@ -18989,10 +19096,10 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		if (is_nan || is_nan_forever)
 			return;
-		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
+		rotate->submodel_instance_1->turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_info_1.current_turn_rate = PI2 / turn_time;
+		rotate->submodel_instance_1->current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)
@@ -24664,6 +24771,17 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_set_target_order(node);
 				break;
 
+			case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			case OP_TURRET_SET_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_forced_target(node, op_num == OP_TURRET_SET_FORCED_SUBSYS_TARGET);
+				break;
+
+			case OP_TURRET_CLEAR_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_clear_forced_target(node);
+				break;
+
 			case OP_SET_ARMOR_TYPE:
 				sexp_val = SEXP_TRUE;
 				sexp_set_armor_type(node);
@@ -26377,6 +26495,9 @@ int query_operator_return_type(int op)
 		case OP_SET_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27939,6 +28060,39 @@ int query_operator_argument_type(int op, int argnum)
 			} else if(argnum == 1) {
 				return OPF_NUMBER;
 			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SUBSYSTEM;
+			}
+			else if (argnum == 2) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_CLEAR_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else {
 				return OPF_SUBSYSTEM;
 			}
 
@@ -30170,6 +30324,9 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
 		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -31616,6 +31773,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but may not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
@@ -33124,6 +33284,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Priority to set, 0 to disable, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
+	{ OP_TURRET_SET_FORCED_TARGET, "turret-set-forced-target\r\n"
+		"\tForces one or more turrets to target a specific ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+	
+	{ OP_TURRET_SET_FORCED_SUBSYS_TARGET, "turret-set-forced-subsys-target\r\n"
+		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this subsystem target until destroyed or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Subsystem to target\r\n"
+		"\t3: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+
+	{ OP_TURRET_CLEAR_FORCED_TARGET, "turret-clear-forced-target\r\n"
+		"\tClears any targets set by turret-set-forced-target\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\trest: Turrets to have their targets cleared\r\n" },
+
 	{ OP_TURRET_SET_TARGET_PRIORITIES, "turret-set-target-priorities\r\n"
 		"\tSets target priorities for the specified ship turret\r\n"
 		"\t1: Ship turret is on\r\n"
@@ -33246,7 +33426,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
-		"successive messages."},
+		"successive messages.\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but may not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+		},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"

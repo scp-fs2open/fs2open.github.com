@@ -986,9 +986,17 @@ int control_config_do_reset()
 	auto &default_bindings = Control_config_presets[0].bindings;
 
 	// first, determine how many bindings need to be changed
-	for (i = 0; i < CCFG_SIZE; ++i) {
-		if ((Control_config[i].first != default_bindings[i].first) ||
-		    (Control_config[i].second != default_bindings[i].second)) {
+	for (size_t e = 0; e < Control_config.size(); ++e) {
+		auto item = Control_config[e];
+		auto default_item = Control_config_presets[Defaults_cycle_pos].bindings[e];
+
+		if (item.disabled) {
+			// skip
+			continue;
+		}
+
+		if ((item.first != default_item.first) ||
+		    (item.second != default_item.second)) {
 			total++;
 		}
 	}
@@ -1605,7 +1613,7 @@ void control_config_draw_selected_preset() {
 	// Draw the string
 	int font_height = gr_get_font_height();
 	int w;
-	gr_get_string_size(&w, NULL, preset_str.c_str());
+	gr_get_string_size(&w, nullptr, preset_str.c_str());
 	gr_set_color_fast(&Color_text_normal);
 
 	if (gr_screen.res == GR_640) {

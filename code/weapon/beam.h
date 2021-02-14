@@ -45,7 +45,7 @@ struct vec3d;
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	
-	float				delta_ang;							// angle between dir_a and dir_b
+	vec3d			rot_axis;
 	ubyte				shot_count;							// # of shots	
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
@@ -81,6 +81,7 @@ typedef struct beam_fire_info {
 	int point;									// for fighters, which point on the bank it is from
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
+	int burst_seed;								// used for sharing random targets if part of the same burst
 	int  fire_method;
 } beam_fire_info;
 
@@ -184,7 +185,8 @@ typedef struct beam {
 	int Beam_muzzle_stamp;
 	int firingpoint;
 
-	float		beam_width;
+	float		beam_collide_width;
+	float		beam_light_width;
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams

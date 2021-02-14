@@ -16,6 +16,7 @@
 #include "FREDView.h"
 #include "Management.h"
 #include "Sexp_tree.h"
+#include "textviewdlg.h"
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
@@ -26,6 +27,16 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+
+BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
+	//{{AFX_MSG_MAP(event_sexp_tree)
+	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
+	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
+	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDraw)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
 
 event_editor *Event_editor_dlg = NULL; // global reference needed by event tree class
 
@@ -145,7 +156,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
 	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
-	ON_BN_CLICKED(ID_CANCEL, On_Cancel)
+	ON_BN_CLICKED(ID_CANCEL, OnCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
 	ON_LBN_DBLCLK(IDC_MESSAGE_LIST, OnDblclkMessageList)
@@ -192,6 +203,26 @@ BOOL event_editor::OnInitDialog()
 		m_event_tree.hilite_item(i);
 		r = FALSE;
 	}
+
+	// determine all the handles for event annotations
+	event_annotation default_ea;
+	for (auto &ea : Event_annotations)
+	{
+		auto h = traverse_path(ea);
+		if (h)
+		{
+			ea.handle = h;
+			if (!ea.comment.empty())
+				event_annotation_swap_image(&m_event_tree, h, ea);
+		}
+		else
+		{
+			// event was probably deleted; clear the annotation so it will be deleted later
+			ea = default_ea;
+		}
+	}
+
+	// ---------- end of event initialization ----------
 
 	m_num_messages = Num_messages - Num_builtin_messages;
 	for (i=0; i<m_num_messages; i++) {
@@ -394,23 +425,6 @@ void event_editor::OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item);
 }
 
-// This is needed as a HACK around default MFC standard
-// It is not required, but overrides default MFC and links no errors without.
-void event_editor::OnOK()
-{
-	HWND h;
-	CWnd *w;
-
-	save();
-	w = GetFocus();
-	if (w) {
-		h = w->m_hWnd;
-		GetDlgItem(IDC_EVENT_TREE)->SetFocus();
-		::SetFocus(h);
-	}
-	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->SetCurSel(m_cur_msg);
-}
-
 int event_editor::query_modified()
 {
 	int i;
@@ -554,6 +568,17 @@ void event_editor::OnOk()
 	Messages.resize(Num_messages);
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
+
+	event_annotation_prune();
+
+	// determine all the paths for the annotations that we want to keep
+	for (auto &ea : Event_annotations)
+	{
+		ea.path.clear();
+		if (ea.handle)
+			populate_path(ea, (HTREEITEM)ea.handle);
+		ea.handle = nullptr;
+	}
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -737,6 +762,17 @@ HTREEITEM event_editor::get_event_handle(int num)
 	return 0;
 }
 
+int event_editor::get_event_num(HTREEITEM handle)
+{
+	int formula = (int)m_event_tree.GetItemData(handle);
+
+	for (int i = 0; i < MAX_MISSION_EVENTS; ++i)
+		if (formula == m_events[i].formula)
+			return i;
+
+	return -1;
+}
+
 void event_editor::reset_event(int num, HTREEITEM after)
 {
 	int index;
@@ -793,16 +829,13 @@ void event_editor::OnDelete()
 	}
 }
 
-// this is called when you hit the escape key..
-void event_editor::OnCancel()
-{
-}
-
 // this is called the clicking the ID_CANCEL button
-void event_editor::On_Cancel()
+void event_editor::OnCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+
+	event_annotation_prune();
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -827,6 +860,8 @@ void event_editor::OnClose()
 			return;
 		}
 	}
+
+	event_annotation_prune();
 	
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -1604,4 +1639,318 @@ void event_editor::OnDblclkMessageList()
 		// highlight next
 		m_event_tree.hilite_item(m_last_message_node);
 	}
+}
+
+void event_annotation_prune()
+{
+	event_annotation default_ea;
+
+	Event_annotations.erase(
+		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [default_ea](const event_annotation &ea)
+		{
+			return ea.comment == default_ea.comment
+				&& ea.r == default_ea.r
+				&& ea.g == default_ea.g
+				&& ea.b == default_ea.b;
+		}),
+		Event_annotations.end()
+	);
+}
+
+int event_annotation_lookup(HTREEITEM handle)
+{
+	for (size_t i = 0; i < Event_annotations.size(); ++i)
+	{
+		if (Event_annotations[i].handle == handle)
+			return (int)i;
+	}
+
+	return -1;
+}
+
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index)
+{
+	event_annotation_swap_image(tree, handle, Event_annotations[annotation_index]);
+}
+
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea)
+{
+	// see if this node is a top-level event - if so, don't mess with the image
+	if (!tree->GetParentItem(handle))
+		return;
+
+	int nImage, nSelectedImage;
+	tree->GetItemImage(handle, nImage, nSelectedImage);
+
+	// if tree node already has the comment image, replace it with the old one
+	if (nImage == BITMAP_COMMENT)
+	{
+		nImage = ea.item_image;
+	}
+	// if tree has its normal image, store it and use the comment image
+	else
+	{
+		ea.item_image = nImage;
+		nImage = BITMAP_COMMENT;
+	}
+
+	// all tree nodes use the same image for both selected and unselected
+	tree->SetItemImage(handle, nImage, nImage);
+}
+
+// tooltip stuff is based on example at
+// https://www.codeproject.com/articles/1761/ctreectrl-clistctrl-clistbox-with-tooltip-based-on
+
+void event_sexp_tree::PreSubclassWindow()
+{
+	CTreeCtrl::PreSubclassWindow();
+	EnableToolTips(TRUE);
+}
+
+INT_PTR event_sexp_tree::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
+{
+	RECT rect;
+
+	UINT nFlags;
+	HTREEITEM hitem = HitTest(point, &nFlags);
+	if (nFlags & TVHT_ONITEMLABEL)
+	{
+		GetItemRect(hitem, &rect, TRUE);
+		pTI->hwnd = m_hWnd;
+		pTI->uId = (UINT)hitem;
+		pTI->lpszText = LPSTR_TEXTCALLBACK;
+		pTI->rect = rect;
+		return pTI->uId;
+	}
+
+	return -1;
+}
+
+//here we supply the text for the item 
+BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// need to handle both ANSI and UNICODE versions of the message
+	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
+	TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
+
+	CString strTipText;
+	UINT_PTR nID = pNMHDR->idFrom;
+
+	// Do not process the message from built in tooltip 
+	if (nID == (UINT_PTR)m_hWnd &&
+		((pNMHDR->code == TTN_NEEDTEXTA && pTTTA->uFlags & TTF_IDISHWND) ||
+		(pNMHDR->code == TTN_NEEDTEXTW && pTTTW->uFlags & TTF_IDISHWND)))
+		return FALSE;
+
+	// Get the mouse position
+	auto pMessage = GetCurrentMessage(); // get mouse pos 
+	ASSERT(pMessage);
+	auto pt = pMessage->pt;
+	ScreenToClient(&pt);
+
+	UINT nFlags;
+	HTREEITEM h = HitTest(pt, &nFlags); //Get item pointed by mouse
+
+	if (h)
+	{
+		int ea_idx = event_annotation_lookup(h);
+
+		if (ea_idx >= 0)
+		{
+			strTipText = Event_annotations[ea_idx].comment.c_str();
+
+			if (!strTipText.IsEmpty())
+			{
+#ifndef _UNICODE
+				if (pNMHDR->code == TTN_NEEDTEXTA)
+					lstrcpyn(pTTTA->szText, strTipText, 80);
+				else
+					_mbstowcsz(pTTTW->szText, strTipText, 80);
+#else
+				if (pNMHDR->code == TTN_NEEDTEXTA)
+					_wcstombsz(pTTTA->szText, strTipText, 80);
+				else
+					lstrcpyn(pTTTW->szText, strTipText, 80);
+#endif
+			}
+		}
+	}
+
+	*pResult = 0;
+
+	return TRUE;    // message was handled
+}
+
+// color stuff is based on example at
+// https://stackoverflow.com/questions/2119717/changing-the-color-of-a-selected-ctreectrl-item
+
+void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMTVCUSTOMDRAW *pcd = (NMTVCUSTOMDRAW *)pNMHDR;
+	switch (pcd->nmcd.dwDrawStage)
+	{
+		case CDDS_PREPAINT:
+			*pResult = CDRF_NOTIFYITEMDRAW;
+			break;
+
+		case CDDS_ITEMPREPAINT:
+		{
+			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
+
+			if (hItem)
+			{
+				int ea_idx = event_annotation_lookup(hItem);
+				if (ea_idx >= 0)
+				{
+					auto ea = &Event_annotations[ea_idx];
+
+					// contrast color calculation taken from here:
+					// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
+					if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
+						pcd->clrText = RGB(0, 0, 0);
+					else
+						pcd->clrText = RGB(255, 255, 255);
+
+					pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+				}
+			}
+
+			*pResult = CDRF_DODEFAULT;
+			break;
+		}
+	}
+}
+
+void event_sexp_tree::edit_comment(HTREEITEM h)
+{
+	CString old_text = _T("");
+	CString new_text;
+
+	int i = event_annotation_lookup(h);
+	if (i >= 0)
+		old_text = (CString)Event_annotations[i].comment.c_str();
+
+	TextViewDlg dlg;
+	dlg.SetText(old_text);
+	dlg.SetCaption("Enter a comment");
+	dlg.SetEditable(true);
+	dlg.DoModal();
+	dlg.GetText(new_text);
+
+	// comment is unchanged
+	if (new_text == old_text)
+		return;
+
+	// maybe add the annotation
+	if (i < 0)
+	{
+		i = (int)Event_annotations.size();
+		Event_annotations.emplace_back();
+		Event_annotations[i].handle = h;
+	}
+
+	Event_annotations[i].comment = new_text;
+
+	// see if we are either adding a new comment or removing an existing comment
+	// if so, change the icon
+	if (old_text.IsEmpty() || new_text.IsEmpty())
+		event_annotation_swap_image(this, h, i);
+}
+
+void event_sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	COLORREF old_color = RGB(255, 255, 255);
+	COLORREF new_color;
+
+	int i = event_annotation_lookup(h);
+	if (i >= 0)
+		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);
+
+	CColorDialog dlg(old_color);
+	if (dlg.DoModal() != IDOK)
+		return;
+	new_color = dlg.GetColor();
+
+	// color is unchanged
+	if (new_color == old_color)
+		return;
+
+	// maybe add the annotation
+	if (i < 0)
+	{
+		i = (int)Event_annotations.size();
+		Event_annotations.emplace_back();
+		Event_annotations[i].handle = h;
+	}
+
+	Event_annotations[i].r = GetRValue(new_color);
+	Event_annotations[i].g = GetGValue(new_color);
+	Event_annotations[i].b = GetBValue(new_color);
+
+	// This is needed otherwise the color won't change until the user clicks something
+	RedrawWindow();
+}
+
+void event_editor::populate_path(event_annotation &ea, HTREEITEM h)
+{
+	HTREEITEM parent = m_event_tree.GetParentItem(h);
+
+	// this is a node in the event tree
+	if (parent)
+	{
+		int child_num = 0;
+		HTREEITEM child = h;
+		while ((child = m_event_tree.GetPrevSiblingItem(child)) != nullptr)
+			++child_num;
+
+		// push the number and iterate up
+		ea.path.push_front(child_num);
+		populate_path(ea, parent);
+	}
+	// if this has no parent, it's an event, so find out which event it is
+	else
+	{
+		int event_num = get_event_num(h);
+		if (event_num >= 0)
+		{
+			ea.path.push_front(event_num);
+		}
+		else
+		{
+			Warning(LOCATION, "Could not find event for this handle!\n");
+			ea.path.clear();
+		}
+	}
+}
+
+HTREEITEM event_editor::traverse_path(const event_annotation &ea)
+{
+	if (ea.path.empty())
+		return nullptr;
+
+	int event_num = ea.path.front();
+	HTREEITEM h = get_event_handle(event_num);
+	if (!h)
+		return nullptr;
+
+	if (ea.path.size() > 1)
+	{
+		auto it = ea.path.begin();
+		for (++it; it != ea.path.end(); ++it)
+		{
+			int child_num = *it;
+
+			h = m_event_tree.GetChildItem(h);
+			while (child_num > 0 && h)
+			{
+				h = m_event_tree.GetNextSiblingItem(h);
+				--child_num;
+			}
+
+			if (!h)
+				return nullptr;
+		}
+	}
+
+	return h;
 }
