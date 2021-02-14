@@ -10,9 +10,9 @@
 // OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. 
 //
 
-
-//#include <windows.h>
+#include "freespace.h"
 #include "OpenGEX.h"
+#include "tracing/tracing.h"
 
 
 using namespace OpenGEX;
