@@ -981,7 +981,6 @@ int control_config_axis_default(int axis)
 int control_config_do_reset()
 {
 	int i, total = 0;
-	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 	Undo_stack stack;
 	auto &default_bindings = Control_config_presets[0].bindings;
 
