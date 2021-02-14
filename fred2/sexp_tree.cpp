@@ -2584,6 +2584,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -5548,8 +5553,8 @@ sexp_list_item *sexp_tree::get_listing_opf_priority()
 {
 	sexp_list_item head;
 
-	head.add_data("Normal");
 	head.add_data("High");
+	head.add_data("Normal");
 	head.add_data("Low");
 	return head.next;
 }

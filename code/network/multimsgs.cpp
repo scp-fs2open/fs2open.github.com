@@ -3461,7 +3461,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission message packet
-void send_mission_message_packet( int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
+void send_mission_message_packet( int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay, int event_num_to_cancel)
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], up, us, utime;
@@ -3483,6 +3483,7 @@ void send_mission_message_packet( int id, const char *who_from, int priority, in
 	ADD_INT(builtin_type);
 	ADD_INT(multi_team_filter);
 	ADD_INT(delay);
+	ADD_INT(event_num_to_cancel);
 
 	if (multi_target == -1){		
 		multi_io_send_to_all_reliable(data, packet_size);
@@ -3494,10 +3495,10 @@ void send_mission_message_packet( int id, const char *who_from, int priority, in
 // process a mission message packet
 void process_mission_message_packet( ubyte *data, header *hinfo )
 {
-	int offset, id, builtin_type, delay;
+	int offset, id, builtin_type, delay = 0;
 	ubyte priority, source, utiming;
 	char who_from[NAME_LENGTH];
-	int multi_team_filter;
+	int multi_team_filter, event_num_to_cancel = -1;
 
 	Assert( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 
@@ -3510,6 +3511,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	GET_INT(builtin_type);
 	GET_INT(multi_team_filter);
 	GET_INT(delay);
+	GET_INT(event_num_to_cancel);
 
 	PACKET_SET_SIZE();
 
@@ -3522,7 +3524,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	// maybe filter this out
 	if(!message_filter_multi(id)){
 		// send the message as if it came from an sexpression
-		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type );
+		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type, event_num_to_cancel );
 	}
 }
 
