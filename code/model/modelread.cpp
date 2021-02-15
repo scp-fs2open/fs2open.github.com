@@ -1112,6 +1112,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	int i,j;
 	vec3d temp_vec;
 
+	Warning( LOCATION, "Extension detected <%s>", fext );
 	fp = cfopen(filename,(strcmp(fext, "ogex")==0||strcmp(fext, "OGEX")==0)?"r":"rb");
 
 	if (!fp) {
@@ -1219,17 +1220,17 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
-	#if defined( FREESPACE1_FORMAT )
+#if defined( FREESPACE1_FORMAT )
 					pm->n_models = cfread_int(fp);
 	//				mprintf(( "Num models = %d\n", pm->n_models ));
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
-	#elif defined( FREESPACE2_FORMAT )
+#elif defined( FREESPACE2_FORMAT )
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
 					pm->n_models = cfread_int(fp);
 	//				mprintf(( "Num models = %d\n", pm->n_models ));
-	#endif
+#endif
 					Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 					// Check for unrealistic radii
