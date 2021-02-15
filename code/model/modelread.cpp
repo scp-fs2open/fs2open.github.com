@@ -38,8 +38,6 @@
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
-#include "model/OpenGEX/OpenGEX.h"
-
 #include <algorithm>
 
 flag_def_list model_render_flags[] =
@@ -1108,12 +1106,12 @@ void model_maybe_adjust_movement_axis(bsp_info *sm)
 int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
 	CFILE *fp;
-	const char *fext = strrchr(filename, '.') + 1;
+	int version;
+	int id, len, next_chunk;
 	int i,j;
 	vec3d temp_vec;
 
-	Warning( LOCATION, "Extension detected <%s>", fext );
-	fp = cfopen(filename,(strcmp(fext, "ogex")==0||strcmp(fext, "OGEX")==0)?"r":"rb");
+	fp = cfopen(filename,"rb");
 
 	if (!fp) {
 		if (ferror == 1) {
@@ -1126,7 +1124,50 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	}
 
 	TRACE_SCOPE(tracing::ReadModelFile);
+
+	// generate checksum for the POF
+	cfseek(fp, 0, SEEK_SET);	
+	cf_chksum_long(fp, &Global_checksum);
+	cfseek(fp, 0, SEEK_SET);
+
+
+	// code to get a filename to write out subsystem information for each model that
+	// is read.  This info is essentially debug stuff that is used to help get models
+	// into the game quicker
+#if 0
+	{
+		char bname[_MAX_FNAME];
+
+		_splitpath(filename, NULL, NULL, bname, NULL);
+		sprintf(debug_name, "%s.subsystems", bname);
+		ss_fp = cfopen(debug_name, "wb", CFILE_NORMAL, CF_TYPE_TABLES );
+		if ( !ss_fp )	{
+			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
+		} else {
+			strcpy_s(model_filename, filename);
+			ss_warning_shown = 0;
+		}
+	}
+#endif
+
+	id = cfread_int(fp);
+
+	if (id != POF_HEADER_ID)
+		Error( LOCATION, "Bad ID in model file <%s>",filename);
+
+	// Version is major*100+minor
+	// So, major = version / 100;
+	//     minor = version % 100;
+	version = cfread_int(fp);
+
+	//Warning( LOCATION, "POF Version = %d", version );
 	
+	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
+		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
+		return 0;
+	}
+
+	pm->version = version;
 	Assert( strlen(filename) < FILESPEC_LENGTH );
 	strcpy_s(pm->filename, filename);
 
@@ -1141,1413 +1182,1353 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	// reset SLDC
 	pm->shield_collision_tree = NULL;
 	pm->sldc_size = 0;
-	
+
+	id = cfread_int(fp);
+	len = cfread_int(fp);
+	next_chunk = cftell(fp) + len;
+
 	// keep track of any look_at submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
 
-	if (strcmp(fext, "ogex") == 0 || strcmp(fext, "OGEX") == 0) {
-		OpenGEX::OpenGexDataDescription fdata_desc;
-		char* fbuf;
+	while (!cfeof(fp)) {
 
-		DataResult result = fdata_desc.ProcessText(fbuf);
-		if (result == kDataOkay) {
-			const Structure *structure = fdata_desc.GetRootStructure()->GetFirstSubnode();
-			while (structure) {
-				structure = structure->GetNextSubnode();
-			}
-		}
-	} else {
-		int version;
-		int id, len, next_chunk;
+//		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
+//		key_getch();
 
-		// generate checksum for the POF
-		cfseek(fp, 0, SEEK_SET);	
-		cf_chksum_long(fp, &Global_checksum);
-		cfseek(fp, 0, SEEK_SET);
+		switch (id) {
 
+			case ID_OHDR: {		//Object header
+				//vector v;
 
-		// code to get a filename to write out subsystem information for each model that
-		// is read.  This info is essentially debug stuff that is used to help get models
-		// into the game quicker
-#if 0
-		{
-			char bname[_MAX_FNAME];
-
-			_splitpath(filename, NULL, NULL, bname, NULL);
-			sprintf(debug_name, "%s.subsystems", bname);
-			ss_fp = cfopen(debug_name, "wb", CFILE_NORMAL, CF_TYPE_TABLES );
-			if ( !ss_fp )	{
-				mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
-			} else {
-				strcpy_s(model_filename, filename);
-				ss_warning_shown = 0;
-			}
-		}
-#endif
-
-		id = cfread_int(fp);
-
-		if (id != POF_HEADER_ID)
-			Error( LOCATION, "Bad ID in model file <%s>",filename);
-
-		// Version is major*100+minor
-		// So, major = version / 100;
-		//     minor = version % 100;
-		version = cfread_int(fp);
-
-		//Warning( LOCATION, "POF Version = %d", version );
-	
-		if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
-			Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
-			return 0;
-		}
-
-		pm->version = version;
-
-		id = cfread_int(fp);
-		len = cfread_int(fp);
-		next_chunk = cftell(fp) + len;
-
-		while (!cfeof(fp)) {
-
-	//		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
-	//		key_getch();
-
-			switch (id) {
-
-				case ID_OHDR: {		//Object header
-					//vector v;
-
-					//mprintf(0,"Got chunk OHDR, len=%d\n",len);
+				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
 #if defined( FREESPACE1_FORMAT )
-					pm->n_models = cfread_int(fp);
-	//				mprintf(( "Num models = %d\n", pm->n_models ));
-					pm->rad = cfread_float(fp);
-					pm->flags = cfread_int(fp);	// 1=Allow tiling
+				pm->n_models = cfread_int(fp);
+//				mprintf(( "Num models = %d\n", pm->n_models ));
+				pm->rad = cfread_float(fp);
+				pm->flags = cfread_int(fp);	// 1=Allow tiling
 #elif defined( FREESPACE2_FORMAT )
-					pm->rad = cfread_float(fp);
-					pm->flags = cfread_int(fp);	// 1=Allow tiling
-					pm->n_models = cfread_int(fp);
-	//				mprintf(( "Num models = %d\n", pm->n_models ));
+				pm->rad = cfread_float(fp);
+				pm->flags = cfread_int(fp);	// 1=Allow tiling
+				pm->n_models = cfread_int(fp);
+//				mprintf(( "Num models = %d\n", pm->n_models ));
 #endif
-					Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
+                Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
-					// Check for unrealistic radii
-					if ( pm->rad <= 0.1f )
-					{
-						Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
-					}
-
-					pm->submodel = new bsp_info[pm->n_models];
-
-					//Assert(pm->n_models <= MAX_SUBMODELS);
-
-					cfread_vector(&pm->mins,fp);
-					cfread_vector(&pm->maxs,fp);
-
-					// sanity first!
-					if (maybe_swap_mins_maxs(&pm->mins, &pm->maxs)) {
-						Warning(LOCATION, "Inverted bounding box on model '%s'!  Swapping values to compensate.", pm->filename);
-					}
-					model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
-				
-					pm->n_detail_levels = cfread_int(fp);
-				//	mprintf(( "There are %d detail levels\n", pm->n_detail_levels ));
-					for (i=0; i<pm->n_detail_levels;i++ )	{
-						pm->detail[i] = cfread_int(fp);
-						pm->detail_depth[i] = 0.0f;
-				///		mprintf(( "Detail level %d is model %d.\n", i, pm->detail[i] ));
-					}
-
-					pm->num_debris_objects = cfread_int(fp);
-					if (pm->num_debris_objects > MAX_DEBRIS_OBJECTS) {
-						Error(LOCATION,
-							  "Model %s specified that it contains %d debris objects but only %d are supported by the "
-							  "engine.",
-							  filename, pm->num_debris_objects, MAX_DEBRIS_OBJECTS);
-					}
-					// mprintf(( "There are %d debris objects\n", pm->num_debris_objects ));
-					for (i=0; i<pm->num_debris_objects;i++ )	{
-						pm->debris_objects[i] = cfread_int(fp);
-						// mprintf(( "Debris object %d is model %d.\n", i, pm->debris_objects[i] ));
-					}
-
-					if ( pm->version >= 1903 )	{
-	
-						if ( pm->version >= 2009 )	{
-																	
-							pm->mass = cfread_float(fp);
-							cfread_vector( &pm->center_of_mass, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
-
-							if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
-								Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
-								Int3();
-							}
-						} else {
-							// old code where mass wasn't based on area, so do the calculation manually
-
-							float vol_mass = cfread_float(fp);
-							//	Attn: John Slagel:  The following is better done in bspgen.
-							// Convert volume (cubic) to surface area (quadratic) and scale so 100 -> 100
-							float area_mass = (float) pow(vol_mass, 0.6667f) * 4.65f;
-
-							pm->mass = area_mass;
-							float mass_ratio = vol_mass / area_mass; 
-							
-							cfread_vector( &pm->center_of_mass, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
-							cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
-
-							if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
-								Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
-								Int3();
-							}
-
-							// John remove this with change to bspgen
-							vm_vec_scale( &pm->moment_of_inertia.vec.rvec, mass_ratio );
-							vm_vec_scale( &pm->moment_of_inertia.vec.uvec, mass_ratio );
-							vm_vec_scale( &pm->moment_of_inertia.vec.fvec, mass_ratio );
-						}
-
-						// a custom MOI is only used for ships, but we should probably log it anyway
-						if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
-							&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
-							&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
-						{
-							mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)\n", filename));
-						}
-
-					} else {
-						pm->mass = 50.0f;
-						vm_vec_zero( &pm->center_of_mass );
-						vm_set_identity( &pm->moment_of_inertia );
-						vm_vec_scale(&pm->moment_of_inertia.vec.rvec, 0.001f);
-						vm_vec_scale(&pm->moment_of_inertia.vec.uvec, 0.001f);
-						vm_vec_scale(&pm->moment_of_inertia.vec.fvec, 0.001f);
-					}
-
-					// read in cross section info
-					pm->xc = NULL;
-					if ( pm->version >= 2014 ) {
-						pm->num_xc = cfread_int(fp);
-						if (pm->num_xc > 0) {
-							pm->xc = (cross_section*) vm_malloc(pm->num_xc*sizeof(cross_section));
-							for (i=0; i<pm->num_xc; i++) {
-								pm->xc[i].z = cfread_float(fp);
-								pm->xc[i].radius = cfread_float(fp);
-							}
-						}
-					} else {
-						pm->num_xc = 0;
-					}
-
-					if ( pm->version >= 2007 )	{
-						pm->num_lights = cfread_int(fp);
-						//mprintf(( "Found %d lights!\n", pm->num_lights ));
-
-						if (pm->num_lights > 0) {
-							pm->lights = (bsp_light *)vm_malloc( sizeof(bsp_light)*pm->num_lights );
-							for (i=0; i<pm->num_lights; i++ )	{			
-								cfread_vector(&pm->lights[i].pos,fp);
-								pm->lights[i].type = cfread_int(fp);
-							}
-						}
-					} else {
-						pm->num_lights = 0;
-						pm->lights = NULL;
-					}
-
-					break;
+				// Check for unrealistic radii
+				if ( pm->rad <= 0.1f )
+				{
+					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
-			
-				case ID_SOBJ: {		//Subobject header
-					int n, parent;
-					char *p, props[MAX_PROP_LEN];
-	//				float d;
 
-					//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
+				pm->submodel = new bsp_info[pm->n_models];
 
-					n = cfread_int(fp);
-					//mprintf(("SOBJ IDed itself as %d\n", n));
+				//Assert(pm->n_models <= MAX_SUBMODELS);
 
-					Assert(n < pm->n_models );
+				cfread_vector(&pm->mins,fp);
+				cfread_vector(&pm->maxs,fp);
 
-	#if defined( FREESPACE2_FORMAT )	
-					pm->submodel[n].rad = cfread_float(fp);		//radius
-	#endif
-
-					parent = cfread_int(fp);
-					pm->submodel[n].parent = parent;
-
-	//				cfread_vector(&pm->submodel[n].norm,fp);
-	//				d = cfread_float(fp);				
-	//				cfread_vector(&pm->submodel[n].pnt,fp);
-					cfread_vector(&pm->submodel[n].offset,fp);
-
-	//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, pm->submodel[n].offset.xyz.x, pm->submodel[n].offset.xyz.y, pm->submodel[n].offset.xyz.z ));
-	
-	#if defined ( FREESPACE1_FORMAT )
-					pm->submodel[n].rad = cfread_float(fp);		//radius
-	#endif
-
-	//				pm->submodel[n].tree_offset = cfread_int(fp);	//offset
-	//				pm->submodel[n].data_offset = cfread_int(fp);	//offset
-
-					cfread_vector(&pm->submodel[n].geometric_center,fp);
-
-					cfread_vector(&pm->submodel[n].min,fp);
-					cfread_vector(&pm->submodel[n].max,fp);
-
-					pm->submodel[n].name[0] = '\0';
-
-					cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
-					cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
-
-					// Check for unrealistic radii
-					if ( pm->submodel[n].rad <= 0.1f )
-					{
-						Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
-					}
+				// sanity first!
+				if (maybe_swap_mins_maxs(&pm->mins, &pm->maxs)) {
+					Warning(LOCATION, "Inverted bounding box on model '%s'!  Swapping values to compensate.", pm->filename);
+				}
+				model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
 				
-					// sanity first!
-					if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
-						Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);
-					}
-					model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
+				pm->n_detail_levels = cfread_int(fp);
+			//	mprintf(( "There are %d detail levels\n", pm->n_detail_levels ));
+				for (i=0; i<pm->n_detail_levels;i++ )	{
+					pm->detail[i] = cfread_int(fp);
+					pm->detail_depth[i] = 0.0f;
+			///		mprintf(( "Detail level %d is model %d.\n", i, pm->detail[i] ));
+				}
 
-					// ---------- submodel movement ----------
+				pm->num_debris_objects = cfread_int(fp);
+			    if (pm->num_debris_objects > MAX_DEBRIS_OBJECTS) {
+				    Error(LOCATION,
+				          "Model %s specified that it contains %d debris objects but only %d are supported by the "
+				          "engine.",
+				          filename, pm->num_debris_objects, MAX_DEBRIS_OBJECTS);
+			    }
+				// mprintf(( "There are %d debris objects\n", pm->num_debris_objects ));
+				for (i=0; i<pm->num_debris_objects;i++ )	{
+					pm->debris_objects[i] = cfread_int(fp);
+					// mprintf(( "Debris object %d is model %d.\n", i, pm->debris_objects[i] ));
+				}
 
-					pm->submodel[n].movement_type = cfread_int(fp);
-					pm->submodel[n].movement_axis_id = cfread_int(fp);
+				if ( pm->version >= 1903 )	{
+	
+					if ( pm->version >= 2009 )	{
+																	
+						pm->mass = cfread_float(fp);
+						cfread_vector( &pm->center_of_mass, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
 
-					// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
-					if ( stristr(pm->submodel[n].name, "turret") || ((parent >= 0) && (pm->submodel[parent].movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-					} else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-						if (stristr(pm->submodel[n].name, "thruster")) {
-							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						} else if(strstr(props, "$triggered")) {
-							pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
 						}
-					}
-
-					// determine rotation axis
-					// (the axis is a vector from 0,0,0 to the point specified)
-					// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
-					if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_X) {
-						pm->submodel[n].movement_axis = vmd_x_vector;
-					}
-					else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Y) {
-						pm->submodel[n].movement_axis = vmd_y_vector;
-					}
-					else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Z) {
-						pm->submodel[n].movement_axis = vmd_z_vector;
-					}
-					else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
-						if ((p = strstr(props, "$rotation_axis")) != nullptr) {
-							if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
-								vm_vec_normalize(&pm->submodel[n].movement_axis);
-							} else {
-								Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-								pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-							}
-						} else {
-							Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						}
-					}
-
-					// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
-					if ((p = strstr(props, "$look_at")) != nullptr) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-						pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
-
-						// we need to work out the correct subobject number later, after all subobjects have been processed
-						pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
-
-						char submodel_name[MAX_NAME_LEN];
-						get_user_prop_value(p + 9, submodel_name);
-						look_at_submodel_names.push_back(submodel_name);
 					} else {
-						pm->submodel[n].look_at_submodel = -1; // No look_at
+						// old code where mass wasn't based on area, so do the calculation manually
+
+						float vol_mass = cfread_float(fp);
+						//	Attn: John Slagel:  The following is better done in bspgen.
+						// Convert volume (cubic) to surface area (quadratic) and scale so 100 -> 100
+						float area_mass = (float) pow(vol_mass, 0.6667f) * 4.65f;
+
+						pm->mass = area_mass;
+						float mass_ratio = vol_mass / area_mass; 
+							
+						cfread_vector( &pm->center_of_mass, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
+						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
+
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
+						}
+
+						// John remove this with change to bspgen
+						vm_vec_scale( &pm->moment_of_inertia.vec.rvec, mass_ratio );
+						vm_vec_scale( &pm->moment_of_inertia.vec.uvec, mass_ratio );
+						vm_vec_scale( &pm->moment_of_inertia.vec.fvec, mass_ratio );
 					}
 
-					// optional extra property for look_at
-					if ((p = strstr(props, "$look_at_offset")) != nullptr) {
-						auto offset = (float)atof(p + 16);
-
-						// model property is specified in degrees, so convert it
-						offset = fl_radians(offset);
-
-						// check range (the angle is now in radians)
-						if (offset < -PI2 || offset > PI2) {
-							Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", pm->submodel[n].name, pm->filename);
-							offset = -1.0f;
-						}
-						// make the angle positive, since negative angles will be set at first look_at call
-						else if (offset < 0.0f) {
-							offset += PI2;
-						}
-
-						pm->submodel[n].look_at_offset = offset;
-					} else {
-						pm->submodel[n].look_at_offset = -1.0f;
+					// a custom MOI is only used for ships, but we should probably log it anyway
+					if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
+					{
+						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)\n", filename));
 					}
 
-					// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-					int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
-					if (idx >= 0) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-						pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+				} else {
+					pm->mass = 50.0f;
+					vm_vec_zero( &pm->center_of_mass );
+					vm_set_identity( &pm->moment_of_inertia );
+					vm_vec_scale(&pm->moment_of_inertia.vec.rvec, 0.001f);
+					vm_vec_scale(&pm->moment_of_inertia.vec.uvec, 0.001f);
+					vm_vec_scale(&pm->moment_of_inertia.vec.fvec, 0.001f);
+				}
 
-						// do this the same way as regular $rotate
-						char buf[64];
-						get_user_prop_value(p, buf);
+				// read in cross section info
+				pm->xc = NULL;
+				if ( pm->version >= 2014 ) {
+					pm->num_xc = cfread_int(fp);
+					if (pm->num_xc > 0) {
+						pm->xc = (cross_section*) vm_malloc(pm->num_xc*sizeof(cross_section));
+						for (i=0; i<pm->num_xc; i++) {
+							pm->xc[i].z = cfread_float(fp);
+							pm->xc[i].radius = cfread_float(fp);
+						}
+					}
+				} else {
+					pm->num_xc = 0;
+				}
 
-						// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
-						float turn_rate;
-						if (idx == 0) {
-							float turn_time = static_cast<float>(atof(buf));
-							if (turn_time == 0.0f) {
-								Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-								turn_rate = 1.0f;
-							} else {
-								turn_rate = PI2 / turn_time;
-							}
+				if ( pm->version >= 2007 )	{
+					pm->num_lights = cfread_int(fp);
+					//mprintf(( "Found %d lights!\n", pm->num_lights ));
+
+					if (pm->num_lights > 0) {
+						pm->lights = (bsp_light *)vm_malloc( sizeof(bsp_light)*pm->num_lights );
+						for (i=0; i<pm->num_lights; i++ )	{			
+							cfread_vector(&pm->lights[i].pos,fp);
+							pm->lights[i].type = cfread_int(fp);
+						}
+					}
+				} else {
+					pm->num_lights = 0;
+					pm->lights = NULL;
+				}
+
+				break;
+			}
+			
+			case ID_SOBJ: {		//Subobject header
+				int n, parent;
+				char *p, props[MAX_PROP_LEN];
+//				float d;
+
+				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
+
+				n = cfread_int(fp);
+				//mprintf(("SOBJ IDed itself as %d\n", n));
+
+				Assert(n < pm->n_models );
+
+#if defined( FREESPACE2_FORMAT )	
+				pm->submodel[n].rad = cfread_float(fp);		//radius
+#endif
+
+				parent = cfread_int(fp);
+				pm->submodel[n].parent = parent;
+
+//				cfread_vector(&pm->submodel[n].norm,fp);
+//				d = cfread_float(fp);				
+//				cfread_vector(&pm->submodel[n].pnt,fp);
+				cfread_vector(&pm->submodel[n].offset,fp);
+
+//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, pm->submodel[n].offset.xyz.x, pm->submodel[n].offset.xyz.y, pm->submodel[n].offset.xyz.z ));
+	
+#if defined ( FREESPACE1_FORMAT )
+				pm->submodel[n].rad = cfread_float(fp);		//radius
+#endif
+
+//				pm->submodel[n].tree_offset = cfread_int(fp);	//offset
+//				pm->submodel[n].data_offset = cfread_int(fp);	//offset
+
+				cfread_vector(&pm->submodel[n].geometric_center,fp);
+
+				cfread_vector(&pm->submodel[n].min,fp);
+				cfread_vector(&pm->submodel[n].max,fp);
+
+				pm->submodel[n].name[0] = '\0';
+
+				cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
+				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
+
+				// Check for unrealistic radii
+				if ( pm->submodel[n].rad <= 0.1f )
+				{
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
+				}
+				
+				// sanity first!
+				if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
+					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);
+				}
+				model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
+
+				// ---------- submodel movement ----------
+
+				pm->submodel[n].movement_type = cfread_int(fp);
+				pm->submodel[n].movement_axis_id = cfread_int(fp);
+
+				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
+				if ( stristr(pm->submodel[n].name, "turret") || ((parent >= 0) && (pm->submodel[parent].movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
+				} else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+					if (stristr(pm->submodel[n].name, "thruster")) {
+						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+					} else if(strstr(props, "$triggered")) {
+						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
+					}
+				}
+
+				// determine rotation axis
+				// (the axis is a vector from 0,0,0 to the point specified)
+				// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
+				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_X) {
+					pm->submodel[n].movement_axis = vmd_x_vector;
+				}
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Y) {
+					pm->submodel[n].movement_axis = vmd_y_vector;
+				}
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Z) {
+					pm->submodel[n].movement_axis = vmd_z_vector;
+				}
+				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
+					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
+						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
+							vm_vec_normalize(&pm->submodel[n].movement_axis);
 						} else {
-							turn_rate = static_cast<float>(atof(buf));
-						}
-
-						pm->submodel[n].dumb_turn_rate = turn_rate;
-					} else {
-						pm->submodel[n].dumb_turn_rate = 0.0f;
-					}
-
-					if ( pm->submodel[n].name[0] == '\0' ) {
-						strcpy_s(pm->submodel[n].name, "unknown object name");
-					}
-
-					if ( ( p = strstr(props, "$special"))!= NULL ) {
-						char type[64];
-
-						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							do_new_subsystem( n_subsystems, subsystems, n, pm->submodel[n].rad, &pm->submodel[n].offset, props, pm->submodel[n].name, pm->id );
-						} else if ( !stricmp(type, "no_rotate") ) {
-							// mark those submodels which should not rotate - ie, those with no subsystem
+							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
 							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-						} else {
-							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
-							Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
 						}
+					} else {
+						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+					}
+				}
+
+				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
+				if ((p = strstr(props, "$look_at")) != nullptr) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+
+					// we need to work out the correct subobject number later, after all subobjects have been processed
+					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
+
+					char submodel_name[MAX_NAME_LEN];
+					get_user_prop_value(p + 9, submodel_name);
+					look_at_submodel_names.push_back(submodel_name);
+				} else {
+					pm->submodel[n].look_at_submodel = -1; // No look_at
+				}
+
+				// optional extra property for look_at
+				if ((p = strstr(props, "$look_at_offset")) != nullptr) {
+					auto offset = (float)atof(p + 16);
+
+					// model property is specified in degrees, so convert it
+					offset = fl_radians(offset);
+
+					// check range (the angle is now in radians)
+					if (offset < -PI2 || offset > PI2) {
+						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", pm->submodel[n].name, pm->filename);
+						offset = -1.0f;
+					}
+					// make the angle positive, since negative angles will be set at first look_at call
+					else if (offset < 0.0f) {
+						offset += PI2;
 					}
 
-					// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
+					pm->submodel[n].look_at_offset = offset;
+				} else {
+					pm->submodel[n].look_at_offset = -1.0f;
+				}
 
-					if (strstr(props, "$no_collisions") != NULL )
-						pm->submodel[n].no_collisions = true;
-					else
-						pm->submodel[n].no_collisions = false;
+				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
+				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
+				if (idx >= 0) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
-					if (strstr(props, "$nocollide_this_only") != NULL )
-						pm->submodel[n].nocollide_this_only = true;
-					else
-						pm->submodel[n].nocollide_this_only = false;
+					// do this the same way as regular $rotate
+					char buf[64];
+					get_user_prop_value(p, buf);
 
-					if (strstr(props, "$collide_invisible") != NULL )
-						pm->submodel[n].collide_invisible = true;
-					else
-						pm->submodel[n].collide_invisible = false;
+					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
+					float turn_rate;
+					if (idx == 0) {
+						float turn_time = static_cast<float>(atof(buf));
+						if (turn_time == 0.0f) {
+							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+							turn_rate = 1.0f;
+						} else {
+							turn_rate = PI2 / turn_time;
+						}
+					} else {
+						turn_rate = static_cast<float>(atof(buf));
+					}
 
-					if (strstr(props, "$gun_rotation") != nullptr) {
-						pm->submodel[n].gun_rotation = true;
-						pm->submodel[n].can_move = true;		// this is something of a special case because it's rotating without "rotating"
-					} else
-						pm->submodel[n].gun_rotation = false;
+					pm->submodel[n].dumb_turn_rate = turn_rate;
+				} else {
+					pm->submodel[n].dumb_turn_rate = 0.0f;
+				}
 
-					if ( (p = strstr(props, "$lod0_name")) != NULL)
-						get_user_prop_value(p+10, pm->submodel[n].lod_name);
+				if ( pm->submodel[n].name[0] == '\0' ) {
+					strcpy_s(pm->submodel[n].name, "unknown object name");
+				}
 
-					if (strstr(props, "$attach_thrusters") != NULL )
-						pm->submodel[n].attach_thrusters = true;
-					else
-						pm->submodel[n].attach_thrusters = false;
+				if ( ( p = strstr(props, "$special"))!= NULL ) {
+					char type[64];
 
-					if ( (p = strstr(props, "$detail_box:")) != NULL ) {
+					get_user_prop_value(p+9, type);
+					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+						do_new_subsystem( n_subsystems, subsystems, n, pm->submodel[n].rad, &pm->submodel[n].offset, props, pm->submodel[n].name, pm->id );
+					} else if ( !stricmp(type, "no_rotate") ) {
+						// mark those submodels which should not rotate - ie, those with no subsystem
+						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+					} else {
+						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
+						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
+					}
+				}
+
+				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
+
+				if (strstr(props, "$no_collisions") != NULL )
+					pm->submodel[n].no_collisions = true;
+				else
+					pm->submodel[n].no_collisions = false;
+
+				if (strstr(props, "$nocollide_this_only") != NULL )
+					pm->submodel[n].nocollide_this_only = true;
+				else
+					pm->submodel[n].nocollide_this_only = false;
+
+				if (strstr(props, "$collide_invisible") != NULL )
+					pm->submodel[n].collide_invisible = true;
+				else
+					pm->submodel[n].collide_invisible = false;
+
+				if (strstr(props, "$gun_rotation") != nullptr) {
+					pm->submodel[n].gun_rotation = true;
+					pm->submodel[n].can_move = true;		// this is something of a special case because it's rotating without "rotating"
+				} else
+					pm->submodel[n].gun_rotation = false;
+
+				if ( (p = strstr(props, "$lod0_name")) != NULL)
+					get_user_prop_value(p+10, pm->submodel[n].lod_name);
+
+				if (strstr(props, "$attach_thrusters") != NULL )
+					pm->submodel[n].attach_thrusters = true;
+				else
+					pm->submodel[n].attach_thrusters = false;
+
+				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
+					p += 12;
+					while (*p == ' ') p++;
+					pm->submodel[n].use_render_box = atoi(p);
+
+					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
 						p += 12;
 						while (*p == ' ') p++;
-						pm->submodel[n].use_render_box = atoi(p);
+						pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
 
-						if ( (p = strstr(props, "$box_offset:")) != NULL ) {
-							p += 12;
-							while (*p == ' ') p++;
-							pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
-
-							pm->submodel[n].use_render_box_offset = true;
-						}
-
-						if ( (p = strstr(props, "$box_min:")) != NULL ) {
-							p += 9;
-							while (*p == ' ') p++;
-							pm->submodel[n].render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
-						} else {
-							pm->submodel[n].render_box_min = pm->submodel[n].min;
-						}
-
-						if ( (p = strstr(props, "$box_max:")) != NULL ) {
-							p += 9;
-							while (*p == ' ') p++;
-							pm->submodel[n].render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
-						} else {
-							pm->submodel[n].render_box_max = pm->submodel[n].max;
-						}
-
-						if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
-							p += 23;
-							pm->submodel[n].do_not_scale_detail_distances = true;
-						}
+						pm->submodel[n].use_render_box_offset = true;
 					}
 
-					if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
-						p += 15;
+					if ( (p = strstr(props, "$box_min:")) != NULL ) {
+						p += 9;
 						while (*p == ' ') p++;
-						pm->submodel[n].use_render_sphere = atoi(p);
-
-						if ( (p = strstr(props, "$radius:")) != NULL ) {
-							p += 8;
-							while (*p == ' ') p++;
-							pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
-						} else {
-							pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
-						}
-
-						if ( (p = strstr(props, "$offset:")) != NULL ) {
-							p += 8;
-							while (*p == ' ') p++;
-							pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
-							while (*p != ',') p++;
-							pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
-
-							pm->submodel[n].use_render_sphere_offset = true;
-						} else {
-							pm->submodel[n].render_sphere_offset = vmd_zero_vector;
-						}
-
-						if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
-							p += 23;
-							pm->submodel[n].do_not_scale_detail_distances = true;
-						}
-					}
-
-					// KeldorKatarn, with modifications
-					if ( (p = strstr(props, "$uvec")) != nullptr ) {
-						matrix submodel_orient;
-
-						if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false)) {
-
-							if ((p = strstr(props, "$fvec")) != nullptr) {
-
-								if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false)) {
-
-									vm_vec_normalize(&submodel_orient.vec.uvec);
-									vm_vec_normalize(&submodel_orient.vec.fvec);
-
-									vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
-									vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
-
-									vm_vec_normalize(&submodel_orient.vec.fvec);
-									vm_vec_normalize(&submodel_orient.vec.rvec);
-
-									vm_orthogonalize_matrix(&submodel_orient);
-
-									pm->submodel[n].frame_of_reference = submodel_orient;
-
-								} else {
-									Warning(LOCATION,
-										"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
-										"\n\n$fvec should be followed by 3 numbers separated with commas.",
-										pm->submodel[n].name, filename);
-								}
-							} else {
-								Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", pm->submodel[n].name);
-							}
-						} else {
-							Warning(LOCATION,
-								"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
-								"\n\n$uvec should be followed by 3 numbers separated with commas.",
-								pm->submodel[n].name, filename);
-						}
+						pm->submodel[n].render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
 					} else {
-						if (parent >= 0) {
-							pm->submodel[n].frame_of_reference = pm->submodel[parent].frame_of_reference;
-						} else {
-							pm->submodel[n].frame_of_reference = vmd_identity_matrix;
-						}
+						pm->submodel[n].render_box_min = pm->submodel[n].min;
 					}
 
-					// ---------- submodel rotation sanity checks ----------
-
-					// make sure this is a validly normalized axis
-					if (vm_vec_mag(&pm->submodel[n].movement_axis) < 0.999f || vm_vec_mag(&pm->submodel[n].movement_axis) > 1.001f) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-					}
-
-					// maybe use the FOR to manipulate the rotation axis
-					// (do this before the compatibility check below to prevent doing it twice)
-					model_maybe_adjust_movement_axis(&pm->submodel[n]);
-
-					// important compatibility check: if there are multipart turrets without rotation axes defined, define them
-					// also, some of the retail models got the axes wrong, so fix those :-/
-					// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
-					//		and also for turrets which don't have their axes set to "other"
-					if (parent >= 0 && stristr(pm->submodel[parent].name, "turret"))
-					{
-						auto base = &pm->submodel[parent];
-						auto gun = &pm->submodel[n];
-
-						if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
-							|| (base->movement_axis_id != MOVEMENT_AXIS_OTHER))
-						{
-							base->movement_axis_id = MOVEMENT_AXIS_Y;
-							base->movement_axis = vmd_y_vector;
-							base->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-							model_maybe_adjust_movement_axis(base);
-						}
-
-						if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-							|| (gun->movement_axis_id != MOVEMENT_AXIS_OTHER))
-						{
-							gun->movement_axis_id = MOVEMENT_AXIS_X;
-							gun->movement_axis = vmd_x_vector;
-							gun->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-							model_maybe_adjust_movement_axis(gun);
-						}
-					}
-
-					// adding a warning if rotation is specified without movement axis.
-					if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_NONE) {
-						if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-							Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-						}
-						else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-							Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
-						}
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
-					}
-
-					// clear the axis if the submodel doesn't move
-					// (don't clear can_move because of gun_rotation)
-					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_NONE) {
-						pm->submodel[n].movement_axis_id = MOVEMENT_AXIS_NONE;
-						pm->submodel[n].movement_axis = vmd_zero_vector;
-					}
-
-					// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-					if (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE) {
-						pm->submodel[n].can_move = true;
-					} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
-						pm->submodel[n].can_move = true;
-					}
-
-					// ---------- done submodel rotation sanity checks ----------
-
-
-					{
-						int nchunks = cfread_int( fp );		// Throw away nchunks
-						if ( nchunks > 0 )	{
-							Error( LOCATION, "Model '%s' is chunked.  See John or Adam!\n", pm->filename );
-						}
-					}
-					pm->submodel[n].bsp_data_size = cfread_int(fp);
-					if ( pm->submodel[n].bsp_data_size > 0 )	{
-						pm->submodel[n].bsp_data = (ubyte *)vm_malloc(pm->submodel[n].bsp_data_size);
-						cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
-						swap_bsp_data( pm, pm->submodel[n].bsp_data );
+					if ( (p = strstr(props, "$box_max:")) != NULL ) {
+						p += 9;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
 					} else {
-						pm->submodel[n].bsp_data = NULL;
+						pm->submodel[n].render_box_max = pm->submodel[n].max;
 					}
 
-					pm->submodel[n].is_thruster = (stristr(pm->submodel[n].name, "thruster") != nullptr);
-
-					// Genghis: if we have a thruster and none of the collision 
-					// properties were provided, then set "nocollide_this_only".
-					if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
-					{
-						pm->submodel[n].nocollide_this_only = true;
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
 					}
-
-					pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
-
-					break;
 				}
 
-				case ID_SLDC: // kazan - Shield Collision tree
-					{
-						pm->sldc_size = cfread_int(fp);
-						pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
-						cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
-						swap_sldc_data(pm->shield_collision_tree);
-						//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
+				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
+					p += 15;
+					while (*p == ' ') p++;
+					pm->submodel[n].use_render_sphere = atoi(p);
+
+					if ( (p = strstr(props, "$radius:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
+					} else {
+						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
 					}
-					break;
 
-				case ID_SHLD:
-					{
-						pm->shield.nverts = cfread_int( fp );		// get the number of vertices in the list
+					if ( (p = strstr(props, "$offset:")) != NULL ) {
+						p += 8;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
 
-						if (pm->shield.nverts > 0) {
-							pm->shield.verts = (shield_vertex *)vm_malloc(pm->shield.nverts * sizeof(shield_vertex) );
-							Assert( pm->shield.verts );
-							for ( i = 0; i < pm->shield.nverts; i++ ) {						// read in the vertex list
-								cfread_vector( &(pm->shield.verts[i].pos), fp );
-							}
-						}
-
-						pm->shield.ntris = cfread_int( fp );		// get the number of triangles that compose the shield
-
-						if (pm->shield.ntris > 0) {
-							pm->shield.tris = (shield_tri *)vm_malloc(pm->shield.ntris * sizeof(shield_tri) );
-							Assert( pm->shield.tris );
-							for ( i = 0; i < pm->shield.ntris; i++ ) {
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								pm->shield.tris[i].norm = temp_vec;
-								for ( j = 0; j < 3; j++ ) {
-									pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
-	#ifndef NDEBUG
-									if (pm->shield.tris[i].verts[j] >= pm->shield.nverts) {
-										Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, pm->shield.nverts, pm->shield.tris[i].verts[j]);
-									}
-	#endif
-								}
-							
-								for ( j = 0; j < 3; j++ ) {
-									pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
-	#ifndef NDEBUG
-									if (pm->shield.tris[i].neighbors[j] >= pm->shield.ntris) {
-										Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i triangles, index %i found.\n", filename, pm->shield.ntris, pm->shield.tris[i].neighbors[j]);
-									}
-	#endif
-								}
-							}
-						}
+						pm->submodel[n].use_render_sphere_offset = true;
+					} else {
+						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
 					}
-					break;
 
-				case ID_GPNT:
-					pm->n_guns = cfread_int(fp);
-
-					if (pm->n_guns > 0) {
-						pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
-						Assert( pm->gun_banks != NULL );
-
-						for (i = 0; i < pm->n_guns; i++ ) {
-							w_bank *bank = &pm->gun_banks[i];
-
-							bank->num_slots = cfread_int(fp);
-							Assert ( bank->num_slots < MAX_SLOTS );
-							for (j = 0; j < bank->num_slots; j++) {
-								cfread_vector( &(bank->pnt[j]), fp );
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								bank->norm[j] = temp_vec;
-							}
-						}
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
 					}
-					break;
-			
-				case ID_MPNT:
-					pm->n_missiles = cfread_int(fp);
-
-					if (pm->n_missiles > 0) {
-						pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
-						Assert( pm->missile_banks != NULL );
-
-						for (i = 0; i < pm->n_missiles; i++ ) {
-							w_bank *bank = &pm->missile_banks[i];
-
-							bank->num_slots = cfread_int(fp);
-							Assert ( bank->num_slots < MAX_SLOTS );
-							for (j = 0; j < bank->num_slots; j++) {
-								cfread_vector( &(bank->pnt[j]), fp );
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								bank->norm[j] = temp_vec;
-							}
-						}
-					}
-					break;
-
-				case ID_DOCK: {
-					char props[MAX_PROP_LEN];
-
-					pm->n_docks = cfread_int(fp);
-
-					if (pm->n_docks > 0) {
-						pm->docking_bays = (dock_bay *)vm_malloc(sizeof(dock_bay) * pm->n_docks);
-						Assert( pm->docking_bays != NULL );
-
-						for (i = 0; i < pm->n_docks; i++ ) {
-							char *p;
-							dock_bay *bay = &pm->docking_bays[i];
-
-							cfread_string_len( props, MAX_PROP_LEN, fp );
-							if ( (p = strstr(props, "$name"))!= NULL ) {
-								get_user_prop_value(p+5, bay->name);
-
-								auto length = strlen(bay->name);
-								if ((length > 0) && is_white_space(bay->name[length-1])) {
-									nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
-									drop_trailing_white_space(bay->name);
-								}
-								if (strlen(bay->name) == 0) {
-									nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
-								}
-							} else {
-								nprintf(("Model", "model '%s' has no name specified for docking point %d\n", pm->filename, i));
-								sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
-							}
-
-	#ifndef NDEBUG
-							// check for duplicates
-							// (we just warn here and take no action, because even some retail models have duplicate dockpoints)
-							for (j = 0; j < i; j++) {
-								if (stricmp(bay->name, pm->docking_bays[j].name) == 0) {
-									Warning(LOCATION, "Duplicate docking bay name '%s' found on model '%s'!", bay->name, pm->filename);
-								}
-							}
-	#endif
-
-							bay->num_spline_paths = cfread_int( fp );
-							if ( bay->num_spline_paths > 0 ) {
-								bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
-								for ( j = 0; j < bay->num_spline_paths; j++ )
-									bay->splines[j] = cfread_int(fp);
-							} else {
-								bay->splines = NULL;
-							}
-
-							// determine what this docking bay can be used for
-							if ( !strnicmp(bay->name, "cargo", 5) )
-								bay->type_flags = DOCK_TYPE_CARGO;
-							else
-								bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
-
-							bay->num_slots = cfread_int(fp);
-
-							if(bay->num_slots != 2) {
-								Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, bay->num_slots, bay->name, 2);
-							}
-
-							for (j = 0; j < bay->num_slots; j++) {
-								cfread_vector( &(bay->pnt[j]), fp );
-								cfread_vector( &(bay->norm[j]), fp );
-								if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
-									Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
-								}
-							}
-
-							if(vm_vec_same(&bay->pnt[0], &bay->pnt[1])) {
-								Warning(LOCATION, "Model '%s' has two identical docking slot positions on docking port '%s'. This is not allowed.  A new second slot position will be generated.", filename, bay->name);
-
-								// just move the second point over by some amount
-								bay->pnt[1].xyz.z += 10.0f;
-							}
-
-							vec3d diff;
-							vm_vec_normalized_dir(&diff, &bay->pnt[0], &bay->pnt[1]);
-							float dot = vm_vec_dot(&diff, &bay->norm[0]);
-							if(fl_abs(dot) > 0.99f) {
-								Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal.  This will cause a NULL VEC crash when docked to another ship.  A new docking normal will be generated.", filename, bay->name);
-
-								// generate a simple rotation matrix in all three dimensions (though bank is probably not needed)
-								angles a = { PI_2, PI_2, PI_2 };
-								matrix m;
-								vm_angles_2_matrix(&m, &a);
-
-								// rotate the docking normal
-								vec3d temp = bay->norm[0];
-								vm_vec_rotate(&bay->norm[0], &temp, &m);
-							}
-						}
-					}
-					break;
 				}
 
-				case ID_GLOW:					//start glow point reading -Bobboau
+				// KeldorKatarn, with modifications
+				if ( (p = strstr(props, "$uvec")) != nullptr ) {
+					matrix submodel_orient;
+
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false)) {
+
+						if ((p = strstr(props, "$fvec")) != nullptr) {
+
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false)) {
+
+								vm_vec_normalize(&submodel_orient.vec.uvec);
+								vm_vec_normalize(&submodel_orient.vec.fvec);
+
+								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
+								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
+
+								vm_vec_normalize(&submodel_orient.vec.fvec);
+								vm_vec_normalize(&submodel_orient.vec.rvec);
+
+								vm_orthogonalize_matrix(&submodel_orient);
+
+								pm->submodel[n].frame_of_reference = submodel_orient;
+
+							} else {
+								Warning(LOCATION,
+									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
+									"\n\n$fvec should be followed by 3 numbers separated with commas.",
+									pm->submodel[n].name, filename);
+							}
+						} else {
+							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", pm->submodel[n].name);
+						}
+					} else {
+						Warning(LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
+							"\n\n$uvec should be followed by 3 numbers separated with commas.",
+							pm->submodel[n].name, filename);
+					}
+				} else {
+					if (parent >= 0) {
+						pm->submodel[n].frame_of_reference = pm->submodel[parent].frame_of_reference;
+					} else {
+						pm->submodel[n].frame_of_reference = vmd_identity_matrix;
+					}
+				}
+
+				// ---------- submodel rotation sanity checks ----------
+
+				// make sure this is a validly normalized axis
+				if (vm_vec_mag(&pm->submodel[n].movement_axis) < 0.999f || vm_vec_mag(&pm->submodel[n].movement_axis) > 1.001f) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+				}
+
+				// maybe use the FOR to manipulate the rotation axis
+				// (do this before the compatibility check below to prevent doing it twice)
+				model_maybe_adjust_movement_axis(&pm->submodel[n]);
+
+				// important compatibility check: if there are multipart turrets without rotation axes defined, define them
+				// also, some of the retail models got the axes wrong, so fix those :-/
+				// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
+				//		and also for turrets which don't have their axes set to "other"
+				if (parent >= 0 && stristr(pm->submodel[parent].name, "turret"))
 				{
-					char props[MAX_PROP_LEN];
+					auto base = &pm->submodel[parent];
+					auto gun = &pm->submodel[n];
 
-					int gpb_num = cfread_int(fp);
-
-					pm->n_glow_point_banks = gpb_num;
-					pm->glow_point_banks = NULL;
-
-					if (gpb_num > 0)
+					if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
+						|| (base->movement_axis_id != MOVEMENT_AXIS_OTHER))
 					{
-						pm->glow_point_banks = (glow_point_bank *) vm_malloc(sizeof(glow_point_bank) * gpb_num);
-						Assert(pm->glow_point_banks != NULL);
+						base->movement_axis_id = MOVEMENT_AXIS_Y;
+						base->movement_axis = vmd_y_vector;
+						base->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
+						model_maybe_adjust_movement_axis(base);
 					}
 
-					for (int gpb = 0; gpb < gpb_num; gpb++)
+					if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
+						|| (gun->movement_axis_id != MOVEMENT_AXIS_OTHER))
 					{
-						glow_point_bank *bank = &pm->glow_point_banks[gpb];
+						gun->movement_axis_id = MOVEMENT_AXIS_X;
+						gun->movement_axis = vmd_x_vector;
+						gun->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
+						model_maybe_adjust_movement_axis(gun);
+					}
+				}
 
-						bank->is_on = true;
-						bank->glow_timestamp = 0;
-						bank->disp_time = cfread_int(fp);
-						bank->on_time = cfread_int(fp);
-						bank->off_time = cfread_int(fp);
-						bank->submodel_parent = cfread_int(fp);
-						bank->LOD = cfread_int(fp);
-						bank->type = cfread_int(fp);
+				// adding a warning if rotation is specified without movement axis.
+				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_NONE) {
+					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+				}
+
+				// clear the axis if the submodel doesn't move
+				// (don't clear can_move because of gun_rotation)
+				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_NONE) {
+					pm->submodel[n].movement_axis_id = MOVEMENT_AXIS_NONE;
+					pm->submodel[n].movement_axis = vmd_zero_vector;
+				}
+
+				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
+				}
+
+				// ---------- done submodel rotation sanity checks ----------
+
+
+				{
+					int nchunks = cfread_int( fp );		// Throw away nchunks
+					if ( nchunks > 0 )	{
+						Error( LOCATION, "Model '%s' is chunked.  See John or Adam!\n", pm->filename );
+					}
+				}
+				pm->submodel[n].bsp_data_size = cfread_int(fp);
+				if ( pm->submodel[n].bsp_data_size > 0 )	{
+					pm->submodel[n].bsp_data = (ubyte *)vm_malloc(pm->submodel[n].bsp_data_size);
+					cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
+					swap_bsp_data( pm, pm->submodel[n].bsp_data );
+				} else {
+					pm->submodel[n].bsp_data = NULL;
+				}
+
+				pm->submodel[n].is_thruster = (stristr(pm->submodel[n].name, "thruster") != nullptr);
+
+				// Genghis: if we have a thruster and none of the collision 
+				// properties were provided, then set "nocollide_this_only".
+				if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
+				{
+					pm->submodel[n].nocollide_this_only = true;
+				}
+
+				pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
+
+				break;
+			}
+
+			case ID_SLDC: // kazan - Shield Collision tree
+				{
+					pm->sldc_size = cfread_int(fp);
+					pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
+					cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
+					swap_sldc_data(pm->shield_collision_tree);
+					//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
+				}
+				break;
+
+			case ID_SHLD:
+				{
+					pm->shield.nverts = cfread_int( fp );		// get the number of vertices in the list
+
+					if (pm->shield.nverts > 0) {
+						pm->shield.verts = (shield_vertex *)vm_malloc(pm->shield.nverts * sizeof(shield_vertex) );
+						Assert( pm->shield.verts );
+						for ( i = 0; i < pm->shield.nverts; i++ ) {						// read in the vertex list
+							cfread_vector( &(pm->shield.verts[i].pos), fp );
+						}
+					}
+
+					pm->shield.ntris = cfread_int( fp );		// get the number of triangles that compose the shield
+
+					if (pm->shield.ntris > 0) {
+						pm->shield.tris = (shield_tri *)vm_malloc(pm->shield.ntris * sizeof(shield_tri) );
+						Assert( pm->shield.tris );
+						for ( i = 0; i < pm->shield.ntris; i++ ) {
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							pm->shield.tris[i].norm = temp_vec;
+							for ( j = 0; j < 3; j++ ) {
+								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
+#ifndef NDEBUG
+								if (pm->shield.tris[i].verts[j] >= pm->shield.nverts) {
+									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, pm->shield.nverts, pm->shield.tris[i].verts[j]);
+								}
+#endif
+							}
+							
+							for ( j = 0; j < 3; j++ ) {
+								pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
+#ifndef NDEBUG
+								if (pm->shield.tris[i].neighbors[j] >= pm->shield.ntris) {
+									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i triangles, index %i found.\n", filename, pm->shield.ntris, pm->shield.tris[i].neighbors[j]);
+								}
+#endif
+							}
+						}
+					}
+				}
+				break;
+
+			case ID_GPNT:
+				pm->n_guns = cfread_int(fp);
+
+				if (pm->n_guns > 0) {
+					pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
+					Assert( pm->gun_banks != NULL );
+
+					for (i = 0; i < pm->n_guns; i++ ) {
+						w_bank *bank = &pm->gun_banks[i];
+
+						bank->num_slots = cfread_int(fp);
+						Assert ( bank->num_slots < MAX_SLOTS );
+						for (j = 0; j < bank->num_slots; j++) {
+							cfread_vector( &(bank->pnt[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
+						}
+					}
+				}
+				break;
+			
+			case ID_MPNT:
+				pm->n_missiles = cfread_int(fp);
+
+				if (pm->n_missiles > 0) {
+					pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
+					Assert( pm->missile_banks != NULL );
+
+					for (i = 0; i < pm->n_missiles; i++ ) {
+						w_bank *bank = &pm->missile_banks[i];
+
+						bank->num_slots = cfread_int(fp);
+						Assert ( bank->num_slots < MAX_SLOTS );
+						for (j = 0; j < bank->num_slots; j++) {
+							cfread_vector( &(bank->pnt[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
+						}
+					}
+				}
+				break;
+
+			case ID_DOCK: {
+				char props[MAX_PROP_LEN];
+
+				pm->n_docks = cfread_int(fp);
+
+				if (pm->n_docks > 0) {
+					pm->docking_bays = (dock_bay *)vm_malloc(sizeof(dock_bay) * pm->n_docks);
+					Assert( pm->docking_bays != NULL );
+
+					for (i = 0; i < pm->n_docks; i++ ) {
+						char *p;
+						dock_bay *bay = &pm->docking_bays[i];
+
+						cfread_string_len( props, MAX_PROP_LEN, fp );
+						if ( (p = strstr(props, "$name"))!= NULL ) {
+							get_user_prop_value(p+5, bay->name);
+
+							auto length = strlen(bay->name);
+							if ((length > 0) && is_white_space(bay->name[length-1])) {
+								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
+								drop_trailing_white_space(bay->name);
+							}
+							if (strlen(bay->name) == 0) {
+								nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
+							}
+						} else {
+							nprintf(("Model", "model '%s' has no name specified for docking point %d\n", pm->filename, i));
+							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
+						}
+
+#ifndef NDEBUG
+						// check for duplicates
+						// (we just warn here and take no action, because even some retail models have duplicate dockpoints)
+						for (j = 0; j < i; j++) {
+							if (stricmp(bay->name, pm->docking_bays[j].name) == 0) {
+								Warning(LOCATION, "Duplicate docking bay name '%s' found on model '%s'!", bay->name, pm->filename);
+							}
+						}
+#endif
+
+						bay->num_spline_paths = cfread_int( fp );
+						if ( bay->num_spline_paths > 0 ) {
+							bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
+							for ( j = 0; j < bay->num_spline_paths; j++ )
+								bay->splines[j] = cfread_int(fp);
+						} else {
+							bay->splines = NULL;
+						}
+
+						// determine what this docking bay can be used for
+						if ( !strnicmp(bay->name, "cargo", 5) )
+							bay->type_flags = DOCK_TYPE_CARGO;
+						else
+							bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
+
+						bay->num_slots = cfread_int(fp);
+
+						if(bay->num_slots != 2) {
+							Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, bay->num_slots, bay->name, 2);
+						}
+
+						for (j = 0; j < bay->num_slots; j++) {
+							cfread_vector( &(bay->pnt[j]), fp );
+							cfread_vector( &(bay->norm[j]), fp );
+							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
+								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+							}
+						}
+
+						if(vm_vec_same(&bay->pnt[0], &bay->pnt[1])) {
+							Warning(LOCATION, "Model '%s' has two identical docking slot positions on docking port '%s'. This is not allowed.  A new second slot position will be generated.", filename, bay->name);
+
+							// just move the second point over by some amount
+							bay->pnt[1].xyz.z += 10.0f;
+						}
+
+						vec3d diff;
+						vm_vec_normalized_dir(&diff, &bay->pnt[0], &bay->pnt[1]);
+						float dot = vm_vec_dot(&diff, &bay->norm[0]);
+						if(fl_abs(dot) > 0.99f) {
+							Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal.  This will cause a NULL VEC crash when docked to another ship.  A new docking normal will be generated.", filename, bay->name);
+
+							// generate a simple rotation matrix in all three dimensions (though bank is probably not needed)
+							angles a = { PI_2, PI_2, PI_2 };
+							matrix m;
+							vm_angles_2_matrix(&m, &a);
+
+							// rotate the docking normal
+							vec3d temp = bay->norm[0];
+							vm_vec_rotate(&bay->norm[0], &temp, &m);
+						}
+					}
+				}
+				break;
+			}
+
+			case ID_GLOW:					//start glow point reading -Bobboau
+			{
+				char props[MAX_PROP_LEN];
+
+				int gpb_num = cfread_int(fp);
+
+				pm->n_glow_point_banks = gpb_num;
+				pm->glow_point_banks = NULL;
+
+				if (gpb_num > 0)
+				{
+					pm->glow_point_banks = (glow_point_bank *) vm_malloc(sizeof(glow_point_bank) * gpb_num);
+					Assert(pm->glow_point_banks != NULL);
+				}
+
+				for (int gpb = 0; gpb < gpb_num; gpb++)
+				{
+					glow_point_bank *bank = &pm->glow_point_banks[gpb];
+
+					bank->is_on = true;
+					bank->glow_timestamp = 0;
+					bank->disp_time = cfread_int(fp);
+					bank->on_time = cfread_int(fp);
+					bank->off_time = cfread_int(fp);
+					bank->submodel_parent = cfread_int(fp);
+					bank->LOD = cfread_int(fp);
+					bank->type = cfread_int(fp);
+					bank->num_points = cfread_int(fp);
+					bank->points = NULL;
+					bank->glow_bitmap = -1;
+					bank->glow_neb_bitmap = -1;
+
+					if (bank->num_points > 0)
+						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
+
+					//if((bank->off_time > 0) && (bank->disp_time > 0))
+						//bank->is_on = false;
+	
+					cfread_string_len(props, MAX_PROP_LEN, fp);
+					// look for $glow_texture=xxx
+					auto length = strlen(props);
+
+					if (length > 0)
+					{
+						auto base_length = strlen("$glow_texture=");
+						char *glow_texture_start = strstr(props, "$glow_texture=");
+						if ( (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
+							char *glow_texture_name = glow_texture_start + base_length;
+							
+							if (glow_texture_name[0] == '$')
+								glow_texture_name++;
+
+							bank->glow_bitmap = bm_load(glow_texture_name);
+
+							if (bank->glow_bitmap < 0)
+							{
+								Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
+							}
+
+							strcat(glow_texture_name, "-neb");
+							bank->glow_neb_bitmap = bm_load(glow_texture_name);
+
+							if (bank->glow_neb_bitmap < 0)
+							{
+								bank->glow_neb_bitmap = bank->glow_bitmap;
+								nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
+							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							}
+						} else {
+							Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
+						}
+					} 
+					else 
+					{
+						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
+					}
+
+					for (j = 0; j < bank->num_points; j++)
+					{
+						glow_point *p = &bank->points[j];
+
+						cfread_vector(&(p->pnt), fp);
+						cfread_vector( &temp_vec, fp );
+						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
+							vm_vec_normalize(&temp_vec);
+						else
+							vm_vec_zero(&temp_vec);
+						p->norm = temp_vec;
+						p->radius = cfread_float( fp);
+					}
+				}
+				break;					
+			 }
+
+			case ID_FUEL:
+				char props[MAX_PROP_LEN];
+				pm->n_thrusters = cfread_int(fp);
+
+				if (pm->n_thrusters > 0) {
+					pm->thrusters = (thruster_bank *)vm_malloc(sizeof(thruster_bank) * pm->n_thrusters);
+					Assert( pm->thrusters != NULL );
+
+					for (i = 0; i < pm->n_thrusters; i++ ) {
+						thruster_bank *bank = &pm->thrusters[i];
+
 						bank->num_points = cfread_int(fp);
 						bank->points = NULL;
-						bank->glow_bitmap = -1;
-						bank->glow_neb_bitmap = -1;
 
 						if (bank->num_points > 0)
 							bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
-						//if((bank->off_time > 0) && (bank->disp_time > 0))
-							//bank->is_on = false;
-	
-						cfread_string_len(props, MAX_PROP_LEN, fp);
-						// look for $glow_texture=xxx
-						auto length = strlen(props);
+						bank->obj_num = -1;
+						bank->submodel_num = -1;
+						bank->wash_info_pointer = nullptr;
 
-						if (length > 0)
-						{
-							auto base_length = strlen("$glow_texture=");
-							char *glow_texture_start = strstr(props, "$glow_texture=");
-							if ( (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
-								char *glow_texture_name = glow_texture_start + base_length;
-							
-								if (glow_texture_name[0] == '$')
-									glow_texture_name++;
+						if (pm->version >= 2117) {
+							cfread_string_len( props, MAX_PROP_LEN, fp );
+							// look for $engine_subsystem=xxx
+							auto length = strlen(props);
+							if (length > 0) {
+								auto base_length = strlen("$engine_subsystem=");
+								char *engine_subsys_start = strstr(props, "$engine_subsystem=");
+								if ( (engine_subsys_start != nullptr) && (strlen(engine_subsys_start + base_length) > 0) ) {
+									char *engine_subsys_name = engine_subsys_start + base_length;
+									if (engine_subsys_name[0] == '$') {
+										engine_subsys_name++;
+									}
 
-								bank->glow_bitmap = bm_load(glow_texture_name);
+									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-								if (bank->glow_bitmap < 0)
-								{
-									Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+									// start off assuming the subsys is invalid
+									int table_error = 1;
+									for (int k=0; k<n_subsystems; k++) {
+										if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+											bank->submodel_num = subsystems[k].subobj_num;
+
+											bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+											if (bank->wash_info_pointer != nullptr) {
+												table_error = 0;
+											}
+											// also set what subsystem this is attached to but not if we only have one thruster bank
+											// do this so that original :V: models still work like they used to
+											if (pm->n_thrusters > 1) {
+												bank->obj_num = k;
+											}
+											break;
+										}
+									}
+
+									if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
+										if (table_error) {
+										//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+										} else {
+											Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
+										}
+									}
 								}
-								else
-								{
-									nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
-								}
-
-								strcat(glow_texture_name, "-neb");
-								bank->glow_neb_bitmap = bm_load(glow_texture_name);
-
-								if (bank->glow_neb_bitmap < 0)
-								{
-									bank->glow_neb_bitmap = bank->glow_bitmap;
-									nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
-								//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-								}
-								else
-								{
-									nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
-								}
-							} else {
-								Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 							}
-						} 
-						else 
-						{
-							Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 						}
 
-						for (j = 0; j < bank->num_points; j++)
-						{
+						for (j = 0; j < bank->num_points; j++) {
 							glow_point *p = &bank->points[j];
 
-							cfread_vector(&(p->pnt), fp);
+							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
-							if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
-								vm_vec_normalize(&temp_vec);
-							else
-								vm_vec_zero(&temp_vec);
+							vm_vec_normalize_safe(&temp_vec);
 							p->norm = temp_vec;
-							p->radius = cfread_float( fp);
-						}
-					}
-					break;					
-				 }
 
-				case ID_FUEL:
-					char props[MAX_PROP_LEN];
-					pm->n_thrusters = cfread_int(fp);
-
-					if (pm->n_thrusters > 0) {
-						pm->thrusters = (thruster_bank *)vm_malloc(sizeof(thruster_bank) * pm->n_thrusters);
-						Assert( pm->thrusters != NULL );
-
-						for (i = 0; i < pm->n_thrusters; i++ ) {
-							thruster_bank *bank = &pm->thrusters[i];
-
-							bank->num_points = cfread_int(fp);
-							bank->points = NULL;
-
-							if (bank->num_points > 0)
-								bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
-
-							bank->obj_num = -1;
-							bank->submodel_num = -1;
-							bank->wash_info_pointer = nullptr;
-
-							if (pm->version >= 2117) {
-								cfread_string_len( props, MAX_PROP_LEN, fp );
-								// look for $engine_subsystem=xxx
-								auto length = strlen(props);
-								if (length > 0) {
-									auto base_length = strlen("$engine_subsystem=");
-									char *engine_subsys_start = strstr(props, "$engine_subsystem=");
-									if ( (engine_subsys_start != nullptr) && (strlen(engine_subsys_start + base_length) > 0) ) {
-										char *engine_subsys_name = engine_subsys_start + base_length;
-										if (engine_subsys_name[0] == '$') {
-											engine_subsys_name++;
-										}
-
-										nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
-
-										// start off assuming the subsys is invalid
-										int table_error = 1;
-										for (int k=0; k<n_subsystems; k++) {
-											if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-												bank->submodel_num = subsystems[k].subobj_num;
-
-												bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-												if (bank->wash_info_pointer != nullptr) {
-													table_error = 0;
-												}
-												// also set what subsystem this is attached to but not if we only have one thruster bank
-												// do this so that original :V: models still work like they used to
-												if (pm->n_thrusters > 1) {
-													bank->obj_num = k;
-												}
-												break;
-											}
-										}
-
-										if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
-											if (table_error) {
-											//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-											} else {
-												Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-											}
-										}
-									}
-								}
+							if ( pm->version > 2004 )	{
+								p->radius = cfread_float( fp );
+								//mprintf(( "Rad = %.2f\n", rad ));
+							} else {
+								p->radius = 1.0f;
 							}
+						}
+						//mprintf(( "Num slots = %d\n", bank->num_slots ));
+					}
+				}
+				break;
 
-							for (j = 0; j < bank->num_points; j++) {
-								glow_point *p = &bank->points[j];
+			case ID_TGUN:
+			case ID_TMIS: {
+				int n_banks = cfread_int(fp);			// Number of turrets
 
-								cfread_vector( &(p->pnt), fp );
+				for ( i = 0; i < n_banks; i++ ) {
+					int parent;							// The parent subobj of the turret (the gun base)
+					int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
+					int n_slots;						// How many firepoints the turret has
+					model_subsystem *subsystemp;		// The actual turret subsystem
+
+					parent = cfread_int( fp );
+					physical_parent = cfread_int(fp);
+
+					int snum=-1;
+					if ( subsystems ) {
+						for ( snum = 0; snum < n_subsystems; snum++ ) {
+							subsystemp = &subsystems[snum];
+
+							if ( parent == subsystemp->subobj_num ) {
 								cfread_vector( &temp_vec, fp );
 								vm_vec_normalize_safe(&temp_vec);
-								p->norm = temp_vec;
+								subsystemp->turret_norm = temp_vec;
+								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
 
-								if ( pm->version > 2004 )	{
-									p->radius = cfread_float( fp );
-									//mprintf(( "Rad = %.2f\n", rad ));
-								} else {
-									p->radius = 1.0f;
+								n_slots = cfread_int( fp );
+								subsystemp->turret_gun_sobj = physical_parent;
+								if(n_slots > MAX_TFP) {
+									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
 								}
+
+								for (j = 0; j < n_slots; j++ )	{
+									if(j < MAX_TFP)
+										cfread_vector( &subsystemp->turret_firing_point[j], fp );
+									else
+									{
+										vec3d bogus;
+										cfread_vector(&bogus, fp);
+									}
+								}
+								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
+
+								subsystemp->turret_num_firing_points = n_slots;
+
+								break;
 							}
-							//mprintf(( "Num slots = %d\n", bank->num_slots ));
 						}
 					}
-					break;
 
-				case ID_TGUN:
-				case ID_TMIS: {
-					int n_banks = cfread_int(fp);			// Number of turrets
+					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
+						vec3d bogus;
 
-					for ( i = 0; i < n_banks; i++ ) {
-						int parent;							// The parent subobj of the turret (the gun base)
-						int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
-						int n_slots;						// How many firepoints the turret has
-						model_subsystem *subsystemp;		// The actual turret subsystem
-
-						parent = cfread_int( fp );
-						physical_parent = cfread_int(fp);
-
-						int snum=-1;
-						if ( subsystems ) {
-							for ( snum = 0; snum < n_subsystems; snum++ ) {
-								subsystemp = &subsystems[snum];
-
-								if ( parent == subsystemp->subobj_num ) {
-									cfread_vector( &temp_vec, fp );
-									vm_vec_normalize_safe(&temp_vec);
-									subsystemp->turret_norm = temp_vec;
-									vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
-
-									n_slots = cfread_int( fp );
-									subsystemp->turret_gun_sobj = physical_parent;
-									if(n_slots > MAX_TFP) {
-										Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
-									}
-
-									for (j = 0; j < n_slots; j++ )	{
-										if(j < MAX_TFP)
-											cfread_vector( &subsystemp->turret_firing_point[j], fp );
-										else
-										{
-											vec3d bogus;
-											cfread_vector(&bogus, fp);
-										}
-									}
-									Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
-
-									subsystemp->turret_num_firing_points = n_slots;
-
-									break;
-								}
-							}
-						}
-
-						if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
-							vec3d bogus;
-
-							nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
+						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
+						cfread_vector( &bogus, fp );
+						n_slots = cfread_int( fp );
+						for (j = 0; j < n_slots; j++ )
 							cfread_vector( &bogus, fp );
-							n_slots = cfread_int( fp );
-							for (j = 0; j < n_slots; j++ )
-								cfread_vector( &bogus, fp );
+					}
+				}
+				break;
+			}
+
+			case ID_SPCL: {
+				char name[MAX_NAME_LEN], props_spcl[MAX_PROP_LEN], *p;
+				int n_specials;
+				float radius;
+				vec3d pnt;
+
+				n_specials = cfread_int(fp);		// get the number of special subobjects we have
+				for (i = 0; i < n_specials; i++) {
+
+					// get the next free object of the subobject list.  Flag error if no more room
+
+					cfread_string_len(name, MAX_NAME_LEN, fp);			// get the name of this special polygon
+
+					cfread_string_len(props_spcl, MAX_PROP_LEN, fp);		// will definately have properties as well!
+					cfread_vector( &pnt, fp );
+					radius = cfread_float( fp );
+
+					// check if $Split
+					p = strstr(name, "$split");
+					if (p != NULL) {
+						pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
+						pm->num_split_plane++;
+						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
+					} else if ( ( p = strstr(props_spcl, "$special"))!= NULL ) {
+						char type[64];
+
+						get_user_prop_value(p+9, type);
+						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+						} else if ( !stricmp(type, "shieldpoint") ) {
+							pm->shield_points.push_back(pnt);
+						}
+					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
+						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+					} else {
+						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
+					}					
+				}
+				break;
+			}
+			
+			case ID_TXTR: {		//Texture filename list
+				int n;
+//				char name_buf[128];
+
+				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
+
+
+				n = cfread_int(fp);
+				pm->n_textures = n;
+				// Don't overwrite memory!!
+				Verify(pm->n_textures <= MAX_MODEL_TEXTURES);
+				//mprintf(0,"  num textures = %d\n",n);
+				for (i=0; i<n; i++ )
+				{
+					char tmp_name[256];
+					cfread_string_len(tmp_name,127,fp);
+					model_load_texture(pm, i, tmp_name);
+					//mprintf(0,"<%s>\n",name_buf);
+				}
+
+
+				break;
+			}
+			
+/*			case ID_IDTA:		//Interpreter data
+				//mprintf(0,"Got chunk IDTA, len=%d\n",len);
+
+				pm->model_data = (ubyte *)vm_malloc(len);
+				pm->model_data_size = len;
+				Assert(pm->model_data != NULL );
+			
+				cfread(pm->model_data,1,len,fp);
+			
+				break;
+*/
+
+			case ID_INFO:		// don't need to do anything with info stuff
+
+				#ifndef NDEBUG
+					pm->debug_info_size = len;
+					pm->debug_info = (char *)vm_malloc(pm->debug_info_size+1);
+					Assert(pm->debug_info!=NULL);
+					memset(pm->debug_info,0,len+1);
+					cfread( pm->debug_info, 1, len, fp );
+				#endif
+				break;
+
+			case ID_GRID:
+				break;
+
+			case ID_PATH:
+				pm->n_paths = cfread_int( fp );
+
+				if (pm->n_paths <= 0) {
+					break;
+				}
+
+				pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
+				Assert( pm->paths != NULL );
+
+				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
+					
+				for (i=0; i<pm->n_paths; i++ )	{
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
+
+					// check for reused path names... not fatal, but maybe problematic
+					for (j = 0; j < i; j++) {
+						if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
+							Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
 						}
 					}
-					break;
-				}
 
-				case ID_SPCL: {
-					char name[MAX_NAME_LEN], props_spcl[MAX_PROP_LEN], *p;
-					int n_specials;
-					float radius;
-					vec3d pnt;
-
-					n_specials = cfread_int(fp);		// get the number of special subobjects we have
-					for (i = 0; i < n_specials; i++) {
-
-						// get the next free object of the subobject list.  Flag error if no more room
-
-						cfread_string_len(name, MAX_NAME_LEN, fp);			// get the name of this special polygon
-
-						cfread_string_len(props_spcl, MAX_PROP_LEN, fp);		// will definately have properties as well!
-						cfread_vector( &pnt, fp );
-						radius = cfread_float( fp );
-
-						// check if $Split
-						p = strstr(name, "$split");
-						if (p != NULL) {
-							pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
-							pm->num_split_plane++;
-							Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
-						} else if ( ( p = strstr(props_spcl, "$special"))!= NULL ) {
-							char type[64];
-
-							get_user_prop_value(p+9, type);
-							if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-								do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
-							} else if ( !stricmp(type, "shieldpoint") ) {
-								pm->shield_points.push_back(pnt);
+					if ( pm->version >= 2002 ) {
+						// store the sub_model name number of the parent
+						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
+						// get rid of leading '$' char in name
+						if ( pm->paths[i].parent_name[0] == '$' ) {
+							char tmpbuf[MAX_NAME_LEN];
+							strcpy_s(tmpbuf, pm->paths[i].parent_name+1);
+							strcpy_s(pm->paths[i].parent_name, tmpbuf);
+						}
+						// store the sub_model index (ie index into pm->submodel) of the parent
+						pm->paths[i].parent_submodel = -1;
+						for ( j = 0; j < pm->n_models; j++ ) {
+							if ( !stricmp( pm->submodel[j].name, pm->paths[i].parent_name) ) {
+								pm->paths[i].parent_submodel = j;
 							}
-						} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
-							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
-						} else {
-							nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
-						}					
-					}
-					break;
-				}
-			
-				case ID_TXTR: {		//Texture filename list
-					int n;
-	//				char name_buf[128];
-
-					//mprintf(0,"Got chunk TXTR, len=%d\n",len);
-
-
-					n = cfread_int(fp);
-					pm->n_textures = n;
-					// Don't overwrite memory!!
-					Verify(pm->n_textures <= MAX_MODEL_TEXTURES);
-					//mprintf(0,"  num textures = %d\n",n);
-					for (i=0; i<n; i++ )
-					{
-						char tmp_name[256];
-						cfread_string_len(tmp_name,127,fp);
-						model_load_texture(pm, i, tmp_name);
-						//mprintf(0,"<%s>\n",name_buf);
+						}
+					} else {
+						pm->paths[i].parent_name[0] = 0;
+						pm->paths[i].parent_submodel = -1;
 					}
 
+					pm->paths[i].nverts = cfread_int( fp );
+					pm->paths[i].verts = (mp_vert *)vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
+					pm->paths[i].goal = pm->paths[i].nverts - 1;
+					pm->paths[i].type = MP_TYPE_UNUSED;
+					pm->paths[i].value = 0;
+					Assert(pm->paths[i].verts!=NULL);
+					memset( pm->paths[i].verts, 0, sizeof(mp_vert) * pm->paths[i].nverts );
 
-					break;
+					for (j=0; j<pm->paths[i].nverts; j++ )	{
+						cfread_vector(&pm->paths[i].verts[j].pos,fp );
+						pm->paths[i].verts[j].radius = cfread_float( fp );
+						
+						{					// version 1802 added turret stuff
+							int nturrets, k;
+
+							nturrets = cfread_int( fp );
+							pm->paths[i].verts[j].nturrets = nturrets;
+
+							if (nturrets > 0) {
+								pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
+								for ( k = 0; k < nturrets; k++ )
+									pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
+							}
+						} 
+						
+					}
 				}
-			
-	/*			case ID_IDTA:		//Interpreter data
-					//mprintf(0,"Got chunk IDTA, len=%d\n",len);
+				break;
 
-					pm->model_data = (ubyte *)vm_malloc(len);
-					pm->model_data_size = len;
-					Assert(pm->model_data != NULL );
-			
-					cfread(pm->model_data,1,len,fp);
-			
-					break;
-	*/
+			case ID_EYE:					// an eye position(s)
+				{
+					int num_eyes;
 
-				case ID_INFO:		// don't need to do anything with info stuff
+					// all eyes points are stored simply as vectors and their normals.
+					// 0th element is used as usual player view position.
 
-					#ifndef NDEBUG
-						pm->debug_info_size = len;
-						pm->debug_info = (char *)vm_malloc(pm->debug_info_size+1);
-						Assert(pm->debug_info!=NULL);
-						memset(pm->debug_info,0,len+1);
-						cfread( pm->debug_info, 1, len, fp );
-					#endif
-					break;
+					num_eyes = cfread_int( fp );
+					pm->n_view_positions = num_eyes;
+					Assert ( num_eyes < MAX_EYES );
+					for (i = 0; i < num_eyes; i++ ) {
+						pm->view_positions[i].parent = cfread_int( fp );
+						cfread_vector( &pm->view_positions[i].pnt, fp );
+						cfread_vector( &pm->view_positions[i].norm, fp );
+					}
+				}
+				break;			
 
-				case ID_GRID:
-					break;
+			case ID_INSG:				
+				int num_ins, num_verts, num_faces, idx, idx2, idx3;			
+				
+				// get the # of insignias
+				num_ins = cfread_int(fp);
+				pm->num_ins = num_ins;
+				
+				// read in the insignias
+				for(idx=0; idx<num_ins; idx++){
+					// get the detail level
+					pm->ins[idx].detail_level = cfread_int(fp);
+					if (pm->ins[idx].detail_level < 0) {
+						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
+					}
 
-				case ID_PATH:
-					pm->n_paths = cfread_int( fp );
+					// # of faces
+					num_faces = cfread_int(fp);
+					pm->ins[idx].num_faces = num_faces;
+					Assert(num_faces <= MAX_INS_FACES);
 
-					if (pm->n_paths <= 0) {
+					// # of vertices
+					num_verts = cfread_int(fp);
+					Assert(num_verts <= MAX_INS_VECS);
+
+					// read in all the vertices
+					for(idx2=0; idx2<num_verts; idx2++){
+						cfread_vector(&pm->ins[idx].vecs[idx2], fp);
+					}
+
+					// read in world offset
+					cfread_vector(&pm->ins[idx].offset, fp);
+
+					// read in all the faces
+					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){						
+						// read in 3 vertices
+						for(idx3=0; idx3<3; idx3++){
+							pm->ins[idx].faces[idx2][idx3] = cfread_int(fp);
+							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
+							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
+						}
+						vec3d tempv;
+
+						//get three points (rotated) and compute normal
+
+						vm_vec_perp(&tempv, 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+
+						vm_vec_normalize_safe(&tempv);
+
+						pm->ins[idx].norm[idx2] = tempv;
+//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+
+					}
+				}					
+				break;
+
+			// autocentering info
+			case ID_ACEN:
+				cfread_vector(&pm->autocenter, fp);
+				pm->flags |= PM_FLAG_AUTOCEN;
+				break;
+
+			default:
+				mprintf(("Unknown chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
+				cfseek(fp,len,SEEK_CUR);
+				break;
+
+		}
+		cfseek(fp,next_chunk,SEEK_SET);
+
+		id = cfread_int(fp);
+		len = cfread_int(fp);
+		next_chunk = cftell(fp) + len;
+	}
+
+	// Now that we've processed all the chunks, resolve the look_at submodels if we have any
+	if (!look_at_submodel_names.empty()) {
+		for (i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].look_at_submodel >= 0) {
+				const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
+
+				// search for this submodel name among all submodels
+				for (j = 0; j < pm->n_models; j++) {
+					if (!stricmp(submodel_name, pm->submodel[j].name)) {
+						nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
+
+						// set the correct submodel reference, and set the char* to null as a found-flag
+						pm->submodel[i].look_at_submodel = j;
+						submodel_name = nullptr;
 						break;
 					}
+				}
 
-					pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
-					Assert( pm->paths != NULL );
-
-					memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
-					
-					for (i=0; i<pm->n_paths; i++ )	{
-						cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
-
-						// check for reused path names... not fatal, but maybe problematic
-						for (j = 0; j < i; j++) {
-							if (!stricmp(pm->paths[i].name, pm->paths[j].name)) {
-								Warning(LOCATION, "Path '%s' in model %s has a name that is not unique!", pm->paths[i].name, pm->filename);
-							}
-						}
-
-						if ( pm->version >= 2002 ) {
-							// store the sub_model name number of the parent
-							cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
-							// get rid of leading '$' char in name
-							if ( pm->paths[i].parent_name[0] == '$' ) {
-								char tmpbuf[MAX_NAME_LEN];
-								strcpy_s(tmpbuf, pm->paths[i].parent_name+1);
-								strcpy_s(pm->paths[i].parent_name, tmpbuf);
-							}
-							// store the sub_model index (ie index into pm->submodel) of the parent
-							pm->paths[i].parent_submodel = -1;
-							for ( j = 0; j < pm->n_models; j++ ) {
-								if ( !stricmp( pm->submodel[j].name, pm->paths[i].parent_name) ) {
-									pm->paths[i].parent_submodel = j;
-								}
-							}
-						} else {
-							pm->paths[i].parent_name[0] = 0;
-							pm->paths[i].parent_submodel = -1;
-						}
-
-						pm->paths[i].nverts = cfread_int( fp );
-						pm->paths[i].verts = (mp_vert *)vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
-						pm->paths[i].goal = pm->paths[i].nverts - 1;
-						pm->paths[i].type = MP_TYPE_UNUSED;
-						pm->paths[i].value = 0;
-						Assert(pm->paths[i].verts!=NULL);
-						memset( pm->paths[i].verts, 0, sizeof(mp_vert) * pm->paths[i].nverts );
-
-						for (j=0; j<pm->paths[i].nverts; j++ )	{
-							cfread_vector(&pm->paths[i].verts[j].pos,fp );
-							pm->paths[i].verts[j].radius = cfread_float( fp );
-						
-							{					// version 1802 added turret stuff
-								int nturrets, k;
-
-								nturrets = cfread_int( fp );
-								pm->paths[i].verts[j].nturrets = nturrets;
-
-								if (nturrets > 0) {
-									pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
-									for ( k = 0; k < nturrets; k++ )
-										pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
-								}
-							} 
-						
-						}
-					}
-					break;
-
-				case ID_EYE:					// an eye position(s)
-					{
-						int num_eyes;
-
-						// all eyes points are stored simply as vectors and their normals.
-						// 0th element is used as usual player view position.
-
-						num_eyes = cfread_int( fp );
-						pm->n_view_positions = num_eyes;
-						Assert ( num_eyes < MAX_EYES );
-						for (i = 0; i < num_eyes; i++ ) {
-							pm->view_positions[i].parent = cfread_int( fp );
-							cfread_vector( &pm->view_positions[i].pnt, fp );
-							cfread_vector( &pm->view_positions[i].norm, fp );
-						}
-					}
-					break;			
-
-				case ID_INSG:				
-					int num_ins, num_verts, num_faces, idx, idx2, idx3;			
-				
-					// get the # of insignias
-					num_ins = cfread_int(fp);
-					pm->num_ins = num_ins;
-				
-					// read in the insignias
-					for(idx=0; idx<num_ins; idx++){
-						// get the detail level
-						pm->ins[idx].detail_level = cfread_int(fp);
-						if (pm->ins[idx].detail_level < 0) {
-							Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
-						}
-
-						// # of faces
-						num_faces = cfread_int(fp);
-						pm->ins[idx].num_faces = num_faces;
-						Assert(num_faces <= MAX_INS_FACES);
-
-						// # of vertices
-						num_verts = cfread_int(fp);
-						Assert(num_verts <= MAX_INS_VECS);
-
-						// read in all the vertices
-						for(idx2=0; idx2<num_verts; idx2++){
-							cfread_vector(&pm->ins[idx].vecs[idx2], fp);
-						}
-
-						// read in world offset
-						cfread_vector(&pm->ins[idx].offset, fp);
-
-						// read in all the faces
-						for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){						
-							// read in 3 vertices
-							for(idx3=0; idx3<3; idx3++){
-								pm->ins[idx].faces[idx2][idx3] = cfread_int(fp);
-								pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
-								pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
-							}
-							vec3d tempv;
-
-							//get three points (rotated) and compute normal
-
-							vm_vec_perp(&tempv, 
-								&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
-								&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
-								&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
-
-							vm_vec_normalize_safe(&tempv);
-
-							pm->ins[idx].norm[idx2] = tempv;
-	//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
-
-						}
-					}					
-					break;
-
-				// autocentering info
-				case ID_ACEN:
-					cfread_vector(&pm->autocenter, fp);
-					pm->flags |= PM_FLAG_AUTOCEN;
-					break;
-
-				default:
-					mprintf(("Unknown chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
-					cfseek(fp,len,SEEK_CUR);
-					break;
-
-			}
-			cfseek(fp,next_chunk,SEEK_SET);
-
-			id = cfread_int(fp);
-			len = cfread_int(fp);
-			next_chunk = cftell(fp) + len;
-		}
-
-		// Now that we've processed all the chunks, resolve the look_at submodels if we have any
-		if (!look_at_submodel_names.empty()) {
-			for (i = 0; i < pm->n_models; i++) {
-				if (pm->submodel[i].look_at_submodel >= 0) {
-					const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
-
-					// search for this submodel name among all submodels
-					for (j = 0; j < pm->n_models; j++) {
-						if (!stricmp(submodel_name, pm->submodel[j].name)) {
-							nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
-
-							// set the correct submodel reference, and set the char* to null as a found-flag
-							pm->submodel[i].look_at_submodel = j;
-							submodel_name = nullptr;
-							break;
-						}
-					}
-
-					// did we fail to find it?
-					if (submodel_name != nullptr) {
-						Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
-						pm->submodel[i].look_at_submodel = -1;
-					}
-					// are we navel-gazing?
-					else if (pm->submodel[i].look_at_submodel == i) {
-						Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
-						pm->submodel[i].look_at_submodel = -1;
-					}
+				// did we fail to find it?
+				if (submodel_name != nullptr) {
+					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
+					pm->submodel[i].look_at_submodel = -1;
+				}
+				// are we navel-gazing?
+				else if (pm->submodel[i].look_at_submodel == i) {
+					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
+					pm->submodel[i].look_at_submodel = -1;
 				}
 			}
 		}
+	}
 
 #ifndef NDEBUG
-		if ( ss_fp) {
-			int size;
+	if ( ss_fp) {
+		int size;
 		
+		cfclose(ss_fp);
+		ss_fp = cfopen(debug_name, "rb");
+		if ( ss_fp )	{
+			size = cfilelength(ss_fp);
 			cfclose(ss_fp);
-			ss_fp = cfopen(debug_name, "rb");
-			if ( ss_fp )	{
-				size = cfilelength(ss_fp);
-				cfclose(ss_fp);
-				if ( size <= 0 )	{
-					_unlink(debug_name);
-				}
+			if ( size <= 0 )	{
+				_unlink(debug_name);
 			}
 		}
-#endif
 	}
+#endif
 
 	cfclose(fp);
 
