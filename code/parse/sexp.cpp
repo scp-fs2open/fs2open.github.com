@@ -31037,7 +31037,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
 		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
-		"\t1:\tA boolean value to return after all successive actions have been performed.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: Even though this value is not returned until the actions are performed, it is evaluated BEFORE any of the actions.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
 
 	// Goober5000
