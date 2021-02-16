@@ -362,6 +362,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Messaging Sub-Category
 	{ "send-message",					OP_SEND_MESSAGE,						3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "send-message-list",				OP_SEND_MESSAGE_LIST,					4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "send-message-chain",				OP_SEND_MESSAGE_CHAIN,					5,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "send-random-message",			OP_SEND_RANDOM_MESSAGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "scramble-messages",				OP_SCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "unscramble-messages",			OP_UNSCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -1772,8 +1773,13 @@ int check_operator_argument_count(int count, int op)
 	if (count < Operators[op].min || count > Operators[op].max)
 		return 0;
 
-	//send-message-list has arguments as blocks of 4
-	if (op == OP_SEND_MESSAGE_LIST)
+	// send-message-list has arguments as blocks of 4
+	// same with send-message-chain, but there's an extra argument
+
+	if (op == OP_SEND_MESSAGE_CHAIN)
+		count--;
+
+	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 		if (count % 4 != 0)
 			return 0;
 
@@ -12417,7 +12423,7 @@ void sexp_warp_effect(int n)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -12453,7 +12459,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	shipp = nullptr;
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
-		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay );
+		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -12492,7 +12498,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 		source = MESSAGE_SOURCE_SHIP;
 	}
 
-	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
+	message_send_unique_to_player( name, shipp, source, ipriority, group, delay, event_num );
 }
 
 void sexp_send_message(int n)
@@ -12521,17 +12527,32 @@ void sexp_send_message(int n)
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_send_message_list(int n)
+void sexp_send_message_list(int n, bool send_message_chain)
 {
-	int delay;
+	int delay = 0, event_num = -1;
 	bool is_nan, is_nan_forever;
 
 	if(physics_paused){
 		return;
 	}
 
+	// find the event that will cancel the message chain
+	if (send_message_chain) {
+		auto name = CTEXT(n);
+		n = CDR(n);
+
+		for (int i = 0; i < Num_mission_events; ++i) {
+			if (!stricmp(Mission_events[i].name, name)) {
+				event_num = i;
+				break;
+			}
+		}
+		if (event_num < 0) {
+			return;
+		}
+	}
+
 	// send a bunch of messages
-	delay = 0;
 	while(n != -1){
 		auto who_from = CTEXT(n);
 		n = CDR(n);
@@ -12570,7 +12591,7 @@ void sexp_send_message_list(int n)
 			who_from = The_mission.command_sender;
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay);
+		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
 	}
 }
 
@@ -24234,7 +24255,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SEND_MESSAGE_LIST:
-				sexp_send_message_list(node);
+			case OP_SEND_MESSAGE_CHAIN:
+				sexp_send_message_list(node, op_num == OP_SEND_MESSAGE_CHAIN);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -26350,6 +26372,7 @@ int query_operator_return_type(int op)
 		case OP_AWACS_SET_RADIUS:
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_TURRET_TAGGED_ONLY_ALL:
 		case OP_TURRET_TAGGED_CLEAR_ALL:
@@ -27595,7 +27618,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		{
+			// chain has one extra argument but is otherwise the same
+			if (op == OP_SEND_MESSAGE_CHAIN)
+			{
+				if (argnum == 0)
+					return OPF_EVENT_NAME;
+				argnum--;
+			}
+
 			// every four, the value repeats
 			int a_mod = argnum % 4;
 
@@ -30239,6 +30271,7 @@ int get_subcategory(int sexp_id)
 	switch(sexp_id)
 	{
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
@@ -31836,6 +31869,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
@@ -33486,7 +33522,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
-		"\tSends a series of delayed messages. All times are accumulated.\r\n"
+		"\tSends a series of delayed messages. All times are accumulated. Takes arguments in multiples of 4.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor).\r\n"
@@ -33494,7 +33530,27 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
-		"successive messages."},
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
+
+	{ OP_SEND_MESSAGE_CHAIN, "send-message-chain\r\n"
+		"\tThis works just like send-message-list, but if the event specified in the first argument becomes true, all un-played messages are cancelled.\r\n"
+		"\t1:\tThe event that will cancel the message chain.\r\n"
+		"\t2:\tName of who the message is from.\r\n"
+		"\t3:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
+		"\t4:\tName of message (from message editor).\r\n"
+		"\t5:\tDelay from previous message in list (if any) in ms\r\n"
+		"Use Add-Data for multiple messages.\r\n\r\n"
+		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
+		"any message without the four proper fields will be ignored, as will any "
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"

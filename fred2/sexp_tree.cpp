@@ -1955,19 +1955,15 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void sexp_tree::NodeCut()
 {
+	if (item_index < 0)
+		return;
+
 	NodeCopy();
 	NodeDelete();
 }
 
 void sexp_tree::NodeDelete()
 {
-	if (item_index < 0)
-		return;
-
-	// can't delete the root node
-	if (tree_nodes[item_index].parent < 0)
-		return;
-
 	int parent, theNode;
 	HTREEITEM h_parent;
 
@@ -1996,8 +1992,10 @@ void sexp_tree::NodeDelete()
 	Assert(item_index >= 0);
 	h_parent = GetParentItem(item_handle);
 	parent = tree_nodes[item_index].parent;
-	if ((parent == -1) && (m_mode == MODE_EVENTS))
-		Int3();  // no longer used, temporary to check if called still.
+
+	// can't delete the root node
+	if (parent < 0)
+		return;
 
 	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
 	free_node(item_index);
@@ -2584,6 +2582,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
