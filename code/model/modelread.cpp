@@ -1112,19 +1112,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	int i,j;
 	vec3d temp_vec;
 
-	Warning( LOCATION, "Extension detected <%s>", fext );
-	fp = cfopen(filename,(strcmp(fext, "ogex")==0||strcmp(fext, "OGEX")==0)?"r":"rb");
-
-	if (!fp) {
-		if (ferror == 1) {
-			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else if (ferror == 0) {
-			Warning( LOCATION, "Can't open model file <%s>", filename );
-		}
-
-		return -1;
-	}
-
 	TRACE_SCOPE(tracing::ReadModelFile);
 	
 	Assert( strlen(filename) < FILESPEC_LENGTH );
@@ -1145,20 +1132,70 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	// keep track of any look_at submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
 
-	if (strcmp(fext, "ogex") == 0 || strcmp(fext, "OGEX") == 0) {
+	if (strcmp(fext, "ogex") == 0) {
 		OpenGEX::OpenGexDataDescription fdata_desc;
-		char* fbuf;
 
-		DataResult result = fdata_desc.ProcessText(fbuf);
-		if (result == kDataOkay) {
+		fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_MODELS);
+		if (fp == NULL)
+		{
+			nprintf(("Error", "Wokka!  Error opening model file (%s)!\n", filename));
+			throw parse::ParseException("Failed to open model file");
+			return -1;
+		}
+
+		// read the entire file in
+		int file_len = cfilelength(fp);
+
+		if(!file_len) {
+			nprintf(("Error", "Oh noes!!  Model file is empty! (%s)!\n", filename));
+			throw parse::ParseException("Failed to open model file");
+			return -1;
+		}
+
+		// initialize the buffer
+		char* fbuf = (char *)malloc(sizeof(char)*file_len + 1);
+
+		if(!fbuf) {
+			nprintf(("Error", "Memory error (%s)!\n", filename));
+			throw parse::ParseException("Failed to open model file");
+			return -1;
+		}
+
+		// read the file
+		cfread(fbuf, file_len, 1, fp);
+
+		fbuf[file_len] = '\0';
+
+		cfclose(fp);
+
+		if (fdata_desc.ProcessText(fbuf) == kDataOkay) {
 			const Structure *structure = fdata_desc.GetRootStructure()->GetFirstSubnode();
 			while (structure) {
 				structure = structure->GetNextSubnode();
 			}
+		} else {
+			if (ferror == 1) {
+				Error( LOCATION, "Can't open model file <%s>", filename );
+			} else if (ferror == 0) {
+				Warning( LOCATION, "Can't open model file <%s>", filename );
+			}
+			return -1;
 		}
 	} else {
 		int version;
 		int id, len, next_chunk;
+
+		fp = cfopen(filename, "rb");
+
+		if (!fp) {
+			if (ferror == 1) {
+				Error( LOCATION, "Can't open model file <%s>", filename );
+			} else if (ferror == 0) {
+				Warning( LOCATION, "Can't open model file <%s>", filename );
+			}
+
+			return -1;
+		}
 
 		// generate checksum for the POF
 		cfseek(fp, 0, SEEK_SET);	
@@ -2547,9 +2584,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			}
 		}
 #endif
-	}
 
-	cfclose(fp);
+		cfclose(fp);
+	}
 
 	// mprintf(("Done processing chunks\n"));
 	return 1;
