@@ -18939,7 +18939,7 @@ void sexp_turret_set_inaccuracy(int node)
 
 	// get inaccuracy
 	node = CDR(node);
-	float inaccuracy = (float)eval_num(node, is_nan, is_nan_forever);
+	auto inaccuracy = (float)eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
 
