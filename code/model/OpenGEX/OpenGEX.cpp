@@ -2427,6 +2427,10 @@ DataResult LightObjectStructure::ProcessData(DataDescription *dataDescription)
 	{
 		// Prepare to handle spot light here.
 	}
+	else if (typeString == "area")
+	{
+		// Prepare to handle area light here.
+	}
 	else
 	{
 		return (kDataOpenGexUndefinedLightType);
