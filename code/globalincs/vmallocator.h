@@ -88,10 +88,19 @@ struct SCP_string_lcase_hash {
 
 struct SCP_string_lcase_equal_to {
 	bool operator()(const SCP_string& _Left, const SCP_string& _Right) const {
-		return std::lexicographical_compare(_Left.cbegin(), _Left.cend(), _Right.cbegin(), _Right.cend(),
-			[](const unsigned char& c1, const unsigned char& c2) -> bool {
-				return ::tolower(c1) == ::tolower(c2);
-			});
+		if (_Left.size() != _Right.size()) {
+			return false;
+		}
+		auto l_it = _Left.cbegin();
+		auto r_it = _Right.cbegin();
+		while (l_it != _Left.cend()) {
+			if (::tolower(*l_it) != ::tolower(*r_it)) {
+				return false;
+			}
+			++l_it;
+			++r_it;
+		}
+		return true;
 	}
 };
 
