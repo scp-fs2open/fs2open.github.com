@@ -75,6 +75,26 @@ template <typename T>
 using SCP_hash = std::hash<T>;
 #endif
 
+struct SCP_string_lcase_hash {
+	size_t operator()(const SCP_string& elem) const {
+		SCP_string lcase_copy;
+		std::transform(elem.begin(), elem.end(), std::back_inserter(lcase_copy),
+			[](unsigned char c) {
+				return static_cast<unsigned char>(::tolower(c));
+			});
+		return SCP_hash<SCP_string>()(lcase_copy);
+	}
+};
+
+struct SCP_string_lcase_equal_to {
+	bool operator()(const SCP_string& _Left, const SCP_string& _Right) const {
+		return std::lexicographical_compare(_Left.cbegin(), _Left.cend(), _Right.cbegin(), _Right.cend(),
+			[](const unsigned char& c1, const unsigned char& c2) -> bool {
+				return ::tolower(c1) == ::tolower(c2);
+			});
+	}
+};
+
 template <typename Key, typename T, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>;
 

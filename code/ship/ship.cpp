@@ -173,7 +173,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 SCP_vector<exited_ship> Ships_exited;
 
 SCP_vector<ship_registry_entry> Ship_registry;
-SCP_unordered_map<SCP_string, int> Ship_registry_map;
+SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 const ship_registry_entry *ship_registry_get(const char *name)
 {
