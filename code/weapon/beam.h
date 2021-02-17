@@ -184,11 +184,11 @@ typedef struct beam {
 
 	int Beam_muzzle_stamp;
 	int firingpoint;
+	float		beam_collide_width;
+	float		beam_light_width;
 
-	float		beam_width;
-
-	float type5_rot_speed;
-	bool rotates;
+	bool rotates;					// type 5s only determines whether it rotates
+	float type5_rot_speed;          // how fast it rotates if it does
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams

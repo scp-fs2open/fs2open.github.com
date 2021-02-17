@@ -362,6 +362,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Messaging Sub-Category
 	{ "send-message",					OP_SEND_MESSAGE,						3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "send-message-list",				OP_SEND_MESSAGE_LIST,					4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "send-message-chain",				OP_SEND_MESSAGE_CHAIN,					5,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "send-random-message",			OP_SEND_RANDOM_MESSAGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "scramble-messages",				OP_SCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "unscramble-messages",			OP_UNSCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -519,6 +520,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-turret-target-order",		OP_SHIP_TURRET_TARGET_ORDER,			1,	1+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "turret-set-forced-target",	    OP_TURRET_SET_FORCED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
+	{ "turret-set-forced-subsys-target",OP_TURRET_SET_FORCED_SUBSYS_TARGET,		4,	INT_MAX,	SEXP_ACTION_OPERATOR, },  // Asteroth
+	{ "turret-clear-forced-target",	    OP_TURRET_CLEAR_FORCED_TARGET,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
 	{ "turret-set-primary-ammo",		OP_TURRET_SET_PRIMARY_AMMO,				4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
@@ -1768,8 +1772,13 @@ int check_operator_argument_count(int count, int op)
 	if (count < Operators[op].min || count > Operators[op].max)
 		return 0;
 
-	//send-message-list has arguments as blocks of 4
-	if (op == OP_SEND_MESSAGE_LIST)
+	// send-message-list has arguments as blocks of 4
+	// same with send-message-chain, but there's an extra argument
+
+	if (op == OP_SEND_MESSAGE_CHAIN)
+		count--;
+
+	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 		if (count % 4 != 0)
 			return 0;
 
@@ -2173,10 +2182,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 					case OP_IS_IN_TURRET_FOV:
+					case OP_TURRET_SET_FORCED_TARGET:
 						ship_index = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
+					case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 						if(argnum == 1){
 							ship_index = CDR(op_node);
 						} else {
@@ -12411,7 +12422,7 @@ void sexp_warp_effect(int n)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -12447,7 +12458,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	shipp = nullptr;
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
-		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay );
+		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -12486,7 +12497,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 		source = MESSAGE_SOURCE_SHIP;
 	}
 
-	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
+	message_send_unique_to_player( name, shipp, source, ipriority, group, delay, event_num );
 }
 
 void sexp_send_message(int n)
@@ -12515,17 +12526,32 @@ void sexp_send_message(int n)
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_send_message_list(int n)
+void sexp_send_message_list(int n, bool send_message_chain)
 {
-	int delay;
+	int delay = 0, event_num = -1;
 	bool is_nan, is_nan_forever;
 
 	if(physics_paused){
 		return;
 	}
 
+	// find the event that will cancel the message chain
+	if (send_message_chain) {
+		auto name = CTEXT(n);
+		n = CDR(n);
+
+		for (int i = 0; i < Num_mission_events; ++i) {
+			if (!stricmp(Mission_events[i].name, name)) {
+				event_num = i;
+				break;
+			}
+		}
+		if (event_num < 0) {
+			return;
+		}
+	}
+
 	// send a bunch of messages
-	delay = 0;
 	while(n != -1){
 		auto who_from = CTEXT(n);
 		n = CDR(n);
@@ -12564,7 +12590,7 @@ void sexp_send_message_list(int n)
 			who_from = The_mission.command_sender;
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay);
+		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
 	}
 }
 
@@ -15898,6 +15924,14 @@ void sexp_ship_create(int n)
 	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
 	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 	Script_system.RemHookVars({"Ship", "Parent"});
+
+	if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+	}
 }
 
 // Goober5000
@@ -18820,6 +18854,78 @@ void sexp_turret_set_target_priorities(int node)
 		// next
 		node = CDR(node);
 		}
+	}
+}
+
+void sexp_turret_set_forced_target(int node, bool targeting_subsys)
+{
+	// get target
+	auto target = eval_ship(node);
+	if (!target || !target->shipp)
+		return;
+	node = CDR(node);
+
+	// maybe get target subsys
+	ship_subsys* target_subsys = nullptr;
+	if (targeting_subsys) {
+		target_subsys = ship_get_subsys(target->shipp, CTEXT(node));
+		if (target_subsys == nullptr)
+			return;
+		node = CDR(node);
+	}
+
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+	node = CDR(node);
+
+	while (node >= 0)
+	{
+		// get the turret
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = OBJ_INDEX(target->objp);
+			turret->turret_enemy_sig = target->objp->signature;
+			turret->flags.set(Ship::Subsystem_Flags::Forced_target);
+			turret->targeted_subsys = nullptr;
+
+			if (targeting_subsys) {
+				turret->targeted_subsys = target_subsys;
+				turret->flags.set(Ship::Subsystem_Flags::Forced_subsys_target);
+			}
+		}
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_clear_forced_target(int node)
+{
+	// get ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
+		return;
+	}
+
+	//Set range
+	while (node >= 0)
+	{
+		// get the subsystem
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = -1;
+			turret->targeted_subsys = nullptr;
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_target);
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
+		}
+
+		// next
+		node = CDR(node);
 	}
 }
 
@@ -24106,7 +24212,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SEND_MESSAGE_LIST:
-				sexp_send_message_list(node);
+			case OP_SEND_MESSAGE_CHAIN:
+				sexp_send_message_list(node, op_num == OP_SEND_MESSAGE_CHAIN);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24686,6 +24793,17 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_TURRET_SET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_turret_set_target_order(node);
+				break;
+
+			case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			case OP_TURRET_SET_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_forced_target(node, op_num == OP_TURRET_SET_FORCED_SUBSYS_TARGET);
+				break;
+
+			case OP_TURRET_CLEAR_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_clear_forced_target(node);
 				break;
 
 			case OP_SET_ARMOR_TYPE:
@@ -26206,6 +26324,7 @@ int query_operator_return_type(int op)
 		case OP_AWACS_SET_RADIUS:
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_TURRET_TAGGED_ONLY_ALL:
 		case OP_TURRET_TAGGED_CLEAR_ALL:
@@ -26401,6 +26520,9 @@ int query_operator_return_type(int op)
 		case OP_SET_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27447,7 +27569,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		{
+			// chain has one extra argument but is otherwise the same
+			if (op == OP_SEND_MESSAGE_CHAIN)
+			{
+				if (argnum == 0)
+					return OPF_EVENT_NAME;
+				argnum--;
+			}
+
 			// every four, the value repeats
 			int a_mod = argnum % 4;
 
@@ -27963,6 +28094,39 @@ int query_operator_argument_type(int op, int argnum)
 			} else if(argnum == 1) {
 				return OPF_NUMBER;
 			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SUBSYSTEM;
+			}
+			else if (argnum == 2) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_CLEAR_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else {
 				return OPF_SUBSYSTEM;
 			}
 
@@ -30047,6 +30211,7 @@ int get_subcategory(int sexp_id)
 	switch(sexp_id)
 	{
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
@@ -30194,6 +30359,9 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
 		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -30871,7 +31039,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
 		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
-		"\t1:\tA boolean value to return after all successive actions have been performed.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: Even though this value is not returned until the actions are performed, it is evaluated BEFORE any of the actions.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
 
 	// Goober5000
@@ -31640,6 +31808,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
@@ -33148,6 +33319,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Priority to set, 0 to disable, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
+	{ OP_TURRET_SET_FORCED_TARGET, "turret-set-forced-target\r\n"
+		"\tForces one or more turrets to target a specific ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+	
+	{ OP_TURRET_SET_FORCED_SUBSYS_TARGET, "turret-set-forced-subsys-target\r\n"
+		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this subsystem target until destroyed or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Subsystem to target\r\n"
+		"\t3: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+
+	{ OP_TURRET_CLEAR_FORCED_TARGET, "turret-clear-forced-target\r\n"
+		"\tClears any targets set by turret-set-forced-target\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\trest: Turrets to have their targets cleared\r\n" },
+
 	{ OP_TURRET_SET_TARGET_PRIORITIES, "turret-set-target-priorities\r\n"
 		"\tSets target priorities for the specified ship turret\r\n"
 		"\t1: Ship turret is on\r\n"
@@ -33262,7 +33453,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
-		"\tSends a series of delayed messages. All times are accumulated.\r\n"
+		"\tSends a series of delayed messages. All times are accumulated. Takes arguments in multiples of 4.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor).\r\n"
@@ -33270,7 +33461,27 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
-		"successive messages."},
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
+
+	{ OP_SEND_MESSAGE_CHAIN, "send-message-chain\r\n"
+		"\tThis works just like send-message-list, but if the event specified in the first argument becomes true, all un-played messages are cancelled.\r\n"
+		"\t1:\tThe event that will cancel the message chain.\r\n"
+		"\t2:\tName of who the message is from.\r\n"
+		"\t3:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
+		"\t4:\tName of message (from message editor).\r\n"
+		"\t5:\tDelay from previous message in list (if any) in ms\r\n"
+		"Use Add-Data for multiple messages.\r\n\r\n"
+		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
+		"any message without the four proper fields will be ignored, as will any "
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"

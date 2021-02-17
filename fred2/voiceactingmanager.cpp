@@ -754,8 +754,12 @@ char *VoiceActingManager::get_message_sender(char *message)
 			if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
 				return Sexp_nodes[n].text;
 		}
-		else if (op == OP_SEND_MESSAGE_LIST)
+		else if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 		{
+			// skip the event argument
+			if (op == OP_SEND_MESSAGE_CHAIN)
+				n = CDR(n);
+
 			// check the argument list
 			while (n != -1)
 			{
@@ -839,8 +843,12 @@ void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int>
 	op = get_operator_const(node);
 	n = CDR(node);
 
-	if (op == OP_SEND_MESSAGE_LIST)
+	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 	{
+		// skip the event argument
+		if (op == OP_SEND_MESSAGE_CHAIN)
+			n = CDR(n);
+
 		// check the argument list
 		while (n != -1)
 		{

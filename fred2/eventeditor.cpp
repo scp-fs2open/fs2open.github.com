@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
 	//{{AFX_MSG_MAP(event_sexp_tree)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
+	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnCustomDraw)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -140,7 +141,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_EVENT_TREE, OnEndlabeleditEventTree)
 	ON_BN_CLICKED(IDC_BUTTON_NEW_EVENT, OnButtonNewEvent)
 	ON_BN_CLICKED(IDC_DELETE, OnDelete)
-	ON_BN_CLICKED(ID_OK, OnOk)
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
 	ON_WM_CLOSE()
 	ON_NOTIFY(TVN_SELCHANGED, IDC_EVENT_TREE, OnSelchangedEventTree)
 	ON_EN_UPDATE(IDC_REPEAT_COUNT, OnUpdateRepeatCount)
@@ -155,7 +156,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
 	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
-	ON_BN_CLICKED(ID_CANCEL, OnCancel)
+	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
 	ON_LBN_DBLCLK(IDC_MESSAGE_LIST, OnDblclkMessageList)
@@ -204,16 +205,21 @@ BOOL event_editor::OnInitDialog()
 	}
 
 	// determine all the handles for event annotations
+	event_annotation default_ea;
 	for (auto &ea : Event_annotations)
 	{
 		auto h = traverse_path(ea);
 		if (h)
 		{
 			ea.handle = h;
-			event_annotation_swap_image(&m_event_tree, h, ea);
+			if (!ea.comment.empty())
+				event_annotation_swap_image(&m_event_tree, h, ea);
 		}
 		else
-			Warning(LOCATION, "Could not find event for annotation!");
+		{
+			// event was probably deleted; clear the annotation so it will be deleted later
+			ea = default_ea;
+		}
 	}
 
 	// ---------- end of event initialization ----------
@@ -419,6 +425,24 @@ void event_editor::OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item);
 }
 
+// This is needed as a HACK around default MFC standard
+// It is not required, but overrides default MFC and links no errors without.
+// (Specifically, this overrides the MFC behavior so that pressing Enter doesn't close the dialog)
+void event_editor::OnOK()
+{
+	HWND h;
+	CWnd *w;
+
+	save();
+	w = GetFocus();
+	if (w) {
+		h = w->m_hWnd;
+		GetDlgItem(IDC_EVENT_TREE)->SetFocus();
+		::SetFocus(h);
+	}
+	((CListBox *)GetDlgItem(IDC_MESSAGE_LIST))->SetCurSel(m_cur_msg);
+}
+
 int event_editor::query_modified()
 {
 	int i;
@@ -494,7 +518,7 @@ int event_editor::query_modified()
 	return 0;
 }
 
-void event_editor::OnOk()
+void event_editor::OnButtonOk()
 {
 	char buf[256], names[2][MAX_MISSION_EVENTS][NAME_LENGTH];
 	int i, count;
@@ -563,7 +587,9 @@ void event_editor::OnOk()
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
-	// determine all the paths for event annotations
+	event_annotation_prune();
+
+	// determine all the paths for the annotations that we want to keep
 	for (auto &ea : Event_annotations)
 	{
 		ea.path.clear();
@@ -821,11 +847,18 @@ void event_editor::OnDelete()
 	}
 }
 
-// this is called the clicking the ID_CANCEL button
+// this is called when you hit the escape key..
 void event_editor::OnCancel()
+{
+}
+
+// this is called the clicking the ID_CANCEL button
+void event_editor::OnButtonCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+
+	event_annotation_prune();
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -846,10 +879,12 @@ void event_editor::OnClose()
 		}
 
 		if (z == IDYES) {
-			OnOk();
+			OnButtonOk();
 			return;
 		}
 	}
+
+	event_annotation_prune();
 	
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -1629,6 +1664,22 @@ void event_editor::OnDblclkMessageList()
 	}
 }
 
+void event_annotation_prune()
+{
+	event_annotation default_ea;
+
+	Event_annotations.erase(
+		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [default_ea](const event_annotation &ea)
+		{
+			return ea.comment == default_ea.comment
+				&& ea.r == default_ea.r
+				&& ea.g == default_ea.g
+				&& ea.b == default_ea.b;
+		}),
+		Event_annotations.end()
+	);
+}
+
 int event_annotation_lookup(HTREEITEM handle)
 {
 	for (size_t i = 0; i < Event_annotations.size(); ++i)
@@ -1725,11 +1776,11 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	if (h)
 	{
-		int ea = event_annotation_lookup(h);
+		int ea_idx = event_annotation_lookup(h);
 
-		if (ea >= 0)
+		if (ea_idx >= 0)
 		{
-			strTipText = Event_annotations[ea].comment.c_str();
+			strTipText = Event_annotations[ea_idx].comment.c_str();
 
 			if (!strTipText.IsEmpty())
 			{
@@ -1753,49 +1804,114 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	return TRUE;    // message was handled
 }
 
+// color stuff is based on example at
+// https://stackoverflow.com/questions/2119717/changing-the-color-of-a-selected-ctreectrl-item
+
+void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMTVCUSTOMDRAW *pcd = (NMTVCUSTOMDRAW *)pNMHDR;
+	switch (pcd->nmcd.dwDrawStage)
+	{
+		case CDDS_PREPAINT:
+			*pResult = CDRF_NOTIFYITEMDRAW;
+			break;
+
+		case CDDS_ITEMPREPAINT:
+		{
+			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
+
+			if (hItem)
+			{
+				int ea_idx = event_annotation_lookup(hItem);
+				if (ea_idx >= 0)
+				{
+					auto ea = &Event_annotations[ea_idx];
+
+					// contrast color calculation taken from here:
+					// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
+					if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
+						pcd->clrText = RGB(0, 0, 0);
+					else
+						pcd->clrText = RGB(255, 255, 255);
+
+					pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+				}
+			}
+
+			*pResult = CDRF_DODEFAULT;
+			break;
+		}
+	}
+}
+
 void event_sexp_tree::edit_comment(HTREEITEM h)
 {
-	TextViewDlg dlg;
 	CString old_text = _T("");
 	CString new_text;
 
 	int i = event_annotation_lookup(h);
 	if (i >= 0)
-	{
 		old_text = (CString)Event_annotations[i].comment.c_str();
-		dlg.SetText(old_text);
-	}
 
+	TextViewDlg dlg;
+	dlg.SetText(old_text);
 	dlg.SetCaption("Enter a comment");
 	dlg.SetEditable(true);
 	dlg.DoModal();
 	dlg.GetText(new_text);
 
-	// removing a comment
-	if (new_text.IsEmpty())
-	{
-		if (i >= 0)
-		{
-			event_annotation_swap_image(this, h, i);
-			Event_annotations.erase(Event_annotations.begin() + i);
-		}
-		return;
-	}
-
 	// comment is unchanged
 	if (new_text == old_text)
 		return;
 
-	// adding a comment
+	// maybe add the annotation
 	if (i < 0)
 	{
 		i = (int)Event_annotations.size();
 		Event_annotations.emplace_back();
-		event_annotation_swap_image(this, h, i);
 		Event_annotations[i].handle = h;
 	}
 
 	Event_annotations[i].comment = new_text;
+
+	// see if we are either adding a new comment or removing an existing comment
+	// if so, change the icon
+	if (old_text.IsEmpty() || new_text.IsEmpty())
+		event_annotation_swap_image(this, h, i);
+}
+
+void event_sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	COLORREF old_color = RGB(255, 255, 255);
+	COLORREF new_color;
+
+	int i = event_annotation_lookup(h);
+	if (i >= 0)
+		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);
+
+	CColorDialog dlg(old_color);
+	if (dlg.DoModal() != IDOK)
+		return;
+	new_color = dlg.GetColor();
+
+	// color is unchanged
+	if (new_color == old_color)
+		return;
+
+	// maybe add the annotation
+	if (i < 0)
+	{
+		i = (int)Event_annotations.size();
+		Event_annotations.emplace_back();
+		Event_annotations[i].handle = h;
+	}
+
+	Event_annotations[i].r = GetRValue(new_color);
+	Event_annotations[i].g = GetGValue(new_color);
+	Event_annotations[i].b = GetBValue(new_color);
+
+	// This is needed otherwise the color won't change until the user clicks something
+	RedrawWindow();
 }
 
 void event_editor::populate_path(event_annotation &ea, HTREEITEM h)
