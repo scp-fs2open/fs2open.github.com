@@ -23,6 +23,9 @@ ADE_VIRTVAR(Class, l_Fireball, "fireballclass", "Fireball's class", "fireballcla
 	if(!oh->IsValid())
 		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
 
+	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
+		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
+
 	fireball *fb = &Fireballs[oh->objp->instance];
 
 	if(ADE_SETTING_VAR && nc > -1) {
@@ -40,6 +43,9 @@ ADE_VIRTVAR(RenderType, l_Fireball, "enumeration", "Fireball's render type", "en
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	if (!oh->IsValid())
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+
+	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	fireball* fb = &Fireballs[oh->objp->instance];
@@ -87,6 +93,9 @@ ADE_VIRTVAR(TimeElapsed, l_Fireball, NULL, "Time this fireball exists in seconds
 	if(!oh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
+	if (oh->objp->instance < 0 || oh->objp->instance <= static_cast<int>(Fireballs.size())) 
+		return ade_set_error(L, "f", 0.0f);
+
 	fireball *fb = &Fireballs[oh->objp->instance];
 
 	return ade_set_args(L, "f", fb->time_elapsed);
@@ -100,6 +109,9 @@ ADE_VIRTVAR(TotalTime, l_Fireball, NULL, "Total lifetime of the fireball's anima
 		return ade_set_error(L, "f", 0.0f);
 
 	if (!oh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
 		return ade_set_error(L, "f", 0.0f);
 
 	fireball* fb = &Fireballs[oh->objp->instance];
