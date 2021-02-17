@@ -11356,7 +11356,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;
-
 		// reset the burst if applicable
 		if (winfo_p->burst_flags[Weapon::Burst_Flags::Resets]) {
 			// a bit of an oversimplification but the reset time doesnt have to be super accurate
@@ -11527,7 +11526,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 				if (winfo_p->b_info.beam_shots){
 					if (winfo_p->b_info.beam_shots > num_slots){
 						points = num_slots;
-					} else {
+					}else{
 						points = winfo_p->b_info.beam_shots;
 					}
 				} else if (winfo_p->wi_flags[Weapon::Info_Flags::Cycle]) {
