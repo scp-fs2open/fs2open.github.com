@@ -2325,7 +2325,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 					break;
 				case Type5BeamPos::RANDOM_OUTSIDE:
 					pos1 = rand1_off;
-				default:
+					break;
+				default:;
 					// the other cases dont matter
 			}
 
@@ -2342,7 +2343,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 						break;
 					case Type5BeamPos::RANDOM_OUTSIDE:
 						pos2 = rand2_off;
-					default:
+						break;
+					default:;
 						// the other cases dont matter
 				}
 			}

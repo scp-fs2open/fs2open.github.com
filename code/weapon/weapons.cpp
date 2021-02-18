@@ -2749,8 +2749,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (optional_string("+Burst Rotation Pattern:")) {
 				stuff_float_list(t5info->burst_rot_pattern);
-				for (int i = 0; i < t5info->burst_rot_pattern.size(); i++) {
-					t5info->burst_rot_pattern[i] *= (PI / 180.f);
+				for (float &rot : t5info->burst_rot_pattern) {
+					rot = fl_radians(rot);
 				}
 			}
 
@@ -8519,8 +8519,8 @@ void weapon_info::reset()
 
 	// type 5 beam stuff
 	this->b_info.t5info.no_translate = true;
-	this->b_info.t5info.start_pos = POS_CENTER;
-	this->b_info.t5info.end_pos = POS_CENTER;
+	this->b_info.t5info.start_pos = Type5BeamPos::CENTER;
+	this->b_info.t5info.end_pos = Type5BeamPos::CENTER;
 	vm_vec_zero(&this->b_info.t5info.start_pos_offset);
 	vm_vec_zero(&this->b_info.t5info.end_pos_offset);
 	vm_vec_zero(&this->b_info.t5info.start_pos_rand);
@@ -8528,11 +8528,11 @@ void weapon_info::reset()
 	this->b_info.t5info.target_orient_positions = false;
 	this->b_info.t5info.target_scale_positions = false;
 	this->b_info.t5info.continuous_rot = 0.f;
-	this->b_info.t5info.continuous_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.continuous_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 	this->b_info.t5info.per_burst_rot = 0.f;
-	this->b_info.t5info.per_burst_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.per_burst_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 	this->b_info.t5info.burst_rot_pattern.clear();
-	this->b_info.t5info.burst_rot_axis = AXIS_UNSPECIFIED;
+	this->b_info.t5info.burst_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
