@@ -336,9 +336,7 @@ void multi_data_send_my_junk()
 
 // is the give file xfer handle for a "multi data" file (pcx, wav, etc)
 int multi_data_is_data(char *filename)
-{		
-	size_t len,idx;
-
+{
 	Assert(filename != NULL);
 
 	// some kind of error
@@ -347,10 +345,7 @@ int multi_data_is_data(char *filename)
 	}
 
 	// convert to lowercase
-	len = strlen(filename);
-	for(idx=0;idx<len;idx++){
-		filename[idx] = (char)tolower(filename[idx]);
-	}
+	SCP_tolower(filename);
 
 	// check to see if the extension is .pcx
 	if(strstr(filename, NOX(".pcx"))){
