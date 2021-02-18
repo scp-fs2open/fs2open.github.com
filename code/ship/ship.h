@@ -846,7 +846,7 @@ struct ship_registry_entry
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
-extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
