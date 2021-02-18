@@ -406,7 +406,7 @@ void ssm_process()
 
 						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
 						vm_vec_normalize(&temp);
-						vm_vector_2_matrix(&orient, &temp, NULL, NULL);
+						vm_vector_2_matrix(&orient, &temp, nullptr, nullptr);
 
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -417,10 +417,10 @@ void ssm_process()
 								memset(&fire_info, 0, sizeof(beam_fire_info));
 
 								fire_info.accuracy = 0.000001f;		// this will guarantee a hit
-								fire_info.shooter = NULL;
-								fire_info.turret = NULL;
+								fire_info.shooter = nullptr;
+								fire_info.turret = nullptr;
 								fire_info.target = moveup->sinfo.target;
-								fire_info.target_subsys = NULL;
+								fire_info.target_subsys = nullptr;
 								fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
 								fire_info.starting_pos = moveup->sinfo.start_pos[idx];
 								fire_info.beam_info_index = si->weapon_info_index;

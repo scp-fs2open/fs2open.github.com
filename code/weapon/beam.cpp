@@ -456,7 +456,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// if the targeted subsystem is not NULL, force it to be a type A beam
-	if(new_item->target_subsys != NULL && new_item->type != BEAM_TYPE_C && new_item->type != BEAM_TYPE_F){
+	if(new_item->target_subsys != nullptr && new_item->type != BEAM_TYPE_C && new_item->type != BEAM_TYPE_F){
 		new_item->type = BEAM_TYPE_A;
 	}
 
@@ -994,7 +994,7 @@ void beam_type_f_move(beam* b)
 		vm_vec_rotate(&b->binfo.dir_b, &old_dirB, &transform_matrix);
 		vm_vec_rotate(&b->binfo.rot_axis, &old_rot_axis, &transform_matrix);
 	}
-	else if (b->subsys != NULL) {
+	else if (b->subsys != nullptr) {
 		vec3d temp, temp2;
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, false);
 	}
@@ -2163,7 +2163,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		vm_vec_unrotate(&turret_point, &b->local_fire_postion, &b->objp->orient);
 		turret_point += b->objp->pos;
 		turret_norm = b->objp->orient.vec.fvec;
-	} else if (b->subsys != NULL) {
+	} else if (b->subsys != nullptr) {
 		int temp = b->subsys->turret_next_fire_pos;
 
 		b->subsys->turret_next_fire_pos = b->firingpoint;
