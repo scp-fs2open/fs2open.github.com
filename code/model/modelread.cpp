@@ -2912,13 +2912,13 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				int dl1, dl2;
 				// If a backward compatibility LOD name is declared use it
 				if (sm1->lod_name[0] != '\0') {
-					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
+					dl1 = SCP_tolower(sm1->lod_name[first_diff]) - 'a';
 				}
 				// otherwise do the standard LOD comparision
 				else {
-					dl1 = tolower(sm1->name[first_diff]) - 'a';
+					dl1 = SCP_tolower(sm1->name[first_diff]) - 'a';
 				}
-				dl2 = tolower(sm2->name[first_diff]) - 'a';
+				dl2 = SCP_tolower(sm2->name[first_diff]) - 'a';
 
 				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
 				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {

@@ -1,10 +1,9 @@
 #ifndef _VMALLOCATOR_H_INCLUDED_
 #define _VMALLOCATOR_H_INCLUDED_
 
-/* SCP_vm_allocator - maintained by portej05 (i.e. please don't patch this one yourself!) */
-
 #include <deque>
 #include <list>
+#include <locale>
 #include <map>
 #include <queue>
 #include <sstream>
@@ -25,9 +24,30 @@ bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 template< typename T >
 using SCP_list = std::list< T, std::allocator< T > >;
 
+
+extern std::locale SCP_default_locale;
+
+template< class charT >
+charT SCP_toupper(charT ch) { return std::toupper(ch, SCP_default_locale); }
+
+template< class charT >
+charT SCP_tolower(charT ch) { return std::tolower(ch, SCP_default_locale); }
+
 typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > SCP_string;
 
 typedef std::basic_stringstream<char, std::char_traits<char>, std::allocator<char> > SCP_stringstream;
+
+inline void SCP_tolower(SCP_string &str) {
+	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_tolower(c); });
+}
+
+inline void SCP_toupper(SCP_string &str) {
+	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_toupper(c); });
+}
+
+extern void SCP_tolower(char *str);
+extern void SCP_toupper(char *str);
+
 
 template< typename T, typename U >
 using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U> > >;
@@ -79,8 +99,8 @@ struct SCP_string_lcase_hash {
 	size_t operator()(const SCP_string& elem) const {
 		SCP_string lcase_copy;
 		std::transform(elem.begin(), elem.end(), std::back_inserter(lcase_copy),
-			[](unsigned char c) {
-				return static_cast<unsigned char>(::tolower(c));
+			[](char c) {
+				return SCP_tolower(c);
 			});
 		return SCP_hash<SCP_string>()(lcase_copy);
 	}
@@ -94,7 +114,31 @@ struct SCP_string_lcase_equal_to {
 		auto l_it = _Left.cbegin();
 		auto r_it = _Right.cbegin();
 		while (l_it != _Left.cend()) {
-			if (::tolower(*l_it) != ::tolower(*r_it)) {
+			if (SCP_tolower(*l_it) != SCP_tolower(*r_it)) {
+				return false;
+			}
+			++l_it;
+			++r_it;
+		}
+		return true;
+	}
+};
+
+struct SCP_string_lcase_less_than {
+	bool operator()(const SCP_string& _Left, const SCP_string& _Right) const {
+		auto l_it = _Left.cbegin();
+		auto r_it = _Right.cbegin();
+		while (true) {
+			if (l_it == _Left.cend()) {
+				return (r_it != _Right.cend());
+			} else if (r_it == _Right.cend()) {
+				return false;
+			}
+			auto lch = SCP_tolower(*l_it);
+			auto rch = SCP_tolower(*r_it);
+			if (lch < rch) {
+				return true;
+			} else if (lch > rch) {
 				return false;
 			}
 			++l_it;
