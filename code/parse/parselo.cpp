@@ -3859,11 +3859,11 @@ int subsystem_stricmp(const char *str1, const char *str2)
 	auto len2 = (int)strlen(str2);
 
 	// get rid of trailing s on s1?
-	if (tolower(*(str1+len1-1) == 's'))
+	if (SCP_tolower(*(str1+len1-1)) == 's')
 		len1--;
 
 	// get rid of trailing s on s2?
-	if (tolower(*(str2+len2-1) == 's'))
+	if (SCP_tolower(*(str2+len2-1)) == 's')
 		len2--;
 
 	// once we remove the trailing s on both names, they should be the same length
@@ -3887,8 +3887,8 @@ const char *stristr(const char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = (char)tolower(*substr);
-	char substr_ch_upper = (char)toupper(*substr);
+	char substr_ch_lower = SCP_tolower(*substr);
+	char substr_ch_upper = SCP_toupper(*substr);
 
 	// find the maximum distance to search
 	const char *upper_bound = str + strlen(str) - strlen(substr);
@@ -3907,7 +3907,7 @@ const char *stristr(const char *str, const char *substr)
 					continue;
 
 				// converted character match?
-				if (tolower(*str_ch) == tolower(*substr_ch))
+				if (SCP_tolower(*str_ch) == SCP_tolower(*substr_ch))
 					continue;
 
 				// mismatch
@@ -3936,8 +3936,8 @@ char *stristr(char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = (char)tolower(*substr);
-	char substr_ch_upper = (char)toupper(*substr);
+	char substr_ch_lower = SCP_tolower(*substr);
+	char substr_ch_upper = SCP_toupper(*substr);
 
 	// find the maximum distance to search
 	const char *upper_bound = str + strlen(str) - strlen(substr);
@@ -3956,7 +3956,7 @@ char *stristr(char *str, const char *substr)
 					continue;
 
 				// converted character match?
-				if (tolower(*str_ch) == tolower(*substr_ch))
+				if (SCP_tolower(*str_ch) == SCP_tolower(*substr_ch))
 					continue;
 
 				// mismatch

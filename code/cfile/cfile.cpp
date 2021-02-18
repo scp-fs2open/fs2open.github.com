@@ -287,7 +287,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	const char *colon = strchr(new_dir, ':');
 
 	if (colon) {
-		if (!cfile_chdrive(tolower(*(colon - 1)) - 'a' + 1, 1))
+		if (!cfile_chdrive(SCP_tolower(*(colon - 1)) - 'a' + 1, 1))
 			return 1;
 
 		path = colon + 1;
@@ -305,7 +305,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	status = _chdir(path);
 	if (status != 0) {
 #ifdef _WIN32
-		cfile_chdrive(tolower(cur_dir[0]) - 'a' + 1, 1);
+		cfile_chdrive(SCP_tolower(cur_dir[0]) - 'a' + 1, 1);
 #endif /* _WIN32 */
 		return 2;
 	}
