@@ -385,12 +385,15 @@ void brief_parse_icon_tbl(const char* filename)
 
 				while (optional_string("$Icon Type:")) {
 					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					// find the matching icon type
 					int icon_type = [&]() {
 						for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
 							if (strcmp(Icon_names[i], name) == 0) {
+								// found it
 								return i;
 							}
 						}
+						// couldnt find it...
 						return -1;
 					}();
 
