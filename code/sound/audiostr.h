@@ -38,6 +38,9 @@ void audiostream_close();
 // Opens a wave file but doesn't play it.
 int audiostream_open( const char * filename, int type );
 
+// Opens wave file contents previously loaded into memory but doesn't play them.
+int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type );
+
 // Closes the opened wave file.  This doesn't have to be
 // called between songs, because when you open the next
 // song, it will call this internally.

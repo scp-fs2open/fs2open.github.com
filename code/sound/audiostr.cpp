@@ -61,6 +61,20 @@ static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName, bo
 	return nullptr;
 }
 
+static std::unique_ptr<sound::IAudioFile> openAudioMem(const uint8_t* snddata, size_t snd_len) {
+#ifdef WITH_FFMPEG
+	{
+		std::unique_ptr<sound::IAudioFile> audio_file(new sound::ffmpeg::FFmpegWaveFile());
+
+		// Open given in-memory file
+		if (audio_file->OpenMem(snddata, snd_len)) {
+			return audio_file;
+		}
+	}
+#endif
+
+	return nullptr;
+}
 
 int Audiostream_inited = 0;
 
@@ -85,6 +99,7 @@ public:
 	AudioStream ();
 	~AudioStream ();
 	bool Create (char *pszFilename);
+	bool CreateMem (const uint8_t* snddata, size_t snd_len);
 	bool Destroy ();
 	void Play (float volume, int looping);
 	bool Is_Playing(){ return m_fPlaying; }
@@ -321,6 +336,65 @@ bool AudioStream::Create (char *pszFilename)
 ErrorExit:
 	if ( (fRtn == false) && (m_pwavefile) ) {
 		mprintf(("AUDIOSTR => ErrorExit for ::Create() on wave file: %s\n", pszFilename));
+
+		if (m_source_id)
+			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
+
+		m_pwavefile = nullptr;
+	}
+
+	return (fRtn);
+}
+
+bool AudioStream::CreateMem (const uint8_t* snddata, size_t snd_len)
+{
+	bool fRtn = true;    // assume success
+
+	Init_Data();
+	
+	// Create a new WaveFile object and open it
+	m_pwavefile = openAudioMem(snddata, snd_len);
+	if (m_pwavefile) {
+		m_fileProps = m_pwavefile->getFileProperties();
+
+		m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
+		// make sure that we are a multiple of the frame size
+		m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
+		m_cbBufSize += (m_cbBufSize % 12) << 1;
+		// if the requested buffer size is too big then cap it
+		m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+
+		OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
+
+		OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
+
+		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
+		OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+
+		OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
+		OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
+
+		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
+		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
+
+		// maybe set EFX
+		if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
+			extern ALuint AL_EFX_aux_id;
+			OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+		}
+
+		Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
+	}
+	else {
+		// Error, unable to create WaveFile object
+		nprintf(("Sound", "SOUND => Failed to open in-memory wave file \n\r"));
+		fRtn = false;
+	}
+	
+
+ErrorExit:
+	if ( (fRtn == false) && (m_pwavefile) ) {
+		mprintf(("AUDIOSTR => ErrorExit for ::Create() on in-memory wave file: \n"));
 
 		if (m_source_id)
 			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
@@ -944,6 +1018,48 @@ int audiostream_open( const char *filename, int type )
 	}
 
 	rc = Audio_streams[i].Create(fname);
+
+	if ( rc == 0 ) {
+		Audio_streams[i].status = ASF_FREE;
+		return -1;
+	} else {
+		return i;
+	}
+}
+
+// Open wave file contents previously loaded into memory for streaming
+//
+// input:    snddata    =>	reference of an in-memory file
+//           snd_len    =>  length of loaded file
+//				type	=>	what type of audio stream do we want to open:
+//								ASF_SOUNDFX
+//								ASF_EVENTMUSIC
+//								ASF_MENUMUSIC
+//								ASF_VOICE
+//	
+// returns:	success => handle to identify streaming sound
+//				failure => -1
+int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type )
+{
+	int i, rc;
+
+	if ( !Audiostream_inited || !snd_is_inited() )
+		return -1;
+
+	for (i = 0; i < MAX_AUDIO_STREAMS; i++) {
+		if (Audio_streams[i].status == ASF_FREE) {
+			Audio_streams[i].status = ASF_USED;
+			Audio_streams[i].type = type;
+			break;
+		}
+	}
+
+	if (i == MAX_AUDIO_STREAMS) {
+		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
+		return -1;
+	}
+
+	rc = Audio_streams[i].CreateMem(snddata, snd_len);
 
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;
