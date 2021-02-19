@@ -1,6 +1,8 @@
 
 #include "FFmpegContext.h"
 
+#include <cstring>
+
 namespace {
 const size_t AVIO_BUFFER_SIZE = 8192;
 
@@ -51,13 +53,71 @@ int64_t cfileSeek(void* ptr, int64_t offset, int whence) {
 	// cfseek returns the offset in the archive file (who thought that would be a good idea?)
 	return cftell(cfile);
 }
+
+int soundmem_read(void* opaque, uint8_t* buf, int buf_size) {
+    auto memsound = reinterpret_cast<libs::ffmpeg::MemSoundCursor*>(opaque);
+    auto vec_buf_size = static_cast<SCP_vector<uint8_t>::size_type>(buf_size);
+    if ((int)vec_buf_size != buf_size) {
+        // Overflow!!!
+        return -1;
+    }
+    
+    vec_buf_size = MIN(vec_buf_size, memsound->snddata.size() - memsound->cursor_pos);
+    
+    if (vec_buf_size > 0) {
+        std::memcpy(buf, memsound->snddata.data() + memsound->cursor_pos, vec_buf_size);
+        
+        memsound->cursor_pos += vec_buf_size;
+        
+        return vec_buf_size;
+    } else {
+        return -1;
+    }
 }
+
+int64_t soundmem_seek(void* opaque, int64_t offset, int whence) {
+    auto memsound = reinterpret_cast<libs::ffmpeg::MemSoundCursor*>(opaque);
+    
+    if (whence == AVSEEK_SIZE) {
+        return memsound->snddata.size();
+    }
+    
+    auto vec_off = static_cast<SCP_vector<uint8_t>::size_type>(offset);
+    if ((int64_t)vec_off != offset) {
+        // Overflow!!!
+        return -1;
+    }
+    
+    switch (whence) {
+        case SEEK_SET:
+            memsound->cursor_pos = 0;
+            [[fallthrough]];
+        case SEEK_CUR:
+            memsound->cursor_pos += vec_off;
+            break;
+        case SEEK_END:
+            memsound->cursor_pos = memsound->snddata.size() + vec_off;
+            break;
+    }
+    
+    CLAMP(memsound->cursor_pos, 0, memsound->snddata.size());
+    
+    return memsound->cursor_pos;
+}
+
+}//namespace
 
 namespace libs {
 namespace ffmpeg {
 
-FFmpegContext::FFmpegContext(CFILE* inFile) : m_ctx(nullptr), m_file(inFile) {
+MemSoundCursor::MemSoundCursor(const uint8_t* data, size_t snd_len) : snddata(data, data + snd_len), cursor_pos(0) {
+}
+
+FFmpegContext::FFmpegContext(CFILE* inFile) : m_ctx(nullptr), m_file(inFile), m_memsound() {
 	Assertion(inFile != nullptr, "Invalid file pointer passed!");
+}
+
+FFmpegContext::FFmpegContext(const uint8_t* snddata, size_t snd_len) : m_ctx(nullptr), m_file(nullptr), m_memsound(snddata, snd_len) {
 }
 
 FFmpegContext::~FFmpegContext() {
@@ -78,6 +138,7 @@ FFmpegContext::~FFmpegContext() {
 		cfclose(m_file);
 		m_file = nullptr;
 	}
+	
 }
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
@@ -99,6 +160,60 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 
 	auto ioContext =
 		avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, instance->m_file, cfileRead, nullptr, cfileSeek);
+
+	if (!ioContext) {
+		throw FFmpegException("Failed to allocate IO context!");
+	}
+
+	instance->m_ctx->pb = ioContext;
+
+	auto probe_ret = av_probe_input_buffer2(instance->m_ctx->pb, &instance->m_ctx->iformat, nullptr, nullptr, 0, 0);
+	if (probe_ret < 0) {
+		char errorStr[1024];
+		av_strerror(probe_ret, errorStr, 1024);
+
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
+	}
+
+	instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+	auto ret = avformat_open_input(&instance->m_ctx, nullptr, instance->m_ctx->iformat, nullptr);
+	if (ret < 0) {
+		char errorStr[1024];
+		av_strerror(ret, errorStr, 1024);
+
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
+	}
+
+	ret = avformat_find_stream_info(instance->m_ctx, nullptr);
+	if (ret < 0) {
+		char errorStr[1024];
+		av_strerror(ret, errorStr, 1024);
+
+		throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
+	}
+
+	return instance;
+}
+
+
+std::unique_ptr<FFmpegContext> FFmpegContext::createContextMem(const uint8_t* snddata, size_t snd_len) {
+	std::unique_ptr<FFmpegContext> instance(new FFmpegContext(snddata, snd_len));
+
+	instance->m_ctx = avformat_alloc_context();
+
+	if (!instance->m_ctx) {
+		throw FFmpegException("Failed to allocate context!");
+	}
+
+	auto avioBuffer = reinterpret_cast<uint8_t*>(av_malloc(AVIO_BUFFER_SIZE));
+
+	if (!avioBuffer) {
+		throw FFmpegException("Failed to allocate IO buffer!");
+	}
+
+	auto ioContext =
+		avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, &(instance->m_memsound), soundmem_read, nullptr, soundmem_seek);
 
 	if (!ioContext) {
 		throw FFmpegException("Failed to allocate IO context!");
