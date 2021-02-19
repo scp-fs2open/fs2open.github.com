@@ -45,7 +45,7 @@ struct vec3d;
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	
-	float				delta_ang;							// angle between dir_a and dir_b
+	vec3d			rot_axis;
 	ubyte				shot_count;							// # of shots	
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
@@ -54,6 +54,14 @@ typedef struct beam_info {
 #define BFIF_FORCE_FIRING		(1<<1)
 #define BFIF_TARGETING_COORDS	(1<<2)
 #define BFIF_FLOATING_BEAM		(1<<3)
+
+// to ensure validity of fire_info, the related fields MUST be provided
+#define BFM_TURRET_FIRED         0   // objp, subsys, target
+#define BFM_TURRET_FORCE_FIRED   1   // objp, subsys, target OR target_pos
+#define BFM_FIGHTER_FIRED        2   // objp, subsys
+#define BFM_SPAWNED              3   // starting pos, target OR target_pos
+#define BFM_SEXP_FLOATING_FIRED  4   // starting pos, target OR target_pos
+#define BFM_SUBSPACE_STRIKE      5   // starting pos, target
 
 // pass to beam fire 
 typedef struct beam_fire_info {
@@ -73,6 +81,8 @@ typedef struct beam_fire_info {
 	int point;									// for fighters, which point on the bank it is from
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
+	int burst_seed;								// used for sharing random targets if part of the same burst
+	int  fire_method;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
@@ -102,16 +112,18 @@ typedef struct beam_collision {
 	int				c_sig;							// object sig
 	int				c_stamp;							// when we should next apply damage	
 	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
+	bool			is_exit_collision;					//does this occur when the beam is exiting the ship
 } beam_collision;
 
 // beam flag defines
 #define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
-#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
+#define BF_SHRINK						(1<<1)		// if this is set, the beam is shrinking in width and approaching the warmdown phase
 #define BF_FORCE_FIRING					(1<<2)
 #define BF_IS_FIGHTER_BEAM				(1<<3)
 #define BF_TARGETING_COORDS				(1<<4)
 #define BF_FLOATING_BEAM				(1<<5)
+#define BF_GROW				            (1<<6)     // if this is set, the beam is growing in width
+#define BF_FINISHED_GROWING				(1<<7)     // to stop grow from re-triggering
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -130,7 +142,7 @@ typedef struct beam {
 	vec3d	targeting_laser_offset;
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	
-	float		shrink;					// shrink factor	
+	float		current_width_factor;		// applied to width due to shrink or grow
 
 	// beam info	
 	int		warmup_stamp;			// timestamp for "warming up"
@@ -173,13 +185,14 @@ typedef struct beam {
 	int Beam_muzzle_stamp;
 	int firingpoint;
 
-	float		beam_width;
+	float		beam_collide_width;
+	float		beam_light_width;
 } beam;
 
-extern beam Beams[MAX_BEAMS];				// all beams
+extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
-#define BEAM_INDEX(beam)			(int)((beam) - Beams)
+#define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS

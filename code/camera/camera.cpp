@@ -319,11 +319,14 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		{
 			object *objp = object_host.objp;
 			int model_num = object_get_model(objp);
-			polymodel *pm = NULL;
+			polymodel *pm = nullptr;
+			polymodel_instance *pmi = nullptr;
 			
-			if(model_num > -1)
+			if(model_num >= 0)
 			{
 				pm = model_get(model_num);
+				if (objp->type == OBJ_SHIP)
+					pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 			}
 
 			if(object_host_submodel < 0 || pm == NULL)
@@ -339,13 +342,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 					Assertion(objp->type == OBJ_SHIP, "This part of the code expects the object to be a ship");
 
 					vec3d c_pos_in;
-					find_submodel_instance_point_normal(&c_pos_in, &host_normal, Ships[objp->instance].model_instance_num, eyep->parent, &eyep->pnt, &eyep->norm);
+					find_submodel_instance_point_normal(&c_pos_in, &host_normal, pm, pmi, eyep->parent, &eyep->pnt, &eyep->norm);
 					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
 					vm_vec_add2(&c_pos, &objp->pos);
 				}
 				else
 				{
-					model_find_world_point( &c_pos, &pt, pm->id, object_host_submodel, &objp->orient, &objp->pos );
+					if (pmi != nullptr)
+						model_instance_find_world_point(&c_pos, &pt, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+					else
+						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
 			}
 		}
@@ -374,13 +380,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 			{
 				object *objp = object_target.objp;
 				int model_num = object_get_model(objp);
-				polymodel *pm = NULL;
+				polymodel *pm = nullptr;
+				polymodel_instance *pmi = nullptr;
 				vec3d target_pos = vmd_zero_vector;
 				
 				//See if we can get the model
-				if(model_num > -1)
+				if(model_num >= 0)
 				{
 					pm = model_get(model_num);
+					if (objp->type == OBJ_SHIP)
+						pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 				}
 
 				//If we don't have a submodel or don't have the model use object pos
@@ -391,7 +400,10 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				}
 				else
 				{
-					model_find_world_point( &target_pos, &vmd_zero_vector, pm->id, object_target_submodel, &objp->orient, &objp->pos );
+					if (pmi != nullptr)
+						model_instance_find_world_point(&target_pos, &vmd_zero_vector, pm, pmi, object_target_submodel, &objp->orient, &objp->pos);
+					else
+						model_find_world_point( &target_pos, &vmd_zero_vector, pm, object_target_submodel, &objp->orient, &objp->pos );
 				}
 
 				vec3d targetvec;
@@ -1094,4 +1106,36 @@ eye* get_submodel_eye(polymodel *pm, int submodel_num)
 		}
 	}
 	return NULL;
+}
+
+// maybe push the camera away from preferred dist if it would intersect the ship's bounding box
+float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, const matrix* cam_orient) {
+	if (viewer_obj == nullptr)
+		return preferred_distance;
+
+	// radius is the maximal extent of the ship's bbox from the center, so if its at least that plus the padding its guaranteed to be good
+	// plus a little fudge factor at the end because shields count against the bounding box, but not the radius
+	if (preferred_distance > (viewer_obj->radius * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING) * 1.5f) 
+		return preferred_distance;
+	
+	int modelnum = object_get_model(viewer_obj);
+	polymodel* pm = model_get(modelnum);
+	vec3d adjusted_bbox;
+	const vec3d* cam_vec = &cam_orient->vec.fvec;
+
+	// the bounding box is expanded by the padding and maybe use negative min instead of max, because they could differ significantly
+	// and we only care about the one thats on the side of the camera
+	adjusted_bbox.xyz.x = (cam_vec->xyz.x < 0 ? -pm->mins.xyz.x : pm->maxs.xyz.x) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+	adjusted_bbox.xyz.y = (cam_vec->xyz.y < 0 ? -pm->mins.xyz.y : pm->maxs.xyz.y) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+	adjusted_bbox.xyz.z = (cam_vec->xyz.z < 0 ? -pm->mins.xyz.z : pm->maxs.xyz.z) * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING;
+
+	vec3d adjusted_dist;
+	// adjusted_dist is the vector (with an inverted magnitude) that contacts the surface of an 
+	// ellipsoid which contacts the adjusted_bbox at each of its faces 
+	adjusted_dist.xyz.x = cam_vec->xyz.x / adjusted_bbox.xyz.x;
+	adjusted_dist.xyz.y = cam_vec->xyz.y / adjusted_bbox.xyz.y;
+	adjusted_dist.xyz.z = cam_vec->xyz.z / adjusted_bbox.xyz.z;
+	float compensation =  vm_vec_mag(&adjusted_dist);
+
+	return fmaxf(1 / compensation, preferred_distance);
 }

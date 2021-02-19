@@ -22,12 +22,23 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	init_stub_pointers();
 
+	gr_screen.gf_flip = []() {
+		renderer_instance->flip();
+	};
+
 	// Nothing else is finished so always fail here
 	mprintf(("Vulkan support is not finished yet so graphics initialization will always fail...\n"));
 	return true;
 }
 
-void cleanup() {
+VulkanRenderer* getRendererInstance()
+{
+	return renderer_instance.get();
+}
+
+void cleanup()
+{
+	renderer_instance->shutdown();
 	renderer_instance = nullptr;
 }
 

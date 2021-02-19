@@ -81,6 +81,8 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
+SCP_map<int,ubyte*> bm_lookup_cache;
+
 /**
  * How much RAM bmpman can use for textures.
  *
@@ -155,16 +157,20 @@ bitmap_lookup::bitmap_lookup(int bitmap_num):
 	Width = be->bm.w;
 	Height = be->bm.h;
 
-	Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
 
-	gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+	auto cache_search = bm_lookup_cache.find(bitmap_num);
+	if (cache_search == bm_lookup_cache.end()) {
+		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+
+		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+	} else {
+		Bitmap_data = cache_search->second;
+	}
 }
 
 bitmap_lookup::~bitmap_lookup()
 {
-	if ( Bitmap_data != NULL ) {
-		vm_free(Bitmap_data);
-	}
 }
 
 bool bitmap_lookup::valid()
@@ -186,6 +192,13 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 3]) / 255.0f;
+}
+
+void clear_bm_lookup_cache() {
+	for(auto &iter: bm_lookup_cache) {
+		free(iter.second);
+	}
+	bm_lookup_cache.clear();
 }
 
 /**
@@ -1823,7 +1836,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	if (!res.found)
 		return -1;
 
-	CFILE *test = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, dir_type);
+	CFILE *test = cfopen_special(res, "rb", dir_type);
 
 	if (test != NULL) {
 		if (img_cfp != NULL)
@@ -1833,7 +1846,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	}
 
 	// umm, that's not good...
-	Warning(LOCATION, "Could not open file %s!", res.full_name.c_str());
+	Warning(LOCATION, "Could not open file %s!", real_filename);
 	return -1;
 }
 
@@ -2839,6 +2852,28 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	return 1;
+}
+
+bool bm_release_rendertarget(int handle) {
+	Assert(handle >= 0);
+
+	bitmap_entry* be = bm_get_entry(handle);
+
+	if (be->type == BM_TYPE_NONE) {
+		return false;	// Already been released?
+	}
+
+	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release_rendertarget()\n", be->handle, handle, be->filename);
+	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
+
+	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
+		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
+		return false;
+	}
+
+	gr_bm_free_data(bm_get_slot(handle), false);
+
+	return true;
 }
 
 int bm_reload(int bitmap_handle, const char* filename) {

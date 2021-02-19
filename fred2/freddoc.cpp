@@ -59,13 +59,6 @@ IMPLEMENT_DYNCREATE(CFREDDoc, CDocument)
 
 BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	//{{AFX_MSG_MAP(CFREDDoc)
-	ON_COMMAND(ID_EDIT_DELETE, OnEditDelete)
-	ON_COMMAND(ID_DUPLICATE, OnDuplicate)
-	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
-	ON_COMMAND(ID_EDIT_CUT, OnEditCut)
-	ON_COMMAND(ID_EDIT_HOLD, OnEditHold)
-	ON_COMMAND(ID_EDIT_FETCH, OnEditFetch)
-	ON_COMMAND(ID_EDIT_PASTE, OnEditPaste)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
 	//}}AFX_MSG_MAP
@@ -336,14 +329,14 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
 		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
 			if (Ships[objp->instance].alt_type_index >= 0) {
-				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+				strcpy_s(Fred_alt_names[objp->instance], mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index));
 
 				// also zero it
 				Ships[objp->instance].alt_type_index = -1;
 			}
 
 			if (Ships[objp->instance].callsign_index >= 0) {
-				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index, Fred_callsigns[objp->instance]);
+				strcpy_s(Fred_callsigns[objp->instance], mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index));
 
 				// also zero it
 				Ships[objp->instance].callsign_index = -1;
@@ -364,42 +357,8 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 	return true;
 }
 
-void CFREDDoc::OnDuplicate() {
-	// TODO: Add your command handler code here
-
-}
-
 void CFREDDoc::OnEditClearAll() {
 	DeleteContents();
-}
-
-void CFREDDoc::OnEditCopy() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditCut() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditDelete() {
-	// TODO: Add your command handler code here
-}
-
-void CFREDDoc::OnEditFetch() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditHold() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditPaste() {
-	// TODO: Add your command handler code here
-
 }
 
 void CFREDDoc::OnEditUndo() {

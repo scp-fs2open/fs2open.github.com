@@ -7,8 +7,6 @@
  *
 */
 
-
-
 #include <cstdio>
 
 #ifdef _WIN32
@@ -22,18 +20,17 @@
 #include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-#define WSAGetLastError()  (errno)
 #endif
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "inetfile/cftp.h"
+#include "network/psnet2.h"
 
 
-int FTPObjThread( void *obj )
+int FTPObjThread(void *obj)
 {
-	((CFtpGet *)obj)->WorkerThread();
+	(reinterpret_cast<CFtpGet *>(obj))->WorkerThread();
 
 	return (reinterpret_cast<CFtpGet *>(obj))->GetStatus();
 }
@@ -42,10 +39,11 @@ void CFtpGet::AbortGet()
 {
 	m_Aborting = true;
 
-	while(!m_Aborted) os_sleep(10); //Wait for the thread to end
+	while ( !m_Aborted ) {
+		os_sleep(10); // Wait for the thread to end
+	}
 
-	if(LOCALFILE != nullptr)
-	{
+	if (LOCALFILE != nullptr) {
 		fclose(LOCALFILE);
 		LOCALFILE = nullptr;
 	}
@@ -53,10 +51,8 @@ void CFtpGet::AbortGet()
 
 CFtpGet::CFtpGet(const char *URL, const char *localfile, const char *Username, const char *Password)
 {
-	SOCKADDR_IN listensockaddr;
 	m_State = FTP_STATE_STARTUP;
 
-	m_ListenSock = INVALID_SOCKET;
 	m_DataSock = INVALID_SOCKET;
 	m_ControlSock = INVALID_SOCKET;
 	m_iBytesIn = 0;
@@ -66,135 +62,85 @@ CFtpGet::CFtpGet(const char *URL, const char *localfile, const char *Username, c
 
 	LOCALFILE = fopen(localfile, "wb");
 
-	if (NULL == LOCALFILE) {
+	if (LOCALFILE == nullptr) {
 		m_State = FTP_STATE_CANT_WRITE_FILE;
 		m_Aborted = true;
+
 		return;
 	}
 
-	if(Username)
-	{
-		strcpy_s(m_szUserName,Username);
+	if (Username) {
+		m_szUserName = Username;
+	} else {
+		m_szUserName = "anonymous";
 	}
-	else
-	{
-		strcpy_s(m_szUserName,"anonymous");
-	}
-	if(Password)
-	{
-		strcpy_s(m_szPassword,Password);
-	}
-	else
-	{
-		strcpy_s(m_szPassword,"pxouser@pxo.net");
-	}
-	m_ListenSock = socket(AF_INET, SOCK_STREAM, 0);
-	if(INVALID_SOCKET == m_ListenSock)
-	{
-		m_State = FTP_STATE_SOCKET_ERROR;
-		m_Aborted = true;
-		return;
-	}
-	else
-	{
-		memset(&listensockaddr, 0, sizeof(SOCKADDR_IN));
-		listensockaddr.sin_family = AF_INET;		
-		listensockaddr.sin_port = 0;
-		listensockaddr.sin_addr.s_addr = INADDR_ANY;
-							
-		// Bind the listen socket
-		if (bind(m_ListenSock, (SOCKADDR *)&listensockaddr, sizeof(SOCKADDR)))
-		{
-			//Couldn't bind the socket
-			m_State = FTP_STATE_SOCKET_ERROR;
-			m_Aborted = true;
-			return;
-		}
 
-		// Listen for the server connection
-		if (listen(m_ListenSock, 1))	
-		{
-			//Couldn't listen on the socket
-			m_State = FTP_STATE_SOCKET_ERROR;
-			m_Aborted = true;
-			return;
-		}
+	if (Password) {
+		m_szPassword = Password;
+	} else {
+		m_szPassword = "pxouser@pxo.net";
 	}
-	m_ControlSock = socket(AF_INET, SOCK_STREAM, 0);
-	if(INVALID_SOCKET == m_ControlSock)
-	{
+
+	m_ControlSock = socket(AF_INET6, SOCK_STREAM, 0);
+
+	if (m_ControlSock == INVALID_SOCKET) {
 		m_State = FTP_STATE_SOCKET_ERROR;
 		m_Aborted = true;
+
 		return;
 	}
-	//Parse the URL
-	//Get rid of any extra ftp:// stuff
+
+	// make sure we are in dual-stack mode (not the default on Windows)
+	int i_opt = 0;
+	setsockopt(m_ControlSock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+
+	// Parse the URL
+	// Get rid of any extra ftp:// stuff
 	const char *pURL = URL;
-	if(strnicmp(URL,"ftp:",4)==0)
-	{
-		pURL +=4;
-		while(*pURL == '/')
-		{
+
+	if ( strnicmp(URL, "ftp:", 4) == 0 ) {
+		pURL += 4;
+
+		while (*pURL == '/') {
 			pURL++;
 		}
 	}
-	//There shouldn't be any : in this string
-	if(strchr(pURL,':'))
-	{
-		m_State = FTP_STATE_URL_PARSING_ERROR;
-		m_Aborted = true;
-		return;
-	}
-	//read the filename by searching backwards for a /
-	//then keep reading until you find the first /
-	//when you found it, you have the host and dir
-	const char *filestart = nullptr;
-	const char *dirstart = nullptr;
-	for(size_t i = strlen(pURL);;i--)
-	{
-		if(pURL[i]== '/')
-		{
-			if(!filestart)
-			{
-				filestart = pURL+i+1;
-				dirstart = pURL+i+1;
-				strcpy_s(m_szFilename,filestart);
-			}
-			else
-			{
-				dirstart = pURL+i+1;
-			}
-		}
 
-		if (i == 0) {
-			break;
-		}
-	}
-	if((dirstart==NULL) || (filestart==NULL))
-	{
+	// There shouldn't be any : in this string
+	if ( strchr(pURL, ':') ) {
 		m_State = FTP_STATE_URL_PARSING_ERROR;
 		m_Aborted = true;
 		return;
 	}
-	else
-	{
-		strncpy(m_szDir,dirstart,(filestart-dirstart));
-		m_szDir[(filestart-dirstart)] = '\0';
-		strncpy(m_szHost,pURL,(dirstart-pURL));
-		m_szHost[(dirstart-pURL)-1] = '\0';
+
+	// parse out host, directory, and filename
+	SCP_string url_str(pURL);
+
+	size_t filestart = url_str.find_last_of('/');
+	size_t dirstart = url_str.find_first_of('/');
+
+	if ( (filestart == SCP_string::npos) || (dirstart == SCP_string::npos) ) {
+		m_State = FTP_STATE_URL_PARSING_ERROR;
+		m_Aborted = true;
+		return;
 	}
-	//At this point we should have a nice host,dir and filename
-	
+
+	m_szHost = url_str.substr(0, dirstart);
+
+	if (dirstart != filestart) {
+		m_szDir = url_str.substr(dirstart+1, filestart);
+	}
+
+	m_szFilename = url_str.substr(filestart+1);
+
+
 	SDL_Thread *thread = SDL_CreateThread(FTPObjThread, "FTPObjThread", this);
 
-	if(thread == nullptr)
-	{
+	if (thread == nullptr) {
 		m_State = FTP_STATE_INTERNAL_ERROR;
 		m_Aborted = true;
 		return;
-	}
-	else
-	{
+	} else {
 		SDL_DetachThread(thread);
 	}
 
@@ -205,24 +151,17 @@ CFtpGet::CFtpGet(const char *URL, const char *localfile, const char *Username, c
 
 CFtpGet::~CFtpGet()
 {
-	if(m_ListenSock != INVALID_SOCKET)
-	{
-		shutdown(m_ListenSock,2);
-		closesocket(m_ListenSock);
-	}
-	if(m_DataSock != INVALID_SOCKET)
-	{
-		shutdown(m_DataSock,2);
+	if (m_DataSock != INVALID_SOCKET) {
+		shutdown(m_DataSock, 2);
 		closesocket(m_DataSock);
 	}
-	if(m_ControlSock != INVALID_SOCKET)
-	{
-		shutdown(m_ControlSock,2);
+
+	if (m_ControlSock != INVALID_SOCKET) {
+		shutdown(m_ControlSock, 2);
 		closesocket(m_ControlSock);
 	}
 
-	if(LOCALFILE != nullptr)
-	{
+	if (LOCALFILE != nullptr) {
 		fclose(LOCALFILE);
 		LOCALFILE = nullptr;
 	}
@@ -251,334 +190,384 @@ uint CFtpGet::GetTotalBytes()
 void CFtpGet::WorkerThread()
 {
 	ConnectControlSocket();
-	if(m_State != FTP_STATE_LOGGING_IN)
-	{
+
+	if (m_State != FTP_STATE_LOGGING_IN) {
 		return;
 	}
+
 	LoginHost();
-	if(m_State != FTP_STATE_LOGGED_IN)
-	{
+
+	if (m_State != FTP_STATE_LOGGED_IN) {
 		return;
 	}
+
 	GetFile();
 
-	//We are all done now, and state has the current state.
+	LogoutHost();
+
+	// We are all done now, and state has the current state.
 	m_Aborted = true;
 }
 
 uint CFtpGet::GetFile()
 {
-	//Start off by changing into the proper dir.
-	char szCommandString[200];
+	// Start off by changing into the proper dir.
+	SCP_string response;
+	SCP_string szCommandString;
 	int rcode;
-	
-	sprintf(szCommandString,"TYPE I\r\n");
-	rcode = SendFTPCommand(szCommandString);
-	if(rcode >=400)
-	{
-		m_State = FTP_STATE_UNKNOWN_ERROR;	
-		return 0;
-	}
-	if(m_Aborting)
-		return 0;
-	if(m_szDir[0])
-	{
-		if (snprintf(szCommandString, sizeof(szCommandString), "CWD %s\r\n",m_szDir) >= (int)sizeof(szCommandString)) {
-			// Make sure the string is null terminated
-			szCommandString[sizeof(szCommandString) - 1] = '\0';
-		}
-		rcode = SendFTPCommand(szCommandString);
-		if(rcode >=400)
-		{
-			m_State = FTP_STATE_DIRECTORY_INVALID;	
-			return 0;
-		}
-	}
-	if(m_Aborting)
-		return 0;
-	if(!IssuePort())
-	{
+
+	rcode = SendFTPCommand("TYPE I");
+
+	if (rcode >=400) {
 		m_State = FTP_STATE_UNKNOWN_ERROR;
 		return 0;
 	}
-	if(m_Aborting)
-		return 0;
-	sprintf(szCommandString,"RETR %s\r\n",m_szFilename);
-	rcode = SendFTPCommand(szCommandString);
-	if(rcode >=400)
-	{
-		m_State = FTP_STATE_FILE_NOT_FOUND;	
-		return 0;
-	}
-	if(m_Aborting)
-		return 0;
-	//Now we will try to determine the file size...
-	char *p,*s;
-	p = strchr(recv_buffer,'(');
-	p++;
-	if(p)
-	{
-		s = strchr(p,' ');
-		*s = '\0';
-		m_iBytesTotal = atoi(p);
-	}
-	if(m_Aborting)
-		return 0;
 
-	m_DataSock = accept(m_ListenSock, NULL,NULL);
-	// Close the listen socket
-	closesocket(m_ListenSock);
-	if (m_DataSock == INVALID_SOCKET)
-	{
-		m_State = FTP_STATE_SOCKET_ERROR;
+	if (m_Aborting) {
 		return 0;
 	}
-	if(m_Aborting)
+
+	if ( !m_szDir.empty() ) {
+		szCommandString = "CWD ";	// end space is intentional!
+		szCommandString += m_szDir;
+
+		rcode = SendFTPCommand(szCommandString.c_str());
+
+		if (rcode >=400) {
+			m_State = FTP_STATE_DIRECTORY_INVALID;
+			return 0;
+		}
+	}
+
+	if (m_Aborting) {
 		return 0;
+	}
+
+	if ( !IssuePasv() ) {
+		m_State = FTP_STATE_UNKNOWN_ERROR;
+		return 0;
+	}
+
+	if (m_Aborting) {
+		return 0;
+	}
+
+	szCommandString = "RETR ";	// end space is intentional!
+	szCommandString += m_szFilename;
+
+	rcode = SendFTPCommand(szCommandString.c_str(), &response);
+
+	if (rcode >=400) {
+		m_State = FTP_STATE_FILE_NOT_FOUND;
+		return 0;
+	}
+
+	// 150 Opening BINARY mode data connection for filename (num bytes)
+	size_t offset = response.find('(');
+
+	if (offset != SCP_string::npos) {
+		SCP_string val = response.substr(offset+1);
+
+		sscanf(val.c_str(), "%u ", &m_iBytesTotal);
+	}
+
+	if (m_Aborting) {
+		return 0;
+	}
+
 	ReadDataChannel();
-	
+
 	m_State = FTP_STATE_FILE_RECEIVED;
+
 	return 1;
 }
 
-uint CFtpGet::IssuePort()
+bool CFtpGet::IssuePasv()
 {
+	SOCKADDR_STORAGE dataaddr;
+	SCP_string response;
+	SCP_string val;
+	int rcode;
+	uint16_t port;
 
-	char szCommandString[200];
-	SOCKADDR_IN listenaddr;					// Socket address structure
-	SOCKLEN_T iLength;						// Length of the address structure
-	uint32_t nLocalPort;							// Local port for listening
-	uint32_t nReplyCode;							// FTP server reply code
-
-
-   // Get the address for the hListenSocket
-	iLength = sizeof(listenaddr);
-	if (getsockname(m_ListenSock, (LPSOCKADDR)&listenaddr,&iLength) == SOCKET_ERROR)
-	{
-		m_State = FTP_STATE_SOCKET_ERROR;
-		return 0;
+	// try extended passive mode first, then fall back to regular,
+	if ( (rcode = SendFTPCommand("EPSV", &response)) >= 400 ) {
+		if ( (rcode = SendFTPCommand("PASV", &response)) >= 400 ) {
+			return false;
+		}
 	}
 
-	// Extract the local port from the hListenSocket
-	nLocalPort = listenaddr.sin_port;
-							
-	// Now, reuse the socket address structure to 
-	// get the IP address from the control socket.
-	if (getsockname(m_ControlSock, (LPSOCKADDR)&listenaddr,&iLength) == SOCKET_ERROR)
-	{
-		m_State = FTP_STATE_SOCKET_ERROR;
-		return 0;
+	if (m_Aborting) {
+		return false;
 	}
-				
-	// Format the PORT command with the correct numbers.
-	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n",
-				static_cast<int>((listenaddr.sin_addr.s_addr >> 0)  & 0xFF),
-				static_cast<int>((listenaddr.sin_addr.s_addr >> 8)  & 0xFF),
-				static_cast<int>((listenaddr.sin_addr.s_addr >> 16) & 0xFF),
-				static_cast<int>((listenaddr.sin_addr.s_addr >> 24) & 0xFF),
-				nLocalPort >> 8,
-				nLocalPort & 0xFF);
 
-	// Tell the server which port to use for data.
-	nReplyCode = SendFTPCommand(szCommandString);
-	if (nReplyCode != 200)
-	{
-		m_State = FTP_STATE_SOCKET_ERROR;
-		return 0;
+	size_t offset = response.find('(');
+
+	if (offset == SCP_string::npos) {
+		return false;
 	}
-	return 1;
+
+	val = response.substr(offset+1);
+
+	// 229 Entering Extended Passive Mode (|||port|)
+	if (rcode == 229) {
+		unsigned int i_port;
+
+		sscanf(val.c_str(), "|||%u|", &i_port);
+		port = static_cast<uint16_t>(i_port);
+	}
+	// 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)
+	else if (rcode == 227) {
+		unsigned int p1, p2;
+
+		// per the spec for IPv6 compat we'll skip host and only grab port
+		sscanf(val.c_str(), ",%u,%u)", &p1, &p2);
+		port = static_cast<uint16_t>(p1 * 256 + p2);
+	} else {
+		return false;
+	}
+
+	if (m_Aborting) {
+		return false;
+	}
+
+	memcpy(&dataaddr, &m_ServerAddr, sizeof(dataaddr));
+
+	switch (dataaddr.ss_family) {
+		case AF_INET: {
+			auto *sa4 = reinterpret_cast<SOCKADDR_IN *>(&dataaddr);
+
+			sa4->sin_port = htons(port);
+
+			break;
+		}
+
+		case AF_INET6: {
+			auto *sa6 = reinterpret_cast<SOCKADDR_IN6 *>(&dataaddr);
+
+			sa6->sin6_port = htons(port);
+
+			break;
+		}
+
+		default:
+			Int3();
+	}
+
+	if (m_Aborting) {
+		return false;
+	}
+
+	m_DataSock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+
+	if (m_DataSock == INVALID_SOCKET) {
+		return false;
+	}
+
+	// make sure we are in dual-stack mode (not the default on Windows)
+	int i_opt = 0;
+	setsockopt(m_DataSock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+
+	if (m_Aborting) {
+		return false;
+	}
+
+	if ( connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&dataaddr), sizeof(dataaddr)) == SOCKET_ERROR ) {
+		return false;
+	}
+
+	return true;
 }
 
 int CFtpGet::ConnectControlSocket()
 {
-	HOSTENT *he;
-	SERVENT *se;
-	SOCKADDR_IN hostaddr;
-	he = gethostbyname(m_szHost);
-	if(he == NULL)
-	{
+	// server address will be needed again for data socket so be sure it's saved
+	if ( !psnet_get_addr(m_szHost.c_str(), "ftp", &m_ServerAddr) ) {
 		m_State = FTP_STATE_HOST_NOT_FOUND;
 		return 0;
 	}
-	//m_ControlSock
-	if(m_Aborting)
-		return 0;
 
-	memset(&hostaddr, 0, sizeof(SOCKADDR_IN));
-    
-	se = getservbyname("ftp", NULL);
-    
-	if(se == NULL)
-	{
-		hostaddr.sin_port = htons(21);
-	}
-	else
-	{
-		hostaddr.sin_port = se->s_port;
-	}
-	hostaddr.sin_family = AF_INET;		
-	memcpy(&hostaddr.sin_addr,he->h_addr_list[0],4);
-	if(m_Aborting)
+	if (m_Aborting) {
 		return 0;
-	//Now we will connect to the host					
-	if(connect(m_ControlSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR)))
-	{
+	}
+
+	// Now we will connect to the host
+	if ( connect(m_ControlSock, reinterpret_cast<LPSOCKADDR>(&m_ServerAddr), sizeof(m_ServerAddr)) ) {
 		m_State = FTP_STATE_CANT_CONNECT;
 		return 0;
 	}
+
 	m_State = FTP_STATE_LOGGING_IN;
+
 	return 1;
 }
 
 
 int CFtpGet::LoginHost()
 {
-	char szLoginString[200];
+	SCP_string szLoginString;
 	int rcode;
-	
-	sprintf(szLoginString,"USER %s\r\n",m_szUserName);
-	rcode = SendFTPCommand(szLoginString);
-	if(rcode >=400)
-	{
-		m_State = FTP_STATE_LOGIN_ERROR;	
+
+	szLoginString = "USER ";	// end space is intentional!
+	szLoginString += m_szUserName;
+
+	rcode = SendFTPCommand(szLoginString.c_str());
+
+	if (rcode >= 400) {
+		m_State = FTP_STATE_LOGIN_ERROR;
 		return 0;
 	}
-	sprintf(szLoginString,"PASS %s\r\n",m_szPassword);
-	rcode = SendFTPCommand(szLoginString);
-	if(rcode >=400)
-	{
-		m_State = FTP_STATE_LOGIN_ERROR;	
+
+	szLoginString = "PASS ";	// end space is intentional!
+	szLoginString += m_szPassword;
+
+	rcode = SendFTPCommand(szLoginString.c_str());
+
+	if (rcode >= 400) {
+		m_State = FTP_STATE_LOGIN_ERROR;
 		return 0;
 	}
 
 	m_State = FTP_STATE_LOGGED_IN;
+
 	return 1;
 }
 
-
-uint CFtpGet::SendFTPCommand(const char *command)
+void CFtpGet::LogoutHost()
 {
+	SendFTPCommand("QUIT");
+}
 
-	FlushControlChannel();
-	// Send the FTP command
-	if (SOCKET_ERROR ==(send(m_ControlSock,command,static_cast<int>(strlen(command)), 0)))
-		{
-		  // Return 999 to indicate an error has occurred
-			return(999);
-		} 
-		
-	// Read the server's reply and return the reply code as an integer
-	return(ReadFTPServerReply());	            
-}	
-
-
-
-uint CFtpGet::ReadFTPServerReply()
+int CFtpGet::SendFTPCommand(const char *command, SCP_string *response)
 {
-	uint rcode;
-	int iBytesRead;
-	char chunk[2];
-	char szcode[4];
-	uint igotcrlf = 0;
-	memset(recv_buffer,0,1000);
-	do
-	{
-		chunk[0] = '\0';
-		iBytesRead = recv(m_ControlSock,chunk,1,0);
+	const SCP_string eol = "\r\n";	// CRLF
+	SCP_string cmd;
 
-		if (iBytesRead == SOCKET_ERROR)
-		{
-		  // Return 999 to indicate an error has occurred
-			return(999);
-		}
-		
-		if((chunk[0]==0x0a) || (chunk[0]==0x0d))
-		{
-			if(recv_buffer[0] != '\0') 
-			{
-				igotcrlf = 1;	
-			}
-		}
-		else
-		{	chunk[1] = '\0';
-			strcat_s(recv_buffer,chunk);
-		}
-		
-		os_sleep(1);	
-	}while(igotcrlf==0);
-					
-	if(recv_buffer[3] == '-')
-	{
-		//Hack -- must be a MOTD
-		return ReadFTPServerReply();
-	}
-	if(recv_buffer[3] != ' ')
-	{
-		//We should have 3 numbers then a space
+	if (command == nullptr) {
 		return 999;
 	}
-	memcpy(szcode,recv_buffer,3);
-	szcode[3] = '\0';
-	rcode = atoi(szcode);
-    // Extract the reply code from the server reply and return as an integer
-	return(rcode);	            
-}	
 
+	cmd = command;
+	cmd += eol;
+
+	// Send the FTP command
+	if ( send(m_ControlSock, cmd.c_str(), static_cast<int>(cmd.length()), 0) == SOCKET_ERROR ) {
+		// Return 999 to indicate an error has occurred
+		return 999;
+	}
+
+	// Read the server's reply and return the reply code as an integer
+	return ReadFTPServerReply(response);
+}
+
+int CFtpGet::ReadFTPServerReply(SCP_string *str_reply)
+{
+	SSIZE_T rval;
+	SCP_string code_str;
+	const size_t RECV_BUF_SIZE = 1024;
+	char recv_buffer[RECV_BUF_SIZE];
+	bool multi_line = false;
+	int code;
+
+	char *p_buf = nullptr;
+	char *p_save = nullptr;
+
+	do {
+		memset(recv_buffer, 0, RECV_BUF_SIZE);
+
+		rval = recv(m_ControlSock, recv_buffer, RECV_BUF_SIZE, 0);
+
+		if (rval <= 0) {
+			break;
+		}
+
+		if (m_Aborting) {
+			break;
+		}
+
+		// buffer could contain multiple lines so loop through them all
+		p_buf = strtok_r(recv_buffer, "\r", &p_save);
+
+		while (p_buf) {
+			// response eol is CRLF, so skip the LF too
+			if (*p_buf == '\n') {
+				++p_buf;
+			}
+
+			if ( strlen(p_buf) < 4 ) {
+				break;
+			}
+
+			// skip muli-line responses
+			// 230-start
+			// ...
+			// 230 end
+			if (p_buf[3] == '-') {
+				multi_line = true;
+			}
+			// normal response or end of multi-line
+			else if (p_buf[3] == ' ') {
+				if (multi_line) {
+					multi_line = false;
+				} else {
+					code_str = SCP_string(p_buf, 0, 3);
+					code = std::stoi(code_str);
+
+					if (str_reply) {
+						str_reply->assign(p_buf+4);
+					}
+
+					return code;
+				}
+			}
+
+			p_buf = strtok_r(nullptr, "\r", &p_save);
+		}
+
+		os_sleep(1);
+	} while (true);
+
+	return 999;
+}
 
 uint CFtpGet::ReadDataChannel()
 {
-	char sDataBuffer[4096];		// Data-storage buffer for the data channel
-	int nBytesRecv;						// Bytes received from the data channel
-	m_State = FTP_STATE_RECEIVING;			
-   if(m_Aborting)
+	const size_t BUF_SIZE = 4096;
+	char sDataBuffer[BUF_SIZE];
+	SSIZE_T nBytesRecv;
+
+	m_State = FTP_STATE_RECEIVING;
+
+	if (m_Aborting) {
 		return 0;
-	do	
-   {
-		if(m_Aborting)
+	}
+
+	do {
+		if (m_Aborting) {
 			return 0;
-		nBytesRecv = (int)recv(m_DataSock, sDataBuffer, sizeof(sDataBuffer), 0);
-    					
-		m_iBytesIn += nBytesRecv;
-		if (nBytesRecv > 0 )
-		{
-			fwrite(sDataBuffer,nBytesRecv,1,LOCALFILE);
-    	}
+		}
+
+		nBytesRecv = recv(m_DataSock, sDataBuffer, BUF_SIZE, 0);
+
+		if (nBytesRecv > 0) {
+			m_iBytesIn += static_cast<uint>(nBytesRecv);
+			fwrite(sDataBuffer, static_cast<size_t>(nBytesRecv), 1, LOCALFILE);
+		}
 
 		os_sleep(1);
-	}while (nBytesRecv > 0);
-	fclose(LOCALFILE);							
+	} while (nBytesRecv > 0);
+
+	fclose(LOCALFILE);
+	LOCALFILE = nullptr;
+
 	// Close the file and check for error returns.
-	if (nBytesRecv == SOCKET_ERROR)
-	{ 
-		//Ok, we got a socket error -- xfer aborted?
+	if (nBytesRecv == SOCKET_ERROR) {
+		// Ok, we got a socket error -- xfer aborted?
 		m_State = FTP_STATE_RECV_FAILED;
 		return 0;
-	}
-	else
-	{
-		//done!
+	} else {
+		// done!
 		m_State = FTP_STATE_FILE_RECEIVED;
 		return 1;
-	}
-}	
-
-
-void CFtpGet::FlushControlChannel()
-{
-	fd_set read_fds;	           
-	struct timeval timeout;   	
-	char flushbuff[3];
-
-	timeout.tv_sec = 0;            
-	timeout.tv_usec = 0;
-	
-	FD_ZERO(&read_fds);
-	FD_SET(m_ControlSock, &read_fds);    
-
-	while ( select(static_cast<int>(m_ControlSock+1), &read_fds, nullptr, nullptr, &timeout) )
-	{
-		recv(m_ControlSock,flushbuff,1,0);
-
-		os_sleep(1);
 	}
 }

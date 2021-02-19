@@ -1575,13 +1575,13 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 {
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int text_alignment = 0;
+	HudAlignment text_alignment = HudAlignment::NONE;
 	bool always_show_text = false;
 	bool show_ballistic = false;
 	bool moving_text = false;
 	int armed_weapon_offsets[2] = {0, 0};
 	int armed_weapon_h = 12;
-	int weapon_alignment = 0;
+	HudAlignment weapon_alignment = HudAlignment::NONE;
 	bool show_weapons = false;
 	char fname[MAX_FILENAME_LEN];
 	
@@ -1633,9 +1633,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		stuff_int_list(Wenergy_text_offsets, 2);
 
 		if(optional_string("Text Alignment:")) {
-			if(required_string("Right")) {
-				text_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			text_alignment = hud_alignment_lookup(temp);
 		}
 	}
 	if(optional_string("Always Show Text:")) {
@@ -1652,9 +1652,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		show_weapons = true;
 
 		if(optional_string("Armed Guns List Alignment:")) {
-			if(required_string("Right")) {
-				weapon_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			weapon_alignment = hud_alignment_lookup(temp);
 		}
 
 		if(optional_string("Armed Guns List Entry Height:")) {
@@ -4427,6 +4427,7 @@ void load_gauge_lock(gauge_settings* settings)
 	int Lock_target_box_width;
 	int Lock_target_box_height;
 	bool loop_locked_anim;
+	bool blink_locked_anim;
 	char fname_lock[MAX_FILENAME_LEN];
 	char fname_spin[MAX_FILENAME_LEN];
 
@@ -4444,6 +4445,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "lock1_fs1");
 			strcpy_s(fname_spin, "lockspin_fs1");
@@ -4457,6 +4459,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "2_lock1_fs1");
 			strcpy_s(fname_spin, "2_lockspin_fs1");
@@ -4472,6 +4475,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "lock1");
 			strcpy_s(fname_spin, "lockspin");
@@ -4485,6 +4489,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "2_lock1");
 			strcpy_s(fname_spin, "2_lockspin");
@@ -4518,6 +4523,7 @@ void load_gauge_lock(gauge_settings* settings)
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
+	hud_gauge->initBlinkLockedAnim(blink_locked_anim);
 	hud_gauge->initGaugeHalfSize(Lock_gauge_half_w, Lock_gauge_half_h);
 	hud_gauge->initSpinHalfSize(Lockspin_half_w, Lockspin_half_h);
 	hud_gauge->initTriHeight(Lock_triangle_height);
@@ -4919,7 +4925,7 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	int icon_height = 0;
 	int max_icons = 0;
 	int max_columns = 0;
-	int alignment = 0;
+	HudAlignment alignment = HudAlignment::NONE;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
 	
 	settings->origin[0] = 1.0f;
@@ -4965,11 +4971,9 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	}
 
 	if ( optional_string("Name Alignment:") ) {
-		if ( optional_string("Right") ) {
-			alignment = 1;
-		} else {
-			alignment = 0;
-		}
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		alignment = hud_alignment_lookup(temp);
 	}
 
 	hud_gauge->initBitmap(fname);

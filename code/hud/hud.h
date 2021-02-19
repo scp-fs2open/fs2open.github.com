@@ -60,6 +60,14 @@ typedef struct hud_subsys_damage
 	char* name;
 } hud_subsys_damage;
 
+// used for hudtarget
+enum class HudAlignment
+{
+	NONE,
+	LEFT,
+	RIGHT
+};
+
 extern int HUD_draw;
 extern int HUD_contrast;
 
@@ -168,6 +176,8 @@ int	hud_gauge_active(int gauge_index);
 void	hud_gauge_start_flash(int gauge_index);
 int	hud_gauge_maybe_flash(int gauge_index);
 
+HudAlignment hud_alignment_lookup(const char *name);
+
 // popup gauges
 void	hud_gauge_popup_start(int gauge_index, int time=4000);
 int	hud_gauge_is_popup(int gauge_index);
@@ -265,6 +275,7 @@ public:
 	bool isActive();
 	
 	void updateColor(int r, int g, int b, int a = 255);
+	const color& getColor();
 	void lockConfigColor(bool lock);
 	void sexpLockConfigColor(bool lock);
 	void updateActive(bool show);

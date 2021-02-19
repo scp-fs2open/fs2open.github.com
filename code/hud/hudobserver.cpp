@@ -39,7 +39,6 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	Hud_obs_ship.wingnum = shipp->wingnum;
 	Hud_obs_ship.alt_type_index = shipp->alt_type_index;
 	Hud_obs_ship.callsign_index = shipp->callsign_index;
-	memcpy(&Hud_obs_ship.np_updates, shipp->np_updates, MAX_PLAYERS * sizeof(np_update));
 	Hud_obs_ship.ship_max_hull_strength = shipp->ship_max_hull_strength;
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
 	Hud_obs_ship.weapons = shipp->weapons;

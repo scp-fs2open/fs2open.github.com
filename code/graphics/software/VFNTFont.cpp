@@ -60,10 +60,9 @@ namespace font
 
 					if (checkLength)
 					{
-						if (textLen < 0)
-							break;
-
 						textLen--;
+						if (textLen <= 0)
+							break;
 					}
 
 					if (*text)
@@ -88,10 +87,9 @@ namespace font
 
 				if (checkLength)
 				{
-					if (textLen < 0)
-						break;
-
 					textLen--;
+					if (textLen <= 0)
+						break;
 				}
 			}
 		}

@@ -47,6 +47,7 @@ public:
 	int		m_special_ship;
 	int		m_waves;
 	int		m_threshold;
+	int		m_formation;
 	int		m_arrival_location;
 	int		m_departure_location;
 	int		m_arrival_delay;

@@ -288,7 +288,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 
 	for(SCP_vector<game_snd>::const_iterator snd = sounds.begin(); snd != sounds.end(); ++snd)
 	{
-		if (snd->name == name)
+		if (!stricmp(snd->name.c_str(), name))
 		{
 			return i;
 		}
@@ -302,6 +302,10 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 gamesnd_id gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
+
+	// empty name is not valid!
+	if (name == nullptr || name[0] == '\0')
+		return gamesnd_id(-1);
 
 	int index = gamesnd_lookup_name(name, Snds);
 
@@ -663,11 +667,9 @@ void parse_gamesnd_old(game_snd* gs)
 		{
 			int temp_min, temp_max;
 
-			ignore_gray_space();
-			if (stuff_int_optional(&temp_min, true) == 2)
+			if (stuff_int_optional(&temp_min) == 2)
 			{
-				ignore_gray_space();
-				if (stuff_int_optional(&temp_max, true) == 2)
+				if (stuff_int_optional(&temp_max) == 2)
 				{
 					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
@@ -681,8 +683,7 @@ void parse_gamesnd_old(game_snd* gs)
 	}
 
 	// check for extra values per Mantis #2408
-	ignore_gray_space();
-	if (stuff_int_optional(&temp, true) == 2)
+	if (stuff_int_optional(&temp) == 2)
 	{
 		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
 	}

@@ -126,7 +126,7 @@ plr_data::~plr_data()
 void pilotfile_convert::plr_import_controls()
 {
 	int idx;
-	config_item con;
+	CCI con;
 
 	unsigned char num_controls = cfread_ubyte(cfp);
 
@@ -135,6 +135,7 @@ void pilotfile_convert::plr_import_controls()
 	}
 
 	// it may be less than 118, but it shouldn't be more than 118
+	// Don't touch this magic number! This is for old playerfiles. See banner at top of this file.
 	if (num_controls > 118) {
 		throw "Data check failure in controls!";
 	}

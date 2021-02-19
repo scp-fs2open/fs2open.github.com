@@ -22,9 +22,13 @@ class argument_list_parser {
 
 	const SCP_vector<scripting::argument_def>& getArgList() const;
 
+	const SCP_string& getErrorMessage() const;
+
   private:
 	SCP_unordered_set<SCP_string> _validTypeNames;
 	SCP_vector<argument_def> _argList;
+
+	SCP_string _errorMessage;
 };
 
 } // namespace scripting

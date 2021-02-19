@@ -296,12 +296,12 @@ public:
 	void reset();
 };
 
-void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos,
-                            int render = MODEL_RENDER_ALL, bool sort = true);
-void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, matrix* orient,
-                        vec3d* pos);
-void submodel_render_immediate(model_render_params *render_info, int model_num, int submodel_num, matrix *orient, vec3d * pos);
-void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos);
+void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
+void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
+void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos);
+void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos);
+void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
+void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
 fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);

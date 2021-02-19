@@ -150,12 +150,17 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 float hud_find_target_distance( object *targetee, object *targeter );
 float hud_find_target_distance( object *targetee, const vec3d *targeter_pos );
 
-extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
+extern object* Player_obj;
+
+extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_obj = Player_obj);
 void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
 
-void hud_stuff_ship_name(char *ship_name_text, ship *shipp);
-void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp);
-void hud_stuff_ship_class(char *ship_class_text, ship *shipp);
+void hud_stuff_ship_name(char *ship_name_text, const ship *shipp);
+void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp);
+void hud_stuff_ship_class(char *ship_class_text, const ship *shipp);
+SCP_string hud_get_ship_name(const ship *shipp);
+SCP_string hud_get_ship_callsign(const ship *shipp);
+SCP_string hud_get_ship_class(const ship *shipp);
 
 #define TARGET_DISPLAY_DIST		(1<<0)
 #define TARGET_DISPLAY_DOTS		(1<<1)
@@ -262,10 +267,10 @@ protected:
 
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int Text_alignment;
+	HudAlignment Text_alignment;
 
 	int Armed_name_offsets[2];
-	int Armed_alignment;
+	HudAlignment Armed_alignment;
 	bool Show_armed;
 	int Armed_name_h;
 	
@@ -280,7 +285,7 @@ public:
 	void initAlwaysShowText(bool show_text);
 	void initMoveText(bool move_text);
 	void initShowBallistics(bool show_ballistics);
-	void initAlignments(int text_align, int armed_align);
+	void initAlignments(HudAlignment text_align, HudAlignment armed_align);
 	void initArmedOffsets(int x, int y, int h, bool show);
 	void render(float frametime) override;
 	void pageIn() override;
@@ -451,7 +456,7 @@ class HudGaugeWarheadCount: public HudGauge
 	int Warhead_count_size[2];
 
 	int Max_symbols;
-	int Text_align;
+	HudAlignment Text_align;
 	int Max_columns;
 public:
 	HudGaugeWarheadCount();
@@ -461,7 +466,7 @@ public:
 	void initCountSizes(int w, int h);
 	void initMaxSymbols(int count);
 	void initMaxColumns(int count);
-	void initTextAlign(int align);
+	void initTextAlign(HudAlignment align);
 	void render(float frametime) override;
 	void pageIn() override;
 };

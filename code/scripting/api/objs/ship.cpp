@@ -273,6 +273,9 @@ ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The d
 
 	if(ADE_SETTING_VAR && s != nullptr) {
 		shipp->display_name = s;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name, s[0] != 0);
 	}
 
 	return ade_set_args(L, "s", shipp->display_name.c_str());
@@ -999,7 +1002,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 		percent_killed = 1.0f;
 	}
 
-	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig) ? 1 : 0);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1459,33 +1462,33 @@ ADE_FUNC(doManeuver,
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	control_info *cip = &aip->ai_override_ci;
 
-	aip->ai_override_flags.reset();
-
-	// handle infinite timestamps
-	if (duration >= 2) {
-		aip->ai_override_timestamp = timestamp(duration);
-	} else {
-		aip->ai_override_timestamp = timestamp(10);
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Never_expire);
+	if (!(maneuver_flags & CIF_DONT_OVERRIDE_OLD_MANEUVERS)) {
+		aip->ai_override_flags.reset();
 	}
-
+	
+	bool applied_rot = false;
+	bool applied_lat = false;
 	if (apply_all_rotate) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_rot);
 		cip->heading = heading;
 		cip->pitch = pitch;
 		cip->bank = bank;
+		applied_rot = true;
 	} else {
 		if (heading != 0) {
 			cip->heading = heading;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
+			applied_rot = true;
 		}
 		if (pitch != 0) {
 			cip->pitch = pitch;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
+			applied_rot = true;
 		}
 		if (bank != 0) {
 			cip->bank = bank;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
+			applied_rot = true;
 		}
 	}
 	if (apply_all_move) {
@@ -1493,18 +1496,40 @@ ADE_FUNC(doManeuver,
 		cip->vertical = up;
 		cip->sideways = sideways;
 		cip->forward = forward;
+		applied_lat = true;
 	} else {
 		if (up != 0) {
 			cip->vertical = up;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
+			applied_lat = true;
 		}
 		if (sideways != 0) {
 			cip->sideways = sideways;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
+			applied_lat = true;
 		}
 		if (forward != 0) {
 			cip->forward = forward;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
+			applied_lat = true;
+		}
+	}
+
+	// handle infinite timestamps
+	if (duration >= 2) {
+		if (applied_rot)
+			aip->ai_override_rot_timestamp = timestamp(duration);
+		if (applied_lat)
+			aip->ai_override_lat_timestamp = timestamp(duration);
+	}
+	else {
+		if (applied_rot) {
+			aip->ai_override_rot_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Rotational_never_expire);
+		}
+		if (applied_lat) {
+			aip->ai_override_lat_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Lateral_never_expire);
 		}
 	}
 
@@ -1713,7 +1738,7 @@ ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the curren
 	char temp_callsign[NAME_LENGTH];
 
 	*temp_callsign = 0;
-	mission_parse_lookup_callsign_index(shipp->callsign_index, temp_callsign);
+	strcpy(temp_callsign, mission_parse_lookup_callsign_index(shipp->callsign_index));
 
 	if (*temp_callsign)
 		return ade_set_args(L, "s", temp_callsign);
@@ -1737,13 +1762,12 @@ ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the sh
 	if (shipp->alt_type_index < 0)
 		return ade_set_args(L, "s", "");
 
-	char temp[NAME_LENGTH];
+	char temp_altname[NAME_LENGTH];
 
-	*temp = 0;
-	mission_parse_lookup_alt_index(shipp->alt_type_index, temp);
+	strcpy_s(temp_altname, mission_parse_lookup_alt_index(shipp->alt_type_index));
 
-	if (*temp)
-		return ade_set_args(L, "s", temp);
+	if (*temp_altname)
+		return ade_set_args(L, "s", temp_altname);
 	else
 		return ade_set_args(L, "s", "");
 }
@@ -1826,7 +1850,7 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 		return ade_set_error(L, "s", "");
 
 	shipp = &Ships[objh->objp->instance];
-	return ade_set_args(L, "s", shipp->get_display_string());
+	return ade_set_args(L, "s", shipp->get_display_name());
 }
 
 

@@ -42,14 +42,13 @@ static int PF_wait_timestamp = 0;
 
 static const uint32_t PF_lifetime = 7200;	// 2 hrs
 
-static bool PF_get_addr(const char *host, const uint16_t port, struct sockaddr *addr);
 static void PF_log_init();
 
 
 void multi_port_forward_init()
 {
-	struct sockaddr_storage gateway_addr;
-	struct sockaddr_storage local_addr;
+	SOCKADDR_STORAGE gateway_addr;
+	SOCKADDR_STORAGE local_addr;
 	int wait_ms;
 	bool auto_discover = true;
 
@@ -58,9 +57,7 @@ void multi_port_forward_init()
 	}
 
 	if (Cmdline_gateway_ip) {
-		if ( PF_get_addr(Cmdline_gateway_ip, PCP_SERVER_PORT,
-						 reinterpret_cast<struct sockaddr *>(&gateway_addr)) )
-		{
+		if ( psnet_get_addr(Cmdline_gateway_ip, PCP_SERVER_PORT, &gateway_addr) ) {
 			auto_discover = false;
 		}
 	}
@@ -78,12 +75,12 @@ void multi_port_forward_init()
 	PF_initted = true;
 
 	if ( !auto_discover ) {
-		pcp_add_server(PF_pcp_ctx, reinterpret_cast<struct sockaddr *>(&gateway_addr), PCP_MAX_SUPPORTED_VERSION);
+		pcp_add_server(PF_pcp_ctx, reinterpret_cast<LPSOCKADDR>(&gateway_addr), PCP_MAX_SUPPORTED_VERSION);
 	}
 
-	PF_get_addr(nullptr, Psnet_default_port, reinterpret_cast<struct sockaddr *>(&local_addr));
+	psnet_get_addr(nullptr, Psnet_default_port, &local_addr);
 
-	PF_pcp_flow = pcp_new_flow(PF_pcp_ctx, reinterpret_cast<struct sockaddr *>(&local_addr),
+	PF_pcp_flow = pcp_new_flow(PF_pcp_ctx, reinterpret_cast<LPSOCKADDR>(&local_addr),
 							   nullptr, nullptr, IPPROTO_UDP, PF_lifetime, nullptr);
 
 	if (PF_pcp_flow == nullptr) {
@@ -134,8 +131,8 @@ void multi_port_forward_do()
 				memset(&int_ip, 0, sizeof(int_ip));
 				memset(&ext_ip, 0, sizeof(ext_ip));
 
-				inet_ntop(AF_INET6, &info->int_ip, int_ip, sizeof(int_ip));
-				inet_ntop(AF_INET6, &info->ext_ip, ext_ip, sizeof(ext_ip));
+				inet_ntop(AF_INET6, psnet_mask_addr(&info->int_ip), int_ip, sizeof(int_ip));
+				inet_ntop(AF_INET6, psnet_mask_addr(&info->ext_ip), ext_ip, sizeof(ext_ip));
 
 				ml_printf("Port forward => Mapping successful  [%s]:%u <-> [%s]:%u",
 						  int_ip, ntohs(info->int_port),
@@ -176,57 +173,10 @@ void multi_port_forward_close()
 }
 
 
-static bool PF_get_addr(const char *host, const uint16_t port, struct sockaddr *addr)
-{
-	struct addrinfo hints, *srvinfo;
-	bool success = false;
-
-	Assert(addr != nullptr);
-
-	memset(&hints, 0, sizeof(hints));
-
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_flags = AI_V4MAPPED;
-
-	if (host == nullptr) {
-		hints.ai_flags |= AI_PASSIVE;
-	}
-
-	SCP_string port_str = std::to_string(port);
-
-	int rval = getaddrinfo(host, port_str.c_str(), &hints, &srvinfo);
-
-	if (rval) {
-		ml_printf("PF_get_addr : getaddrinfo() => %s", gai_strerror(rval));
-		return false;
-	}
-
-	for (auto *srv = srvinfo; srv != nullptr; srv = srv->ai_next) {
-		if ( (srv->ai_family == AF_INET) || (srv->ai_family == AF_INET6) ) {
-			size_t ssize = sizeof(struct sockaddr_in);
-
-			if (srv->ai_family == AF_INET6) {
-				ssize = sizeof(struct sockaddr_in6);
-			}
-
-			memcpy(addr, srv->ai_addr, ssize);
-
-			success = true;
-
-			break;
-		}
-	}
-
-	freeaddrinfo(srvinfo);
-
-	return success;
-}
-
 #ifndef NDEBUG
 static void PF_logger_fn(pcp_loglvl_e /* lvl */, const char *msg)
 {
-	ml_printf("Port forward => %s", msg);
+	nprintf(("portfwd", "Port forward => %s", msg));
 }
 #endif
 

@@ -1,0 +1,759 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::ShipEditorDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ShipEditorDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>466</width>
+    <height>681</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Edit Ship</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0">
+    <layout class="QVBoxLayout" name="fullLayout">
+     <item>
+      <layout class="QHBoxLayout" name="topLayout" stretch="2,2,1">
+       <item>
+        <layout class="QVBoxLayout" name="firstColumn" stretch="1,1">
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QGridLayout" name="firstColumnOptions">
+           <item row="3" column="0">
+            <widget class="QLabel" name="teamLabel">
+             <property name="text">
+              <string>Team</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="AIClassCombo"/>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="cargoCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="shipClassCombo"/>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="teamCombo"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="shipNameEdit"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="cargoLabel">
+             <property name="text">
+              <string>Cargo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="AIClassLabel">
+             <property name="text">
+              <string>AI Class</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="shipNameLabel">
+             <property name="text">
+              <string>Ship Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QComboBox" name="callsignCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="altNameLabel">
+             <property name="text">
+              <string>Alt Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="shipClassLabel">
+             <property name="text">
+              <string>Ship Class</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="callsignLabel">
+             <property name="text">
+              <string>Callsign</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QComboBox" name="altNameCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="textureReplacementButton">
+           <property name="text">
+            <string>Texture Replacement</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="middleColumn" stretch="1,1,1,1">
+         <item>
+          <layout class="QGridLayout" name="middleOptionsGrid">
+           <item row="4" column="0">
+            <widget class="QLabel" name="scoreLabel">
+             <property name="text">
+              <string>Kill Score</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="hotkeyCombo">
+             <item>
+              <property name="text">
+               <string>None</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 1 (F5)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 2 (F6)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 3 (F7)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 4 (F8)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 5 (F9)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 6 (F10)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 7 (F11)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Set 8 (F12)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Hidden</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="personaCombo"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QSpinBox" name="assistEdit">
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="wingLabel">
+             <property name="text">
+              <string>Wing:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="wing">
+             <property name="text">
+              <string>Static</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="personaLabel">
+             <property name="text">
+              <string>Persona</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="hotkeyLabel">
+             <property name="text">
+              <string>Hotkey</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QSpinBox" name="killScoreEdit">
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="assistLabel">
+             <property name="text">
+              <string>Assist %</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="playerCheckboxLayout">
+           <item>
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="playerShipCheckBox">
+             <property name="text">
+              <string>Player Ship</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="playerShipButton">
+           <property name="text">
+            <string>Set As Player Ship</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="altShipClassButton">
+           <property name="text">
+            <string>Alt Ship Class</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="lastColumn">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetDefaultConstraint</enum>
+         </property>
+         <property name="horizontalSpacing">
+          <number>0</number>
+         </property>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="specialExpButton">
+           <property name="text">
+            <string>Special Exp</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <layout class="QHBoxLayout" name="directionalBtnLayout">
+           <property name="spacing">
+            <number>6</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="prevButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>35</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Prev</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="nextButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>35</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Next</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0">
+          <widget class="QPushButton" name="weaponsButton">
+           <property name="text">
+            <string>Weapons</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QPushButton" name="playerOrdersButton">
+           <property name="text">
+            <string>Player Orders</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="resetButton">
+           <property name="text">
+            <string>Reset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPushButton" name="specialHitsButton">
+           <property name="text">
+            <string>Special Hits</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="deleteButton">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="buttons">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <item>
+        <widget class="QPushButton" name="miscButton">
+         <property name="text">
+          <string>Misc</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="initialStatusButton">
+         <property name="text">
+          <string>Initial Status</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="initialOrdersButton">
+         <property name="text">
+          <string>Initial Orders</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="tblInfoButton">
+         <property name="text">
+          <string>TBL Info</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="hideCuesButton">
+         <property name="text">
+          <string>Hide Cues</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="cueLayout">
+       <item>
+        <widget class="QGroupBox" name="arrivalGroupBox">
+         <property name="title">
+          <string>Arrival</string>
+         </property>
+         <layout class="QVBoxLayout" name="arrivalLayout">
+          <item>
+           <layout class="QGridLayout" name="arrivalBoxLayout">
+            <item row="2" column="0">
+             <widget class="QLabel" name="arrivalDistanceLabel">
+              <property name="text">
+               <string>Distance</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="arrivalLocationLabel">
+              <property name="text">
+               <string>Location</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="arrivalTargetCombo"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="arrivalTargetLabel">
+              <property name="text">
+               <string>Target</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="arrivalDelayLabel">
+              <property name="text">
+               <string>Delay</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="arrivalLocationCombo"/>
+            </item>
+            <item row="3" column="1">
+             <layout class="QHBoxLayout" name="arrivalDelayLayout">
+              <item>
+               <widget class="QSpinBox" name="arrivalDelaySpinBox"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="arrivalSeconds">
+                <property name="text">
+                 <string>Seconds</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="arrivalDistanceLayout">
+              <item>
+               <widget class="QSpinBox" name="arrivalDistanceEdit">
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="distanceSpaceer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Preferred</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="restrictArrivalPathsButton">
+            <property name="text">
+             <string>Restrict Arrival Paths</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="customWarpinButton">
+            <property name="text">
+             <string>Custom Warp-in Parameters</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="arrivalCueLayout">
+            <item>
+             <widget class="QLabel" name="arrivalCureLabel">
+              <property name="text">
+               <string>Cue:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="updateArrivalCueCheckBox">
+              <property name="text">
+               <string>Update Cue</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="fso::fred::sexp_tree" name="arrivalTree"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="noArrivalWarpCheckBox">
+            <property name="text">
+             <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="departureGroupBox">
+         <property name="title">
+          <string>Departure</string>
+         </property>
+         <layout class="QVBoxLayout" name="departureLayout_2">
+          <item>
+           <layout class="QGridLayout" name="departureLayout">
+            <item row="1" column="0">
+             <widget class="QLabel" name="departureTargetLabel">
+              <property name="text">
+               <string>Target</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="departureTargetCombo"/>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="departureDelayLabel">
+              <property name="text">
+               <string>Delay</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <spacer name="departureSpaceer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>22</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="departureLocationCombo"/>
+            </item>
+            <item row="3" column="1">
+             <layout class="QHBoxLayout" name="departureDelayLayout">
+              <item>
+               <widget class="QSpinBox" name="departureDelaySpinBox"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="departureSeconds">
+                <property name="text">
+                 <string>Seconds</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="departuredelaySpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="departureLocationLabel">
+              <property name="text">
+               <string>Location</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="restrictDeparturePathsButton">
+            <property name="text">
+             <string>Restrict Departure Paths</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="customWarpoutButton">
+            <property name="text">
+             <string>Custom Warp-out Parameters</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="departureCueLayout">
+            <item>
+             <widget class="QLabel" name="departureCueLabel">
+              <property name="text">
+               <string>Cue:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="departureCueSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="updateDepartureCueCheckBox">
+              <property name="text">
+               <string>Update Cue</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="fso::fred::sexp_tree" name="departureTree"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="noDepartureWarpCheckBox">
+            <property name="text">
+             <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="HelpTitle">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTextEdit" name="helpText">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

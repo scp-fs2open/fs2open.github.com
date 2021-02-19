@@ -14,6 +14,7 @@ enum class ade_type_info_type {
 	Alternative,
 	Function,
 	Generic,
+	Varargs,
 };
 
 class ade_type_array;
@@ -22,6 +23,7 @@ class ade_type_iterator;
 class ade_type_alternative;
 class ade_type_function;
 class ade_type_generic;
+class ade_type_varargs;
 
 /**
  * @brief A definition of a type used in the ADE system
@@ -44,6 +46,7 @@ class ade_type_info {
 	/*implicit*/ ade_type_info(const ade_type_alternative& alternativeType);
 	/*implicit*/ ade_type_info(const ade_type_function& functionType);
 	/*implicit*/ ade_type_info(const ade_type_generic& genericType);
+	/*implicit*/ ade_type_info(const ade_type_varargs& genericType);
 
 	ade_type_info(const ade_type_info&) = default;
 	ade_type_info& operator=(const ade_type_info&) = default;
@@ -132,6 +135,15 @@ class ade_type_generic {
 
 	const ade_type_info& getBaseType() const;
 	const SCP_vector<scripting::ade_type_info>& getGenericTypes() const;
+};
+
+class ade_type_varargs {
+	ade_type_info _baseType;
+
+  public:
+	explicit ade_type_varargs(ade_type_info baseType);
+
+	const ade_type_info& getBaseType() const;
 };
 
 class ade_overload_list {

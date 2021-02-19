@@ -413,10 +413,10 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 			return ade_set_error(L, "s", "");
 		}
 
-		strcpy_s(Ship_info[idx].alt_name, newName);
+		strcpy_s(Ship_info[idx].display_name, newName);
 	}
 
-	return ade_set_args(L, "s", Ship_info[idx].alt_name);
+	return ade_set_args(L, "s", Ship_info[idx].display_name);
 }
 
 ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")
@@ -455,6 +455,23 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 	}
 
 	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
+{
+	int idx;
+	float new_power;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &new_power))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		Ship_info[idx].power_output = new_power;
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].power_output);
 }
 
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

@@ -591,6 +591,28 @@ ADE_FUNC(getNormalized,
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(projectParallel,
+	l_Vector,
+	"vector unitVector",
+	"Returns a projection of the vector along a unit vector.  The unit vector MUST be normalized.",
+	"vector",
+	"The projected vector, or NIL if a handle is invalid")
+{
+	vec3d *src, *unit;
+	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&unit)))
+		return ADE_RETURN_NIL;
+
+	if (!vm_vec_is_normalized(unit))
+	{
+		LuaError(L, "The unit vector MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
+
+	vec3d dest;
+	vm_vec_projection_parallel(&dest, src, unit);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
 ADE_FUNC(projectOntoPlane,
 	l_Vector,
 	"vector surfaceNormal",
@@ -601,6 +623,12 @@ ADE_FUNC(projectOntoPlane,
 	vec3d *src, *normal;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&normal)))
 		return ADE_RETURN_NIL;
+
+	if (!vm_vec_is_normalized(normal))
+	{
+		LuaError(L, "The surface normal MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
 
 	vec3d dest;
 	vm_vec_projection_onto_plane(&dest, src, normal);
@@ -621,6 +649,90 @@ ADE_FUNC(findNearestPointOnLine,
 	vec3d dest;
 	float f = find_nearest_point_on_line(&dest, p0, p1, point);
 	return ade_set_args(L, "of", l_Vector.Set(dest), f);
+}
+
+ADE_FUNC(perturb,
+	l_Vector,
+	"number angle1, [number angle2]",
+	"Create a new normalized vector, randomly perturbed around a given (normalized) vector.  Angles are in radians.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
+	"vector",
+	"A vector, somewhat perturbed from the experience")
+{
+	vec3d *in, out;
+	float angle1, angle2;
+
+	int numargs = ade_get_args(L, "of|f", l_Vector.GetPtr(&in), &angle1, &angle2);
+	if (numargs < 2)
+		return ADE_RETURN_NIL;
+
+	if (numargs == 2)
+		vm_vec_random_cone(&out, in, angle1);
+	else
+		vm_vec_random_cone(&out, in, angle1, angle2);
+
+	return ade_set_args(L, "o", l_Vector.Set(out));
+}
+
+ADE_FUNC(perturb,
+	l_Matrix,
+	"number angle1, [number angle2]",
+	"Create a new normalized vector, randomly perturbed around a cone in the given orientation.  Angles are in radians.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
+	"vector",
+	"A vector, somewhat perturbed from the experience")
+{
+	matrix_h* mh = nullptr;
+	vec3d out;
+	float angle1, angle2;
+
+	int numargs = ade_get_args(L, "of|f", l_Matrix.GetPtr(&mh), &angle1, &angle2);
+	if (numargs < 2)
+		return ADE_RETURN_NIL;
+
+	if (numargs == 2)
+		vm_vec_random_cone(&out, nullptr, angle1, mh->GetMatrix());
+	else
+		vm_vec_random_cone(&out, nullptr, angle1, angle2, mh->GetMatrix());
+
+	return ade_set_args(L, "o", l_Vector.Set(out));
+}
+
+ADE_FUNC(randomInCircle,
+	l_Vector,
+	"orientation orient, number radius, boolean on_edge",
+	"Given this vector (the origin point), an orientation, and a radius, generate a point on the plane of the circle.  If on_edge is true, the point will be on the edge of the circle.",
+	"vector",
+	"A point within the plane of the circle")
+{
+	vec3d *in, out;
+	matrix_h* mh = nullptr;
+	float radius;
+	bool on_edge;
+
+	if (!ade_get_args(L, "oofb", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge))
+		return ADE_RETURN_NIL;
+
+	vm_vec_random_in_circle(&out, in, mh->GetMatrix(), radius, on_edge);
+
+	return ade_set_args(L, "o", l_Vector.Set(out));
+}
+
+ADE_FUNC(randomInSphere,
+	l_Vector,
+	"number radius, boolean on_surface",
+	"Given this vector (the origin point) and a radius, generate a point in the volume of the sphere.  If on_surface is true, the point will be on the surface of the sphere.",
+	"vector",
+	"A point within the plane of the circle")
+{
+	vec3d *in, out;
+	float radius;
+	bool on_surface;
+
+	if (!ade_get_args(L, "ofb", l_Vector.GetPtr(&in), &radius, &on_surface))
+		return ADE_RETURN_NIL;
+
+	vm_vec_random_in_sphere(&out, in, radius, on_surface);
+
+	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
 

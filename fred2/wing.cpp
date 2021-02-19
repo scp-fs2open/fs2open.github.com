@@ -33,27 +33,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 #define MULTI_WING	999999
 
-/**
- * @brief 8 Vectors per formation. Possible to have more than 8 ships.
- *
- * @details  A vector is where a ship is located relative to the leader.  Other ships can be located at the same
- * vector relative to another member.  So wing formation size is not limited by this constant.
- */
-#define MAX_WING_VECTORS    8
-
-/**
- * @brief 8 different kinds of wing formations
- */
-#define MAX_WING_FORMATIONS 8
-
-typedef struct formation
-{
-	int		num_vectors;
-	vec3d	offsets[MAX_WING_VECTORS];
-} formation;
-
-formation Wing_formations[MAX_WING_FORMATIONS];
-
 int already_deleting_wing = 0;
 int Wings_initialized = 0;
 
@@ -197,6 +176,7 @@ int create_wing() {
 
 		Wings[wing].num_waves = 1;
 		Wings[wing].threshold = 0;
+		Wings[wing].formation = -1;
 		Wings[wing].arrival_location = Wings[wing].departure_location = 0;
 		Wings[wing].arrival_distance = 0;
 		Wings[wing].arrival_anchor = -1;
@@ -422,16 +402,6 @@ void initialize_wings(void) {
 		return;
 
 	Wings_initialized = 1;
-
-	Wing_formations[0].num_vectors = 2;
-
-	Wing_formations[0].offsets[0].xyz.x = -5.0f;
-	Wing_formations[0].offsets[0].xyz.y = +1.0f;
-	Wing_formations[0].offsets[0].xyz.z = -5.0f;
-
-	Wing_formations[0].offsets[1].xyz.x = +5.0f;
-	Wing_formations[0].offsets[1].xyz.y = +1.0f;
-	Wing_formations[0].offsets[1].xyz.z = -5.0f;
 }
 
 void mark_wing(int wing)

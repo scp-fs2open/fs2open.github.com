@@ -32,6 +32,7 @@ namespace font
 	{
 	private:
 		SCP_string name;	//!< The name of this font
+		SCP_string filename; //!< The file name used to retrieve this font
 
 	protected:
 		float offsetTop;		//!< The offset at the top of a line of text
@@ -64,9 +65,18 @@ namespace font
 		*
 		* @date	23.11.2011
 		*
-		* @param	name	The new name.
+		* @param	newName		The new name.
 		*/
 		void setName(const SCP_string& newName);
+
+		/**
+		* @brief	Sets the filename of this font.
+		*
+		* @date	9.9.2020
+		*
+		* @param	newName		The new filename.
+		*/
+		void setFilename(const SCP_string& newName);
 
 		/**
 		* @brief	Gets the name of this font.
@@ -76,6 +86,15 @@ namespace font
 		* @return	The name.
 		*/
 		const SCP_string& getName() const;
+
+		/**
+		* @brief	Gets the filename of this font.
+		*
+		* @date	9.9.2020
+		*
+		* @return	The name.
+		*/
+		const SCP_string& getFilename() const;
 
 		/**
 		* @brief	Gets the type of this font.

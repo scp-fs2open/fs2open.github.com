@@ -56,7 +56,7 @@ int multi_kick_can_kick(net_player *player);
 void multi_kick_init()
 {
 	// blast all the ban slots
-	memset(Multi_kick_ban_slots,0,sizeof(net_addr)*MAX_BAN_SLOTS);
+	memset(Multi_kick_ban_slots, 0, sizeof(Multi_kick_ban_slots));
 	Multi_kick_num_ban_slots = 0;
 }
 
@@ -196,7 +196,7 @@ void multi_kick_add_ban(net_addr *addr)
 {
 	// if we still have any slots left
 	if(Multi_kick_num_ban_slots < (MAX_BAN_SLOTS - 1)){
-		memcpy(&Multi_kick_ban_slots[Multi_kick_num_ban_slots++],addr,sizeof(net_addr));
+		memcpy(&Multi_kick_ban_slots[Multi_kick_num_ban_slots++], addr, sizeof(*addr));
 	}
 }
 

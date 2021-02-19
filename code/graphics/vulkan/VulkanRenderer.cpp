@@ -3,6 +3,7 @@
 
 #include "globalincs/version.h"
 
+#include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "libs/renderdoc/renderdoc.h"
 #include "mod_table/mod_table.h"
@@ -268,6 +269,15 @@ bool VulkanRenderer::initialize()
 		mprintf(("Failed to create swap chain.\n"));
 		return false;
 	}
+
+	createRenderPass();
+	createGraphicsPipeline();
+	createFrameBuffers();
+	createPresentSyncObjects();
+	createCommandPool(deviceValues);
+
+	// Prepare the rendering state by acquiring our first swap chain image
+	acquireNextSwapChainImage();
 
 	return true;
 }
@@ -590,6 +600,291 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 	}
 
 	return true;
+}
+vk::UniqueShaderModule VulkanRenderer::loadShader(const SCP_string& name)
+{
+	auto def_file = defaults_get_file(name.c_str());
+
+	vk::ShaderModuleCreateInfo createInfo;
+	createInfo.codeSize = def_file.size;
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(def_file.data);
+
+	return m_device->createShaderModuleUnique(createInfo);
+}
+void VulkanRenderer::createFrameBuffers()
+{
+	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
+	for (const auto& imageView : m_swapChainImageViews) {
+		vk::ImageView attachments[] = {
+			imageView.get(),
+		};
+
+		vk::FramebufferCreateInfo framebufferInfo;
+		framebufferInfo.renderPass = m_renderPass.get();
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = m_swapChainExtent.width;
+		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.layers = 1;
+
+		m_swapChainFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+	}
+}
+void VulkanRenderer::createRenderPass()
+{
+	vk::AttachmentDescription colorAttachment;
+	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+	vk::AttachmentReference colorAttachRef;
+	colorAttachRef.attachment = 0;
+	colorAttachRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachRef;
+
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+	vk::RenderPassCreateInfo renderPassInfo;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
+	m_renderPass = m_device->createRenderPassUnique(renderPassInfo);
+}
+void VulkanRenderer::createGraphicsPipeline()
+{
+	auto vertShaderMod = loadShader("vulkan.vert.spv");
+	vk::PipelineShaderStageCreateInfo vertStageCreate;
+	vertStageCreate.stage = vk::ShaderStageFlagBits::eVertex;
+	vertStageCreate.module = vertShaderMod.get();
+	vertStageCreate.pName = "main";
+
+	auto fragShaderMod = loadShader("vulkan.frag.spv");
+	vk::PipelineShaderStageCreateInfo fragStageCreate;
+	fragStageCreate.stage = vk::ShaderStageFlagBits::eFragment;
+	fragStageCreate.module = fragShaderMod.get();
+	fragStageCreate.pName = "main";
+
+	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertStageCreate, fragStageCreate};
+
+	vk::PipelineVertexInputStateCreateInfo vertInCreate;
+	vertInCreate.vertexBindingDescriptionCount = 0;
+	vertInCreate.vertexAttributeDescriptionCount = 0;
+
+	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
+	inputAssembly.primitiveRestartEnable = false;
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = i2fl(gr_screen.max_w);
+	viewport.height = i2fl(gr_screen.max_h);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	vk::Rect2D scissor;
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent = m_swapChainExtent;
+
+	vk::PipelineViewportStateCreateInfo viewportState;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &scissor;
+
+	vk::PipelineRasterizationStateCreateInfo rasterizer;
+	rasterizer.depthClampEnable = false;
+	rasterizer.rasterizerDiscardEnable = false;
+	rasterizer.polygonMode = vk::PolygonMode::eFill;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode |= vk::CullModeFlagBits::eBack;
+	rasterizer.frontFace = vk::FrontFace::eClockwise;
+	rasterizer.depthBiasEnable = false;
+	rasterizer.depthBiasConstantFactor = 0.0f;
+	rasterizer.depthBiasClamp = 0.0f;
+	rasterizer.depthBiasSlopeFactor = 0.0f;
+
+	vk::PipelineMultisampleStateCreateInfo multisampling;
+	multisampling.sampleShadingEnable = false;
+	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
+	multisampling.minSampleShading = 1.0f;
+	multisampling.pSampleMask = nullptr;
+	multisampling.alphaToCoverageEnable = false;
+	multisampling.alphaToOneEnable = false;
+
+	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
+	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+										  vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+	colorBlendAttachment.blendEnable = false;
+	colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eOne;  // Optional
+	colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero; // Optional
+	colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;             // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;  // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero; // Optional
+	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;             // Optional
+
+	vk::PipelineColorBlendStateCreateInfo colorBlending;
+	colorBlending.logicOpEnable = false;
+	colorBlending.logicOp = vk::LogicOp::eCopy;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
+
+	vk::DynamicState dynamicStates[] = {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eLineWidth,
+	};
+
+	vk::PipelineDynamicStateCreateInfo dynamicStateInfo;
+	dynamicStateInfo.dynamicStateCount = 2;
+	dynamicStateInfo.pDynamicStates = dynamicStates;
+
+	vk::PipelineLayoutCreateInfo pipelineLayout;
+	pipelineLayout.setLayoutCount = 0;
+	pipelineLayout.pSetLayouts = nullptr;
+	pipelineLayout.pushConstantRangeCount = 0;
+	pipelineLayout.pPushConstantRanges = nullptr;
+
+	m_pipelineLayout = m_device->createPipelineLayoutUnique(pipelineLayout);
+
+	vk::GraphicsPipelineCreateInfo pipelineInfo;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shaderStages.data();
+	pipelineInfo.pVertexInputState = &vertInCreate;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = nullptr;
+	pipelineInfo.layout = m_pipelineLayout.get();
+	pipelineInfo.renderPass = m_renderPass.get();
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = nullptr;
+	pipelineInfo.basePipelineIndex = -1;
+
+	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo);
+}
+void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
+{
+	vk::CommandPoolCreateInfo poolCreate;
+	poolCreate.queueFamilyIndex = values.graphicsQueueIndex.index;
+	poolCreate.flags |= vk::CommandPoolCreateFlagBits::eTransient;
+
+	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
+}
+void VulkanRenderer::createPresentSyncObjects()
+{
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		m_frames[i].reset(new RenderFrame(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue));
+	}
+
+	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+}
+void VulkanRenderer::acquireNextSwapChainImage()
+{
+	m_frames[m_currentFrame]->waitForFinish();
+
+	m_currentSwapChainImage = m_frames[m_currentFrame]->acquireSwapchainImage();
+
+	// Ensure that this image is no longer in use
+	if (m_swapChainImageRenderImage[m_currentSwapChainImage]) {
+		m_swapChainImageRenderImage[m_currentSwapChainImage]->waitForFinish();
+	}
+	// Reserve the image as in use
+	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
+}
+void VulkanRenderer::drawScene(vk::Framebuffer destinationFb, vk::CommandBuffer cmdBuffer)
+{
+	vk::CommandBufferBeginInfo beginInfo;
+	beginInfo.flags |= vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
+	cmdBuffer.begin(beginInfo);
+
+	vk::RenderPassBeginInfo renderPassBegin;
+	renderPassBegin.renderPass = m_renderPass.get();
+	renderPassBegin.framebuffer = destinationFb;
+	renderPassBegin.renderArea.offset.x = 0;
+	renderPassBegin.renderArea.offset.y = 0;
+	renderPassBegin.renderArea.extent = m_swapChainExtent;
+
+	vk::ClearValue clearColor;
+	clearColor.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+
+	renderPassBegin.clearValueCount = 1;
+	renderPassBegin.pClearValues = &clearColor;
+
+	cmdBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+
+	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline.get());
+
+	cmdBuffer.draw(3, 1, 0, 0);
+
+	cmdBuffer.endRenderPass();
+
+	cmdBuffer.end();
+}
+void VulkanRenderer::flip()
+{
+	vk::CommandBufferAllocateInfo cmdBufferAlloc;
+	cmdBufferAlloc.commandPool = m_graphicsCommandPool.get();
+	cmdBufferAlloc.level = vk::CommandBufferLevel::ePrimary;
+	cmdBufferAlloc.commandBufferCount = 1;
+
+	// Uses the non-unique version since we can't get the buffers into the lambda below otherwise. Only C++14 can do
+	// that
+	auto allocatedBuffers = m_device->allocateCommandBuffers(cmdBufferAlloc);
+	auto& cmdBuffer = allocatedBuffers.front();
+
+	drawScene(m_swapChainFramebuffers[m_currentSwapChainImage].get(), cmdBuffer);
+	m_frames[m_currentFrame]->onFrameFinished([this, allocatedBuffers]() mutable {
+		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), allocatedBuffers);
+		allocatedBuffers.clear();
+	});
+
+	m_frames[m_currentFrame]->submitAndPresent(allocatedBuffers);
+
+	// Advance counters to prepare for the next frame
+	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+	acquireNextSwapChainImage();
+}
+void VulkanRenderer::shutdown()
+{
+	// Wait for all frames to complete to ensure no drawing is in progress when we destroy the device
+	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		m_frames[i]->waitForFinish();
+	}
+	// For good measure, also wait until the device is idle
+	m_device->waitIdle();
 }
 
 } // namespace vulkan

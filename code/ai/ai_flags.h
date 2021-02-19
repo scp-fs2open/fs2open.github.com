@@ -63,7 +63,9 @@ namespace AI {
 		Dont_bank_when_turning,		// maps to CIF_DONT_BANK_WHEN_TURNING
 		Dont_clamp_max_velocity,	// maps to CIF_DONT_CLAMP_MAX_VELOCITY
 		Instantaneous_acceleration,	// maps to CIF_INSTANTANEOUS_ACCELERATION
-		Never_expire,				// don't clear the maneuver when the timestamp is up
+		Lateral_never_expire,       // don't clear the lateral maneuver when the timestamp is up
+		Rotational_never_expire,    // don't clear the rotational maneuver when the timestamp is up
+		Dont_override_old_maneuvers,// doesn't clear any previous maneuvers
 
 		NUM_VALUES
 	};
@@ -118,7 +120,7 @@ namespace AI {
         Smart_secondary_weapon_selection,
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
-        Strict_turred_tagged_only_targeting,
+        Strict_turret_tagged_only_targeting,
 		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in http://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
@@ -127,6 +129,13 @@ namespace AI {
         Use_newtonian_dampening,
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
+		Use_axial_turnrate_differences,
+		all_nonshielded_ships_can_manage_ets,
+		fightercraft_nonshielded_ships_can_manage_ets,
+		Better_collision_avoidance,
+		Require_exact_los,
+		Improved_missile_avoidance,
+		Friendlies_use_countermeasure_firechance,
 
 		NUM_VALUES
 	};

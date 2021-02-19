@@ -586,11 +586,6 @@ void options_change_tab(int n)
 
 	switch (n) {
 		case MULTIPLAYER_TAB:
-			if ( Networking_disabled ) {
-				game_feature_disabled_popup();
-				return;
-			}
-
 			if ( !Options_multi_inited ) {
 				// init multiplayer
 				options_multi_init(&Ui_window);
@@ -901,13 +896,6 @@ void options_menu_init()
 
 	Assert(!Options_menu_inited);
 
-	// pause all sounds, since we could get here through the game
-	weapon_pause_sounds();
-	// only pause music if we're in-mission; we could also be in the main hall
-	if (Game_mode & GM_IN_MISSION) {
-		audiostream_pause_all();
-	}
-
 	Tab = 0;
 	Gamma_last_set = -1;
 
@@ -1035,18 +1023,9 @@ void options_menu_close()
 	Pilot.save_savefile();
 	game_flush();
 	
-	// unpause all sounds, since we could be headed back to the game
-	weapon_unpause_sounds();
-	// only unpause music if we're in-mission; we could also be in the main hall
-	if (Game_mode & GM_IN_MISSION) {
-		audiostream_unpause_all();
-	}
-	
 	Options_menu_inited = 0;
 	Options_multi_inited = 0;
 	Options_detail_inited = 0;
-
-
 }
 
 

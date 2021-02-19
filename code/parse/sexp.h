@@ -114,6 +114,7 @@ class waypoint_list;
 #define OPF_SKYBOX_FLAGS		87		// niffiwan - valid skybox flags
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
+#define OPF_SPECIES				90		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -420,6 +421,10 @@ class waypoint_list;
 #define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FOR_SHIP_CLASS					(0x0013 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FOR_SHIP_TYPE					(0x0014 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_TEAM					(0x0015 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_SPECIES					(0x0016 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_PLAYERS						(0x0017 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
 
 
 // sexpressions with side-effects
@@ -758,6 +763,11 @@ class waypoint_list;
 #define OP_SET_DEBRIEFING_PERSONA			(0x0037 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ADD_TO_COLGROUP2					(0x0038 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_REMOVE_FROM_COLGROUP2			(0x0039 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_POWER_OUTPUT					(0x003a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
+#define OP_TURRET_SET_FORCED_TARGET			(0x003b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TURRET_SET_FORCED_SUBSYS_TARGET	(0x003c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TURRET_CLEAR_FORCED_TARGET		(0x003d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_SEND_MESSAGE_CHAIN				(0x003e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1044,6 +1054,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_GAME_SND				-159
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
+#define SEXP_CHECK_INVALID_SPECIES				-162
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1188,7 +1199,7 @@ extern int get_operator_const(int node);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
-extern int run_sexp(const char* sexpression); // debug and lua sexps
+extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);

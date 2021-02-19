@@ -50,6 +50,8 @@ bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
+bool Shockwaves_always_damage_bombs;
+bool Shockwaves_damage_all_obj_types_once;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -57,9 +59,12 @@ std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
-bool Ai_before_physics;
+bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
+bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
+float Weapon_SS_Threshold_Turret_Inaccuracy;
+bool Render_player_mflash;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -113,10 +118,6 @@ void parse_mod_table(const char *filename)
 			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
 		}
 
-		if (optional_string("$Process AI before physics:")) {
-			stuff_boolean(&Ai_before_physics);
-		}
-
 		optional_string("#CAMPAIGN SETTINGS");
 
 		if (optional_string("$Default Campaign File Name:")) {
@@ -151,8 +152,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(campaign_name);
 
 				Ignored_campaigns.push_back(campaign_name);
 			}
@@ -171,8 +171,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(mission_name);
 
 				Ignored_missions.push_back(mission_name);
 			}
@@ -373,6 +372,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Render player muzzle flashes in cockpit:")) {
+			stuff_boolean(&Render_player_mflash);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -538,12 +541,41 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shockwaves Always Damage Bombs:")) {
+			stuff_boolean(&Shockwaves_always_damage_bombs);
+		}
+
+		if (optional_string("$Shockwaves Damage All Object Types Once:")) {
+			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
+		}
+
 		if (optional_string("$Use Engine Wash Intensity:")) {
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
 		if (optional_string("$Swarmers Lead Targets:")) {
 			stuff_boolean(&Swarmers_lead_targets);
+		}
+
+		if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
+			float weapon_ss_threshold;
+			stuff_float(&weapon_ss_threshold);
+			if ( (weapon_ss_threshold >= 0.0f) && (weapon_ss_threshold <= 1.0f) ) {
+				Weapon_SS_Threshold_Turret_Inaccuracy = weapon_ss_threshold;
+			} else {
+				mprintf(("Game Settings Table: '$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:' value of %.2f is not between 0 and 1. Using default value of 0.70.\n", weapon_ss_threshold));
+			}
+		}
+
+		if (optional_string("$AI use framerate independent turning:")) {
+			stuff_boolean(&Framerate_independent_turning);
+		}
+		
+		if (optional_string("+AI respect tabled turn time and rotdamp:")) {
+			stuff_boolean(&Ai_respect_tabled_turntime_rotdamp);
+			if (!Framerate_independent_turning) {
+				Warning(LOCATION, "\'AI respect tabled turn time and rotdamp\' requires \'AI use framerate independent turning\' in order to function.\n");
+			}
 		}
 
 		required_string("#END");
@@ -611,6 +643,8 @@ void mod_table_reset()
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = false;
 	Dinky_shockwave_default_multiplier = 1.0f;
+	Shockwaves_always_damage_bombs = false;
+	Shockwaves_damage_all_obj_types_once = false;
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
@@ -618,7 +652,10 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
-  Ai_before_physics = false;
+	Framerate_independent_turning = true;
+	Ai_respect_tabled_turntime_rotdamp = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
+	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
+	Render_player_mflash = false;
 }

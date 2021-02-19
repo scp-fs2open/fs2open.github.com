@@ -47,6 +47,13 @@ static intel_data expected_baz = {
 	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
 };
 
+static intel_data expected_qux = {
+	"Qux name", // No XSTR
+	"Qux desc", // No XSTR
+	"Qux anim",
+	IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+};
+
 // use SCOPED_TRACE("<test name>") before calling this
 static void test_intel_data_equal(const intel_data& i1, const intel_data& i2)
 {
@@ -163,18 +170,6 @@ TEST_F(IntelParseTest, three) {
 	test_intel_data_equal(expected_baz, Intel_info[2]);
 }
 
-// Two identical entries are allowed.
-TEST_F(IntelParseTest, identical) {
-	SCOPED_TRACE("identical");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 2);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-	test_intel_data_equal(expected_foo, Intel_info[1]);
-}
-
 // A valid entry followed by one with a missing $:Entry line.
 // The second entry should be ignored. Parsing should stop there.
 TEST_F(IntelParseTest, missing_entry) {
@@ -282,7 +277,7 @@ TEST_F(IntelParseTest, always_techroom_values) {
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 	test_intel_data_equal(expected_bar, Intel_info[1]);
 	test_intel_data_equal(expected_baz, Intel_info[2]);
-	test_intel_data_equal(expected_baz, Intel_info[3]);
+	test_intel_data_equal(expected_qux, Intel_info[3]);
 }
 
 // Data must be in the correct order.

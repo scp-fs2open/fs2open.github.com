@@ -521,18 +521,16 @@ void fix_ship_name(int ship)
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
-	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[MAX_PATH_LEN];
-	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
-	
-
 	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info *sip;
 
-	// "pop" and cfile_chdirs off the sta
-	chdir(Fred_base_dir);
+	// Save the Current Working dir to restore in a minute - fred is being stupid
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpath]/data/missions/
 
+	// "pop" and cfile_chdirs off the stack
+	chdir(Fred_base_dir);
 
 	obj = ship_create(orient, pos, ship_type);
 	if (obj == -1)
@@ -548,6 +546,9 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	if (query_ship_name_duplicate(Objects[obj].instance))
 		fix_ship_name(Objects[obj].instance);
+
+	// set up model stuff - only needs to be done once, not every frame
+	model_set_up_techroom_instance(sip, shipp->model_instance_num);
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
@@ -954,6 +955,8 @@ void clear_mission()
 	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
+
+	Event_annotations.clear();
 
 	mission_parse_reset_alt();		// alternate ship type names
 	mission_parse_reset_callsign();

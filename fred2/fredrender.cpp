@@ -1535,9 +1535,9 @@ void render_frame() {
 			a_deg.p = a.p * CONVERT_DEGREES;
 			a_deg.b = a.b * CONVERT_DEGREES;
 
-			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nHeading: %.2f\nPitch: %.2f\nBank: %.2f",
+			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nPitch: %.2f\nBank: %.2f\nHeading: %.2f",
 					Ships[inst].ship_name, Ship_info[Ships[inst].ship_info_index].short_name,
-					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.h, a_deg.p, a_deg.b);
+					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.p, a_deg.b, a_deg.h);
 
 		} else if (Objects[Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
@@ -1799,14 +1799,14 @@ void render_one_model_htl(object *objp) {
 		if (Fred_outline) {
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
 		g3_done_instance(0);
 
 		if (Show_ship_models) {
 			render_info.set_flags(j);
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 	} else {
 		int r = 0, g = 0, b = 0;

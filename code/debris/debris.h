@@ -24,6 +24,7 @@ class model_draw_list;
 
 FLAG_LIST(Debris_Flags) {
 	Used,
+	OnHullDebrisList,
 	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
 
 	NUM_VALUES
@@ -31,10 +32,6 @@ FLAG_LIST(Debris_Flags) {
 
 
 typedef struct debris {
-	// used for a linked list of the hull debris chunks
-	debris	*next = nullptr;
-	debris *prev = nullptr;
-
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
 	int		source_objnum;			// What object this came from
 	int		damage_type_idx;		// Damage type of this debris
@@ -45,6 +42,7 @@ typedef struct debris {
 	float		lifeleft;			// When 0 or less object dies
 	int		must_survive_until;		//WMC - timestamp of earliest point that it can be murthered.
 	int		model_num;				// What model this uses
+	int		model_instance_num;		// What model instance this uses - needed for arcs
 	int		submodel_num;			// What submodel this uses
 	int		next_fireball;			// When to start a fireball
 	int		is_hull;				// indicates a large hull chunk of debris
@@ -57,6 +55,7 @@ typedef struct debris {
 	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
 	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
 	int		arc_frequency;					// Starts at 1000, gets bigger
+
 	int		parent_alt_name;
 	float	damage_mult;
 

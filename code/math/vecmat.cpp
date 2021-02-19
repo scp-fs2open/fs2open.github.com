@@ -100,7 +100,7 @@ float atan2_safe(float y, float x)
 float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_vec), "unit_vec must be normalized!");
 
 	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
@@ -115,7 +115,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_normal), "unit_normal must be normalized!");
 
 	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
@@ -132,7 +132,7 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
-	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(plane_normal), "plane_normal must be normalized!");
 
 	D = -vm_vec_dot(plane_point, plane_normal);
 	dist = vm_vec_dot(point, plane_normal) + D;
@@ -388,6 +388,12 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
+bool vm_vec_is_normalized(const vec3d *v)
+{
+	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
+	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+}
+
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -540,10 +546,12 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float t;
 	vec3d t0,t1,t2;
@@ -551,10 +559,10 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	vm_vec_copy_normalize(&t0,v0);
 	vm_vec_copy_normalize(&t1,v1);
 
-	if (NULL == fvec) {
+	if (uvec == nullptr) {
 		t = vm_vec_delta_ang_norm(&t0, &t1, NULL);
 	} else {
-		vm_vec_copy_normalize(&t2,fvec);
+		vm_vec_copy_normalize(&t2,uvec);
 		t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
 	}
 
@@ -562,16 +570,38 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 }
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float a;
 	vec3d t;
 
 	a = acosf(vm_vec_dot(v0,v1));
 
-	if (fvec) {
+	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
+			a = -a;
+		}
+	}
+
+	return a;
+}
+
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
+{
+	float a, dot;
+	vec3d t;
+
+	// to avoid round-off errors...
+	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
+	dot = vm_vec_dot(v0, v1);
+	CLAMP(dot, -1.0f, 1.0f);
+
+	a = acosf(dot);
+
+	if (uvec) {
+		vm_vec_cross(&t,v0,v1);
+		if ( vm_vec_dot(&t,uvec) < 0.0 ) {
 			a = -a;
 		}
 	}
@@ -734,7 +764,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	matrix temp = *m;
+	matrix temp = vmd_identity_matrix;
 
 	vec3d *xvec=&temp.vec.rvec;
 	vec3d *yvec=&temp.vec.uvec;
@@ -2213,9 +2243,9 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 }
 
 
-// given a start vector, an orientation and a radius, give a point on the plane of the circle
-// if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge)
+// given a start vector, an orientation, and a radius, generate a point on the plane of the circle
+// if on_edge is true, the point will be on the edge of the circle
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge)
 {
 	vec3d temp;
 
@@ -2226,17 +2256,19 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
 }
 
-// given a start vector, an orientation, and a radius, give a point in a spherical volume
-// if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, int on_edge)
+// given a start vector and a radius, generate a point in a spherical volume
+// if on_surface is true, the point will be on the surface of the sphere
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface)
 {
 	vec3d temp;
+
 	// Uniformly distributing each coordinate of a vector then normalizing results in a uniform sphere distribution
 	util::UniformFloatRange coords(-1.0f,1.0f);
 	vm_vec_make( &temp, coords.next(), coords.next(), coords.next() );
 	vm_vec_normalize(&temp);
+
 	// We then add the scaled result to the initial position to get the final position
-	vm_vec_scale_add(out, in, &temp, on_edge ? radius : util::UniformFloatRange(0.0f,radius).next());
+	vm_vec_scale_add(out, in, &temp, on_surface ? radius : util::UniformFloatRange(0.0f, radius).next());
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
@@ -2741,4 +2773,67 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 	vec3d temp;
 	vm_vec_rotate(&temp, &match_orient->vec.rvec, &source_frame);
 	vm_vec_unrotate(out_rvec, &temp, &dest_frame);
+}
+
+// Cyborg17 - Rotational interpolation between two angle structs in radians.  Assumes that the rotation direction is the smaller arc difference.
+// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f inclusive.
+// rot_vel is only used to determine the rotation direction. This functions assumes a <= 2PI rotation in any axis.  
+// You will get inaccurate results otherwise.
+void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, float interp_perc) {
+	
+	Assertion((interp_perc >= 0.0f) && (interp_perc <= 1.0f), "Interpolation percentage, %f, sent to vm_interpolate_angles is invalid. The valid range is [0,1], go find a coder!", interp_perc);
+
+	angles arc_measures;
+
+	arc_measures.p = src1->p - src0->p;	
+	arc_measures.h = src1->h - src0->h;	
+	arc_measures.b = src1->b - src0->b;
+
+	  // pitch
+	  // if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.p) < 0.00001f) ) {
+		arc_measures.p = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.p > (PI*1.5f)) {
+		arc_measures.p = PI2 - arc_measures.p;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.p < -PI_2) {
+		arc_measures.p = -PI2 - arc_measures.p;
+	}
+
+	  // heading
+	  // if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.h) < 0.00001f) ) {
+		arc_measures.h = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.h > (PI*1.5f)) {
+		arc_measures.h = PI2 - arc_measures.h;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.h < -PI_2) {
+		arc_measures.h = -PI2 - arc_measures.h;
+	}
+
+	// bank
+	// if start and end are basically the same, assume we can basically jump to the end.
+	if ( (fabs(arc_measures.b) < 0.00001f) ) {
+		arc_measures.b = 0.0f;
+
+	} // Test if we actually need to go in the other direction
+	else if (arc_measures.b > (PI*1.5f)) {
+		arc_measures.b = PI2 - arc_measures.b;
+
+	} // Test if we actually need to go in the other direction for negative values
+	else if (arc_measures.b < -PI_2) {
+		arc_measures.b = -PI2 - arc_measures.b;
+	}
+
+	// Now just multiply the difference in angles by the given percentage, and then subtract it from the destination angles.
+	// If arc_measures is 0.0f, then we are basically bashing to the ending orientation without worrying about the inbetween.
+	dest0->p = src0->p + (arc_measures.p * interp_perc);
+	dest0->h = src0->h + (arc_measures.h * interp_perc);
+	dest0->b = src0->b + (arc_measures.b * interp_perc);
 }

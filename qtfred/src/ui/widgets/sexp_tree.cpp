@@ -121,6 +121,8 @@ QString node_image_to_resource_name(NodeImage image) {
 		return ":/images/data90.png";
 	case NodeImage::DATA_95:
 		return ":/images/data95.png";
+	case NodeImage::COMMENT:
+		return ":/images/comment.png";
 	}
 	return ":/images/bitmap1.png";
 }
@@ -1025,7 +1027,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		return 0;
 
 	case OPF_ANYTHING:
-		item->set_data("<any data>");
+		if (Operators[op].value == OP_INVALIDATE_ARGUMENT || Operators[op].value == OP_VALIDATE_ARGUMENT)
+			item->set_data(SEXP_ARGUMENT_STRING);	// this is almost always what you want for these sexps
+		else
+			item->set_data("<any data>");
 		return 0;
 
 	case OPF_NUMBER:
@@ -1215,6 +1220,11 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -1457,6 +1467,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_TEAM_COLOR:
 	case OPF_GAME_SND:
 	case OPF_FIREBALL:
+	case OPF_SPECIES:
 		return 1;
 
 	case OPF_SHIP:
@@ -3013,6 +3024,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_fireball();
 		break;
 
+	case OPF_SPECIES:
+		list = get_listing_opf_species();
+		break;
+
 	default:
 		Int3();  // unknown OPF code
 		list = NULL;
@@ -4552,6 +4567,16 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 		if (strlen(unique_id) > 0)
 			head.add_data(unique_id);
 	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &species : Species_info)
+		head.add_data(species.species_name);
 
 	return head.next;
 }

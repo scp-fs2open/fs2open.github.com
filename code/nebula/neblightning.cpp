@@ -761,7 +761,7 @@ int nebl_gen(vec3d *left, vec3d *right, float depth, float max_depth, int child,
 	if(!child && (frand() <= Nebl_type->b_rand)){
 		// get a point on the plane of the strike
 		vec3d tmp2;
-		vm_vec_random_in_circle(&tmp2, &Nebl_bolt_strike, &Nebl_bolt_dir, Nebl_bolt_len * Nebl_type->b_scale, 0);
+		vm_vec_random_in_circle(&tmp2, &Nebl_bolt_strike, &Nebl_bolt_dir, Nebl_bolt_len * Nebl_type->b_scale, false);
 
 		// maybe move away from the plane
 		vec3d dir;
@@ -1080,7 +1080,7 @@ void nebl_jitter(l_bolt *b)
 	moveup = b->head;
 	while(moveup != NULL){
 		temp = moveup->pos;
-		vm_vec_random_in_circle(&moveup->pos, &temp, &m, frand_range(0.0f, length * bi->noise), 0);
+		vm_vec_random_in_circle(&moveup->pos, &temp, &m, frand_range(0.0f, length * bi->noise), false);
 
 		// just on the main trunk
 		moveup = moveup->links[LINK_RIGHT];

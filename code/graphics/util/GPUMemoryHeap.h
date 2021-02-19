@@ -16,7 +16,7 @@ namespace util {
  */
 class GPUMemoryHeap {
 	std::unique_ptr<::util::HeapAllocator> _allocator;
-	int _bufferHandle = -1;
+	gr_buffer_handle _bufferHandle;
 
 	void* _dataBuffer = nullptr;
 	size_t _bufferSize = 0;
@@ -53,7 +53,7 @@ class GPUMemoryHeap {
 	 *
 	 * @return The graphics code buffer handle.
 	 */
-	int bufferHandle();
+	gr_buffer_handle bufferHandle();
 };
 
 }

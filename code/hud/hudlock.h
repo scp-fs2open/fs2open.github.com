@@ -14,6 +14,8 @@
 
 #include "hud/hud.h"
 
+struct lock_info;
+
 void hud_init_missile_lock();
 void hud_calculate_lock_position(float frametime);
 void hud_calculate_lock_start_pos();
@@ -29,6 +31,7 @@ protected:
 	hud_anim Lock_anim;
 
 	bool loop_locked_anim;
+	bool blink_locked_anim;
 
 	int Lock_gauge_half_w;
 	int Lock_gauge_half_h;
@@ -53,11 +56,12 @@ public:
 	void initTriBase(float length);
 	void initTargetBoxSize(int w, int h);
 	void initLoopLockedAnim(bool loop);
+	void initBlinkLockedAnim(bool blink);
 
 	void render(float frametime) override;
 	void renderOld(float frametime);
 	void renderLockTriangles(int center_x, int center_y, float frametime);
-	void renderLockTrianglesNew(int center_x, int center_y, int start_timestamp);
+	void renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot);
 	void renderLockTrianglesOld(int center_x, int center_y, int radius);
 	void pageIn() override;
 	void initialize() override;

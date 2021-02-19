@@ -90,6 +90,7 @@ enum class NodeImage {
 	DATA_85,
 	DATA_90,
 	DATA_95,
+	COMMENT,
 };
 
 /**
@@ -328,6 +329,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
+	sexp_list_item *get_listing_opf_species();
 
 
 	int getCurrentItemIndex() const;

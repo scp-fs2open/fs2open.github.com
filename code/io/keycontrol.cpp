@@ -471,7 +471,6 @@ int Non_critical_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
-	CYCLE_PRIMARY_WEAPON_SEQUENCE,
     CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
@@ -915,7 +914,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				objp->flags.toggle(Object::Object_Flags::Invulnerable);
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].get_display_string(), objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].get_display_name(), objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
 
@@ -995,7 +994,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_string());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_name());
 			break;
 		}
 
@@ -1008,7 +1007,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_string());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_name());
 			break;
 		}
 		
@@ -1037,7 +1036,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_LASER);
 			
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_string());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_name());
 			break;
 		}
 
@@ -1049,7 +1048,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_LASER);
 		
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_string());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_name());
 			break;
 		}
 
@@ -1085,12 +1084,12 @@ void process_debug_keys(int k)
 
 			if (is_support_allowed(obj_to_rearm))
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].get_display_string());
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].get_display_name());
 				ai_issue_rearm_request(obj_to_rearm);
 			}
 			else
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].get_display_string());
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].get_display_name());
 			}
 
 			break;
@@ -1395,7 +1394,7 @@ void ppsk_hotkeys(int k)
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No target to add/remove from set %d.", 26), hotkey_set+1);
 			else  {
 				hud_target_hotkey_add_remove( hotkey_set, &Objects[Player_ai->target_objnum], HOTKEY_USER_ADDED);
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "%s added to set %d. (F%d)", 27), Ships[Objects[Player_ai->target_objnum].instance].get_display_string(), hotkey_set, 4+hotkey_set+1);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "%s added to set %d. (F%d)", 27), Ships[Objects[Player_ai->target_objnum].instance].get_display_name(), hotkey_set, 4+hotkey_set+1);
 			}
 
 			break;
@@ -2188,6 +2187,13 @@ int button_function_demo_valid(int n)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
 			Viewer_mode &= ~VM_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
+			// reset external camera distance if we're external
+			if (Viewer_mode & VM_EXTERNAL) {
+				if (Viewer_mode & VM_OTHER_SHIP)
+					Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+				else
+					Viewer_external_info.preferred_distance = 2 * Player_obj->radius;
+			}
 		}
 		else
 		{
@@ -2231,6 +2237,13 @@ int button_function_demo_valid(int n)
 				snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 			} else {
 				Viewer_mode ^= VM_OTHER_SHIP;
+				// reset external camera distance if we're external
+				if (Viewer_mode & VM_EXTERNAL) {
+					if (Viewer_mode & VM_OTHER_SHIP)
+						Viewer_external_info.preferred_distance = 2 * Objects[Player_ai->target_objnum].radius;
+					else
+						Viewer_external_info.preferred_distance = 2 * Player_obj->radius;
+				}
 			}
 		}
 		ret = 1;
