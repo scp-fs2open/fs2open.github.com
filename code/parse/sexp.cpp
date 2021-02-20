@@ -25912,6 +25912,10 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	{
 		if (run_eval_num)
 		{
+			// if this sexp node is an operator, put it in another node so that CAR(node) will find it
+			if (get_operator_index(n) >= 0)
+				n = alloc_sexp("", 1, -1, n, -1);
+
 			bool is_nan, is_nan_forever;
 			sexp_val = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan_or_nan_forever != nullptr)
