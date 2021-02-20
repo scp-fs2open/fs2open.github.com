@@ -53,6 +53,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           dir: ${{ github.workspace }}/..
           cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
+          setup-python: 'false'
 
       - uses: actions/checkout@v1
         name: Checkout
