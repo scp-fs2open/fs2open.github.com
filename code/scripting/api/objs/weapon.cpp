@@ -351,6 +351,20 @@ ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision info
 		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h()));
 }
 
+ADE_FUNC(vanish, l_Weapon, nullptr, "Vanishes this weapon from the mission.", nullptr, "Returns nothing.")
+{
+
+	object_h* oh = nullptr;
+	if (!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);
+
+	return ADE_RETURN_NIL;
+}
 
 }
 }

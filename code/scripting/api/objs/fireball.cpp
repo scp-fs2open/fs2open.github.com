@@ -122,6 +122,25 @@ ADE_FUNC(isWarp, l_Fireball, NULL, "Checks if the fireball is a warp effect.", "
 	return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(vanish, l_Fireball, nullptr, "Vanishes this fireball from the mission.", nullptr, "Returns nothing.")
+{
+
+	object_h* oh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Fireball.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	fireball* fb = &Fireballs[oh->objp->instance];
+
+	//Should be sufficient for Fireballs, as the fireball internal functions also call this, for example to free up a fireball if the limit is reached
+	obj_delete(fb->objnum);
+
+	return ADE_RETURN_NIL;
+}
+
 }
 }
 

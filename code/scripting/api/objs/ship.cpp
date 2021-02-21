@@ -1853,6 +1853,31 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 	return ade_set_args(L, "s", shipp->get_display_name());
 }
 
+ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in Singleplayer only and will cause the ship exit to not be logged.", nullptr, "Returns nothing.")
+{
+
+	object_h* objh = nullptr;
+	ship* shipp = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	shipp = &Ships[objh->objp->instance];
+
+	// if MULTIPLAYER bail
+	if (Game_mode & GM_MULTIPLAYER)
+		return ADE_RETURN_NIL;
+
+	auto ship_entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
+	if (ship_entry && ship_entry->status == ShipStatus::PRESENT)
+		ship_actually_depart(ship_entry->objp->instance, SHIP_VANISHED);
+
+	return ADE_RETURN_NIL;
+}
+
 
 }
 }
