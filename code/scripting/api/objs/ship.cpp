@@ -1857,7 +1857,6 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 {
 
 	object_h* objh = nullptr;
-	ship* shipp = nullptr;
 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "b", false);
@@ -1865,15 +1864,11 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 	if (!objh->IsValid())
 		return ade_set_error(L, "b", false);
 
-	shipp = &Ships[objh->objp->instance];
-
 	// if MULTIPLAYER bail
 	if (Game_mode & GM_MULTIPLAYER)
 		return ade_set_error(L, "b", false);
 
-	auto ship_entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
-	if (ship_entry && ship_entry->status == ShipStatus::PRESENT)
-		ship_actually_depart(ship_entry->objp->instance, SHIP_VANISHED);
+	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
 
 	return ade_set_args(L, "b", true);
 }
