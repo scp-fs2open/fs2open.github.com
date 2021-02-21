@@ -97,7 +97,7 @@ int64_t memfile_seek(void* opaque, int64_t offset, int whence) {
 
     memsound->cursor_pos = MIN(static_cast<SCP_vector<uint8_t>::size_type>(cursor_pos), memsound->snddata.size());
 
-    return memsound->cursor_pos;
+    return static_cast<int64_t>(memsound->cursor_pos);
 }
 
 }//namespace
