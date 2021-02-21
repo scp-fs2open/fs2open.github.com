@@ -65,16 +65,19 @@ ADE_FUNC(openAudioStreamMem,
 	    return ade_set_args(L, "o", l_AudioStream.Set(-1));
     if (!lua_isstring(L, -1)) {
         lua_pop(L, 1);
+        LuaError(L, "Expected binary string containing audio.");
         return ade_set_args(L, "o", l_AudioStream.Set(-1));
     }
     
     size_t snd_len;
     auto snddata = lua_tolstring(L, -1, &snd_len);
 	
-	int ah = audiostream_open_mem(reinterpret_cast<const uint8_t *>(snddata), snd_len - 1, streamType);
+    int ah = audiostream_open_mem(reinterpret_cast<const uint8_t *>(snddata), snd_len, streamType);
 	lua_pop(L, 1);
-	if (ah < 0)
-		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    if (ah < 0) {
+        LuaError(L,"Stream could not be opened. Did you pass valid audio?");
+        return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    }
 
 	return ade_set_args(L, "o", l_AudioStream.Set(ah));
 }
