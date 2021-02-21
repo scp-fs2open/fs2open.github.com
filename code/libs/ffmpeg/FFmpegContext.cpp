@@ -77,31 +77,26 @@ int memfile_read(void* opaque, uint8_t* buf, int buf_size) {
 
 int64_t memfile_seek(void* opaque, int64_t offset, int whence) {
     auto memsound = reinterpret_cast<libs::ffmpeg::MemFileCursor*>(opaque);
-    
+
     if (whence == AVSEEK_SIZE) {
         return memsound->snddata.size();
     }
-    
-    auto vec_off = static_cast<SCP_vector<uint8_t>::size_type>(offset);
-    if ((int64_t)vec_off != offset) {
-        // Overflow!!!
-        return -1;
-    }
-    
+    int64_t cursor_pos = memsound->cursor_pos;
+
     switch (whence) {
         case SEEK_SET:
-            memsound->cursor_pos = 0;
-            [[fallthrough]];
+            cursor_pos = offset;
+            break;
         case SEEK_CUR:
-            memsound->cursor_pos += vec_off;
+            cursor_pos += offset;
             break;
         case SEEK_END:
-            memsound->cursor_pos = memsound->snddata.size() + vec_off;
+            cursor_pos = memsound->snddata.size() + offset;
             break;
     }
-    
-    CLAMP(memsound->cursor_pos, 0, memsound->snddata.size());
-    
+
+    memsound->cursor_pos = MIN(static_cast<SCP_vector<uint8_t>::size_type>(cursor_pos), memsound->snddata.size());
+
     return memsound->cursor_pos;
 }
 
