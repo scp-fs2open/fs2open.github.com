@@ -13,26 +13,34 @@ namespace libs {
 namespace ffmpeg {
 
 /**
+ * @brief Stores a vector of bytes and an access position to treat it as file
+ *
+ *
+ */
+
+struct MemFileCursor {
+    const SCP_vector<uint8_t> snddata;
+    SCP_vector<uint8_t>::size_type cursor_pos;
+
+    MemFileCursor(const uint8_t* snddata, size_t snd_len);
+    MemFileCursor();
+};
+
+
+/**
  * @brief Contains a FFmpeg context
  *
  * This should be used for making sure a FFmpeg context is always deallocated even if an exception is throws.
  * createContext can be used for opening a specific file for FFmpeg decoding
  */
 
-struct MemSoundCursor {
-    const SCP_vector<uint8_t> snddata;
-    SCP_vector<uint8_t>::size_type cursor_pos;
-    
-    MemSoundCursor(const uint8_t* snddata, size_t snd_len);
-    MemSoundCursor() = default;
-};
 
 class FFmpegContext {
  private:
 	AVFormatContext* m_ctx;
 	CFILE* m_file;
 	
-	MemSoundCursor m_memsound;
+    MemFileCursor m_memsound;
 
 	FFmpegContext(CFILE* file);
 	FFmpegContext(const uint8_t* snddata, size_t snd_len);
