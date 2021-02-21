@@ -122,6 +122,7 @@ public:
 	bool paused_via_sexp_or_script;
 
 protected:
+    bool prepareOpened(const char *filename);
 	void Cue ();
 	bool WriteWaveData (uint cbSize, uint *num_bytes_written, int service = 1);
 	uint GetMaxWriteSize ();
@@ -158,6 +159,7 @@ protected:
 	size_t m_max_uncompressed_bytes_to_read;
 
 	SDL_mutex* write_lock;
+
 };
 
 
@@ -273,136 +275,96 @@ void AudioStream::Init_Data ()
 	m_max_uncompressed_bytes_to_read = std::numeric_limits<size_t>::max();
 }
 
+
+bool AudioStream::prepareOpened(const char *filename)
+{
+    bool fRtn = true;
+
+    m_fileProps = m_pwavefile->getFileProperties();
+
+    m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
+    // make sure that we are a multiple of the frame size
+    m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
+    m_cbBufSize += (m_cbBufSize % 12) << 1;
+    // if the requested buffer size is too big then cap it
+    m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+
+//				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
+
+    OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
+
+    OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
+
+    OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
+    OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+
+    OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
+    OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
+
+    OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
+    OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
+
+    // maybe set EFX
+    if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
+        extern ALuint AL_EFX_aux_id;
+        OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+    }
+
+    Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
+
+ErrorExit:
+    if ( (fRtn == false) && (m_pwavefile) ) {
+        mprintf(("AUDIOSTR => ErrorExit for ::prepareOpened() on wave file: %s\n", filename));
+
+        if (m_source_id)
+            OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
+
+        m_pwavefile = nullptr;
+    }
+
+    return fRtn;
+}
+
 // Create
 bool AudioStream::Create (char *pszFilename)
 {
-	bool fRtn = true;    // assume success
-
 	Assert(pszFilename);
 
 	Init_Data();
 
-	if (pszFilename) {
-		// make 100% sure we got a good filename
-		if ( !strlen(pszFilename) )
-			return false;
+    if ( ! pszFilename )
+        return false;
+    // make 100% sure we got a good filename
+    if ( !strlen(pszFilename) )
+        return false;
 
-		// Create a new WaveFile object and open it
-		m_pwavefile = openAudioFile(pszFilename, (type == ASF_EVENTMUSIC));
-		if (m_pwavefile) {
-			m_fileProps = m_pwavefile->getFileProperties();
+    // Create a new WaveFile object and open it
+    m_pwavefile = openAudioFile(pszFilename, (type == ASF_EVENTMUSIC));
+    if (m_pwavefile) {
+        return prepareOpened(pszFilename);
+    }
+    else {
+        // Error, unable to create WaveFile object
+        nprintf(("Sound", "SOUND => Failed to open wave file %s\n", pszFilename));
+        return false;
+    }
 
-			m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
-			// make sure that we are a multiple of the frame size
-			m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
-			m_cbBufSize += (m_cbBufSize % 12) << 1;
-			// if the requested buffer size is too big then cap it
-			m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
-
-//				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
-
-			OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
-
-			OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
-
-			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
-			OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-
-			OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
-			OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
-
-			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
-			OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
-
-			// maybe set EFX
-			if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
-				extern ALuint AL_EFX_aux_id;
-				OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
-			}
-
-			Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
-		}
-		else {
-			// Error, unable to create WaveFile object
-			nprintf(("Sound", "SOUND => Failed to open wave file %s\n\r", pszFilename));
-			fRtn = false;
-		}
-	}
-	else {
-		// Error, passed invalid parms
-		fRtn = false;
-	}
-
-ErrorExit:
-	if ( (fRtn == false) && (m_pwavefile) ) {
-		mprintf(("AUDIOSTR => ErrorExit for ::Create() on wave file: %s\n", pszFilename));
-
-		if (m_source_id)
-			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
-
-		m_pwavefile = nullptr;
-	}
-
-	return (fRtn);
 }
 
 bool AudioStream::CreateMem (const uint8_t* snddata, size_t snd_len)
 {
-	bool fRtn = true;    // assume success
-
 	Init_Data();
 	
 	// Create a new WaveFile object and open it
 	m_pwavefile = openAudioMem(snddata, snd_len);
 	if (m_pwavefile) {
-		m_fileProps = m_pwavefile->getFileProperties();
-
-		m_cbBufSize = (m_fileProps.sample_rate * m_fileProps.bytes_per_sample * m_fileProps.num_channels) >> 2;
-		// make sure that we are a multiple of the frame size
-		m_cbBufSize -= (m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels));
-		m_cbBufSize += (m_cbBufSize % 12) << 1;
-		// if the requested buffer size is too big then cap it
-		m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
-
-		OpenAL_ErrorCheck( alGenSources(1, &m_source_id), { fRtn = false; goto ErrorExit; } );
-
-		OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { fRtn = false; goto ErrorExit; } );
-
-		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 1.0f) );
-		OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-
-		OpenAL_ErrorPrint( alSource3f(m_source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
-		OpenAL_ErrorPrint( alSource3f(m_source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
-
-		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1.0f) );
-		OpenAL_ErrorPrint( alSourcef(m_source_id, AL_PITCH, 1.0f) );
-
-		// maybe set EFX
-		if ( (type == ASF_SOUNDFX) && ds_eax_is_inited() ) {
-			extern ALuint AL_EFX_aux_id;
-			OpenAL_ErrorPrint( alSource3i(m_source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
-		}
-
-		Snd_sram += (m_cbBufSize * MAX_STREAM_BUFFERS);
+        return prepareOpened("in-memory");
 	}
 	else {
 		// Error, unable to create WaveFile object
-		nprintf(("Sound", "SOUND => Failed to open in-memory wave file \n\r"));
-		fRtn = false;
+        nprintf(("Sound", "SOUND => Failed to open in-memory wave file \n"));
+        return false;
 	}
-	
-
-ErrorExit:
-	if ( (fRtn == false) && (m_pwavefile) ) {
-		mprintf(("AUDIOSTR => ErrorExit for ::Create() on in-memory wave file: \n"));
-
-		if (m_source_id)
-			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
-
-		m_pwavefile = nullptr;
-	}
-
-	return (fRtn);
 }
 
 // Destroy
