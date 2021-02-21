@@ -69,7 +69,7 @@ int memfile_read(void* opaque, uint8_t* buf, int buf_size) {
         
         memsound->cursor_pos += vec_buf_size;
         
-        return vec_buf_size;
+        return static_cast<int>(vec_buf_size);
     } else {
         return -1;
     }
