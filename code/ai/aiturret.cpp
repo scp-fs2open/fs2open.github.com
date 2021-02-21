@@ -1839,7 +1839,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		ship_weapon* swp = &turret->weapons;
 		turret->turret_last_fire_direction = *firing_vec;
 
-		if (turret->turret_inaccuracy >= 0.0f)
+		if (turret->turret_inaccuracy > 0.0f)
 			vm_vec_random_cone(firing_vec, firing_vec, turret->turret_inaccuracy);
 
 		vm_vector_2_matrix(&turret_orient, firing_vec, nullptr, nullptr);

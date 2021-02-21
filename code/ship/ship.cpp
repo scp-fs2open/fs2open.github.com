@@ -6831,6 +6831,7 @@ void ship_subsys::clear()
 	turret_enemy_sig = 0;
 	turret_next_fire_pos = 0;
 	turret_time_enemy_in_range = 0.0f;
+	turret_inaccuracy = 0.0f;
 
 	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
 		turret_targeting_order[i] = -1;
