@@ -1,0 +1,9 @@
+/**
+@mainpage openddl_parser - The OpenDDLParser Library
+
+@section intro Indroduction
+
+OpenDDL-Parser is a small and easy to use library for DDL-file-parsing. OpenDDL stands for Open Data Description Language, which was introduced by Eric Lengyel
+Check http://openddl.org/ to learn more about it.
+
+*/
