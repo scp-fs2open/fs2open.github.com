@@ -54,8 +54,8 @@ int64_t cfileSeek(void* ptr, int64_t offset, int whence) {
 	return cftell(cfile);
 }
 
-int soundmem_read(void* opaque, uint8_t* buf, int buf_size) {
-    auto memsound = reinterpret_cast<libs::ffmpeg::MemSoundCursor*>(opaque);
+int memfile_read(void* opaque, uint8_t* buf, int buf_size) {
+    auto memsound = reinterpret_cast<libs::ffmpeg::MemFileCursor*>(opaque);
     auto vec_buf_size = static_cast<SCP_vector<uint8_t>::size_type>(buf_size);
     if ((int)vec_buf_size != buf_size) {
         // Overflow!!!
@@ -75,8 +75,8 @@ int soundmem_read(void* opaque, uint8_t* buf, int buf_size) {
     }
 }
 
-int64_t soundmem_seek(void* opaque, int64_t offset, int whence) {
-    auto memsound = reinterpret_cast<libs::ffmpeg::MemSoundCursor*>(opaque);
+int64_t memfile_seek(void* opaque, int64_t offset, int whence) {
+    auto memsound = reinterpret_cast<libs::ffmpeg::MemFileCursor*>(opaque);
     
     if (whence == AVSEEK_SIZE) {
         return memsound->snddata.size();
@@ -110,8 +110,10 @@ int64_t soundmem_seek(void* opaque, int64_t offset, int whence) {
 namespace libs {
 namespace ffmpeg {
 
-MemSoundCursor::MemSoundCursor(const uint8_t* data, size_t snd_len) : snddata(data, data + snd_len), cursor_pos(0) {
+MemFileCursor::MemFileCursor(const uint8_t* data, size_t snd_len) : snddata(data, data + snd_len), cursor_pos(0) {
 }
+
+MemFileCursor::MemFileCursor() : snddata() , cursor_pos(0) {}
 
 FFmpegContext::FFmpegContext(CFILE* inFile) : m_ctx(nullptr), m_file(inFile), m_memsound() {
 	Assertion(inFile != nullptr, "Invalid file pointer passed!");
@@ -213,7 +215,7 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContextMem(const uint8_t* sn
 	}
 
 	auto ioContext =
-		avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, &(instance->m_memsound), soundmem_read, nullptr, soundmem_seek);
+        avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, &(instance->m_memsound), memfile_read, nullptr, memfile_seek);
 
 	if (!ioContext) {
 		throw FFmpegException("Failed to allocate IO context!");
