@@ -15,7 +15,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-a8ca321
+    container: ghcr.io/scp-fs2open/linux_build:sha-e29f882
     steps:
       - name: Cache Qt
         id: cache-qt-lin
