@@ -2297,7 +2297,6 @@ void multi_handle_state_special()
 void multi_file_xfer_notify(int handle)
 {
 	char *filename = nullptr;
-	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
@@ -2310,10 +2309,7 @@ void multi_file_xfer_notify(int handle)
 	}
 
 	// convert the filename to all lowercase
-	len = strlen(filename);
-	for(idx=0;idx<len;idx++){
-		filename[idx] = (char)tolower(filename[idx]);
-	}		
+	SCP_tolower(filename);
 
 	// if this is a mission file
 	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != nullptr);

@@ -2463,6 +2463,14 @@ int parse_create_object_sub(p_object *p_objp)
 		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars({"Ship", "Parent"});
+
+		if (Ship_info[shipp->ship_info_index].is_big_or_huge() && !brought_in_docked_wing) {
+			float mission_time = f2fl(Missiontime);
+			int minutes = (int)(mission_time / 60);
+			int seconds = (int)mission_time % 60;
+
+			mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+		}
 	}
 
 	return objnum;
@@ -5070,6 +5078,47 @@ void parse_event(mission * /*pm*/)
 			}
 		}
 	}
+
+	if (optional_string("$Annotations Start")) {
+		// annotations are only used in FRED
+		if (Fred_running) {
+			while (check_for_string("+Comment:") || check_for_string("+Background Color:")) {
+				event_annotation ea;
+				ea.path.push_back(Num_mission_events);
+
+				if (optional_string("+Comment:")) {
+					stuff_string(ea.comment, F_MULTITEXT);
+					lcl_replace_stuff(ea.comment, true);
+				}
+
+				if (optional_string("+Background Color:")) {
+					stuff_ubyte(&ea.r);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.g);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.b);
+				}
+
+				if (optional_string("+Path:")) {
+					int num;
+					while (true) {
+						ignore_gray_space();
+						if (stuff_int_optional(&num) != 2) {
+							break;
+						}
+						ea.path.push_back(num);
+					}
+				}
+
+				Event_annotations.push_back(std::move(ea));
+			}
+			required_string("$Annotations End");
+		} else {
+			skip_to_string("$Annotations End");
+		}
+	}
 }
 
 void parse_events(mission *pm)
@@ -6802,8 +6851,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
-				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX_2 ? -1 : 1;
-				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX_2 ? -1 : 1;
+				r1 = static_rand(Objects[objnum].net_signature) < STATIC_RAND_MAX / 2 ? -1 : 1;
+				r2 = static_rand(Objects[objnum].net_signature+1) < STATIC_RAND_MAX / 2 ? -1 : 1;
 			}
 
 			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.vec.fvec), x);

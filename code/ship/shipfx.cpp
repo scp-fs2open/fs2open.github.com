@@ -119,7 +119,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 		model_instance_find_world_point(&world_axis_pt, &smi->point_on_axis, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
-		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&smi->angs), &model_axis);
+		vm_quaternion_rotate(&m_rot, smi->cur_angle, &model_axis);
 	} else {
 		//fix to allow non rotating submodels to use live debris
 		vm_vec_zero(&rotvel);

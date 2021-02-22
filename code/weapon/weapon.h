@@ -307,6 +307,8 @@ struct weapon_info
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
+	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
+	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -469,6 +471,10 @@ struct weapon_info
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
+	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
+	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
+	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;

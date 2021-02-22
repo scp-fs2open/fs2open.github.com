@@ -250,6 +250,9 @@ std::ostream& operator<<(std::ostream& out, const player& plr) {
 }
 
 TEST_F(PilotPlayerFileTest, binaryToJSONConversion) {
+	// Init control_config stuff
+	control_config_common_init();
+
 	// Call the conversion function
 	convert_pilot_files();
 
@@ -272,4 +275,7 @@ TEST_F(PilotPlayerFileTest, binaryToJSONConversion) {
 	ASSERT_TRUE(loader.load_player("asdf", &json_plr, false));
 
 	ASSERT_EQ(binary_plr, json_plr);
+
+	// Close control_config stuff
+	control_config_common_close();
 }

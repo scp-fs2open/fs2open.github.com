@@ -152,8 +152,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(campaign_name);
 
 				Ignored_campaigns.push_back(campaign_name);
 			}
@@ -172,8 +171,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(mission_name);
 
 				Ignored_missions.push_back(mission_name);
 			}
