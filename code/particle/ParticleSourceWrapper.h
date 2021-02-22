@@ -54,11 +54,11 @@ namespace particle
 
 		void moveTo(vec3d* pos);
 
-		void setOrientationFromNormalizedVec(vec3d* normalizedDir);
+		void setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative = false);
 
-		void setOrientationFromVec(vec3d* dir);
+		void setOrientationFromVec(vec3d* dir, bool relative = false);
 
-		void setOrientationMatrix(matrix* mtx);
+		void setOrientationMatrix(matrix* mtx, bool relative = false);
 
 		void setOrientationNormal(vec3d* normal);
 
