@@ -492,12 +492,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		// Create Debris piece n!
 		if ( hull_flag ) {
 			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-				db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
+				db->lifeleft = 2.0f * (frand()) + 0.5f;
 			else {
 				db->flags.set(Debris_Flags::DoNotExpire);
 				db->lifeleft = -1.0f;		// large hull pieces stay around forever
 			}
-		} else {
+		} else { 
+			// small non-hull pieces should stick around longer the larger they are
+			// sqrtf should make sure its never too crazy long
 			db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
 		}
 	}
@@ -1162,7 +1164,7 @@ bool debris_is_vaporized(debris *db)
 	return db->model_num == Debris_vaporize_model;
 }
 
-void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, float max_num_debris, float speed_mult, bool vaporize) {
+void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris) {
 	Assertion(ship_objp->type == OBJ_SHIP, "create_generic_debris called for a non-ship, only ships can spew debris!");
 	if (ship_objp->type != OBJ_SHIP)
 		return;
@@ -1173,7 +1175,7 @@ void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, 
 
 	vec3d create_pos = *pos;
 	for (int i = 0; i < num_debris; i++) {
-		int model_num = vaporize ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
+		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
 		debris_create(ship_objp, model_num, -1, &create_pos, pos, 0, speed_mult);
 	}
 }

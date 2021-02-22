@@ -81,6 +81,9 @@ void debris_remove_from_hull_list(debris *db);
 
 bool debris_is_generic(debris *db);
 bool debris_is_vaporized(debris *db);
-void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool vaporize);
+
+// creates a burst of generic debris at hitpos from ship_objp, with a random number between min and max
+// use_ship_debris is for whether the ship's generic debris should be used, or simply debris01.pof
+void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris);
 
 #endif // _DEBRIS_H
