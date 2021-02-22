@@ -138,113 +138,73 @@ FFmpegContext::~FFmpegContext() {
 	
 }
 
+std::unique_ptr<FFmpegContext> FFmpegContext::prepareInstance(std::unique_ptr<FFmpegContext> instance,
+                                                      void *opaque,
+                                                      int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                                                      int64_t (*seek)(void *opaque, int64_t offset, int whence)) {
+    instance->m_ctx = avformat_alloc_context();
+
+    if (!instance->m_ctx) {
+        throw FFmpegException("Failed to allocate context!");
+    }
+
+    auto avioBuffer = reinterpret_cast<uint8_t*>(av_malloc(AVIO_BUFFER_SIZE));
+
+    if (!avioBuffer) {
+        throw FFmpegException("Failed to allocate IO buffer!");
+    }
+
+    auto ioContext =
+        avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, opaque, read_packet, nullptr, seek);
+
+    if (!ioContext) {
+        throw FFmpegException("Failed to allocate IO context!");
+    }
+
+    instance->m_ctx->pb = ioContext;
+
+    auto probe_ret = av_probe_input_buffer2(instance->m_ctx->pb, &instance->m_ctx->iformat, nullptr, nullptr, 0, 0);
+    if (probe_ret < 0) {
+        char errorStr[1024];
+        av_strerror(probe_ret, errorStr, 1024);
+
+        throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
+    }
+
+    instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+    auto ret = avformat_open_input(&instance->m_ctx, nullptr, instance->m_ctx->iformat, nullptr);
+    if (ret < 0) {
+        char errorStr[1024];
+        av_strerror(ret, errorStr, 1024);
+
+        throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
+    }
+
+    ret = avformat_find_stream_info(instance->m_ctx, nullptr);
+    if (ret < 0) {
+        char errorStr[1024];
+        av_strerror(ret, errorStr, 1024);
+
+        throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
+    }
+
+    return instance;
+}
+
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 	Assertion(mediaFile != nullptr, "File pointer must be valid!");
 
 	std::unique_ptr<FFmpegContext> instance(new FFmpegContext(mediaFile));
 
-	instance->m_ctx = avformat_alloc_context();
-
-	if (!instance->m_ctx) {
-		throw FFmpegException("Failed to allocate context!");
-	}
-
-	auto avioBuffer = reinterpret_cast<uint8_t*>(av_malloc(AVIO_BUFFER_SIZE));
-
-	if (!avioBuffer) {
-		throw FFmpegException("Failed to allocate IO buffer!");
-	}
-
-	auto ioContext =
-		avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, instance->m_file, cfileRead, nullptr, cfileSeek);
-
-	if (!ioContext) {
-		throw FFmpegException("Failed to allocate IO context!");
-	}
-
-	instance->m_ctx->pb = ioContext;
-
-	auto probe_ret = av_probe_input_buffer2(instance->m_ctx->pb, &instance->m_ctx->iformat, nullptr, nullptr, 0, 0);
-	if (probe_ret < 0) {
-		char errorStr[1024];
-		av_strerror(probe_ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
-	}
-
-	instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
-
-	auto ret = avformat_open_input(&instance->m_ctx, nullptr, instance->m_ctx->iformat, nullptr);
-	if (ret < 0) {
-		char errorStr[1024];
-		av_strerror(ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
-	}
-
-	ret = avformat_find_stream_info(instance->m_ctx, nullptr);
-	if (ret < 0) {
-		char errorStr[1024];
-		av_strerror(ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
-	}
-
-	return instance;
+    return prepareInstance(std::move(instance), instance->m_file, cfileRead, cfileSeek);
 }
 
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContextMem(const uint8_t* snddata, size_t snd_len) {
 	std::unique_ptr<FFmpegContext> instance(new FFmpegContext(snddata, snd_len));
 
-	instance->m_ctx = avformat_alloc_context();
-
-	if (!instance->m_ctx) {
-		throw FFmpegException("Failed to allocate context!");
-	}
-
-	auto avioBuffer = reinterpret_cast<uint8_t*>(av_malloc(AVIO_BUFFER_SIZE));
-
-	if (!avioBuffer) {
-		throw FFmpegException("Failed to allocate IO buffer!");
-	}
-
-	auto ioContext =
-        avio_alloc_context(avioBuffer, AVIO_BUFFER_SIZE, 0, &(instance->m_memsound), memfile_read, nullptr, memfile_seek);
-
-	if (!ioContext) {
-		throw FFmpegException("Failed to allocate IO context!");
-	}
-
-	instance->m_ctx->pb = ioContext;
-
-	auto probe_ret = av_probe_input_buffer2(instance->m_ctx->pb, &instance->m_ctx->iformat, nullptr, nullptr, 0, 0);
-	if (probe_ret < 0) {
-		char errorStr[1024];
-		av_strerror(probe_ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
-	}
-
-	instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
-
-	auto ret = avformat_open_input(&instance->m_ctx, nullptr, instance->m_ctx->iformat, nullptr);
-	if (ret < 0) {
-		char errorStr[1024];
-		av_strerror(ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
-	}
-
-	ret = avformat_find_stream_info(instance->m_ctx, nullptr);
-	if (ret < 0) {
-		char errorStr[1024];
-		av_strerror(ret, errorStr, 1024);
-
-		throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
-	}
-
-	return instance;
+    return prepareInstance(std::move(instance), &(instance->m_memsound), memfile_read, memfile_seek);
 }
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(const SCP_string& path, int dir_type) {

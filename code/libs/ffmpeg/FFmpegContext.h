@@ -44,6 +44,11 @@ class FFmpegContext {
 
 	FFmpegContext(CFILE* file);
 	FFmpegContext(const uint8_t* snddata, size_t snd_len);
+
+    static std::unique_ptr<FFmpegContext> prepareInstance(std::unique_ptr<FFmpegContext> instance,
+                                                          void *opaque,
+                                                          int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                                                          int64_t (*seek)(void *opaque, int64_t offset, int whence));
  public:
 	~FFmpegContext();
 
