@@ -1896,33 +1896,26 @@ int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 {
 	// Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
 	Assertion(((*ignore_objnum <= UNUSED_OBJNUM) || (*ignore_objnum >= 0)), "Unexpected value for ignore_objnum %d. This is a coder error, please report.", *ignore_objnum); 
-	if ((*ignore_objnum > UNUSED_OBJNUM) && (*ignore_objnum < 0)) {
+	// whether this is an invalid OBJNUM or the official UNUSED_OBJNUM, we should just return here.
+	// As a note, if it was set to UNUSED_OBJNUM, it would be trying to ignore a wing and not an object. (at least according to previously written comments) 
+	if (*ignore_objnum < 0) {
 		return 0;
 	}
 
-	// Not ignoring anything.
-	if (*ignore_objnum < 0)
+	// see if this object became invalid
+	if (Objects[*ignore_objnum].signature != *ignore_signature)
 	{
-		return 0;									
+		// reset
+		*ignore_objnum = UNUSED_OBJNUM;
 	}
-	// This means it's ignoring an object, not a wing.
-	else
+	// objects and signatures match
+	else if (*ignore_objnum == objnum)
 	{
-		// see if this object became invalid
-		if (Objects[*ignore_objnum].signature != *ignore_signature)
-		{
-			// reset
-			*ignore_objnum = UNUSED_OBJNUM;
-		}
-		// objects and signatures match
-		else if (*ignore_objnum == objnum)
-		{
-			// found it
-			return 1;
-		}
+		// found it
+		return 1;
+	}
 
-		return 0;
-	}
+	return 0;
 }
 
 // Goober5000
