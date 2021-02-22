@@ -62,7 +62,7 @@ int memfile_read(void* opaque, uint8_t* buf, int buf_size) {
         return -1;
     }
     
-    vec_buf_size = MIN(vec_buf_size, memsound->snddata.size() - memsound->cursor_pos);
+    vec_buf_size = std::min(vec_buf_size, memsound->snddata.size() - memsound->cursor_pos);
     
     if (vec_buf_size > 0) {
         std::memcpy(buf, memsound->snddata.data() + memsound->cursor_pos, vec_buf_size);
@@ -95,7 +95,7 @@ int64_t memfile_seek(void* opaque, int64_t offset, int whence) {
             break;
     }
 
-    memsound->cursor_pos = MIN(static_cast<SCP_vector<uint8_t>::size_type>(cursor_pos), memsound->snddata.size());
+    memsound->cursor_pos = std::min(static_cast<SCP_vector<uint8_t>::size_type>(cursor_pos), memsound->snddata.size());
 
     return static_cast<int64_t>(memsound->cursor_pos);
 }
@@ -138,13 +138,12 @@ FFmpegContext::~FFmpegContext() {
 	
 }
 
-std::unique_ptr<FFmpegContext> FFmpegContext::prepareInstance(std::unique_ptr<FFmpegContext> instance,
-                                                      void *opaque,
-                                                      int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                                                      int64_t (*seek)(void *opaque, int64_t offset, int whence)) {
-    instance->m_ctx = avformat_alloc_context();
+void FFmpegContext::prepare(void *opaque,
+                            int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                            int64_t (*seek)(void *opaque, int64_t offset, int whence)) {
+    m_ctx = avformat_alloc_context();
 
-    if (!instance->m_ctx) {
+    if (!m_ctx) {
         throw FFmpegException("Failed to allocate context!");
     }
 
@@ -161,9 +160,9 @@ std::unique_ptr<FFmpegContext> FFmpegContext::prepareInstance(std::unique_ptr<FF
         throw FFmpegException("Failed to allocate IO context!");
     }
 
-    instance->m_ctx->pb = ioContext;
+    m_ctx->pb = ioContext;
 
-    auto probe_ret = av_probe_input_buffer2(instance->m_ctx->pb, &instance->m_ctx->iformat, nullptr, nullptr, 0, 0);
+    auto probe_ret = av_probe_input_buffer2(m_ctx->pb, &m_ctx->iformat, nullptr, nullptr, 0, 0);
     if (probe_ret < 0) {
         char errorStr[1024];
         av_strerror(probe_ret, errorStr, 1024);
@@ -171,9 +170,9 @@ std::unique_ptr<FFmpegContext> FFmpegContext::prepareInstance(std::unique_ptr<FF
         throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
     }
 
-    instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+    m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
 
-    auto ret = avformat_open_input(&instance->m_ctx, nullptr, instance->m_ctx->iformat, nullptr);
+    auto ret = avformat_open_input(&m_ctx, nullptr, m_ctx->iformat, nullptr);
     if (ret < 0) {
         char errorStr[1024];
         av_strerror(ret, errorStr, 1024);
@@ -181,15 +180,13 @@ std::unique_ptr<FFmpegContext> FFmpegContext::prepareInstance(std::unique_ptr<FF
         throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
     }
 
-    ret = avformat_find_stream_info(instance->m_ctx, nullptr);
+    ret = avformat_find_stream_info(m_ctx, nullptr);
     if (ret < 0) {
         char errorStr[1024];
         av_strerror(ret, errorStr, 1024);
 
         throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
     }
-
-    return instance;
 }
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
@@ -197,14 +194,16 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 
 	std::unique_ptr<FFmpegContext> instance(new FFmpegContext(mediaFile));
 
-    return prepareInstance(std::move(instance), instance->m_file, cfileRead, cfileSeek);
+    instance->prepare(instance->m_file, cfileRead, cfileSeek);
+    return instance;
 }
 
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContextMem(const uint8_t* snddata, size_t snd_len) {
 	std::unique_ptr<FFmpegContext> instance(new FFmpegContext(snddata, snd_len));
 
-    return prepareInstance(std::move(instance), &(instance->m_memsound), memfile_read, memfile_seek);
+    instance->prepare(&(instance->m_memsound), memfile_read, memfile_seek);
+    return instance;
 }
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(const SCP_string& path, int dir_type) {
