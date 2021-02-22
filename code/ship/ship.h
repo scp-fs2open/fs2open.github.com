@@ -362,6 +362,8 @@ public:
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
 
+	float   turret_inaccuracy;						// additional SEXP inaccuracy, field of fire degrees
+
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 

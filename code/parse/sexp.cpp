@@ -516,6 +516,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-set-rate-of-fire",		OP_TURRET_SET_RATE_OF_FIRE,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
 	{ "turret-set-optimum-range",		OP_TURRET_SET_OPTIMUM_RANGE,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
 	{ "turret-set-target-priorities",	OP_TURRET_SET_TARGET_PRIORITIES,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
+	{ "turret-set-inaccuracy",	        OP_TURRET_SET_INACCURACY,		        2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "turret-set-target-order",		OP_TURRET_SET_TARGET_ORDER,				2,	2+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "ship-turret-target-order",		OP_SHIP_TURRET_TARGET_ORDER,			1,	1+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -18927,6 +18928,50 @@ void sexp_turret_clear_forced_target(int node)
 	}
 }
 
+void sexp_turret_set_inaccuracy(int node)
+{
+	bool is_nan, is_nan_forever;
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+
+	// get inaccuracy
+	node = CDR(node);
+	auto inaccuracy = (float)eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	if (inaccuracy < 0.0f)
+		inaccuracy = 0.0f;
+
+	// input is in tenths so divide by 10
+	inaccuracy /= 10.0f;
+
+	node = CDR(node);
+	if (node < 0) { // affect all turrets
+		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
+		{
+			if (turret->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			turret->turret_inaccuracy = inaccuracy;
+		}
+	} else { // affect just some particular turret(s)
+		while (node >= 0)
+		{
+			// get the subsystem
+			ship_subsys* turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+			if (turret != nullptr)
+				turret->turret_inaccuracy = inaccuracy;
+
+			// next
+			node = CDR(node);
+		}
+	}
+}
+
 void sexp_ship_turret_target_order(int node)
 {
 	int oindex;
@@ -24804,6 +24849,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_clear_forced_target(node);
 				break;
 
+			case OP_TURRET_SET_INACCURACY:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_inaccuracy(node);
+				break;
+
 			case OP_SET_ARMOR_TYPE:
 				sexp_val = SEXP_TRUE;
 				sexp_set_armor_type(node);
@@ -25912,6 +25962,10 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	{
 		if (run_eval_num)
 		{
+			// if this sexp node is an operator, put it in another node so that CAR(node) will find it
+			if (get_operator_index(n) >= 0)
+				n = alloc_sexp("", 1, -1, n, -1);
+
 			bool is_nan, is_nan_forever;
 			sexp_val = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan_or_nan_forever != nullptr)
@@ -26521,6 +26575,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_FORCED_TARGET:
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 		case OP_TURRET_CLEAR_FORCED_TARGET:
+		case OP_TURRET_SET_INACCURACY:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28123,6 +28178,17 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 			if (argnum == 0) {
 				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_INACCURACY:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_NUMBER;
 			}
 			else {
 				return OPF_SUBSYSTEM;
@@ -30362,6 +30428,7 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
+		case OP_TURRET_SET_INACCURACY:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -33343,6 +33410,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Turret to set\r\n"
 		"\t3: True = Set new list, False = Reset to turret default\r\n"
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
+
+	{ OP_TURRET_SET_INACCURACY, "turret-set-inaccuracy\r\n"
+		"\tMakes the specified turrets more inaccurate by firing their shots in a cone, like field of fire."
+		"This will only decrease their accuracy, it cannot make the weapons more accurate than normal.\r\n"
+		"\tDoes not work on beams.\r\n"
+		"\t1: Ship turret(s) are on\r\n"
+		"\t2: TENTHS of a degree. (i.e. 100 = 10 degrees)\r\n"
+		"\trest: (optional) Turrets to set. If omitted affects all turrets on the ship.\r\n" },
 
 	{ OP_TURRET_GET_PRIMARY_AMMO, "turret-get-primary-ammo\r\n"
 		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"

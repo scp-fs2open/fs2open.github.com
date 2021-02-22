@@ -6,6 +6,29 @@ add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
 add_file_folder("AI"
 	ai/ai.cpp

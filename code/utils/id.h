@@ -46,7 +46,7 @@ public:
 		return stream;
 	}
 
-	inline bool isValid() { return m_val != default_value; }
+	inline bool isValid() const { return m_val != default_value; }
 
 private:
 	Impl m_val;

@@ -1771,7 +1771,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 /**
  * Fire a weapon from a turret
  */
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -1836,9 +1836,13 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 #endif
 
 	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip, -1, turret)) {
-		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
 		ship_weapon* swp = &turret->weapons;
-		turret->turret_last_fire_direction = *turret_fvec;
+		turret->turret_last_fire_direction = *firing_vec;
+
+		if (turret->turret_inaccuracy > 0.0f)
+			vm_vec_random_cone(firing_vec, firing_vec, turret->turret_inaccuracy);
+
+		vm_vector_2_matrix(&turret_orient, firing_vec, nullptr, nullptr);
 
 		// set next fire timestamp for the turret
 		int old_burst_seed = swp->burst_seed[weapon_num];
@@ -1991,7 +1995,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				}
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
-				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
+				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, firing_vec, 1, nullptr);
 
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1, 0,0.0f, turret);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
@@ -2016,7 +2020,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// if the gun is a flak gun
 					if (wip->wi_flags[Weapon::Info_Flags::Flak]) {			
 						// show a muzzle flash
-						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
+						flak_muzzle_flash(turret_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
 						if(predicted_pos != NULL)
 						{
@@ -2033,7 +2037,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					}
 					// otherwise just do mflash if the weapon has it
 					else if (wip->muzzle_flash >= 0) {
-						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
+						mflash_create(turret_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
