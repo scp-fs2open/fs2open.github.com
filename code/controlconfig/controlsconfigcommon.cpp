@@ -260,9 +260,7 @@ void control_config_common_init_bindings() {
 	preset.name = "default";
 
 	for (auto &item : Control_config) {
-		CCB bind = item;
-
-		preset.bindings.push_back(bind);
+		preset.bindings.push_back(CCB(item));
 	}
 
 	Control_config_presets.push_back(preset);
@@ -1756,7 +1754,7 @@ void control_config_common_load_overrides()
 	}
 }
 
-CC_bind CC_bind::operator=(const CC_bind &A)
+CC_bind& CC_bind::operator=(const CC_bind &A)
 {
 	cid = A.cid;
 	btn = A.btn;
@@ -1925,9 +1923,11 @@ short CCB::get_btn(CID cid) const {
 	}
 }
 
-void CCB::operator=(const CCB& A) {
+CCB& CCB::operator=(const CCB& A) {
 	first = A.first;
 	second = A.second;
+
+	return *this;
 }
 
 bool CCB::has_first(const CCB& A) const {
@@ -1938,7 +1938,7 @@ bool CCB::has_second(const CCB& A) const {
 	return !second.empty() && ((second == A.first) || (second == A.second));
 }
 
-void CCI::operator=(const CCI& A) {
+CCI& CCI::operator=(const CCI& A) {
 	first = A.first;
 	second = A.second;
 	tab = A.tab;
@@ -1948,11 +1948,15 @@ void CCI::operator=(const CCI& A) {
 	used = A.used;
 	disabled = A.disabled;
 	continuous_ongoing = A.continuous_ongoing;
+
+	return *this;;
 };
 
-void CCI::operator=(const CCB& A) {
+CCI& CCI::operator=(const CCB& A) {
 	first = A.first;
 	second = A.second;
+
+	return *this;
 };
 
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {

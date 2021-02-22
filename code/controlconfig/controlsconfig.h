@@ -301,15 +301,16 @@ class CCB;
  */
 class CC_bind {
 public:
-	CID cid;    //!< Which controller this belongs to
-	short btn;  //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+	CID cid   = CID_NONE;   //!< Which controller this belongs to
+	short btn = -1;         //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
 
 public:
-	CC_bind() :cid(CID_NONE), btn(-1) {};
-	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
-	CC_bind(const CC_bind &A) : cid(A.cid), btn(A.btn) {};
+	CC_bind() = default;
+	CC_bind(const CC_bind &A) = default;
 
-	CC_bind operator=(const CC_bind &A);
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
+
+	CC_bind& operator=(const CC_bind &A);
 
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
@@ -357,8 +358,8 @@ public:
 	CC_bind second; // The secondary binding
 
 public:
-	CCB() {};
-	CCB(const CCB& A) : first(A.first), second(A.second) {};
+	CCB() = default;
+	CCB(const CCB& A) = default;
 
 	/*!
 	 * Returns true if nothing is bound
@@ -391,7 +392,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCB to this CCB
 	 */
-	void operator=(const CCB&);
+	CCB& operator=(const CCB&);
 
 	/*!
 	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
@@ -437,20 +438,17 @@ public:
 
 public:
 	CCI() = default;
-
-	CCI(const CCI& A) :
-		CCB(A), tab(A.tab), indexXSTR(A.indexXSTR), text(A.text), type(A.type), used(A.used), disabled(A.disabled),
-		continuous_ongoing(A.continuous_ongoing) {};
+	CCI(const CCI& A) = default;
 	
 	/*!
 	 * Assigns the contents of the given CCI to this CCI
 	 */
-	void operator=(const CCI&);
+	CCI& operator=(const CCI&);
 
 	/*!
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
 	 */
-	void operator=(const CCB&);
+	CCI& operator=(const CCB&);
 };
 
 /*!

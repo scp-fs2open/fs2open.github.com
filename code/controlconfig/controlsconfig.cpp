@@ -194,10 +194,8 @@ static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last
 int Control_config_overlay_id;
 
 struct conflict {
-	int first;  // index of other control in conflict with this one
-	int second; // index of other control in conflict with this one
-
-	conflict() : first(-1), second(-1) {};
+	int first = -1;     // index of other control in conflict with this one
+	int second = -1;    // index of other control in conflict with this one
 };
 
 SCP_vector<conflict> Conflicts;

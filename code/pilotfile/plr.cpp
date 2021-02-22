@@ -601,11 +601,11 @@ void pilotfile::plr_write_controls()
 
 	// For some unknown reason, the old code used a short for the array length here...
 	handler->startArrayWrite("controls", Control_config.size(), true);
-	for (size_t idx = 0; idx < Control_config.size(); idx++) {
+	for (auto &item : Control_config) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", Control_config[idx].get_btn(CID_JOY0));
+		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", item.get_btn(CID_JOY0));
 		// placeholder? for future mouse_id?
 		handler->writeShort("mouse", -1);
 
