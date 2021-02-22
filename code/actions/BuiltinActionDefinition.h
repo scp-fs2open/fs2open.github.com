@@ -15,6 +15,7 @@ class BuiltinActionDefinition : public ActionDefinition {
 		: ActionDefinition(std::move(name), {{"parameter", expression::ValueTypeTraits<ActionValueType>::type}})
 	{
 	}
+	~BuiltinActionDefinition() override = default;
 
 	flagset<ProgramContextFlags> getRequiredContext() const override
 	{

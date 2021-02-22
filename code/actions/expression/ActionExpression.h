@@ -14,6 +14,12 @@ class AbstractExpression;
 template <typename T>
 class TypedActionExpression;
 
+/**
+ * @brief An expression that can be executed to compute a value at runtime
+ *
+ * This is the basis of having dynamic values in actions by allowing mods to specify complex expressions that make use
+ * of variables and functions for computing their values at runtime.
+ */
 class ActionExpression {
   public:
 	ActionExpression() = default;
@@ -36,6 +42,13 @@ class ActionExpression {
 	std::shared_ptr<nodes::AbstractExpression> m_expression;
 };
 
+/**
+ * @brief An action expression with a specific type specified at compile time
+ *
+ * This is most useful for built-in actions that have the required type fixed at compile time.
+ *
+ * @tparam T The type of the expression value.
+ */
 template <typename T>
 class TypedActionExpression {
   public:

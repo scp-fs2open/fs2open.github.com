@@ -2851,6 +2851,6 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec)
 {
-	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ")";
+	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
 	return os;
 }

@@ -7,6 +7,7 @@ ActionDefinition::ActionDefinition(SCP_string name, SCP_vector<ActionParameter> 
 	: m_name(std::move(name)), m_parameters(std::move(parameters))
 {
 }
+ActionDefinition::~ActionDefinition() = default;
 
 const SCP_string& ActionDefinition::getName() const
 {

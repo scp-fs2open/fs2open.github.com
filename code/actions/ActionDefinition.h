@@ -15,6 +15,7 @@ struct ActionParameter {
 class ActionDefinition {
   public:
 	ActionDefinition(SCP_string name, SCP_vector<ActionParameter> parameters);
+	virtual ~ActionDefinition();
 
 	const SCP_string& getName() const;
 	const SCP_vector<actions::ActionParameter>& getParameters() const;
