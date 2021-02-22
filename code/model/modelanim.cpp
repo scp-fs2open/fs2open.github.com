@@ -434,7 +434,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 		return;
 
 	// save last angles
-	smi->prev_angs = smi->angs;
+	smi->canonical_prev_orient = smi->canonical_orient;
 
 	// process velocity and position
 	// first you accelerate, then you maintain a speed, then you slow down, then you stay put
@@ -517,24 +517,27 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	smi->turn_accel = vm_vec_mag(&trigger->rot_accel);
 
 	// the extra math here is/was useless, it just returns the exact same value (or really just 0 in the old code)
-	smi->angs.p = trigger->current_ang.xyz.x; //- (2.0f * PI2 * (trigger->current_ang.xyz.x / (2.0f * PI2)));
-	smi->angs.h = trigger->current_ang.xyz.y; //- (2.0f * PI2 * (trigger->current_ang.xyz.y / (2.0f * PI2)));
-	smi->angs.b = trigger->current_ang.xyz.z; //- (2.0f * PI2 * (trigger->current_ang.xyz.z / (2.0f * PI2)));
+	angles angs;
+	angs.p = trigger->current_ang.xyz.x; //- (2.0f * PI2 * (trigger->current_ang.xyz.x / (2.0f * PI2)));
+	angs.h = trigger->current_ang.xyz.y; //- (2.0f * PI2 * (trigger->current_ang.xyz.y / (2.0f * PI2)));
+	angs.b = trigger->current_ang.xyz.z; //- (2.0f * PI2 * (trigger->current_ang.xyz.z / (2.0f * PI2)));
 
-	if (smi->angs.p >= PI2)
-		smi->angs.p -= PI2;
-	else if (smi->angs.p < 0.0f)
-		smi->angs.p += PI2;
+	if (angs.p >= PI2)
+		angs.p -= PI2;
+	else if (angs.p < 0.0f)
+		angs.p += PI2;
 
-	if (smi->angs.h >= PI2)
-		smi->angs.h -= PI2;
-	else if (smi->angs.h < 0.0f)
-		smi->angs.h += PI2;
+	if (angs.h >= PI2)
+		angs.h -= PI2;
+	else if (angs.h < 0.0f)
+		angs.h += PI2;
 
-	if (smi->angs.b >= PI2)
-		smi->angs.b -= PI2;
-	else if (smi->angs.b < 0.0f)
-		smi->angs.b += PI2;
+	if (angs.b >= PI2)
+		angs.b -= PI2;
+	else if (angs.b < 0.0f)
+		angs.b += PI2;
+
+	vm_angles_2_matrix(&smi->canonical_orient, &angs);
 }
 
 //************************************//
@@ -595,7 +598,10 @@ bool model_anim_start_type(ship_subsys *pss, AnimationTriggerType animation_type
 			// rotate instantly; don't use the queue
 			if (instant) {
 				trigger->set_to_final(&psub->triggers[i]);
-				trigger->apply_trigger_angles(&pss->submodel_instance_1->angs);
+
+				angles angs;
+				trigger->apply_trigger_angles(&angs);
+				vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &angs);
 
 				retval = true;
 			}
@@ -861,6 +867,9 @@ void model_anim_set_initial_states(ship *shipp)
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
 
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
@@ -868,10 +877,14 @@ void model_anim_set_initial_states(ship *shipp)
 			if (psub->triggers[i].type == AnimationTriggerType::Initial) {
 				if (psub->type == SUBSYSTEM_TURRET) {
 					// special case for turrets
-					if (pss->submodel_instance_2 != nullptr)
-						pss->submodel_instance_2->angs.p = psub->triggers[i].angle.xyz.x;
-					if (pss->submodel_instance_1 != nullptr)
-						pss->submodel_instance_1->angs.h = psub->triggers[i].angle.xyz.y;
+					if (pss->submodel_instance_1 != nullptr) {
+						pss->submodel_instance_1->cur_angle = psub->triggers[i].angle.xyz.y;
+						submodel_canonicalize(&pm->submodel[psub->subobj_num], pss->submodel_instance_1, true);
+					}
+					if (pss->submodel_instance_2 != nullptr) {
+						pss->submodel_instance_2->cur_angle = psub->triggers[i].angle.xyz.x;
+						submodel_canonicalize(&pm->submodel[psub->turret_gun_sobj], pss->submodel_instance_2, true);
+					}
 				} else {
 					if (pss->triggered_rotation_index < 0) {
 						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
@@ -880,7 +893,10 @@ void model_anim_set_initial_states(ship *shipp)
 					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 					tr->set_to_initial(&psub->triggers[i]);
-					tr->apply_trigger_angles(&pss->submodel_instance_1->angs);
+
+					angles angs;
+					tr->apply_trigger_angles(&angs);
+					vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &angs);
 				}
 			}
 		}

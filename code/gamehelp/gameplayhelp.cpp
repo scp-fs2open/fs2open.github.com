@@ -114,9 +114,8 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 {
 	int			has_key=0, has_joy=0;
 	char			buf[256];
-	config_item	*ci;
 
-	ci = &Control_config[id];
+	auto ci = &Control_config[id];
 
 	buf[0] = 0;
 
@@ -140,7 +139,7 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 	gr_string(x,y,buf,GR_RESIZE_MENU);
 
 //	gr_string(x+KEY_DESCRIPTION_OFFSET,y,ci->text,GR_RESIZE_MENU);
-	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id), GR_RESIZE_MENU);
+	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text.c_str(), CONTROL_CONFIG_XSTR + id), GR_RESIZE_MENU);
 }
 
 void gameplay_help_blit_control_line_raw(int x, int y, const char *control_text, const char *control_description)

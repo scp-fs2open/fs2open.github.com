@@ -156,6 +156,7 @@ public:
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
@@ -361,6 +362,8 @@ public:
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
 
+	float   turret_inaccuracy;						// additional SEXP inaccuracy, field of fire degrees
+
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 
@@ -396,7 +399,7 @@ public:
 	flagset<Ship::Subsys_Sound_Flags> subsys_snd_flags;
 
 	int      rotation_timestamp;
-	matrix   world_to_turret_matrix;
+	matrix   world_to_turret_matrix;			// This is now only used for Turret_alt_math
 
 	// target priority setting for turrets
 	int      target_priority[32];
@@ -845,7 +848,7 @@ struct ship_registry_entry
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
-extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
@@ -1239,8 +1242,11 @@ public:
 
 	// optional afterburner trail values
 	generic_bitmap afterburner_trail;
+	float afterburner_trail_tex_stretch;
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
+	float afterburner_trail_alpha_end_factor;
+	float afterburner_trail_alpha_decay_exponent;
 	float afterburner_trail_life;
 	float afterburner_trail_spread;
 	int afterburner_trail_faded_out_sections;

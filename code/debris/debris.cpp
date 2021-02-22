@@ -899,13 +899,13 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 					smi->collision_checked = false;
 
 					// set angles for last frame (need to set to prev to get p0)
-					angles copy_angles = smi->angs;
+					matrix copy_matrix = smi->canonical_orient;
 
 					// find the start and end positions of the sphere in submodel RF
-					smi->angs = smi->prev_angs;
+					smi->canonical_orient = smi->canonical_prev_orient;
 					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos);
 
-					smi->angs = copy_angles;
+					smi->canonical_orient = copy_matrix;
 					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
@@ -924,7 +924,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 							// set up debris_hit_info for rotating submodel
 							if (debris_hit_info->edge_hit == 0) {
-								model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
+								model_instance_find_world_dir(&debris_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 							}
 
 							// find position in submodel RF of light object at collison
@@ -956,7 +956,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 					// get collision normal if not edge hit
 					if (debris_hit_info->edge_hit == 0) {
-						model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
+						model_instance_find_world_dir(&debris_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 					}
 
 					// find position in submodel RF of light object at collison

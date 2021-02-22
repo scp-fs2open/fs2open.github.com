@@ -103,6 +103,12 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
+flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
+	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false }
+};
+
+const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
+
 weapon_explosions Weapon_explosions;
 
 SCP_vector<lod_checker> LOD_checker;
@@ -210,11 +216,14 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
 
-//default time of a homing weapon to not home
+//default time of a homing missile to not home
 #define HOMING_DEFAULT_FREE_FLIGHT_TIME	0.5f
 
 // default percentage of max speed to coast at during freeflight
 const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
+
+//default time of a homing primary to not home
+#define HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME	0.0f
 
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
@@ -1167,6 +1176,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_float(&wip->atten_damage);
 		}
 	}
+
+	// angle-based damage multiplier
+	if (optional_string("$Angle of Incidence Damage Multiplier:")) {
+		if (optional_string("+Min:")) {
+			stuff_float(&wip->damage_incidence_min);
+		}
+		if (optional_string("+Max:")) {
+			stuff_float(&wip->damage_incidence_max);
+		}
+	}
 	
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
@@ -1366,7 +1385,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nResetting value to default.", wip->name);
 					wip->seeker_strength = 3.0f;
 				}
 			}
@@ -1543,6 +1562,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->ship_restrict_strings.emplace_back(LockRestrictionType::IFF, name);
 		}
 
+		if (subtype == WP_LASER && !wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
+			Warning(LOCATION, "Homing primary %s must be a heat seeker. Setting to heat", wip->name);
+			wip->wi_flags.remove(Weapon::Info_Flags::Homing_aspect);
+			wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
+			wip->wi_flags.set(Weapon::Info_Flags::Homing_heat);
+		}
 	}
 
 	// swarm missiles
@@ -1582,7 +1607,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
 	} else if(first_time && is_homing) {
-		wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
+		if (subtype == WP_LASER) {
+			wip->free_flight_time = HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME;
+		}
+		else {
+			wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
+		}
 	}
 
 	if (optional_string("$Free Flight Speed:")) {
@@ -1797,6 +1827,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if ( optional_string("+End Alpha:") )
 			stuff_float(&ti->a_end);
 
+		if (optional_string("+Alpha Decay Exponent:")) {
+			stuff_float(&ti->a_decay_exponent);
+			if (ti->a_decay_exponent < 0.0f) {
+				Warning(LOCATION, "Trail Alpha Decay Exponent of weapon %s cannot be negative. Reseting to 1.\n", wip->name);
+				ti->a_decay_exponent = 1.0f;
+			}
+		}
+
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
@@ -1808,6 +1846,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if ( required_string("+Bitmap:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_bitmap_init(&ti->texture, fname);
+		}
+
+		if (optional_string("+Bitmap Stretch:")) {
+			stuff_float(&ti->texture_stretch);
+			if (ti->texture_stretch == 0.0f) {
+				Warning(LOCATION, "Trail bitmap stretch of weapon %s cannot be 0.  Setting to 1.\n", wip->name);
+				ti->texture_stretch = 1.0f;
+			}
 		}
 
 		if ( optional_string("+Faded Out Sections:") ) {
@@ -2309,6 +2355,31 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Pulse Interval:")) {
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
+
+		if (optional_string("+Use Fire Wait:")) {
+			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		}
+
+		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {
+			int delay_multiplier;
+			stuff_int(&delay_multiplier);
+			if (delay_multiplier > 0) {
+				wip->cmeasure_failure_delay_multiplier_ai = delay_multiplier;
+			} else {
+				Warning(LOCATION,"\"+Failure Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
+			}
+		}
+
+		if (optional_string("+Successful Launch Delay Multiplier for AI:")) {
+			int delay_multiplier;
+			stuff_int(&delay_multiplier);
+			if (delay_multiplier > 0) {
+				wip->cmeasure_sucess_delay_multiplier_ai = delay_multiplier;
+			} else {
+				Warning(LOCATION, "\"+Successful Launch Delay Multiplier for AI:\" should be >= 0 (read %i). Value will not be used. ", delay_multiplier);
+			}
+		}
+
 	}
 
 	// beam weapon optional stuff
@@ -2575,6 +2646,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->piercing_impact_effect = ParticleManager::get()->
 					addEffect(piercingEffect);
 			}
+		}
+
+		if (optional_string("+Beam Flags:")) {
+			parse_string_flag_list(wip->b_info.flags, Beam_info_flags, Num_beam_info_flags, nullptr);
 		}
 
 		// beam sections
@@ -4521,16 +4596,19 @@ void weapon_home(object *obj, int num, float frame_time)
 	//	See if this weapon is the nearest homing object to the object it is homing on.
 	//	If so, update some fields in the target object's ai_info.
 	if (hobjp != &obj_used_list) {
-		float	dist;
-
-		dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
 
 		if (hobjp->type == OBJ_SHIP) {
 			ai_info	*aip;
 
 			aip = &Ai_info[Ships[hobjp->instance].ai_index];
 
-			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) {
+			vec3d target_vector;
+			float dist = vm_vec_normalized_dir(&target_vector, &hobjp->pos, &obj->pos);
+
+			// add this missile to nearest_locked_object if its the closest
+			// with the flag, only do it if its also mostly pointed at its target
+			if (((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) && 
+				(!(The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
 				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
@@ -4665,7 +4743,8 @@ void weapon_home(object *obj, int num, float frame_time)
             (old_dot < wip->fov) &&
             (wp->lifeleft > 0.01f) &&
             (wp->homing_object != &obj_used_list) &&
-            (wp->homing_object->type == OBJ_SHIP))
+            (wp->homing_object->type == OBJ_SHIP) && 
+            (wip->subtype != WP_LASER))				
         {
             wp->lifeleft = 0.01f;
         }
@@ -4699,7 +4778,8 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Control speed based on dot product to goal.  If close to straight ahead, move
 		//	at max speed, else move slower based on how far from ahead.
-		if (old_dot < 0.90f) {
+		//	Asteroth - but not for homing primaries
+		if (old_dot < 0.90f && wip->subtype != WP_LASER) {
 			obj->phys_info.speed = MAX(0.2f, old_dot* (float) fabs(old_dot));
 			if (obj->phys_info.speed < max_speed*0.75f)
 				obj->phys_info.speed = max_speed*0.75f;
@@ -5625,7 +5705,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// check if laser or dumbfire missile
 	// set physics flag to allow optimization
-	if ((wip->subtype == WP_LASER) || ((wip->subtype == WP_MISSILE) && !(wip->is_homing()) && wip->acceleration_time == 0.0f)) {
+	if (((wip->subtype == WP_LASER) || (wip->subtype == WP_MISSILE)) && !(wip->is_homing()) && wip->acceleration_time == 0.0f) {
 		// set physics flag
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
@@ -8091,6 +8171,8 @@ void weapon_info::reset()
 	this->damage = 0.0f;
 	this->damage_time = -1.0f;
 	this->atten_damage = -1.0f;
+	this->damage_incidence_max = 1.0f;
+	this->damage_incidence_min = 1.0f;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
@@ -8185,6 +8267,7 @@ void weapon_info::reset()
 	this->tr_info.a_end = 1.0f;
 	this->tr_info.max_life = 1.0f;
 	this->tr_info.spread = 0.0f;
+	this->tr_info.a_decay_exponent = 1.0f;
 	this->tr_info.stamp = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
@@ -8269,6 +8352,7 @@ void weapon_info::reset()
 	this->b_info.range = BEAM_FAR_LENGTH;
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;
+	this->b_info.flags.reset();
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
@@ -8313,6 +8397,10 @@ void weapon_info::reset()
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
 	this->cm_kill_single = false;
 	this->cmeasure_timer_interval = 0;
+	this->cmeasure_firewait = CMEASURE_WAIT;
+	this->cmeasure_use_firewait = false;
+	this->cmeasure_failure_delay_multiplier_ai = -1;
+	this->cmeasure_sucess_delay_multiplier_ai = 2;
 
 	this->weapon_submodel_rotate_accell = 10.0f;
 	this->weapon_submodel_rotate_vel = 0.0f;

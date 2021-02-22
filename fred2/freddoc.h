@@ -162,55 +162,6 @@ protected:
 	 *
 	 * @TODO Remove.
 	 */
-	afx_msg void OnEditDelete();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnDuplicate();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditCopy();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditCut();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditHold();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditFetch();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
-	afx_msg void OnEditPaste();
-
-	/**
-	 * @brief Unused.
-	 *
-	 * @TODO Remove.
-	 */
 	afx_msg void OnEditUndo();
 
 	/**

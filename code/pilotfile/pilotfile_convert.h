@@ -137,7 +137,7 @@ struct plr_data {
 	unsigned char hud_colors[39][4];
 
 	// control setup
-	SCP_vector<config_item> controls;
+	SCP_vector<CCI> controls;
 
 	int joy_axis_map_to[5];
 	int joy_invert_axis[5];
@@ -254,6 +254,10 @@ class pilotfile_convert {
 		plr_data *plr;
 
 		void plr_import();
+
+		/**
+		 * @brief Reads in the player controls from the playerfile.  Assumes controls are written in the order they are hardcoded.
+		 */
 		void plr_import_controls();
 		void plr_import_hud();
 		void plr_import_detail();

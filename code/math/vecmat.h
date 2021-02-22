@@ -184,6 +184,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 #define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
 #define vm_vec_rand_vec_quick			vm_vec_rand_vec
 
+bool vm_vec_is_normalized(const vec3d *v);
+
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
