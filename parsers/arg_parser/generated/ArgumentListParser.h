@@ -13,15 +13,17 @@ class  ArgumentListParser : public antlr4::Parser {
 public:
   enum {
     COMMA = 1, EQUALS = 2, STRING = 3, PLACEHOLDER = 4, NIL = 5, TRUE = 6, 
-    FALSE = 7, FUNCTION = 8, NUMBER = 9, TYPE_ALT = 10, L_BRACKET = 11, 
-    R_BRACKET = 12, L_PAREN = 13, R_PAREN = 14, ARROW = 15, L_ANGLE_BRACKET = 16, 
-    R_ANGLE_BRACKET = 17, ARG_COMMENT = 18, ID = 19, SPACE = 20, OTHER = 21
+    FALSE = 7, FUNCTION = 8, VARARGS_SPECIFIER = 9, NUMBER = 10, TYPE_ALT = 11, 
+    L_BRACKET = 12, R_BRACKET = 13, L_PAREN = 14, R_PAREN = 15, ARROW = 16, 
+    L_ANGLE_BRACKET = 17, R_ANGLE_BRACKET = 18, ARG_COMMENT = 19, ID = 20, 
+    SPACE = 21, OTHER = 22
   };
 
   enum {
-    RuleArg_list = 0, RuleSimple_type = 1, RuleFunc_arg = 2, RuleFunc_arglist = 3, 
-    RuleFunction_type = 4, RuleType = 5, RuleBoolean = 6, RuleValue = 7, 
-    RuleActual_argument = 8, RuleOptional_argument = 9, RuleArgument = 10
+    RuleArg_list = 0, RuleSimple_type = 1, RuleVarargs_or_simple_type = 2, 
+    RuleFunc_arg = 3, RuleFunc_arglist = 4, RuleFunction_type = 5, RuleType = 6, 
+    RuleBoolean = 7, RuleValue = 8, RuleActual_argument = 9, RuleOptional_argument = 10, 
+    RuleArgument = 11
   };
 
   ArgumentListParser(antlr4::TokenStream *input);
@@ -36,6 +38,7 @@ public:
 
   class Arg_listContext;
   class Simple_typeContext;
+  class Varargs_or_simple_typeContext;
   class Func_argContext;
   class Func_arglistContext;
   class Function_typeContext;
@@ -73,6 +76,20 @@ public:
   };
 
   Simple_typeContext* simple_type();
+
+  class  Varargs_or_simple_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Varargs_or_simple_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Simple_typeContext *simple_type();
+    antlr4::tree::TerminalNode *VARARGS_SPECIFIER();
+
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Varargs_or_simple_typeContext* varargs_or_simple_type();
 
   class  Func_argContext : public antlr4::ParserRuleContext {
   public:
@@ -126,7 +143,7 @@ public:
   public:
     TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    Simple_typeContext *simple_type();
+    Varargs_or_simple_typeContext *varargs_or_simple_type();
     Function_typeContext *function_type();
     std::vector<TypeContext *> type();
     TypeContext* type(size_t i);

@@ -1,13 +1,12 @@
 
-INCLUDE(source_groups.cmake)
+include(util)
 
+INCLUDE(source_groups.cmake)
 INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
 target_compile_features(code PUBLIC cxx_std_11)
-
-INCLUDE(default_files.cmake)
 
 if (MSVC)
 	target_compile_definitions(code PUBLIC "PDB_DEBUGGING=1")
@@ -53,6 +52,8 @@ endif()
 
 target_link_libraries(code PUBLIC parsers)
 
+target_link_libraries(code PUBLIC mdns)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)
@@ -87,7 +88,11 @@ if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN)
 endif()
 
-include(util)
+include(shaders.cmake)
+
+target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
+
+handle_embedded_files(code)
 
 set_precompiled_header(code "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")
 

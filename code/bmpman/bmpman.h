@@ -167,6 +167,8 @@ public:
 	float get_channel_alpha(float u, float v);
 };
 
+void clear_bm_lookup_cache();
+
 /**
  * @brief Loads a bitmap so we can draw with it later.
  *
@@ -258,6 +260,21 @@ int bm_unload_fast(int handle, int clear_render_targets = 0);
  * @todo upgrade return type and clear_render_targets type to bools
  */
 int bm_release(int handle, int clear_render_targets = 0);
+
+/**
+ * @brief Detaches the render target of a bitmap if it exists
+ *
+ * @details Once called, this handle cannot be used as a target to switch the rendering context to
+ *
+ * @param handle               The index number of the bitmap to release
+ *
+ * @returns 1 on success,
+ * @returns 0 otherwise
+ *
+ * @note If the passed handle is that of an ANI, it frees the render target of EVERY frame. Be sure to only pass the handle of the first frame!
+ *
+ */
+bool bm_release_rendertarget(int handle);
 
 /**
  * @brief Loads a bitmap sequance so we can draw with it.

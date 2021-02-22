@@ -128,7 +128,7 @@ typedef struct voice_stream {
 	sound_handle stream_snd_handle;                                         // sound playing instance handle
 	int stream_rtvoice_handle;												// rtvoice buffer handle
 } voice_stream;
-voice_stream Multi_voice_stream[MULTI_VOICE_MAX_STREAMS];		// voice streams themselves
+std::array<voice_stream, MULTI_VOICE_MAX_STREAMS> Multi_voice_stream;		// voice streams themselves
 
 // player-side data
 #define MULTI_VOICE_KEY									KEY_LAPOSTRO	// key used for realtime voice
@@ -333,8 +333,8 @@ void multi_voice_init()
 		}
 	}
 
-	// initialize the streams	
-	memset(Multi_voice_stream,0,sizeof(voice_stream) * MULTI_VOICE_MAX_STREAMS);	
+	// initialize the streams
+	Multi_voice_stream.fill({});
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		Multi_voice_stream[idx].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
 		Multi_voice_stream[idx].token_stamp = -1;

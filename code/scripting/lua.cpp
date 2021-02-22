@@ -193,15 +193,8 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string leftStr(leftCmp);
-	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	SCP_string rightStr(rightCmp);
-	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	return leftStr < rightStr;
+	SCP_string_lcase_less_than lt;
+	return lt(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {
@@ -215,7 +208,8 @@ static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry*
 	return false;
 }
 
-void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
+void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
 	SCP_vector<ade_table_entry*> table_entries;
 
@@ -228,7 +222,7 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
 	for (auto entry : table_entries) {
-		doc.elements.emplace_back(entry->ToDocumentationElement());
+		doc.elements.emplace_back(entry->ToDocumentationElement(errorReporter));
 	}
 
 	//***Enumerations

@@ -44,3 +44,7 @@ if (FSO_BUILD_WITH_VULKAN)
 endif()
 
 include(antlr4.cmake)
+
+include(vulkan.cmake)
+
+add_subdirectory(mdns)

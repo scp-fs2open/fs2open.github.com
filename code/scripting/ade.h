@@ -31,6 +31,8 @@ namespace scripting {
 // Forward definition
 struct DocumentationElement;
 
+using DocumentationErrorReporter = std::function<void(const SCP_string& errorMessage)>;
+
 /**
  *
  * @param L
@@ -154,7 +156,8 @@ class ade_table_entry {
 	//*****Functions
 	size_t AddSubentry(ade_table_entry& n_ate);
 	int SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx);
-	std::unique_ptr<DocumentationElement> ToDocumentationElement();
+	std::unique_ptr<DocumentationElement> ToDocumentationElement(
+		const scripting::DocumentationErrorReporter& errorReporter);
 
 	//*****Get
 	const char* GetName() { if (Name != NULL) { return Name; } else { return ShortName; }}

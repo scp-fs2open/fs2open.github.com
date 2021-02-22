@@ -4427,6 +4427,7 @@ void load_gauge_lock(gauge_settings* settings)
 	int Lock_target_box_width;
 	int Lock_target_box_height;
 	bool loop_locked_anim;
+	bool blink_locked_anim;
 	char fname_lock[MAX_FILENAME_LEN];
 	char fname_spin[MAX_FILENAME_LEN];
 
@@ -4444,6 +4445,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "lock1_fs1");
 			strcpy_s(fname_spin, "lockspin_fs1");
@@ -4457,6 +4459,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "2_lock1_fs1");
 			strcpy_s(fname_spin, "2_lockspin_fs1");
@@ -4472,6 +4475,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "lock1");
 			strcpy_s(fname_spin, "lockspin");
@@ -4485,6 +4489,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "2_lock1");
 			strcpy_s(fname_spin, "2_lockspin");
@@ -4518,6 +4523,7 @@ void load_gauge_lock(gauge_settings* settings)
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
+	hud_gauge->initBlinkLockedAnim(blink_locked_anim);
 	hud_gauge->initGaugeHalfSize(Lock_gauge_half_w, Lock_gauge_half_h);
 	hud_gauge->initSpinHalfSize(Lockspin_half_w, Lockspin_half_h);
 	hud_gauge->initTriHeight(Lock_triangle_height);

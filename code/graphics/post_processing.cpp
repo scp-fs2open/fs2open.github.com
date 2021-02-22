@@ -137,8 +137,14 @@ bool PostProcessingManager::parse_table()
 			stuff_int(&m_lightshaftParams.samplenum);
 
 			m_lightshaftParams.cpintensity = m_lightshaftParams.weight;
-			for (int i = 1; i < m_lightshaftParams.samplenum; i++)
-				m_lightshaftParams.cpintensity += m_lightshaftParams.weight * pow(m_lightshaftParams.falloff, i);
+
+			float falloff = m_lightshaftParams.falloff;
+			for (int i = 1; i < m_lightshaftParams.samplenum; ++i)
+			{
+				m_lightshaftParams.cpintensity += m_lightshaftParams.weight * falloff;
+				falloff *= m_lightshaftParams.falloff;	// this replaces pow(falloff, i)
+			}
+
 			m_lightshaftParams.cpintensity *= m_lightshaftParams.intensity;
 		}
 

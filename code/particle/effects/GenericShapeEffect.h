@@ -120,10 +120,14 @@ class GenericShapeEffect : public ParticleEffect {
 				if (m_particleTrail.isValid()) {
 					auto part = m_particleProperties.createPersistentParticle(info);
 
-					auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-					trailSource.moveToParticle(part);
+					// There are some possibilities where we can get a null pointer back. Those are very rare but we
+					// still shouldn't crash in those circumstances.
+					if (!part.expired()) {
+						auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
+						trailSource.moveToParticle(part);
 
-					trailSource.finish();
+						trailSource.finish();
+					}
 				} else {
 					// We don't have a trail so we don't need a persistent particle
 					m_particleProperties.createParticle(info);

@@ -13,12 +13,21 @@ namespace util {
  * @ingroup particleUtils
  */
 class ParticleProperties {
+private:
+	/**
+	 * @brief Choose particle from bitmap list
+	 */
+	int chooseBitmap();
+
  public:
-	int m_bitmap = -1;
+
+	SCP_vector<int> m_bitmap_list;
+	::util::UniformRange<size_t> m_bitmap_range;
 	::util::UniformFloatRange m_radius;
 
 	bool m_hasLifetime = false;
 	::util::UniformFloatRange m_lifetime;
+	::util::UniformFloatRange m_length;
 
 	ParticleProperties();
 

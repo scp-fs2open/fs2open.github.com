@@ -212,10 +212,16 @@ void trail_render( trail * trailp )
 		}
 
 		w = trailp->val[n] * w_size + ti->w_start;
+
+		float fade = trailp->val[n];
+		
+		if (trailp->info.a_decay_exponent != 1.0f)
+			fade = powf(trailp->val[n], trailp->info.a_decay_exponent);
+
 		if (init_fade_out != 1.0f) {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
 		} else {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
 
 		if ( i == 0 )	{
@@ -243,7 +249,7 @@ void trail_render( trail * trailp )
 		top.a = bot.a = l;	
 
 		if (i > 0) {
-			float U = i2fl(i);
+			float U = i2fl(n) / trailp->info.texture_stretch;
 
 			if (i == num_sections-1) {
 				// Last one...
@@ -304,7 +310,11 @@ void trail_render( trail * trailp )
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
 }
 
-void trail_add_segment( trail *trailp, vec3d *pos )
+// Adds a new segment to trailp at pos
+// In order for trailp's 'spread' field to have any effect, it must be nonzero and the orient must be non-null
+// If so, the orient's fvec is the treated as the direction of the trail, and the 
+// new trail point is given a random velocity orthogonal to the fvec (scaled by spread speed)
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 {
 	int next = trailp->tail;
 	trailp->tail++;
@@ -320,6 +330,11 @@ void trail_add_segment( trail *trailp, vec3d *pos )
 	
 	trailp->pos[next] = *pos;
 	trailp->val[next] = 0.0f;
+
+	if (orient != nullptr && trailp->info.spread > 0.0f) {
+		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
+	} else 
+		vm_vec_zero(&trailp->vel[next]);
 }		
 
 void trail_set_segment( trail *trailp, vec3d *pos )
@@ -358,6 +373,8 @@ void trail_move_all(float frametime)
 				if ( trailp->val[n] <= 1.0f ) {
 					num_alive_segments++;	// Record how many still alive.
 				}
+
+				trailp->pos[n] += trailp->vel[n] * frametime; 
 
 			} while ( n != trailp->head );
 		}		

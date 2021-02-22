@@ -210,7 +210,10 @@ void script_init()
 	Script_system.CreateLuaState();
 
 	if (Output_scripting_meta || Output_scripting_json) {
-		const auto doc = Script_system.OutputDocumentation();
+		const auto doc = Script_system.OutputDocumentation([](const SCP_string& error) {
+			mprintf(("Scripting documentation: Error while parsing\n%s(This is only relevant for coders)\n\n",
+				error.c_str()));
+		});
 
 		if (Output_scripting_meta) {
 			mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
@@ -506,7 +509,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 
 					int action_index = more_data;
 
-					if (action_index <= 0 || stricmp(scp->condition_string.c_str(), Control_config[action_index].text) != 0)
+					if (action_index <= 0 || stricmp(scp->condition_string.c_str(), Control_config[action_index].text.c_str()) != 0)
 						return false;
 					break;
 				}
@@ -609,7 +612,7 @@ void script_state::SetHookObjects(int num, ...)
 		auto reference = luacpp::UniqueLuaReference::create(LuaState);
 		lua_pop(LuaState, 1); // Remove object value from the stack
 
-		HookVariableValues.emplace(name, std::move(reference));
+		HookVariableValues[name].push_back(std::move(reference));
 	}
 
 	va_end(vl);
@@ -624,11 +627,15 @@ void script_state::RemHookVars(std::initializer_list<SCP_string> names)
 {
 	if (LuaState != nullptr) {
 		for (const auto& hookVar : names) {
-			HookVariableValues.erase(hookVar);
+			if (HookVariableValues[hookVar].empty()) {
+				// Nothing to do
+				continue;
+			}
+			HookVariableValues[hookVar].pop_back();
 		}
 	}
 }
-const SCP_unordered_map<SCP_string, luacpp::LuaReference>& script_state::GetHookVariableReferences()
+const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& script_state::GetHookVariableReferences()
 {
 	return HookVariableValues;
 }
@@ -753,7 +760,7 @@ void script_state::SetLuaSession(lua_State *L)
 	}
 }
 
-ScriptingDocumentation script_state::OutputDocumentation()
+ScriptingDocumentation script_state::OutputDocumentation(const scripting::DocumentationErrorReporter& errorReporter)
 {
 	ScriptingDocumentation doc;
 
@@ -780,9 +787,7 @@ ScriptingDocumentation script_state::OutputDocumentation()
 			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->isOverridable()});
 	}
 
-	if (Langs & SC_LUA) {
-		OutputLuaDocumentation(doc);
-	}
+	OutputLuaDocumentation(doc, errorReporter);
 
 	return doc;
 }

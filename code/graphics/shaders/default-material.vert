@@ -1,15 +1,19 @@
-in vec4 vertPosition;
-in vec4 vertTexCoord;
-in vec4 vertColor;
-out vec4 fragTexCoord;
-out vec4 fragColor;
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-layout (std140) uniform matrixData {
+layout (location = 0) in vec4 vertPosition;
+layout (location = 1) in vec4 vertColor;
+layout (location = 2) in vec4 vertTexCoord;
+
+layout (location = 0) out vec4 fragTexCoord;
+layout (location = 1) out vec4 fragColor;
+
+layout (binding = 0, std140) uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
-layout (std140) uniform genericData {
+layout (binding = 1, std140) uniform genericData {
 	mat4 modelMatrix;
 
 	vec4 color;

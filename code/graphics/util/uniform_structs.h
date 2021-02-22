@@ -2,6 +2,11 @@
 
 #include "globalincs/pstypes.h"
 
+using SPIRV_FLOAT_MAT_4x4 = matrix4;
+using SPIRV_FLOAT_VEC4 = vec4;
+
+#include "shader_structs.h"
+
 namespace graphics {
 
 /**
@@ -216,24 +221,6 @@ struct passthrough_data {
 	int srgb;
 
 	float pad[2];
-};
-
-struct default_material_data {
-	matrix4 modelMatrix;
-
-	vec4 color;
-
-	vec4 clipEquation;
-
-	int baseMapIndex;
-	int alphaTexture;
-	int noTexturing;
-	int srgb;
-
-	float intensity;
-	float alphaThreshold;
-	int clipEnabled;
-	float pad;
 };
 
 struct tonemapping_data {

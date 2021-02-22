@@ -23,6 +23,8 @@ public:
 
     virtual antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext *context) = 0;
 
+    virtual antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext *context) = 0;
+
     virtual antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext *context) = 0;
 
     virtual antlrcpp::Any visitFunc_arglist(ArgumentListParser::Func_arglistContext *context) = 0;

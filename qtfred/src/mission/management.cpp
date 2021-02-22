@@ -150,7 +150,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	species_init();        // Kazan
 
 	listener(SubSystem::BriefingIcons);
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();

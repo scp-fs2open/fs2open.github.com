@@ -44,6 +44,7 @@ add_file_folder("Scripting"
     scripting/ade_args.cpp
     scripting/doc_parser.cpp
     scripting/require.cpp
+    scripting/script_state.cpp
     scripting/ScriptingTestFixture.h
     scripting/ScriptingTestFixture.cpp
 )

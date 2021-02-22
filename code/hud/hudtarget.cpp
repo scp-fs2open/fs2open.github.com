@@ -2513,8 +2513,6 @@ void hud_target_in_reticle_new()
 			}
 
 		} else {
-
-			model_clear_instance( mc.model_num );
 			mc.orient = &A->orient;										// The object's orient
 			mc.pos = &A->pos;												// The object's position
 			mc.p0 = &Eye_position;										// Point 1 of ray to check
@@ -3203,9 +3201,6 @@ void hud_process_remote_detonate_missile()
 						Int3();	// should never happen
 						return;
 					}
-
-					// do only for the first remote detonate missile
-					break;
 				}
 			}
 		}
@@ -3728,10 +3723,12 @@ int hud_get_best_primary_bank(float *range)
 //
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps)
+void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_object)
 {
+	Assertion(reference_object != nullptr, "polish_predicted_target_pos received a nullptr for its reference ship, this is a coder mistake, please report!");
+
 	int	iteration;
-	vec3d	player_pos = Player_obj->pos;
+	vec3d	reference_pos = reference_object->pos;
 	float		time_to_enemy;
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
 
@@ -3750,11 +3747,11 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	// additive velocity stuff
 	// not just the player's main target
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
-		vm_vec_scale_sub2( &enemy_vel, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2( &enemy_vel, &reference_object->phys_info.vel, wip->vel_inherit_amount);
 	}
 
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
-		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
+		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &reference_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
 		if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
@@ -5238,27 +5235,41 @@ void hudtarget_page_in()
 	}
 }
 
-void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
+void hud_stuff_ship_name(char *ship_name_text, const ship *shipp)
+{
+	strcpy(ship_name_text, hud_get_ship_name(shipp).c_str());
+}
+
+SCP_string hud_get_ship_name(const ship *shipp)
 {
 	// print ship name
 	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
-		*ship_name_text = 0;
-	} else {
-		strcpy(ship_name_text, shipp->get_display_name());
-
-		if (!Disable_built_in_translations) {
-			// handle translation
-			if (Lcl_gr) {
-				lcl_translate_targetbox_name_gr(ship_name_text);
-			} else if (Lcl_pl) {
-				lcl_translate_targetbox_name_pl(ship_name_text);
-			}
+		return "";
+	} else if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			char buf[128];
+			strcpy(buf, shipp->get_display_name());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
+		} else if (Lcl_pl) {
+			char buf[128];
+			strcpy(buf, shipp->get_display_name());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return shipp->get_display_name();
+}
+
+void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp)
+{
+	strcpy(ship_callsign_text, hud_get_ship_callsign(shipp).c_str());
 }
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
+SCP_string hud_get_ship_callsign(const ship *shipp)
 {
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -5266,57 +5277,80 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 		int pn = multi_find_player_by_object( &Objects[shipp->objnum] );
 
 		if (pn >= 0) {
-			strcpy(ship_callsign_text, Net_players[pn].m_player->short_callsign);
-			return;
+			return Net_players[pn].m_player->short_callsign;
 		}
 	}
+
+	SCP_string ship_callsign_text;
 
 	// try to get callsign
 	if (Fred_running) {
-		strcpy(ship_callsign_text, Fred_callsigns[shipp-Ships]);
+		ship_callsign_text = Fred_callsigns[shipp-Ships];
 	} else {
-		*ship_callsign_text = 0;
 		if (shipp->callsign_index >= 0) {
-			strcpy(ship_callsign_text, mission_parse_lookup_callsign_index(shipp->callsign_index));
+			ship_callsign_text = mission_parse_lookup_callsign_index(shipp->callsign_index);
 		}
 	}
 
 	if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_callsign_text);
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
 		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_callsign_text);
+			char buf[128];
+			strcpy(buf, ship_callsign_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return ship_callsign_text;
 }
 
-extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
-void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
+void hud_stuff_ship_class(char *ship_class_text, const ship *shipp)
 {
+	strcpy(ship_class_text, hud_get_ship_class(shipp).c_str());
+}
+
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
+SCP_string hud_get_ship_class(const ship *shipp)
+{
+	SCP_string ship_class_text;
+
 	// try to get alt name
 	if (Fred_running) {
-		strcpy(ship_class_text, Fred_alt_names[shipp-Ships]);
-	} else {
-		*ship_class_text = 0;
-		if (shipp->alt_type_index >= 0) {
-			strcpy(ship_class_text, mission_parse_lookup_alt_index(shipp->alt_type_index));
-		}
-	}
+		ship_class_text = Fred_alt_names[shipp-Ships];
 
-	// maybe get ship class
-	if (!*ship_class_text) {
-		strcpy(ship_class_text, Ship_info[shipp->ship_info_index].get_display_name());
+		if (ship_class_text.empty()) {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
+		}
+	} else {
+		if (shipp->alt_type_index >= 0) {
+			ship_class_text = mission_parse_lookup_alt_index(shipp->alt_type_index);
+		} else {
+			ship_class_text = Ship_info[shipp->ship_info_index].get_display_name();
+		}
 	}
 
 	if (!Disable_built_in_translations) {
 		// handle translation
 		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_class_text);
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_gr(buf);
+			return buf;
 		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_class_text);
+			char buf[128];
+			strcpy(buf, ship_class_text.c_str());
+			lcl_translate_targetbox_name_pl(buf);
+			return buf;
 		}
 	}
+
+	return ship_class_text;
 }
 
 HudGaugeCmeasures::HudGaugeCmeasures():
@@ -7215,10 +7249,11 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 	//primary weapons
 	if ( draw_primary_models ) {
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 			auto bank = &model_get(sip->model_num)->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
-				if ( ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) ) {
+				if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
 					//vm_vec_sub(&subobj_pos, &Eye_position, &subobj_pos);
 					//g3_rotate_vertex(&draw_point, &bank->pnt[k]);
@@ -7234,9 +7269,6 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 					//renderCircle(xc, yc, 25);
 				} else {
-					polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
-
-
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
@@ -7246,9 +7278,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					vec3d world_position;
 					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
 
-					pm->gun_submodel_rotation = sp->primary_rotate_ang[i];
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
-					pm->gun_submodel_rotation = 0.0f;
+					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &object_orient, &world_position);
 				}
 			}
 		}

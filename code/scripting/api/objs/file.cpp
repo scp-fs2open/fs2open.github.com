@@ -101,14 +101,14 @@ ADE_FUNC(getPath, l_File, nullptr, "Determines path of the given file", "string"
 
 ADE_FUNC(read,
 	l_File,
-	"number|string, ...",
+	"number|string, any...",
 	"Reads part of or all of a file, depending on arguments passed. Based on basic Lua file:read function."
 	"Returns nil when the end of the file is reached."
 	"<br><ul><li>\"*n\" - Reads a number.</li>"
 	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
 	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
 	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-	ade_type_info({ade_type_alternative({"number", "string"}), "..."}),
+	ade_type_varargs(ade_type_alternative({"number", "string"})),
 	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;
@@ -262,7 +262,7 @@ ADE_FUNC(seek, l_File, "[string Whence=\"cur\", number Offset=0]",
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(write, l_File, "string or number, ...",
+ADE_FUNC(write, l_File, "string|number, any...",
 	"Writes a series of Lua strings or numbers to the current file.", "number", "Number of items successfully written.")
 {
 	cfile_h* cfp = nullptr;

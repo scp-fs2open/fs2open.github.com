@@ -143,18 +143,9 @@ add_file_folder("Decals"
 
 add_file_folder("Default files"
 	def_files/def_files.h
+	def_files/def_files.cpp
+	${file_root_def_files}
 )
-if(MSVC)
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-win32.cpp
-	)
-else()
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-generic.cpp
-	)
-endif()
 
 add_file_folder("Default files\\\\data"
 )
@@ -167,8 +158,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
-	def_files/data/effects/default-material-f.sdr
-	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
 	def_files/data/effects/deferred-f.sdr
@@ -329,6 +318,8 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/undosys.cpp
+	globalincs/undosys.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h
@@ -486,6 +477,8 @@ if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
 		graphics/vulkan/gr_vulkan.cpp
 		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/RenderFrame.cpp
+		graphics/vulkan/RenderFrame.h
 		graphics/vulkan/vulkan_stubs.cpp
 		graphics/vulkan/vulkan_stubs.h
 		graphics/vulkan/VulkanRenderer.cpp
@@ -602,10 +595,43 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/lab.cpp
-	lab/lab.h
 	lab/wmcgui.cpp
 	lab/wmcgui.h
+	lab/labv2.h
+	lab/labv2_internal.h
+	lab/labv2.cpp
+)
+
+add_file_folder("Lab\\\\Dialogs"
+	lab/dialogs/lab_dialog.h
+	lab/dialogs/ship_classes.h
+	lab/dialogs/ship_classes.cpp
+	lab/dialogs/weapon_classes.h
+	lab/dialogs/weapon_classes.cpp
+	lab/dialogs/class_descriptions.h
+	lab/dialogs/class_descriptions.cpp
+	lab/dialogs/class_options.h
+	lab/dialogs/class_options.cpp
+	lab/dialogs/class_variables.h
+	lab/dialogs/class_variables.cpp
+	lab/dialogs/render_options.h
+	lab/dialogs/render_options.cpp
+	lab/dialogs/backgrounds.h
+	lab/dialogs/backgrounds.cpp
+	lab/dialogs/actions.h
+	lab/dialogs/actions.cpp
+)
+
+add_file_folder("Lab\\\\Manager"
+	lab/manager/lab_manager.h
+	lab/manager/lab_manager.cpp
+)
+
+add_file_folder("Lab\\\\Renderer"
+	lab/renderer/lab_renderer.h
+	lab/renderer/lab_renderer.cpp
+	lab/renderer/lab_cameras.h
+	lab/renderer/lab_cameras.cpp
 )
 
 add_file_folder("Libs"
@@ -797,6 +823,8 @@ add_file_folder("Network"
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_mdns.cpp
+	network/multi_mdns.h
 	network/multi_obj.cpp
 	network/multi_obj.h
 	network/multi_observer.cpp
@@ -1060,6 +1088,8 @@ add_file_folder("ScpUi"
 	scpui/rocket_ui.h
 	scpui/RocketFileInterface.cpp
 	scpui/RocketFileInterface.h
+	scpui/RocketLuaSystemInterface.cpp
+	scpui/RocketLuaSystemInterface.h
 	scpui/RocketRenderingInterface.cpp
 	scpui/RocketRenderingInterface.h
 	scpui/RocketSystemInterface.cpp
@@ -1169,6 +1199,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/color.cpp
+	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
 	scripting/api/objs/controls.cpp
@@ -1187,6 +1219,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/eye.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
+	scripting/api/objs/fireballclass.cpp
+	scripting/api/objs/fireballclass.h
+	scripting/api/objs/fireball.cpp
+	scripting/api/objs/fireball.h
 	scripting/api/objs/font.cpp
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp

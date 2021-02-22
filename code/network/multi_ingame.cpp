@@ -1039,6 +1039,9 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
         Objects[objnum].flags.from_u64(oflags);
 		Objects[objnum].net_signature = net_signature;
 
+		// Cyborg17 also add this ship to the multi ship tracking and interpolation struct
+		multi_ship_record_add_ship(objnum);
+
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags.from_u64(sflags);

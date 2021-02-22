@@ -191,7 +191,7 @@ medal_stuff::medal_stuff()
 	voice_base[0] = '\0';
 }
 
-const char* medal_stuff::get_display_name() {
+const char* medal_stuff::get_display_name() const {
 	if (!alt_name.empty()) {
 		return alt_name.c_str();
 	} else {

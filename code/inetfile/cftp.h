@@ -12,6 +12,10 @@
 #ifndef _CFTP_HEADER_
 #define _CFTP_HEADER_
 
+#ifndef _WIN32
+#include "netinet/in.h"
+#endif
+
 #include "globalincs/pstypes.h"
 
 #include <cstdio>
@@ -57,30 +61,30 @@ public:
 protected:
 	
 	int ConnectControlSocket();
-	int LoginHost();	
-	uint SendFTPCommand(const char *command);
-	uint ReadFTPServerReply();
+	int LoginHost();
+	void LogoutHost();
+	int SendFTPCommand(const char *command, SCP_string *response = nullptr);
+	int ReadFTPServerReply(SCP_string *str_reply);
 	uint GetFile();
-	uint IssuePort();
+	bool IssuePasv();
 	uint ReadDataChannel();
-	void FlushControlChannel();
 
 	uint m_iBytesIn;
 	uint m_iBytesTotal;
-	uint m_State;
+	int m_State;
 
 	bool m_Aborting;
 	bool m_Aborted;
 
-	char m_szUserName[100];
-	char m_szPassword[100];
-	char m_szHost[200];
-	char m_szDir[200];
-	char m_szFilename[100];
-	
-	char recv_buffer[1000];
+	SCP_string m_szUserName;
+	SCP_string m_szPassword;
+	SCP_string m_szHost;
+	SCP_string m_szDir;
+	SCP_string m_szFilename;
 
-	SOCKET m_ListenSock;
+
+	SOCKADDR_STORAGE m_ServerAddr;
+
 	SOCKET m_DataSock;
 	SOCKET m_ControlSock;
 

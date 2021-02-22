@@ -143,6 +143,11 @@ void HudGaugeLock::initLoopLockedAnim(bool loop)
 	loop_locked_anim = loop;
 }
 
+void HudGaugeLock::initBlinkLockedAnim(bool blink)
+{
+	blink_locked_anim = blink;
+}
+
 void HudGaugeLock::initBitmaps(char *lock_gauge_fname, char *lock_anim_fname)
 {
 	hud_anim_init(&Lock_gauge, 0, 0, lock_gauge_fname);
@@ -291,11 +296,6 @@ void HudGaugeLock::render(float frametime)
 		g3_start_frame(0);
 	gr_set_screen_scale(base_w, base_h);
 
-	Lock_gauge.time_elapsed += frametime;
-	if ( Lock_gauge.time_elapsed > Lock_gauge.total_time ) {
-		Lock_gauge.time_elapsed = 0.0f;
-	}
-
 	// go through all present lock indicators
 	for ( i = 0; i < Player_ship->missile_locks.size(); ++i ) {
 		current_lock = &Player_ship->missile_locks[i];
@@ -324,7 +324,7 @@ void HudGaugeLock::render(float frametime)
 			gr_unsize_screen_pos(&sx, &sy);
 
 			// show the rotating triangles if target is locked
-			renderLockTrianglesNew(sx, sy, current_lock->locked_timestamp);
+			renderLockTrianglesNew(sx, sy, frametime, current_lock);
 		} else {
 			const float scaling_factor = (gr_screen.clip_center_x < gr_screen.clip_center_y)
 											 ? (gr_screen.clip_center_x / VIRTUAL_FRAME_HALF_WIDTH)
@@ -337,13 +337,17 @@ void HudGaugeLock::render(float frametime)
 		Lock_gauge.sx = sx - Lock_gauge_half_w;
 		Lock_gauge.sy = sy - Lock_gauge_half_h;
 		if( current_lock->locked ){
-			float saved_time_elapsed = Lock_gauge.time_elapsed;
-			
-			Lock_gauge.time_elapsed = 0.0f;	
+			current_lock->lock_gauge_time_elapsed = 0.0f;
+			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
 			hud_anim_render(&Lock_gauge, 0.0f, 1);
-
-			Lock_gauge.time_elapsed = saved_time_elapsed;
 		} else {
+			// manually track the animation time, since we may have more than one lock
+			current_lock->lock_gauge_time_elapsed += frametime;
+			if (current_lock->lock_gauge_time_elapsed > Lock_gauge.total_time) {
+				current_lock->lock_gauge_time_elapsed = 0.0f;
+			}
+			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
+
 			hud_anim_render(&Lock_gauge, 0.0f, 1);
 		}
 	}
@@ -496,7 +500,8 @@ int hud_abort_lock()
 	if ( (Player_ai->target_objnum >= 0) ) {
 		target_team = obj_team(&Objects[Player_ai->target_objnum]);
 
-		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) ) ) {
+		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) ) 
+			&& !weapon_has_iff_restrictions(wip)) {
 			// if we're in multiplayer dogfight, ignore this
 			// remember to check if we're firing a missile that doesn't require a current target
 			if(!MULTI_DOGFIGHT || wip->target_restrict == LR_ANY_TARGETS) {
@@ -829,7 +834,7 @@ void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float
 				continue;
 			}
 
-			if ( ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
+			if ( !ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
 				continue;
 			}
 
@@ -905,8 +910,8 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}
 
-		// if this is part of the same team, reject lock
-		if ( Player_ship->team == obj_team(A) ) {
+		// if this is part of the same team and doesn't have any iff restrictions, reject lock
+		if ( !weapon_has_iff_restrictions(wip) && Player_ship->team == obj_team(A) ) {
 			continue;
 		}
 
@@ -919,7 +924,7 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}*/
 
-		if (!weapon_multilock_can_lock_on_ship(wip, A->instance)) {
+		if (!weapon_target_satisfies_lock_restrictions(wip, A)) {
 			continue;
 		}
 
@@ -1037,7 +1042,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1105,7 +1110,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1117,12 +1122,12 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			if ( Player_ai->targeted_subsys ) {
 				vec3d subobj_pos;
 
-				vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &lock_slot->obj->orient);
+				vm_vec_unrotate(&subobj_pos, &Player_ai->targeted_subsys->system_info->pnt, &lock_slot->obj->orient);
 				vm_vec_add2(&subobj_pos, &lock_slot->obj->pos);
 
 				int target_subsys_in_sight = ship_subsystem_in_sight(lock_slot->obj, Player_ai->targeted_subsys, &Player_obj->pos, &subobj_pos);
 
-				if ( !target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
+				if ( !target_subsys_in_sight || Player_ai->targeted_subsys->system_info->type != SUBSYSTEM_ENGINE ) {
 					lock_slot->subsys = ship_get_closest_subsys_in_sight(&Ships[lock_slot->obj->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
 				}
 			} else {
@@ -1593,6 +1598,8 @@ void hud_do_lock_indicators(float frametime)
 
 		if ( !lock_slot->locked ) {
 			num_active_seekers++;
+		} else {
+			player_has_lock = true;
 		}
 
 		if ( !current_lock_status && lock_slot->locked ) {
@@ -1610,9 +1617,7 @@ void hud_do_lock_indicators(float frametime)
 				}
 			}
 
-			lock_slot->locked_timestamp = timestamp();
-
-			player_has_lock = true;
+			lock_slot->lock_anim_time_elapsed = 0.0f;
 		} else if ( !lock_slot->locked ) {
 			if (Missile_lock_loop.isValid() && snd_is_playing(Missile_lock_loop)) {
 				snd_stop(Missile_lock_loop);
@@ -1699,25 +1704,31 @@ void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frameti
 				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
 			}
 		} else {
-			// if the timestamp is unset or expired
-			if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
-				// reset timestamp
-				Lock_gauge_draw_stamp = timestamp(1000 / (2 * LOCK_GAUGE_BLINK_RATE));
+			if(blink_locked_anim) {
+				// if the timestamp is unset or expired
+				if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
+					// reset timestamp
+					Lock_gauge_draw_stamp = timestamp(1000 / (2 * LOCK_GAUGE_BLINK_RATE));
 
-				// switch between draw and don't-draw
-				Lock_gauge_draw = !Lock_gauge_draw;
+					// switch between draw and don't-draw
+					Lock_gauge_draw = !Lock_gauge_draw;
+				}
 			}
 
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
-			if(Lock_gauge_draw){
-				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			if(Lock_gauge_draw || !blink_locked_anim){
+				if(loop_locked_anim) {
+					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+				} else {
+					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				}
 			}
 		}
 	}
 }
 
-void HudGaugeLock::renderLockTrianglesNew(int center_x, int center_y, int start_timestamp)
+void HudGaugeLock::renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot)
 {
 	if ( Lock_anim.first_frame == -1 ) {
 		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
@@ -1726,30 +1737,41 @@ void HudGaugeLock::renderLockTrianglesNew(int center_x, int center_y, int start_
 		Lock_anim.sx = center_x - Lockspin_half_w;
 		Lock_anim.sy = center_y - Lockspin_half_h;
 
-		float time_elapsed = i2fl(timestamp() - start_timestamp)/1000.0f;
-		Lock_anim.time_elapsed = time_elapsed;
-
 		// if it's still animating
-		if(Lock_anim.time_elapsed < Lock_anim.total_time){
+		if(slot->lock_anim_time_elapsed < Lock_anim.total_time){
+			// manually track the animation time, since we may have more than one lock
+			slot->lock_anim_time_elapsed += frametime;
+			Lock_anim.time_elapsed = slot->lock_anim_time_elapsed;
+
 			if(loop_locked_anim) {
 				hud_anim_render(&Lock_anim, 0.0f, 1, 1, 0);
 			} else {
 				hud_anim_render(&Lock_anim, 0.0f, 1, 0, 1);
 			}
 		} else {
-			// if the timestamp is unset or expired
-			if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
-				// reset timestamp
-				Lock_gauge_draw_stamp = timestamp(1000 / (2 * LOCK_GAUGE_BLINK_RATE));
+			if(blink_locked_anim) {
+				// if the timestamp is unset or expired
+				if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
+					// reset timestamp
+					Lock_gauge_draw_stamp = timestamp(1000 / (2 * LOCK_GAUGE_BLINK_RATE));
 
-				// switch between draw and don't-draw
-				Lock_gauge_draw = !Lock_gauge_draw;
+					// switch between draw and don't-draw
+					Lock_gauge_draw = !Lock_gauge_draw;
+				}
 			}
 
 			// maybe draw the anim
-			Lock_gauge.time_elapsed = 0.0f;			
-			if(Lock_gauge_draw){
-				hud_anim_render(&Lock_anim, 0.0f, 1, 0, 1);
+			slot->lock_gauge_time_elapsed = 0.0f;			
+			if(Lock_gauge_draw || !blink_locked_anim){
+				// manually track the animation time, since we may have more than one lock
+				slot->lock_anim_time_elapsed += frametime;
+				Lock_anim.time_elapsed = slot->lock_anim_time_elapsed;
+
+				if(loop_locked_anim) {
+					hud_anim_render(&Lock_anim, 0.0f, 1, 1, 0);
+				} else {
+					hud_anim_render(&Lock_anim, 0.0f, 1, 0, 1);
+				}
 			}
 		}
 	}

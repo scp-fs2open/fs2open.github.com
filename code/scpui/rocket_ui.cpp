@@ -17,6 +17,7 @@
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
 #include "scpui/RocketFileInterface.h"
+#include "scpui/RocketLuaSystemInterface.h"
 #include "scpui/RocketRenderingInterface.h"
 #include "scpui/RocketSystemInterface.h"
 #include "scpui/SoundPlugin.h"
@@ -552,7 +553,8 @@ void initialize()
 	}
 
 	// Initialise the Lua interface
-	Rocket::Core::Lua::Interpreter::Initialise(Script_system.GetLuaSession());
+	Rocket::Core::Lua::Interpreter::Initialise(Script_system.GetLuaSession(),
+		std::unique_ptr<Rocket::Core::Lua::LuaSystemInterface>(new RocketLuaSystemInterface()));
 	Rocket::Controls::Lua::RegisterTypes(Rocket::Core::Lua::Interpreter::GetLuaState());
 
 	load_fonts();

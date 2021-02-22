@@ -93,6 +93,16 @@ namespace os
 {
 	namespace dialogs
 	{
+		//This function is a helper function to determine if the dialogs should have a parent window
+		//Normally, this should always be FSO's window, but there is an issue with this in fullscreen
+		//where occasionally (when knossos is on the same screen as FSO in a multi-monitor setup on
+		//windows) this results in the dialog losing focus, unable to regain it, thus rendering the 
+		//buttons not clickable. So as a hotfix, the dialog has no blocking parent in that case and
+		//is instead rendered as it's own window
+		SDL_Window* getDialogParent() {
+			return !(Cmdline_fullscreen_window || Cmdline_window) ? NULL : os::getSDLMainWindow();
+		}
+
 		void AssertMessage(const char * text, const char * filename, int linenum, const char * format, ...)
 		{
 			// We only want to display the file name
@@ -230,7 +240,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = boxText.c_str();
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -314,7 +324,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = text;
 			boxData.title = "Error!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -382,7 +392,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_WARNING;
 			boxData.message = boxMessage.c_str();
 			boxData.title = "Warning!";
-			boxData.window = os::getSDLMainWindow();
+			boxData.window = getDialogParent();
 
 			gr_activate(0);
 
@@ -486,7 +496,7 @@ namespace os
 					break;
 			}
 
-			SDL_ShowSimpleMessageBox(flags, title, message, os::getSDLMainWindow());
+			SDL_ShowSimpleMessageBox(flags, title, message, getDialogParent());
 		}
 	}
 }

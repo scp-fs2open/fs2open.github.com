@@ -184,6 +184,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 #define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
 #define vm_vec_rand_vec_quick			vm_vec_rand_vec
 
+bool vm_vec_is_normalized(const vec3d *v);
+
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
@@ -224,13 +226,16 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d *p
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec);
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *fvec);
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *uvec);
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
 matrix *vm_angles_2_matrix(matrix *m, const angles *a);
@@ -545,6 +550,12 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 
 // calculates the best rvec to match another orient while maintaining a given fvec
 void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
+
+// Cyborg17 - Rotational interpolation between two angle structs in radians, given a rotational velocity, in radians.
+// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f.
+// rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
+// You will get strange results otherwise.
+void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }

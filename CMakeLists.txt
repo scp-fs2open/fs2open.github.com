@@ -8,6 +8,7 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 include(cmake/util.cmake)
+include(cmake/embed_file.cmake)
 
 # Set a few policies
 set_policy(CMP0051 NEW)
@@ -43,9 +44,14 @@ PROJECT(FS2_Open)
 find_program(CCACHE_PROGRAM ccache)
 # Currently only GCC support ccache properly without generating additional warnings
 if(CCACHE_PROGRAM AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	message(STATUS "Using ccache for compilation: ${CCACHE_PROGRAM}")
-	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-	set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CCACHE_PROGRAM}")
+	if(NOT CMAKE_C_COMPILER_LAUNCHER)
+		message(STATUS "Using ccache for C compilation: ${CCACHE_PROGRAM}")
+		SET(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+	endif()
+	if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
+		message(STATUS "Using ccache for C++ compilation: ${CCACHE_PROGRAM}")
+		SET(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+	endif()
 endif()
 
 IF(CMAKE_CROSSCOMPILING)
