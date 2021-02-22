@@ -5774,11 +5774,13 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_type()
 sexp_list_item *sexp_tree::get_listing_opf_keypress()
 {
 	sexp_list_item head;
+	const auto& Default_config = Control_config_presets[0].bindings;
 
-	const auto& default_bindings = Control_config_presets[0].bindings;
 	for (size_t i = 0; i < Control_config.size(); ++i) {
-		if ((default_bindings[i].first.btn > 0) && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(default_bindings[i].first.btn));
+		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
+
+		if ((btn >= 0) && !Control_config[i].disabled) {
+			head.add_data_dup(textify_scancode(btn));
 		}
 	}
 
