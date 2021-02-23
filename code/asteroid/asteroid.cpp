@@ -499,11 +499,11 @@ void asteroid_create_all()
 	// choose next type from table ship_debris_odds_table by rand()%max_weighted_range,
 	// the threshold *below* which the debris type is selected.
 	struct {
-		int random_threshold;
+		float random_threshold;
 		int debris_type;
 	} ship_debris_odds_table[MAX_ACTIVE_DEBRIS_TYPES];
 
-	int max_weighted_range = 0;
+	float max_weighted_range = 0.0f;
 
 	if (!Asteroids_enabled)
 		return;
@@ -526,7 +526,7 @@ void asteroid_create_all()
 
 		// Calculate the odds table
 		for (idx=0; idx<num_debris_types; idx++) {
-			int debris_weight = Asteroid_info[Asteroid_field.field_debris_type[idx]].spawn_weight;
+			float debris_weight = Asteroid_info[Asteroid_field.field_debris_type[idx]].spawn_weight;
 			ship_debris_odds_table[idx].random_threshold = max_weighted_range + debris_weight;
 			ship_debris_odds_table[idx].debris_type = Asteroid_field.field_debris_type[idx];
 			max_weighted_range += debris_weight;
@@ -573,7 +573,7 @@ void asteroid_create_all()
 		} else {
 			Assert(num_debris_types > 0);
 
-			int rand_choice = rand() % max_weighted_range;
+			float rand_choice = frand() * max_weighted_range;
 
 			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				// for ship debris, choose type according to odds table
