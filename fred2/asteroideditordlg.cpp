@@ -434,7 +434,7 @@ void asteroid_editor::update_init()
 
 	// set up combo boxes
 	uint i;
-	int j, k, index, box_index;
+	int k, box_index;
 
 	// add "None" to each box
 	for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
