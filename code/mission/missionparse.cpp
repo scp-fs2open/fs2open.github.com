@@ -5644,7 +5644,7 @@ void parse_asteroid_fields(mission *pm)
 
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
-			if (ast_type >= Asteroid_info.size()) {
+			if (ast_type >= (int)Asteroid_info.size()) {
 				invalid_asteroids = true;
 				ast_type = -1;
 			}
