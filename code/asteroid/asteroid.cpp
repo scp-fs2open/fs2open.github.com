@@ -1861,15 +1861,10 @@ static void asteroid_parse_section(asteroid_info *asip)
 /**
 Read in data from asteroid.tbl into Asteroid_info[] array.
 
-After this function is completes, the Asteroid_info[] array at 
-least 3 generic asteroids plus whatever else special ones 
-were added in the table.  The generic asteroids are a set
-of small, medium, and large asteroids in that exact order.
-
-If asteroid.tbl contains too many or too few asteroids as per
-the rules above this function will abort the engine with an
-error message stating the number expected and it will write
-to the debug.log how everything was parsed.
+After this function is complete, the Asteroid_info[] array 
+will have at least 3 generic asteroids plus whatever else 
+special ones were added in the table.  The generic asteroids are 
+a set of small, medium, and large asteroids in that exact order.
 
 Note that by saying "asteroid" this code is talking about
 the asteroids and the debris that make up asteroid fields
