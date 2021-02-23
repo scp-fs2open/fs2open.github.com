@@ -5642,6 +5642,17 @@ void parse_asteroid_fields(mission *pm)
 			}
 		}
 
+		bool invalid_asteroids = false;
+		for (int& ast_type : Asteroid_field.field_debris_type) {
+			if (ast_type >= Asteroid_info.size()) {
+				invalid_asteroids = true;
+				ast_type = -1;
+			}
+		}
+
+		if (invalid_asteroids)
+			Warning(LOCATION, "The Asteroid field contains invalid entries!");
+
 		// backward compatibility
 		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (count == 0) ) {
 			Asteroid_field.field_debris_type[0] = 0;

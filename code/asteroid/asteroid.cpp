@@ -38,7 +38,6 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
-#include "species_defs/species_defs.h"
 #include "stats/scoring.h"
 #include "weapon/weapon.h"
 
@@ -50,9 +49,9 @@ asteroid_obj	Asteroid_objs[MAX_ASTEROID_OBJS];	// array used to store asteroid o
 asteroid_obj	Asteroid_obj_list;						// head of linked list of asteroid_obj structs
 
 // used for randomly generating debris type when there are multiple sizes.
-#define SMALL_DEBRIS_WEIGHT	8
-#define MEDIUM_DEBRIS_WEIGHT	4
-#define LARGE_DEBRIS_WEIGHT	1
+#define SMALL_DEBRIS_WEIGHT	8.0f
+#define MEDIUM_DEBRIS_WEIGHT	4.0f
+#define LARGE_DEBRIS_WEIGHT	1.0f
 
 int	Asteroids_enabled = 1;
 int	Num_asteroids = 0;
@@ -257,7 +256,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		return NULL;
 	}
 
-	if((asteroid_type < 0) || (asteroid_type >= (((int)Species_info.size() + 1) * NUM_DEBRIS_SIZES))) {
+	if((asteroid_type < 0) || (asteroid_type >= (int)Asteroid_info.size())) {
 		return NULL;
 	}
 
@@ -489,31 +488,6 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 }
 
 /**
- * Returns a weight that depends on asteroid size.
- *
- * The weight is then used to determine the frequencty of different sizes of ship debris
- */
-static int get_debris_weight(int ship_debris_index)
-{
-	int size = ship_debris_index % NUM_DEBRIS_SIZES;
-	switch (size)
-	{
-		case ASTEROID_TYPE_SMALL:
-			return SMALL_DEBRIS_WEIGHT;
-
-		case ASTEROID_TYPE_MEDIUM:
-			return MEDIUM_DEBRIS_WEIGHT;
-
-		case ASTEROID_TYPE_LARGE:
-			return LARGE_DEBRIS_WEIGHT;
-
-		default:
-			Int3();
-			return 1;
-	}
-}
-
-/**
  * Create all the asteroids for the mission
  */
 void asteroid_create_all()
@@ -552,7 +526,7 @@ void asteroid_create_all()
 
 		// Calculate the odds table
 		for (idx=0; idx<num_debris_types; idx++) {
-			int debris_weight = get_debris_weight(Asteroid_field.field_debris_type[idx]);
+			int debris_weight = Asteroid_info[Asteroid_field.field_debris_type[idx]].spawn_weight;
 			ship_debris_odds_table[idx].random_threshold = max_weighted_range + debris_weight;
 			ship_debris_odds_table[idx].debris_type = Asteroid_field.field_debris_type[idx];
 			max_weighted_range += debris_weight;
@@ -1849,14 +1823,47 @@ static void asteroid_parse_section(asteroid_info *asip)
 		} else
 			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_type);
 	}
+
+	if (optional_string("$Display Name:")) {
+		stuff_string(asip->display_name, F_NAME);
+	} else {
+		// take the first word of the name and append "debris"
+		SCP_string current_name = asip->name;
+		size_t split = current_name.find(' ');
+		asip->display_name = current_name.substr(0, split);
+		asip->display_name += " debris";
+	}
+
+	if (optional_string("$Spawn Weight:")) {
+		stuff_float(&asip->spawn_weight);
+		if (asip->spawn_weight <= 0.0f) {
+			Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asip->name);
+			asip->spawn_weight = 1.0f;
+		}
+	} else {
+		switch (Asteroid_info.size() % NUM_DEBRIS_SIZES)
+		{
+			case ASTEROID_TYPE_SMALL:
+				asip->spawn_weight = SMALL_DEBRIS_WEIGHT;
+				break;
+			case ASTEROID_TYPE_MEDIUM:
+				asip->spawn_weight = MEDIUM_DEBRIS_WEIGHT;
+				break;
+			case ASTEROID_TYPE_LARGE:
+				asip->spawn_weight = LARGE_DEBRIS_WEIGHT;
+				break;
+			default:
+				UNREACHABLE("Here be dragons");
+		}
+	}
 }
 
 /**
 Read in data from asteroid.tbl into Asteroid_info[] array.
 
-After this function is completes, the Asteroid_info[] array will
-contain exactly three asteroids per species plus exactly three
-generic asteroids.  These three asteroids are a set
+After this function is completes, the Asteroid_info[] array at 
+least 3 generic asteroids plus whatever else special ones 
+were added in the table.  The generic asteroids are a set
 of small, medium, and large asteroids in that exact order.
 
 If asteroid.tbl contains too many or too few asteroids as per
@@ -1874,12 +1881,6 @@ that is being protected.
 static void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
-
-	// How did we get here without having any species defined?
-	Assertion(!Species_info.empty(),
-		"Cannot parse asteroids/debris if there "
-		"are no species for them to belong to."
-		);
 	
 	try
 	{
@@ -1889,8 +1890,6 @@ static void asteroid_parse_tbl()
 		required_string("#Asteroid Types");
 
 		size_t tally = 0;
-		size_t max_asteroids =
-			NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES;
 
 #ifndef NDEBUG
 		SCP_vector<SCP_string> parsed_asteroids;
@@ -1903,81 +1902,38 @@ static void asteroid_parse_tbl()
 
 			asteroid_parse_section(&new_asteroid);
 
-			size_t species = tally / NUM_DEBRIS_SIZES;
-			if (tally >= max_asteroids)
-			{
-#ifdef NDEBUG
-				// Bump the warning count in release so they get something
-				// even if the message never gets displayed.
-				Warning(LOCATION, "Ignoring extra asteroid/debris");
-#else
-				SCP_string msg("Ignoring extra asteroid/debris '");
-				msg.append(new_asteroid.name);
-				msg.append("'\n");
-				Warning(LOCATION, "%s", msg.c_str());
-				parsed_asteroids.push_back(msg);
-#endif
-			}
-			else
-			{
 #ifndef NDEBUG
-				SCP_string msg;
-				msg.append("Parsing asteroid: '");
-				msg.append(new_asteroid.name);
-				msg.append("' as a '");
-				msg.append((species == 0) ? "generic" : Species_info[species - 1].species_name);
-				msg.append("'");
-				switch (tally % NUM_DEBRIS_SIZES) {
-				case ASTEROID_TYPE_SMALL:
-					msg.append(" small\n");
-					break;
-				case ASTEROID_TYPE_MEDIUM:
-					msg.append(" medium\n");
-					break;
-				case ASTEROID_TYPE_LARGE:
-					msg.append(" large\n");
-					break;
-				default:
-					Error(LOCATION, "Get a coder! Math has broken!\n"
-						"Important numbers:\n"
-						"\ttally: " SIZE_T_ARG "\n"
-						"\tNUM_DEBRIS_SIZES: %d\n",
-						tally, NUM_DEBRIS_SIZES
-						);
-					msg.append(" unknown\n");
-				}
-				parsed_asteroids.push_back(msg);
-#endif
-				Asteroid_info.push_back(new_asteroid);
+			SCP_string msg;
+			msg.append("Parsing asteroid: '");
+			msg.append(new_asteroid.name);
+			msg.append("' as a '");
+			msg.append((tally >= NUM_DEBRIS_SIZES) ? "generic" : "special");
+			msg.append("'");
+			switch (tally % NUM_DEBRIS_SIZES) {
+			case ASTEROID_TYPE_SMALL:
+				msg.append(" small\n");
+				break;
+			case ASTEROID_TYPE_MEDIUM:
+				msg.append(" medium\n");
+				break;
+			case ASTEROID_TYPE_LARGE:
+				msg.append(" large\n");
+				break;
+			default:
+				Error(LOCATION, "Get a coder! Math has broken!\n"
+					"Important numbers:\n"
+					"\ttally: " SIZE_T_ARG "\n"
+					"\tNUM_DEBRIS_SIZES: %d\n",
+					tally, NUM_DEBRIS_SIZES
+					);
+				msg.append(" unknown\n");
 			}
+			parsed_asteroids.push_back(msg);
+#endif
+			Asteroid_info.push_back(new_asteroid);
 			tally++;
 		}
 		required_string("#End");
-
-		if (tally != max_asteroids)
-		{
-#ifndef NDEBUG
-			mprintf(("Asteroid.tbl as parsed:\n"));
-			for (SCP_vector<SCP_string>::iterator iter = parsed_asteroids.begin();
-				iter != parsed_asteroids.end(); ++iter)
-			{
-				mprintf(("%s\n", iter->c_str()));
-			}
-#endif
-			Error(LOCATION,
-				"Found " SIZE_T_ARG " asteroids/debris when " SIZE_T_ARG " expected\n\n"
-				"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
-				SIZE_T_ARG " = " SIZE_T_ARG "*%d + %d\n\n"
-#ifdef NDEBUG
-				"Run a debug build to see a list of all parsed asteroids\n",
-#else
-				"See the debug.log for a listing of all parsed asteroids\n",
-#endif
-				tally, max_asteroids,
-				NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES,
-				max_asteroids, Species_info.size(), NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES
-				);
-		}
 
 		Asteroid_impact_explosion_ani = -1;
 		required_string("$Impact Explosion:");
