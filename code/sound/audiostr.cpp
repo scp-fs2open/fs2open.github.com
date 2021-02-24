@@ -18,6 +18,7 @@
 #include "sound/IAudioFile.h"
 #include "sound/sound.h"
 #include "sound/openal.h"
+#include "gamesnd/eventmusic.h"
 
 #ifdef WITH_FFMPEG
 #include "sound/ffmpeg/FFmpegWaveFile.h"
@@ -939,6 +940,26 @@ static int audiostream_use_next_free( int type )
 
     Audio_streams[i].status = ASF_USED;
     Audio_streams[i].type = type;
+
+    switch (type) {
+        case ASF_SOUNDFX: // As in: sound.cpp:590
+            Audio_streams[i].Set_Default_Volume(Master_sound_volume * aav_effect_volume);
+            break;
+        case ASF_EVENTMUSIC: // As in: sexp.cpp:11562
+            Audio_streams[i].Set_Default_Volume(Master_event_music_volume * aav_music_volume);
+            break;
+        case ASF_MENUMUSIC: // As in: mainhallmenu.cpp:1170
+            Audio_streams[i].Set_Default_Volume(Master_event_music_volume);
+            break;
+        case ASF_VOICE: // As in: sound.cpp:590
+            Audio_streams[i].Set_Default_Volume(Master_voice_volume * aav_voice_volume);
+            break;
+        default:
+            Audio_streams[i].status = ASF_FREE;
+            return -1;
+    }
+
+    Audio_streams[i].Set_Default_Volume(type == ASF_VOICE ? Master_voice_volume * aav_voice_volume : Master_sound_volume);
 
     return i;
 }
