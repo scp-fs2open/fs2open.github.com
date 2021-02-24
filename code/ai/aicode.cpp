@@ -238,7 +238,7 @@ const char *Skill_level_names(int level, int translate)
 			str = XSTR("Insane", 473);
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("Unhandled difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	} else {
 		switch( level )	{
@@ -258,7 +258,7 @@ const char *Skill_level_names(int level, int translate)
 			str = NOX("Insane");
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("An invalid difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	}
 
@@ -944,7 +944,8 @@ float get_skill_stealth_dist_scaler()
 		return 1.3f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dist_scaler().", Game_skill_level);
+
 	}
 
 	return 1.0f;
@@ -972,7 +973,7 @@ float get_skill_stealth_dot_scaler()
 		return 0.7f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dot_scaler().", Game_skill_level);
 	}
 
 	return 1.0f;
@@ -1951,35 +1952,28 @@ float get_wing_lowest_av_ab_speed(object *objp)
  */
 int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 {
-	// Not ignoring anything.
-	if (*ignore_objnum == UNUSED_OBJNUM)
-	{
-		return 0;									
+	// Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
+	Assertion(((*ignore_objnum <= UNUSED_OBJNUM) || (*ignore_objnum >= 0)), "Unexpected value for ignore_objnum %d. This is a coder error, please report.", *ignore_objnum); 
+	// whether this is an invalid OBJNUM or the official UNUSED_OBJNUM, we should just return here.
+	// As a note, if it was set to UNUSED_OBJNUM, it would be trying to ignore a wing and not an object. (at least according to previously written comments) 
+	if (*ignore_objnum < 0) {
+		return 0;
 	}
-	// This means it's ignoring an object, not a wing.
-	else if (*ignore_objnum >= 0)
-	{
-		// see if this object became invalid
-		if (Objects[*ignore_objnum].signature != *ignore_signature)
-		{
-			// reset
-			*ignore_objnum = UNUSED_OBJNUM;
-		}
-		// objects and signatures match
-		else if (*ignore_objnum == objnum)
-		{
-			// found it
-			return 1;
-		}
 
-		return 0;
-	}
-	// Ignoring a wing.
-	else
+	// see if this object became invalid
+	if (Objects[*ignore_objnum].signature != *ignore_signature)
 	{
-		Int3(); // Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
-		return 0;
+		// reset
+		*ignore_objnum = UNUSED_OBJNUM;
 	}
+	// objects and signatures match
+	else if (*ignore_objnum == objnum)
+	{
+		// found it
+		return 1;
+	}
+
+	return 0;
 }
 
 // Goober5000
@@ -2374,24 +2368,28 @@ void force_avoid_player_check(object *objp, ai_info *aip)
  * If attacked == NULL, then attack any enemy object.
  * Attack point *rel_pos on object.  This is for supporting attacking subsystems.
  */
-void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int ship_info_index)
+void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 {
 	int temp;
-	ai_info	*aip;
+	ai_info* aip;
 
-	Assert(attacker != NULL);
+	Assert(attacker != nullptr);
 	Assert(attacker->instance != -1);
 	Assert(Ships[attacker->instance].ai_index != -1);
+	//	Bogus!  Who tried to get me to attack myself!
+	if (attacker == attacked) {
+		Warning(LOCATION, "%s was told to attack itself! This may be an error in the mission file.  If that checks out, please report to a coder!", Ships[attacker->instance].ship_name);
+		return;
+	}
+
+	if (attacker == nullptr || attacker->instance == -1) {
+		return;
+	}
 
 	aip = &Ai_info[Ships[attacker->instance].ai_index];
 	force_avoid_player_check(attacker, aip);
 
 	aip->ok_to_target_timestamp = timestamp(0);		//	Guarantee we can target.
-
-	if (attacker == attacked) {
-		Int3();		//	Bogus!  Who tried to get me to attack myself!  Trace out and fix!
-		return;
-	}
 
 	//	Only set to chase if a fighter or bomber, otherwise just return.
 	if (!(Ship_info[Ships[attacker->instance].ship_info_index].is_small_ship()) && (attacked != NULL)) {
@@ -2399,7 +2397,7 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int 
 	}
 
 	//	This is how "engage enemy" gets processed
-	if (attacked == NULL) {
+	if (attacked == nullptr) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
 		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, ship_info_index));
@@ -2429,13 +2427,9 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int 
 	aip->submode = SM_ATTACK;				// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
 	aip->submode_start_time = Missiontime;	// for AIM_CHASE... it may have been not set correctly here
 
-	if (ssp == NULL) {
-		set_targeted_subsys(aip, NULL, -1);
-		if (aip->target_objnum != -1) {
-			Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);	//	If ship had been protected, unprotect it.
-		}
-	} else {
-		Int3();	//	Not supported yet!
+	set_targeted_subsys(aip, nullptr , -1);
+	if (aip->target_objnum != -1) {
+		Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);	//	If ship had been protected, unprotect it.
 	}
 }
 
@@ -11549,7 +11543,7 @@ void process_subobjects(int objnum)
 					//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 					//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
 					if (aip->mode != AIM_BAY_DEPART) {
-						ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
+					  ai_attack_object(objp, nullptr);		//	Regardless of current mode, enter attack mode.
 						aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 						aip->submode_start_time = Missiontime;
 					}
