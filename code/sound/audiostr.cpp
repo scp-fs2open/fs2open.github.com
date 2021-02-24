@@ -975,7 +975,7 @@ int audiostream_open( const char *filename, int type )
 			break;
 
 		default:
-			Int3();
+            Audio_streams[i].status = ASF_FREE;
 			return -1;
 	}
 
