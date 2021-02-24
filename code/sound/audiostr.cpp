@@ -922,6 +922,27 @@ void audiostream_close()
 
 }
 
+static int audiostream_use_next_free( int type )
+{
+    if ( !Audiostream_inited || !snd_is_inited() )
+        return -1;
+
+    int i;
+    for (i = 0; i < MAX_AUDIO_STREAMS; i++)
+        if (Audio_streams[i].status == ASF_FREE)
+            break;
+
+    if (i == MAX_AUDIO_STREAMS) {
+        nprintf(("Sound", "SOUND => No more audio streams available!\n"));
+        return -1;
+    }
+
+    Audio_streams[i].status = ASF_USED;
+    Audio_streams[i].type = type;
+
+    return i;
+}
+
 // Open a digital sound file for streaming
 //
 // input:	filename	=>	disk filename of sound file
@@ -935,25 +956,11 @@ void audiostream_close()
 //				failure => -1
 int audiostream_open( const char *filename, int type )
 {
-	int i, rc;
-	char fname[MAX_FILENAME_LEN];
+    int i = audiostream_use_next_free(type);
+    if ( i == -1 )
+        return -1;
 
-	if ( !Audiostream_inited || !snd_is_inited() )
-		return -1;
-
-	for (i = 0; i < MAX_AUDIO_STREAMS; i++) {
-		if (Audio_streams[i].status == ASF_FREE) {
-			Audio_streams[i].status = ASF_USED;
-			Audio_streams[i].type = type;
-			break;
-		}
-	}
-
-	if (i == MAX_AUDIO_STREAMS) {
-		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
-		return -1;
-	}
-
+    char fname[MAX_FILENAME_LEN];
 	// copy filename, since we might modify it
 	strcpy_s(fname, filename);
 
@@ -979,7 +986,7 @@ int audiostream_open( const char *filename, int type )
 			return -1;
 	}
 
-	rc = Audio_streams[i].Create(fname);
+    int rc = Audio_streams[i].Create(fname);
 
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;
@@ -1003,25 +1010,11 @@ int audiostream_open( const char *filename, int type )
 //				failure => -1
 int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type )
 {
-	int i, rc;
+    int i = audiostream_use_next_free(type);
+    if ( i == -1 )
+        return -1;
 
-	if ( !Audiostream_inited || !snd_is_inited() )
-		return -1;
-
-	for (i = 0; i < MAX_AUDIO_STREAMS; i++) {
-		if (Audio_streams[i].status == ASF_FREE) {
-			Audio_streams[i].status = ASF_USED;
-			Audio_streams[i].type = type;
-			break;
-		}
-	}
-
-	if (i == MAX_AUDIO_STREAMS) {
-		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
-		return -1;
-	}
-
-	rc = Audio_streams[i].CreateMem(snddata, snd_len);
+    int rc = Audio_streams[i].CreateMem(snddata, snd_len);
 
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;
