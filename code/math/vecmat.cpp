@@ -157,6 +157,17 @@ void vm_set_identity(matrix *m)
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
 }
 
+vec3d vm_vec_new(float x, float y, float z)
+{
+	vec3d vec;
+
+	vec.xyz.x = x;
+	vec.xyz.y = y;
+	vec.xyz.z = z;
+
+	return vec;
+}
+
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 //dest = src0 + src1
@@ -2836,4 +2847,10 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec)
+{
+	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
+	return os;
 }
