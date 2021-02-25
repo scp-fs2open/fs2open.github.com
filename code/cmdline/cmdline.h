@@ -30,7 +30,6 @@ extern char *Cmdline_game_password;
 extern char *Cmdline_rank_above;
 extern char *Cmdline_rank_below;
 extern int Cmdline_cd_check;
-extern int Cmdline_client_dodamage;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;

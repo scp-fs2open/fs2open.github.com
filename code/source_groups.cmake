@@ -6,6 +6,29 @@ add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
 add_file_folder("AI"
 	ai/ai.cpp
@@ -318,6 +341,8 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/undosys.cpp
+	globalincs/undosys.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h
@@ -1197,6 +1222,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/color.cpp
+	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
 	scripting/api/objs/controls.cpp

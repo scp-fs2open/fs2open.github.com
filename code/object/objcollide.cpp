@@ -268,30 +268,39 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
 		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
-			vec3d delta_x, laser_vel;
+			vec3d delta_x, weapon_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
-			if (max_vel_weapon == max_vel_other) {
+			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
+			weapon_vel = obj_weapon->phys_info.vel;
+			float weapon_speed = vm_vec_mag(&weapon_vel);
+
+			if (weapon_speed == max_vel_other) {
 				// this will give us NAN using the below formula, so check every frame
 				current_pair->next_check_time = timestamp(0);
 				return 0;
 			}
 
-			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
-			laser_vel = obj_weapon->phys_info.vel;
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dot( &delta_x, &laser_vel );
+			delta_x_dot_vl = vm_vec_dot( &delta_x, &weapon_vel);
 
-			a = max_vel_weapon*max_vel_weapon - max_vel_other*max_vel_other;
+			a = weapon_speed * weapon_speed - max_vel_other*max_vel_other;
 			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);
 			c = vm_vec_mag_squared( &delta_x ) - max_vel_other*max_vel_other*delta_t*delta_t;
 
 			float discriminant = b*b - 4.0f*a*c;
 			if ( discriminant < 0) {
-				// never hit
-				return 1;
+				// neither entity passes the other
+				if (c < 0) { 
+					// ship outpaces weapon
+					current_pair->next_check_time = timestamp(0);	// check next time
+					return 0;
+				} else {
+					// weapon outpaces ship; will never hit
+					return 1;
+				}
 			} else {
 				root = fl_sqrt( discriminant );
 				root1 = (-b + root) / (2.0f * a) * 1000.0f;	// get time in ms
@@ -299,7 +308,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 			// standard algorithm
-			if (max_vel_weapon > max_vel_other) {
+			if (weapon_speed > max_vel_other) {
 				// find earliest positive time
 				if ( root1 > root2 ) {
 					float temp = root1;

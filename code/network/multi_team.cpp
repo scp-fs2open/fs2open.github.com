@@ -406,7 +406,7 @@ void multi_team_handle_drop()
 			int team_check = team0_cap ? 1 : 0;
 			for(idx=0; idx<MAX_PLAYERS; idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN) && (Net_players[idx].p_info.team == team_check)){			
-					send_host_captain_change_packet(Net_players[idx].player_id, 1);
+					send_host_captain_change_packet(Net_players[idx].player_id, true);
 				}
 			}
 			return;

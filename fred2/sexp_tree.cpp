@@ -70,7 +70,7 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	ON_WM_LBUTTONUP()
 	ON_WM_DESTROY()
 	ON_WM_LBUTTONDOWN()
-	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeydown)
+	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeyDown)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -546,18 +546,23 @@ int sexp_tree::load_sub_tree(int index, bool valid, const char *text)
 
 void sexp_tree::setup_selected(HTREEITEM h)
 {
-	uint i;
-
-	item_index = -1;
-	item_handle = h;
 	if (!h)
-		item_handle = GetSelectedItem();
+		h = GetSelectedItem();
 
-	for (i=0; i<tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == item_handle) {
+	update_item(h);
+}
+
+void sexp_tree::update_item(HTREEITEM h)
+{
+	item_handle = h;
+	item_index = -1;
+
+	for (int i = 0; i < (int)tree_nodes.size(); ++i) {
+		if (tree_nodes[i].handle == h) {
 			item_index = i;
 			break;
 		}
+	}
 }
 
 // handler for right mouse button clicks.
@@ -644,12 +649,18 @@ void sexp_tree::right_clicked(int mode)
 		replace_variable_menu->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);
 
 		// get item_index
-		item_index = -1;
-		for (i=0; i<(int)tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == h) {
-				item_index = i;
-				break;
-			}
+		update_item(h);
+
+		// annotations only work in the event editor
+		if (m_mode == MODE_EVENTS)
+		{
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_ENABLED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_ENABLED);
+		}
+		else
+		{
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_GRAYED);
 		}
 
 		/*
@@ -909,12 +920,8 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// find local index (i) of current item (from its handle)
-		SelectItem(item_handle = h);
-		for (i=0; i<(int)tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == h) {
-				break;
-			}
-		}
+		SelectItem(h);
+		update_item(h);
 
 		// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
 		if ((item_index == -1) && (m_mode & ST_LABELED_ROOT)) {
@@ -1409,6 +1416,16 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
+void sexp_tree::edit_comment(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
+void sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
 // given a tree node, returns the argument type it should be.
 int sexp_tree::query_node_argument_type(int node)
 {
@@ -1587,7 +1604,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		item_handle = tree_nodes[item_index].handle;
 
 	id = LOWORD(wParam);
-
 
 	// Add variable
 	if (id == ID_SEXP_TREE_ADD_VARIABLE) {
@@ -1859,97 +1875,15 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	switch (id) {
 		case ID_EDIT_COPY:
-			// If a clipboard already exist, unmark it as persistent and free old clipboard
-			if (Sexp_clipboard != -1) {
-				sexp_unmark_persistent(Sexp_clipboard);
-				free_sexp2(Sexp_clipboard);
-			}
-
-			// Allocate new clipboard and mark persistent
-			Sexp_clipboard = save_branch(item_index, 1);
-			sexp_mark_persistent(Sexp_clipboard);
+			NodeCopy();
 			return 1;
 
 		case ID_EDIT_PASTE:
-			// the following assumptions are made..
-			Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
-			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-
-			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-				expand_operator(item_index);
-				replace_operator(CTEXT(Sexp_clipboard));
-				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = tree_nodes[item_index].child;
-					while (i != -1) {
-						add_sub_tree(i, tree_nodes[item_index].handle);
-						i = tree_nodes[i].next;
-					}
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-					Assert(var_idx > -1);
-					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
-				}
-				else {
-					expand_operator(item_index);
-					replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-					Assert(var_idx > -1);
-					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
-				}
-				else {
-					expand_operator(item_index);
-					replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-				}
-
-			} else
-				Assert(0);  // unknown and/or invalid sexp type
-
-			expand_branch(item_handle);
-
+			NodePaste();
 			return 1;
 
 		case ID_EDIT_PASTE_SPECIAL:  // add paste, instead of replace.
-			// the following assumptions are made..
-			Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
-			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-
-			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-				expand_operator(item_index);
-				add_operator(CTEXT(Sexp_clipboard));
-				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = tree_nodes[item_index].child;
-					while (i != -1) {
-						add_sub_tree(i, tree_nodes[item_index].handle);
-						i = tree_nodes[i].next;
-					}
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-
-			} else
-				Assert(0);  // unknown and/or invalid sexp type
-
-			expand_branch(item_handle);
-
+			NodeAddPaste();
 			return 1;
 
 /*		case ID_SPLIT_LINE:
@@ -1969,9 +1903,16 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				*modified = 1;
 				EditLabel(item_handle);
 			}
-
 			return 1;
-	
+
+		case ID_EDIT_COMMENT:
+			edit_comment(item_handle);
+			return 1;
+
+		case ID_EDIT_BG_COLOR:
+			edit_bg_color(item_handle);
+			return 1;
+
 		case ID_REPLACE_NUMBER:
 			expand_operator(item_index);
 			replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
@@ -2001,66 +1942,183 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		case ID_EDIT_CUT:
-			if (Sexp_clipboard != -1) {
-				sexp_unmark_persistent(Sexp_clipboard);
-				free_sexp2(Sexp_clipboard);
-			}
-
-			Sexp_clipboard = save_branch(item_index, 1);
-			sexp_mark_persistent(Sexp_clipboard);
-			// fall through to ID_DELETE case.
-
-		case ID_DELETE:	{
-			int parent, theNode;
-			HTREEITEM h_parent;
-
-			if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
-				item_index = (int)GetItemData(item_handle);
-				if (m_mode == MODE_GOALS) {
-					Assert(Goal_editor_dlg);
-					theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
-
-				} else if (m_mode == MODE_EVENTS) {
-					Assert(Event_editor_dlg);
-					theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
-
-				} else {
-					Assert(m_mode == MODE_CAMPAIGN);
-					theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
-				}
-
-				Assert(theNode >= 0);
-				free_node2(theNode);
-				DeleteItem(item_handle);
-				*modified = 1;
-				return 1;
-			}
-
-			Assert(item_index >= 0);
-			h_parent = GetParentItem(item_handle);
-			parent = tree_nodes[item_index].parent;
-			if ((parent == -1) && (m_mode == MODE_EVENTS))
-				Int3();  // no longer used, temporary to check if called still.
-
-			Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
-			free_node(item_index);
-			DeleteItem(item_handle);
-
-			theNode = tree_nodes[parent].child;
-/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
-				sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
-				SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
-				tree_nodes[parent].flags = OPERAND | EDITABLE;
-				tree_nodes[node].flags = COMBINED;
-				DeleteItem(tree_nodes[node].handle);
-			}*/
-
-			*modified = 1;
+			NodeCut();
 			return 1;
-		}
+
+		case ID_DELETE:
+			NodeDelete();
+			return 1;
 	}
 	
 	return CTreeCtrl::OnCommand(wParam, lParam);
+}
+
+void sexp_tree::NodeCut()
+{
+	if (item_index < 0)
+		return;
+
+	NodeCopy();
+	NodeDelete();
+}
+
+void sexp_tree::NodeDelete()
+{
+	int parent, theNode;
+	HTREEITEM h_parent;
+
+	if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
+		item_index = (int)GetItemData(item_handle);
+		if (m_mode == MODE_GOALS) {
+			Assert(Goal_editor_dlg);
+			theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
+
+		} else if (m_mode == MODE_EVENTS) {
+			Assert(Event_editor_dlg);
+			theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
+
+		} else {
+			Assert(m_mode == MODE_CAMPAIGN);
+			theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
+		}
+
+		Assert(theNode >= 0);
+		free_node2(theNode);
+		DeleteItem(item_handle);
+		*modified = 1;
+		return;
+	}
+
+	Assert(item_index >= 0);
+	h_parent = GetParentItem(item_handle);
+	parent = tree_nodes[item_index].parent;
+
+	// can't delete the root node
+	if (parent < 0)
+		return;
+
+	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
+	free_node(item_index);
+	DeleteItem(item_handle);
+
+	theNode = tree_nodes[parent].child;
+/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
+		sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
+		SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
+		tree_nodes[parent].flags = OPERAND | EDITABLE;
+		tree_nodes[node].flags = COMBINED;
+		DeleteItem(tree_nodes[node].handle);
+	}*/
+
+	*modified = 1;
+}
+
+void sexp_tree::NodeCopy()
+{
+	if (item_index < 0)
+		return;
+
+	// If a clipboard already exist, unmark it as persistent and free old clipboard
+	if (Sexp_clipboard != -1) {
+		sexp_unmark_persistent(Sexp_clipboard);
+		free_sexp2(Sexp_clipboard);
+	}
+
+	// Allocate new clipboard and mark persistent
+	Sexp_clipboard = save_branch(item_index, 1);
+	sexp_mark_persistent(Sexp_clipboard);
+}
+
+void sexp_tree::NodePaste()
+{
+	if (item_index < 0)
+		return;
+
+	int i;
+
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		replace_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+		}
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(item_handle);
+}
+
+void sexp_tree::NodeAddPaste()
+{
+	if (item_index < 0)
+		return;
+
+	int i;
+
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		add_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(item_handle);
 }
 
 // adds to or replaces (based on passed in flag) the current operator
@@ -2524,6 +2582,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -3875,6 +3938,10 @@ void sexp_tree::setup(CEdit *ptr)
 			bitmap.DeleteObject();
 		}
 
+		bitmap.LoadBitmap(IDB_COMMENT);
+		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
+		bitmap.DeleteObject();
+
 		SetImageList(pimagelist, TVSIL_NORMAL);
 	}
 }
@@ -4139,13 +4206,59 @@ int sexp_tree::find_text(const char *text, int *find)
 	return find_count;
 }
 			
-
-void sexp_tree::OnKeydown(NMHDR *pNMHDR, LRESULT *pResult) 
+void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
 {
 	int key;
 	TV_KEYDOWN *pTVKeyDown = (TV_KEYDOWN *) pNMHDR;
 
 	key = pTVKeyDown->wVKey;
+
+	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
+	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
+	// despite considerable research and effort.  So this achieves the same result by just catching
+	// the shortcut keys instead of the messages they produce.  Unfortunately one still hears an error
+	// beep caused by the fumbled WM_CUT, WM_COPY, or WM_PASTE message landing somewhere unknown.
+	// 
+	// Only capture keys on the nodes when we're not currently editing their text
+	//
+	if (GetEditControl() == nullptr)
+	{
+		if (GetKeyState(VK_CONTROL) & 0x8000)
+		{
+			// Currently the item_index and item_handle are only updated
+			// when right-clicking, so we need to do another update
+			// before processing the key press.  Ideally they should be
+			// updated when the selection changes, but there are some
+			// hidden side-effects to making it selection-dependent
+			// that are difficult to track down.			
+			if (key == 'X')
+			{
+				update_item(GetSelectedItem());
+				NodeCut();
+			}
+			else if (key == 'C')
+			{
+				update_item(GetSelectedItem());
+				NodeCopy();
+			}
+			else if (key == 'V')
+			{
+				update_item(GetSelectedItem());
+				NodePaste();
+			}
+			else if (key == 'P')
+			{
+				update_item(GetSelectedItem());
+				auto orig_handle = item_handle;
+				NodeAddPaste();
+
+				// when using the keyboard shortcut, stay on the original node after pasting
+				SelectItem(orig_handle);
+				update_item(orig_handle);
+			}
+		}
+	}
+
 	if (key == VK_SPACE)
 		EditLabel(GetSelectedItem());
 
@@ -4929,6 +5042,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_MISSILE_LOCKED:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_TURRET_SET_FORCED_TARGET:
 			// iterate to the next field
 			child = tree_nodes[child].next;
 			break;
@@ -4978,6 +5092,16 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			break;
+
+		// this sexp checks the third entry, but only for the 4th argument
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (arg_index >= 3) {
+				child = tree_nodes[child].next;
+				Assert(child >= 0);
+				child = tree_nodes[child].next;
+			}
+			break;
+
 	}
 
 	// now find the ship and add all relevant subsystems

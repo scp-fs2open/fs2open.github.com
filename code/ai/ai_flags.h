@@ -130,9 +130,12 @@ namespace AI {
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
-		nonshielded_ships_can_manage_ets,
+		all_nonshielded_ships_can_manage_ets,
+		fightercraft_nonshielded_ships_can_manage_ets,
 		Better_collision_avoidance,
 		Require_exact_los,
+		Improved_missile_avoidance,
+		Friendlies_use_countermeasure_firechance,
 		Improved_subsystem_attack_pathing,
 
 		NUM_VALUES

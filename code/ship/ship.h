@@ -100,7 +100,10 @@ public:
 	int num_tertiary_banks;
 
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
-	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
+	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
+
+	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
+	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -131,7 +134,7 @@ public:
 	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
-	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
+	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank -- Every time the secondary bank changes, this must change too!
 	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank
 	int secondary_next_slot[MAX_SHIP_SECONDARY_BANKS];			// Next slot to fire in the bank
 	int secondary_bank_rearm_time[MAX_SHIP_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
@@ -146,12 +149,14 @@ public:
 	int ai_class;
 
 	flagset<Ship::Weapon_Flags> flags;
+
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
 	EModelAnimationPosition secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
@@ -357,6 +362,8 @@ public:
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
 
+	float   turret_inaccuracy;						// additional SEXP inaccuracy, field of fire degrees
+
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 
@@ -374,8 +381,8 @@ public:
 	// angles and if it is blown off or not.
 	// There are 2 of these because turrets need one for the turret and one for the barrel.
 	// Things like radar dishes would only use one.
-	submodel_instance_info	submodel_info_1;		// Instance data for main turret or main object
-	submodel_instance_info	submodel_info_2;		// Instance data for turret guns, if there is one
+	submodel_instance *submodel_instance_1;		// Instance data for main turret or main object
+	submodel_instance *submodel_instance_2;		// Instance data for turret guns, if there is one
 
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
@@ -392,7 +399,7 @@ public:
 	flagset<Ship::Subsys_Sound_Flags> subsys_snd_flags;
 
 	int      rotation_timestamp;
-	matrix   world_to_turret_matrix;
+	matrix   world_to_turret_matrix;			// This is now only used for Turret_alt_math
 
 	// target priority setting for turrets
 	int      target_priority[32];
@@ -841,7 +848,7 @@ struct ship_registry_entry
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
-extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
@@ -1235,8 +1242,11 @@ public:
 
 	// optional afterburner trail values
 	generic_bitmap afterburner_trail;
+	float afterburner_trail_tex_stretch;
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
+	float afterburner_trail_alpha_end_factor;
+	float afterburner_trail_alpha_decay_exponent;
 	float afterburner_trail_life;
 	float afterburner_trail_spread;
 	int afterburner_trail_faded_out_sections;
@@ -1607,12 +1617,6 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-// These two functions transfer instance specific angle
-// data into and out of the model structure, which contains
-// angles, but not for each instance of model being used. See
-// the actual functions in ship.cpp for more details.
-extern void ship_model_start(object *objp);
-extern void ship_model_stop(object *objp);
 void ship_model_update_instance(object *objp);
 
 //============================================

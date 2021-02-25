@@ -933,13 +933,8 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}			
 
-			// in multiplayer, if this object was just updatd (i.e. clients send their own positions),
-			// then reset the flag and don't move the object.
-            if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
-				objp->flags.remove(Object::Object_Flags::Just_updated);
-			} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		// simulate the physics
-			}
+			// simulate the physics
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1580,10 +1575,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-
-		// unflag all objects as being updates
-        objp->flags.remove(Object::Object_Flags::Just_updated);
-
 		objp = GET_NEXT(objp);
 	}
 
@@ -1809,7 +1800,6 @@ void obj_observer_move(float frame_time)
 	ft = flFrametime;
 	obj_move_call_physics( objp, ft );
 	obj_move_all_post(objp, frame_time);
-	objp->flags.remove(Object::Object_Flags::Just_updated);
 }
 
 /**
@@ -2036,6 +2026,44 @@ int object_get_model(const object *objp)
 
 	return -1;
 }
+
+int object_get_model_instance(const object *objp)
+{
+	switch (objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return asp->model_instance_num;
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_instance_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return shipp->model_instance_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return wp->model_instance_num;
+		}
+		case OBJ_JUMP_NODE:
+		{
+			CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+			Assertion(jnp != nullptr, "Could not find jump node!");
+			return jnp->GetPolymodelInstanceNum();
+		}
+		default:
+			break;
+	}
+
+	return -1;
+}
+
 bool obj_compare(object* left, object* right) {
 	if (left == right) {
 		// Same pointer

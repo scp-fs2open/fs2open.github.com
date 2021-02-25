@@ -9,9 +9,6 @@
 
 
 
-#include <cctype> // for 'tolower'
-
-
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "hud/hudtargetbox.h"
@@ -457,9 +454,9 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 	// Goober5000 - get the lowercase abbreviation
 	char abbrev[4];
-	abbrev[0] = (char) tolower(Squadron_wing_names[wing_index][0]);
-	abbrev[1] = (char) tolower(Squadron_wing_names[wing_index][1]);
-	abbrev[2] = (char) tolower(Squadron_wing_names[wing_index][2]);
+	abbrev[0] = SCP_tolower(Squadron_wing_names[wing_index][0]);
+	abbrev[1] = SCP_tolower(Squadron_wing_names[wing_index][1]);
+	abbrev[2] = SCP_tolower(Squadron_wing_names[wing_index][2]);
 	abbrev[3] = '\0';
 
 	// Goober5000 - center it (round the offset rather than truncate it)
