@@ -24,6 +24,7 @@ class ade_type_alternative;
 class ade_type_function;
 class ade_type_generic;
 class ade_type_varargs;
+class ade_type_tuple;
 
 /**
  * @brief A definition of a type used in the ADE system
@@ -39,7 +40,7 @@ class ade_type_info {
 	ade_type_info() = default;
 	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
 	/*implicit*/ ade_type_info(SCP_string single_type);
-	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
+	/*implicit*/ ade_type_info(const ade_type_tuple& tupleType);
 	/*implicit*/ ade_type_info(const ade_type_array& listType);
 	/*implicit*/ ade_type_info(const ade_type_map& listType);
 	/*implicit*/ ade_type_info(const ade_type_iterator& iteratorType);
@@ -111,6 +112,15 @@ class ade_type_alternative {
 
   public:
 	explicit ade_type_alternative(SCP_vector<ade_type_info> elements);
+
+	const SCP_vector<ade_type_info>& getElementTypes() const;
+};
+
+class ade_type_tuple {
+	SCP_vector<ade_type_info> _elements;
+
+  public:
+	explicit ade_type_tuple(SCP_vector<ade_type_info> elements);
 
 	const SCP_vector<ade_type_info>& getElementTypes() const;
 };
