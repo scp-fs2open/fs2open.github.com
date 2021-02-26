@@ -305,8 +305,12 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		break;
 	case LabMode::Weapon:
 		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
+		if (Weapon_info[CurrentClass].model_num != -1) {
+			ModelFilename = model_get(Weapon_info[CurrentClass].model_num)->filename;
+		}
 		break;
 	default:
+		ModelFilename = "";
 		break;
 	}
 	
@@ -345,4 +349,6 @@ void LabManager::changeShipInternal() {
 	ship_page_in_textures(ship_objp->ship_info_index);
 
 	Renderer->setTeamColor(ship_infop->default_team_name);
+
+	ModelFilename = model_get(ship_infop->model_num)->filename;
 }

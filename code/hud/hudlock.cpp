@@ -337,6 +337,8 @@ void HudGaugeLock::render(float frametime)
 		Lock_gauge.sx = sx - Lock_gauge_half_w;
 		Lock_gauge.sy = sy - Lock_gauge_half_h;
 		if( current_lock->locked ){
+			current_lock->lock_gauge_time_elapsed = 0.0f;
+			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
 			hud_anim_render(&Lock_gauge, 0.0f, 1);
 		} else {
 			// manually track the animation time, since we may have more than one lock
@@ -498,7 +500,8 @@ int hud_abort_lock()
 	if ( (Player_ai->target_objnum >= 0) ) {
 		target_team = obj_team(&Objects[Player_ai->target_objnum]);
 
-		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) ) ) {
+		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) ) 
+			&& !weapon_has_iff_restrictions(wip)) {
 			// if we're in multiplayer dogfight, ignore this
 			// remember to check if we're firing a missile that doesn't require a current target
 			if(!MULTI_DOGFIGHT || wip->target_restrict == LR_ANY_TARGETS) {
@@ -831,7 +834,7 @@ void hud_lock_acquire_uncaged_subsystem(weapon_info *wip, lock_info *lock, float
 				continue;
 			}
 
-			if ( ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
+			if ( !ship_subsystem_in_sight(lock->obj, ss, &Eye_position, &ss_pos) ) {
 				continue;
 			}
 
@@ -907,8 +910,8 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}
 
-		// if this is part of the same team, reject lock
-		if ( Player_ship->team == obj_team(A) ) {
+		// if this is part of the same team and doesn't have any iff restrictions, reject lock
+		if ( !weapon_has_iff_restrictions(wip) && Player_ship->team == obj_team(A) ) {
 			continue;
 		}
 
@@ -921,7 +924,7 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 			continue;
 		}*/
 
-		if (!weapon_multilock_can_lock_on_ship(wip, A->instance)) {
+		if (!weapon_target_satisfies_lock_restrictions(wip, A)) {
 			continue;
 		}
 
@@ -1039,7 +1042,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}
@@ -1107,7 +1110,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			return;
 		}
 
-		if ( !weapon_multilock_can_lock_on_ship(wip, lock_slot->obj->instance) ) {
+		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
 		}

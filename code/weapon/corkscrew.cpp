@@ -246,9 +246,9 @@ void cscrew_process_post(object *objp)
 	vm_vec_sub(&ci->cen_p, &cen, &objp->pos);
 
 	// do trail stuff here
-	if ( wp->trail_ptr != NULL )	{
+	if ( wp->trail_ptr != nullptr && wp->lssm_stage != 3)	{
 		if (trail_stamp_elapsed(wp->trail_ptr)) {
-			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_add_segment( wp->trail_ptr, &objp->pos, &ci->real_orient);
 			trail_set_stamp(wp->trail_ptr);
 		} else {
 			trail_set_segment( wp->trail_ptr, &objp->pos );

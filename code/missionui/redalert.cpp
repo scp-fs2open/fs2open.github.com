@@ -27,6 +27,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "mod_table/mod_table.h"
@@ -305,6 +306,11 @@ void red_alert_init()
 		return;
 	}
 
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+	}
+
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 
@@ -346,14 +352,6 @@ void red_alert_init()
 	}
 
 	red_alert_voice_load();
-
-	// we have to reset/setup the shipselect and weaponselect pointers before moving on
-	ship_select_common_init();
-	weapon_select_common_init();
-
-	if (Game_mode & GM_MULTIPLAYER) {
-		multi_ts_common_init();
-	}
 
 	Text_delay = timestamp(200);
 
@@ -625,8 +623,8 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 			break;
 		}
 
-		if (ss->current_hits <= 0) {
-			ss->submodel_info_1.blown_off = 1;
+		if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
+			ss->submodel_instance_1->blown_off = true;
 		}
 
 		ss = GET_NEXT( ss );

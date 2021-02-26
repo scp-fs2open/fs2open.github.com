@@ -52,6 +52,10 @@ struct weapon;
 #define OO_SUBSYS_ROTATION_2p		(1<<6)		// Did this subsystem's barrel rotation angles change
 #define OO_SUBSYS_TRANSLATION		(1<<7)		// Only for backwards compatibility of future builds.
 
+// combo values
+#define OO_SUBSYS_ROTATION_1	(OO_SUBSYS_ROTATION_1b | OO_SUBSYS_ROTATION_1h | OO_SUBSYS_ROTATION_1p)
+#define OO_SUBSYS_ROTATION_2	(OO_SUBSYS_ROTATION_2b | OO_SUBSYS_ROTATION_2h | OO_SUBSYS_ROTATION_2p)
+
 
 // ---------------------------------------------------------------------------------------------------
 // POSITION AND ORIENTATION RECORDING
@@ -68,7 +72,7 @@ void multi_ship_record_update_all();
 void multi_ship_record_increment_frame();
 
 // find the right frame to start our weapon simulation
-int multi_ship_record_find_frame(ushort client_frame, int time_elapsed);
+int multi_ship_record_find_frame(int client_frame, int time_elapsed);
 
 // a quick lookups for position and orientation
 vec3d multi_ship_record_lookup_position(object* objp, int frame);
@@ -76,9 +80,10 @@ vec3d multi_ship_record_lookup_position(object* objp, int frame);
 // a quick lookups for orientation
 matrix multi_ship_record_lookup_orientation(object* objp, int frame);
 
+// figures out how much time has passed bwetween the two frames.
 int multi_ship_record_find_time_after_frame(int client_frame, int frame, int time_elapsed);
 
-// This stores the information we got from the client to create later, and checks to see if this is the oldest shot we are going to fire during rollback.
+// This stores the information we got from the client to create later.
 void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, bool secondary);
 
 // Lookup whether rollback mode is on

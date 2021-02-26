@@ -922,9 +922,11 @@ void delete_player(int player_num,int kicked_reason)
 					if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
 						// make this guy the host
 						Net_players[idx].flags |= NETINFO_FLAG_GAME_HOST;
+						// set the host pointer
+						Netgame.host = &Net_players[idx];
 
 						// send a packet
-						send_host_captain_change_packet(Net_players[idx].player_id, 0);
+						send_host_captain_change_packet(Net_players[idx].player_id, false);
 
 						found_new_host = 1;
 						break;
@@ -2295,7 +2297,6 @@ void multi_handle_state_special()
 void multi_file_xfer_notify(int handle)
 {
 	char *filename = nullptr;
-	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
@@ -2308,10 +2309,7 @@ void multi_file_xfer_notify(int handle)
 	}
 
 	// convert the filename to all lowercase
-	len = strlen(filename);
-	for(idx=0;idx<len;idx++){
-		filename[idx] = (char)tolower(filename[idx]);
-	}		
+	SCP_tolower(filename);
 
 	// if this is a mission file
 	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != nullptr);

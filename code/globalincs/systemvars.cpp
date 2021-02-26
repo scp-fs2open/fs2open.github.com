@@ -511,3 +511,19 @@ void insertion_sort(void *array_base, size_t array_size, size_t element_size, in
 	// free the allocated space
 	free(current);
 }
+
+// Stuff that can't be included in vmallocator.h
+
+std::locale SCP_default_locale("");
+
+void SCP_tolower(char *str)
+{
+	for (; *str != '\0'; ++str)
+		*str = SCP_tolower(*str);
+}
+
+void SCP_toupper(char *str)
+{
+	for (; *str != '\0'; ++str)
+		*str = SCP_toupper(*str);
+}

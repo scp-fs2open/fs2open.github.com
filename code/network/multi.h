@@ -64,9 +64,11 @@ class player;
 // version 49 - 7/26/2020 Addition of multilock
 // version 50 - 7/27/2020 IPv6
 // version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
+// version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// version 53 - 12/2/2020 big set of packet fixes/upgrades
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							51
+#define MULTI_FS_SERVER_VERSION							53
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -363,8 +365,6 @@ class player;
 #define STATS_DOGFIGHT_KILLS		3			// same as mission kills, but also sends per-player kills
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
-
-#define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
@@ -696,6 +696,10 @@ typedef struct network_buffer {
 #define NETPLAYER_STATE_DEBRIEF_REPLAY		28				// set on the host instead of NETPLAYER_STATE_DEBRIEF_ACCEPT to indicate he wants to replay the mission
 #define NETPLAYER_STATE_CPOOL_ACK			29				// player has acked all campaign pool status data
 #define NETPLAYER_STATE_INGAME_CINFO		30				// player has received campaign information (ingame join only)
+#define NETPLAYER_STATE_CUTSCENE			31				// watching a custscene
+#define NETPLAYER_STATE_FICTION_VIEWER		32				// in the fiction viewer screen
+#define NETPLAYER_STATE_CMD_BRIEFING		33				// in the command briefing
+#define NETPLAYER_STATE_RED_ALERT			34				// in the red alert screen
 
 // defines for connection speed
 #define CONNECTION_SPEED_NONE					-1				// not really used except for error checking
@@ -756,7 +760,7 @@ extern int Multi_button_info_ok;										// flag saying it is ok to apply criti
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying
 
 // low level networking vars
-extern int HEADER_LENGTH;												// 1 byte (packet type)
+#define HEADER_LENGTH	1											// 1 byte (packet type)
 
 // misc data
 extern active_game* Active_game_head;								// linked list of active games displayed on Join screen

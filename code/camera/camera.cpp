@@ -319,11 +319,14 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		{
 			object *objp = object_host.objp;
 			int model_num = object_get_model(objp);
-			polymodel *pm = NULL;
+			polymodel *pm = nullptr;
+			polymodel_instance *pmi = nullptr;
 			
-			if(model_num > -1)
+			if(model_num >= 0)
 			{
 				pm = model_get(model_num);
+				if (objp->type == OBJ_SHIP)
+					pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 			}
 
 			if(object_host_submodel < 0 || pm == NULL)
@@ -339,13 +342,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 					Assertion(objp->type == OBJ_SHIP, "This part of the code expects the object to be a ship");
 
 					vec3d c_pos_in;
-					find_submodel_instance_point_normal(&c_pos_in, &host_normal, Ships[objp->instance].model_instance_num, eyep->parent, &eyep->pnt, &eyep->norm);
+					find_submodel_instance_point_normal(&c_pos_in, &host_normal, pm, pmi, eyep->parent, &eyep->pnt, &eyep->norm);
 					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
 					vm_vec_add2(&c_pos, &objp->pos);
 				}
 				else
 				{
-					model_find_world_point( &c_pos, &pt, pm->id, object_host_submodel, &objp->orient, &objp->pos );
+					if (pmi != nullptr)
+						model_instance_find_world_point(&c_pos, &pt, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+					else
+						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
 			}
 		}
@@ -374,13 +380,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 			{
 				object *objp = object_target.objp;
 				int model_num = object_get_model(objp);
-				polymodel *pm = NULL;
+				polymodel *pm = nullptr;
+				polymodel_instance *pmi = nullptr;
 				vec3d target_pos = vmd_zero_vector;
 				
 				//See if we can get the model
-				if(model_num > -1)
+				if(model_num >= 0)
 				{
 					pm = model_get(model_num);
+					if (objp->type == OBJ_SHIP)
+						pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 				}
 
 				//If we don't have a submodel or don't have the model use object pos
@@ -391,7 +400,10 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				}
 				else
 				{
-					model_find_world_point( &target_pos, &vmd_zero_vector, pm->id, object_target_submodel, &objp->orient, &objp->pos );
+					if (pmi != nullptr)
+						model_instance_find_world_point(&target_pos, &vmd_zero_vector, pm, pmi, object_target_submodel, &objp->orient, &objp->pos);
+					else
+						model_find_world_point( &target_pos, &vmd_zero_vector, pm, object_target_submodel, &objp->orient, &objp->pos );
 				}
 
 				vec3d targetvec;

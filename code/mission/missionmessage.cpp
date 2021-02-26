@@ -21,6 +21,7 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "mission/missiontraining.h"
+#include "mission/missiongoals.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -121,18 +122,6 @@ SCP_vector<message_extra> Message_waves;
 // variables to keep track of messages that are currently playing
 int Num_messages_playing;						// number of is a message currently playing?
 
-/*typedef struct pmessage {
-	//anim_instance *anim;		// handle of anim currently playing
-	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
-	int start_frame;			// the start frame needed to play the animation
-	bool play_anim;			// used to tell HUD gauges if they should be playing or not
-	int wave;					// handle of wave currently playing
-	int id;						// id of message currently playing
-	int priority;				// priority of message currently playing
-	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
-	int builtin_type;			// if a builtin message, type of the message
-} pmessage;*/
-
 pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
@@ -156,6 +145,7 @@ typedef struct message_q {
 	int	flags;						// should this message entry be converted to Terran Command head/wave file
 	int	min_delay_stamp;			// minimum delay before this message will start playing
 	int	group;						// message is part of a group, don't time it out
+	int event_num_to_cancel;		// Goober5000 - if this event is true, the message will not be played
 } message_q;
 
 #define MAX_MESSAGE_Q				30
@@ -711,7 +701,8 @@ void messages_init()
 		MessageQ[i].group = 0;
 
 		// Goober5000
-		MessageQ[i].special_message = NULL;
+		MessageQ[i].special_message = nullptr;
+		MessageQ[i].event_num_to_cancel = -1;
 	}
 	
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
@@ -992,6 +983,7 @@ void message_remove_from_queue(message_q *q)
 		vm_free(q->special_message);
 		q->special_message = NULL;
 	}
+	q->event_num_to_cancel = -1;
 
 	if ( MessageQ_num > 0 ) {
 		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
@@ -1392,7 +1384,8 @@ void message_queue_process()
 	// preprocess message queue and remove anything on the queue that is too old.  If next message on
 	// the queue can be played, then break out of the loop.  Otherwise, loop until nothing on the queue
 	while ( MessageQ_num > 0 ) {
-		q = &MessageQ[0];		
+		q = &MessageQ[0];
+		// message is outside its time window
 		if ( timestamp_valid(q->window_timestamp) && timestamp_elapsed(q->window_timestamp) && !q->group) {
 			// remove message from queue and see if more to remove
 			nprintf(("messaging", "Message %s didn't play because it didn't fit into time window.\n", Messages[q->message_num].name));
@@ -1401,7 +1394,13 @@ void message_queue_process()
 			} else {
 				break;
 			}
-		} else {
+		}
+		// message can't be played after a certain event
+		else if (q->event_num_to_cancel >= 0 && Mission_events[q->event_num_to_cancel].result) {
+			message_remove_from_queue(q);
+		}
+		// message isn't too old
+		else {
 			break;
 		}
 	}
@@ -1475,7 +1474,7 @@ void message_queue_process()
 		goto all_done;
 	}
 	// G5K 4-26-20: Can't send messages if comm is destroyed
-	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
+	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && (provisional_message_shipnum >= 0) && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
 		goto all_done;
 	}
 
@@ -1641,7 +1640,7 @@ all_done:
 }
 
 // queues up a message to display to the player
-void message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type )
+void message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type, int event_num_to_cancel )
 {
 	int i, m_persona;
 	char temp_buf[MESSAGE_LENGTH];
@@ -1690,6 +1689,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	MessageQ[i].min_delay_stamp = timestamp(delay);
 	MessageQ[i].group = group;
 	strcpy_s(MessageQ[i].who_from, who_from);
+	MessageQ[i].event_num_to_cancel = event_num_to_cancel;
 
 	// Goober5000 - this shouldn't happen, but let's be safe
 	if (MessageQ[i].special_message != NULL)
@@ -1862,7 +1862,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay )
+void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
 {
 	int i, source;
 	const char *who_from;
@@ -1918,12 +1918,12 @@ void message_send_unique_to_player( const char *id, const void *data, int m_sour
 
 			// maybe filter it out altogether
 			if (!message_filter_multi(i)) {
-				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay );
+				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay, -1, event_num_to_cancel );
 			}
 
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
-				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay);
+				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay, event_num_to_cancel );
 			}			
 
 			return;		// all done with displaying		
@@ -2145,7 +2145,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 		// if this filter matches mine
 		if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
-			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type );
+			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type, -1 );
 		}
 	}
 

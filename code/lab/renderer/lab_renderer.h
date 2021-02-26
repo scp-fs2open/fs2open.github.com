@@ -133,6 +133,8 @@ public:
 	int setAmbientFactor(int factor) { 
 		ambientFactor = factor; 
 		Cmdline_ambient_factor = factor;
+		gr_calculate_ambient_factor();
+
 		return factor; 
 	}
 

@@ -40,6 +40,9 @@ void multi_ts_init();
 // initialize all critical internal data structures
 void multi_ts_common_init();
 
+// initialize internal structures that need to be sync'd between host/client
+void multi_ts_common_level_init();
+
 // do frame for team select
 void multi_ts_do();
 

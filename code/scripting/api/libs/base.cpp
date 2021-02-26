@@ -229,7 +229,22 @@ ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds s
 	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
-ADE_FUNC(getFrametime, l_Base, "[boolean adjustForTimeCompression]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
+ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flFrametime);
+}
+
+ADE_FUNC(getRealFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take in real time. Not affected by time compression.", "number", "Frame time (seconds)")
+{
+	return ade_set_args(L, "f", flRealframetime);
+}
+
+ADE_FUNC_DEPRECATED(getFrametime, l_Base, 
+	"[boolean adjustForTimeCompression]", 
+	"Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", 
+	"number", "Frame time (seconds)", 
+	gameversion::version(20, 2, 0, 0),
+	"The parameter of this function is inverted from the naming (passing true returns non-adjusted time). Please use either getMissionFrametime() or getRealFrametime().")
 {
 	bool b=false;
 	ade_get_args(L, "|b", &b);
@@ -477,8 +492,16 @@ ADE_FUNC(getCurrentLanguage,
 		 nullptr,
 		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
 		 "string",
-		 "The current game language") {
-	auto lang_name = (Lcl_current_lang == LCL_UNTRANSLATED) ? "UNTRANSLATED" : Lcl_languages[Lcl_current_lang].lang_name;
+		 "The current game language")
+{
+	const char *lang_name;
+	if (Lcl_current_lang == LCL_UNTRANSLATED)
+		lang_name = "UNTRANSLATED";
+	else if (Lcl_current_lang == LCL_RETAIL_HYBRID)
+		lang_name = "RETAIL HYBRID";
+	else
+		lang_name = Lcl_languages[lcl_get_current_lang_index()].lang_name;
+
 	return ade_set_args(L, "s", lang_name);
 }
 
@@ -489,8 +512,9 @@ ADE_FUNC(getCurrentLanguageExtension,
 			 "This returns a short code for the current language that can be used for creating language specific file names (e.g. \"gr\" when the current language is German). "
 			 "This will return an empty string for the default language.",
 		 "string",
-		 "The current game language") {
-	int lang = (Lcl_current_lang == LCL_UNTRANSLATED) ? LCL_DEFAULT : Lcl_current_lang;
+		 "The current game language")
+{
+	int lang = lcl_get_current_lang_index();
 	return ade_set_args(L, "s", Lcl_languages[lang].lang_ext);
 }
 
