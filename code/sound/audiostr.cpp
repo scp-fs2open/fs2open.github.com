@@ -959,8 +959,6 @@ static int audiostream_use_next_free( int type )
             return -1;
     }
 
-    Audio_streams[i].Set_Default_Volume(type == ASF_VOICE ? Master_voice_volume * aav_voice_volume : Master_sound_volume);
-
     return i;
 }
 
