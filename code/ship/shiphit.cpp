@@ -2610,6 +2610,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos, float healing, int submodel_num)
 {
+	// multiplayer clients dont do healing
+	if (MULTIPLAYER_CLIENT)
+		return;
+
 	ship* shipp;
 	bool other_obj_is_weapon, other_obj_is_beam, other_obj_is_shockwave;
 
@@ -2692,12 +2696,9 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 
 		healing *= wip->armor_factor;
 
-		// multiplayer clients don't do healing
-		if (!MULTIPLAYER_CLIENT) {
-			ship_objp->hull_strength += healing;
-			if (ship_objp->hull_strength > shipp->ship_max_hull_strength)
-				ship_objp->hull_strength = shipp->ship_max_hull_strength;
-		}
+		ship_objp->hull_strength += healing;
+		if (ship_objp->hull_strength > shipp->ship_max_hull_strength)
+			ship_objp->hull_strength = shipp->ship_max_hull_strength;
 	}
 
 	// fix up the ship's sparks :)
