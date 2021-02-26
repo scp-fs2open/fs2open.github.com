@@ -5464,26 +5464,30 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 	}
 
-	auto other_is_ship = (other_objp->type == OBJ_SHIP);
+	bool other_is_ship = (other_objp->type == OBJ_SHIP);
 	float enemy_remaining_shield = get_shield_pct(other_objp);
 
-	if ( other_is_ship && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) )
+	if ( other_is_ship )
 	{
-		//Check if we have a capital+ weapon on board
-		for (int i = 0; i < swp->num_primary_banks; i++)
-		{
-			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
+		ship_info* other_sip = &Ship_info[Ships[other_objp->instance].ship_info_index];
+
+		if (other_sip->class_type >= 0 && Ship_types[other_sip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only]) {
+			//Check if we have a capital+ weapon on board
+			for (int i = 0; i < swp->num_primary_banks; i++)
 			{
-				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-				if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
+				if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 				{
-					// handle shielded big/huge ships (non FS-verse)
-					// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
-					if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+					auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+					if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
 					{
-						swp->current_primary_bank = i;
-						nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
-						return i;
+						// handle shielded big/huge ships (non FS-verse)
+						// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
+						if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+						{
+							swp->current_primary_bank = i;
+							nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
+							return i;
+						}
 					}
 				}
 			}
