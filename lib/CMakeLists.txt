@@ -46,3 +46,7 @@ endif()
 include(antlr4.cmake)
 
 include(vulkan.cmake)
+
+add_subdirectory(mdns)
+
+add_subdirectory(variant)

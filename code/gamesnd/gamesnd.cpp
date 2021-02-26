@@ -10,6 +10,7 @@
 #include <sstream>
 #include <climits>
 
+#include "gamesnd.h"
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -303,6 +304,10 @@ gamesnd_id gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
 
+	// empty name is not valid!
+	if (name == nullptr || name[0] == '\0')
+		return gamesnd_id(-1);
+
 	int index = gamesnd_lookup_name(name, Snds);
 
 	if (index < 0)
@@ -421,19 +426,30 @@ bool parse_game_sound(const char* tag, gamesnd_id* idx_dest)
 {
 	if (optional_string(tag))
 	{
-		SCP_string buf;
-		stuff_string(buf, F_NAME);
-
-		*idx_dest = gamesnd_get_by_name(buf.c_str());
-
-		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
-		if (idx_dest->isValid() || buf == "-1")
-			return true;
-		
-		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
+		*idx_dest = parse_game_sound_inline();
+		return true;
 	}
 
 	return false;
+}
+
+/**
+ * @brief Parses a game sound that should appear at the current parsing location
+ * @return The game sound id or invalid id when parsing fails
+ */
+gamesnd_id parse_game_sound_inline()
+{
+	SCP_string buf;
+	stuff_string(buf, F_NAME);
+
+	auto id = gamesnd_get_by_name(buf.c_str());
+
+	// The special case "-1" is needed to silence warnings where sounds are intentionally removed
+	if (!id.isValid() && buf != "-1") {
+		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
+	}
+
+	return id;
 }
 
 /**
@@ -663,11 +679,9 @@ void parse_gamesnd_old(game_snd* gs)
 		{
 			int temp_min, temp_max;
 
-			ignore_gray_space();
-			if (stuff_int_optional(&temp_min, true) == 2)
+			if (stuff_int_optional(&temp_min) == 2)
 			{
-				ignore_gray_space();
-				if (stuff_int_optional(&temp_max, true) == 2)
+				if (stuff_int_optional(&temp_max) == 2)
 				{
 					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
@@ -681,8 +695,7 @@ void parse_gamesnd_old(game_snd* gs)
 	}
 
 	// check for extra values per Mantis #2408
-	ignore_gray_space();
-	if (stuff_int_optional(&temp, true) == 2)
+	if (stuff_int_optional(&temp) == 2)
 	{
 		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
 	}

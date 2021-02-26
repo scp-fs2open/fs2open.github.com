@@ -100,7 +100,7 @@ float atan2_safe(float y, float x)
 float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_vec), "unit_vec must be normalized!");
 
 	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
@@ -115,7 +115,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_normal), "unit_normal must be normalized!");
 
 	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
@@ -132,7 +132,7 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
-	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(plane_normal), "plane_normal must be normalized!");
 
 	D = -vm_vec_dot(plane_point, plane_normal);
 	dist = vm_vec_dot(point, plane_normal) + D;
@@ -155,6 +155,17 @@ void vm_set_identity(matrix *m)
 	m->vec.rvec.xyz.x = 1.0f;	m->vec.rvec.xyz.y = 0.0f;	m->vec.rvec.xyz.z = 0.0f;
 	m->vec.uvec.xyz.x = 0.0f;	m->vec.uvec.xyz.y = 1.0f;	m->vec.uvec.xyz.z = 0.0f;
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
+}
+
+vec3d vm_vec_new(float x, float y, float z)
+{
+	vec3d vec;
+
+	vec.xyz.x = x;
+	vec.xyz.y = y;
+	vec.xyz.z = z;
+
+	return vec;
 }
 
 //adds two vectors, fills in dest, returns ptr to dest
@@ -388,6 +399,12 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
+bool vm_vec_is_normalized(const vec3d *v)
+{
+	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
+	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+}
+
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -540,10 +557,12 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float t;
 	vec3d t0,t1,t2;
@@ -551,10 +570,10 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	vm_vec_copy_normalize(&t0,v0);
 	vm_vec_copy_normalize(&t1,v1);
 
-	if (NULL == fvec) {
+	if (uvec == nullptr) {
 		t = vm_vec_delta_ang_norm(&t0, &t1, NULL);
 	} else {
-		vm_vec_copy_normalize(&t2,fvec);
+		vm_vec_copy_normalize(&t2,uvec);
 		t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
 	}
 
@@ -562,16 +581,38 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 }
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float a;
 	vec3d t;
 
 	a = acosf(vm_vec_dot(v0,v1));
 
-	if (fvec) {
+	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
+			a = -a;
+		}
+	}
+
+	return a;
+}
+
+float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
+{
+	float a, dot;
+	vec3d t;
+
+	// to avoid round-off errors...
+	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
+	dot = vm_vec_dot(v0, v1);
+	CLAMP(dot, -1.0f, 1.0f);
+
+	a = acosf(dot);
+
+	if (uvec) {
+		vm_vec_cross(&t,v0,v1);
+		if ( vm_vec_dot(&t,uvec) < 0.0 ) {
 			a = -a;
 		}
 	}
@@ -2806,4 +2847,10 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec)
+{
+	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
+	return os;
 }

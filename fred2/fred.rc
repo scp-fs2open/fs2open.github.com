@@ -146,6 +146,8 @@ IDB_DATA_90             BITMAP                  "res\\data90.bmp"
 
 IDB_DATA_95             BITMAP                  "res\\data95.bmp"
 
+IDB_COMMENT             BITMAP                  "res\\comment.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -209,7 +211,7 @@ BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
         END
         MENUITEM SEPARATOR
-        MENUITEM "&Run FreeSpace\tAlt+R",       32985
+        MENUITEM "&Run FreeSpace",       32985
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 57616, GRAYED
         MENUITEM SEPARATOR
@@ -439,6 +441,9 @@ BEGIN
         MENUITEM "&Edit Data",                  ID_EDIT_TEXT
         MENUITEM "Expand All",                  ID_EXPAND_ALL
         MENUITEM SEPARATOR
+        MENUITEM "Edit Comment",                ID_EDIT_COMMENT, GRAYED
+        MENUITEM "Edit Background Color",       ID_EDIT_BG_COLOR, GRAYED
+        MENUITEM SEPARATOR
         MENUITEM "Cut\tCtrl+X",                 ID_EDIT_CUT, GRAYED
         MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
         MENUITEM "Paste\tCtrl+V",               ID_EDIT_PASTE, GRAYED
@@ -454,7 +459,7 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Add Paste",                   ID_EDIT_PASTE_SPECIAL, GRAYED
+        MENUITEM "Add Paste\tCtrl+P",               ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
@@ -553,93 +558,86 @@ END
 
 IDR_MAINFRAME ACCELERATORS
 BEGIN
-    "1",            ID_SPEED1,              VIRTKEY, NOINVERT
-    "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
-    "1",            ID_ROT1,                VIRTKEY, SHIFT, NOINVERT
-    "2",            ID_SPEED2,              VIRTKEY, NOINVERT
-    "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
-    "2",            ID_ROT2,                VIRTKEY, SHIFT, NOINVERT
-    "3",            ID_SPEED3,              VIRTKEY, NOINVERT
-    "3",            ID_GROUP3,              VIRTKEY, CONTROL, NOINVERT
-    "3",            ID_ROT3,                VIRTKEY, SHIFT, NOINVERT
-    "3",            ID_EDIT_POPUP_SHOW_COMPASS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "4",            ID_SPEED5,              VIRTKEY, NOINVERT
-    "4",            ID_GROUP4,              VIRTKEY, CONTROL, NOINVERT
-    "4",            ID_ROT4,                VIRTKEY, SHIFT, NOINVERT
-    "5",            ID_SPEED8,              VIRTKEY, NOINVERT
-    "5",            ID_GROUP5,              VIRTKEY, CONTROL, NOINVERT
-    "5",            ID_ROT5,                VIRTKEY, SHIFT, NOINVERT
-    "6",            ID_SPEED10,             VIRTKEY, NOINVERT
-    "6",            ID_GROUP6,              VIRTKEY, CONTROL, NOINVERT
-    "7",            ID_SPEED50,             VIRTKEY, NOINVERT
-    "7",            ID_GROUP7,              VIRTKEY, CONTROL, NOINVERT
-    "8",            ID_SPEED100,            VIRTKEY, NOINVERT
-    "8",            ID_GROUP8,              VIRTKEY, CONTROL, NOINVERT
-    "9",            ID_GROUP9,              VIRTKEY, CONTROL, NOINVERT
-    "A",            ID_ASTEROID_EDITOR,     VIRTKEY, SHIFT, NOINVERT
-    "B",            ID_EDITORS_BRIEFING,    VIRTKEY, SHIFT, NOINVERT
-    "B",            ID_SHOW_STARFRIELD,     VIRTKEY, SHIFT, ALT, NOINVERT
-    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    "C",            ID_EDITORS_CMD_BRIEF,   VIRTKEY, SHIFT, NOINVERT
-    "C",            ID_SHOW_COORDINATES,    VIRTKEY, SHIFT, ALT, NOINVERT
-    "D",            ID_SHOW_DISTANCES,      VIRTKEY, NOINVERT
-    "D",            ID_DISBAND_WING,        VIRTKEY, CONTROL, NOINVERT
-    "D",            ID_EDITORS_DEBRIEFING,  VIRTKEY, SHIFT, NOINVERT
-    "D",            ID_DUMP_STATS,          VIRTKEY, SHIFT, CONTROL, NOINVERT
-    "E",            ID_EDITORS_EVENTS,      VIRTKEY, SHIFT, NOINVERT
-    "F",            IDD_FICTION_VIEWER,     VIRTKEY, SHIFT, NOINVERT
-    "G",            ID_EDITORS_GOALS,       VIRTKEY, SHIFT, NOINVERT
-    "G",            ID_VIEW_GRID,           VIRTKEY, SHIFT, ALT, NOINVERT
-    "H",            ID_SELECT_LIST,         VIRTKEY, NOINVERT
-    "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
-    "H",            ID_SHOW_HORIZON,        VIRTKEY, SHIFT, ALT, NOINVERT
-    "I",            ID_EDITORS_BG_BITMAPS,  VIRTKEY, SHIFT, NOINVERT
-    "I",            ID_EDIT_POPUP_SHOW_SHIP_ICONS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "K",            ID_NEXT_SUBSYS,         VIRTKEY, NOINVERT
-    "K",            ID_CANCEL_SUBSYS,       VIRTKEY, ALT, NOINVERT
-    "K",            ID_PREV_SUBSYS,         VIRTKEY, SHIFT, NOINVERT
-    "L",            ID_LEVEL_OBJ,           VIRTKEY, NOINVERT
     "L",            ID_ALIGN_OBJ,           VIRTKEY, CONTROL, NOINVERT
-    "M",            ID_SELECT_AND_MOVE,     VIRTKEY, NOINVERT
-    "M",            ID_EDIT_POPUP_SHOW_SHIP_MODELS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
-    "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
-    "O",            ID_EDITORS_ORIENT,      VIRTKEY, SHIFT, NOINVERT
-    "O",            ID_VIEW_OUTLINES,       VIRTKEY, SHIFT, ALT, NOINVERT
-    "P",            ID_SAVE_CAMERA,         VIRTKEY, CONTROL, NOINVERT
-    "P",            ID_EDITORS_PLAYER,      VIRTKEY, SHIFT, NOINVERT
-    "P",            ID_SHOW_GRID_POSITIONS, VIRTKEY, SHIFT, ALT, NOINVERT
-    "R",            ID_RESTORE_CAMERA,      VIRTKEY, CONTROL, NOINVERT
-    "R",            ID_RUN_FREESPACE,       VIRTKEY, ALT, NOINVERT
-    "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
-    "S",            ID_SELECT,              VIRTKEY, NOINVERT
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
-    "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
+    "A",            ID_ASTEROID_EDITOR,     VIRTKEY, SHIFT, NOINVERT
+    "K",            ID_CANCEL_SUBSYS,       VIRTKEY, ALT, NOINVERT
+    VK_F1,          ID_CONTEXT_HELP,        VIRTKEY, SHIFT, NOINVERT
     "T",            ID_CONTROL_OBJ,         VIRTKEY, NOINVERT
-    "V",            ID_LOOKAT_OBJ,          VIRTKEY, CONTROL, NOINVERT
-    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    "D",            ID_DISBAND_WING,        VIRTKEY, CONTROL, NOINVERT
+    "D",            ID_DUMP_STATS,          VIRTKEY, SHIFT, CONTROL, NOINVERT
     VK_DELETE,      ID_EDIT_DELETE,         VIRTKEY, NOINVERT
     VK_DELETE,      ID_EDIT_DELETE_WING,    VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
-    VK_F1,          ID_CONTEXT_HELP,        VIRTKEY, SHIFT, NOINVERT
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_EDIT_POPUP_SHOW_COMPASS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "I",            ID_EDIT_POPUP_SHOW_SHIP_ICONS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "M",            ID_EDIT_POPUP_SHOW_SHIP_MODELS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
+    "I",            ID_EDITORS_BG_BITMAPS,  VIRTKEY, SHIFT, NOINVERT
+    "B",            ID_EDITORS_BRIEFING,    VIRTKEY, SHIFT, NOINVERT
+    "C",            ID_EDITORS_CMD_BRIEF,   VIRTKEY, SHIFT, NOINVERT
+    "D",            ID_EDITORS_DEBRIEFING,  VIRTKEY, SHIFT, NOINVERT
+    "E",            ID_EDITORS_EVENTS,      VIRTKEY, SHIFT, NOINVERT
+    "F",            ID_EDITORS_FICTION,     VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_EDITORS_GOALS,       VIRTKEY, SHIFT, NOINVERT
+    "O",            ID_EDITORS_ORIENT,      VIRTKEY, SHIFT, NOINVERT
+    "P",            ID_EDITORS_PLAYER,      VIRTKEY, SHIFT, NOINVERT
+    "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
+    "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
+    "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
+    "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
+    "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
+    "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
+    "3",            ID_GROUP3,              VIRTKEY, CONTROL, NOINVERT
+    "4",            ID_GROUP4,              VIRTKEY, CONTROL, NOINVERT
+    "5",            ID_GROUP5,              VIRTKEY, CONTROL, NOINVERT
+    "6",            ID_GROUP6,              VIRTKEY, CONTROL, NOINVERT
+    "7",            ID_GROUP7,              VIRTKEY, CONTROL, NOINVERT
+    "8",            ID_GROUP8,              VIRTKEY, CONTROL, NOINVERT
+    "9",            ID_GROUP9,              VIRTKEY, CONTROL, NOINVERT
+    "L",            ID_LEVEL_OBJ,           VIRTKEY, NOINVERT
+    "R",            ID_LOOKAT_OBJ,          VIRTKEY, ALT, NOINVERT
+    "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
     VK_SPACE,       ID_MISC_STATISTICS,     VIRTKEY, ALT, NOINVERT
     VK_TAB,         ID_NEXT_OBJ,            VIRTKEY, NOINVERT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
+    "K",            ID_NEXT_SUBSYS,         VIRTKEY, NOINVERT
     VK_TAB,         ID_PREV_OBJ,            VIRTKEY, CONTROL, NOINVERT
-    "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
-    "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
-    "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
+    "K",            ID_PREV_SUBSYS,         VIRTKEY, SHIFT, NOINVERT
+    "R",            ID_RESTORE_CAMERA,      VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_ROT1,                VIRTKEY, SHIFT, NOINVERT
+    "2",            ID_ROT2,                VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_ROT3,                VIRTKEY, SHIFT, NOINVERT
+    "4",            ID_ROT4,                VIRTKEY, SHIFT, NOINVERT
+    "5",            ID_ROT5,                VIRTKEY, SHIFT, NOINVERT
     "X",            ID_ROTATE_LOCALLY,      VIRTKEY, NOINVERT
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
-    "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
-    "Z",            ID_ZOOM_SELECTED,       VIRTKEY, ALT, NOINVERT
+    "P",            ID_SAVE_CAMERA,         VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_SELECT,              VIRTKEY, NOINVERT
+    "M",            ID_SELECT_AND_MOVE,     VIRTKEY, NOINVERT
+    "H",            ID_SELECT_LIST,         VIRTKEY, NOINVERT
+    "C",            ID_SHOW_COORDINATES,    VIRTKEY, SHIFT, ALT, NOINVERT
+    "D",            ID_SHOW_DISTANCES,      VIRTKEY, NOINVERT
+    "P",            ID_SHOW_GRID_POSITIONS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "H",            ID_SHOW_HORIZON,        VIRTKEY, SHIFT, ALT, NOINVERT
+    "B",            ID_SHOW_STARFRIELD,     VIRTKEY, SHIFT, ALT, NOINVERT
+    "1",            ID_SPEED1,              VIRTKEY, NOINVERT
+    "6",            ID_SPEED10,             VIRTKEY, NOINVERT
+    "8",            ID_SPEED100,            VIRTKEY, NOINVERT
+    "2",            ID_SPEED2,              VIRTKEY, NOINVERT
+    "3",            ID_SPEED3,              VIRTKEY, NOINVERT
+    "4",            ID_SPEED5,              VIRTKEY, NOINVERT
+    "7",            ID_SPEED50,             VIRTKEY, NOINVERT
+    "5",            ID_SPEED8,              VIRTKEY, NOINVERT
+    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_VIEW_GRID,           VIRTKEY, SHIFT, ALT, NOINVERT
+    "O",            ID_VIEW_OUTLINES,       VIRTKEY, SHIFT, ALT, NOINVERT
     "Z",            ID_ZOOM_EXTENTS,        VIRTKEY, SHIFT, NOINVERT
+    "Z",            ID_ZOOM_SELECTED,       VIRTKEY, ALT, NOINVERT
 END
 
 IDR_ACC_CAMPAIGN ACCELERATORS
@@ -1290,7 +1288,7 @@ BEGIN
 END
 
 IDD_EVENT_EDITOR DIALOGEX 0, 0, 437, 431
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 CAPTION "Mission Event Edit"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
@@ -1651,12 +1649,12 @@ BEGIN
     LTEXT           "Debriefing persona index",IDC_STATIC,148,176,79,8
 END
 
-IDD_TEXT_VIEW DIALOG 0, 0, 324, 285
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Ship TBL Data"
-FONT 8, "MS Sans Serif"
+IDD_TEXT_VIEW DIALOGEX 0, 0, 299, 124
+STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Text View"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    EDITTEXT        IDC_EDIT1,7,7,310,271,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+    EDITTEXT        IDC_EDIT1,7,7,285,110,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
 END
 
 IDD_BRIEFING_EDITOR DIALOGEX 0, 0, 413, 414
@@ -2073,15 +2071,6 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,166,159,100,19
 END
 
-IDD_BRIEFING_PERSONAS DIALOG 0, 0, 320, 201
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Dialog"
-FONT 8, "MS Sans Serif"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,263,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,263,24,50,14
-END
-
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Custom Wing Names"
@@ -2193,6 +2182,26 @@ BEGIN
     EDITTEXT        IDC_ANIM,161,191,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,210,103,12,ES_AUTOHSCROLL
     LTEXT           "All of these parameters are optional, and a mission designer will usually not need to override more than one or two.  These parameters are the same as those found in ships.tbl.",IDC_STATIC,7,7,257,29
+END
+
+IDD_ALT_SHIP_CLASS DIALOG 0, 0, 312, 212
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Alternate Ship Class Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,201,191,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,255,191,50,14
+    LISTBOX         IDC_ALT_CLASS_LIST,7,7,147,155,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SET_FROM_SHIP_CLASS,190,25,115,164,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SET_FROM_VARIABLES,190,54,115,136,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Default To This Class",IDC_DEFAULT_TO_CLASS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,190,70,96,14
+    LTEXT           "Set From Ship Class",ID_STATIC,190,15,64,8
+    LTEXT           "Set From Variable",IDC_STATIC,190,43,82,9,SS_CENTERIMAGE
+    PUSHBUTTON      "U\np",IDC_ALT_CLASS_UP,158,7,21,78,BS_MULTILINE
+    PUSHBUTTON      "D\no\nw\nn",IDC_ALT_CLASS_DOWN,158,84,21,78,BS_MULTILINE
+    PUSHBUTTON      "Add",IDC_ALT_CLASS_ADD,7,177,50,17
+    PUSHBUTTON      "Delete",IDC_ALT_CLASS_DELETE,109,177,50,17
+    PUSHBUTTON      "Insert",IDC_ALT_CLASS_INSERT,58,177,50,17
 END
 
 
@@ -2401,9 +2410,9 @@ BEGIN
     IDD_TEXT_VIEW, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 317
+        RIGHTMARGIN, 292
         TOPMARGIN, 7
-        BOTTOMMARGIN, 278
+        BOTTOMMARGIN, 117
     END
 
     IDD_BRIEFING_EDITOR, DIALOG
@@ -2536,14 +2545,6 @@ BEGIN
         BOTTOMMARGIN, 211
     END
 
-    IDD_BRIEFING_PERSONAS, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 313
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 194
-    END
-
     IDD_CUSTOM_WING_NAMES, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -2593,6 +2594,14 @@ BEGIN
         RIGHTMARGIN, 264
         TOPMARGIN, 7
         BOTTOMMARGIN, 245
+    END
+
+    IDD_ALT_SHIP_CLASS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 305
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 205
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2814,6 +2823,73 @@ BEGIN
     0
 END
 
+IDD_TEXT_VIEW AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 100, 100
+END
+
+IDD_EVENT_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 50, 100,
+    50, 0, 0, 0,
+    50, 0, 0, 0,
+    50, 0, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    0, 100, 50, 0,
+    0, 100, 50, 0,
+    50, 50, 50, 50,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 0, 50, 50,
+    50, 50, 50, 0,
+    50, 50, 50, 0,
+    50, 50, 50, 0,
+    100, 50, 0, 0,
+    50, 50, 50, 0,
+    100, 50, 0, 0,
+    100, 50, 0, 0,
+    50, 50, 50, 0,
+    100, 50, 0, 0,
+    50, 50, 50, 0,
+    100, 50, 0, 0,
+    100, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    0, 100, 0, 0,
+    0, 100, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    75, 0, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    50, 50, 50, 0,
+    50, 50, 0, 0,
+    100, 50, 0, 0,
+    50, 50, 50, 0,
+    50, 50, 0, 0,
+    50, 50, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    25, 100, 0, 0,
+    50, 50, 0, 0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3023,6 +3099,8 @@ BEGIN
                             "See things from the current object's viewpoint"
     ID_ADD_PLUS             "Evaluates to sum of subexpressions"
     ID_ADD_MINUS            "Evaluates to difference between first subexpression and remaining subexpressions"
+    ID_EDIT_COMMENT         "Change the comment associated with this item"
+    ID_EDIT_BG_COLOR        "Change the background color displayed for this item"
 END
 
 STRINGTABLE
@@ -3081,7 +3159,7 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Ctrl+V)"
+    ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Alt+R)"
 END
 
 STRINGTABLE
@@ -3114,61 +3192,6 @@ BEGIN
 END
 
 #endif    // English (United States) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// English (United Kingdom) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
-#pragma code_page(1252)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_ALT_SHIP_CLASS DIALOG 0, 0, 312, 212
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Alternate Ship Class Editor"
-FONT 8, "MS Sans Serif"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,201,191,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,255,191,50,14
-    LISTBOX         IDC_ALT_CLASS_LIST,7,7,147,155,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SET_FROM_SHIP_CLASS,190,25,115,164,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SET_FROM_VARIABLES,190,54,115,136,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Default To This Class",IDC_DEFAULT_TO_CLASS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,190,70,96,14
-    LTEXT           "Set From Ship Class",ID_STATIC,190,15,64,8
-    LTEXT           "Set From Variable",IDC_STATIC,190,43,82,9,SS_CENTERIMAGE
-    PUSHBUTTON      "U\np",IDC_ALT_CLASS_UP,158,7,21,78,BS_MULTILINE
-    PUSHBUTTON      "D\no\nw\nn",IDC_ALT_CLASS_DOWN,158,84,21,78,BS_MULTILINE
-    PUSHBUTTON      "Add",IDC_ALT_CLASS_ADD,7,177,50,17
-    PUSHBUTTON      "Delete",IDC_ALT_CLASS_DELETE,109,177,50,17
-    PUSHBUTTON      "Insert",IDC_ALT_CLASS_INSERT,58,177,50,17
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_ALT_SHIP_CLASS, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 305
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 205
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-#endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -655,7 +655,7 @@ SCP_string message_translate_tokens(const char *text)
 						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
-								XSTR(Control_config[Failed_key_index].text, CONTROL_CONFIG_XSTR + Failed_key_index));
+								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
 
 							if (r) {  // do they want to abort the mission?
 								gameseq_post_event(GS_EVENT_END_GAME);

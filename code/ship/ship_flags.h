@@ -32,6 +32,8 @@ namespace Ship {
 		No_disappear,				// prevents submodel from disappearing when subsys destroyed
         Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
         No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
+		Forced_target,				// The turrets current target is being forced by SEXP, and won't let it go until it dies or is cleared by SEXP
+		Forced_subsys_target,		// The turrets current subsystem target is being forced by SEXP, implies Forced_target
 
 		NUM_VALUES
 	};
@@ -195,6 +197,7 @@ namespace Ship {
 		Dont_clamp_max_velocity,		// Goober5000
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
+		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
 
 		NUM_VALUES
 	};

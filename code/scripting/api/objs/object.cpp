@@ -186,7 +186,7 @@ ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship betwee
 
 ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "number", "Hitpoints left, or 0 if handle is invalid")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -200,6 +200,24 @@ ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "
 	}
 
 	return ade_set_args(L, "f", objh->objp->hull_strength);
+}
+
+ADE_VIRTVAR(SimHitpointsLeft, l_Object, "number", "Simulated hitpoints an object has left", "number", "Simulated hitpoints left, or 0 if handle is invalid")
+{
+	object_h *objh = nullptr;
+	float f = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	//Set sim hull strength.
+	if (ADE_SETTING_VAR) {
+		objh->objp->sim_hull_strength = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->sim_hull_strength);
 }
 
 ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle, or invalid shields handle if object handle is invalid")

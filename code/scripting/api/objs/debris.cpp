@@ -167,6 +167,21 @@ ADE_FUNC(isVaporized, l_Debris, nullptr, "Return if this debris is the vaporized
 	return ade_set_args(L, "b", debris_is_vaporized(db));
 }
 
+ADE_FUNC(vanish, l_Debris, nullptr, "Vanishes this piece of debris from the mission.", "boolean", "True if the deletion was successful, false otherwise.")
+{
+
+	object_h* oh = nullptr;
+	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
+		return ade_set_error(L, "b", false);
+
+	if (!oh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	//This skips all the fancy deathroll stuff, and just cleans it from the mission
+	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);
+
+	return ade_set_args(L, "b", true);
+}
 
 }
 }

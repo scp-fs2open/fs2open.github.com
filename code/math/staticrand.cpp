@@ -20,8 +20,9 @@ void init_semirand()
 {
 	Semirand_inited = true;
 
+	// Originally this made a 30-bit rand by sticking two 15-bit rands from myrand() together. Instead we trim rand32() down to size.
 	for (auto & number : Semirand)
-		number = (static_cast<unsigned>(myrand()) << 15u) + myrand();
+		number = (unsigned) (rand32() & STATIC_RAND_MAX);
 }
 
 /**

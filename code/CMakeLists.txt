@@ -52,6 +52,8 @@ endif()
 
 target_link_libraries(code PUBLIC parsers)
 
+target_link_libraries(code PUBLIC mdns)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)
@@ -60,6 +62,8 @@ IF (FSO_USE_SPEECH)
 ENDIF(FSO_USE_SPEECH)
 
 TARGET_LINK_LIBRARIES(code PUBLIC jansson)
+
+target_link_libraries(code PUBLIC variant)
 
 # Headers for standalone "gui" on UNIX
 IF(UNIX)

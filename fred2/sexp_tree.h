@@ -53,9 +53,9 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA		9
-//Therefore NEXT DEFINE should be 9+12 or 21
-
+#define BITMAP_NUMBERED_DATA	9
+// There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
+#define BITMAP_COMMENT			29
 
 
 // tree behavior modes (or tree subtype)
@@ -154,6 +154,8 @@ public:
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
+	virtual void edit_comment(HTREEITEM h);
+	virtual void edit_bg_color(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);
 	void right_clicked(int mode = 0);
@@ -168,7 +170,6 @@ public:
 	void reset_handles();
 	int save_tree(int node = -1);
 	void load_tree(int index, const char *deflt = "true");
-	void add_one_arg_operator(const char *op, const char *data, int type);
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
 	int add_data(const char *data, int type);
 	int add_variable_data(const char *data, int type);
@@ -304,8 +305,16 @@ protected:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnDestroy();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	afx_msg void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
+
+	virtual void NodeCut();
+	virtual void NodeDelete();
+	virtual void NodeCopy();
+	virtual void NodePaste();
+	virtual void NodeAddPaste();
+
+	void update_item(HTREEITEM handle);
 
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);

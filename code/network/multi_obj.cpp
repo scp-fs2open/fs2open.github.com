@@ -1312,38 +1312,51 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 			// retrieve the submodel for rotation info.
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsystem->submodel_instance_1) {
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(angs_1, &subsystem->submodel_instance_1->canonical_orient);
+				}
+				if (subsystem->submodel_instance_2) {
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(angs_2, &subsystem->submodel_instance_2->canonical_orient);
+				}
 
 				// here we're checking to see if the subsystems rotated enough to send.
-				if (subsystem->submodel_info_1.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
+				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.b / PI2);
+					subsys_data.push_back(angs_1->b / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
+				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.h / PI2);
+					subsys_data.push_back(angs_1->h / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
+				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.p / PI2);
+					subsys_data.push_back(angs_1->p / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
+				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.b / PI2);
+					subsys_data.push_back(angs_2->b / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
+				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.h / PI2);
+					subsys_data.push_back(angs_2->h / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
+				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.p / PI2);
+					subsys_data.push_back(angs_2->p / PI2);
 				}
 
+				// clang says deleting null pointer has no effect
+				delete angs_1;
+				delete angs_2;
 			}
 			i++;
 		}
@@ -1914,41 +1927,73 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					data_idx++;
 				}
 
+				angles *prev_angs_1 = nullptr;
+				angles *prev_angs_2 = nullptr;
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsysp->submodel_instance_1) {
+					prev_angs_1 = new angles;
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
+				}
+				if (subsysp->submodel_instance_2) {
+					prev_angs_2 = new angles;
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
+				}
+
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
-					subsysp->submodel_info_1.prev_angs.b = subsysp->submodel_info_1.angs.b;
-					subsysp->submodel_info_1.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_1->b = angs_1->b;
+					angs_1->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1h) {
-					subsysp->submodel_info_1.prev_angs.h = subsysp->submodel_info_1.angs.h;
-					subsysp->submodel_info_1.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_1->h = angs_1->h;
+					angs_1->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1p) {
-					subsysp->submodel_info_1.prev_angs.p = subsysp->submodel_info_1.angs.p;
-					subsysp->submodel_info_1.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_1->p = angs_1->p;
+					angs_1->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2b) {
-					subsysp->submodel_info_2.prev_angs.b = subsysp->submodel_info_2.angs.b;
-					subsysp->submodel_info_2.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_2->b = angs_2->b;
+					angs_2->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2h) {
-					subsysp->submodel_info_2.prev_angs.h = subsysp->submodel_info_2.angs.h;
-					subsysp->submodel_info_2.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_2->h = angs_2->h;
+					angs_2->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2p) {
-					subsysp->submodel_info_2.prev_angs.p = subsysp->submodel_info_2.angs.p;
-					subsysp->submodel_info_2.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_2->p = angs_2->p;
+					angs_2->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
+
+				// fix up the matrixes
+				if (flags[i] & OO_SUBSYS_ROTATION_1) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
+					delete prev_angs_1;
+					delete angs_1;
+				}
+				if (flags[i] & OO_SUBSYS_ROTATION_2) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
+					delete prev_angs_2;
+					delete angs_2;
+				}
+
 				subsysp = GET_NEXT(subsysp);
 
 			}
@@ -2041,6 +2086,13 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 			object *objp = multi_get_network_object( dock_sig );
 			if(objp != nullptr){
 				Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
+				if ((objp->instance > -1) && (objp->type == OBJ_SHIP)) {
+					Ai_info[shipp->ai_index].goals[0].target_name = Ships[objp->instance].ship_name;
+					Ai_info[shipp->ai_index].goals[0].target_signature = objp->signature;
+				} else {
+					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
+					Ai_info[shipp->ai_index].goals[0].target_signature = 0;
+				}
 			}
 		}			
 	} 
@@ -2334,10 +2386,14 @@ void multi_oo_process_all(net_player *pl)
 	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
 	if (temp_timestamp > 255) {
 		temp_timestamp = 255;
-	} else if (temp_timestamp < 0) {
-		// Send to the log if we're getting negative times. 
-		mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
-		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
+
+	} else if (temp_timestamp < 0 ){
+		// this should only happen when the game is just starting, because the previous timestamp is nonsense.
+		if (Oo_info.number_of_frames > 1) {
+			// Send to the log if we're getting negative times. 
+			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		}
+		temp_timestamp = TIMESTAMP_OUT_IF_ERROR; // average amount of time per frame on a 60fps machine
 	}
 
 	// finish adding the timestamp
@@ -3292,15 +3348,17 @@ void multi_oo_interp(object* objp)
 
 	local_rubberband_correction = vmd_zero_vector;
 
+	constexpr float anti_rubberbanding_factor = 0.5f;
+
 	// a difference in sign means something just rubberbanded.
 	if ( ((local_displacement.xyz.x < 0.0f) && (temp_local_vel.xyz.x > 0.0f)) || ((local_displacement.xyz.x > 0.0f) && (temp_local_vel.xyz.x < 0.0f)) ) {
-		local_rubberband_correction.xyz.x = -local_displacement.xyz.x;
+		local_rubberband_correction.xyz.x = anti_rubberbanding_factor * -local_displacement.xyz.x;
 	}
 	if ( ((local_displacement.xyz.y < 0.0f) && (temp_local_vel.xyz.y > 0.0f)) || ((local_displacement.xyz.y > 0.0f) && (temp_local_vel.xyz.y < 0.0f)) ) {
-		local_rubberband_correction.xyz.y = -local_displacement.xyz.y;
+		local_rubberband_correction.xyz.y = anti_rubberbanding_factor * -local_displacement.xyz.y;
 	}
 	if ( ((local_displacement.xyz.z < 0.0f) && (temp_local_vel.xyz.z > 0.0f)) || ((local_displacement.xyz.z > 0.0f) && (temp_local_vel.xyz.z < 0.0f)) ) {
-		local_rubberband_correction.xyz.z = -local_displacement.xyz.z;
+		local_rubberband_correction.xyz.z = anti_rubberbanding_factor * -local_displacement.xyz.z;
 	}
 
 	vm_vec_unrotate(&global_rubberband_correction, &local_rubberband_correction, &objp->orient);

@@ -40,6 +40,8 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
+#define MAX_FIREBALLS	200
+
 extern int fireball_used[MAX_FIREBALL_TYPES];
 
 // all this moved here by Goober5000 because it makes more sense in the H file
@@ -92,6 +94,11 @@ typedef struct fireball {
 	float	warp_close_duration;
 } fireball;
 // end move
+
+extern fireball Fireballs[MAX_FIREBALLS];
+extern int Num_fireballs;
+
+extern bool fireballs_inited;
 
 void fireball_init();
 void fireball_render(object* obj, model_draw_list *scene);
