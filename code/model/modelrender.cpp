@@ -1256,27 +1256,13 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = vmd_zero_angles;
+	matrix submodel_orient = vmd_identity_matrix;
 
 	if ( smi != nullptr ) {
-		ang = smi->angs;
+		submodel_orient = smi->canonical_orient;
 	}
 
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = sm->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &sm->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	scene->push_transform(&sm->offset, &submodel_matrix);
+	scene->push_transform(&sm->offset, &submodel_orient);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
@@ -1896,18 +1882,18 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 			bank->glow_timestamp=time;
 		}
 
-		if ( ( gpo && gpo->off_time_override ) ? gpo->off_time : bank->off_time ) {
-			if ( bank->is_on ) {
-				if( ((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) > ((time - ((gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time)) % (((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) + ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time))) ){
+		int on_time = (gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time;
+		int off_time = (gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time;
+		int disp_time = (gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time;
+
+
+		if (off_time) {
+			bool glow_state = ((time - disp_time) % (on_time + off_time)) < on_time;
+
+			if ( glow_state != bank->is_on )
 					bank->glow_timestamp = time;
-					bank->is_on = 0;
-				}
-			} else {
-				if( ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time) < ((time - ((gpo && gpo->disp_time_override)?gpo->disp_time:bank->disp_time)) % (((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time))) ){
-					bank->glow_timestamp = time;
-					bank->is_on = 1;
-				}
-			}
+			
+			bank->is_on = glow_state;
 		}
 	}
 }
@@ -2389,23 +2375,9 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
 	// (Not needed here because we're not using model instances)
-	angles ang = vmd_zero_angles;
+	matrix submodel_orient = vmd_identity_matrix;
 
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = model->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &model->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
+	g3_start_instance_matrix(&model->offset, &submodel_orient, true);
 
 	if ( debug_flags & MR_DEBUG_PIVOTS ) {
 		model_draw_debug_points( pm, &pm->submodel[mn], debug_flags );

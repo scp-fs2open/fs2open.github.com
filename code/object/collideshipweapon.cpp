@@ -89,6 +89,15 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		damage = wip->damage;
 	}
 
+	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
+		float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
+
+		if (dot < 0.0f)
+			dot = 0.0f;
+
+		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
+	}
+
 	// deterine whack whack
 	float		blast = wip->mass;
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	

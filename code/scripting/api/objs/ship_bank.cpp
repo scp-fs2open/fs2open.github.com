@@ -216,7 +216,7 @@ ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted i
 			if(ADE_SETTING_VAR && weaponclass > -1) {
 				bh->sw->primary_bank_weapons[bh->bank] = weaponclass;
 				if (Weapon_info[weaponclass].wi_flags[Weapon::Info_Flags::Ballistic]) {
-					bh->sw->primary_bank_ammo[bh->bank] = (int)std::lround(bh->sw->primary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
+					bh->sw->primary_bank_start_ammo[bh->bank] = (int)std::lround(bh->sw->primary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
 				}
 			}
 
@@ -224,7 +224,7 @@ ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted i
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && weaponclass > -1) {
 				bh->sw->secondary_bank_weapons[bh->bank] = weaponclass;
-				bh->sw->secondary_bank_ammo[bh->bank] = (int)std::lround(bh->sw->secondary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
+				bh->sw->secondary_bank_start_ammo[bh->bank] = (int)std::lround(bh->sw->secondary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
 			}
 
 			return ade_set_args(L, "o", l_Weaponclass.Set(bh->sw->secondary_bank_weapons[bh->bank]));

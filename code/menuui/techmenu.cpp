@@ -43,7 +43,7 @@
 
 #define NUM_BUTTONS	16
 #define NUM_TABS		3
-#define LIST_BUTTONS_MAX	42
+#define LIST_BUTTONS_MAX	50
 
 #define SHIPS_DATA_MODE		(1<<0)
 #define WEAPONS_DATA_MODE	(1<<1)
@@ -337,6 +337,8 @@ void techroom_select_new_entry()
 		}
 		Techroom_ship_model_instance = model_create_instance(true, Techroom_ship_modelnum);
 
+		model_set_up_techroom_instance(sip, Techroom_ship_model_instance);
+
 		Current_list->at(Cur_entry).model_num = Techroom_ship_modelnum;
 
 		// page in ship textures properly (takes care of nondimming pixels)
@@ -428,7 +430,7 @@ void tech_common_render()
 	y = 0;
 	z = List_offset;
 	while (y + font_height <= Tech_list_coords[gr_screen.res][SHIP_H_COORD]) {
-		if (z >= static_cast<int>(Current_list->size())) {
+		if ((z - List_offset) >= LIST_BUTTONS_MAX || z >= static_cast<int>(Current_list->size())) {
 			break;
 		}
 
@@ -463,8 +465,6 @@ void tech_common_render()
 	}
 }
 
-void light_set_all_relevent();
-
 void techroom_ships_render(float frametime)
 {
 	// render all the common stuff
@@ -476,7 +476,6 @@ void techroom_ships_render(float frametime)
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
-	int i, j;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 	model_render_params render_info;
 
@@ -547,31 +546,6 @@ void techroom_ships_render(float frametime)
 	model_clear_instance(Techroom_ship_modelnum);
 	render_info.set_detail_level_lock(0);
 
-	polymodel *pm = model_get(Techroom_ship_modelnum);
-	polymodel_instance *pmi = model_get_instance(Techroom_ship_model_instance);
-	
-	for (i = 0; i < sip->n_subsystems; i++) {
-		model_subsystem *msp = &sip->subsystems[i];
-		if (msp->type == SUBSYSTEM_TURRET) {
-
-			float p = 0.0f;
-			float h = 0.0f;
-
-			for (j = 0; j < msp->n_triggers; j++) {
-
-				// special case for turrets
-				p = msp->triggers[j].angle.xyz.x;
-				h = msp->triggers[j].angle.xyz.y;
-			}
-			if ( msp->subobj_num >= 0 )	{
-				model_set_instance_techroom(pm, pmi, msp->subobj_num, 0.0f, h );
-			}
-			if ( (msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0) )		{
-				model_set_instance_techroom(pm, pmi, msp->turret_gun_sobj, p, 0.0f );
-			}
-		}
-	}
-
 	if (sip->replacement_textures.size() > 0)
 	{
 		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
@@ -581,10 +555,12 @@ void techroom_ships_render(float frametime)
     {
         gr_reset_clip();
 
+		auto pm = model_get(Techroom_ship_modelnum);
+
 		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, -sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
         render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 		
-		model_render_immediate(&render_info, Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector);
+		model_render_immediate(&render_info, Techroom_ship_modelnum, Techroom_ship_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
         shadows_end_render();
 
 		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD], GR_RESIZE_MENU);
@@ -600,7 +576,7 @@ void techroom_ships_render(float frametime)
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, Techroom_ship_modelnum, Techroom_ship_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
 
 	Glowpoint_use_depth_buffer = true;
 

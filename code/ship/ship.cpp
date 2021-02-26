@@ -173,7 +173,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 SCP_vector<exited_ship> Ships_exited;
 
 SCP_vector<ship_registry_entry> Ship_registry;
-SCP_unordered_map<SCP_string, int> Ship_registry_map;
+SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 const ship_registry_entry *ship_registry_get(const char *name)
 {
@@ -943,7 +943,7 @@ void ship_info::clone(const ship_info& other)
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
-            subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems);
+			subsystems = new model_subsystem[other.n_subsystems];
 		} else {
 			for ( int i = 0; i < n_subsystems; i++ ) {
 				for ( int j = 0; j < subsystems[i].n_triggers; j++ ) {
@@ -954,10 +954,11 @@ void ship_info::clone(const ship_info& other)
 					}
 				}
 			}
-            subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
+			delete[] subsystems;
+			subsystems = new model_subsystem[other.n_subsystems];
 		}
 
-        Assert(subsystems != NULL);
+		Assert(subsystems != nullptr);
 		for ( int i = n_subsystems; i < other.n_subsystems; i++ ) {
 			subsystems[i].triggers = (queued_animation*) vm_malloc(sizeof(queued_animation) * (other.subsystems[i].n_triggers));
 		}
@@ -1069,9 +1070,11 @@ void ship_info::clone(const ship_info& other)
 	uses_team_colors = other.uses_team_colors;
 	default_team_name = other.default_team_name;
 
-	afterburner_trail = other.afterburner_trail;
+	afterburner_trail = other.afterburner_trail; 
+	afterburner_trail_tex_stretch = other.afterburner_trail_tex_stretch;
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
+	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1373,8 +1376,10 @@ void ship_info::move(ship_info&& other)
 	std::swap(default_team_name, other.default_team_name);
 
 	std::swap(afterburner_trail, other.afterburner_trail);
+	afterburner_trail_tex_stretch = other.afterburner_trail_tex_stretch;
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
+	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1783,8 +1788,10 @@ ship_info::ship_info()
 	default_team_name = "";
 
 	generic_bitmap_init(&afterburner_trail, NULL);
+	afterburner_trail_tex_stretch = 1.0f;
 	afterburner_trail_width_factor = 1.0f;
 	afterburner_trail_alpha_factor = 1.0f;
+	afterburner_trail_alpha_end_factor = 0.0f;
 	afterburner_trail_life = 5.0f;
 	afterburner_trail_spread = 0.0f;
 	afterburner_trail_faded_out_sections = 0;
@@ -1896,8 +1903,8 @@ ship_info::~ship_info()
 			}
 		}
 
-		vm_free(subsystems);
-        subsystems = NULL;
+		delete[] subsystems;
+		subsystems = nullptr;
 	}
 
 	free_strings();
@@ -3844,6 +3851,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			generic_bitmap_init(&sip->afterburner_trail, NULL);
 			stuff_string(sip->afterburner_trail.filename, F_NAME, MAX_FILENAME_LEN);
 		}
+
+		if (optional_string("+Bitmap Stretch:")) {
+			trails_warning = false;
+			stuff_float(&sip->afterburner_trail_tex_stretch);
+			if (sip->afterburner_trail_tex_stretch == 0.0f) {
+				Warning(LOCATION, "Trail bitmap stretch of ship %s cannot be 0.  Setting to 1.\n", sip->name);
+				sip->afterburner_trail_tex_stretch = 1.0f;
+			}
+		}
 		
 		if ( optional_string("+Width:") ) {
 			trails_warning = false;
@@ -3853,6 +3869,20 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if ( optional_string("+Alpha:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_alpha_factor);
+		}
+
+		if (optional_string("+Alpha End:")) {
+			trails_warning = false;
+			stuff_float(&sip->afterburner_trail_alpha_end_factor);
+		}
+
+		if (optional_string("+Alpha Decay Exponent:")) {
+			trails_warning = false;
+			stuff_float(&sip->afterburner_trail_alpha_decay_exponent);
+			if (sip->afterburner_trail_alpha_decay_exponent < 0.0f) {
+				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Resetting to 1.\n", sip->name);
+				sip->afterburner_trail_alpha_decay_exponent = 1.0f;
+			}
 		}
 			
 		if ( optional_string("+Life:") ) {
@@ -4272,6 +4302,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		required_string("+End Alpha:");
 		stuff_float(&ci->a_end);
 
+		if (optional_string("+Alpha Decay Exponent:")) {
+			stuff_float(&ci->a_decay_exponent);
+			if (ci->a_decay_exponent < 0.0f) {
+				Warning(LOCATION, "Trail Alpha Decay Exponent of ship %s cannot be negative. Resetting to 1.\n", sip->name);
+				ci->a_decay_exponent = 1.0f;
+			}
+		}
+
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
 
@@ -4285,6 +4323,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
 		generic_bitmap_init(&ci->texture, name_tmp);
 		generic_bitmap_load(&ci->texture);
+
+		if (optional_string("+Bitmap Stretch:")) {
+			stuff_float(&ci->texture_stretch);
+			if (ci->texture_stretch == 0.0f) {
+				Warning(LOCATION, "Trail bitmap stretch of ship %s cannot be 0.  Setting to 1.\n", sip->name);
+				ci->texture_stretch = 1.0f;
+			}
+		}
 
 		if (optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ci->n_fade_out_sections);
@@ -4531,9 +4577,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	int n_subsystems = 0;
 	int cont_flag = 1;
-	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
+	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS] = {}; // see model.h for max_model_subsystems
 	for (auto i=0; i<MAX_MODEL_SUBSYSTEMS; i++) {
-		subsystems[i].stepped_rotation = NULL;
+		subsystems[i].reset();
 	}
 	
 	float	hull_percentage_of_hits = 100.0f;
@@ -5033,6 +5079,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				}
 			}
 
+			sp->beam_warmdown_program = actions::ProgramSet::parseProgramSet("$On Beam Warmdown:",
+				{actions::ProgramContextFlags::HasObject, actions::ProgramContextFlags::HasSubobject});
 		}
 		break;
 		case 2:
@@ -5055,14 +5103,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
 	if ( n_subsystems > 0 ) {
-		if(sip->n_subsystems < 1) {
-			sip->n_subsystems = n_subsystems;
-			sip->subsystems = (model_subsystem*)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems);
+		// Let's make sure that n_subsystems is not negative
+		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
+		auto new_n = sip->n_subsystems + n_subsystems;
 
+		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[new_n]);
+
+		if(sip->n_subsystems <= 0) {
+			sip->n_subsystems = n_subsystems;
 		} else {
+			// This used realloc originally so we need to copy the existing subsystems to the new storage
+			std::copy(sip->subsystems, sip->subsystems + sip->n_subsystems, subsys_storage.get());
+
 			sip->n_subsystems += n_subsystems;
-			sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
-		} 
+		}
+		sip->subsystems = subsys_storage.release();
 
 	    Assert(sip->subsystems != NULL);
     }
@@ -6426,6 +6481,7 @@ void ship_weapon::clear()
         primary_bank_pattern_index[i] = 0;
 
         burst_counter[i] = 0;
+		burst_seed[i] = rand32();
         external_model_fp_counter[i] = 0;
     }
 
@@ -6785,6 +6841,7 @@ void ship_subsys::clear()
 	turret_enemy_sig = 0;
 	turret_next_fire_pos = 0;
 	turret_time_enemy_in_range = 0.0f;
+	turret_inaccuracy = 0.0f;
 
 	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
 		turret_targeting_order[i] = -1;
@@ -7864,31 +7921,27 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 	}
 
-#ifndef NDEBUG
-	switch (cleanup_mode) {
-	case SHIP_DESTROYED:
-		nprintf(("Alan", "SHIP DESTROYED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DEPARTED:
-	case SHIP_DEPARTED_WARP:
-	case SHIP_DEPARTED_BAY:
-		nprintf(("Alan", "SHIP DEPARTED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DESTROYED_REDALERT:
-		nprintf(("Alan", "SHIP REDALERT DESTROYED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_DEPARTED_REDALERT:
-		nprintf(("Alan", "SHIP REDALERT DEPARTED: %s'\n'", shipp->ship_name));
-		break;
-	case SHIP_VANISHED:
-		nprintf(("Alan", "SHIP VANISHED: %s'\n'", shipp->ship_name));
-		break;
-	default:
-		// Can't Happen, but we should've already caught this
-		UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
-		break;
+	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);  
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		switch (cleanup_mode) {
+		case SHIP_DESTROYED:
+			mprintf(("%s destroyed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		case SHIP_DEPARTED:
+		case SHIP_DEPARTED_WARP:
+		case SHIP_DEPARTED_BAY:
+			mprintf(("%s departed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		case SHIP_VANISHED:
+			mprintf(("%s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+			break;
+		default:
+			break;
+		}
 	}
-#endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
@@ -9572,6 +9625,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_primary_fire_stamp[i] = timestamp(0);
 		swp->last_primary_fire_stamp[i] = -1;
 		swp->burst_counter[i] = 0;
+		swp->burst_seed[i] = rand32();
 		swp->last_primary_fire_sound_stamp[i] = timestamp(0);
 	}
 
@@ -9579,6 +9633,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
 		swp->last_secondary_fire_stamp[i] = -1;
 		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
+		swp->burst_seed[i + MAX_SHIP_PRIMARY_BANKS] = rand32();
 	}
 
 	//Countermeasures
@@ -9738,8 +9793,8 @@ static void ship_init_afterburners(ship *shipp)
 			ci->w_start = bank->points[j].radius * sip->afterburner_trail_width_factor;	// width * table loaded width factor
 			ci->w_end = 0.05f; //end width
 
-			ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor; // start alpha  * table loaded alpha factor
-			ci->a_end = 0.0f; //end alpha
+			ci->a_start = sip->afterburner_trail_alpha_factor; // start alpha  * table loaded alpha factor
+			ci->a_end = sip->afterburner_trail_alpha_end_factor; //end alpha
 
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 			ci->stamp = 60;	//spew time???	
@@ -9748,6 +9803,7 @@ static void ship_init_afterburners(ship *shipp)
 			ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // initial fade out
 
 			ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
+			ci->texture_stretch = sip->afterburner_trail_tex_stretch;
 
 			nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
 
@@ -10587,9 +10643,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	
 				ci->w_end = 0.05f;//end width
 	
-				ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor;	// start alpha  * table loaded alpha factor
+				ci->a_start = sip->afterburner_trail_alpha_factor;	// start alpha  * table loaded alpha factor
 	
-				ci->a_end = 0.0f;//end alpha
+				ci->a_end = sip->afterburner_trail_alpha_end_factor;//end alpha
+
+				ci->a_decay_exponent = sip->afterburner_trail_alpha_decay_exponent;
 	
 				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 
@@ -10600,6 +10658,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // table loaded n sections to be faded out
 
 				ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
+
+				ci->texture_stretch = sip->afterburner_trail_tex_stretch;
 				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", sp->ab_count, sp->ship_name));
 				sp->ab_count++;
 				Assert(MAX_SHIP_CONTRAILS > sp->ab_count);
@@ -10657,10 +10717,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if ( by_sexp ) {
 		if (sip_orig->num_primary_banks > sip->num_primary_banks) {
 			sp->weapons.current_primary_bank = 0;
+			sp->weapons.previous_primary_bank = 0;
 		}
 
 		if (sip_orig->num_secondary_banks > sip->num_secondary_banks) {
 			sp->weapons.current_secondary_bank = 0;
+			sp->weapons.previous_secondary_bank = 0;
 		}
 
 		// While we're at it, let's copy over the ETS settings too
@@ -10760,7 +10822,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		return 0;
 	}
 
-	shipp->cmeasure_fire_stamp = timestamp(CMEASURE_WAIT);	//	Can launch every half second.
+	shipp->cmeasure_fire_stamp = timestamp(Weapon_info[shipp->current_cmeasure].cmeasure_firewait);	//	Can launch every cmeasure wait
 #ifndef NDEBUG
 	if (Weapon_energy_cheat) {
 		shipp->cmeasure_count++;
@@ -11322,8 +11384,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		} else {
 			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
+			swp->burst_seed[bank_to_fire] = rand32();
 		}
-		if (!((obj->flags[Object::Object_Flags::Player_ship]) || (fast_firing))) {
+		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
 			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
@@ -11453,16 +11516,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 			}
 			
 			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
-				float t;
-				if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-					t = winfo_p->burst_delay;
-					swp->burst_counter[bank_to_fire]++;
-				} else {
-					t = winfo_p->fire_wait;//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
-					swp->burst_counter[bank_to_fire] = 0;
-				}
-				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int) (t * 1000.0f));
-				swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 				beam_fire_info fbfire_info;				
 
 				int points;
@@ -12304,6 +12357,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	} else {
 		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
+		swp->burst_seed[bank_adjusted] = rand32();
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int)(t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
@@ -13328,7 +13382,7 @@ int ship_type_name_lookup(const char *name)
 // Return true/false for subsystem found/not found.
 // Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
-int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
+int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 {
 	if (subsysp == NULL) {
 		*pos = objp->pos;
@@ -13336,7 +13390,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 	}
 	Assertion(objp->type == OBJ_SHIP, "Only ships can have subsystems!");
 
-	model_subsystem *mss = subsysp->system_info;
+	model_subsystem* mss = subsysp->system_info;
 
 	if (mss->subobj_num == -1) {
 		// If it's a special point subsys, we can use its offset directly
@@ -13402,9 +13456,6 @@ void ship_model_update_instance(object *objp)
 
 	// Handle intrinsic rotations for this ship
 	model_do_intrinsic_rotations(shipp->model_instance_num);
-
-	// preprocess subobject orientations for collision detection
-	model_collide_preprocess(&objp->orient, pm, pmi);
 }
 
 /**
@@ -19254,7 +19305,11 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			for (int mn = 0; mn < pm->n_models; ++mn)
 			{
 				if (pm->submodel[mn].gun_rotation)
-					pmi->submodel[mn].angs.b = shipp->primary_rotate_ang[i];
+				{
+					angles angs = vmd_zero_angles;
+					angs.b = shipp->primary_rotate_ang[i];
+					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
+				}
 			}
 		}
 

@@ -918,6 +918,32 @@ void stars_post_level_init()
 	// FRED doesn't do normal page_in stuff so we need to load up the bitmaps here instead
 	if (Fred_running) {
 		stars_load_all_bitmaps();
+
+		// see whether we are missing any suns or bitmaps
+		for (i = 0; i < (int)Backgrounds.size(); ++i) {
+			SCP_string failed_suns;
+			for (auto &sun : Backgrounds[i].suns) {
+				if (stars_find_sun(sun.filename) < 0) {
+					failed_suns += sun.filename;
+					failed_suns += "\n";
+				}
+			}
+
+			SCP_string failed_bitmaps;
+			for (auto &bitmap : Backgrounds[i].bitmaps) {
+				if (stars_find_bitmap(bitmap.filename) < 0) {
+					failed_bitmaps += bitmap.filename;
+					failed_bitmaps += "\n";
+				}
+			}
+
+			if (!failed_suns.empty()) {
+				Warning(LOCATION, "In Background %d, failed to load the following suns:\n%s", (i + 1), failed_suns.c_str());
+			}
+			if (!failed_bitmaps.empty()) {
+				Warning(LOCATION, "In Background %d, failed to load the following bitmaps:\n%s", (i + 1), failed_bitmaps.c_str());
+			}
+		}
 	}
 
 	starfield_generate_bitmap_buffers();
@@ -2279,7 +2305,9 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	idx = stars_find_sun(sun_ptr->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a sun '%s' that does not exist in stars.tbl!", sun_ptr->filename);
+		if (!Fred_running) {
+			Warning(LOCATION, "Trying to add a sun '%s' that does not exist in stars.tbl!", sun_ptr->filename);
+		}
 		return -1;
 	}
 
@@ -2373,7 +2401,9 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	idx = stars_find_bitmap(sle->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a bitmap '%s' that does not exist in stars.tbl!", sle->filename);
+		if (!Fred_running) {
+			Warning(LOCATION, "Trying to add a bitmap '%s' that does not exist in stars.tbl!", sle->filename);
+		}
 		return -1;
 	}
 
@@ -2676,7 +2706,7 @@ int stars_get_first_valid_background()
 				if (stars_find_bitmap(background->bitmaps[j].filename) < 0)
 				{
 					mprintf(("Failed to load bitmap %s for background %d, falling back to background %d\n",
-						background->suns[j].filename, i + 1, i + 2));
+						background->bitmaps[j].filename, i + 1, i + 2));
 					valid = false;
 					break;
 				}

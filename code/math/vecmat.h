@@ -52,6 +52,8 @@ extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
+extern vec3d vm_vec_new(float x, float y, float z);
+
 //Global constants
 
 extern vec3d vmd_zero_vector;
@@ -183,6 +185,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 #define vm_vec_normalize_quick			vm_vec_normalize
 #define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
 #define vm_vec_rand_vec_quick			vm_vec_rand_vec
+
+bool vm_vec_is_normalized(const vec3d *v);
 
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
@@ -653,6 +657,8 @@ inline matrix operator*(const matrix& left, const matrix& right) {
 	vm_matrix_x_matrix(&out, &left, &right);
 	return out;
 }
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 
 #endif
 

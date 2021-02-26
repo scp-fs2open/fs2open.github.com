@@ -114,6 +114,7 @@ typedef struct brief_icon {
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
+	int		model_instance_num;
 	float		radius;
 	int		type;					// ICON_* defines from MissionBriefCommon.h
 	int		bitmap_id;
@@ -297,7 +298,7 @@ void brief_camera_move(float frametime, int stage_num);
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
-void brief_parse_icon_tbl();
+void brief_icons_init();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();

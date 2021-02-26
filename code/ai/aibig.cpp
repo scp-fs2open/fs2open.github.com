@@ -831,6 +831,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
+														swp->burst_seed[current_bank_adjusted] = rand32();
 													}
 												} else {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
@@ -843,6 +844,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
+														swp->burst_seed[current_bank_adjusted] = rand32();
 													}
 												}
 												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));

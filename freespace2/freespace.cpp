@@ -1314,6 +1314,8 @@ void game_post_level_init()
 
 	freespace_mission_load_stuff();
 
+	mission_process_alt_types();
+
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
 		Script_system.SetHookObject("Player", Player_obj);
@@ -1614,6 +1616,11 @@ void game_init()
 		outwnd_init();
 	}
 
+	// Cyborg17 -- This section used to be in game_main(), but in a section before outwnd_init()
+	if (Is_standalone){
+		nprintf(("Network", "Standalone running\n"));
+	}
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
@@ -1808,7 +1815,7 @@ void game_init()
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	hud_init_comm_orders();	// Goober5000
 
@@ -4355,16 +4362,16 @@ int game_poll()
 {
 	if (!Cmdline_no_unfocus_pause)
 	{
-		if (!os_foreground()) {
+		// If we're in a single player game, pause it.  
+		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
+		// otherwise, ship interpolation will become inaccurate.
+		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
 			game_stop_time();
 			os_sleep(1);
 			game_start_time();
+			if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active())) {
+				game_process_pause_key();
 
-			// If we're in a single player game, pause it.
-			if (!(Game_mode & GM_MULTIPLAYER)){
-				if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()))	{
-					game_process_pause_key();
-				}
 			}
 		}
 	}
@@ -6461,11 +6468,6 @@ int game_main(int argc, char *argv[])
 
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
-	}
-
-
-	if (Is_standalone){
-		nprintf(("Network", "Standalone running\n"));
 	}
 
 	game_init();
