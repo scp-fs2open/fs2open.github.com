@@ -1,5 +1,3 @@
-//
-//
 
 #include "WaitAction.h"
 
@@ -9,11 +7,28 @@
 namespace actions {
 namespace types {
 
+flagset<ProgramContextFlags> WaitAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{};
+}
+
+WaitAction::WaitAction(expression::TypedActionExpression<float> waitTimeExpression)
+	: _waitTimeExpression(std::move(waitTimeExpression))
+{
+}
 WaitAction::~WaitAction() = default;
+
 ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 {
 	if (!timestamp_valid(locals.waitTimestamp)) {
-		locals.waitTimestamp = timestamp(fl2i(_waitTime.next()) * TIMESTAMP_FREQUENCY);
+		auto waitTime = _waitTimeExpression.execute(locals.variables);
+
+		// Catch errors in the expression
+		if (waitTime < 0.001f) {
+			waitTime = 0.001f;
+		}
+
+		locals.waitTimestamp = timestamp(fl2i(waitTime * TIMESTAMP_FREQUENCY));
 	}
 	if (!timestamp_elapsed(locals.waitTimestamp)) {
 		// Wait until the timestamp is elapsed
@@ -23,10 +38,6 @@ ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 	// action
 	locals.waitTimestamp = 0;
 	return ActionResult::Finished;
-}
-void WaitAction::parseValues(const flagset<ProgramContextFlags>&)
-{
-	_waitTime = util::parseUniformRange(0.001f);
 }
 std::unique_ptr<Action> WaitAction::clone() const
 {

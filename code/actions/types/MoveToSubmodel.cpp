@@ -5,9 +5,20 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
 
+flagset<ProgramContextFlags> MoveToSubmodel::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{ProgramContextFlags::HasObject, ProgramContextFlags::HasSubobject};
+}
+
+MoveToSubmodel::MoveToSubmodel(expression::TypedActionExpression<ValueType> subObjectExpression)
+	: m_subObjectExpression(std::move(subObjectExpression))
+{
+}
 MoveToSubmodel::~MoveToSubmodel() = default;
 
 ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
@@ -21,7 +32,13 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 	auto pmi = model_get_instance(instance);
 	auto pm = model_get(pmi->model_num);
 
-	if (_goToParent) {
+	const auto destinationSubObject = m_subObjectExpression.execute(locals.variables);
+	bool goToParent = false;
+	if (destinationSubObject == "<parent>") {
+		goToParent = true;
+	}
+
+	if (goToParent) {
 		// Special case when we simply want to go to our parent without explicitly specifying its name
 		auto parentSubobject = pm->submodel[locals.hostSubobject].parent;
 
@@ -42,31 +59,15 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 	for (int i = 0; i < pm->n_models; ++i) {
 		const auto submodel = pm->submodel[i];
 
-		if (subsystem_stricmp(_destination.c_str(), submodel.name) == 0) {
+		if (subsystem_stricmp(destinationSubObject.c_str(), submodel.name) == 0) {
 			// Found something!
 			locals.hostSubobject = i;
 			return ActionResult::Finished;
 		}
 	}
 
-	Warning(LOCATION, "Could not find subobject %s in model %s!", _destination.c_str(), pm->filename);
+	Warning(LOCATION, "Could not find subobject %s in model %s!", destinationSubObject.c_str(), pm->filename);
 	return ActionResult::Errored;
-}
-
-void MoveToSubmodel::parseValues(const flagset<ProgramContextFlags>& parse_flags)
-{
-	if (!parse_flags[ProgramContextFlags::HasObject]) {
-		error_display(1, "This action requires a host object but in this context none is available!");
-	}
-	if (!parse_flags[ProgramContextFlags::HasSubobject]) {
-		error_display(1, "This action required a host sub-object but in this context none is available!");
-	}
-
-	if (optional_string("<parent>")) {
-		_goToParent = true;
-	} else {
-		stuff_string(_destination, F_NAME);
-	}
 }
 
 std::unique_ptr<Action> MoveToSubmodel::clone() const

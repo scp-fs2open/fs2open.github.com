@@ -5,9 +5,22 @@
 
 #include "ship/ship.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
+
+flagset<ProgramContextFlags> PlaySoundAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{ProgramContextFlags::HasObject};
+}
+
+PlaySoundAction::PlaySoundAction(expression::TypedActionExpression<ValueType> soundIdExpression)
+	: m_soundIdExpression(std::move(soundIdExpression))
+{
+}
 PlaySoundAction::~PlaySoundAction() = default;
+
 ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 {
 	vec3d local_pos;
@@ -31,23 +44,18 @@ ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 		local_orient = locals.localOrient;
 	}
 
-	local_pos += locals.position;
+	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
 
 	vec3d global_pos;
 	vm_vec_unrotate(&global_pos, &local_pos, &locals.host.objp->orient);
 	global_pos += locals.host.objp->pos;
 
+	const auto soundId = gamesnd_get_by_name(m_soundIdExpression.execute(locals.variables).c_str());
+
 	// Sound is not attached to the host but the object sound system currently only supports persistent sounds
-	snd_play_3d(gamesnd_get_game_sound(_soundId), &global_pos, &Eye_position);
+	snd_play_3d(gamesnd_get_game_sound(soundId), &global_pos, &Eye_position);
 
 	return ActionResult::Finished;
-}
-void PlaySoundAction::parseValues(const flagset<ProgramContextFlags>& parse_flags)
-{
-	if (!parse_flags[ProgramContextFlags::HasObject]) {
-		error_display(1, "The sound effect action requires a host object but in this context none is available!");
-	}
-	_soundId = parse_game_sound_inline();
 }
 std::unique_ptr<Action> PlaySoundAction::clone() const
 {

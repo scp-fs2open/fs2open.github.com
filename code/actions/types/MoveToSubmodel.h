@@ -1,23 +1,28 @@
 #pragma once
 
+#include "globalincs/flagset.h"
+
 #include "actions/Action.h"
-#include "particle/ParticleManager.h"
+#include "actions/expression/ActionExpression.h"
 
 namespace actions {
 namespace types {
 
 class MoveToSubmodel : public Action {
-	bool _goToParent;
-	SCP_string _destination;
-
   public:
+	using ValueType = SCP_string;
+
+	static flagset<ProgramContextFlags> getRequiredExecutionContextFlags();
+
+	explicit MoveToSubmodel(expression::TypedActionExpression<ValueType> subObjectExpression);
 	~MoveToSubmodel() override;
 
 	ActionResult execute(ProgramLocals& locals) const override;
 
-	void parseValues(const flagset<ProgramContextFlags>& parse_flags) override;
-
 	std::unique_ptr<Action> clone() const override;
+
+  private:
+	expression::TypedActionExpression<ValueType> m_subObjectExpression;
 };
 
 } // namespace types

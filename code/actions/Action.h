@@ -17,8 +17,6 @@ class Action {
 
 	virtual ActionResult execute(ProgramLocals& locals) const = 0;
 
-	virtual void parseValues(const flagset<ProgramContextFlags>& parse_flags) = 0;
-
 	virtual std::unique_ptr<Action> clone() const = 0;
 };
 
