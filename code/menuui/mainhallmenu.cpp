@@ -2576,7 +2576,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	if (res_idx >= num_resolutions)
 	{
 		res_idx = 0;
-		hall_idx++;
+		hall_idx = (int)Main_hall_defines.size();	// assume the next main hall is going to be a new one
 	}
 }
 
