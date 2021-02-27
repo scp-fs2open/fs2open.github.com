@@ -4331,7 +4331,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->texture_stretch = 1.0f;
 			}
 		}
-		else
+		else if (first_time)
 			ci->texture_stretch = 1.0f;
 
 		if (optional_string("+Faded Out Sections:") ) {
