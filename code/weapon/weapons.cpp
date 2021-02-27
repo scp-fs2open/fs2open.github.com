@@ -8289,6 +8289,7 @@ void weapon_info::reset()
 	this->tr_info.stamp = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
+	this->tr_info.texture_stretch = 1.0f;
 
 	memset(this->icon_filename, 0, sizeof(this->icon_filename));
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));
