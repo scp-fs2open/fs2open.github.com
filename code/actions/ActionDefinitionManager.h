@@ -19,7 +19,7 @@ class ActionDefinitionManager {
 	static const ActionDefinitionManager& instance();
 
   private:
-	ActionDefinitionManager() = default;
+	ActionDefinitionManager();
 
 	void addDefinition(std::unique_ptr<ActionDefinition> def);
 

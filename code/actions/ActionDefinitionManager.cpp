@@ -47,24 +47,7 @@ void parseActionParameters(const SCP_vector<ActionParameter>& params,
 
 const ActionDefinitionManager& ActionDefinitionManager::instance()
 {
-	static const ActionDefinitionManager manager = []() {
-		ActionDefinitionManager newManager;
-
-		newManager.addDefinition(
-			std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::MoveToSubmodel>("Move To Subobject")));
-		newManager.addDefinition(std::unique_ptr<ActionDefinition>(
-			new BuiltinActionDefinition<types::ParticleEffectAction>("Start Particle Effect")));
-		newManager.addDefinition(
-			std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::PlaySoundAction>("Play 3D Sound")));
-		newManager.addDefinition(
-			std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::SetDirectionAction>("Set Direction")));
-		newManager.addDefinition(
-			std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::SetPositionAction>("Set Position")));
-		newManager.addDefinition(
-			std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::WaitAction>("Wait")));
-
-		return newManager;
-	}();
+	static const ActionDefinitionManager manager;
 	return manager;
 }
 void ActionDefinitionManager::addDefinition(std::unique_ptr<ActionDefinition> def)
@@ -143,6 +126,20 @@ std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<Progr
 	}
 
 	return std::unique_ptr<Action>();
+}
+ActionDefinitionManager::ActionDefinitionManager()
+{
+	addDefinition(
+		std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::MoveToSubmodel>("Move To Subobject")));
+	addDefinition(std::unique_ptr<ActionDefinition>(
+		new BuiltinActionDefinition<types::ParticleEffectAction>("Start Particle Effect")));
+	addDefinition(
+		std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::PlaySoundAction>("Play 3D Sound")));
+	addDefinition(
+		std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::SetDirectionAction>("Set Direction")));
+	addDefinition(
+		std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::SetPositionAction>("Set Position")));
+	addDefinition(std::unique_ptr<ActionDefinition>(new BuiltinActionDefinition<types::WaitAction>("Wait")));
 }
 
 } // namespace actions

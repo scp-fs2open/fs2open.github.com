@@ -22,19 +22,7 @@ Value value_minus(const SCP_vector<Value>& parameters)
 
 const FunctionManager& FunctionManager::instance()
 {
-	static const FunctionManager manager = []() {
-		FunctionManager newManager;
-
-		newManager.addOperator("+", {ValueType::Integer, ValueType::Integer}, ValueType::Integer, value_plus<int>);
-		newManager.addOperator("+", {ValueType::Float, ValueType::Float}, ValueType::Float, value_plus<float>);
-		newManager.addOperator("+", {ValueType::Vector, ValueType::Vector}, ValueType::Vector, value_plus<vec3d>);
-
-		newManager.addOperator("-", {ValueType::Integer, ValueType::Integer}, ValueType::Integer, value_minus<int>);
-		newManager.addOperator("-", {ValueType::Float, ValueType::Float}, ValueType::Float, value_minus<float>);
-		newManager.addOperator("-", {ValueType::Vector, ValueType::Vector}, ValueType::Vector, value_minus<vec3d>);
-
-		return newManager;
-	}();
+	static const FunctionManager manager;
 	return manager;
 }
 void FunctionManager::addOperator(const SCP_string& name,
@@ -87,7 +75,16 @@ const FunctionDefinition* FunctionManager::findOperator(const SCP_string& name,
 	return nullptr;
 }
 
-FunctionManager::FunctionManager() = default;
+FunctionManager::FunctionManager()
+{
+	addOperator("+", {ValueType::Integer, ValueType::Integer}, ValueType::Integer, value_plus<int>);
+	addOperator("+", {ValueType::Float, ValueType::Float}, ValueType::Float, value_plus<float>);
+	addOperator("+", {ValueType::Vector, ValueType::Vector}, ValueType::Vector, value_plus<vec3d>);
+
+	addOperator("-", {ValueType::Integer, ValueType::Integer}, ValueType::Integer, value_minus<int>);
+	addOperator("-", {ValueType::Float, ValueType::Float}, ValueType::Float, value_minus<float>);
+	addOperator("-", {ValueType::Vector, ValueType::Vector}, ValueType::Vector, value_minus<vec3d>);
+}
 
 } // namespace expression
 } // namespace actions
