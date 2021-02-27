@@ -2340,7 +2340,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index)
  * If issued an order to a ship that's awaiting repair, abort that process.
  * However, do not abort process for an object that is currently being repaired -- let it finish.
  */
-void ai_set_goal_maybe_abort_dock(object *objp, ai_info *aip)
+void ai_set_goal_abort_support_call(object *objp, ai_info *aip)
 {
 	if (aip->ai_flags[AI::AI_Flags::Awaiting_repair]) {
 		object	*repair_obj;
@@ -2409,7 +2409,10 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 		set_target_objnum(aip, OBJ_INDEX(attacked));
 	}
 
-	ai_set_goal_maybe_abort_dock(attacker, aip);
+	// don't abort a support call if you're disabled!
+	if (ship_get_subsystem_strength(&Ships[attacker->instance], SUBSYSTEM_ENGINE) > 0.0f) 
+		ai_set_goal_abort_support_call(attacker, aip);
+
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
@@ -2465,7 +2468,7 @@ void ai_attack_wing(object *attacker, int wingnum)
 
 		set_target_objnum(aip, Ships[Wings[wingnum].ship_index[index]].objnum);
 
-		ai_set_goal_maybe_abort_dock(attacker, aip);
+		ai_set_goal_abort_support_call(attacker, aip);
 		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 	}
 }
@@ -3435,7 +3438,7 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 
 	ai_formation_object_recalculate_slotnums(aip->goal_objnum);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME*4);		//	Super extra long time until can target another ship.
 
 }
@@ -7693,7 +7696,7 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 
 	// -- Done at caller in ai_process_mission_orders -- attacked_objp->flags .add(Object::Object_Flags::Protected);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 
 	return 1;
@@ -7761,7 +7764,7 @@ void ai_set_guard_wing(object *objp, int wingnum)
 	aip = &Ai_info[shipp->ai_index];
 	force_avoid_player_check(objp, aip);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 
 	//	This function is called whenever a guarded ship is destroyed, so this code
@@ -7831,7 +7834,7 @@ void ai_set_guard_object(object *objp, object *other_objp)
 
 		ai_set_guard_vec(objp, &Objects[other_objnum]);
 
-		ai_set_goal_maybe_abort_dock(objp, aip);
+		ai_set_goal_abort_support_call(objp, aip);
 		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 	}
 }
