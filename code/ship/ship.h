@@ -604,7 +604,6 @@ public:
 
 	int	num_swarm_missiles_to_fire;	// number of swarm missiles that need to be launched
 	int	next_swarm_fire;					// timestamp of next swarm missile to fire
-	int	next_swarm_path;					// next path number for swarm missile to take
 	int	num_turret_swarm_info;			// number of turrets in process of launching swarm
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 

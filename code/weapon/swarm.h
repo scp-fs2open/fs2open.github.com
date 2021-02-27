@@ -32,33 +32,22 @@ typedef struct turret_swarm_info {
 	int				weapon_num;
 } turret_swarm_info;
 
-typedef struct swarm_info {
-	int		flags;
+struct swarm_info {
 	int		change_timestamp;
-	vec3d	original_target;
-	vec3d	new_target;
-	vec3d	circle_rvec, circle_uvec;
-	vec3d	last_offset;
-	uint		change_count;		
-	int		path_num;			// which path swarm missile is currently following
+	vec3d	current_target;
+	vec3d	offset;
 	int		homing_objnum;		// object number that swarm missile is homing on, -1 if not homing
-	int		change_time;		// when swarm missile should next update direction, based on missile speed
-	float		angle_offset;
-	float		last_dist;			// last distance to target
-} swarm_info;
+	float	zig_direction;
+};
 
 #define SWARM_DEFAULT_NUM_MISSILES_FIRED					4		// number of swarm missiles that launch when fired
-
-#define MAX_SWARM_MISSILES	100
-extern swarm_info	Swarm_missiles[MAX_SWARM_MISSILES];
 
 #define MAX_TURRET_SWARM_INFO	100
 extern turret_swarm_info Turret_swarm_info[MAX_TURRET_SWARM_INFO];
 
 void	swarm_level_init();
-void	swarm_delete(int index);
-int	swarm_create();
-void	swarm_update_direction(object *objp);
+void	swarm_create(object* objp, swarm_info* swarmp);
+void	swarm_update_direction(object *objp, swarm_info* swarmp);
 void	swarm_maybe_fire_missile(int shipnum);
 
 int	turret_swarm_create();
