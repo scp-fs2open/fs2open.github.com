@@ -4029,10 +4029,8 @@ void weapon_delete(object *obj)
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;
-	if (wp->swarm_index >= 0) {
-		swarm_delete(wp->swarm_index);
-		wp->swarm_index = -1;
-	}
+	if (wp->swarm_info_ptr != nullptr)
+		wp->swarm_info_ptr.reset();
 
 	if(wp->cscrew_index >= 0) {
 		cscrew_delete(wp->cscrew_index);
@@ -4824,7 +4822,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
-		if ( wp->swarm_index < 0 ) {
+		if ( wp->swarm_info_ptr == nullptr ) {
 			ai_turn_towards_vector(&target_pos, obj, nullptr, nullptr, 0.0f, 0, nullptr);
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
@@ -4848,8 +4846,8 @@ void weapon_update_missiles(object* obj, float  frame_time) {
 		weapon_home(obj, obj->instance, frame_time);
 
 		// If this is a swarm type missile,  
-		if (wp->swarm_index >= 0) {
-			swarm_update_direction(obj);
+		if (wp->swarm_info_ptr != nullptr) {
+			swarm_update_direction(obj, wp->swarm_info_ptr.get());
 		}
 	}
 	else if (wip->acceleration_time > 0.0f) {
@@ -5765,10 +5763,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->weapon_state = WeaponState::INVALID;
 
 	if ( wip->wi_flags[Weapon::Info_Flags::Swarm] ) {
-		wp->swarm_index = (short)swarm_create();
-	} else {
-		wp->swarm_index = -1;
-	}		
+		wp->swarm_info_ptr.reset(new swarm_info);
+		swarm_create(objp, wp->swarm_info_ptr.get());
+	} 	
 
 	// if this is a particle spewing weapon, setup some stuff
 	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
@@ -6179,18 +6176,15 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				// fire the beam
 				beam_fire(&fire_info);
 			} else {
-				vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
+				vm_vector_2_matrix(&orient, &tvec, nullptr, nullptr);
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
 				if ((child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target]) && (wp->homing_object != &obj_used_list))
 				{
 					//Deal with swarm weapons
-					if (wp->swarm_index >= 0) {
-						swarm_info	*swarmp;
-						swarmp = &Swarm_missiles[wp->swarm_index];
-
-						weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+					if (wp->swarm_info_ptr != nullptr) {
+						weapon_set_tracking_info(weapon_objnum, parent_num, wp->swarm_info_ptr->homing_objnum, 1, wp->homing_subsys);
 					} else {
 						weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
 					}
@@ -8296,6 +8290,7 @@ void weapon_info::reset()
 	this->tr_info.stamp = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
+	this->tr_info.texture_stretch = 1.0f;
 
 	memset(this->icon_filename, 0, sizeof(this->icon_filename));
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));

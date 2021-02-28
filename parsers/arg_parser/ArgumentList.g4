@@ -2,6 +2,9 @@ grammar ArgumentList;
 
 arg_list: argument? EOF;
 
+// This is used for parsing standalone types. Tuples are not valid in argument lists
+standalone_type: type (COMMA type)*;
+
 simple_type
  : ID
  | NIL
@@ -18,9 +21,16 @@ func_arglist
 
 function_type: FUNCTION L_PAREN func_arglist R_PAREN ARROW type;
 
+map_type: L_CURLY type ARROW type VARARGS_SPECIFIER R_CURLY;
+
+iterator_type: ITERATOR L_ANGLE_BRACKET type R_ANGLE_BRACKET;
+
 type
  : varargs_or_simple_type
  | function_type
+ | map_type
+ | iterator_type
+ | type L_BRACKET R_BRACKET // array types
  | type (TYPE_ALT type)+ // Alternative types
  ;
 
@@ -51,10 +61,6 @@ STRING
  | '\'' (~['\r\n])* '\''
  ;
 
-PLACEHOLDER
- : '<' (~[>])* '>'
- ;
-
 NIL: 'nil';
 
 TRUE: 'true';
@@ -83,7 +89,12 @@ R_BRACKET: ']';
 L_PAREN: '(';
 R_PAREN: ')';
 
+L_CURLY: '{';
+R_CURLY: '}';
+
 ARROW: '=>';
+
+ITERATOR: 'iterator';
 
 L_ANGLE_BRACKET: '<';
 R_ANGLE_BRACKET: '>';
