@@ -21,7 +21,7 @@
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-#include "object\objcollide.h"
+#include "object/objcollide.h"
 
 
 #ifdef _MSC_VER
