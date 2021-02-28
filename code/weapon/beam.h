@@ -187,6 +187,8 @@ typedef struct beam {
 
 	float		beam_collide_width;
 	float		beam_light_width;
+
+	float u_offset_local;
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
