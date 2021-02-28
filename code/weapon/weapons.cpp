@@ -2328,6 +2328,36 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Lock Range:")) {
 			stuff_float(&wip->lssm_lock_range);
 		}
+
+		if (optional_string("+Warp Effect:")) {
+			int temp;
+			if (stuff_int_optional(&temp) != 2) {
+				// We have a string to parse instead.
+				char unique_id[NAME_LENGTH];
+				memset(unique_id, 0, NAME_LENGTH);
+				stuff_string(unique_id, F_NAME, NAME_LENGTH);
+				int fireball_type = fireball_info_lookup(unique_id);
+				if (fireball_type < 0) {
+					error_display(0, "Unknown fireball [%s] to use as warp effect for LSSM weapon", unique_id);
+					wip->lssm_warpeffect = FIREBALL_WARP;
+				}
+				else {
+					wip->lssm_warpeffect = fireball_type;
+				}
+			}
+			else {
+				if ((temp < 0) || (temp >= Num_fireball_types)) {
+					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon", temp, Num_fireball_types - 1);
+					wip->lssm_warpeffect = FIREBALL_WARP;
+				}
+				else {
+					wip->lssm_warpeffect = temp;
+				}
+			}
+		}
+		else {
+			wip->lssm_warpeffect = FIREBALL_WARP;
+		}
 	}
 
 	if (optional_string("$Countermeasure:"))
@@ -5258,7 +5288,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
-			wp->lssm_warp_idx = fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
+			wp->lssm_warp_idx = fireball_create(&warpout, wip->lssm_warpeffect, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
 
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -8347,6 +8377,7 @@ void weapon_info::reset()
 	this->lssm_stage5_vel = 0;		//velocity during final stage
 	this->lssm_warpin_radius = 0;
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
+	this->lssm_warpeffect = FIREBALL_WARP;		//Which fireballtype is used for the warp effect
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;
