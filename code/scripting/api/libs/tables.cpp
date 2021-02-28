@@ -228,7 +228,7 @@ ADE_INDEXER(l_Tables_SimulatedSpeechOverrides, "number Index", nullptr, "string"
 	if (!ade_get_args(L, "*i", &idx)) {
 		return ade_set_error(L, "s", "");
 	}
-	if (idx > 0 && idx <= Generic_message_filenames.size()) {
+	if (idx > 0 && (unsigned int) idx <= Generic_message_filenames.size()) {
 		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
 		return ade_set_args(L, "s", Generic_message_filenames[idx]);
 	}
