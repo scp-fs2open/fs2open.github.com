@@ -425,6 +425,8 @@ class waypoint_list;
 #define OP_FOR_SHIP_SPECIES					(0x0016 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FOR_PLAYERS						(0x0017 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
+#define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects

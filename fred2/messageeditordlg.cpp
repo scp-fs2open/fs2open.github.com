@@ -302,7 +302,8 @@ int CMessageEditorDlg::find_event()
 		int op_const = get_operator_const(node);
 		if (op_const == OP_WHEN || op_const == OP_EVERY_TIME
 			|| op_const == OP_WHEN_ARGUMENT || op_const == OP_EVERY_TIME_ARGUMENT
-			|| op_const == OP_IF_THEN_ELSE || op_const == OP_PERFORM_ACTIONS )
+			|| op_const == OP_IF_THEN_ELSE || op_const == OP_SWITCH
+			|| op_const == OP_PERFORM_ACTIONS )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
 			if (is_blank_argument_op(op_const))
