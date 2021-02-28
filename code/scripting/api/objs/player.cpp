@@ -3,7 +3,9 @@
 
 #include "player.h"
 
+#include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/readyroom.h"
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
@@ -290,6 +292,24 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loa
 	if (!loader.load_savefile(plh->get(), savefile)) {
 		return ADE_RETURN_FALSE;
 	}
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaign file and return to it's mainhall.", "boolean", "true on success, false otherwise")
+{
+	player_h* plh;
+	const char* filename = nullptr;
+	if (!ade_get_args(L, "os", l_Player.GetPtr(&plh), &filename)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!plh->isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	campaign_select_campaign(SCP_string(filename));
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
 
 	return ADE_RETURN_TRUE;
 }
