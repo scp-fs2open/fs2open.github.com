@@ -13,7 +13,7 @@ cfile_h::cfile_h(CFILE* cfp) : _cfp(cfp) {}
 cfile_h::~cfile_h()
 {
 	if (_cfp && cf_is_valid(_cfp.get())) {
-		Error(LOCATION, "Lua file handle has been left open!\n\nSorry, I can't say anything more than that...");
+		Warning(LOCATION, "Lua cfile handle of file %s has been left open!\nYou should close the file with the object's close() method explicitly.\n", cf_get_filename(_cfp.get()));
 	}
 }
 bool cfile_h::isValid() const { return _cfp != nullptr; }
