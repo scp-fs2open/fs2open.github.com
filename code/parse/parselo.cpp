@@ -2468,10 +2468,15 @@ SCP_string utf8_to_current(const char* str)
 }
 
 // Goober5000
-void process_raw_file_text(char *processed_text, char *raw_text)
+void process_raw_file_text(char* processed_text, char* raw_text)
 {
-	char	*mp;
-	char	*mp_raw;
+	const SCP_string parse_exception_1402 = iso8859_1_to_current("1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n");
+	const SCP_string parse_exception_1117 = iso8859_1_to_current("1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n");
+	const SCP_string parse_exception_1337 = iso8859_1_to_current("1337, \"(fr)Loading\"\n");
+	const SCP_string parse_exception_3966 = iso8859_1_to_current("3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n");
+
+	char* mp;
+	char* mp_raw;
 	char outbuf[PARSE_BUF_SIZE];
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
@@ -2484,32 +2489,38 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	if (raw_text == NULL)
 		raw_text = Parse_text_raw;
 
-	Assert( processed_text != NULL );
-	Assert( raw_text != NULL );
+	Assert(processed_text != NULL);
+	Assert(raw_text != NULL);
 
 	mp = processed_text;
 	mp_raw = raw_text;
 
 	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
+	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0) {
 		mp_raw += num_chars_read;
 
 		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
-		if (!strcmp(outbuf, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n")) {
-			outbuf[121] = ' ';
-			outbuf[122] = ' ';
-		} else if (!strcmp(outbuf, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n")) {
-			char *ch = &outbuf[11];
+		if (!strcmp(outbuf, parse_exception_1402.c_str())) {
+
+			int offset = Unicode_text_mode ? 1 : 0;
+			outbuf[121 + offset] = ' ';
+			outbuf[122 + offset] = ' ';
+		}
+		else if (!strcmp(outbuf, parse_exception_1117.c_str())) {
+			char* ch = &outbuf[11];
 			do {
-				*ch = *(ch+1);
+				*ch = *(ch + 1);
 				++ch;
 			} while (*ch);
-		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
+		}
+		else if (!strcmp(outbuf, parse_exception_1337.c_str())) {
 			outbuf[3] = '6';
-		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
-			outbuf[171] = '\'';
-			outbuf[181] = '\'';
+		}
+		else if (!strcmp(outbuf, parse_exception_3966.c_str())) {
+			int offset = Unicode_text_mode ? 1 : 0;
+			outbuf[171 + offset] = '\'';
+			outbuf[181 + offset * 2] = '\'';
 		}
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
