@@ -242,7 +242,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Ship Status Sub-Category
 	{ "is-in-mission",					OP_IS_IN_MISSION,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "is-docked",						OP_IS_DOCKED,							1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
-	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-friendly-stealth-visible",	OP_IS_FRIENDLY_STEALTH_VISIBLE,			1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-iff",							OP_IS_IFF,								2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -4361,6 +4361,8 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
  */
 const ship_registry_entry *eval_ship(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4400,6 +4402,8 @@ const ship_registry_entry *eval_ship(int node)
  */
 wing *eval_wing(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4443,6 +4447,7 @@ wing *eval_wing(int node)
 int sexp_atoi(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -4479,6 +4484,7 @@ int sexp_atoi(int node)
 bool sexp_can_construe_as_integer(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
 		return true;
@@ -4503,6 +4509,8 @@ bool sexp_can_construe_as_integer(int node)
  */
 int sexp_get_variable_index(int node)
 {
+	Assert(node >= 0);
+
 	if (Sexp_nodes[node].cached_variable_index >= 0)
 		return Sexp_nodes[node].cached_variable_index;
 
@@ -6789,32 +6797,45 @@ int sexp_hits_left(int node, bool sim_hull)
  */
 int sexp_is_ship_visible(int node)
 {
-	int ship_is_visible = 0;
-
-	// if multiplayer, bail
-	if (Game_mode & GM_MULTIPLAYER) {
-		return SEXP_NAN_FOREVER;
-	}
+	ship *viewer_shipp = nullptr;
+	int n = node, ship_is_visible = 0;
 
 	// get the ship
-	auto ship_entry = eval_ship(node);
+	auto ship_entry = eval_ship(n);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
+	n = CDR(n);
+
+	// the second argument is the viewer
+	if (n >= 0)
+	{
+		auto viewer_entry = eval_ship(n);
+		if (viewer_entry)
+			viewer_shipp = viewer_entry->shipp;
+	}
+	else
+	{
+		// if the second argument is not supplied, default to the player, per retail
+		if (Game_mode & GM_MULTIPLAYER)
+			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		else
+			viewer_shipp = Player_ship;
+	}
 
 	// get ship's *radar* visiblity
-	if (Player_ship)
+	if (viewer_shipp)
 	{
-		if (ship_is_visible_by_team(ship_entry->objp, Player_ship))
+		if (ship_is_visible_by_team(ship_entry->objp, viewer_shipp))
 		{
 			ship_is_visible = 2;
 		}
 	}
 
 	// only check awacs level if ship is not visible by team
-	if (Player_ship && !ship_is_visible) {
-		float awacs_level = awacs_get_level(ship_entry->objp, Player_ship);
+	if (viewer_shipp && !ship_is_visible) {
+		float awacs_level = awacs_get_level(ship_entry->objp, viewer_shipp);
 		if (awacs_level >= 1.0f) {
 			ship_is_visible = 2;
 		} else if (awacs_level > 0) {
@@ -16076,10 +16097,6 @@ void sexp_weapon_create(int n)
 // make ship vanish without a trace (and what it's docked to)
 void sexp_ship_vanish(int n)
 {
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER)
-		return;
-
 	for ( ; n != -1; n = CDR(n) )
 	{
 		auto ship_entry = eval_ship(n);
@@ -33830,9 +33847,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
-		"\tCheck whether ship is visible on Player's radar\r\n"
-		"\tSingle Player Only!  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\t1: Name of ship to check\r\n"},
+		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tTakes 1 or 2 arguments...\r\n"
+		"\t1: Name of ship to check\r\n"
+		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
 
 	// Goober5000
 	{ OP_IS_SHIP_STEALTHY, "is-ship-stealthy\r\n"

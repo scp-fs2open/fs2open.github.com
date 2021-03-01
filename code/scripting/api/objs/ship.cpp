@@ -1864,10 +1864,6 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 	if (!objh->IsValid())
 		return ade_set_error(L, "b", false);
 
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER)
-		return ade_set_error(L, "b", false);
-
 	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
 
 	return ade_set_args(L, "b", true);
