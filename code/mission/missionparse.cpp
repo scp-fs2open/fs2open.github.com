@@ -5789,13 +5789,12 @@ void parse_list_collections()
 {
 	if (! optional_string("#Sexp_collections") ) {
 		return;
-	} 
-	else {
+	} else {
 		if (optional_string("$Lists")) {
 			stuff_sexp_list_container();
 			required_string("$End Lists");
 		}
-		
+
 		if (optional_string("$Maps")) {
 			stuff_sexp_map_container();
 			required_string("$End Maps");
