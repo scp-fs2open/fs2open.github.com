@@ -61,7 +61,7 @@ int Neb2_render_mode = NEB2_RENDER_NONE;
 // array of neb2 poofs
 char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];
 int Neb2_poofs[MAX_NEB2_POOFS];
-int Neb2_poof_flags = 0;
+int32_t Neb2_poof_flags = 0;
 int Neb2_poof_count = 0;
 
 // array of neb2 bitmaps
