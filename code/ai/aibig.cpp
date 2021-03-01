@@ -595,11 +595,11 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		}
 
 		// ok, let's start moving it away and see if that's better
-		for (int i = 1; i < 4; i++) {
+		for (float i = 1.0f; i < 4.0f; i += 1.0f) {
 			if (good_pos)
 				break;
 
-			vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * pow(1.3f,i));
+			vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
 			world_goal_pos += target_objp->pos;
 			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
 				good_pos = &world_goal_pos;
@@ -1438,7 +1438,9 @@ void ai_big_strafe_attack()
 	ai_info	*aip;
 	vec3d	target_pos;
 	vec3d	rand_vec;
-	float		target_dist, target_dot, accel, t;
+	float	accel, t;
+	float target_dist = 0.0f;
+	float target_dot = 0.0f;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
