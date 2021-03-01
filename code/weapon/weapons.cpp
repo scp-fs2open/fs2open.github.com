@@ -2338,7 +2338,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_string(unique_id, F_NAME, NAME_LENGTH);
 				int fireball_type = fireball_info_lookup(unique_id);
 				if (fireball_type < 0) {
-					error_display(0, "Unknown fireball [%s] to use as warp effect for LSSM weapon", unique_id);
+					error_display(0, "Unknown fireball [%s] to use as warp effect for LSSM weapon [%s].", unique_id, wip->name);
 					wip->lssm_warpeffect = FIREBALL_WARP;
 				}
 				else {
@@ -2347,16 +2347,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 			else {
 				if ((temp < 0) || (temp >= Num_fireball_types)) {
-					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon", temp, Num_fireball_types - 1);
+					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, Num_fireball_types - 1, wip->name);
 					wip->lssm_warpeffect = FIREBALL_WARP;
 				}
 				else {
 					wip->lssm_warpeffect = temp;
 				}
 			}
-		}
-		else {
-			wip->lssm_warpeffect = FIREBALL_WARP;
 		}
 	}
 
@@ -5357,7 +5354,7 @@ void weapon_process_post(object * obj, float frame_time)
 				warp_size = model_get_radius(wip->model_num);
 
 			//create a warpin effect
-			wp->lssm_warp_idx = fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
+			wp->lssm_warp_idx = fireball_create(&warpin, wip->lssm_warpeffect, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
 			
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
