@@ -256,6 +256,8 @@ extern void read_file_text_from_default(const default_file& file, char *processe
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void coerce_to_utf8(SCP_string &buffer, const char *src);
+extern SCP_string iso8859_1_to_current(const char* src);
+extern SCP_string utf8_to_current(const char* src);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
 extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null = true);

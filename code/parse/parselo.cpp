@@ -2327,6 +2327,146 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
 }
 
+//Converts a string in ISO 8859-1 to the currently used encoding
+//Only legal for strings with correct ISO 8859-1 encoding
+SCP_string iso8859_1_to_current(const char* str)
+{
+	SCP_string buffer;
+	//We are not in unicode mode, so just return as is, the string is correct
+	if (!Unicode_text_mode) {
+		buffer.assign(str);
+		return buffer;
+	}
+
+	//If not, convert to utf-8
+	auto len = strlen(str);
+
+	// Validate the UTF-8 encoding
+	bool valid = true;
+
+	for (size_t i = 0; i < len; i++) {
+		if (str[i] > 0x79 || str[i] < 0) {
+			valid = false;
+			break;
+		}
+	}
+
+	if (valid)
+	{
+		// turns out this is valid UTF-8
+		buffer.assign(str);
+		return buffer;
+	}
+
+	//Skip checks. This function is only allowed for known iso8859-1 encoded strings
+
+	size_t newlen = len;
+	std::unique_ptr<char[]> newstr(new char[newlen]);
+
+	do {
+		auto in_str = str;
+		auto in_size = len;
+		auto out_str = newstr.get();
+		auto out_size = newlen;
+
+		auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
+		auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
+		SDL_iconv_close(iconv);
+
+		// SDL returns the number of processed character on success;
+		// error codes are (size_t)-1 through -4
+		if (err < (size_t)-100)
+		{
+			// successful re-encoding
+			buffer.assign(newstr.get(), newlen - out_size);
+			return buffer;
+		}
+		else if (err == SDL_ICONV_E2BIG)
+		{
+			// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
+			// increment since the additional size required is probably pretty small
+			newlen += 10;
+			newstr.reset(new char[newlen]);
+		}
+		else
+		{
+			break;
+		}
+	} while (true);
+
+	return "";
+}
+
+//Converts a string in UTF-8 to the currently used encoding
+//Only legal for strings with correct UTF-8 encoding
+SCP_string utf8_to_current(const char* str)
+{
+	SCP_string buffer;
+	//We are in unicode mode, so just return as is, the string is correct
+	if (Unicode_text_mode) {
+		buffer.assign(str);
+		return buffer;
+	}
+
+	//If not, convert to iso8859-1
+	auto len = strlen(str);
+
+	// Validate the UTF-8 encoding
+	bool valid = true;
+
+	for (size_t i = 0; i < len; i++) {
+		if (str[i] > 0x79 || str[i] < 0) {
+			valid = false;
+			break;
+		}
+	}
+
+	if (valid)
+	{
+		// turns out this is valid ISO8859-1
+		buffer.assign(str);
+		return buffer;
+	}
+
+	//Skip checks. This function is only allowed for known utf-8 encoded strings
+
+	size_t newlen = len;
+	std::unique_ptr<char[]> newstr(new char[newlen]);
+
+	do {
+		auto in_str = str;
+		auto in_size = len;
+		auto out_str = newstr.get();
+		auto out_size = newlen;
+
+		auto iconv = SDL_iconv_open("ISO-8859-1", "UTF-8");
+		auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
+		SDL_iconv_close(iconv);
+
+		// SDL returns the number of processed character on success;
+		// error codes are (size_t)-1 through -4
+		if (err < (size_t)-100)
+		{
+			// successful re-encoding
+			buffer.assign(newstr.get(), newlen - out_size);
+			return buffer;
+		}
+		else if (err == SDL_ICONV_E2BIG)
+		{
+			// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
+			// increment since the additional size required is probably pretty small
+			newlen += 10;
+			newstr.reset(new char[newlen]);
+		}
+		else
+		{
+			break;
+		}
+	} while (true);
+
+	return "";
+}
+
 // Goober5000
 void process_raw_file_text(char *processed_text, char *raw_text)
 {
