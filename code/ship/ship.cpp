@@ -6885,8 +6885,6 @@ void ship_subsys::clear()
 
 	rotation_timestamp = timestamp(0);
 
-	world_to_turret_matrix = vmd_identity_matrix;
-
 	for (i = 0; i < 32; i++)
 		target_priority[i] = -1;
 	num_target_priorities = 0;
@@ -7176,9 +7174,6 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		float turn_accel = 0.5f;
 		if (ship_system->submodel_instance_1 != nullptr)
 			model_set_submodel_turn_info(ship_system->submodel_instance_1, model_system->turn_rate, turn_accel);
-
-		// Clear this flag here so we correctly rebuild the turret matrix on mission load
-        model_system->flags.remove(Model::Subsystem_Flags::Turret_matrix);
 
 		// Allocate a triggered rotation instance if we need it
 		if (model_system->flags[Model::Subsystem_Flags::Triggered]) {

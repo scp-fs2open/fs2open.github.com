@@ -399,7 +399,6 @@ public:
 	flagset<Ship::Subsys_Sound_Flags> subsys_snd_flags;
 
 	int      rotation_timestamp;
-	matrix   world_to_turret_matrix;			// This is now only used for Turret_alt_math
 
 	// target priority setting for turrets
 	int      target_priority[32];

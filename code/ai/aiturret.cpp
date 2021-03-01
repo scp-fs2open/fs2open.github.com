@@ -2251,24 +2251,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 	objp = &Objects[shipp->objnum];
 	Assert(objp->type == OBJ_SHIP);
 
-	// Wanderer - make sure turrets already have all the data
-	if ( !(tp->flags[Model::Subsystem_Flags::Turret_matrix]) )
-	{
-		if (!(tp->turret_gun_sobj == tp->subobj_num))
-		{
-			auto pmi = model_get_instance(shipp->model_instance_num);
-			auto pm = model_get(pmi->model_num);
-			model_make_turret_matrix(pm, pmi, tp);
-		}
-	}
-
 	// Use the turret info for all guns, not one gun in particular.
 	vec3d	 gvec, gpos;
 	ship_get_global_turret_info(objp, tp, &gpos, &gvec);
-
-	if (tp->flags[Model::Subsystem_Flags::Turret_alt_math]) {
-		vm_matrix_x_matrix( &ss->world_to_turret_matrix, &objp->orient, &tp->turret_matrix );
-	}
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(objp, shipp, ss, lep, &predicted_enemy_pos, &gvec);
