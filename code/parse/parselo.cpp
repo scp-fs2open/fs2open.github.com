@@ -2285,41 +2285,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	// we can convert it
 	if (isLatin1)
 	{
-		size_t newlen = len;
-		std::unique_ptr<char[]> newstr(new char[newlen]);
-
-		do {
-			auto in_str = str;
-			auto in_size = len;
-			auto out_str = newstr.get();
-			auto out_size = newlen;
-
-			auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-			auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-			SDL_iconv_close(iconv);
-
-			// SDL returns the number of processed character on success;
-			// error codes are (size_t)-1 through -4
-			if (err < (size_t)-100)
-			{
-				// successful re-encoding
-				buffer.assign(newstr.get(), newlen - out_size);
-				mprintf(("Re-encoding non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str()));
-				return;
-			}
-			else if (err == SDL_ICONV_E2BIG)
-			{
-				// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-				// increment since the additional size required is probably pretty small
-				newlen += 10;
-				newstr.reset(new char[newlen]);
-			}
-			else
-			{
-				// re-encoding failed, so use truncation
-				break;
-			}
-		} while (true);
+		unicode::convert_encoding(buffer, str, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
 	}
 
 	// unknown encoding, so just truncate
