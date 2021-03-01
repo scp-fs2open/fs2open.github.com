@@ -6834,14 +6834,9 @@ int sexp_is_ship_visible(int node)
 		if (viewer_entry)
 			viewer_shipp = viewer_entry->shipp;
 	}
-	else
-	{
-		// if the second argument is not supplied, default to the player, per retail
-		if (Game_mode & GM_MULTIPLAYER)
-			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
-		else
-			viewer_shipp = Player_ship;
-	}
+	// if the second argument is not supplied, and we're single-player, default to the player
+	else if (!(Game_mode & GM_MULTIPLAYER))
+		viewer_shipp = Player_ship;
 
 	// get ship's *radar* visiblity
 	if (viewer_shipp)
