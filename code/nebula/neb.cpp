@@ -170,7 +170,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.13f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		0.013f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		150.0f, 150.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
 		510.0f,							// total dimension of player poof cube
 		50.0f,							// inner radius of the player poof cube
@@ -181,7 +181,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		0.0125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
 		550.0f,							// total dimension of player poof cube
 		100.0f,							// inner radius of the player poof cube
@@ -192,7 +192,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd highest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.1f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		0.01f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
 		550.0f,							// total dimension of player poof cube
 		150.0f,							// inner radius of the player poof cube
@@ -203,7 +203,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // higest detail level
 		0.475f,							// max alpha for this detail level in Glide
 		0.575f,							// max alpha for this detail level in D3d
-		0.05f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		0.005f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		200.0f, 200.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
 		750.0f,							// total dimension of player poof cube
 		200.0f,							// inner radius of the player poof cube
@@ -420,6 +420,18 @@ void neb2_post_level_init()
 		if (Neb2_poofs[idx] < 0) {
 			Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
 		}
+	}
+
+	float height = Neb2_detail[MAX_DETAIL_LEVEL-1].break_y;
+	for (auto poof : Neb2_poofs) {
+		int bm_height;
+		bm_get_info(poof, nullptr, &bm_height);
+		height = MAX(height, static_cast<float>(bm_height));
+	}
+
+	for (auto& detail : Neb2_detail) {
+		detail.break_y = height;
+		detail.break_x = height * gr_screen.aspect;
 	}
 
 	pneb_tried = 0;
