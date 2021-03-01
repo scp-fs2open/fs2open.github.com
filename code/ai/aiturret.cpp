@@ -159,8 +159,15 @@ bool is_object_radius_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, 
 		}
 
 		if (tp->flags[Model::Subsystem_Flags::Turret_alt_math]) {
+			// Since we no longer maintain world_to_turret_matrix, regenerate it here.
+			vec3d turret_norm;
+			matrix turret_matrix, world_to_turret_matrix;
+			model_instance_find_world_dir(&turret_norm, &tp->turret_norm, object_get_model_instance(objp), tp->subobj_num, &vmd_identity_matrix);
+			vm_vector_2_matrix(&turret_matrix, &turret_norm, nullptr, nullptr);
+			vm_matrix_x_matrix(&world_to_turret_matrix, &objp->orient, &turret_matrix);
+
 			vec3d temp_vec2;
-			vm_vec_rotate(&temp_vec2, &temp_vec, &ss->world_to_turret_matrix);
+			vm_vec_rotate(&temp_vec2, &temp_vec, &world_to_turret_matrix);
 
 			// now in turrets frame of reference
 			// check if math is actually possible
@@ -185,7 +192,7 @@ bool is_object_radius_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, 
 						vm_vec_scale(&temp_vec2,scaler);
 						temp_vec2.xyz.z = temp_z;
 						// back to world frame
-						vm_vec_unrotate(&temp_vec, &temp_vec2, &ss->world_to_turret_matrix);
+						vm_vec_unrotate(&temp_vec, &temp_vec2, &world_to_turret_matrix);
 					}
 				}
 			}
@@ -2798,8 +2805,17 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
 	if (((dot + size_mod) >= tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
+
+		// Since we no longer maintain world_to_turret_matrix, regenerate it here.
+		object *objp = &Objects[ss->parent_objnum];
+		vec3d turret_norm;
+		matrix turret_matrix, world_to_turret_matrix;
+		model_instance_find_world_dir(&turret_norm, &tp->turret_norm, object_get_model_instance(objp), tp->subobj_num, &vmd_identity_matrix);
+		vm_vector_2_matrix(&turret_matrix, &turret_norm, nullptr, nullptr);
+		vm_matrix_x_matrix(&world_to_turret_matrix, &objp->orient, &turret_matrix);
+
 		vec3d of_dst;
-		vm_vec_rotate( &of_dst, v2e, &ss->world_to_turret_matrix );
+		vm_vec_rotate( &of_dst, v2e, &world_to_turret_matrix );
 		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
 			return true;
 		} else {
