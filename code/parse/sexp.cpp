@@ -17724,19 +17724,6 @@ void sexp_replace_texture(int n)
 	{
 		p_object* pobjp = ship_entry->p_objp;
 
-		polymodel* pm = model_get(Ship_info[pobjp->ship_class].model_num);
-		int final_index = -1;
-
-		for (int i = 0; i < pm->n_textures; i++)
-		{
-			int tm_num = pm->maps[i].FindTexture(old_name);
-			if (tm_num > -1)
-			{
-				final_index = i * TM_NUM_TYPES + tm_num;
-				break;
-			}
-		}
-
 		texture_replace replace;
 
 		strcpy(replace.ship_name, ship_entry->name);
