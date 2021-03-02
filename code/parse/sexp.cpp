@@ -547,6 +547,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
+	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  3,			SEXP_ACTION_OPERATOR,   },  // Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -3450,6 +3451,16 @@ void preload_turret_change_weapon(const char *text)
 	weapon_mark_as_used(idx);
 }
 
+void preload_texture(const char* text)
+{
+	int texture = bm_load(text);
+
+	if (texture < 0)
+		Error(LOCATION, "Could not preload texture %s", text);
+
+	bm_page_in_texture(texture);
+}
+
 // Goober5000
 // we don't use the do_preload function because the preloader needs to access two nodes at a time
 // also we're not using CTEXT or eval_num here because XSTR should really be constant, and
@@ -3755,6 +3766,12 @@ int get_sexp()
 			case OP_MODIFY_VARIABLE_XSTR:
 				n = CDDR(start); // First parameter is the variable name so we need to get the second parameter
 				localize_sexp(n, CDR(n));
+				break;
+
+			case OP_REPLACE_TEXTURE:
+				//Texture name is argument 3
+				n = CDDDR(start);
+				do_preload_for_arguments(preload_texture, n, arg_handler);
 				break;
 		}
 	}
@@ -17688,6 +17705,78 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	}
 }
 
+void sexp_replace_texture(int n)
+{
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
+		return;
+
+	n = CDR(n);
+
+	auto old_name = CTEXT(n);
+	n = CDR(n);
+
+	auto new_name = CTEXT(n);
+	n = CDR(n);
+
+	// If the ship hasn't arrived we still want the ability to replace a texture.
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	{
+		p_object* pobjp = ship_entry->p_objp;
+
+		polymodel* pm = model_get(Ship_info[pobjp->ship_class].model_num);
+		int final_index = -1;
+
+		for (int i = 0; i < pm->n_textures; i++)
+		{
+			int tm_num = pm->maps[i].FindTexture(old_name);
+			if (tm_num > -1)
+			{
+				final_index = i * TM_NUM_TYPES + tm_num;
+				break;
+			}
+		}
+
+		texture_replace replace;
+
+		strcpy(replace.ship_name, ship_entry->name);
+		strcpy(replace.old_texture, old_name);
+		strcpy(replace.new_texture, new_name);
+		replace.new_texture_id = bm_load(new_name);
+
+		pobjp->replacement_textures.push_back(replace);
+	}
+	// If the ship is already in the mission
+	else
+	{
+		ship* shipp = ship_entry->shipp;
+		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+		int final_index = -1;
+
+		for (int i = 0; i < pm->n_textures; i++)
+		{
+			int tm_num = pm->maps[i].FindTexture(old_name);
+			if (tm_num > -1)
+			{
+				final_index = i * TM_NUM_TYPES + tm_num;
+				break;
+			}
+		}
+
+		//Should be fast since we preloaded the texture earlier
+		int texture = bm_load(new_name);
+
+		if (shipp->ship_replacement_textures == NULL) {
+			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+
+			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+				shipp->ship_replacement_textures[i] = -1;
+		}
+
+		shipp->ship_replacement_textures[final_index] = texture;
+	}
+}
+
 extern int insert_subsys_status(p_object *pobjp);
 
 // Goober5000
@@ -25482,6 +25571,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
 
+			case OP_REPLACE_TEXTURE:
+				sexp_val = SEXP_TRUE;
+				sexp_replace_texture(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -26576,6 +26670,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
+		case OP_REPLACE_TEXTURE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28959,6 +29054,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_BOOL;
 
+		case OP_REPLACE_TEXTURE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			if (argnum == 1)
+				return OPF_STRING;
+			else
+				return OPF_STRING;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -30454,6 +30557,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_FROM_COLGROUP2:
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
+		case OP_REPLACE_TEXTURE:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -34770,6 +34874,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of Variable.\r\n"
 		"\t2:\tThe default text if no localized version is available.\r\n"
 		"\t3:\tThe XSTR index. If set to -1 then the default value will be used\r\n"
+	},
+
+	{ OP_REPLACE_TEXTURE, "replace-texture\r\n"
+		"\tChanges a texture of a ship to a different texture, similar to the FRED texture replace.\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: Name of the Ship.\r\n"
+		"\t2: Name of the texture to be replaced.\r\n"
+		"\t3: Name of the texture to be changed to.\r\n"
 	},
 };
 // clang-format on
