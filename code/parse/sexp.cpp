@@ -547,7 +547,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
-	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  3,			SEXP_ACTION_OPERATOR,   },  // Lafiel
+	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -3769,8 +3769,8 @@ int get_sexp()
 				break;
 
 			case OP_REPLACE_TEXTURE:
-				//Texture name is argument 3
-				n = CDDDR(start);
+				//Texture name is argument 2
+				n = CDDR(start);
 				do_preload_for_arguments(preload_texture, n, arg_handler);
 				break;
 		}
@@ -17707,60 +17707,85 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 
 void sexp_replace_texture(int n)
 {
-	auto ship_entry = eval_ship(n);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return;
-
-	n = CDR(n);
-
 	auto old_name = CTEXT(n);
 	n = CDR(n);
 
 	auto new_name = CTEXT(n);
 	n = CDR(n);
 
-	// If the ship hasn't arrived we still want the ability to replace a texture.
-	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	for (; n != -1; n = CDR(n))
 	{
-		p_object* pobjp = ship_entry->p_objp;
 
-		texture_replace replace;
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
 
-		strcpy(replace.ship_name, ship_entry->name);
-		strcpy(replace.old_texture, old_name);
-		strcpy(replace.new_texture, new_name);
-		replace.new_texture_id = bm_load(new_name);
-
-		pobjp->replacement_textures.push_back(replace);
-	}
-	// If the ship is already in the mission
-	else
-	{
-		ship* shipp = ship_entry->shipp;
-		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-		int final_index = -1;
-
-		for (int i = 0; i < pm->n_textures; i++)
+		// we only handle ships and wings that are present
+		switch (oswpt.type)
 		{
-			int tm_num = pm->maps[i].FindTexture(old_name);
-			if (tm_num > -1)
+		case OSWPT_TYPE_PARSE_OBJECT:
+		case OSWPT_TYPE_SHIP:
+		{
+			auto ship_entry = oswpt.ship_entry;
+
+			if (ship_entry->status == ShipStatus::EXITED)
+				continue;
+
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 			{
-				final_index = i * TM_NUM_TYPES + tm_num;
-				break;
+				p_object* pobjp = ship_entry->p_objp;
+
+				texture_replace replace;
+
+				strcpy(replace.ship_name, ship_entry->name);
+				strcpy(replace.old_texture, old_name);
+				strcpy(replace.new_texture, new_name);
+				replace.new_texture_id = bm_load(new_name);
+
+				pobjp->replacement_textures.push_back(replace);
 			}
+			// If the ship is already in the mission
+			else
+			{
+				ship_replace_active_texture(ship_entry->objp->instance, old_name, new_name);
+			}
+			break;
 		}
 
-		//Should be fast since we preloaded the texture earlier
-		int texture = bm_load(new_name);
-
-		if (shipp->ship_replacement_textures == NULL) {
-			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-				shipp->ship_replacement_textures[i] = -1;
+		case OSWPT_TYPE_WING:
+		{
+			auto wp = oswpt.wingp;
+			for (int i = 0; i < wp->current_count; ++i)
+			{
+				if (wp->ship_index[i] >= 0)
+				{
+					ship_replace_active_texture(wp->ship_index[i], old_name, new_name);
+				}
+			}
+			break;
 		}
 
-		shipp->ship_replacement_textures[final_index] = texture;
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			for (p_object* p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+				{
+					texture_replace replace;
+
+					strcpy(replace.ship_name, p_objp->name);
+					strcpy(replace.old_texture, old_name);
+					strcpy(replace.new_texture, new_name);
+					replace.new_texture_id = bm_load(new_name);
+
+					p_objp->replacement_textures.push_back(replace);
+				}
+			}
+			break;
+		}
+
+		default:
+			mprintf(("Invalid Shipname in SEXP ship-effect\n"));
+		}
 	}
 }
 
@@ -29043,11 +29068,11 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_REPLACE_TEXTURE:
 			if (argnum == 0)
-				return OPF_SHIP;
+				return OPF_STRING;
 			if (argnum == 1)
 				return OPF_STRING;
 			else
-				return OPF_STRING;
+				return OPF_SHIP_WING;
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -34865,10 +34890,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_REPLACE_TEXTURE, "replace-texture\r\n"
 		"\tChanges a texture of a ship to a different texture, similar to the FRED texture replace.\r\n"
-		"Takes 3 arguments...\r\n"
-		"\t1: Name of the Ship.\r\n"
-		"\t2: Name of the texture to be replaced.\r\n"
-		"\t3: Name of the texture to be changed to.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1: Name of the texture to be replaced.\r\n"
+		"\t2: Name of the texture to be changed to.\r\n"
+		"\tRest: Name of the ship or wing.\r\n"
 	},
 };
 // clang-format on

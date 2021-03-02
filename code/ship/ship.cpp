@@ -17126,6 +17126,33 @@ void ship_page_out_textures(int ship_index, bool release)
 		PAGE_OUT_TEXTURE(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 }
 
+void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name) {
+	ship* shipp = &Ships[ship_index];
+	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	int final_index = -1;
+
+	for (int i = 0; i < pm->n_textures; i++)
+	{
+		int tm_num = pm->maps[i].FindTexture(old_name);
+		if (tm_num > -1)
+		{
+			final_index = i * TM_NUM_TYPES + tm_num;
+			break;
+		}
+	}
+
+	int texture = bm_load(new_name);
+
+	if (shipp->ship_replacement_textures == NULL) {
+		shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+
+		for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			shipp->ship_replacement_textures[i] = -1;
+	}
+
+	shipp->ship_replacement_textures[final_index] = texture;
+}
+
 // function to return true if support ships are allowed in the mission for the given object.
 //	In single player, must be friendly and not Shivan. (Goober5000 - Shivans can now have support)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
