@@ -2478,7 +2478,13 @@ int stuff_int(int *i, bool optional)
 	// this is a bit cumbersome
 	size_t span;
 	if (*Mp == '+' || *Mp == '-')
-		span = strspn(Mp + 1, "0123456789") + 1;
+	{
+		span = strspn(Mp + 1, "0123456789");
+
+		// account for the sign symbol, but not if it's the only valid character
+		if (span > 0)
+			++span;
+	}
 	else
 		span = strspn(Mp, "0123456789");
 
@@ -2511,13 +2517,15 @@ int stuff_int(int *i, bool optional)
 		Mp = str_start;
 
 	if (success)
+	{
 		retval = 2;
+		diag_printf("Stuffed int: %d\n", *i);
+	}
 	else if (optional)
 		retval = comma ? 1 : 0;
 	else
 		skip_token();
 
-	diag_printf("Stuffed int: %d\n", *i);
 	return retval;
 }
 
@@ -2533,7 +2541,13 @@ int stuff_long(long *l, bool optional)
 	// this is a bit cumbersome
 	size_t span;
 	if (*Mp == '+' || *Mp == '-')
-		span = strspn(Mp + 1, "0123456789") + 1;
+	{
+		span = strspn(Mp + 1, "0123456789");
+
+		// account for the sign symbol, but not if it's the only valid character
+		if (span > 0)
+			++span;
+	}
 	else
 		span = strspn(Mp, "0123456789");
 
@@ -2566,13 +2580,15 @@ int stuff_long(long *l, bool optional)
 		Mp = str_start;
 
 	if (success)
+	{
 		retval = 2;
+		diag_printf("Stuffed long: %ld\n", *l);
+	}
 	else if (optional)
 		retval = comma ? 1 : 0;
 	else
 		skip_token();
 
-	diag_printf("Stuffed long: %ld\n", *l);
 	return retval;
 }
 
