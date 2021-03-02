@@ -104,7 +104,8 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
 flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
-	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false }
+	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false },
+	{ "track own texture tiling",       Weapon::Beam_Info_Flags::Track_own_texture_tiling,          true, false }
 };
 
 const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
