@@ -93,7 +93,7 @@ extern void ignore_gray_space();
 
 // error
 extern int get_line_num();
-extern char *next_tokens();
+extern char *next_tokens(bool terminate_before_parenthesis_or_comma = false);
 extern void diag_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 extern void error_display(int error_level, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 

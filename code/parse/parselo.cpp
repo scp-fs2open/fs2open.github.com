@@ -214,7 +214,7 @@ void diag_printf(const char *format, ...)
 
 //	Grab and return (a pointer to) a bunch of tokens, terminating at
 // ERROR_LENGTH chars, or end of line.
-char *next_tokens()
+char *next_tokens(bool terminate_before_parenthesis_or_comma)
 {
 	int	count = 0;
 	char	*pstr = Mp;
@@ -222,6 +222,9 @@ char *next_tokens()
 
 	while (((ch = *pstr++) != EOLN) && (ch != '\0') && (count < ERROR_LENGTH-1))
 		Error_str[count++] = ch;
+
+	if (terminate_before_parenthesis_or_comma && (Error_str[count-1] == ',' || Error_str[count - 1] == ')'))
+		--count;
 
 	Error_str[count] = 0;
 	return Error_str;
@@ -2417,6 +2420,11 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
+bool unexpected_numeric_char(char ch)
+{
+	return (ch != '\0') && (ch != ',') && (ch != ')') && !is_white_space(ch);
+}
+
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
 int stuff_float(float *f, bool optional)
@@ -2435,7 +2443,7 @@ int stuff_float(float *f, bool optional)
 	if (result == 0.0f && str_end == Mp)
 	{
 		if (!optional)
-			error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
+			error_display(1, "Expected float, found [%.32s].\n", next_tokens());
 	}
 	else
 	{
@@ -2445,6 +2453,14 @@ int stuff_float(float *f, bool optional)
 
 	if (success)
 		Mp = str_end;
+
+	// if an unexpected character is part of the number, the number parsing should fail
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		Mp = str_start;
+		success = false;
+		error_display(1, "Expected float, found [%.32s].\n", next_tokens(true));
+	}
 
 	if (*Mp == ',')
 	{
@@ -2496,7 +2512,7 @@ int stuff_int(int *i, bool optional)
 	if (result == 0 && span == 0)
 	{
 		if (!optional)
-			error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
+			error_display(1, "Expected int, found [%.32s].\n", next_tokens());
 	}
 	else
 	{
@@ -2506,6 +2522,14 @@ int stuff_int(int *i, bool optional)
 
 	if (success)
 		Mp += span;
+
+	// if an unexpected character is part of the number, the number parsing should fail
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		Mp = str_start;
+		success = false;
+		error_display(1, "Expected int, found [%.32s].\n", next_tokens(true));
+	}
 
 	if (*Mp == ',')
 	{
@@ -2559,7 +2583,7 @@ int stuff_long(long *l, bool optional)
 	if (result == 0 && span == 0)
 	{
 		if (!optional)
-			error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
+			error_display(1, "Expected long, found [%.32s].\n", next_tokens());
 	}
 	else
 	{
@@ -2569,6 +2593,14 @@ int stuff_long(long *l, bool optional)
 
 	if (success)
 		Mp += span;
+
+	// if an unexpected character is part of the number, the number parsing should fail
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		Mp = str_start;
+		success = false;
+		error_display(1, "Expected long, found [%.32s].\n", next_tokens(true));
+	}
 
 	if (*Mp == ',')
 	{
