@@ -1337,7 +1337,7 @@ int collide_ship_ship( obj_pair * pair )
 							// iterate through each player
 							for (net_player & current_player : Net_players) {
 								// check that this player's ship is valid, and that it's not the server ship.
-								if ((current_player.m_player != nullptr) && (&current_player != Netgame.server) && (current_player.m_player->objnum > 0) && current_player.m_player->objnum < MAX_OBJECTS) {
+								if ((current_player.m_player != nullptr) && !(current_player.flags & NETINFO_FLAG_AM_MASTER) && (current_player.m_player->objnum > 0) && current_player.m_player->objnum < MAX_OBJECTS) {
 									// check that one of the colliding ships is this player's ship
 									if (LightOne == &Objects[current_player.m_player->objnum]) {
 										// set this as not an interpolated ship
