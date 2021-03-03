@@ -3455,8 +3455,10 @@ void preload_texture(const char* text)
 {
 	int texture = bm_load(text);
 
-	if (texture < 0)
-		Error(LOCATION, "Could not preload texture %s", text);
+	if (texture < 0) {
+		Warning(LOCATION, "Could not preload texture %s", text);
+		return;
+	}
 
 	bm_page_in_texture(texture);
 }
@@ -29067,9 +29069,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_BOOL;
 
 		case OP_REPLACE_TEXTURE:
-			if (argnum == 0)
-				return OPF_STRING;
-			if (argnum == 1)
+			if (argnum == 0 || argnum == 1)
 				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
