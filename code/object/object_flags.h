@@ -27,6 +27,7 @@ namespace Object {
 		Marked,					// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
 		Temp_marked,			// Temporarily marked (Fred).
 		Hidden,					// Object is hidden (not shown) and can't be manipulated
+		Collides_with_parent,	// Asteroth
 
 		NUM_VALUES
 	};
