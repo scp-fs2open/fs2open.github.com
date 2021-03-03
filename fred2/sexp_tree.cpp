@@ -280,12 +280,11 @@ int sexp_tree::save_branch(int cur, int at_root)
 			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
-		}else if (tree_nodes[cur].type & SEXPT_CONTAINER) {
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER) {
 			int container_index = get_index_sexp_container_name(tree_nodes[cur].text); 
 			if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
 				node = alloc_sexp(tree_nodes[cur].text, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
-			}
-			else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
+			} else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
 				node = alloc_sexp(tree_nodes[cur].text, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
 			}
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
@@ -522,8 +521,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = BITMAP_VARIABLE;
-		}
-		else if (tree_nodes[node].type & SEXPT_CONTAINER) {
+		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
 			bitmap = BITMAP_CONTAINER;
 			tree_nodes[node].flags = NOT_EDITABLE;
 		} else {
@@ -543,8 +541,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
 			add_sub_tree(node, root);
-		}
-		else {
+		} else {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
@@ -716,140 +713,145 @@ void sexp_tree::right_clicked(int mode)
 		}
 		else
 		*/
+		{
+			menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
+			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
+			
+			// check not root (-1)
+			if (item_index >= 0) {
+				// get type of sexp_tree item clicked on
+				type = get_type(h);
 
-		menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
-		menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
-		
-		// check not root (-1)
-		if (item_index >= 0) {
-			// get type of sexp_tree item clicked on
-			int item_type = get_type(h);
+				int parent = tree_nodes[item_index].parent;
+				if (parent >= 0) {
+					op = get_operator_index(tree_nodes[parent].text);
+					Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER);
+					int first_arg = tree_nodes[parent].child;
 
-			int parent = tree_nodes[item_index].parent;
-			if (parent >= 0) {
-				op = get_operator_index(tree_nodes[parent].text);
-				Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER);
-				int first_arg = tree_nodes[parent].child;
+					// get arg count of item to replace
+					Replace_count = 0;
+					int temp = first_arg;
+					while (temp != item_index) {
+						Replace_count++;
+						temp = tree_nodes[temp].next;
 
-				// get arg count of item to replace
-				Replace_count = 0;
-				int temp = first_arg;
-				while (temp != item_index) {
-					Replace_count++;
-					temp = tree_nodes[temp].next;
-
-					// DB - added 3/4/99
-					if (temp == -1) {
-						break;
-					}
-				}
-
-				int op_type;
-
-				if (op >= 0) {
-					op_type = query_operator_argument_type(op, Replace_count); // check argument type at this position
-				}
-				else {
-					Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
-					int container_index = get_index_sexp_container_name(tree_nodes[parent].text);
-					op_type = Sexp_containers[container_index].opf_type;
-				}
-
-				// Goober5000 - given the above, we have to figure out what type this stands for
-				if (op_type == OPF_AMBIGUOUS)
-				{
-					int modify_type = get_modify_variable_type(parent);
-					if (modify_type == OPF_NUMBER) {
-						item_type = SEXPT_NUMBER;
-					}
-					else if (modify_type == OPF_AMBIGUOUS) {
-						item_type = SEXPT_STRING;
-					}
-					else {
-						Int3();
-						item_type = tree_nodes[first_arg].type;
-					}
-				}
-
-				// Goober5000 - certain types accept both integers and a list of strings
-				if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER)
-				{
-					type = SEXPT_NUMBER | SEXPT_STRING;
-				}
-
-				if ((item_type & SEXPT_STRING) || (item_type & SEXPT_NUMBER)) {
-					
-					int max_sexp_vars = MAX_SEXP_VARIABLES;
-					// prevent collisions in id numbers: ID_VARIABLE_MENU + 512 = ID_ADD_MENU
-					Assert(max_sexp_vars < 512);
-
-					for (int idx = 0; idx < max_sexp_vars; idx++) {
-						if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
-							// skip block variables
-							if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-								continue;
-							}
-
-							UINT flags = MF_STRING | MF_GRAYED;
-							// maybe gray flag MF_GRAYED
-
-							// get type -- gray "string" or number accordingly
-							if (item_type & SEXPT_STRING) {
-								if (Sexp_variables[idx].type & SEXP_VARIABLE_STRING) {
-									flags &= ~MF_GRAYED;
-								}
-							}
-							if (item_type & SEXPT_NUMBER) {
-								if (Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER) {
-									flags &= ~MF_GRAYED;
-								}
-							}
-
-							// if modify-variable and changing variable, enable all variables
-							if (op_type == OPF_VARIABLE_NAME) {
-								Modify_variable = 1;
-								flags &= ~MF_GRAYED;
-							}
-							else {
-								Modify_variable = 0;
-							}
-
-                            // enable navsystem always
-							if (op_type == OPF_NAV_POINT)
-								flags &= ~MF_GRAYED;
-
-							if (!((idx + 3) % 30)) {
-								flags |= MF_MENUBARBREAK;
-							}
-
-							char buf[128];
-							// append list of variable names and values
-							// set id as ID_VARIABLE_MENU + idx
-							sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
-
-							replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + idx), buf);
+						// DB - added 3/4/99
+						if(temp == -1){
+							break;
 						}
 					}
+
+					int op_type;
+
+					if (op >= 0) {
+						op_type =
+							query_operator_argument_type(op, Replace_count); // check argument type at this position
+					} else {
+						Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
+						int container_index = get_index_sexp_container_name(tree_nodes[parent].text);
+						op_type = Sexp_containers[container_index].opf_type;
+					}
+
+					// special case don't allow replace data for variable names
+					// Goober5000 - why?  the only place this happens is when replacing the ambiguous argument in
+					// modify-variable with a variable, which seems legal enough.
+					//if (op_type != OPF_AMBIGUOUS) {
+
+						// Goober5000 - given the above, we have to figure out what type this stands for
+						if (op_type == OPF_AMBIGUOUS)
+						{
+							int modify_type = get_modify_variable_type(parent);
+							if (modify_type == OPF_NUMBER) {
+								type = SEXPT_NUMBER;
+							} else if (modify_type == OPF_AMBIGUOUS) {
+								type = SEXPT_STRING;
+							} else {
+								Int3();
+								type = tree_nodes[first_arg].type;
+							}
+						}
+
+						// Goober5000 - certain types accept both integers and a list of strings
+						if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER)
+						{
+							type = SEXPT_NUMBER | SEXPT_STRING;
+						}
+						
+						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
+
+							int max_sexp_vars = MAX_SEXP_VARIABLES;
+							// prevent collisions in id numbers: ID_VARIABLE_MENU + 512 = ID_ADD_MENU
+							Assert(max_sexp_vars < 512);
+
+							for (int idx=0; idx<max_sexp_vars; idx++) {
+								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+									// skip block variables
+									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+										continue;
+									}
+
+									UINT flags = MF_STRING | MF_GRAYED;
+									// maybe gray flag MF_GRAYED
+
+									// get type -- gray "string" or number accordingly
+									if ( type & SEXPT_STRING ) {
+										if ( Sexp_variables[idx].type & SEXP_VARIABLE_STRING ) {
+											flags &= ~MF_GRAYED;
+										}
+									}
+									if ( type & SEXPT_NUMBER ) {
+										if ( Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER ) {
+											flags &= ~MF_GRAYED;
+										}
+									}
+
+									// if modify-variable and changing variable, enable all variables
+									if (op_type == OPF_VARIABLE_NAME) {
+										Modify_variable = 1;
+										flags &= ~MF_GRAYED;
+									} else {
+										Modify_variable = 0;
+									}
+
+									// enable navsystem always
+									if (op_type == OPF_NAV_POINT)
+										flags &= ~MF_GRAYED;
+
+									if (!( (idx + 3) % 30)) {
+										flags |= MF_MENUBARBREAK;
+									}
+
+									char buf[128];
+									// append list of variable names and values
+									// set id as ID_VARIABLE_MENU + idx
+									sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
+
+									replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + idx), buf);
+								}
+							}
+						}
+					//}
 
 					// now deal with SEXP containers
 
 					for (int index = 0; index < (int)Sexp_containers.size(); index++) {
-
 						UINT flags = MF_STRING | MF_GRAYED;
 
-						if (item_type & SEXPT_STRING) {
+						if (type & SEXPT_STRING) {
 							if (Sexp_containers[index].type & SEXP_CONTAINER_STRING_DATA) {
 								flags &= ~MF_GRAYED;
 							}
 						}
 
-						if (item_type & SEXPT_NUMBER) {
+						if (type & SEXPT_NUMBER) {
 							if (Sexp_containers[index].type & SEXP_CONTAINER_NUMBER_DATA) {
 								flags &= ~MF_GRAYED;
 							}
 						}
 
-						replace_container_menu->AppendMenu(flags, (ID_CONTAINER_MENU + index), Sexp_containers[index].container_name.c_str());
+						replace_container_menu->AppendMenu(flags,
+							(ID_CONTAINER_MENU + index),
+							Sexp_containers[index].container_name.c_str());
 					}
 				}
 			}
@@ -859,7 +861,6 @@ void sexp_tree::right_clicked(int mode)
 				menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_GRAYED);
 			}
 		}
-		
 
 		// add all the submenu items first
 		for (i=0; i<(int)op_submenu.size(); i++)
