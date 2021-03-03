@@ -1172,7 +1172,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	
 
 	if ( time_to_impact >= 0.0f ) {
-		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
+		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, XSTR("impact: %.1f sec", 1596), time_to_impact);	
 	}
 }
 
