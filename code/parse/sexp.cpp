@@ -338,11 +338,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "every-time-argument",			OP_EVERY_TIME_ARGUMENT,					3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "if-then-else",					OP_IF_THEN_ELSE,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "functional-if-then-else",		OP_FUNCTIONAL_IF_THEN_ELSE,				3,	3,			SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
+	{ "switch",							OP_SWITCH,								2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
+	{ "functional-switch",				OP_FUNCTIONAL_SWITCH,					2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "any-of",							OP_ANY_OF,								1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "every-of",						OP_EVERY_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "random-of",						OP_RANDOM_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "random-multiple-of",				OP_RANDOM_MULTIPLE_OF,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Karajorma
 	{ "number-of",						OP_NUMBER_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
+	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "in-sequence",					OP_IN_SEQUENCE,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Karajorma
 	{ "for-counter",					OP_FOR_COUNTER,							2,	3,			SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "for-ship-class",					OP_FOR_SHIP_CLASS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
@@ -350,7 +353,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
-	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -9317,7 +9319,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 					// if the op is a conditional we have to make sure that it can access arguments
 					case OP_WHEN:
 					case OP_EVERY_TIME:
-					case OP_IF_THEN_ELSE:				
+					case OP_IF_THEN_ELSE:
 						Sexp_current_argument_nesting_level++;
 						Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 						eval_sexp(exp);
@@ -9379,6 +9381,32 @@ int eval_perform_actions(int n)
 	// return whatever val was, but don't return known-*
 	// note: SEXP_KNOWN_TRUE/SEXP_KNOWN_FALSE are never returned from eval_sexp
 	return val;
+}
+
+void eval_switch(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	int choice = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || choice < 0)
+		return;
+	n = CDR(n);
+
+	// iterate until we land on the action we want to perform
+	while (choice > 0 && n >= 0)
+	{
+		--choice;
+		n = CDR(n);
+	}
+
+	// out of range?
+	if (n < 0)
+		return;
+
+	// do it
+	int exp = CAR(n);
+	if (exp >= 0)
+		eval_sexp(exp);
 }
 	
 /**
@@ -10363,6 +10391,39 @@ int sexp_functional_if_then_else(int node)
 		return num1;
 	else
 		return num2;
+}
+
+// Goober5000
+int sexp_functional_switch(int node)
+{
+	bool is_nan, is_nan_forever;
+	int n = node, result = 0;
+
+	int choice = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || choice < 0)
+		return 0;
+	n = CDR(n);
+
+	// evaluate all the numbers, but only keep the one we want
+	while (n >= 0)
+	{
+		int temp = eval_num(n, is_nan, is_nan_forever);
+
+		if (choice == 0)
+		{
+			if (is_nan)
+				result = SEXP_NAN;
+			else if (is_nan_forever)
+				result = SEXP_NAN_FOREVER;
+			else
+				result = temp;
+		}
+
+		--choice;
+		n = CDR(n);
+	}
+
+	return result;
 }
 
 // Goober5000 - added wing capability
@@ -23813,6 +23874,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_perform_actions( node );
 				break;
 
+			case OP_SWITCH:
+				eval_switch(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_COND:
 				sexp_val = eval_cond(node);
 				break;
@@ -23901,6 +23967,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			// this is a "conditional", but it's not really treated the same way as when, etc.
 			case OP_FUNCTIONAL_IF_THEN_ELSE:
 				sexp_val = sexp_functional_if_then_else(node);
+				break;
+
+			// this too
+			case OP_FUNCTIONAL_SWITCH:
+				sexp_val = sexp_functional_switch(node);
 				break;
 
 			// sexpressions with side effects
@@ -26169,6 +26240,7 @@ int query_operator_return_type(int op)
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
+		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
 			return OPR_NUMBER;
 
@@ -26242,6 +26314,7 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_IF_THEN_ELSE:
+		case OP_SWITCH:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
@@ -27314,6 +27387,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NULL;
 
+		case OP_SWITCH:
+			if (!argnum)
+				return OPF_NUMBER;
+			else
+				return OPF_NULL;
+
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME_ARGUMENT:
 			if (argnum == 0)
@@ -27364,6 +27443,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_NUMBER;
+
+		case OP_FUNCTIONAL_SWITCH:
+			return OPF_NUMBER;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
@@ -31617,6 +31699,34 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tActions to take if that expression becomes true.\r\n"
 		"\tRest:\tActions to take if that expression becomes false.\r\n" },
 
+	// Goober5000
+	{ OP_SWITCH, "Switch (Conditional operator)\r\n"
+		"\tPerforms one action according to the value of the first argument.  If the argument evaluates to 0, the first action is performed; if the argument is 1, the next action is performed, etc.  "
+		"If the value is out of range, no action is performed at all.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tNumeric expression to evaluate.\r\n"
+		"\tRest:\tList of actions, one of which (at most) will be taken according to the value of the expression.\r\n" },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_IF_THEN_ELSE, "Functional If-then-else (Conditional operator)\r\n"
+		"\tReturns the first number if the condition is true, and the second number otherwise.\r\n\r\n"
+		"This sexp is very similar to the ?: ternary operator in C and other programming languages.  Unfortunately, "
+		"due to limitations of the sexp system, it is not possible to create an equivalent sexp for string values.\r\n\r\n"
+		"Note that all arguments will be evaluated, even though only one will be returned.\r\n\r\n"
+		"Takes exactly 3 arguments...\r\n"
+		"\t1:\tBoolean expression to evaluate.\r\n"
+		"\t2:\tNumber to return if the expression is currently true.\r\n"
+		"\t3:\tNumber to return if the expression is not currently true..\r\n" },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_SWITCH, "Functional Switch (Conditional operator)\r\n"
+		"\tReturns a number according to the value of the first argument.  If the argument evaluates to 0, the first of the following numbers is returned; if the argument is 1, the next number is performed, etc.  "
+		"If the value is out of range, zero is returned.\r\n\r\n"
+		"Note that all arguments will be evaluated, even though only one will be returned.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tNumeric expression to evaluate.\r\n"
+		"\tRest:\tList of numeric expressions, one of which will be returned according to the current value of the first argument.\r\n" },
+
 	// Karajorma
 	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"
 		"\tPerforms specified actions once for each valid " SEXP_ARGUMENT_STRING " in the parent conditional. For example, a FREDder may use (do-for-valid-arguments (modify-variable @var (+ @var 1))) to count the number of valid arguments.\r\n\r\n"
@@ -31752,16 +31862,6 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRestores all arguments for future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
 		"Takes no arguments." },
-
-	// Goober5000
-	{ OP_FUNCTIONAL_IF_THEN_ELSE, "Functional If-then-else (Conditional operator)\r\n"
-		"\tReturns the first number if the condition is true, and the second number otherwise.\r\n\r\n"
-		"This sexp is very similar to the ?: ternary operator in C and other programming languages.  Unfortunately, "
-		"due to limitations of the sexp system, it is not possible to create an equivalent sexp for string values.\r\n\r\n"
-		"Takes exactly 3 arguments...\r\n"
-		"\t1:\tBoolean expression to evaluate.\r\n"
-		"\t2:\tNumber to return if the expression is currently true.\r\n"
-		"\t3:\tNumber to return if the expression is not currently true..\r\n" },
 
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"

@@ -4331,6 +4331,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->texture_stretch = 1.0f;
 			}
 		}
+		else if (first_time)
+			ci->texture_stretch = 1.0f;
 
 		if (optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ci->n_fade_out_sections);
@@ -6267,7 +6269,6 @@ void ship::clear()
 
 	num_swarm_missiles_to_fire = 0;
 	next_swarm_fire = timestamp(0);
-	next_swarm_path = 0;
 	num_turret_swarm_info = 0;
 	swarm_missile_bank = -1;
 

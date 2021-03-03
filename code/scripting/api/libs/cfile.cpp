@@ -57,7 +57,7 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
          "Lists all the files in the specified directory and optionally applies a filter. The filter must have the "
          "format \"*<rest>\" (the wildcard has to appear at the start).",
-         ade_type_array("string"), "A table with all files in the directory or nil on error")
+         "string[]", "A table with all files in the directory or nil on error")
 {
 	using namespace luacpp;
 

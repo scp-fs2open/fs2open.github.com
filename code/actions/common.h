@@ -2,6 +2,8 @@
 
 #include "globalincs/flagset.h"
 
+#include "actions/expression/ParseContext.h"
+#include "actions/expression/ProgramVariables.h"
 #include "math/vecmat.h"
 #include "object/object.h"
 
@@ -17,8 +19,8 @@ struct ProgramLocals {
 	int hostSubobject = -1;
 
 	int waitTimestamp = 0;
-	vec3d position = vmd_zero_vector;
-	vec3d direction = vmd_zero_vector;
+
+	expression::ProgramVariables variables;
 };
 
 /**
@@ -35,5 +37,23 @@ FLAG_LIST(ProgramContextFlags) {
 	NUM_VALUES
 };
 // clang-format on
+
+/**
+ * @brief Constructs the "table" parse context
+ *
+ * This is the context that is available when parsing a program from an external table (e.g. ships or weapons).
+ *
+ * @return The parse context
+ */
+expression::ParseContext getTableParseContext();
+
+/**
+ * @brief Gets a program variables instance initialized with the default values
+ *
+ * The values are consistent with what is required for the default table parse context;
+ *
+ * @return The program variables
+ */
+expression::ProgramVariables getDefaultTableVariables();
 
 } // namespace actions

@@ -392,7 +392,7 @@ ADE_FUNC(
     checkRayCollision, l_Object, "vector StartPoint, vector EndPoint, [boolean Local=false]",
     "Checks the collisions between the polygons of the current object and a ray. Start and end vectors are in world "
     "coordinates",
-    ade_type_info({"vector", "collision_info"}),
+    "vector, collision_info",
     "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
 {
 	object_h *objh = NULL;

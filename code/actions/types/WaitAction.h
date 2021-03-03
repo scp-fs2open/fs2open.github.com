@@ -1,22 +1,28 @@
 #pragma once
 
 #include "actions/Action.h"
+#include "actions/common.h"
+#include "actions/expression/ActionExpression.h"
 #include "utils/RandomRange.h"
 
 namespace actions {
 namespace types {
 
 class WaitAction : public Action {
-	util::UniformFloatRange _waitTime;
-
   public:
+	using ValueType = float;
+
+	static flagset<ProgramContextFlags> getRequiredExecutionContextFlags();
+
+	explicit WaitAction(expression::TypedActionExpression<ValueType> waitTimeExpression);
 	~WaitAction() override;
 
 	ActionResult execute(ProgramLocals& locals) const override;
 
-	void parseValues(const flagset<ProgramContextFlags>& parse_flags) override;
-
 	std::unique_ptr<Action> clone() const override;
+
+  private:
+	expression::TypedActionExpression<ValueType> _waitTimeExpression;
 };
 
 } // namespace types

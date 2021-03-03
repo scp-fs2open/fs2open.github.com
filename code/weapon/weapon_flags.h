@@ -115,6 +115,7 @@ namespace Weapon {
 
 	FLAG_LIST(Beam_Info_Flags) {
 		Burst_share_random,
+		Track_own_texture_tiling,
 
 		NUM_VALUES
 	};

@@ -4,28 +4,30 @@
 #include "math/vecmat.h"
 #include "parse/parselo.h"
 
+#include <utility>
+
 namespace actions {
 namespace types {
+
+flagset<ProgramContextFlags> SetDirectionAction::getRequiredExecutionContextFlags()
+{
+	return flagset<ProgramContextFlags>{};
+}
+
+SetDirectionAction::SetDirectionAction(expression::TypedActionExpression<vec3d> newDirExpression)
+	: m_newDirExpression(std::move(newDirExpression))
+{
+}
 SetDirectionAction::~SetDirectionAction() = default;
 
 ActionResult SetDirectionAction::execute(ProgramLocals& locals) const
 {
-	locals.direction = _newDir;
+	auto dir = m_newDirExpression.execute(locals.variables);
+
+	vm_vec_normalize_safe(&dir);
+
+	locals.variables.setValue({"locals", "direction"}, expression::Value(dir));
 	return ActionResult::Finished;
-}
-
-void SetDirectionAction::parseValues(const flagset<ProgramContextFlags>& /*parse_flags*/)
-{
-	stuff_parenthesized_vec3d(&_newDir);
-
-	if (vm_vec_mag(&_newDir) < 0.1f) {
-		error_display(0,
-			"Zero vector is not valid here! The vector will be normalized so the actual length does not matter.");
-		_newDir = vmd_zero_vector;
-		_newDir.xyz.z = 1.0f;
-	}
-
-	vm_vec_normalize(&_newDir);
 }
 
 std::unique_ptr<Action> SetDirectionAction::clone() const

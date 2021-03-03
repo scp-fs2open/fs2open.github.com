@@ -1276,6 +1276,12 @@ void beam_render(beam *b, float u_offset)
 
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
+	// if this beam tracks it's own u_offset, increment
+	if (bwi->flags[Weapon::Beam_Info_Flags::Track_own_texture_tiling]) {
+		b->u_offset_local += flFrametime;
+		u_offset = b->u_offset_local;
+	}
+
 	// draw all sections	
 	for (s_idx = 0; s_idx < bwi->beam_num_sections; s_idx++) {
 		bwsi = &bwi->sections[s_idx];
@@ -1634,6 +1640,7 @@ void beam_render_all()
 		if ( (moveup->warmup_stamp == -1) && (moveup->warmdown_stamp == -1) && !(moveup->flags & BF_SAFETY) ) {
 			// HACK -  if this is the first frame the beam is firing, don't render it
             if (moveup->framecount <= 0) {
+				moveup->u_offset_local = 0;
 				moveup = GET_NEXT(moveup);
 				continue;
 			}			
