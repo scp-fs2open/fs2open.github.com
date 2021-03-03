@@ -49,9 +49,9 @@ asteroid_obj	Asteroid_objs[MAX_ASTEROID_OBJS];	// array used to store asteroid o
 asteroid_obj	Asteroid_obj_list;						// head of linked list of asteroid_obj structs
 
 // used for randomly generating debris type when there are multiple sizes.
-#define SMALL_DEBRIS_WEIGHT	8.0f
-#define MEDIUM_DEBRIS_WEIGHT	4.0f
-#define LARGE_DEBRIS_WEIGHT	1.0f
+const float SMALL_DEBRIS_WEIGHT = 8.0f;
+const float MEDIUM_DEBRIS_WEIGHT = 4.0f;
+const float LARGE_DEBRIS_WEIGHT = 1.0f;
 
 int	Asteroids_enabled = 1;
 int	Num_asteroids = 0;
@@ -1824,16 +1824,6 @@ static void asteroid_parse_section(asteroid_info *asip)
 			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_type);
 	}
 
-	if (optional_string("$Display Name:")) {
-		stuff_string(asip->display_name, F_NAME);
-	} else {
-		// take the first word of the name and append "debris"
-		SCP_string current_name = asip->name;
-		size_t split = current_name.find(' ');
-		asip->display_name = current_name.substr(0, split);
-		asip->display_name += " debris";
-	}
-
 	if (optional_string("$Spawn Weight:")) {
 		stuff_float(&asip->spawn_weight);
 		if (asip->spawn_weight <= 0.0f) {
@@ -1855,6 +1845,45 @@ static void asteroid_parse_section(asteroid_info *asip)
 			default:
 				UNREACHABLE("Here be dragons");
 		}
+	}
+}
+
+// changes the name to "[species] Debris" if it had a name like "[species] debris #"
+void maybe_change_asteroid_name(asteroid_info* asip) {
+
+	SCP_string name = asip->name;
+	size_t split = name.find(' ');
+
+	if (split == std::string::npos)
+		return;
+
+	SCP_string remaining_name = name.substr(split + 1, name.length());
+	SCP_string species_name = name.substr(0, split);
+
+	int idx = species_info_lookup(species_name.c_str());
+	if (idx < 0)
+		return;
+
+	split = remaining_name.find(' ');
+
+	if (split == std::string::npos)
+		return;
+
+	SCP_string debris = remaining_name.substr(0, split);
+	SCP_string num = remaining_name.substr(split + 1, name.length());
+
+	if (debris.compare("Debris") != 0)
+		return;
+
+	if (num.empty() || std::find_if(num.begin(),
+		num.end(), [](unsigned char c) { return !std::isdigit(c); }) != num.end())
+		return;
+
+	// make sure this asteroid would correspond the 'species section' of the old style retail asteroids
+	if (Asteroid_info.size() < NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES && Asteroid_info.size() >= NUM_DEBRIS_SIZES) {
+		idx = (int)(Asteroid_info.size()) / NUM_DEBRIS_SIZES - 1;
+		strcpy_s(asip->name, Species_info[idx].species_name);
+		strcat(asip->name, " debris");
 	}
 }
 
@@ -1896,6 +1925,8 @@ static void asteroid_parse_tbl()
 			asteroid_info new_asteroid;
 
 			asteroid_parse_section(&new_asteroid);
+
+			maybe_change_asteroid_name(&new_asteroid);
 
 #ifndef NDEBUG
 			SCP_string msg;
