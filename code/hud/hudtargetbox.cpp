@@ -1160,7 +1160,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
-			strcpy_s(hud_name, NOX("asteroid"));
+			strcpy_s(hud_name, XSTR("Asteroid", 431));
 			break;
 
 		default:

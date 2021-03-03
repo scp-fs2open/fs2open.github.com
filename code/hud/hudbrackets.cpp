@@ -653,7 +653,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 					case ASTEROID_TYPE_SMALL:
 					case ASTEROID_TYPE_MEDIUM:
 					case ASTEROID_TYPE_LARGE:
-						tinfo_name = NOX("Asteroid");
+						tinfo_name = XSTR("Asteroid", 431);
 						break;
 					default:
 						tinfo_name = XSTR("Debris", 348);
