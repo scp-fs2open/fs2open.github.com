@@ -797,7 +797,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		printable_ship_class = Ship_info[debrisp->ship_info_index].get_display_name();
 	
 	renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, printable_ship_class);	
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("Debris", 348));	
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("debris", 348));	
 }
 
 /**
@@ -1160,7 +1160,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
-			strcpy_s(hud_name, NOX("asteroid"));
+			strcpy_s(hud_name, XSTR("asteroid", 431));
 			break;
 
 		default:
