@@ -1068,13 +1068,13 @@ void fireball_render(object* obj, model_draw_list *scene)
 	}
 }
 
+// Because fireballs are only added and removed in two places, and Unused_fireball_indices is always updated in those places to contain unused indices,
+// this very simple code will give you the correct count of currently existing fireballs in use. 
 int fireball_get_count()
 {
-	int count = static_cast<int>(Fireballs.size() - Unused_fireball_indices.size());
+	int count = static_cast<int>(Fireballs.size()) - static_cast<int>(Unused_fireball_indices.size());
 
-	if (count < 0) {
-		count = 0;
-	}
-
+	Assert (count >= 0);
+	
 	return count;
 }
