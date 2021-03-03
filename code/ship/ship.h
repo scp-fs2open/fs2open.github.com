@@ -1802,6 +1802,9 @@ void ship_page_in_textures(int ship_index = -1);
 // fixer for above - taylor
 void ship_page_out_textures(int ship_index, bool release = false);
 
+// replaces a texture on a ship with a different texture
+void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name);
+
 // update artillery lock info
 void ship_update_artillery_lock();
 
