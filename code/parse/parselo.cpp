@@ -2293,7 +2293,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
 }
 
-const char* const get_encoding_string(int encoding) {
+const char* get_encoding_string(int encoding) {
 	switch (encoding) {
 	case ENCODING_ISO8859_1:
 		return "ISO-8859-1";

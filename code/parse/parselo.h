@@ -260,7 +260,7 @@ extern void read_file_text_from_default(const default_file& file, char *processe
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void coerce_to_utf8(SCP_string &buffer, const char *src);
-extern const char* const get_encoding_string(int encoding);
+extern const char* get_encoding_string(int encoding);
 extern void convert_encoding(SCP_string& buffer, const char* src, int encoding_src, int encoding_dest = ENCODING_CURRENT);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
