@@ -3864,9 +3864,10 @@ int get_sexp()
 	return start;
 }
 
-bool stuff_one_generic_sexp_container(SCP_string &name, int &type, int &opf_type, SCP_vector<SCP_string> &data)
+bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type, SCP_vector<SCP_string>& data)
 {
 	SCP_string temp_type_string;
+
 	data.clear();
 
 	required_string("$Name:");
@@ -3917,53 +3918,53 @@ bool stuff_one_generic_sexp_container(SCP_string &name, int &type, int &opf_type
 }
 
 /**
- * Stuffs a sexp list type container
+ * Stuffs sexp list type containers
  */
 
-void stuff_sexp_list_container()
-{	
-	sexp_container temp_list;
+void stuff_sexp_list_containers()
+{
 	SCP_vector<SCP_string>	parsed_data;
 
+	// TODO: this loop condition doesn't look right. It looks like specifying multiple lists won't work
 	while (required_string_either("$End Lists", "$Name:")) {
-		temp_list.type = SEXP_CONTAINER_LIST;
-		if (stuff_one_generic_sexp_container(temp_list.container_name, temp_list.type, temp_list.opf_type, parsed_data)){
-			temp_list.list_data.clear();
-			for (int i = 0; i < (int)parsed_data.size(); i++) {
-				temp_list.list_data.push_back(parsed_data[i]);
-			}
-		}
+		Sexp_containers.emplace_back();
+		auto& new_list = Sexp_containers.back();
 
-		Sexp_containers.push_back(temp_list);
+		new_list.type = SEXP_CONTAINER_LIST;
+		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
+			std::copy(parsed_data.begin(), parsed_data.end(), new_list.list_data.begin());
+		} else {
+			Sexp_containers.pop_back();
+		}
 	}
 }
 
 /**
- * Stuffs a sexp map type container
+ * Stuffs sexp map type containers
  */
-void stuff_sexp_map_container()
+void stuff_sexp_map_containers()
 {
-	sexp_container temp_map;
 	SCP_vector<SCP_string>	parsed_data;
 
+	// TODO: this loop condition doesn't look right. It looks like specifying multiple maps won't work
 	while (required_string_either("$End Maps", "$Name:")) {
-		temp_map.type = SEXP_CONTAINER_MAP;
-		if (stuff_one_generic_sexp_container(temp_map.container_name, temp_map.type, temp_map.opf_type, parsed_data)){
-			// if the data is corrupt, discard it
+		Sexp_containers.emplace_back();
+		auto& new_map = Sexp_containers.back();
+
+		new_map.type = SEXP_CONTAINER_MAP;
+		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)){
 			if (parsed_data.size() % 2 != 0) {
 				Warning(LOCATION, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size() );
 				log_printf(LOGFILE_EVENT_LOG, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size());
-				continue;
+				Sexp_containers.pop_back();
+			} else {
+				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
+					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
+				}
 			}
-
-			// move the data into the new entry
-			temp_map.map_data.clear();
-			for (int i = 0; i < (int)parsed_data.size(); i += 2) {
-				temp_map.map_data.emplace(parsed_data[i], parsed_data[i+1]);
-			}
+		} else {
+			Sexp_containers.pop_back();
 		}
-
-		Sexp_containers.push_back(temp_map);
 	}
 }
 
@@ -23947,7 +23948,7 @@ int get_index_sexp_container_name(const char *name)
 * Tests whether this position in a character array is the start of a container name
 * return index in Sexp_containers or -1 if not found
 **/
-int get_index_sexp_container_name_special(SCP_string &text, size_t startpos)
+int get_index_sexp_container_name_special(const SCP_string &text, size_t startpos)
 {
 	for (int i = 0; i < (int)Sexp_containers.size() ; i++) {
 		size_t pos = text.find(Sexp_containers[i].container_name, startpos); 

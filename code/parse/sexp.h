@@ -1198,14 +1198,13 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
-class sexp_container 
+struct sexp_container
 {
-	public:
-		SCP_string	container_name;
-		int type;
-		int opf_type;
-		SCP_deque<SCP_string>	list_data;
-		SCP_unordered_map<SCP_string, SCP_string> map_data;
+	SCP_string container_name;
+	int type;
+	int opf_type;
+	SCP_deque<SCP_string> list_data;
+	SCP_unordered_map<SCP_string, SCP_string> map_data;
 };
 
 // next define used to eventually mark a directive as satisfied even though there may be more
@@ -1278,8 +1277,8 @@ extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
-extern void stuff_sexp_list_container();
-extern void stuff_sexp_map_container();
+extern void stuff_sexp_list_containers();
+extern void stuff_sexp_map_containers();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);

@@ -5785,20 +5785,20 @@ void parse_variables()
 	}
 }
 
-void parse_list_collections()
+void parse_sexp_containers()
 {
-	if (! optional_string("#Sexp_collections") ) {
+	if (!optional_string("#Sexp_containers")) {
 		return;
-	} else {
-		if (optional_string("$Lists")) {
-			stuff_sexp_list_container();
-			required_string("$End Lists");
-		}
+	}
 
-		if (optional_string("$Maps")) {
-			stuff_sexp_map_container();
-			required_string("$End Maps");
-		}
+	if (optional_string("$Lists")) {
+		stuff_sexp_list_containers();
+		required_string("$End Lists");
+	}
+
+	if (optional_string("$Maps")) {
+		stuff_sexp_map_containers();
+		required_string("$End Maps");
 	}
 }
 
@@ -5847,7 +5847,7 @@ bool parse_mission(mission *pm, int flags)
 
 	parse_plot_info(pm);
 	parse_variables();
-	parse_list_collections();
+	parse_sexp_containers();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cutscenes(pm);
 	parse_fiction(pm);

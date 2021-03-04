@@ -1761,7 +1761,7 @@ int CFred_mission_save::save_containers()
 	}
 
 	// sexp_container_sort();
-	required_string_fred("#Sexp_collections");
+	required_string_fred("#Sexp_containers");
 	parse_comments(2);
 
 	int i = 0;
@@ -1818,7 +1818,7 @@ int CFred_mission_save::save_containers()
 		for (i = 0; i < (int)Sexp_containers.size(); i++) {
 			if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
 
-				Assertion((Sexp_containers[i].list_data.size() % 2 == 0), "Sexp Map Container %s has a key with no corresponding data entry. Can not save. Skipping this collection", Sexp_containers[i].container_name.c_str());
+				Assertion((Sexp_containers[i].list_data.size() % 2 == 0), "Sexp Map Container %s has a key with no corresponding data entry. Can not save. Skipping this container", Sexp_containers[i].container_name.c_str());
 
 				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
 				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
