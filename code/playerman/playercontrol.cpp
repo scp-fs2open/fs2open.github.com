@@ -1865,12 +1865,7 @@ void player_generate_death_message(player *player_p)
 			ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
 			if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
 			{
-				if (Player_ship == &Ships[ship_index]) {
-					sprintf(msg, XSTR("%s killed themselves", 1338), player_p->callsign);
-				}
-				else {
-					sprintf(msg, XSTR("%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
-				}
+				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
 			}
 			else
 			{
