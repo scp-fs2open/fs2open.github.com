@@ -66,6 +66,10 @@ extern int Token_found_flag;
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
 
+#define ENCODING_CURRENT	0
+#define ENCODING_UTF8		1
+#define ENCODING_ISO8859_1	2
+
 // Goober5000 - this seems to be a pretty universal function
 extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
 extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
@@ -256,8 +260,8 @@ extern void read_file_text_from_default(const default_file& file, char *processe
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void coerce_to_utf8(SCP_string &buffer, const char *src);
-extern SCP_string iso8859_1_to_current(const char* src);
-extern SCP_string utf8_to_current(const char* src);
+extern const char* const get_encoding_string(int encoding);
+extern void convert_encoding(SCP_string& buffer, const char* src, int encoding_src, int encoding_dest = ENCODING_CURRENT);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
 extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null = true);

@@ -2285,41 +2285,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	// we can convert it
 	if (isLatin1)
 	{
-		size_t newlen = len;
-		std::unique_ptr<char[]> newstr(new char[newlen]);
-
-		do {
-			auto in_str = str;
-			auto in_size = len;
-			auto out_str = newstr.get();
-			auto out_size = newlen;
-
-			auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-			auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-			SDL_iconv_close(iconv);
-
-			// SDL returns the number of processed character on success;
-			// error codes are (size_t)-1 through -4
-			if (err < (size_t)-100)
-			{
-				// successful re-encoding
-				buffer.assign(newstr.get(), newlen - out_size);
-				mprintf(("Re-encoding non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str()));
-				return;
-			}
-			else if (err == SDL_ICONV_E2BIG)
-			{
-				// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-				// increment since the additional size required is probably pretty small
-				newlen += 10;
-				newstr.reset(new char[newlen]);
-			}
-			else
-			{
-				// re-encoding failed, so use truncation
-				break;
-			}
-		} while (true);
+		convert_encoding(buffer, str, ENCODING_ISO8859_1, ENCODING_UTF8);
 	}
 
 	// unknown encoding, so just truncate
@@ -2327,95 +2293,41 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	Warning(LOCATION, "Truncating non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str());
 }
 
-//Converts a string in ISO 8859-1 to the currently used encoding
-//Only legal for strings with correct ISO 8859-1 encoding
-SCP_string iso8859_1_to_current(const char* str)
-{
-	SCP_string buffer;
-	//We are not in unicode mode, so just return as is, the string is correct
-	if (!Unicode_text_mode) {
-		buffer.assign(str);
-		return buffer;
+const char* const get_encoding_string(int encoding) {
+	switch (encoding) {
+	case ENCODING_ISO8859_1:
+		return "ISO-8859-1";
+	case ENCODING_UTF8:
+		return "UTF-8";
+	case ENCODING_CURRENT:
+	default:
+		UNREACHABLE("Unknown encoding type was passed: %d\n", encoding);
+		return "";
 	}
-
-	//If not, convert to utf-8
-	auto len = strlen(str);
-
-	// Validate the UTF-8 encoding
-	bool valid = true;
-
-	for (size_t i = 0; i < len; i++) {
-		if (str[i] > 0x79 || str[i] < 0) {
-			valid = false;
-			break;
-		}
-	}
-
-	if (valid)
-	{
-		// turns out this is valid UTF-8
-		buffer.assign(str);
-		return buffer;
-	}
-
-	//Skip checks. This function is only allowed for known iso8859-1 encoded strings
-
-	size_t newlen = len;
-	std::unique_ptr<char[]> newstr(new char[newlen]);
-
-	do {
-		auto in_str = str;
-		auto in_size = len;
-		auto out_str = newstr.get();
-		auto out_size = newlen;
-
-		auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-		auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-		SDL_iconv_close(iconv);
-
-		// SDL returns the number of processed character on success;
-		// error codes are (size_t)-1 through -4
-		if (err < (size_t)-100)
-		{
-			// successful re-encoding
-			buffer.assign(newstr.get(), newlen - out_size);
-			return buffer;
-		}
-		else if (err == SDL_ICONV_E2BIG)
-		{
-			// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-			// increment since the additional size required is probably pretty small
-			newlen += 10;
-			newstr.reset(new char[newlen]);
-		}
-		else
-		{
-			break;
-		}
-	} while (true);
-
-	return "";
 }
 
-//Converts a string in UTF-8 to the currently used encoding
-//Only legal for strings with correct UTF-8 encoding
-SCP_string utf8_to_current(const char* str)
-{
-	SCP_string buffer;
-	//We are in unicode mode, so just return as is, the string is correct
-	if (Unicode_text_mode) {
-		buffer.assign(str);
-		return buffer;
+void convert_encoding(SCP_string& buffer, const char* src, int encoding_src, int encoding_dest) {
+
+	if (encoding_src == ENCODING_CURRENT)
+		encoding_src = Unicode_text_mode ? ENCODING_UTF8 : ENCODING_ISO8859_1;
+
+	if (encoding_dest == ENCODING_CURRENT)
+		encoding_dest = Unicode_text_mode ? ENCODING_UTF8 : ENCODING_ISO8859_1;
+
+	//We are already in the correct encoding, the string is correct
+	if (encoding_src == encoding_dest) {
+		buffer.assign(src);
+		return;
 	}
 
-	//If not, convert to iso8859-1
-	auto len = strlen(str);
+	//If not, convert
+	auto len = strlen(src);
 
-	// Validate the UTF-8 encoding
+	// Validate if no change needs to be done
 	bool valid = true;
 
 	for (size_t i = 0; i < len; i++) {
-		if (str[i] > 0x79 || str[i] < 0) {
+		if (src[i] > 0x79 || src[i] < 0) {
 			valid = false;
 			break;
 		}
@@ -2423,23 +2335,23 @@ SCP_string utf8_to_current(const char* str)
 
 	if (valid)
 	{
-		// turns out this is valid ISO8859-1
-		buffer.assign(str);
-		return buffer;
+		// turns out this is valid anyways
+		buffer.assign(src);
+		return;
 	}
-
-	//Skip checks. This function is only allowed for known utf-8 encoded strings
 
 	size_t newlen = len;
 	std::unique_ptr<char[]> newstr(new char[newlen]);
 
 	do {
-		auto in_str = str;
+		auto in_str = src;
 		auto in_size = len;
 		auto out_str = newstr.get();
 		auto out_size = newlen;
 
-		auto iconv = SDL_iconv_open("ISO-8859-1", "UTF-8");
+
+
+		auto iconv = SDL_iconv_open(get_encoding_string(encoding_dest), get_encoding_string(encoding_src));
 		auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
 		SDL_iconv_close(iconv);
 
@@ -2449,7 +2361,7 @@ SCP_string utf8_to_current(const char* str)
 		{
 			// successful re-encoding
 			buffer.assign(newstr.get(), newlen - out_size);
-			return buffer;
+			return;
 		}
 		else if (err == SDL_ICONV_E2BIG)
 		{
@@ -2463,17 +2375,19 @@ SCP_string utf8_to_current(const char* str)
 			break;
 		}
 	} while (true);
-
-	return "";
 }
 
 // Goober5000
 void process_raw_file_text(char* processed_text, char* raw_text)
 {
-	const SCP_string parse_exception_1402 = iso8859_1_to_current("1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n");
-	const SCP_string parse_exception_1117 = iso8859_1_to_current("1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n");
-	const SCP_string parse_exception_1337 = iso8859_1_to_current("1337, \"(fr)Loading\"\n");
-	const SCP_string parse_exception_3966 = iso8859_1_to_current("3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n");
+	SCP_string parse_exception_1402;
+	convert_encoding(parse_exception_1402, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	SCP_string parse_exception_1117;
+	convert_encoding(parse_exception_1117, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	SCP_string parse_exception_1337;
+	convert_encoding(parse_exception_1337, "1337, \"(fr)Loading\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	SCP_string parse_exception_3966;
+	convert_encoding(parse_exception_3966, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
 
 	char* mp;
 	char* mp_raw;
