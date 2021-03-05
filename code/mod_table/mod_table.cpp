@@ -65,6 +65,10 @@ bool Swarmers_lead_targets;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
+bool Neb_affects_beams;
+bool Neb_affects_weapons;
+bool Neb_affects_particles;
+bool Neb_affects_fireballs;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -376,6 +380,22 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Render_player_mflash);
 		}
 
+		if (optional_string("$Beams affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_beams);
+		}
+
+		if (optional_string("$Weapons affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_weapons);
+		}
+
+		if (optional_string("$Particles affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_particles);
+		}
+		
+		if (optional_string("Fireballs affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_fireballs);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -658,4 +678,8 @@ void mod_table_reset()
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
 	Render_player_mflash = false;
+	Neb_affects_beams = true;
+	Neb_affects_weapons = true;
+	Neb_affects_particles = true;
+	Neb_affects_fireballs = true;
 }

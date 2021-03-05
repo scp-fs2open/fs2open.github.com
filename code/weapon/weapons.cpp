@@ -28,6 +28,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "nebula/neb.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -7968,6 +7969,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
+				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, 1.3f));
+
 				vec3d headp;
 
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -8015,6 +8019,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 				} else {
 					alpha = weapon_glow_alpha;
 				}
+
+				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, 1.3f));
 
 				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}

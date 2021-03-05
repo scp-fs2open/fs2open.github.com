@@ -19,6 +19,9 @@
 #include "render/batching.h"
 #include "tracing/tracing.h"
 #include "tracing/Monitor.h"
+#include "nebula/neb.h"
+#include "mission/missionparse.h"
+#include "mod_table/mod_table.h"
 
 using namespace particle;
 
@@ -41,7 +44,7 @@ namespace
 	float get_current_alpha(vec3d* pos)
 	{
 		float dist;
-		float alpha;
+		float alpha = 0.99999f;
 
 		const float inner_radius = 30.0f;
 		const float magic_num = 2.75f;
@@ -55,14 +58,18 @@ namespace
 		if (dist <= inner_radius)
 		{
 			// alpha per meter between the magic # and the inner radius
-			alpha = 0.99999f / (inner_radius - magic_num);
+			alpha /= (inner_radius - magic_num);
 
 			// above value times the # of meters away we are
 			alpha *= (dist - magic_num);
-			return (alpha < 0.05f) ? 0.0f : alpha;
+			if (alpha < 0.05f)
+				return 0.0f;
 		}
 
-		return 0.99999f;
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_particles)
+			alpha *= neb2_get_fog_visibility(pos, 1.4f);
+
+		return alpha;
 	}
 
 	inline int get_percent(int count)

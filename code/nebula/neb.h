@@ -46,6 +46,9 @@ extern float Neb2_fog_far_mult;
 extern char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];	
 extern int Neb2_poof_flags;
 
+// this is the percent of visibility at the fog far distance
+const float NEB_FOG_FAR_PCT = 0.15f;
+
 #define MAX_NEB2_BITMAPS			10
 
 // pof texture filenames
@@ -117,11 +120,11 @@ void neb2_eye_changed();
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *obj = NULL);
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
 
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_intensity(object *obj);
-float neb2_get_fog_intensity(vec3d *pos);
+float neb2_get_fog_visibility(object *obj);
+float neb2_get_fog_visibility (vec3d* pos, float distance_mult);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);

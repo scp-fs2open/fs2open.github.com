@@ -57,6 +57,10 @@ extern float Weapon_SS_Threshold_Turret_Inaccuracy;
 extern bool Framerate_independent_turning;
 extern bool Ai_respect_tabled_turntime_rotdamp;
 extern bool Render_player_mflash;
+extern bool Neb_affects_beams;
+extern bool Neb_affects_weapons;
+extern bool Neb_affects_particles;
+extern bool Neb_affects_fireballs;
 
 void mod_table_init();
 
