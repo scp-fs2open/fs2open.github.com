@@ -914,6 +914,7 @@ bool Container_edits_off; // TODO: maybe "Container_editing_disabled"?
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
 // TODO: altnertiave key: std::pair<char,char> being the first and last char of the name
 SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
+static const char *Empty_str = "";
 
 
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
@@ -31030,8 +31031,7 @@ const char* deal_with_container(int node, int container_index)
 
 		// if this isn't an array or is empty we exit
 		if (!success) {
-			// FIXME: returning a ptr to a local var (i.e., on the stack)
-			return "";
+			return Empty_str;
 		}
 
 		if ( result.at(0) != SEXP_CONTAINER_CHAR ) {
@@ -31049,12 +31049,12 @@ const char* deal_with_container(int node, int container_index)
 		// if it's still nonsense, warn then bail
 		if ( container_index == -1 ) {
 			Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
-			return "";
+			return Empty_str;
 		}
 
 	} while (sanity++ < 20);
 
-	return "";
+	return Empty_str;
 }
 
 /**
@@ -31158,7 +31158,7 @@ const char *CTEXT(int n, bool do_not_edit)
 		if (container_index < 0)  {
 			Warning(LOCATION, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
 			log_printf(LOGFILE_EVENT_LOG, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
-			return "";
+			return Empty_str;
 		}
 
 		n = CAR(n);
