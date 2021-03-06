@@ -913,9 +913,8 @@ bool Container_edits_off; // TODO: maybe "Container_editing_disabled"?
 // we can't use full name (SCP_string) as the key, because get_sexp_container_index() takes const char*
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
 // TODO: altnertiave key: std::pair<char,char> being the first and last char of the name
-SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
+static SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
 static const char *Empty_str = "";
-
 
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
 char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
