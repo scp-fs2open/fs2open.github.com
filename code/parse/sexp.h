@@ -1001,10 +1001,10 @@ const char *CTEXT(int n, bool do_not_edit = false);
 // Bump this if you add a container modifier on the line above!
 #define NUM_CONTAINER_MODIFIERS					7
 
-typedef struct container_modifier {
+struct container_modifier {
 	char *name;
 	int def;
-} container_modifier;
+};
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -1237,7 +1237,7 @@ extern SCP_vector<sexp_oper> Operators;
 extern SCP_vector<sexp_container> Sexp_containers;
 // TODO: convert to SCP_vector?
 #define MAX_CONTAINER_MODIFIERS		7
-extern container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
+extern const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;

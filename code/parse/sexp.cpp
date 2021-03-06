@@ -23962,7 +23962,7 @@ int get_index_sexp_container_name_special(const SCP_string &text, size_t startpo
 /**
 * Helper function for sexp_replace_container_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
 **/
-bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &lookHere, SCP_string &replacement_text, SCP_string &replace_this)
+bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t &lookHere, SCP_string &replacement_text, SCP_string &replace_this)
 {
 	// for map containers, check if this matches a map key
 	if (Sexp_containers[con_index].type & SEXP_CONTAINER_MAP) {
@@ -23971,10 +23971,10 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 			return false;
 		}
 
-		size_t key_ends_here;
-		key_ends_here = text.find('&', lookHere);
+		const size_t key_ends_here = text.find('&', lookHere);
+		// FIXME TODO: what if '&' is not found? Is that possible?
 
-		SCP_string key = text.substr(lookHere, key_ends_here - lookHere); 
+		const SCP_string key = text.substr(lookHere, key_ends_here - lookHere);
 		SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[con_index].map_data.find(key);
 
 		if (iter == Sexp_containers[con_index].map_data.end()) {
@@ -24005,14 +24005,15 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 			}
 		}
 
-		int data_index; 
-		int number_of_elements; 
+		int data_index;
+		int number_of_elements;
 		int number_length = 0;
 		SCP_string number_string;
 
 		switch (modifier_index) {
 
 			case SNF_CONTAINER_GET_FIRST:
+				// TODO: replace all of the calls to assign() with `=` operator
 				replacement_text.assign(Sexp_containers[con_index].list_data.front());
 				break;
 
@@ -24026,20 +24027,20 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 				break;
 
 			case SNF_CONTAINER_REMOVE_LAST:
-				replacement_text.assign(Sexp_containers[con_index].list_data.back());	
+				replacement_text.assign(Sexp_containers[con_index].list_data.back());
 				Sexp_containers[con_index].list_data.pop_back();
 				break;
 
 			case SNF_CONTAINER_GET_RANDOM:
 				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1); 
+				data_index = rand_internal(0, number_of_elements-1);
 				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
 				break;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
 				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1); 
-				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));	
+				data_index = rand_internal(0, number_of_elements-1);
+				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
 				Sexp_containers[con_index].list_data.erase(Sexp_containers[con_index].list_data.begin() + data_index);
 				break;
 
@@ -24049,7 +24050,7 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
 
 				//we'll need this later, so we might as well grab it now
-				number_length = (int)strspn(number_string.c_str(), "0123456789");	
+				number_length = (int)strspn(number_string.c_str(), "0123456789");
 				break;
 
 			default:
@@ -30822,7 +30823,7 @@ int check_text_for_variable_name(const char *text)
 	return sexp_variable_index;
 }
 
- container_modifier Container_modifiers[] = {
+ const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS] = {
 	{ "Get_First",			SNF_CONTAINER_GET_FIRST,		},
 	{ "Get_Last",			SNF_CONTAINER_GET_LAST,			},
 	{ "Remove_First",		SNF_CONTAINER_REMOVE_FIRST,		},
@@ -30909,7 +30910,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 			return false;
 		}
 
-		int number_of_elements; 
+		int number_of_elements;
 		int data_index;
 
 		switch (modifier_index) {
@@ -30967,7 +30968,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 	return false;
 }
 
-int container_push_return_string(SCP_string &result) 
+int container_push_return_string(const SCP_string &result)
 {
 	// maybe reset if we've already used all the slots
 	if (( Ctext_strings_last_index >= NUM_CTEXT_RETURN_STRINGS ) || ( Ctext_strings_last_index < 0 )) {
@@ -30980,7 +30981,7 @@ int container_push_return_string(SCP_string &result)
 	return Ctext_strings_last_index++; 
 }
 
-char* deal_with_container(int node, int container_index)  
+const char* deal_with_container(int node, int container_index)
 {
 	bool success = true;
 	int sanity = 0; 
@@ -30998,7 +30999,7 @@ char* deal_with_container(int node, int container_index)
 			if (success) {
 				log_string.append(result);
 			}
-			Current_event_log_container_buffer->push_back(log_string); 
+			Current_event_log_container_buffer->emplace_back(log_string);
 		}
 
 		// if this isn't an array or is empty we exit
@@ -31008,6 +31009,8 @@ char* deal_with_container(int node, int container_index)
 		}
 
 		if ( result.at(0) != SEXP_CONTAINER_CHAR ) {
+			// FIXME: ugh. Instead of this hackishness, store the resulting string as cached data on the Sexp node in question
+			// if the node already has cached data attached, reuse the cached_data object
 			int result_index = container_push_return_string(result);
 			return Ctext_strings[result_index];
 		}
@@ -31121,6 +31124,7 @@ const char *CTEXT(int n, bool do_not_edit)
 	}
 	// Karajorma - check we're not dealing with a container
 	else if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) {
+		// TODO: remove unneeded assertion
 		Assertion((Sexp_nodes[n].type & SEXP_FLAG_CONTAINER), "deal_with_container() called for an unknown type of container"); 
  
 		int container_index = get_index_sexp_container_name(Sexp_nodes[n].text);
@@ -31158,7 +31162,7 @@ void init_sexp_vars()
 }
 
 /**
- * Clear the SEXP Collectors vector
+ * Clear the SEXP Containers and related data
  */
 void init_sexp_containers()
 {
