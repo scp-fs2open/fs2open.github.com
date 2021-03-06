@@ -731,7 +731,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "modify-variable-xstr",			OP_MODIFY_VARIABLE_XSTR,				3,	3,			SEXP_ACTION_OPERATOR,	},	// m!m
 
-	//Variable Category
+	//Containers Category
 	{ "add-to-list",					OP_CONTAINER_ADD_TO_LIST,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
