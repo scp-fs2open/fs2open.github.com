@@ -1276,10 +1276,10 @@ void beam_render(beam *b, float u_offset)
 
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// if this beam tracks it's own u_offset, increment
+	// if this beam tracks its own u_offset, use that instead
 	if (bwi->flags[Weapon::Beam_Info_Flags::Track_own_texture_tiling]) {
-		b->u_offset_local += flFrametime;
-		u_offset = b->u_offset_local;
+		u_offset = b->u_offset_local;			// the parameter is passed by value so this won't interfere with the u_offset in the calling function
+		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
 	// draw all sections	
@@ -1351,8 +1351,8 @@ void beam_render(beam *b, float u_offset)
 		material material_params;
 		material_set_unlit_emissive(&material_params, bwsi->texture.first_frame + framenum, 0.9999f, 2.0f);
 		g3_render_primitives_colored_textured(&material_params, h1, 4, PRIM_TYPE_TRIFAN, false);
-	}		
-	
+	}
+
 	// turn backface culling back on
 	//gr_set_cull(cull);
 }
