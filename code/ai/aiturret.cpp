@@ -162,7 +162,7 @@ bool is_object_radius_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, 
 			// Since we no longer maintain world_to_turret_matrix, regenerate it here.
 			vec3d turret_norm;
 			matrix turret_matrix, world_to_turret_matrix;
-			model_instance_find_world_dir(&turret_norm, &tp->turret_norm, object_get_model_instance(objp), tp->subobj_num, &vmd_identity_matrix);
+			model_instance_find_world_dir(&turret_norm, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->subobj_num, &vmd_identity_matrix);
 			vm_vector_2_matrix(&turret_matrix, &turret_norm, nullptr, nullptr);
 			vm_matrix_x_matrix(&world_to_turret_matrix, &objp->orient, &turret_matrix);
 
@@ -1485,7 +1485,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 	if (ship_subsystem_in_sight(enemy_objp, enemy_subsysp, abs_gunposp, &subobj_pos, 1, &dot_out, &vector_out)) {
 		vec3d	turret_norm;
 
-		model_instance_find_world_dir(&turret_norm, &turret_subsysp->system_info->turret_norm, object_get_model_instance(objp), turret_subsysp->system_info->subobj_num, &objp->orient);
+		model_instance_find_world_dir(&turret_norm, &turret_subsysp->system_info->turret_norm, Ships[objp->instance].model_instance_num, turret_subsysp->system_info->subobj_num, &objp->orient);
 		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
 
 		if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_subsystem_targeting_for_turrets]) {
@@ -2810,7 +2810,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 		object *objp = &Objects[ss->parent_objnum];
 		vec3d turret_norm;
 		matrix turret_matrix, world_to_turret_matrix;
-		model_instance_find_world_dir(&turret_norm, &tp->turret_norm, object_get_model_instance(objp), tp->subobj_num, &vmd_identity_matrix);
+		model_instance_find_world_dir(&turret_norm, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->subobj_num, &vmd_identity_matrix);
 		vm_vector_2_matrix(&turret_matrix, &turret_norm, nullptr, nullptr);
 		vm_matrix_x_matrix(&world_to_turret_matrix, &objp->orient, &turret_matrix);
 

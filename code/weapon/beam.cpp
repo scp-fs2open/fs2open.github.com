@@ -783,9 +783,12 @@ void beam_unpause_sounds()
 	}
 }
 
-void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam){
-		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
-	if(fighter_beam)*gvec = objp->orient.vec.fvec;
+void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam)
+{
+	ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
+
+	if (fighter_beam)
+		*gvec = objp->orient.vec.fvec;
 }
 
 // -----------------------------===========================------------------------------
@@ -3559,7 +3562,7 @@ int beam_ok_to_fire(beam *b)
 				turret_normal = b->objp->orient.vec.fvec;
                 b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_alt_math);
 			} else {
-				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, object_get_model_instance(b->objp), b->subsys->system_info->subobj_num, &b->objp->orient);
+				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient);
 			}
 
 			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {

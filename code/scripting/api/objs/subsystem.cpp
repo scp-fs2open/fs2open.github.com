@@ -643,7 +643,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
-	vec3d gpos, gvec;
+	vec3d gpos;
 	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
 
@@ -655,9 +655,6 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
-
-	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 
 	int ret_val = model_rotate_gun(objp, pm, pmi, tp, &pos, reset);
 
