@@ -23976,7 +23976,13 @@ int get_sexp_container_index(const char* name) {
 
 static bool str_prefix(const char* prefix, const char* str)
 {
-	return strstr(str, prefix) == str;
+	for (; *prefix; ++prefix, ++str) {
+		if (SCP_tolower(*str) != SCP_tolower(*prefix)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 /** 
