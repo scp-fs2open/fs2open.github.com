@@ -1769,7 +1769,7 @@ int control_config_draw_list(int select_tease_line) {
 				j = Axis_override;
 			}
 
-			conflict = set_item_color(line, select_tease_line, selItem::Primary, (j < 0));
+			conflict += set_item_color(line, select_tease_line, selItem::Primary, (j < 0));
 			
 			if (j < 0) {
 				gr_printf_menu(x, y, "%s", XSTR("None", 211));
