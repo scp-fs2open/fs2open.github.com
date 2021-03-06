@@ -208,7 +208,7 @@ int sexp_tree::load_branch(int index, int parent)
 
 		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER) {
 			cur = allocate_node(parent);
-			int container_index = get_index_sexp_container_name(Sexp_nodes[index].text);
+			const int container_index = get_sexp_container_index(Sexp_nodes[index].text);
 			set_node(cur, (SEXPT_CONTAINER | SEXPT_STRING | additional_flags ), Sexp_containers[container_index].container_name.c_str());
 			load_branch(Sexp_nodes[index].first, cur);  // operator is new parent now
 
@@ -281,7 +281,7 @@ int sexp_tree::save_branch(int cur, int at_root)
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
 		} else if (tree_nodes[cur].type & SEXPT_CONTAINER) {
-			int container_index = get_index_sexp_container_name(tree_nodes[cur].text); 
+			const int container_index = get_sexp_container_index(tree_nodes[cur].text); 
 			if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
 				node = alloc_sexp(tree_nodes[cur].text, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
 			} else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
@@ -748,7 +748,7 @@ void sexp_tree::right_clicked(int mode)
 							query_operator_argument_type(op, Replace_count); // check argument type at this position
 					} else {
 						Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
-						int container_index = get_index_sexp_container_name(tree_nodes[parent].text);
+						const int container_index = get_sexp_container_index(tree_nodes[parent].text);
 						op_type = Sexp_containers[container_index].opf_type;
 					}
 
@@ -1192,7 +1192,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 			else {
 				Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
-				int container_index = get_index_sexp_container_name(tree_nodes[parent].text);
+				const int container_index = get_sexp_container_index(tree_nodes[parent].text);
 				type = Sexp_containers[container_index].opf_type; 					
 			}
 
@@ -1340,7 +1340,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 			else {
 				Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
-				int container_index = get_index_sexp_container_name(tree_nodes[z].text);
+				const int container_index = get_sexp_container_index(tree_nodes[z].text);
 				type = Sexp_containers[container_index].opf_type; 					
 			}
 
@@ -1424,7 +1424,7 @@ void sexp_tree::right_clicked(int mode)
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 				bool TODO; // check for strongly typed containers
-				// int container_idx = get_index_sexp_container_name(CTEXT(Sexp_clipboard)); 
+				// int container_idx = get_sexp_container_index(CTEXT(Sexp_clipboard)); 
 				// z = Sexp_containers[container_idx].opf_type; 
 				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
 				menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
@@ -2260,7 +2260,7 @@ void sexp_tree::NodePaste()
 		}
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 		expand_operator(item_index);
-		int container_idx = get_index_sexp_container_name(Sexp_nodes[Sexp_clipboard].text);
+		const int container_idx = get_sexp_container_index(Sexp_nodes[Sexp_clipboard].text);
 		// don't add the default data cause we're still adding that stuff from the clipboard
 		int container_replace_type = tree_nodes[item_index].type | SEXPT_CONTAINER;
 		replace_container_data(container_idx, container_replace_type, false, true, false);
@@ -3344,7 +3344,7 @@ int sexp_tree::add_container_data(const char *data, bool add_default)
 	item_index = node;
 	*modified = 1;
 	if (add_default) {
-		add_default_modifier(get_index_sexp_container_name(data));
+		add_default_modifier(get_sexp_container_index(data));
 	}
 	return node;
 }
@@ -3700,7 +3700,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 			type = get_modify_variable_type(node);
 		}
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
-			int container_index = get_index_sexp_container_name(tree_nodes[item_index].text); 
+			const int container_index = get_sexp_container_index(tree_nodes[item_index].text); 
 			Assert (container_index != -1);
 			if (!(Sexp_containers[container_index].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA)) {
 				// if we don't have strongly typed data, we don't care if the data matches
@@ -3872,7 +3872,7 @@ void sexp_tree::replace_container_data(int container_idx, int type, bool test_ch
 	// if this is already a container of the right type, don't alter the child nodes
 	if (test_child_nodes && (tree_nodes[item_index].type & SEXPT_CONTAINER)) {
 		if (Sexp_containers[container_idx].type & SEXP_CONTAINER_LIST) {
-			int old_con_index = get_index_sexp_container_name(tree_nodes[item_index].text);
+			const int old_con_index = get_sexp_container_index(tree_nodes[item_index].text);
 
 			Assert (old_con_index != -1); 
 			
@@ -4664,7 +4664,7 @@ int sexp_tree::query_restricted_opf_range(int opf)
 sexp_list_item *sexp_tree::modifier_get_listing_opf(int parent_node, int arg_index, int type)
 {
 	Assert(tree_nodes[item_index].parent != -1);
-	int container_index = get_index_sexp_container_name(tree_nodes[tree_nodes[item_index].parent].text); 
+	const int container_index = get_sexp_container_index(tree_nodes[tree_nodes[item_index].parent].text); 
 
 	Assert(container_index != -1); 
 
@@ -6720,7 +6720,7 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node, bool modifi
 
 	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER); 
 
-	int container_index = get_index_sexp_container_name(tree_nodes[parent_node].text);
+	const int container_index = get_sexp_container_index(tree_nodes[parent_node].text);
 
 	Assert(container_index >= 0); 
 

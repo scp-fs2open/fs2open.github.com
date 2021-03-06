@@ -1351,7 +1351,7 @@ int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // sexp_containers
-int get_index_sexp_container_name(const char *text);
+int get_sexp_container_index(const char* name);
 bool sexp_replace_container_refs_with_values(char *text, int max_len); 
 bool sexp_replace_container_refs_with_values(SCP_string &text);
 

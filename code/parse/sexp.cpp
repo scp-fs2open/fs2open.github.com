@@ -14,6 +14,8 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
+#include <functional>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -906,7 +908,13 @@ sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
 SCP_vector<sexp_container> Sexp_containers;
-bool Container_edits_off;
+bool Container_edits_off; // TODO: maybe "Container_editing_disabled"?
+// non-extern vars
+// we can't use full name (SCP_string) as the key, because get_sexp_container_index() takes const char*
+// so every call to get_sexp_container_index() would construct a string before lookup (ugh)
+// TODO: altnertiave key: std::pair<char,char> being the first and last char of the name
+SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
+
 
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
 char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
@@ -3623,7 +3631,7 @@ int get_sexp()
 			Mp += 2;
 
 			// what kind of container?
-			int container_index = get_index_sexp_container_name(container);
+			const int container_index = get_sexp_container_index(container);
 
 			if (container_index == -1) {
 				Error(LOCATION, "Unknown container type detected in mission");
@@ -3932,6 +3940,7 @@ void stuff_sexp_list_containers()
 		new_list.type = SEXP_CONTAINER_LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), new_list.list_data.begin());
+			Container_indices_by_initial[new_list.container_name[0]].emplace_back((int)Sexp_containers.size() - 1);
 		} else {
 			Sexp_containers.pop_back();
 		}
@@ -3959,6 +3968,7 @@ void stuff_sexp_map_containers()
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
 				}
+				Container_indices_by_initial[new_map.container_name[0]].emplace_back((int)Sexp_containers.size() - 1);
 			}
 		} else {
 			Sexp_containers.pop_back();
@@ -4177,7 +4187,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
 	if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
-		int container_index = get_index_sexp_container_name(Sexp_nodes[node].text);
+		const int container_index = get_sexp_container_index(Sexp_nodes[node].text);
 		Assertion(container_index != -1, "Couldn't find container: %s\n", Sexp_nodes[node].text);
 
 		sprintf(dest, "&%s& ", Sexp_nodes[node].text);
@@ -23505,7 +23515,7 @@ void sexp_set_motion_debris(int node)
 */
 int container_has_data(const char *container_name, const char *possible_data)
 {
-	int index = get_index_sexp_container_name(container_name);
+	const int index = get_sexp_container_index(container_name);
 	int data_index = 0;
 
 	if (index < 0) {
@@ -23599,7 +23609,7 @@ int sexp_container_has_key(int node)
 	const char *possible_key;
 	const char *container_name = CTEXT(node);
 	SCP_vector<SCP_string> keys;
-	int index = get_index_sexp_container_name(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name);
@@ -23649,7 +23659,7 @@ int sexp_container_has_key(int node)
 int get_container_index_from_node (int node, int type)
 {
 	const char *container_name = CTEXT(node); 
-	int index = get_index_sexp_container_name(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name); 
@@ -23673,7 +23683,7 @@ void sexp_remove_from_list(int node)
 	int index_to_remove_from = -1;
 	const char *container_name = CTEXT(node);
 	const char *entry_to_remove;
-	int index = get_index_sexp_container_name(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name);
@@ -23754,7 +23764,7 @@ void sexp_remove_from_map(int node)
 {
 	const char *container_name = CTEXT(node);
 	const char *entry_to_remove;
-	int index = get_index_sexp_container_name(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name);
@@ -23815,7 +23825,7 @@ void sexp_add_to_map (int node)
 int sexp_is_container_empty (int node)
 {
 	const char *container_name = CTEXT(node);
-	int index = get_index_sexp_container_name(container_name);
+	int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name); 
@@ -23862,7 +23872,7 @@ int sexp_get_container_size(int node)
 void sexp_clear_container (int node)
 {
 	const char *container_name = CTEXT(node);
-	int index = get_index_sexp_container_name(container_name);
+	int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name); 
@@ -23886,7 +23896,7 @@ void sexp_get_map_keys(int node)
 	bool replace_contents = true;
 
 	const char *map_container_name = CTEXT(node);
-	int map_index = get_index_sexp_container_name(map_container_name);
+	const int map_index = get_sexp_container_index(map_container_name);
 
 	if (map_index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", map_container_name); 
@@ -23896,7 +23906,7 @@ void sexp_get_map_keys(int node)
 	node = CDR(node); 
 	const char *list_container_name = CTEXT(node);
 
-	int list_index = get_index_sexp_container_name(list_container_name);
+	const int list_index = get_sexp_container_index(list_container_name);
 
 	if (list_index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", list_container_name); 
@@ -23926,13 +23936,18 @@ void sexp_get_map_keys(int node)
 	}
 }
 
-/**
- * Return index of a map type sexp_container by its name, -1 if not found
- */
-int get_index_sexp_container_name(const char *name)
+int get_sexp_container_index_generic(const char *name,
+	const std::function<bool(const char*, const char*)>& match_func)
 {
-	for (int i = 0; i < (int)Sexp_containers.size() ; i++) {
-		if ( !stricmp(Sexp_containers[i].container_name.c_str(), name) ) {
+	const char initial = name[0];
+
+	if (Container_indices_by_initial.count(initial) == 0) {
+		return -1;
+	}
+
+	const SCP_vector<int>& indices = Container_indices_by_initial.at(initial);
+	for (const int& i : indices) {
+		if (match_func(Sexp_containers[i].container_name.c_str(), name)) {
 			return i;
 		}
 	}
@@ -23941,22 +23956,33 @@ int get_index_sexp_container_name(const char *name)
 	return -1;
 }
 
-// Karajorma - Based on the same function by Goober for variables.
+static bool str_match(const char* str1, const char* str2)
+{
+	return !stricmp(str1, str2);
+}
+
+/**
+ * Return index of a sexp_container by its name, or -1 if not found
+ */
+int get_sexp_container_index(const char* name) {
+	return get_sexp_container_index_generic(name, str_match);
+}
+
+static bool str_prefix(const char* prefix, const char* str)
+{
+	return strstr(str, prefix) == str;
+}
+
 /** 
 * Tests whether this position in a character array is the start of a container name
 * return index in Sexp_containers or -1 if not found
 **/
-int get_index_sexp_container_name_special(const SCP_string &text, size_t startpos)
+int get_sexp_container_index_special(const SCP_string &text, size_t start_pos)
 {
-	for (int i = 0; i < (int)Sexp_containers.size() ; i++) {
-		size_t pos = text.find(Sexp_containers[i].container_name, startpos); 
-		if (pos != SCP_string::npos && pos == startpos) {
-			return i;
-		}
-	}
+	Assert(!text.empty());
+	Assert(start_pos < text.length());
 
-	// not found
-	return -1;
+	return get_sexp_container_index_generic(text.c_str() + start_pos, str_prefix);
 }
 
 /**
@@ -24094,7 +24120,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 		// found?
 		if (foundHere != SCP_string::npos) {
 			// see if a container starts at the next char
-			int con_index = get_index_sexp_container_name_special(text, foundHere+1);
+			int con_index = get_sexp_container_index_special(text, foundHere+1);
 			if (con_index >= 0)	{				
 				// we have to replace &container&modifier/key& with the value but since we don't know the length of the modifier yet, this is going to get complicated. 
 				SCP_string replace_this = "&"; 
@@ -24119,7 +24145,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 					if (get_replace_text_for_modifier(text, con_index, lookHere, replacement_text, replace_this)) {
 						// in the case of multidimentional containers the inner containers name will be in this format &Container_Name&
 						if (replacement_text.find('&') == 0) {
-							con_index = get_index_sexp_container_name(replacement_text.substr(1, replacement_text.length() - 2).c_str());
+							con_index = get_sexp_container_index(replacement_text.substr(1, replacement_text.length() - 2).c_str());
 
 							// not entirely sure why the FREDder has decided to start the value with an & if this is not a multidimentional container, but since it's legal to do so.....
 							if (con_index == -1) {
@@ -31018,7 +31044,7 @@ const char* deal_with_container(int node, int container_index)
 		// we're dealing with a multidimentional array
 		node = CDR(node);
 
-		container_index = get_index_sexp_container_name(result.substr(1, (result.length() - 2)).c_str());
+		const int container_index = get_sexp_container_index(result.substr(1, (result.length() - 2)).c_str());
 
 		// if it's still nonsense, warn then bail
 		if ( container_index == -1 ) {
@@ -31127,7 +31153,7 @@ const char *CTEXT(int n, bool do_not_edit)
 		// TODO: remove unneeded assertion
 		Assertion((Sexp_nodes[n].type & SEXP_FLAG_CONTAINER), "deal_with_container() called for an unknown type of container"); 
  
-		int container_index = get_index_sexp_container_name(Sexp_nodes[n].text);
+		const int container_index = get_sexp_container_index(Sexp_nodes[n].text);
 
 		if (container_index < 0)  {
 			Warning(LOCATION, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
@@ -31167,6 +31193,7 @@ void init_sexp_vars()
 void init_sexp_containers()
 {
 	Sexp_containers.clear();
+	Container_indices_by_initial.clear();
 }
 
 
