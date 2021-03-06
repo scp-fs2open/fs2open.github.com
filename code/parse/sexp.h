@@ -976,7 +976,9 @@ const char *CTEXT(int n, bool do_not_edit = false);
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 
 // sexp container definitions
+// FIXME TODO: find a more descriptive name, maybe _CHAR_DELIM
 #define SEXP_CONTAINER_CHAR					('&')
+// TODO: maybe SEXP_CONTAINER_LIST_TYPE and similar for MAP						(1<<0)
 #define SEXP_CONTAINER_LIST							(1<<0)
 #define SEXP_CONTAINER_MAP							(1<<1)
 #define SEXP_CONTAINER_STRONGLY_TYPED_KEYS			(1<<2)
@@ -1207,6 +1209,17 @@ struct sexp_container
 	SCP_unordered_map<SCP_string, SCP_string> map_data;
 };
 
+// TODO: maybe something like this
+// nail down the requirements and re-evaluate the design
+template <typename ContainerT>
+struct sexp_container_new // TODO: remove "_new"
+{
+	SCP_string container_name;
+	int type;
+	int opf_type;
+	ContainerT container_data;
+};
+
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
@@ -1337,10 +1350,10 @@ bool generate_special_explosion_block_variables();
 int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
 
-// sexp_container
+// sexp_containers
 int get_index_sexp_container_name(const char *text);
-bool sexp_replace_container_with_values(char *text, int max_len); 
-bool sexp_replace_container_with_values(SCP_string &text);
+bool sexp_replace_container_refs_with_values(char *text, int max_len); 
+bool sexp_replace_container_refs_with_values(SCP_string &text);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);

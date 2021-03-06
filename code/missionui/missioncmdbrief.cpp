@@ -565,7 +565,7 @@ void cmd_brief_init(int team)
 	// Goober5000 - replace any variables (probably persistent variables) with their values. Also any containers
 	for (i = 0; i < Cur_cmd_brief->num_stages; i++) {
 		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
-		sexp_replace_container_with_values(Cur_cmd_brief->stage[i].text);
+		sexp_replace_container_refs_with_values(Cur_cmd_brief->stage[i].text);
 	}
 
 	if (Cur_cmd_brief->num_stages <= 0)

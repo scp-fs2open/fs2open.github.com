@@ -3925,7 +3925,6 @@ void stuff_sexp_list_containers()
 {
 	SCP_vector<SCP_string>	parsed_data;
 
-	// TODO: this loop condition doesn't look right. It looks like specifying multiple lists won't work
 	while (required_string_either("$End Lists", "$Name:")) {
 		Sexp_containers.emplace_back();
 		auto& new_list = Sexp_containers.back();
@@ -3946,7 +3945,6 @@ void stuff_sexp_map_containers()
 {
 	SCP_vector<SCP_string>	parsed_data;
 
-	// TODO: this loop condition doesn't look right. It looks like specifying multiple maps won't work
 	while (required_string_either("$End Maps", "$Name:")) {
 		Sexp_containers.emplace_back();
 		auto& new_map = Sexp_containers.back();
@@ -11404,7 +11402,7 @@ void sexp_hud_set_message(int n)
 			message = Messages[i].message;
 
 			sexp_replace_variable_names_with_values(message);
-			sexp_replace_container_with_values(message);
+			sexp_replace_container_refs_with_values(message);
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
@@ -16761,7 +16759,7 @@ void sexp_set_death_message(int n)
 	lcl_replace_stuff(Player->death_message);
 
 	sexp_replace_variable_names_with_values(Player->death_message);
-	sexp_replace_container_with_values(Player->death_message);
+	sexp_replace_container_refs_with_values(Player->death_message);
 }
 
 int sexp_key_pressed(int node)
@@ -23962,7 +23960,7 @@ int get_index_sexp_container_name_special(const SCP_string &text, size_t startpo
 }
 
 /**
-* Helper function for sexp_replace_container_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be. 
+* Helper function for sexp_replace_container_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
 **/
 bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &lookHere, SCP_string &replacement_text, SCP_string &replace_this)
 {
@@ -23980,7 +23978,7 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 		SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[con_index].map_data.find(key);
 
 		if (iter == Sexp_containers[con_index].map_data.end()) {
-			Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
+			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
 			return false;
 		}
 
@@ -24055,7 +24053,7 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 				break;
 
 			default:
-				Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
+				Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
 				return false;
 		}
 
@@ -24079,9 +24077,9 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 
 // Karajorma - Based on the same function by Goober for variables.
 /**
-* Replaces instances of a container in a text string with a value
+* Replaces container references in a text string with their values
 **/
-bool sexp_replace_container_with_values(SCP_string &text)
+bool sexp_replace_container_refs_with_values(SCP_string &text)
 {
 	bool replaced_anything = false;
 
@@ -24105,7 +24103,7 @@ bool sexp_replace_container_with_values(SCP_string &text)
 				// no modifier/key - skip past this container as it's malformed
 				if (text.compare((foundHere + 1 + Sexp_containers[con_index].container_name.length()), 1, "&")) {
 					lookHere = foundHere + 1; 
-					Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but there is no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This format is expected for maps &Container_Name&Key&", Sexp_containers[con_index].container_name.c_str());
+					Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but there is no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This format is expected for maps &Container_Name&Key&", Sexp_containers[con_index].container_name.c_str());
 					continue; 
 				}
 
@@ -24160,16 +24158,17 @@ bool sexp_replace_container_with_values(SCP_string &text)
 	return replaced_anything;
 }
 
-bool sexp_replace_container_with_values(char *text, int max_len)
+bool sexp_replace_container_refs_with_values(char *text, int max_len)
 {
 	Assert(text != NULL);
 	Assert(max_len >= 0);
 
 	SCP_string call_string_function = text; 
 
-	bool replaced_anything = sexp_replace_container_with_values(call_string_function);
+	bool replaced_anything = sexp_replace_container_refs_with_values(call_string_function);
 
 	if (replaced_anything) {
+		// TODO: does strncpy_s append null char?
 		strncpy_s(text, max_len, call_string_function.c_str(), max_len); 
 	}
 
@@ -31004,6 +31003,7 @@ char* deal_with_container(int node, int container_index)
 
 		// if this isn't an array or is empty we exit
 		if (!success) {
+			// FIXME: returning a ptr to a local var (i.e., on the stack)
 			return "";
 		}
 
