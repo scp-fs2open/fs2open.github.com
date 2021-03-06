@@ -3873,6 +3873,12 @@ int get_sexp()
 	return start;
 }
 
+void register_new_container_index(const SCP_string& container_name)
+{
+	const char initial_lower = SCP_tolower(container_name[0]);
+	Container_indices_by_initial[initial_lower].emplace_back((int)Sexp_containers.size() - 1);
+}
+
 bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type, SCP_vector<SCP_string>& data)
 {
 	SCP_string temp_type_string;
@@ -3941,7 +3947,7 @@ void stuff_sexp_list_containers()
 		new_list.type = SEXP_CONTAINER_LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), new_list.list_data.begin());
-			Container_indices_by_initial[new_list.container_name[0]].emplace_back((int)Sexp_containers.size() - 1);
+			register_new_container_index(new_list.container_name);
 		} else {
 			Sexp_containers.pop_back();
 		}
@@ -3969,7 +3975,7 @@ void stuff_sexp_map_containers()
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
 				}
-				Container_indices_by_initial[new_map.container_name[0]].emplace_back((int)Sexp_containers.size() - 1);
+				register_new_container_index(new_map.container_name);
 			}
 		} else {
 			Sexp_containers.pop_back();
@@ -23940,13 +23946,13 @@ void sexp_get_map_keys(int node)
 int get_sexp_container_index_generic(const char *name,
 	const std::function<bool(const char*, const char*)>& match_func)
 {
-	const char initial = name[0];
+	const char initial_lower = SCP_tolower(name[0]);
 
-	if (Container_indices_by_initial.count(initial) == 0) {
+	if (Container_indices_by_initial.count(initial_lower) == 0) {
 		return -1;
 	}
 
-	const SCP_vector<int>& indices = Container_indices_by_initial.at(initial);
+	const SCP_vector<int>& indices = Container_indices_by_initial.at(initial_lower);
 	for (const int& i : indices) {
 		if (match_func(Sexp_containers[i].container_name.c_str(), name)) {
 			return i;
