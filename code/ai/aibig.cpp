@@ -567,7 +567,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
 	float angle2goal = angle2subsys;
-	if (angle2goal > 1.2f) // let's not try to go more than 1.2 radians around the ship
+	if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
 		angle2goal = 1.2f;
 
 	// we'll start by travelling along the sphere at our current distance around the ship
@@ -619,8 +619,8 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	ai_turn_towards_vector(good_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 	float subsys_distance = vm_vec_dist(&Pl_objp->pos, &gsubpos);
 
-	//
-	accelerate_ship(aip, subsys_distance > 200.0f ? 1.0f : ((subsys_distance - 100.0f) / 100.0f));
+	// full speed until you're close, then slow down a bit
+	accelerate_ship(aip, subsys_distance > 200.0f ? 1.0f : subsys_distance / 200.0f);
 
 	if (!(Ships[Pl_objp->instance].flags[Ship::Ship_Flags::Afterburner_locked])) {
 		if (subsys_distance > 300.0f) {
