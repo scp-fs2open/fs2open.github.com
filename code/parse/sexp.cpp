@@ -31061,10 +31061,10 @@ const char* deal_with_container(int node, int container_index)
 		// we're dealing with a multidimentional array
 		node = CDR(node);
 
-		const int container_index = get_sexp_container_index(result.substr(1, (result.length() - 2)).c_str());
+		const int next_container_index = get_sexp_container_index(result.substr(1, (result.length() - 2)).c_str());
 
 		// if it's still nonsense, warn then bail
-		if ( container_index == -1 ) {
+		if (next_container_index == -1) {
 			Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
 			return Empty_str;
 		}
