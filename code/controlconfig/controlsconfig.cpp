@@ -701,20 +701,19 @@ int cc_line_query_visible(int n)
 void control_config_bind_btn(int i, const CC_bind &new_bind, int order)
 {
 	switch (order) {
-		// Bind states. Saving covered by below
-		case 0:
-		case 1:
-			break;
+	// Bind states. Saving covered by below
+	case 0:
+	case 1:
+		break;
 		
-		// Ignore states
-		case -1:
-			// Ignore silently
-			return;
+	// Ignore states
+	case -1:
+		// Ignore silently
+		return;
 
-		default:
-			// Ignore and complain
-			mprintf(("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.", order));
-			return;
+	// Error
+	default:
+		UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", order);
 	}
 
 	// Save both bindings, because ::take() can clear the other binding if it is equal.
@@ -810,7 +809,7 @@ int control_config_remove_binding()
 
 	default:
 		// Coder forgot to add a case!
-		Int3();
+		UNREACHABLE("Unhandled selItem case.");
 	}
 
 	control_config_conflict_check();
@@ -1652,8 +1651,7 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 			conflict_id = Conflicts[z].second;
 			break;
 		default:
-			mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
-			Int3();
+			UNREACHABLE("Invalid selItem passed to set_item_color: %i", static_cast<int>(item));
 		}
 	}
 
