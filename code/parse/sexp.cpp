@@ -30994,7 +30994,13 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				if (node == -1) {
 					return false;
 				}
-				data_index = eval_num(node); 
+				bool is_nan, is_nan_forever;
+				data_index = eval_num(node, is_nan, is_nan_forever); 
+				if (is_nan || is_nan_forever) {
+					return false;
+				}
+				Assert(data_index >= 0);
+				Assert((size_t)data_index < Sexp_containers[container_index].list_data.size());
 				result.assign(Sexp_containers[container_index].list_data.at(data_index));
 				return true;
 
@@ -31862,25 +31868,6 @@ int sexp_var_compare(const void *var1, const void *var2)
 void sexp_variable_sort()
 {
 	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
-}
-
-/**
- * Evaluate number which may result from an operator or may be text
- */
-int eval_num(int n)
-{
-	if (n < 0)
-	{
-		Int3();
-		return 0;
-	}
-
-	if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) // if argument is a container
-		return atoi(CTEXT(n));
-	else if (CAR(n) != -1)				// if argument is a sexp
-		return eval_sexp(CAR(n));
-	else
-		return atoi(CTEXT(n));		// otherwise, just get the number
 }
 
 // Goober5000
