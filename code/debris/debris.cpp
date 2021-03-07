@@ -430,7 +430,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		if (vaporize) {
 			dist /= 2.0f;
 		}
-		if ( dist > 200.0f ) {
+		if ( dist > source_obj->radius * 20.0f ) {
 			return NULL;
 		}
 	}
@@ -457,6 +457,29 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	db = &Debris[n];
 
+	if (!hull_flag) {
+		if (model_num >= 0) {
+			db->model_num = model_num;
+			db->submodel_num = (myrand() >> 4) % sip->generic_debris_num_submodels;
+		}
+		else if (vaporize) {
+			db->model_num = Debris_vaporize_model;
+			db->submodel_num = (myrand() >> 4) % Debris_num_submodels;
+		}
+		else {
+			db->model_num = Debris_model;
+			db->submodel_num = (myrand() >> 4) % Debris_num_submodels;
+		}
+	}
+	else {
+		db->model_num = model_num;
+		db->submodel_num = submodel_num;
+	}
+
+	db->model_instance_num = model_create_instance(false, db->model_num);
+
+	float radius = submodel_get_radius(db->model_num, db->submodel_num);
+
 	//WMC - We must survive until now, at least.
 	db->must_survive_until = timestamp();
 
@@ -469,13 +492,15 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		// Create Debris piece n!
 		if ( hull_flag ) {
 			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-				db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
+				db->lifeleft = 2.0f * (frand()) + 0.5f;
 			else {
 				db->flags.set(Debris_Flags::DoNotExpire);
 				db->lifeleft = -1.0f;		// large hull pieces stay around forever
 			}
-		} else {
-			db->lifeleft = (myrand() * RAND_MAX_1f) * 2.0f + 0.1f;
+		} else { 
+			// small non-hull pieces should stick around longer the larger they are
+			// sqrtf should make sure its never too crazy long
+			db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
 		}
 	}
 
@@ -533,22 +558,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->arc_frequency = 0;
 	}
 
-	if ( model_num < 0 )	{
-		if (vaporize) {
-			db->model_num = Debris_vaporize_model;
-		} else {
-			db->model_num = Debris_model;
-		}
-		db->submodel_num = (myrand()>>4) % Debris_num_submodels;
-	} else {
-		db->model_num = model_num;
-		db->submodel_num = submodel_num;
-	}
-
-	db->model_instance_num = model_create_instance(false, db->model_num);
-
-	float radius = submodel_get_radius( db->model_num, db->submodel_num );
-
 	db->next_fireball = timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
 	if ( pos == NULL )
@@ -559,7 +568,15 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
     default_flags.set(Object::Object_Flags::Physics);
     default_flags.set(Object::Object_Flags::Collides, hull_flag != 0);
 
-    objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &source_obj->orient, pos, radius, default_flags);
+	matrix orient = source_obj->orient;
+	if (!db->is_hull) {
+		// non-hull debris has no relation to its parent orientation
+		vec3d rand;
+		vm_vec_rand_vec(&rand);
+		vm_vector_2_matrix(&orient, &rand);
+	}
+
+    objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &orient, pos, radius, default_flags);
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
 		return NULL;
@@ -1127,7 +1144,7 @@ void debris_render(object * obj, model_draw_list *scene)
 		MONITOR_INC(NumHullDebrisRend, 1);
 	} else {
 		MONITOR_INC(NumSmallDebrisRend, 1);
-		render_info.set_flags(MR_NO_LIGHTING);
+		// render_info.set_flags(MR_NO_LIGHTING);
 	}
 
 	submodel_render_queue( &render_info, scene, pm, pmi, db->submodel_num, &obj->orient, &obj->pos );
@@ -1145,4 +1162,20 @@ bool debris_is_generic(debris *db)
 bool debris_is_vaporized(debris *db)
 {
 	return db->model_num == Debris_vaporize_model;
+}
+
+void create_generic_debris(object* ship_objp, vec3d* pos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris) {
+	Assertion(ship_objp->type == OBJ_SHIP, "create_generic_debris called for a non-ship, only ships can spew debris!");
+	if (ship_objp->type != OBJ_SHIP)
+		return;
+
+	float num_debris = frand_range(min_num_debris, max_num_debris);
+
+	num_debris *= (Detail.num_small_debris + 0.5f) / 4.5f;
+
+	vec3d create_pos = *pos;
+	for (int i = 0; i < num_debris; i++) {
+		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
+		debris_create(ship_objp, model_num, -1, &create_pos, pos, 0, speed_mult);
+	}
 }
