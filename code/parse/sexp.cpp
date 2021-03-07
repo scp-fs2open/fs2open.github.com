@@ -14,7 +14,9 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
+#include <algorithm>
 #include <functional>
+#include <iterator>
 
 #include <cstdio>
 #include <cstdlib>
@@ -3945,7 +3947,7 @@ void stuff_sexp_list_containers()
 
 		new_list.type = SEXP_CONTAINER_LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
-			std::copy(parsed_data.begin(), parsed_data.end(), new_list.list_data.begin());
+			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
 			register_new_container_index(new_list.container_name);
 		} else {
 			Sexp_containers.pop_back();
