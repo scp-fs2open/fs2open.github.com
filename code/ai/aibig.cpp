@@ -1160,7 +1160,7 @@ void ai_big_chase()
 		if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
 			if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
 				dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
-			else // I'm fairly the retail this retail code VVV meant to use / instead of * 
+			else // I'm fairly sure this retail code VVV meant to use / instead of * 
 				dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
 		} else {
 			// don;t have normal so use a conservative value here
