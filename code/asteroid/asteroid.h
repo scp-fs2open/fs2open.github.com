@@ -73,6 +73,8 @@ public:
 	int			model_num[NUM_DEBRIS_POFS];
 	SCP_vector<int> explosion_bitmap_anims;
 	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
+	SCP_string	display_name;									// only used for hud targeting display and for 'ship' asteroids
+	float		spawn_weight;									// ship asteroids only, relative proportion to spawn compared to other types in its asteroid field
 
 	asteroid_info( )
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
