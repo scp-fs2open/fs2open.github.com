@@ -24036,56 +24036,58 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 		}
 
 		for (modifier_index = 0; modifier_index < MAX_CONTAINER_MODIFIERS; modifier_index++) {
-			modifier_name.assign(Container_modifiers[modifier_index].name);
-			int result = text.compare(lookHere, modifier_name.length(), modifier_name);
-			if (!result) {
+			modifier_name = Container_modifiers[modifier_index].name;
+			// TODO: make comparison case-insensitive
+			if (!text.compare(lookHere, modifier_name.length(), modifier_name)) {
 				break;
 			}
 		}
+
+		// FIXME TODO: handle case of modifier not found
 
 		int data_index;
 		int number_of_elements;
 		int number_length = 0;
 		SCP_string number_string;
+		auto &list_data = Sexp_containers[con_index].list_data;
 
 		switch (modifier_index) {
 
 			case SNF_CONTAINER_GET_FIRST:
-				// TODO: replace all of the calls to assign() with `=` operator
-				replacement_text.assign(Sexp_containers[con_index].list_data.front());
+				replacement_text = list_data.front();
 				break;
 
 			case SNF_CONTAINER_GET_LAST:
-				replacement_text.assign(Sexp_containers[con_index].list_data.back());
+				replacement_text = list_data.back();
 				break;
 
 			case SNF_CONTAINER_REMOVE_FIRST:
-				replacement_text.assign(Sexp_containers[con_index].list_data.front());
-				Sexp_containers[con_index].list_data.pop_front();
+				replacement_text = list_data.front();
+				list_data.pop_front();
 				break;
 
 			case SNF_CONTAINER_REMOVE_LAST:
-				replacement_text.assign(Sexp_containers[con_index].list_data.back());
-				Sexp_containers[con_index].list_data.pop_back();
+				replacement_text = list_data.back();
+				list_data.pop_back();
 				break;
 
 			case SNF_CONTAINER_GET_RANDOM:
-				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
+				number_of_elements = (int)list_data.size();
 				data_index = rand_internal(0, number_of_elements-1);
-				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
+				replacement_text = list_data.at(data_index);
 				break;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
-				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
+				number_of_elements = (int)list_data.size();
 				data_index = rand_internal(0, number_of_elements-1);
-				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
-				Sexp_containers[con_index].list_data.erase(Sexp_containers[con_index].list_data.begin() + data_index);
+				replacement_text = list_data.at(data_index);
+				list_data.erase(std::next(list_data.begin(), data_index));
 				break;
 
 			case SNF_CONTAINER_AT_INDEX:
 				number_string = text.substr(lookHere + 2);
 				data_index = atoi(number_string.c_str());
-				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
+				replacement_text = list_data.at(data_index);
 
 				//we'll need this later, so we might as well grab it now
 				number_length = (int)strspn(number_string.c_str(), "0123456789");
@@ -24096,21 +24098,21 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 				return false;
 		}
 
-		replace_this.append(Container_modifiers[modifier_index].name); 
+		replace_this.append(Container_modifiers[modifier_index].name);
 		lookHere += strlen(Container_modifiers[modifier_index].name);
 
-		// for the at modifier we also need to add the number to the text we are going to replace. 
+		// for the at modifier we also need to add the number to the text we are going to replace.
 		if (modifier_index == SNF_CONTAINER_AT_INDEX) {
-			replace_this.append(text.substr(lookHere + 2, number_length ));						
-			lookHere += number_length; 
+			replace_this.append(text.substr(lookHere + 2, number_length ));
+			lookHere += number_length;
 		}
 
 		//advance past the final '&'
-		replace_this.append("&");				
+		replace_this.append("&");
 		lookHere++;
 	}
 
-	return true; 
+	return true;
 }
 
 
@@ -30903,28 +30905,28 @@ int check_text_for_variable_name(const char *text)
 	 }
 }
 
-bool deal_with_container_sub(int &node, int container_index, SCP_string &result) 
-{ 	
+bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
+{
 	if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
 		const char *buffer = CTEXT(node);
-		SCP_unordered_map<SCP_string, SCP_string>::iterator value = Sexp_containers[container_index].map_data.find(buffer);
+		// TODO: watch out for overhead from implicit SCP_string construction like here
+		auto valueIt = Sexp_containers[container_index].map_data.find(buffer);
 
 		// not found
-		if (value == Sexp_containers[container_index].map_data.end()) {
+		if (valueIt == Sexp_containers[container_index].map_data.end()) {
 			if (Log_event) {
-				SCP_string log_string = log_string.assign(Sexp_containers[container_index].container_name); 
+				SCP_string log_string = Sexp_containers[container_index].container_name;
 				log_string.append(" map container returned nothing when searched for key ");
 				log_string.append(buffer);
-				Current_event_log_container_buffer->push_back(log_string); 
+				Current_event_log_container_buffer->emplace_back(log_string);
 			}
 			return false;
  		}	
 
-		result.assign(value->second);
+		result = valueIt->second;
 		return true; 
 	}
 	else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
-
 		// if the container is empty, we might as well quit now
 		if (Sexp_containers[container_index].list_data.empty()) {
 			return false;
@@ -30950,42 +30952,43 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 
 		int number_of_elements;
 		int data_index;
+		auto &list_data = Sexp_containers[container_index].list_data;
 
 		switch (modifier_index) {
 			case SNF_CONTAINER_GET_FIRST:
-				result.assign(Sexp_containers[container_index].list_data.front());
+				result = list_data.front();
 				return true;
-	
+
 			case SNF_CONTAINER_GET_LAST:
-				result.assign(Sexp_containers[container_index].list_data.back());
+				result = list_data.back();
 				return true;
-	
+
 			case SNF_CONTAINER_REMOVE_FIRST:
-				result.assign(Sexp_containers[container_index].list_data.front());
+				result = list_data.front();
 				if (allow_container_modifications()) {
-					Sexp_containers[container_index].list_data.pop_front();
+					list_data.pop_front();
 				}
 				return true;
-	
+
 			case SNF_CONTAINER_REMOVE_LAST:
-				result.assign(Sexp_containers[container_index].list_data.back());				
+				result = list_data.back();
 				if (allow_container_modifications()) {
-					Sexp_containers[container_index].list_data.pop_back();
+					list_data.pop_back();
 				}
 				return true;
-	
+
 			case SNF_CONTAINER_GET_RANDOM:
 				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1); 
-				result.assign(Sexp_containers[container_index].list_data.at(data_index));
+				data_index = rand_internal(0, number_of_elements-1);
+				result = list_data.at(data_index);
 				return true;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
 				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1); 
-				result.assign(Sexp_containers[container_index].list_data.at(data_index));				
+				data_index = rand_internal(0, number_of_elements-1);
+				result = list_data.at(data_index);
 				if (allow_container_modifications()) {
-					Sexp_containers[container_index].list_data.erase(Sexp_containers[container_index].list_data.begin() + data_index);
+					list_data.erase(std::next(list_data.begin(), data_index));
 				}
 				return true;
 
@@ -31001,7 +31004,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				}
 				Assert(data_index >= 0);
 				Assert((size_t)data_index < Sexp_containers[container_index].list_data.size());
-				result.assign(Sexp_containers[container_index].list_data.at(data_index));
+				result = list_data.at(data_index);
 				return true;
 
 			default:
