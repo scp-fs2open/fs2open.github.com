@@ -1393,7 +1393,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_5)
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	Assert(mActionToVal.size() == CCFG_MAX);
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected.");
 }
 
 /*! Loads the various control configuration maps to allow the parsing functions to appropriately map string tokns to
@@ -1677,7 +1677,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 					break;
 				}
 			}
-			Assert(buf_str != "");
+			Assertion(buf_str != "", "Unknown key found during ccfg.tbl write: 0x%X", key);
 		} else {
 			// Not bound
 			buf_str = "NONE";
@@ -1700,7 +1700,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assertion(buf_str != "", "Unknown tab found during ccfg.tbl write: %i", static_cast<int>(item.tab));
 		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
 
 		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
@@ -1714,7 +1714,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assertion(buf_str != "", "Unknown CC_type found during ccfg.tbl write: %i", static_cast<int>(item.type));
 		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
