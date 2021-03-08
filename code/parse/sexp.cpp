@@ -23735,31 +23735,29 @@ void sexp_remove_from_list(int node)
 }
 
 /**
- * Add an entry to a SEXP list container.
+ * Add entries to a SEXP list container.
  */
-// Review Note: given the `while` loop, the description of this and the other add/remove SEXPs is potentially incorrect
-//             it adds/removes as many items as specified, not just a single entry
-void sexp_add_to_list (int node)
+void sexp_add_to_list(int node)
 {
-	int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
+	const int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
 
 	if (index < 0) {
 		return;
 	}
 
 	node = CDR(node);
-	const bool push_back = is_sexp_true(node); 
+	const bool add_to_back = is_sexp_true(node);
 
-	node = CDR(node); 
+	node = CDR(node);
 
 	int type = Sexp_containers[index].type; 
 	// TO DO - ADD TYPE CHECKING CODE HERE!
 
 	while (node != -1) {
-		if (push_back) {
-			Sexp_containers[index].list_data.push_back(CTEXT(node));
+		if (add_to_back) {
+			Sexp_containers[index].list_data.emplace_back(CTEXT(node));
 		} else {
-			Sexp_containers[index].list_data.push_front(CTEXT(node));
+			Sexp_containers[index].list_data.emplace_front(CTEXT(node));
 		}
 
 		node = CDR(node); 
