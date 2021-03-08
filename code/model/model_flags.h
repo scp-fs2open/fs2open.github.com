@@ -10,7 +10,6 @@ namespace Model {
 		Stepped_rotate,		// This means that the rotation occurs in steps
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
-		Turret_matrix,		// If set, this has it's turret matrix created correctly.
 		Awacs,				// If set, this subsystem has AWACS capability
 		Artillery,			// if this rotates when weapons are fired - Goober5000
 		Triggered,			// rotates when triggered by something

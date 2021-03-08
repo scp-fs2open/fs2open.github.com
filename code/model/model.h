@@ -156,8 +156,7 @@ public:
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
     char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	vec3d	turret_norm;						//	direction this turret faces
-	matrix	turret_matrix;						// turret_norm converted to a matrix.  This is now only used for Turret_alt_math
+	vec3d	turret_norm;						//	direction this turret faces (i.e. the normal to the turret base, or the center of the field of view)
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
 	float	turret_y_fov;						//  turret's base's fov
@@ -916,9 +915,6 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset = false);
-
-// Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
