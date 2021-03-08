@@ -8750,7 +8750,7 @@ float get_damage_caused(const ship_registry_entry *ship_entry, int attacker_sig)
 }
 
 // Karajorma
-int sexp_get_damage_caused(int node)
+int sexp_get_damage_caused(int node) 
 {
 	int ship_class, attacker_sig;
 	float damage_caused = 0.0f;
