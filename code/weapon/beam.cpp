@@ -1353,7 +1353,12 @@ void beam_render(beam *b, float u_offset)
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
 			vec3d nearest;
-			vm_vec_dist_to_line(&Eye_position, &b->last_start, &b->last_shot, &nearest, nullptr);
+			int result = vm_vec_dist_to_line(&Eye_position, &b->last_start, &b->last_shot, &nearest, nullptr);
+			if (result == 1)
+				nearest = b->last_shot;
+			if (result == -1)
+				nearest = b->last_start;
+
 			fade *= neb2_get_fog_visibility(&nearest, 4.0f + (b->beam_light_width / 10.0f));
 		}
 
@@ -1469,7 +1474,7 @@ static float get_muzzle_glow_alpha(beam* b)
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
-		alpha *= neb2_get_fog_visibility(&b->last_start, 4.0f + (b->beam_light_width / 10.0f));
+		alpha *= neb2_get_fog_visibility(&b->last_start, NEB_FOG_VISIBILITY_MULT_BEAM(b->beam_light_width));
 	}
 
 	return alpha;

@@ -491,23 +491,23 @@ void render_shield(int shield_num)
 
 		float alpha = 0.9999f;
 		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= neb2_get_fog_visibility(centerp, 1.2f);
+			alpha *= neb2_get_fog_visibility(centerp, NEB_FOG_VISIBILITY_MULT_SHIELD);
 		}
 
-		int r, g, b;
-		r = (int)(Shield_hits[shield_num].rgb[0] * alpha);
-		g = (int)(Shield_hits[shield_num].rgb[1] * alpha);
-		b = (int)(Shield_hits[shield_num].rgb[2] * alpha);
+		ubyte r, g, b;
+		r = (ubyte)(Shield_hits[shield_num].rgb[0] * alpha);
+		g = (ubyte)(Shield_hits[shield_num].rgb[1] * alpha);
+		b = (ubyte)(Shield_hits[shield_num].rgb[2] * alpha);
 
 		if ( bitmap_id <= -1 ) {
 			return;
 		}
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
-			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, r, g, b);
 		} else if ( Detail.shield_effects < 4 ) {
 			for ( int i = 0; i < Shield_hits[shield_num].num_tris; i++ ) {
-				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, r, g, b);
 			}
 		} else {
 			float hit_radius = pm->core_radius;

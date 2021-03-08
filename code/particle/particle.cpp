@@ -41,7 +41,7 @@ namespace
 
 	static int Particles_enabled = 1;
 
-	float get_current_alpha(vec3d* pos)
+	float get_current_alpha(vec3d* pos, float rad)
 	{
 		float dist;
 		float alpha = 0.99999f;
@@ -67,7 +67,7 @@ namespace
 		}
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_particles)
-			alpha *= neb2_get_fog_visibility(pos, 1.4f);
+			alpha *= neb2_get_fog_visibility(pos, NEB_FOG_VISIBILITY_MULT_PARTICLE(rad));
 
 		return alpha;
 	}
@@ -406,7 +406,7 @@ namespace particle
 		}
 
 		// calculate the alpha to draw at
-		auto alpha = get_current_alpha(&p_pos);
+		auto alpha = get_current_alpha(&p_pos, part->radius);
 
 		// if it's transparent then just skip it
 		if (alpha <= 0.0f)

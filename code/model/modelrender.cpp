@@ -1685,7 +1685,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
-					d *= neb2_get_fog_visibility(&world_pnt, 1.2f);
+					d *= neb2_get_fog_visibility(&world_pnt, NEB_FOG_VISIBILITY_MULT_GLOWPOINT);
 					w *= 1.5;	//make it bigger in a nebula
 				}
 				
@@ -2145,7 +2145,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
-				fog_int = neb2_get_fog_visibility(&npnt, 1.2f);
+				fog_int = neb2_get_fog_visibility(&npnt, NEB_FOG_VISIBILITY_MULT_THRUSTER);
 
 				if (fog_int > 1.0f)
 					fog_int = 1.0f;

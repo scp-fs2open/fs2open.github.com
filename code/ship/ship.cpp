@@ -19641,7 +19641,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->is_small_ship() ) ) {			
 			// force detail levels
 			float fog_val = neb2_get_fog_visibility(obj);
-			if ( fog_val <= 0.4f ) {
+			if ( fog_val <= 0.15f ) {
 				render_info.set_detail_level_lock(2);
 			}
 		}

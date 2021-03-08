@@ -161,6 +161,10 @@ float Neb2_awacs = -1.0f;
 float Neb2_fog_near_mult = 1.0f;
 float Neb2_fog_far_mult = 1.0f;
 
+
+// this is the percent of visibility at the fog far distance
+const float NEB_FOG_FAR_PCT = 0.1f;
+
 // how many "slices" are in the current player nebuls
 int Neb2_slices = 5;
 
