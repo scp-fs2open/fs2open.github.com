@@ -156,6 +156,31 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
+ADE_VIRTVAR(Offset, l_Subsystem, "vector", "Translated offset of subobject or turret base", "vector", "Offset, or zero vector if handle is not valid")
+{
+	ship_subsys_h *sso;
+	vec3d *vec = nullptr;
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto smi = sso->ss->submodel_instance_1;
+	if (smi == nullptr)
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR && vec != nullptr)
+	{
+		smi->canonical_prev_offset = smi->canonical_offset;
+		smi->canonical_offset = *vec;
+
+		smi->cur_offset = vm_vec_mag(vec);
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(smi->canonical_offset));
+}
+
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
 {
 	ship_subsys_h *sso;

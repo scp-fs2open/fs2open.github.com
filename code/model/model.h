@@ -90,6 +90,14 @@ struct submodel_instance
 	float	turn_accel = 0.0f;
 	TIMESTAMP stepped_rotation_started;
 
+	float	cur_offset = 0.0f;
+	float	prev_offset = 0.0f;
+
+	float	current_shift_rate = 0.0f;
+	float	desired_shift_rate = 0.0f;
+	float	shift_accel = 0.0f;
+	int		shift_step_zero_timestamp = timestamp();	// timestamp determines when next step is to begin (for stepped translation)
+
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
 
@@ -97,6 +105,9 @@ struct submodel_instance
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
 	matrix	canonical_orient = vmd_identity_matrix;
 	matrix	canonical_prev_orient = vmd_identity_matrix;
+	// similarly for translation
+	vec3d	canonical_offset = vmd_zero_vector;
+	vec3d	canonical_prev_offset = vmd_zero_vector;
 
 	// --- these fields used to be in bsp_info ---
 
@@ -350,8 +361,15 @@ public:
 	vec3d	rotation_axis = vmd_zero_vector;			// which axis this subobject rotates on.
 	int		rotation_axis_id = MOVEMENT_AXIS_NONE;		// for optimization
 
+	int		translation_type = MOVEMENT_TYPE_NONE;
+	vec3d	translation_axis = vmd_zero_vector;
+	int		translation_axis_id = MOVEMENT_AXIS_NONE;
+
 	float	default_turn_rate = 0.0f;
 	float	default_turn_accel = 0.0f;
+
+	float	default_shift_rate = 0.0f;
+	float	default_shift_accel = 0.0f;
 
 	flagset<Model::Submodel_flags> flags;
 

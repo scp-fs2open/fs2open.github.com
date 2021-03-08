@@ -751,7 +751,10 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 	int mn = subobj_num;
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
 	{
-		g3_start_instance_matrix(&pm->submodel[mn].offset, &pmi->submodel[mn].canonical_orient, true);
+		vec3d offset = pm->submodel[mn].offset;
+		vm_vec_add2(&offset, &pmi->submodel[mn].canonical_offset);
+
+		g3_start_instance_matrix(&offset, &pmi->submodel[mn].canonical_orient, true);
 		g3_count++;
 		mn = pm->submodel[mn].parent;
 	}

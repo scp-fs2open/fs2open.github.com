@@ -74,6 +74,9 @@ struct oo_info_sent_to_players {
 	SCP_vector<float> subsystem_2b;
 	SCP_vector<float> subsystem_2h;
 	SCP_vector<float> subsystem_2p;
+	SCP_vector<float> subsystem_x;
+	SCP_vector<float> subsystem_y;
+	SCP_vector<float> subsystem_z;
 };
 
 struct oo_netplayer_records{
@@ -354,6 +357,9 @@ void multi_rollback_ship_record_add_ship(int obj_num)
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2b.push_back(-1.0f);
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2h.push_back(-1.0f);
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2p.push_back(-1.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_x.push_back(0.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_y.push_back(0.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_z.push_back(0.0f);
 		}
 	}
 
@@ -909,7 +915,9 @@ void multi_oo_respawn_reset_info(object* objp)
 			player_record.last_sent[objp->net_signature].subsystem_2b[i] = -1.0f;
 			player_record.last_sent[objp->net_signature].subsystem_2h[i] = -1.0f;
 			player_record.last_sent[objp->net_signature].subsystem_2p[i] = -1.0f;
-
+			player_record.last_sent[objp->net_signature].subsystem_x[i] = 0.0f;
+			player_record.last_sent[objp->net_signature].subsystem_y[i] = 0.0f;
+			player_record.last_sent[objp->net_signature].subsystem_z[i] = 0.0f;
 		}
 	}
 
@@ -1373,6 +1381,27 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				delete angs_1;
 				delete angs_2;
 			}
+
+			// ditto for translation
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Translates]) {
+				auto smi = subsystem->submodel_instance_1;
+
+				if (smi && smi->canonical_offset.xyz.x != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_x[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_x;
+					subsys_data.push_back(smi->canonical_offset.xyz.x);
+				}
+
+				if (smi && smi->canonical_offset.xyz.y != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_y[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_y;
+					subsys_data.push_back(smi->canonical_offset.xyz.y);
+				}
+
+				if (smi && smi->canonical_offset.xyz.z != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_z[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_z;
+					subsys_data.push_back(smi->canonical_offset.xyz.z);
+				}
+			}
+
 			i++;
 		}
 
@@ -1911,6 +1940,24 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 				if (flags[i] & OO_SUBSYS_ROTATION_2p) {
 					prev_angs_2->p = angs_2->p;
 					angs_2->p = (subsys_data[data_idx] * PI2);
+					data_idx++;
+				}
+
+				if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
+					subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
+					data_idx++;
+				}
+
+				if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
+					subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
+					data_idx++;
+				}
+
+				if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
+					subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
 					data_idx++;
 				}
 
@@ -2541,6 +2588,15 @@ void multi_init_oo_and_ship_tracker()
 	
 	temp_sent_to_player.subsystem_2p.reserve(MAX_MODEL_SUBSYSTEMS);
 	temp_sent_to_player.subsystem_2p.push_back(0.0f);
+
+	temp_sent_to_player.subsystem_x.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_x.push_back(0.0f);
+
+	temp_sent_to_player.subsystem_y.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_y.push_back(0.0f);
+
+	temp_sent_to_player.subsystem_z.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_z.push_back(0.0f);
 
 	temp_netplayer_records.last_sent.push_back(temp_sent_to_player);
 	Oo_info.frame_info.push_back(temp_position_records);

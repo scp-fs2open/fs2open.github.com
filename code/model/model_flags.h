@@ -25,6 +25,7 @@ namespace Model {
 
 	FLAG_LIST(Subsystem_Flags) {
 		Rotates,			// This means the object rotates automatically
+		Translates,			// This means the object translates automatically
 		Stepped_rotate,		// This means that the rotation occurs in steps
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
