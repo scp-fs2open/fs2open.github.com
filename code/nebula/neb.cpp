@@ -937,7 +937,6 @@ void neb2_render_player()
 		return;
 	}
 
-	return;
 	if (Neb2_regen) {
 		neb2_regen();
 		Neb2_regen = 0;

@@ -1458,12 +1458,11 @@ static float get_muzzle_glow_alpha(beam* b)
 
 	// determine what alpha to draw this bitmap with
 	// higher alpha the closer the bitmap gets to the eye
-	dist = vm_vec_dist_quick(&Eye_position,& b->last_start);
+	dist = vm_vec_dist_quick(&Eye_position, &b->last_start);
 
 	// if the point is inside the inner radius, alpha is based on distance to the player's eye,
 	// becoming more transparent as it gets close
-	if (dist <= inner_radius)
-	{
+	if (dist <= inner_radius) {
 		// alpha per meter between the magic # and the inner radius
 		alpha /= (inner_radius - magic_num);
 

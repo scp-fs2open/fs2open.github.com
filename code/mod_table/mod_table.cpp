@@ -392,7 +392,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Neb_affects_particles);
 		}
 		
-		if (optional_string("Fireballs affected by nebula visibility:")) {
+		if (optional_string("$Fireballs affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_fireballs);
 		}
 
@@ -678,8 +678,8 @@ void mod_table_reset()
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
 	Render_player_mflash = false;
-	Neb_affects_beams = true;
-	Neb_affects_weapons = true;
-	Neb_affects_particles = true;
-	Neb_affects_fireballs = true;
+	Neb_affects_beams = false;
+	Neb_affects_weapons = false;
+	Neb_affects_particles = false;
+	Neb_affects_fireballs = false;
 }
