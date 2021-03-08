@@ -964,10 +964,6 @@ void neb2_render_poofs()
 	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
 		return;
 	}
-	
-	// no poofs, bail
-	if (!Neb2_poof_flags)
-		return;
 
 	if (Neb2_regen) {
 		neb2_regen();
@@ -1324,9 +1320,12 @@ void neb2_get_eye_orient(matrix *eye_matrix)
 // get a (semi) random bitmap to use for a poof
 int neb2_get_bitmap()
 {
-	Assertion(Neb2_poof_flags, "Cannot get a random poof without any poofs!");
+	if (Neb2_poof_flags == 0)
+		return -1;
+
 	int neb2_choose = 0;
 	int mission_num_poofs = 0;
+
 
 	// count up poofs in use
 	for (int i = 0; i < MAX_NEB2_POOFS; i++) {
@@ -1348,10 +1347,6 @@ int neb2_get_bitmap()
 		}
 	}
 
-	// bitmap 0
-	if (Neb2_poofs[neb2_choose] < 0) {
-		return Neb2_poofs[0];
-	}
 	return Neb2_poofs[neb2_choose];
 }
 
