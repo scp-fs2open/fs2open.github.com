@@ -3632,14 +3632,13 @@ int get_sexp()
 			// bump past closing '&'
 			Mp += 2;
 
-			// what kind of container?
 			const int container_index = get_sexp_container_index(container);
 
 			if (container_index == -1) {
-				Error(LOCATION, "Unknown container type detected in mission");
+				Error(LOCATION, "Attempt to use unknown container '%s'", container);
 			}
 
-			// advance to the control options since we'll read them in using get_sexp() below
+			// advance to the control options, since we'll read them when calling get_sexp() below
 			while ( *Mp != '(' ) {
 				Mp++;
 			}
@@ -3649,6 +3648,8 @@ int get_sexp()
 				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
 			} else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
 				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
+			} else {
+				Error(LOCATION, "Unknown container type %d detected in mission", Sexp_containers[container_index].type);
 			}
 
 			ignore_white_space();
