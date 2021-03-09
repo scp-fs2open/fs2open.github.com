@@ -973,26 +973,24 @@ bool mc_shield_check_common(shield_tri	*tri)
 
 bool mc_check_sldc(int offset)
 {
-	//ShivanSpS - Changed the type char for a type int (Now SLC2)
 	if (offset > Mc_pm->sldc_size-5) //no way is this big enough
 		return false;
-
-	int *type_p = (int *)(Mc_pm->shield_collision_tree+offset);
+	char *type_p = (char *)(Mc_pm->shield_collision_tree+offset);
 	
 	// not used
-	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+4);
+	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+1);
 	// split and polygons
-	auto *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+8);
-	auto *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+20);
+	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
+	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
 
 	// split
-	auto *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
-	auto *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
+	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
 
 	// polygons
-	auto *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
+	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
 
-	auto *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
+	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
 
 
 
