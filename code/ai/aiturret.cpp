@@ -1246,11 +1246,13 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
  * in global space.
  * @note2 Because of this, both single-part and multi-part turrets are treated the same way; no need to find the multi-part's gun submodel.
  */
-void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos, vec3d *gvec)
+void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, vec3d *gpos, vec3d *gvec)
 {
 	auto model_instance_num = Ships[objp->instance].model_instance_num;
-	model_instance_find_world_point(gpos, &tp->pnt, model_instance_num, tp->subobj_num, &objp->orient, &objp->pos);
-	model_instance_find_world_dir(gvec, &tp->turret_norm, model_instance_num, tp->subobj_num, &objp->orient);
+	if (gpos)
+		model_instance_find_world_point(gpos, &vmd_zero_vector, model_instance_num, tp->subobj_num, &objp->orient, &objp->pos);
+	if (gvec)
+		model_instance_find_world_dir(gvec, &tp->turret_norm, model_instance_num, tp->subobj_num, &objp->orient);
 }
 
 void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss);
@@ -1555,8 +1557,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 
 	//	Compute absolute gun position.
 	vec3d	abs_gun_pos;
-	vm_vec_unrotate(&abs_gun_pos, &ssp->system_info->pnt, &objp->orient);
-	vm_vec_add2(&abs_gun_pos, &objp->pos);
+	ship_get_global_turret_info(objp, ssp->system_info, &abs_gun_pos, nullptr);
 
 	//	Only pick a turret to attack on large ships.
 	if (!esip->is_big_or_huge())

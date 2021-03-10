@@ -646,12 +646,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	vec3d gpos;
 	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
-
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &objp->orient);
-
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &objp->pos);
+	ship_get_global_turret_info(objp, tp, &gpos, nullptr);
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
