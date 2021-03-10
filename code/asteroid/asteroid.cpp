@@ -1878,7 +1878,7 @@ void maybe_change_asteroid_name(asteroid_info* asip) {
 		return;
 
 	if (num.empty() || std::find_if(num.begin(),
-		num.end(), [](unsigned char c) { return !std::isdigit(c); }) != num.end())
+		num.end(), [](unsigned char c) { return !std::isdigit(c, SCP_default_locale); }) != num.end())
 		return;
 
 	// make sure this asteroid would correspond the 'species section' of the old style retail asteroids
