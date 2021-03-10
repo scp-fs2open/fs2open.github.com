@@ -819,13 +819,13 @@ model_draw_list::~model_draw_list() {
 	reset();
 }
 
-void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, bsp_info * sm )
+void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, submodel_instance *smi )
 {
 	int i;
 	float width = 0.9f;
 	color primary, secondary;
 
-	Assert( sm->num_arcs > 0 );
+	Assert( smi->num_arcs > 0 );
 
 	if ( interp->get_model_flags() & MR_SHOW_OUTLINE_PRESET ) {
 		return;
@@ -845,9 +845,9 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 	}
 
-	for ( i = 0; i < sm->num_arcs; i++ ) {
+	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
-		switch ( sm->arc_type[i] ) {
+		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
@@ -875,7 +875,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&sm->arc_pts[i][0], &sm->arc_pts[i][1], &primary, &secondary, width);
+		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
@@ -1227,24 +1227,19 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		return;
 	}
 
-	bsp_info *model = &pm->submodel[mn];
-	submodel_instance *smi = NULL;
+	bsp_info *sm = &pm->submodel[mn];
+	submodel_instance *smi = nullptr;
 
-	if ( pmi != NULL ) {
+	if ( pmi != nullptr ) {
 		smi = &pmi->submodel[mn];
-	}
-
-	if ( smi != NULL ) {
 		if ( smi->blown_off ) {
 			return;
 		}
-	} else if ( model->blown_off ) {
-		return;
 	}
 
 	const uint model_flags = interp->get_model_flags();
 
-	if (model->is_thruster) {
+	if (sm->is_thruster) {
 		if ( !( model_flags & MR_SHOW_THRUSTERS ) ) {
 			return;
 		}
@@ -1261,56 +1256,31 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = model->angs;
+	matrix submodel_orient = vmd_identity_matrix;
 
-	if ( smi != NULL ) {
-		ang = smi->angs;
+	if ( smi != nullptr ) {
+		submodel_orient = smi->canonical_orient;
 	}
 
-	// Add barrel rotation if needed
-	if ( model->gun_rotation ) {
-		if ( pm->gun_submodel_rotation > PI2 ) {
-			pm->gun_submodel_rotation -= PI2;
-		} else if ( pm->gun_submodel_rotation < 0.0f ) {
-			pm->gun_submodel_rotation += PI2;
-		}
-
-		ang.b += pm->gun_submodel_rotation;
-	}
-
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = model->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &model->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	scene->push_transform(&model->offset, &submodel_matrix);
+	scene->push_transform(&sm->offset, &submodel_orient);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
-		pm->submodel[mn].outline_buffer != NULL ) {
+		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
-		scene->add_outline(pm->submodel[mn].outline_buffer, pm->submodel[mn].n_verts_outline, &outline_color);
+		scene->add_outline(sm->outline_buffer, sm->n_verts_outline, &outline_color);
 	} else {
-		if ( trans_buffer && pm->submodel[mn].trans_buffer.flags & VB_FLAG_TRANS ) {
-			model_render_buffers(scene, rendering_material, interp, &pm->submodel[mn].trans_buffer, pm, mn, detail_level, tmap_flags);
+		if ( trans_buffer && sm->trans_buffer.flags & VB_FLAG_TRANS ) {
+			model_render_buffers(scene, rendering_material, interp, &sm->trans_buffer, pm, mn, detail_level, tmap_flags);
 		} else {
-			model_render_buffers(scene, rendering_material, interp, &pm->submodel[mn].buffer, pm, mn, detail_level, tmap_flags);
+			model_render_buffers(scene, rendering_material, interp, &sm->buffer, pm, mn, detail_level, tmap_flags);
 		} 
 	}
 
-	if ( model->num_arcs ) {
-		model_render_add_lightning( scene, interp, pm, &pm->submodel[mn] );
+	if ( smi != nullptr && smi->num_arcs > 0 ) {
+		model_render_add_lightning( scene, interp, pm, smi );
 	}
 
-	i = model->first_child;
+	i = sm->first_child;
 
 	while ( i >= 0 ) {
 		if ( !pm->submodel[i].is_thruster ) {
@@ -1320,7 +1290,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		i = pm->submodel[i].next_sibling;
 	}
 
-	if ( model->is_thruster ) {
+	if ( sm->is_thruster ) {
 		rendering_material->set_lighting(true);
 	}
 
@@ -1458,7 +1428,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 		if (model->use_render_box_offset) {
 			offset = model->render_box_offset;
 		} else {
-			model_find_submodel_offset(&offset, pm->id, submodel_num);
+			model_find_submodel_offset(&offset, pm, submodel_num);
 		}
 
 		vm_vec_copy_scale(&box_min, &model->render_box_min, box_scale);
@@ -1478,7 +1448,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 		if (model->use_render_sphere_offset) {
 			offset = model->render_sphere_offset;
 		} else {
-			model_find_submodel_offset(&offset, pm->id, submodel_num);
+			model_find_submodel_offset(&offset, pm, submodel_num);
 		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, sphere_radius, view_pos)) ) {
@@ -1489,13 +1459,15 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	return true;
 }
 
-void submodel_render_immediate(model_render_params *render_info, int model_num, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
+	Assert(pm->id == pmi->model_num);
+
 	model_draw_list model_list;
 	
 	model_list.init();
 
-	submodel_render_queue(render_info, &model_list, model_num, submodel_num, orient, pos);
+	submodel_render_queue(render_info, &model_list, pm, pmi, submodel_num, orient, pos);
 
 	model_list.init_render();
 	model_list.render_all();
@@ -1511,9 +1483,10 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	gr_set_lighting(false, false);
 }
 
-void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
-	polymodel * pm;
+	Assert(pm->id == pmi->model_num);
+
 	model_material rendering_material;
 
 	//MONITOR_INC( NumModelsRend, 1 );	
@@ -1530,8 +1503,6 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		
 	uint flags = render_info->get_model_flags();
 	int objnum = render_info->get_object_number();
-
-	pm = model_get(model_num);
 
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
@@ -1626,8 +1597,8 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		}
 	}
 	
-	if ( pm->submodel[submodel_num].num_arcs )	{
-		model_render_add_lightning( scene, render_info, pm, &pm->submodel[submodel_num] );
+	if ( pmi->submodel[submodel_num].num_arcs > 0 )	{
+		model_render_add_lightning( scene, render_info, pm, &pmi->submodel[submodel_num] );
 	}
 
 	if ( set_autocen ) {
@@ -1637,7 +1608,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 	scene->pop_transform();
 }
 
-void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, ship* shipp, bool use_depth_buffer)
+void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
 {
 	glow_point *gpt = &bank->points[point_num];
 	vec3d loc_offset = gpt->pnt;
@@ -1649,7 +1620,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	bool submodel_rotation = false;
 
 	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
-		model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
+		model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_parent);
 
 		submodel_rotation = true;
 	}
@@ -1658,7 +1629,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_parent, &tempv, &loc_norm);
+		find_submodel_instance_point_normal(&loc_offset, &loc_norm, pm, pmi, bank->submodel_parent, &tempv, &loc_norm);
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -1807,7 +1778,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 						cone_dir_rot = gpo->cone_direction; 
 					}
 
-					find_submodel_instance_point_normal(&unused, &cone_dir_model, shipp->model_instance_num, bank->submodel_parent, &unused, &cone_dir_rot);
+					find_submodel_instance_point_normal(&unused, &cone_dir_model, pm, pmi, bank->submodel_parent, &unused, &cone_dir_rot);
 					vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
 					vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 					cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
@@ -1911,24 +1882,26 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 			bank->glow_timestamp=time;
 		}
 
-		if ( ( gpo && gpo->off_time_override ) ? gpo->off_time : bank->off_time ) {
-			if ( bank->is_on ) {
-				if( ((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) > ((time - ((gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time)) % (((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) + ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time))) ){
+		int on_time = (gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time;
+		int off_time = (gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time;
+		int disp_time = (gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time;
+
+
+		if (off_time) {
+			bool glow_state = ((time - disp_time) % (on_time + off_time)) < on_time;
+
+			if ( glow_state != bank->is_on )
 					bank->glow_timestamp = time;
-					bank->is_on = 0;
-				}
-			} else {
-				if( ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time) < ((time - ((gpo && gpo->disp_time_override)?gpo->disp_time:bank->disp_time)) % (((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time))) ){
-					bank->glow_timestamp = time;
-					bank->is_on = 1;
-				}
-			}
+			
+			bank->is_on = glow_state;
 		}
 	}
 }
 
-void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
+void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
 {
+	Assert(pmi == nullptr || pm->id == pmi->model_num);
+
 	if ( Rendering_to_shadow_map ) {
 		return;
 	}
@@ -1968,8 +1941,12 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 		if (bank->glow_bitmap == -1)
 			continue;
 
-		if (pm->submodel[bank->submodel_parent].blown_off)
-			continue;
+		if (pmi != nullptr) {
+			auto smi = &pmi->submodel[bank->submodel_parent];
+			if (smi->blown_off) {
+				continue;
+			}
+		}
 
 		if ((gpo && gpo->off_time_override && !gpo->off_time)?gpo->is_on:bank->is_on) {
 			if ( (shipp != NULL) && !(shipp->glow_point_bank_active[i]) )
@@ -1979,14 +1956,14 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 				Assert( bank->points != NULL );
 				int flick;
 
-				if (pm->submodel[pm->detail[0]].num_arcs) {
-					flick = static_rand( timestamp() % 20 ) % (pm->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
+					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
 				} else {
 					flick = 1;
 				}
 
 				if (flick == 1) {
-					model_render_glowpoint(j, pos, orient, bank, gpo, pm, shipp, use_depth_buffer);
+					model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
 				} // flick
 			} // for slot
 		} // bank is on
@@ -2001,7 +1978,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	int n_q = 0;
 	size_t 	k;
 	vec3d norm, norm2, fvec, pnt, npnt;
-	thruster_bank *bank = NULL;
+	thruster_bank *bank = nullptr;
+	polymodel_instance *pmi = nullptr;
 	vertex p;
 	bool do_render = false;
 
@@ -2075,7 +2053,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
 		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
-			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
+			model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 			submodel_rotation = true;
 		}
@@ -2093,9 +2071,12 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 			if ( submodel_rotation ) {
 				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
-
 				tempv = loc_offset;
-				find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_num, &tempv, &loc_norm);
+
+				if (pmi == nullptr)
+					pmi = model_get_instance(shipp->model_instance_num);
+
+				find_submodel_instance_point_normal(&loc_offset, &loc_norm, pm, pmi, bank->submodel_num, &tempv, &loc_norm);
 			}
 
 			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -2390,41 +2371,13 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 
 	bsp_info *model = &pm->submodel[mn];
 
-	if ( model->blown_off ) {
-		return;
-	}
-
 	// Get submodel rotation data and use submodel orientation matrix
 	// to put together a matrix describing the final orientation of
 	// the submodel relative to its parent
-	angles ang = model->angs;
+	// (Not needed here because we're not using model instances)
+	matrix submodel_orient = vmd_identity_matrix;
 
-	// Add barrel rotation if needed
-	if ( model->gun_rotation ) {
-		if ( pm->gun_submodel_rotation > PI2 ) {
-			pm->gun_submodel_rotation -= PI2;
-		} else if ( pm->gun_submodel_rotation < 0.0f ) {
-			pm->gun_submodel_rotation += PI2;
-		}
-
-		ang.b += pm->gun_submodel_rotation;
-	}
-
-	// Compute final submodel orientation by using the orientation matrix
-	// and the rotation angles.
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent
-	matrix rotation_matrix = model->orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &model->orientation);
-
-	matrix submodel_matrix;
-	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
-
-	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
+	g3_start_instance_matrix(&model->offset, &submodel_orient, true);
 
 	if ( debug_flags & MR_DEBUG_PIVOTS ) {
 		model_draw_debug_points( pm, &pm->submodel[mn], debug_flags );
@@ -2504,14 +2457,18 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render,
-                            bool sort)
+void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render, bool sort)
+{
+	model_render_immediate(render_info, model_num, -1, orient, pos, render, sort);
+}
+
+void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render, bool sort)
 {
 	model_draw_list model_list;
 
 	model_list.init();
 
-	model_render_queue(render_info, &model_list, model_num, orient, pos);
+	model_render_queue(render_info, &model_list, model_num, model_instance_num, orient, pos);
 
 	model_list.init_render(sort);
 
@@ -2548,6 +2505,11 @@ void model_render_immediate(model_render_params* render_info, int model_num, mat
 }
 
 void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos)
+{
+	model_render_queue(interp, scene, model_num, -1, orient, pos);
+}
+
+void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
 {
 	int i;
 
@@ -2592,30 +2554,38 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
+		int tentative_num = -1;
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
-			pmi = model_get_instance(shipp->model_instance_num);
+			tentative_num = shipp->model_instance_num;
 		}
-		else if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			if (objp->type == OBJ_ASTEROID) {
-				pmi = model_get_instance(Asteroids[objp->instance].model_instance_num);
-			} else if (objp->type == OBJ_WEAPON) {
-				pmi = model_get_instance(Weapons[objp->instance].model_instance_num);
-			} else if (objp->type == OBJ_JUMP_NODE) {
-				CJumpNode* jnp = jumpnode_get_by_objnum(objnum);
-				Assertion(jnp != nullptr, "Could not find jump node with object number %d!", objnum);
-				pmi = model_get_instance(jnp->GetPolymodelInstanceNum());
-			} else {			
-				Warning(LOCATION, "Unsupported object type %d for rendering intrinsic-rotate submodels!", objp->type);
-			}
+		else {
+			tentative_num = object_get_model_instance(objp);
+		}
+
+		if (tentative_num >= 0) {
+			model_instance_num = tentative_num;
 		}
 	}
 
 	// is this a skybox with a rotating submodel?
 	extern int Nmodel_num, Nmodel_instance_num;
-	if (model_num == Nmodel_num && Nmodel_instance_num >= 0)
-		pmi = model_get_instance(Nmodel_instance_num);
+	if (model_num == Nmodel_num && Nmodel_instance_num >= 0) {
+		model_instance_num = Nmodel_instance_num;
+	}
+
+	if (model_instance_num >= 0) {
+		pmi = model_get_instance(model_instance_num);
+
+		// This can happen if we supply a HUD target model for a real ship.
+		// The passed parameter was -1 but it was assigned an instance from
+		// the actual object.  Set it back to -1 if there is a mismatch.
+		if (pmi->model_num != pm->id) {
+			model_instance_num = -1;
+			pmi = nullptr;
+		}
+	}
 	
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
@@ -2793,8 +2763,8 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 
-			if ( pm->submodel[detail_model_num].num_arcs ) {
-				model_render_add_lightning( scene, interp, pm, &pm->submodel[detail_model_num] );
+			if ( pmi != nullptr && pmi->submodel[detail_model_num].num_arcs > 0 ) {
+				model_render_add_lightning( scene, interp, pm, &pmi->submodel[detail_model_num] );
 			}
 		}
 	}
@@ -2847,7 +2817,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 
 	// start rendering glow points -Bobboau
 	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
-		model_render_glow_points(pm, shipp, orient, pos, Glowpoint_use_depth_buffer);
+		model_render_glow_points(pm, pmi, shipp, orient, pos, Glowpoint_use_depth_buffer);
 	}
 
 	// Draw the thruster glow

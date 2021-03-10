@@ -34,15 +34,15 @@ void Undo_system::clamp_stacks() {
 void Undo_system::clear() {
 	clear_redo();
 
-	for (auto& item : undo_stack) {
-		delete item;
+	for (auto &element : undo_stack) {
+		delete element;
 	}
 	undo_stack.clear();
 }
 
 void Undo_system::clear_redo() {
-	for (auto& item : redo_stack) {
-		delete item;
+	for (auto &element : redo_stack) {
+		delete element;
 	}
 	redo_stack.clear();
 }
@@ -141,8 +141,8 @@ std::pair<const void*, const void*> Undo_stack::restore() {
 			retval = (*it)->restore();
 		}
 	} else {
-		for (auto& item : stack) {
-			retval = item->restore();
+		for (auto &element : stack) {
+			retval = element->restore();
 		}
 	}
 
@@ -159,8 +159,8 @@ void Undo_stack::untrack() {
 }
 
 void Undo_stack::clear() {
-	for (auto& item : stack) {
-		delete item;
+	for (auto &element : stack) {
+		delete element;
 	}
 	stack.clear();
 }

@@ -155,18 +155,18 @@ class SourceOrientation {
 	 *
 	 * @param vec The vector to create the matrix from
 	 */
-	void setFromVector(const vec3d& vec);
+	void setFromVector(const vec3d& vec, bool relative = false);
 
 	/**
 	 * @brief Sets the direction from an already normalized vector
 	 *
 	 * @param vec The normalized vector
 	 */
-	void setFromNormalizedVector(const vec3d& vec);
+	void setFromNormalizedVector(const vec3d& vec, bool relative = false);
 
 	void setNormal(const vec3d& normal);
 
-	void setFromMatrix(const matrix& mat);
+	void setFromMatrix(const matrix& mat, bool relative = false);
 
 	vec3d getDirectionVector(const SourceOrigin* origin) const;
 

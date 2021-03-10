@@ -1268,7 +1268,6 @@ void gr_set_shader(shader *shade);
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

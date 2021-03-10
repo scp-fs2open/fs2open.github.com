@@ -11,8 +11,8 @@ ADE_OBJ(l_AudioStream, int, "audio_stream", "An audio stream handle");
 
 ADE_FUNC(play,
 	l_AudioStream,
-	"[number volume = -1.0 /* By default uses preset volume of the stream type */, boolean loop = false]",
-	"Starts playing the audio stream",
+   "[number volume = -1.0 /* By default sets the last used volume of this stream, if applicable. Otherwise, uses preset volume of the stream type */, boolean loop = false]",
+    "Starts playing the audio stream",
 	"boolean",
 	"true on success, false otherwise")
 {

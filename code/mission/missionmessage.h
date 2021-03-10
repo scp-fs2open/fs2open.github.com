@@ -164,6 +164,8 @@ extern int Num_messages;
 extern int Num_builtin_messages;				// from messages.tbl -- index of message location to load mission specific messages into
 extern int Message_shipnum;					// used to display info on hud when message is sent
 
+extern SCP_vector<SCP_string> Generic_message_filenames;
+
 // variable, etc for persona information
 #define MAX_PERSONA_TYPES		4
 
@@ -203,10 +205,10 @@ int	message_is_playing();
 void	message_maybe_distort();
 void	message_kill_all( int kill_all );
 
-void	message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type=-1 );
+void	message_queue_message(int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type, int event_num_to_cancel);
 
 // functions which send messages to player -- called externally
-void	message_send_unique_to_player( const char *id, const void *data, int source, int priority, int group, int delay);
+void	message_send_unique_to_player( const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
 void	message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter );
 
 // functions to deal with personas

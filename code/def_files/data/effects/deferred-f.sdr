@@ -65,15 +65,23 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 		if (lightType == LT_TUBE) {  // Tube light
 			float beamLength = length(beamVec);
 			vec3 beamDir = beamVec / beamLength;
+			//The actual 'lighting element' is shorter than the light volume cylinder
+			//To compensate the light is moved forward along the beam one radius and the length shortened
+			//this allows room for clean falloff of the light past the ends of beams.
+			vec3 adjustedLightPos = lightPosition - (beamDir * lightRadius);
+			beamLength = beamLength - (lightRadius * 2.0);
+			//adjustments having been made, lightdir needs recalculating
+			lightDir = adjustedLightPos - position.xyz;
 			// Get nearest point on line
 			float neardist = clamp(dot(lightDir, beamDir), 0.0, beamLength);
 			// Move back from the endpoint of the beam along the beam by the distance we calculated
-			vec3 nearest = lightPosition - beamDir * neardist;
+			vec3 nearest = adjustedLightPos - beamDir * neardist;
 			lightDir = nearest - position.xyz;
 			dist = length(lightDir);
 			if(dist > lightRadius) {
 				discard;
 			}
+			attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
 		} else if (lightType == LT_CONE) {
 			float coneDot = dot(normalize(-lightDir), coneDir);
 			if(dualCone) {

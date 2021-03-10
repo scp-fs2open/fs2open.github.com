@@ -9,6 +9,12 @@
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/particle.h"
 
+#include "scripting/lua/LuaValue.h"
+
+#include "scripting/api/objs/bytearray.h"
+#include "scripting/api/objs/audio_stream.h"
+#include "sound/audiostr.h"
+
 #include "physics/physics.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
@@ -24,6 +30,58 @@ namespace api {
 //*************************Testing stuff*************************
 //This section is for stuff that's considered experimental.
 ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
+
+ADE_FUNC(openAudioStreamMem,
+	l_Testing,
+	"string snddata, enumeration stream_type /* AUDIOSTREAM_* values */",
+	"Opens an audio stream of the specified in-memory file contents and type.",
+	"audio_stream",
+	"A handle to the opened stream or invalid on error")
+{
+	luacpp::LuaValue snddata_arr(L);
+	enum_h streamTypeEnum;
+	if (!ade_get_args(L, "ao", &snddata_arr, l_Enum.Get(&streamTypeEnum))) {
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
+
+	int streamType;
+	switch (streamTypeEnum.index) {
+	case LE_ASF_EVENTMUSIC:
+		streamType = ASF_EVENTMUSIC;
+		break;
+	case LE_ASF_MENUMUSIC:
+		streamType = ASF_MENUMUSIC;
+		break;
+	case LE_ASF_VOICE:
+		streamType = ASF_VOICE;
+		break;
+	default:
+		LuaError(L, "Invalid audio stream type %d.", streamTypeEnum.index);
+		return ade_set_args(L, "o", l_AudioStream.Set(-1));
+	}
+	
+	
+	if (!snddata_arr.pushValue(L))
+	    return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    if (!lua_isstring(L, -1)) {
+        lua_pop(L, 1);
+        LuaError(L, "Expected binary string containing audio.");
+        return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    }
+    
+    size_t snd_len;
+    auto snddata = lua_tolstring(L, -1, &snd_len);
+	
+    int ah = audiostream_open_mem(reinterpret_cast<const uint8_t *>(snddata), snd_len, streamType);
+	lua_pop(L, 1);
+    if (ah < 0) {
+        LuaError(L,"Stream could not be opened. Did you pass valid audio?");
+        return ade_set_args(L, "o", l_AudioStream.Set(-1));
+    }
+
+	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+}
+
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {

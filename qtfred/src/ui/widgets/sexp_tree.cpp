@@ -121,6 +121,8 @@ QString node_image_to_resource_name(NodeImage image) {
 		return ":/images/data90.png";
 	case NodeImage::DATA_95:
 		return ":/images/data95.png";
+	case NodeImage::COMMENT:
+		return ":/images/comment.png";
 	}
 	return ":/images/bitmap1.png";
 }
@@ -1218,6 +1220,11 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -4102,13 +4109,14 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_type() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_keypress() {
-	int i;
 	sexp_list_item head;
-	auto& Default_config = Control_config_presets[0].bindings;
+	const auto& Default_config = Control_config_presets[0].bindings;
 
-	for (i = 0; i < CCFG_MAX; i++) {
-		if ((Default_config[i].get_btn(CID_KEYBOARD) != -1) && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(Default_config[i].get_btn(CID_KEYBOARD)));
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
+
+		if ((btn >= -1) && !Control_config[i].disabled) {
+			head.add_data_dup(textify_scancode(btn));
 		}
 	}
 

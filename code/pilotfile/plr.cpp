@@ -174,6 +174,7 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
+	int strikes = 0;
 	// flags
 	HUD_config.show_flags = handler->readInt("show_flags");
 	HUD_config.show_flags2 = handler->readInt("show_flags2");
@@ -187,15 +188,28 @@ void pilotfile::plr_read_hud()
 	HUD_config.rp_flags = handler->readInt("rp_flags");
 	HUD_config.rp_dist = handler->readInt("rp_dist");
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
-		Warning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
 		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
 	}
+
 	// basic colors
 	HUD_config.main_color = handler->readInt("main_color");
-	HUD_color_alpha = handler->readInt("color_alpha");
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Player file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = handler->readInt("color_alpha");
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Player file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_set_color(HUD_config.main_color);

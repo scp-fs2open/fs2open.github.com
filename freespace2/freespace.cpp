@@ -287,9 +287,6 @@ fix FrametimeOverall = 0;
 
 int	Framerate_cap = 120;
 
-// to determine if networking should be disabled, needs to be done first thing
-int Networking_disabled = 0;
-
 // for the model page in system
 extern void model_page_in_start();
 
@@ -1317,6 +1314,8 @@ void game_post_level_init()
 
 	freespace_mission_load_stuff();
 
+	mission_process_alt_types();
+
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
 		Script_system.SetHookObject("Player", Player_obj);
@@ -1617,6 +1616,11 @@ void game_init()
 		outwnd_init();
 	}
 
+	// Cyborg17 -- This section used to be in game_main(), but in a section before outwnd_init()
+	if (Is_standalone){
+		nprintf(("Network", "Standalone running\n"));
+	}
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
@@ -1811,7 +1815,7 @@ void game_init()
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	hud_init_comm_orders();	// Goober5000
 
@@ -3325,7 +3329,7 @@ void game_render_frame( camid cid )
 	nebl_render_all();
 
 	// render local player nebula
-	neb2_render_player();
+	neb2_render_poofs();
 
 	batching_render_all(false);
 
@@ -4358,16 +4362,16 @@ int game_poll()
 {
 	if (!Cmdline_no_unfocus_pause)
 	{
-		if (!os_foreground()) {
+		// If we're in a single player game, pause it.  
+		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
+		// otherwise, ship interpolation will become inaccurate.
+		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
 			game_stop_time();
 			os_sleep(1);
 			game_start_time();
+			if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active())) {
+				game_process_pause_key();
 
-			// If we're in a single player game, pause it.
-			if (!(Game_mode & GM_MULTIPLAYER)){
-				if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()))	{
-					game_process_pause_key();
-				}
 			}
 		}
 	}
@@ -5460,11 +5464,22 @@ void game_enter_state( int old_state, int new_state )
 			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != nullptr)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
 				Main_hall_netgame_started = 1;
 				main_hall_do_multi_ready();
-			}
 
-			if(Cmdline_start_mission) {
+				if (Cmdline_start_mission) {
+					mprintf(( "Ignoring the -start_mission commandline because it is incompatible with multiplayer.\n"));
+					Cmdline_start_mission = nullptr;
+				}
+
+			} else if(Cmdline_start_mission) {
 				strcpy_s(Game_current_mission_filename, Cmdline_start_mission);
 				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
+
+				// force to singleplayer, because this is a singleplayer only commmandline option
+				if (Game_mode & GM_MULTIPLAYER) {
+					Game_mode = GM_NORMAL;
+					mprintf(( "Forcing to single player mode.  Multiplayer is not compatible with the -start_mission commandline.\n" ));
+				}
+
 				gameseq_post_event(GS_EVENT_START_GAME);
 				// This stops the mission from loading again when you go back to the hall
 				Cmdline_start_mission = nullptr;
@@ -6424,12 +6439,6 @@ int game_main(int argc, char *argv[])
 {
 	int state;
 
-	// check if networking should be disabled, this could probably be done later but the sooner the better
-	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
-	if ( Ship_info.size() > MAX_SHIP_CLASSES_MULTI ) {
-		Networking_disabled = 1;
-	}
-
 #ifdef _WIN32
 	// Find out how much RAM is on this machine
 	MEMORYSTATUSEX ms;
@@ -6459,11 +6468,6 @@ int game_main(int argc, char *argv[])
 
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
-	}
-
-
-	if (Is_standalone){
-		nprintf(("Network", "Standalone running\n"));
 	}
 
 	game_init();
@@ -7535,6 +7539,15 @@ int main(int argc, char *argv[])
 	::CoInitialize(nullptr);
 
 	SCP_mspdbcs_Initialise();
+
+	// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
+	// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
+	// seems to close or otherwise grab the streams for somthing else.
+	if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+		freopen("CONIN$", "r", stdin);
+		freopen("CONOUT$", "w", stdout);
+		freopen("CONOUT$", "w", stderr);
+	}
 #else
 #ifdef APPLE_APP
     char pathbuf[PROC_PIDPATHINFO_MAXSIZE];

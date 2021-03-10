@@ -774,8 +774,11 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
+		auto pmi = model_get_instance(debrisp->model_instance_num);
+		auto pm = model_get(pmi->model_num);
+
 		// This calls the colour that doesn't get reset
-		submodel_render_immediate( &render_info, debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos);
+		submodel_render_immediate( &render_info, pm, pmi, debrisp->submodel_num, &target_objp->orient, &obj_pos);
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -794,7 +797,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		printable_ship_class = Ship_info[debrisp->ship_info_index].get_display_name();
 	
 	renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, printable_ship_class);	
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("Debris", 348));	
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("debris", 348));	
 }
 
 /**
@@ -1157,11 +1160,11 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
-			strcpy_s(hud_name, NOX("asteroid"));
+			strcpy_s(hud_name, XSTR("asteroid", 431));
 			break;
 
 		default:
-			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->asteroid_type / NUM_DEBRIS_SIZES) - 1].species_name);
+			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].name);
 			break;
 	}
 
@@ -1169,7 +1172,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	
 
 	if ( time_to_impact >= 0.0f ) {
-		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
+		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, XSTR("impact: %.1f sec", 1596), time_to_impact);	
 	}
 }
 

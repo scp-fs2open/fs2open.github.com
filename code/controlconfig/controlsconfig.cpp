@@ -193,8 +193,8 @@ static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last
 int Control_config_overlay_id;
 
 struct conflict {
-	int first = -1;  // index of other control in conflict with this one
-	int second = -1; // index of other control in conflict with this one
+	int first = -1;     // index of other control in conflict with this one
+	int second = -1;    // index of other control in conflict with this one
 };
 
 SCP_vector<conflict> Conflicts;
@@ -722,10 +722,9 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 			sel = -1;
 			break;
 
+		// Error
 		default:
-			// Ignore and complain
-			mprintf(("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.", static_cast<int>(order)));
-			return;
+			UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", order);
 	}
 
 	// Save both bindings, because ::take() can clear the other binding if it is equal.
@@ -804,7 +803,7 @@ int control_config_remove_binding()
 
 	default:
 		// Coder forgot to add a case!
-		Int3();
+		UNREACHABLE("Unhandled selItem case.");
 	}
 
 	control_config_conflict_check();
@@ -915,14 +914,21 @@ int control_config_clear_all()
 int control_config_do_reset()
 {
 	int i, total = 0;
-	const int CCFG_SIZE = static_cast<int>(Control_config.size());
 	Undo_stack stack;
 	auto &default_bindings = Control_config_presets[Defaults_cycle_pos].bindings;
 
 	// first, determine how many bindings need to be changed
-	for (i = 0; i < CCFG_SIZE; ++i) {
-		if ((Control_config[i].first != default_bindings[i].first) ||
-			(Control_config[i].second != default_bindings[i].second)) {
+	for (size_t e = 0; e < Control_config.size(); ++e) {
+		auto item = Control_config[e];
+		auto default_item = default_bindings[e];
+
+		if (item.disabled) {
+			// skip
+			continue;
+		}
+
+		if ((item.first != default_item.first) ||
+		    (item.second != default_item.second)) {
 			total++;
 		}
 	}
@@ -1642,8 +1648,7 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 		conflict_id = Conflicts[z].second;
 		break;
 	default:
-		mprintf(("Invalid selItem passed to set_item_color: %i", static_cast<int>(item)));
-		Int3();
+		UNREACHABLE("Invalid selItem passed to set_item_color: %i", static_cast<int>(item));
 	}
 
 	if (conflict_id >= 0) {

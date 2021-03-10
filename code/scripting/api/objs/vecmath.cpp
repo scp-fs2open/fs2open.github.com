@@ -549,8 +549,12 @@ ADE_FUNC(getCrossProduct,
 	return ade_set_args(L, "o", l_Vector.Set(v3r));
 }
 
-ADE_FUNC(getScreenCoords, l_Vector, nullptr, "Gets screen cordinates of a world vector",
-         ade_type_info({"number", "number"}), "X (number), Y (number), or false if off-screen")
+ADE_FUNC(getScreenCoords,
+	l_Vector,
+	nullptr,
+	"Gets screen cordinates of a world vector",
+	"number, number",
+	"X (number), Y (number), or false if off-screen")
 {
 	vec3d v3;
 	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
@@ -591,6 +595,28 @@ ADE_FUNC(getNormalized,
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(projectParallel,
+	l_Vector,
+	"vector unitVector",
+	"Returns a projection of the vector along a unit vector.  The unit vector MUST be normalized.",
+	"vector",
+	"The projected vector, or NIL if a handle is invalid")
+{
+	vec3d *src, *unit;
+	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&unit)))
+		return ADE_RETURN_NIL;
+
+	if (!vm_vec_is_normalized(unit))
+	{
+		LuaError(L, "The unit vector MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
+
+	vec3d dest;
+	vm_vec_projection_parallel(&dest, src, unit);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
 ADE_FUNC(projectOntoPlane,
 	l_Vector,
 	"vector surfaceNormal",
@@ -602,6 +628,12 @@ ADE_FUNC(projectOntoPlane,
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&normal)))
 		return ADE_RETURN_NIL;
 
+	if (!vm_vec_is_normalized(normal))
+	{
+		LuaError(L, "The surface normal MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
+
 	vec3d dest;
 	vm_vec_projection_onto_plane(&dest, src, normal);
 	return ade_set_args(L, "o", l_Vector.Set(dest));
@@ -611,7 +643,7 @@ ADE_FUNC(findNearestPointOnLine,
 	l_Vector,
 	"vector point1, vector point2",
 	"Finds the point on the line defined by point1 and point2 that is closest to this point.  (The line is assumed to extend infinitely in both directions; the closest point will not necessarily be between the two points.)",
-	ade_type_info({ "vector", "number" }),
+	"vector, number",
 	"Returns two arguments.  The first is the nearest point, and the second is a value indicating where on the line the point lies.  From the code: '0.0 means nearest_point is p1; 1.0 means it's p2; 2.0 means it's beyond p2 by 2x; -1.0 means it's \"before\" p1 by 1x'.")
 {
 	vec3d *point, *p0, *p1;

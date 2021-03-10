@@ -2,6 +2,8 @@
 //
 #include "ui.h"
 
+#include "globalincs/alphacolors.h"
+
 #include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
 #include "menuui/barracks.h"
@@ -9,12 +11,14 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
+#include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/cmd_brief.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -129,7 +133,7 @@ ADE_VIRTVAR(ErrorCount, l_UserInterface_PilotSelect, nullptr, "The amount of err
 }
 
 ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
-         "Lists all pilots available for the pilot selection<br>", ade_type_array("string"),
+         "Lists all pilots available for the pilot selection<br>", "string[]",
          "A table containing the pilots (without a file extension) or nil on error")
 {
 	using namespace luacpp;
@@ -239,7 +243,7 @@ ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
-         ade_type_array("string"), "The list of pilot filenames or nil on error")
+         "string[]", "The list of pilot filenames or nil on error")
 {
 	pilot_load_pic_list();
 
@@ -253,7 +257,7 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
-         ade_type_array("string"), "The list of squad filenames or nil on error")
+         "string[]", "The list of squad filenames or nil on error")
 {
 	pilot_load_squad_pic_list();
 
@@ -322,7 +326,7 @@ ADE_FUNC(getCampaignList,
 	l_UserInterface_Campaign,
 	nullptr,
 	"Get the campaign name and description lists",
-	ade_type_info({ade_type_array("string"), ade_type_array("string"), ade_type_array("string")}),
+	"string[], string[], string[]",
 	"Three tables with the names, file names, and descriptions of the campaigns")
 {
 	luacpp::LuaTable nameTable        = luacpp::LuaTable::create(L);
@@ -385,6 +389,46 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for accessing data related to the command briefing UI.<br><b>Warning:</b> This is an internal "
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
+
+ADE_VIRTVAR(ColorTags,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"The available tagged colors",
+	"{ string => color ... }",
+	"A mapping from tag string to color value")
+{
+	using namespace luacpp;
+
+	LuaTable mapping = LuaTable::create(L);
+
+	for (const auto& tagged : Tagged_Colors) {
+		SCP_string tag;
+		tag.resize(1, tagged.first);
+
+		mapping.addValue(tag, l_Color.Set(*tagged.second));
+	}
+
+	return ade_set_args(L, "t", mapping);
+}
+
+ADE_VIRTVAR(DefaultTextColorTag,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Gets the default color tag string for the command briefing. Index into ColorTags.",
+	"string",
+	"The default color tag")
+{
+	SCP_string tagStr;
+
+	auto defaultColor = default_command_briefing_color;
+
+	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
+		defaultColor = Color_Tags[0];
+	}
+	tagStr.resize(1, defaultColor);
+
+	return ade_set_args(L, "s", tagStr);
+}
 
 ADE_FUNC(getBriefing,
 	l_UserInterface_CmdBrief,
