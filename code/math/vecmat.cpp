@@ -2256,15 +2256,20 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge)
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center)
 {
 	vec3d temp;
+	float scalar = frand();
 
-	// point somewhere in the plane
-	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
+	// sqrt because scaling inward increases the probability desnity by the square of its distance towards the center
+	if (!bias_towards_center)
+		scalar = sqrtf(scalar);
+
+	// point somewhere in the plane, maybe scaled inward
+	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : scalar * radius);
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
 // given a start vector and a radius, generate a point in a spherical volume
@@ -2273,13 +2278,12 @@ void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_
 {
 	vec3d temp;
 
-	// Uniformly distributing each coordinate of a vector then normalizing results in a uniform sphere distribution
-	util::UniformFloatRange coords(-1.0f,1.0f);
-	vm_vec_make( &temp, coords.next(), coords.next(), coords.next() );
-	vm_vec_normalize(&temp);
+	float z = util::UniformFloatRange(-1, 1).next(); // Take a 2-sphere slice
+	float phi = util::UniformFloatRange(0.0f, PI2).next();
+	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
 
-	// We then add the scaled result to the initial position to get the final position
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : util::UniformFloatRange(0.0f, radius).next());
+	// cube root because scaling inward increases the probability desnity by the cube of its distance towards the center
+	vm_vec_scale_add(out, in, &temp, on_surface ? radius : powf(util::UniformFloatRange(0.0f, 1.0f).next(), 0.333f) * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

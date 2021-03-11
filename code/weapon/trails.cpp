@@ -332,7 +332,7 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 	trailp->val[next] = 0.0f;
 
 	if (orient != nullptr && trailp->info.spread > 0.0f) {
-		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
+		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false, true);
 	} else 
 		vm_vec_zero(&trailp->vel[next]);
 }		
