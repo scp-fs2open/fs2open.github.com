@@ -1343,8 +1343,10 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	}
 	
 	if (Framerate_independent_turning) {
-		pip->ai_desired_orient = out_orient;
-		pip->desired_rotvel = vel_out;
+		if (IS_MAT_NULL(&pip->ai_desired_orient)) {
+			pip->ai_desired_orient = out_orient;
+			pip->desired_rotvel = vel_out;
+		} // if ai_desired_orient is NOT null, that means a SEXP is trying to move the ship right now, and the AI should defer to it
 	}
 	else {
 		objp->orient = out_orient;
