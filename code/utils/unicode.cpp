@@ -160,11 +160,11 @@ size_t encoded_size(codepoint_t cp) {
 
 const char* get_encoding_string(Encoding encoding) {
 	switch (encoding) {
-	case Encoding_iso8859_1:
+	case Encoding::Encoding_iso8859_1:
 		return "ISO-8859-1";
-	case Encoding_utf8:
+	case Encoding::Encoding_utf8:
 		return "UTF-8";
-	case Encoding_current:
+	case Encoding::Encoding_current:
 	default:
 		UNREACHABLE("Unknown encoding type was passed: %d\n", encoding);
 		return "";
@@ -173,11 +173,11 @@ const char* get_encoding_string(Encoding encoding) {
 
 void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest) {
 
-	if (encoding_src == Encoding_current)
-		encoding_src = Unicode_text_mode ? Encoding_utf8 : Encoding_iso8859_1;
+	if (encoding_src == Encoding::Encoding_current)
+		encoding_src = Unicode_text_mode ? Encoding::Encoding_utf8 : Encoding::Encoding_iso8859_1;
 
-	if (encoding_dest == Encoding_current)
-		encoding_dest = Unicode_text_mode ? Encoding_utf8 : Encoding_iso8859_1;
+	if (encoding_dest == Encoding::Encoding_current)
+		encoding_dest = Unicode_text_mode ? Encoding::Encoding_utf8 : Encoding::Encoding_iso8859_1;
 
 	//We are already in the correct encoding, the string is correct
 	if (encoding_src == encoding_dest) {
