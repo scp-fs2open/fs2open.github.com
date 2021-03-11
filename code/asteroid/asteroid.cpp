@@ -1762,7 +1762,7 @@ static void asteroid_parse_section(asteroid_info *asip)
 	}
 
 	required_string("$Detail distance:");
-	asip->num_detail_levels = stuff_int_list(asip->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	asip->num_detail_levels = (int)stuff_int_list(asip->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 
 	required_string("$Max Speed:");
 	stuff_float(&asip->max_speed);
@@ -1776,7 +1776,7 @@ static void asteroid_parse_section(asteroid_info *asip)
 	
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
-		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		asip->explosion_bitmap_anims.clear();
 		asip->explosion_bitmap_anims.insert(asip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}

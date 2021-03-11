@@ -777,7 +777,8 @@ static void parse_wing_formation(bool replace)
 	required_string("$Name:");
 	stuff_string(name, F_NAME, NAME_LENGTH);
 
-	if (stuff_vec3d_list(position_list) != MAX_SHIPS_PER_WING - 1)
+	stuff_vec3d_list(position_list);
+	if (position_list.size() != MAX_SHIPS_PER_WING - 1)
 	{
 		error_display(0, "Wing formation %s did not have " SIZE_T_ARG " positions.  Ignoring.", name, (size_t)(MAX_SHIPS_PER_WING - 1));
 		return;
@@ -2381,7 +2382,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 				break;
 			}
 
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_allowed = (int)stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2424,7 +2425,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	{
 		// get weapon list
 		if (num_banks != NULL)
-			*num_banks = stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			*num_banks = (int)stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
 		else
 			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
 	}
@@ -2432,7 +2433,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	if (optional_string(bank_capacities_str))
 	{
 		// get capacity list
-		num_bank_capacities = stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+		num_bank_capacities = (int)stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
 	}
 
 	// num_banks can be null if we're parsing weapons for a turret
@@ -2917,7 +2918,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if(optional_string("$Detail distance:")) {
-		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		sip->num_detail_levels = (int)stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
 	if(optional_string("$Collision LOD:")) {
@@ -3480,7 +3481,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
-		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		sip->explosion_bitmap_anims.clear();
 		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
@@ -3544,7 +3545,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Model Point Shield Controls:")) {
 		SCP_vector<SCP_string> ctrl_strings;
-		int num_strings = stuff_string_list(ctrl_strings);
+		stuff_string_list(ctrl_strings);
 
 		// Init all to -1 in case some aren't supplied...
 		sip->shield_point_augment_ctrls[FRONT_QUAD] = -1;
@@ -3552,7 +3553,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
 		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
 
-		for (auto i = 0; i < num_strings; i++) {
+		for (int i = 0; i < (int)ctrl_strings.size(); i++) {
 			const char *str = ctrl_strings[i].c_str();
 
 			if (!stricmp(str, "front"))
@@ -3727,7 +3728,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		// we'll assume the list will contain no more than 20 distinct tokens
 		char ship_strings[20][NAME_LENGTH];
-		int num_strings = stuff_string_list(ship_strings, 20);
+		int num_strings = (int)stuff_string_list(ship_strings, 20);
 
 		int ship_type_index = -1;
 
@@ -4543,7 +4544,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector<SCP_string> target_group_strings;
-		int num_strings = stuff_string_list(target_group_strings);
+		stuff_string_list(target_group_strings);
 		size_t num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
@@ -4551,7 +4552,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			override_strings = true;
 		}
 
-		for(auto j = 0; j < num_strings; j++) {
+		for(size_t j = 0; j < target_group_strings.size(); j++) {
 			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
@@ -4832,19 +4833,19 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			if (optional_string("$Target Priority:")) {
 				SCP_vector <SCP_string> tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities);
+				stuff_string_list(tgt_priorities);
 				sp->num_target_priorities = 0;
 
-				if (num_strings > 32)
-					num_strings = 32;
+				if (tgt_priorities.size() > 32)
+					tgt_priorities.resize(32);
 
-				int num_groups = (int)Ai_tp_list.size();
+				size_t num_groups = Ai_tp_list.size();
 
-				for(auto i = 0; i < num_strings; i++) {
-					int j;
+				for (size_t i = 0; i < tgt_priorities.size(); ++i) {
+					size_t j;
 					for(j = 0; j < num_groups; j++) {
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							sp->target_priority[i] = j;
+							sp->target_priority[i] = (int)j;
 							sp->num_target_priorities++;
 							break;
 						}
@@ -5251,7 +5252,8 @@ static void parse_ship_type(const char *filename, const bool replace)
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector <SCP_string> target_group_strings;
-		int num_strings = stuff_string_list(target_group_strings);
+		stuff_string_list(target_group_strings);
+		auto num_strings = target_group_strings.size();
 		auto num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
@@ -5259,7 +5261,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 			override_strings = true;
 		}
 
-		for(auto j = 0; j < num_strings; j++) {
+		for(size_t j = 0; j < num_strings; j++) {
 			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
@@ -5409,7 +5411,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 	if(optional_string("$Explosion Animations:"))
 	{
 		int temp[MAX_FIREBALL_TYPES];
-		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		stp->explosion_bitmap_anims.clear();
 		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
@@ -18884,7 +18886,7 @@ void armor_init()
 //**************************************************************
 void parse_ai_target_priorities()
 {
-	int i, j, num_strings;
+	int i, j;
 	int n_entries = (int)Ai_tp_list.size();
 	SCP_vector <SCP_string> temp_strings;
 
@@ -18919,9 +18921,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for(i = 0; i < num_strings; i++) {
+		for(i = 0; i < (int)temp_strings.size(); i++) {
 			for(j = 0; j < weapon_info_size(); ++j) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
@@ -18936,9 +18938,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Object Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
 				if ( !stricmp(ai_tgt_obj_flags[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.obj_flags |= ai_tgt_obj_flags[j].def;
@@ -18953,9 +18955,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Ship Class Flags:")) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
 				if (!stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str())) {
 					temp_priority.sif_flags.set(ai_tgt_ship_flags[j].def);
@@ -18970,9 +18972,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_weapon_info_flags; j++) {
 				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
@@ -19015,14 +19017,11 @@ ai_target_priority init_ai_target_priorities()
 void parse_weapon_targeting_priorities()
 {
 	char tempname[NAME_LENGTH];
-	int i = 0;
-	int j = 0;
-	int k = 0;
 
 	if (optional_string("$Name:")) {
 		stuff_string(tempname, F_NAME, NAME_LENGTH);
 		
-		k = weapon_info_lookup(tempname);
+		int k = weapon_info_lookup(tempname);
 		if (k < 0) {
 			error_display(0, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 			if (optional_string("+Target Priority:")) {		// consume the data to avoid parsing errors
@@ -19038,17 +19037,18 @@ void parse_weapon_targeting_priorities()
 
 			if (optional_string("+Target Priority:")) {
 				SCP_vector <SCP_string> tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities);
+				stuff_string_list(tgt_priorities);
 
-				if (num_strings > 32)
-					num_strings = 32;
+				if (tgt_priorities.size() > 32)
+					tgt_priorities.resize(32);
 
-				auto num_groups = static_cast<int>(Ai_tp_list.size());
+				auto num_groups = Ai_tp_list.size();
 
-				for(i = 0; i < num_strings; i++) {
+				for(size_t i = 0; i < tgt_priorities.size(); i++) {
+					size_t j;
 					for(j = 0; j < num_groups; j++) {
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							wip->targeting_priorities[i] = j;
+							wip->targeting_priorities[i] = (int)j;
 							wip->num_targeting_priorities++;
 							break;
 						}

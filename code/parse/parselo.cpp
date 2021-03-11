@@ -2634,67 +2634,16 @@ int stuff_int_optional(int *i)
 	return stuff_int(i, true);
 }
 
-int stuff_int_or_variable (int &i, bool positive_value = false);
-int stuff_int_or_variable (int *ilp, int count, bool positive_value = false);
-
-// Stuffs an int value or the value of a number variable. Returns the index of the variable or NOT_SET_BY_SEXP_VARIABLE.
-int stuff_int_or_variable (int &i, bool positive_value)
-{
-	int index = NOT_SET_BY_SEXP_VARIABLE;
-
-	if (*Mp == '@')
-	{
-		Mp++;
-		int value = -1;
-		char str[128];
-		stuff_string(str, F_NAME, sizeof(str));
-
-		index = get_index_sexp_variable_name(str);
-
-		if (index > -1 && index < MAX_SEXP_VARIABLES)
-		{
-			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
-			{
-				value = atoi(Sexp_variables[index].text);
-			}
-			else
-			{
-				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
-			}
-		}
-		else
-		{
-
-			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
-		}
-
-		// zero negative values if requested
-		if (positive_value && value < 0)
-		{
-			value = 0;
-		}
-
-
-		// Record the value of the index for FreeSpace
-		i = value;
-	}
-	else
-	{
-		stuff_int(&i);
-	}
-	return index;
-}
-
-// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the
+// Stuff an integer value pointed at by Mp.  If a variable is found instead, stuff the value of that variable and record the
 // index of the variable in the following slot.
-int stuff_int_or_variable (int *ilp, int count, bool positive_value)
+void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 {
 	if (*Mp == '@')
 	{
 		Mp++;
 		int value = -1;
-		char str[128];
-		stuff_string(str, F_NAME, sizeof(str));
+		SCP_string str;
+		stuff_string(str, F_NAME);
 
 		int index = get_index_sexp_variable_name(str);
 
@@ -2706,36 +2655,33 @@ int stuff_int_or_variable (int *ilp, int count, bool positive_value)
 			}
 			else
 			{
-				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
+				error_display(1, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str.c_str());
 			}
 		}
 		else
 		{
 
-			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
+			error_display(1, "Invalid variable name \"%s\" found.", str.c_str());
 		}
 
 		// zero negative values if requested
-		if (positive_value && value < 0)
+		if (need_positive_value && value < 0)
 		{
 			value = 0;
 		}
 
-
 		// Record the value of the index for FreeSpace
-		ilp[count++] = value;
+		*i = value;
 		// Record the index itself because we may need it later.
-		ilp[count++] = index;
+		*var_index = index;
 	}
 	else
 	{
-		stuff_int(&ilp[count++]);
+		stuff_int(i);
 		// Since we have a numerical value we don't have a SEXP variable index to add for next slot.
-		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
+		*var_index = NOT_SET_BY_SEXP_VARIABLE;
 	}
-	return count;
 }
-
 
 //Stuffs boolean value.
 //Passes things off to stuff_boolean(bool)
@@ -2811,59 +2757,6 @@ void stuff_boolean(bool *b, bool a_to_eol)
 	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
 }
 
-int stuff_bool_list(bool *blp, int max_bools)
-{
-	int count = 0;
-	bool trash_buf = false;
-
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-
-	ignore_white_space();
-
-	while(*Mp != ')')
-	{
-		if(count < max_bools)
-		{
-			stuff_boolean(&blp[count++], false);
-			ignore_white_space();
-
-			//Since Bobb has set a precedent, allow commas for bool lists -WMC
-			if(*Mp == ',')
-			{
-				Mp++;
-				ignore_white_space();
-			}
-		}
-		else
-		{
-			trash_buf = true;
-			break;
-		}
-	}
-
-	if(trash_buf)
-	{
-		error_display(0, "Boolean list has more than allowed arguments; max is %d. Arguments over max will be ignored.", max_bools);
-		while(*Mp != ')')
-		{
-			stuff_boolean(&trash_buf, false);
-			ignore_white_space();
-		}
-	}
-
-	Mp++;
-
-	return count;
-}
-
-
 //	Stuff an integer value (cast to a ubyte) pointed at by Mp.
 //	Advances past integer characters.
 void stuff_ubyte(ubyte *i)
@@ -2873,99 +2766,123 @@ void stuff_ubyte(ubyte *i)
 	*i = (ubyte)temp;
 }
 
-int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
+template <typename T, typename F>
+void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string)
+{
+	list.clear();
+
+	ignore_white_space();
+
+	if (*Mp != '(')
+	{
+		error_display(1, "Reading %s list.  Found [%c].  Expected '('.\n", type_as_string, *Mp);
+		throw parse::ParseException("Syntax error");
+	}
+	Mp++;
+
+	ignore_white_space();
+
+	while (*Mp != ')')
+	{
+		T item;
+		if (stuff_one_token(&item))
+			list.push_back(std::move(item));
+
+		ignore_white_space();
+
+		if (*Mp == ',')
+		{
+			Mp++;
+			ignore_white_space();
+		}
+	}
+	Mp++;
+}
+
+template <typename T, typename F>
+size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string)
+{
+	SCP_vector<T> list;
+	stuff_token_list(list, stuff_one_token, type_as_string);
+
+	if (list_max < list.size())
+	{
+		error_display(0, "Too many items in %s list.  Found " SIZE_T_ARG "; max is " SIZE_T_ARG ".  List has been truncated.", type_as_string, list.size(), list_max);
+		list.resize(list_max);
+	}
+
+	size_t i = 0;
+	for (const auto &item : list)
+		listp[i++] = item;
+
+	Assert(i == list.size());
+	return i;
+}
+
+void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size)
 {
 	Assert(dest!=NULL);	//wtf?
 
-	char (*slp)[NAME_LENGTH] = (char(*)[32])new char[defs_size*NAME_LENGTH];
-	int num_strings = stuff_string_list(slp, defs_size);
-	int i, j;
+	SCP_vector<SCP_string> slp;
+	stuff_string_list(slp);
 
-	for(i = 0; i < num_strings; i++)
+	for (auto &str : slp)
 	{
-		for(j = 0; j < defs_size; j++)
+		for (size_t j = 0; j < defs_size; j++)
 		{
-			if(!stricmp(slp[i], defs[j].name)) {
+			if (!stricmp(str.c_str(), defs[j].name)) {
 				(*dest) |= defs[j].def;
 			}
 		}
 	}
-
-	delete[] slp;	//>_>
-	//nobody saw that right
-
-	return num_strings;
 }
 
-int stuff_string_list(SCP_vector<SCP_string>& slp)
+size_t stuff_bool_list(bool *blp, size_t max_bools)
 {
-	//_asm int 3;
-	slp.clear();
-
-	ignore_white_space();
-
-	if ( *Mp != '(' ) {
-        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-
-	ignore_white_space();
-
-	SCP_string buf;
-
-	while (*Mp != ')') {
-		if(*Mp != '\"') {
-			error_display(0, "Missing quotation marks in string list.");
-		}
-		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
-
-		buf = "";
-		get_string( buf );
-		slp.push_back( buf );
-		ignore_white_space();
-	}
-
-	Mp++;
-
-	return (int)(slp.size());
+	return stuff_token_list(blp, max_bools, [](bool *b)->bool {
+		stuff_boolean(b, false);
+		return true;
+	}, "bool");
 }
 
-// Stuffs a list of strings
-int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
+void stuff_string_list(SCP_vector<SCP_string> &slp)
 {
-	int count = 0;
-	ignore_white_space();
-
-	if ( *Mp != '(' ) {
-        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-
-	ignore_white_space();
-
-	while (*Mp != ')') {
-		Assert ( count < max_strings );
-		if(*Mp != '\"') {
+	stuff_token_list(slp, [](SCP_string *buf)->bool {
+		if (*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
+			return false;
 		}
-		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
 
-		if (count < max_strings) {
-			get_string( slp[count++] );
-		} else {
-			char trash[NAME_LENGTH];
-			get_string( trash );
-		}
-		ignore_white_space();
+		*buf = "";
+		get_string(*buf);
+
+		return true;
+	}, "string");
+}
+
+size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings)
+{
+	SCP_vector<SCP_string> list;
+	stuff_string_list(list);
+
+	if (max_strings < list.size())
+	{
+		error_display(0, "Too many items in %s list.  Found " SIZE_T_ARG "; max is " SIZE_T_ARG ".  List has been truncated.", "string", list.size(), max_strings);
+		list.resize(max_strings);
 	}
 
-	Mp++;
+	for (size_t i = 0; i < list.size(); ++i)
+	{
+		if (list[i].size() >= NAME_LENGTH)
+		{
+			Warning(LOCATION, "'%s' is too long and will be truncated.  Max length is %d.", list[i].c_str(), NAME_LENGTH - 1);
+			list[i].resize(NAME_LENGTH - 1);
+		}
 
-	return count;
+		strcpy_s(slp[i], list[i].c_str());
+	}
+
+	return list.size();
 }
 
 const char* get_lookup_type_name(int lookup_type)
@@ -2981,6 +2898,14 @@ const char* get_lookup_type_name(int lookup_type)
 			return "Weapon Types";
 		case RAW_INTEGER_TYPE:
 			return "Untyped integer list";
+		case MISSION_LOADOUT_SHIP_LIST:
+			return "Mission Loadout Ships";
+		case MISSION_LOADOUT_WEAPON_LIST:
+			return "Mission Loadout Weapons";
+		case CAMPAIGN_LOADOUT_SHIP_LIST:
+			return "Campaign Loadout Ships";
+		case CAMPAIGN_LOADOUT_WEAPON_LIST:
+			return "Campaign Loadout Weapons";
 	}
 
 	return "Unknown lookup type, tell a coder!";
@@ -2990,318 +2915,142 @@ const char* get_lookup_type_name(int lookup_type)
 //	This is of the form ( i* )
 //	  where i is an integer.
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-int stuff_int_list(int *ilp, int max_ints, int lookup_type)
+size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 {
-	Assertion(max_ints > 0, "Requested to parse an integer list with a maximum of 0 entries!");
-
-	int	count = 0, ok_flag = 1, dummy;
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-	ignore_white_space();
-
-	while (*Mp != ')') {
+	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
 		if (*Mp == '"') {
 			int num = 0;
-			char str[128];
-
+			SCP_string str;
 			get_string(str);
+
 			switch (lookup_type) {
 				case SHIP_TYPE:
-					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
+					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
+					if (num < 0)
+						error_display(1, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
-					ok_flag = 1;
-					num = ship_info_lookup(str);	// returns index of Ship_info[] entry with name
+					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0)
-						ok_flag = 0;
+						error_display(1, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
-					ok_flag = 1;
-					num = weapon_info_lookup(str);
+					num = weapon_info_lookup(str.c_str());
 					if (num < 0)
-						ok_flag = 0;
+						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_LIST_TYPE:
-					num = weapon_info_lookup(str);
-					if (num < 0)
-						num = -2;
+					num = weapon_info_lookup(str.c_str());
+					if (num < 0 && !str.empty())
+						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
-					num = atoi(str);
+					num = atoi(str.c_str());
 					break;
 
 				default:
-					Error(LOCATION,"Unknown lookup_type %d in stuff_int_list", lookup_type);
+					error_display(1, "Unknown lookup_type %d in stuff_int_list", lookup_type);
 					break;
 			}
 
-			if (ok_flag) {
-				if (num == -1) {
-					error_display(1, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
-				} else if (num == -2) {
-					if (str[0] != '\0') {
-						error_display(0, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
-					}
-				}
-
-				if (num < 0)  // other negatives used to bypass the above error trap, but should be -1
-					num = -1;
-
-				if (count < max_ints) {
-					ilp[count] = num;
-				}
-				++count;
-			}
-
+			*buf = num;
 		} else {
-			if (ok_flag && (count < max_ints))
-				stuff_int(&ilp[count]);
-			else
-				stuff_int(&dummy);
-			++count;
+			stuff_int(buf);
 		}
 
-		ignore_white_space();
-	}
-
-	Mp++;
-
-	if (count > max_ints) {
-		error_display(0,
-					  "Too many entries in integer list. Expected %d, found %d.\nList type was %s",
-					  max_ints,
-					  count,
-					  get_lookup_type_name(lookup_type));
-	}
-
-	return count;
+		return true;
+	}, get_lookup_type_name(lookup_type));
 }
 
-// helper for the next function. Removes a broken entry from ship or weapon lists and advances to the next one
-void clean_loadout_list_entry()
+// Karajorma/Goober5000 - Stuffs a loadout list by parsing a list of ship or weapon choices.
+// Unlike stuff_int_list it can deal with variables
+void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 {
-	int dummy;
+	stuff_token_list(list, [&](loadout_row *buf)->bool {
+		SCP_string str;
+		int variable_found = get_string_or_variable(str);
 
-	// clean out the broken entry
-	ignore_white_space();
-	stuff_int_or_variable(dummy);
-	ignore_white_space();
-}
-
-// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices.
-// Unlike stuff_int_list it can deal with variables and it also has better error reporting.
-int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
-{
-	int count = 0;
-	int index, sexp_variable_index, variable_found;
-	char str[128];
-
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-	ignore_white_space();
-
-	while (*Mp != ')') {
-		if (count >= max_ints) {
-			Error(LOCATION, "Loadout contains too many entries.\n");
-		}
-
-		index = -1;
-		sexp_variable_index = NOT_SET_BY_SEXP_VARIABLE;
-		variable_found = get_string_or_variable (str);
-
-		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found
+		// if we've got a variable get the variable index and copy its value into str so that regardless of whether we found
 		// a variable or not it now holds the name of the ship or weapon we're interested in.
 		if (variable_found) {
-			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
-			sexp_variable_index = get_index_sexp_variable_name(str);
+			Assert(lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST);
+			buf->index_sexp_var = get_index_sexp_variable_name(str);
 
-			if(sexp_variable_index<0) {
-				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
+			if (buf->index_sexp_var < 0) {
+				error_display(1, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str.c_str());
 			}
 
-			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
+			str = Sexp_variables[buf->index_sexp_var].text;
 		}
 
 		switch (lookup_type) {
 			case MISSION_LOADOUT_SHIP_LIST:
 			case CAMPAIGN_LOADOUT_SHIP_LIST:
-				index = ship_info_lookup(str);
+				buf->index = ship_info_lookup(str.c_str());
 				break;
 
 			case MISSION_LOADOUT_WEAPON_LIST:
 			case CAMPAIGN_LOADOUT_WEAPON_LIST:
-				index = weapon_info_lookup(str);
+				buf->index = weapon_info_lookup(str.c_str());
 				break;
 
 			default:
-				Int3();
+				Assertion(false, "Unsupported lookup type %d", lookup_type);
+				return false;
 		}
 
-		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing
+		bool skip_this_entry = false;
+
+		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loaded containing
 		// no ships from the current tables (when swapping mods) so don't report that as an error.
-		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
-			// print a warning in debug mode
-			error_display(0, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+		if (buf->index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
+			error_display(0, "Invalid type \"%s\" found in loadout of mission file...skipping", str.c_str());
+			skip_this_entry = true;
+
 			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
-
-			clean_loadout_list_entry();
-			continue;
 		}
-		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[index].maximum_children_spawned > 300)){
-			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[index].name);
+		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[buf->index].maximum_children_spawned > 300)){
+			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[buf->index].name);
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
-		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
-			clean_loadout_list_entry();
-			error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
-			continue;
+		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[buf->index].flags[Ship::Info_Flags::Player_ship])) ) {
+			error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str.c_str());
+			skip_this_entry = true;
 		}
-		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
-			clean_loadout_list_entry();
-			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
+		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[buf->index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
+			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str.c_str()));
 			if ( !Is_standalone )
-				error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
-			continue;
+				error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str.c_str());
+			skip_this_entry = true;
 		}
 
-		// we've found a real item. Add its index to the list.
-		if (count < max_ints) {
-			ilp[count++] = index;
+		// Loadout counts are only needed for missions
+		if (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)
+		{
+			ignore_white_space();
+
+			// Now read in the number of this type available. The number must be positive
+			stuff_int_or_variable(&buf->count, &buf->count_sexp_var, true);
 		}
 
-		ignore_white_space();
-
-		// Campaign lists need go no further
-		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
-			continue;
-		}
-
-		// record the index of the variable that gave us this item if any
-		if (count < max_ints) {
-			ilp[count++] = sexp_variable_index;
-		}
-
-		// Now read in the number of this type available. The number must be positive
-		count = stuff_int_or_variable(ilp, count, true);
-
-		ignore_white_space();
-	}
-
-	Mp++;
-	return count;
+		return !skip_this_entry;
+	}, get_lookup_type_name(lookup_type));
 }
 
 //Stuffs an integer list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
-	size_t count = 0;
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-	ignore_white_space();
-	while(*Mp != ')')
-	{
-		Assert(count < max_floats);
-		if (count < max_floats) {
-			stuff_float(&flp[count++]);
-		} else {
-			float dummy;
-			stuff_float(&dummy);
-		}
-		ignore_white_space();
-	}
-
-	Mp++;
-
-	return count;
+	return stuff_token_list(flp, max_floats, [](float *f)->bool {
+		stuff_float(f);
+		return true;
+	}, "float");
 }
-
-//	Marks an integer list.
-//	This is of the form ( i* )
-//	  where i is an integer.
-//	If a specified string is found in the lookup and its value is 7, then the 7th value
-//	in the array is set.
-void mark_int_list(int *ilp, int max_ints, int lookup_type)
-{
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-	ignore_white_space();
-
-	while (*Mp != ')') {
-		if (*Mp == '"') {
-			int num = 0;
-			char str[128];
-
-			get_string(str);
-			switch(lookup_type) {
-				case SHIP_TYPE:
-					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
-					break;
-
-				case SHIP_INFO_TYPE:
-					num = ship_info_lookup(str);	// returns index of Ship_info[] entry with name
-					break;
-
-				case WEAPON_LIST_TYPE:
-					num = weapon_info_lookup(str);
-					break;
-
-				default:
-					Error(LOCATION,"Unknown lookup_type %d in mark_int_list", lookup_type);
-					break;
-			}
-
-			if ( (num < 0) || (num >= max_ints) )
-				Error(LOCATION, "Unable to find string \"%s\" in mark_int_list.\n", str);
-
-//			ilp[num] = 1;
-
-		} else {
-			int	tval;
-
-			stuff_int(&tval);
-			Assert((tval >= 0) && (tval < max_ints));
-			if (tval >= 0 && tval < max_ints) {
-				ilp[tval] = 1;
-			}
-		}
-
-		ignore_white_space();
-	}
-
-	Mp++;
-
-}
-
 
 //	Stuff a vec3d struct, which is 3 floats.
 void stuff_vec3d(vec3d *vp)
@@ -3316,19 +3065,18 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-        error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
+        error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expected '('.\n", *Mp);
         throw parse::ParseException("Syntax error");
 	} else {
 		Mp++;
 		stuff_vec3d(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
-            error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
+            error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expected ')'.\n", *Mp);
             throw parse::ParseException("Syntax error");
 		}
 		Mp++;
 	}
-
 }
 
 //	Stuffs vec3d list.  *vlp is an array of vec3ds.
@@ -3336,63 +3084,21 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 //	  (where * is a kleene star, not a pointer indirection)
 // For example, ( (1 2 3) (2 3 4) (2 3 5) )
 //		 is a list of three vec3ds.
-int stuff_vec3d_list(vec3d *vlp, int max_vecs)
+size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs)
 {
-	int	count = 0;
-
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-
-	ignore_white_space();
-
-	while (*Mp != ')') {
-		Assert(count < max_vecs);
-		if (count < max_vecs) {
-			stuff_parenthesized_vec3d(&vlp[count++]);
-		} else {
-			vec3d temp;
-			stuff_parenthesized_vec3d(&temp);
-		}
-
-		ignore_white_space();
-	}
-
-	Mp++;
-
-	return count;
+	return stuff_token_list(vlp, max_vecs, [](vec3d *buf)->bool {
+		stuff_parenthesized_vec3d(buf);
+		return true;
+	}, "vec3d");
 }
 
 // ditto the above, but a vector of vec3ds...
-int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
+void stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 {
-	ignore_white_space();
-
-	if (*Mp != '(') {
-        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-        throw parse::ParseException("Syntax error");
-	}
-
-	Mp++;
-
-	ignore_white_space();
-
-	while (*Mp != ')') {
-		vec3d temp;
-		stuff_parenthesized_vec3d(&temp);
-		vec_list.push_back(temp);
-
-		ignore_white_space();
-	}
-
-	Mp++;
-
-	return (int)vec_list.size();
+	stuff_token_list(vec_list, [](vec3d *buf)->bool {
+		stuff_parenthesized_vec3d(buf);
+		return true;
+	}, "vec3d");
 }
 
 //	Stuff a matrix, which is 3 vec3ds.
@@ -4473,15 +4179,13 @@ void truncate_message_lines(SCP_string &text, int num_allowed_lines)
 }
 
 // Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
-// the only differece is the lack of parentheses
+// the only difference is the lack of parentheses
 
 // from aicode.cpp
 // Stuff a list of floats at *plist.
-void parse_float_list(float *plist, int size)
+void parse_float_list(float *plist, size_t size)
 {
-	int i;
-
-	for (i=0; i<size; i++)
+	for (size_t i=0; i<size; i++)
 	{
 		stuff_float(&plist[i]);
 	}
@@ -4489,11 +4193,9 @@ void parse_float_list(float *plist, int size)
 
 // from aicode.cpp
 // Stuff a list of ints at *plist.
-void parse_int_list(int *ilist, int size)
+void parse_int_list(int *ilist, size_t size)
 {
-	int i;
-
-	for (i=0; i<size; i++)
+	for (size_t i=0; i<size; i++)
 	{
 		stuff_int(&ilist[i]);
 	}
