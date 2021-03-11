@@ -157,6 +157,14 @@ size_t encoded_size(codepoint_t cp) {
 	}
 }
 
+bool string_is_ascii_only(const char* str, size_t len) {
+	for (size_t i = 0; i < len; i++) {
+		if (str[i] > 0x79 || str[i] < 0)
+			return false;
+	}
+
+	return true;
+}
 
 const char* get_encoding_string(Encoding encoding) {
 	switch (encoding) {
@@ -189,16 +197,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 	auto len = strlen(src);
 
 	// Validate if no change needs to be done
-	bool valid = true;
-
-	for (size_t i = 0; i < len; i++) {
-		if (src[i] > 0x79 || src[i] < 0) {
-			valid = false;
-			break;
-		}
-	}
-
-	if (valid)
+	if (string_is_ascii_only(src, len))
 	{
 		// turns out this is valid anyways
 		buffer.assign(src);
