@@ -2297,13 +2297,13 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 void process_raw_file_text(char* processed_text, char* raw_text)
 {
 	SCP_string parse_exception_1402;
-	convert_encoding(parse_exception_1402, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	unicode::convert_encoding(parse_exception_1402, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n", unicode::Encoding_iso8859_1);
 	SCP_string parse_exception_1117;
-	convert_encoding(parse_exception_1117, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	unicode::convert_encoding(parse_exception_1117, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n", unicode::Encoding_iso8859_1);
 	SCP_string parse_exception_1337;
-	convert_encoding(parse_exception_1337, "1337, \"(fr)Loading\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	unicode::convert_encoding(parse_exception_1337, "1337, \"(fr)Loading\"\n", unicode::Encoding_iso8859_1);
 	SCP_string parse_exception_3966;
-	convert_encoding(parse_exception_3966, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n", ENCODING_ISO8859_1, ENCODING_CURRENT);
+	unicode::convert_encoding(parse_exception_3966, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n", unicode::Encoding_iso8859_1);
 
 	char* mp;
 	char* mp_raw;
