@@ -913,7 +913,7 @@ int control_config_clear_all()
  */
 int control_config_do_reset()
 {
-	int i, total = 0;
+	int total = 0;
 	Undo_stack stack;
 	auto &default_bindings = Control_config_presets[Defaults_cycle_pos].bindings;
 
