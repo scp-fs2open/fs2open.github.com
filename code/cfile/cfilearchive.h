@@ -21,8 +21,7 @@
 struct compression_info {
 	char header[4] = { 'N','O','C','P' };
 	int isCompressed = 0;
-	size_t uncompressed_position = 0;
-	size_t uncompressed_size = 0;
+	size_t compressed_size = 0;
 	int maxBlocks = 0;
 	int numOffsets = 0;
 	int* offsets = nullptr;
@@ -65,6 +64,10 @@ extern std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 // Called once to setup the low-level reading code.
 void cf_init_lowlevel_read_code(CFILE* cfile, size_t lib_offset, size_t size, size_t pos);
 
+void cf_check_compression(CFILE* cfile);
+
+void cf_clear_compression_info(CFILE* cfile);
+
 /*LZ41*/
 #define LZ41_FILE_HEADER "LZ41"
 #define LZ41_BLOCK_BYTES 8192
@@ -94,7 +97,7 @@ void comp_create_ci(CFILE* cf, char* header);
 	Read X bytes from the uncompressed file starting from X offset.
 	Returns the amount of bytes read, and 0 or lower to indicate errors.
 */
-int comp_fread(CFILE* cf, char* buffer, int offset, int length);
+int comp_fread(CFILE* cf, char* buffer, int length);
 
 /*
 	Returns the current uncompressed file position.
