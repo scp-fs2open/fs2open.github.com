@@ -2261,7 +2261,7 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vec3d temp;
 	float scalar = frand();
 
-	// sqrt because scaling inward increases the probability desnity by the square of its distance towards the center
+	// sqrt because scaling inward increases the probability density by the square of its proximity towards the center
 	if (!bias_towards_center)
 		scalar = sqrtf(scalar);
 
@@ -2274,7 +2274,7 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface)
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
@@ -2282,8 +2282,13 @@ void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_
 	float phi = util::UniformFloatRange(0.0f, PI2).next();
 	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
 
-	// cube root because scaling inward increases the probability desnity by the cube of its distance towards the center
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : powf(util::UniformFloatRange(0.0f, 1.0f).next(), 0.333f) * radius);
+	float scalar = util::UniformFloatRange(0.0f, 1.0f).next();
+
+	// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+	if (!bias_towards_center)
+		scalar = powf(scalar, 0.333f);
+
+	vm_vec_scale_add(out, in, &temp, on_surface ? radius : scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

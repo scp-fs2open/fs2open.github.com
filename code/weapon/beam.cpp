@@ -2436,7 +2436,7 @@ void beam_jitter_aim(beam *b, float aim)
 	// vector
 	vm_vector_2_matrix(&m, &forward, NULL, NULL);
 
-	// get a vector on the circle - this should appear to be pretty random
+	// get a random vector on the circle, but somewhat biased towards the center
 	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false, true);
 	
 	// get the vector pointing to the circle point
