@@ -1080,6 +1080,7 @@ void ship_info::clone(const ship_info& other)
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
+	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1389,6 +1390,7 @@ void ship_info::move(ship_info&& other)
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
+	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1805,6 +1807,7 @@ ship_info::ship_info()
 	afterburner_trail_width_factor = 1.0f;
 	afterburner_trail_alpha_factor = 1.0f;
 	afterburner_trail_alpha_end_factor = 0.0f;
+	afterburner_trail_alpha_decay_exponent = 1.0f;
 	afterburner_trail_life = 5.0f;
 	afterburner_trail_spread = 0.0f;
 	afterburner_trail_faded_out_sections = 0;
@@ -9832,6 +9835,7 @@ static void ship_init_afterburners(ship *shipp)
 
 			ci->a_start = sip->afterburner_trail_alpha_factor; // start alpha  * table loaded alpha factor
 			ci->a_end = sip->afterburner_trail_alpha_end_factor; //end alpha
+			ci->a_decay_exponent = sip->afterburner_trail_alpha_decay_exponent;
 
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 			ci->stamp = 60;	//spew time???	
