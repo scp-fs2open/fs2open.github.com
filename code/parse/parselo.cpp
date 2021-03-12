@@ -2226,36 +2226,26 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 				// SDL2 has iconv functionality so we use that to convert from Latin1 to UTF-8
 
-				// We need the raw_text as the output buffer so we first need to copy the current
+				// We need the raw_text as fallback so we first need to copy the current
 				SCP_string input_str = raw_text;
 
-				do {
-					auto in_str = input_str.c_str();
-					auto in_size = input_str.size();
-					auto out_str = Parse_text_raw;
-					auto out_size = Parse_text_size;
+				SCP_string buffer;
+				bool success = unicode::convert_encoding(buffer, raw_text, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
 
-					auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-					auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-					SDL_iconv_close(iconv);
+				if (Parse_text_size < buffer.length()) {
+					allocate_parse_text(buffer.length());
+				}
 
-					// SDL returns the number of processed character on success;
-					// error codes are (size_t)-1 through -4
-					if (err < (size_t)-100) {
-						break;
-					} else if (err == SDL_ICONV_E2BIG) {
-						// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-						// increment since the additional size required is probably pretty small
-						allocate_parse_text(Parse_text_size + 300);
-					} else {
-						Warning(LOCATION, "File reencoding failed (error code " SIZE_T_ARG ")!\n"
-							"You will probably encounter encoding issues.", err);
+				if (success) {
+					strncpy(Parse_text_raw, buffer.c_str(), buffer.length());
+				}
+				else {
+					Warning(LOCATION, "File reencoding failed!\n"
+						"You will probably encounter encoding issues.");
 
-						// Copy the original data back to the mission text pointer so that we don't loose any data here
-						strcpy(Parse_text_raw, input_str.c_str());
-						break;
-					}
-				} while(true);
+					// Copy the original data back to the mission text pointer so that we don't loose any data here
+					strcpy(Parse_text_raw, input_str.c_str());
+				}
 			} else {
 				Warning(LOCATION, "Found invalid UTF-8 encoding in file %s at position " PTRDIFF_T_ARG "!\n"
 					"This may cause parsing errors and should be fixed!", filename, invalid - raw_text);

@@ -179,7 +179,7 @@ const char* get_encoding_string(Encoding encoding) {
 	}
 }
 
-void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest) {
+bool convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest) {
 
 	if (encoding_src == Encoding::Encoding_current)
 		encoding_src = Unicode_text_mode ? Encoding::Encoding_utf8 : Encoding::Encoding_iso8859_1;
@@ -190,7 +190,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 	//We are already in the correct encoding, the string is correct
 	if (encoding_src == encoding_dest) {
 		buffer.assign(src);
-		return;
+		return true;
 	}
 
 	//If not, convert
@@ -201,7 +201,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 	{
 		// turns out this is valid anyways
 		buffer.assign(src);
-		return;
+		return true;
 	}
 
 	size_t newlen = len;
@@ -223,7 +223,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 		{
 			// successful re-encoding
 			buffer.assign(newstr.get(), newlen - out_size);
-			return;
+			return true;
 		}
 		else if (err == SDL_ICONV_E2BIG)
 		{
@@ -237,5 +237,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 			break;
 		}
 	} while (true);
+
+	return false;
 }
 }
