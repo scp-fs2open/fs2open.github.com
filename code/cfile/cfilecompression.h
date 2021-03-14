@@ -12,18 +12,6 @@ ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and ev
 #define _CFILECOMPRESSION_H
 struct CFILE;
 
-struct compression_info {
-	int header=0;
-	size_t compressed_size = 0;
-	int block_size = 0;
-	int numOffsets = 0;
-	int* offsets = nullptr;
-	char* decoderBuffer = nullptr;
-	int lastDecBlockNum = 0;
-	int lastDecBytes = 0;
-};
-
-
 /*LZ41*/
 #define LZ41_FILE_HEADER 0x31345A4C //"LZ41", inverted
 #define LZ41_DECOMPRESSION_ERROR -1

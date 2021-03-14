@@ -24,6 +24,7 @@
 
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
+#include "cfile/cfilecompression.h"
 #include "luaconf.h"
 
 #include <sstream>
@@ -228,7 +229,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
 		if (bytes_read != size)
 		{
-			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), bytes_read, size));
+			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), (int)bytes_read, (int)size));
 			Assertion(bytes_read == size, "File decompression error!");
 		}
 	}else{

@@ -15,13 +15,23 @@
 #endif
 
 #include "globalincs/pstypes.h"
-#include "cfilecompression.h"
 
 // The following Cfile_block data is private to cfile.cpp
 // DO NOT MOVE the Cfile_block* information to cfile.h / do not extern this data
 //
 #define CFILE_BLOCK_UNUSED		0
 #define CFILE_BLOCK_USED		1
+
+struct compression_info {
+	int header = 0;
+	size_t compressed_size = 0;
+	int block_size = 0;
+	int numOffsets = 0;
+	int* offsets = nullptr;
+	char* decoderBuffer = nullptr;
+	int lastDecBlockNum = 0;
+	int lastDecBytes = 0;
+};
 
 struct CFILE {
 	int type = CFILE_BLOCK_UNUSED;                // CFILE_BLOCK_UNUSED, CFILE_BLOCK_USED
