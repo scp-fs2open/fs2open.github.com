@@ -426,7 +426,7 @@ void neb2_post_level_init()
 	for (auto poof : Neb2_poofs) {
 		int bm_height;
 		bm_get_info(poof, nullptr, &bm_height);
-		height = MAX(height, static_cast<float>(bm_height));
+		height = MAX(height, static_cast<float>(bm_height * 2));
 	}
 
 	for (auto& detail : Neb2_detail) {
