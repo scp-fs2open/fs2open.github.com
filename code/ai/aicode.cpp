@@ -238,7 +238,7 @@ const char *Skill_level_names(int level, int translate)
 			str = XSTR("Insane", 473);
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("Unhandled difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	} else {
 		switch( level )	{
@@ -258,7 +258,7 @@ const char *Skill_level_names(int level, int translate)
 			str = NOX("Insane");
 			break;
 		default:	
-			Int3();
+			UNREACHABLE("An invalid difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	}
 
@@ -944,7 +944,8 @@ float get_skill_stealth_dist_scaler()
 		return 1.3f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dist_scaler().", Game_skill_level);
+
 	}
 
 	return 1.0f;
@@ -972,7 +973,7 @@ float get_skill_stealth_dot_scaler()
 		return 0.7f;
 
 	default:
-		Int3();
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dot_scaler().", Game_skill_level);
 	}
 
 	return 1.0f;
@@ -1342,8 +1343,10 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	}
 	
 	if (Framerate_independent_turning) {
-		pip->ai_desired_orient = out_orient;
-		pip->desired_rotvel = vel_out;
+		if (IS_MAT_NULL(&pip->ai_desired_orient)) {
+			pip->ai_desired_orient = out_orient;
+			pip->desired_rotvel = vel_out;
+		} // if ai_desired_orient is NOT null, that means a SEXP is trying to move the ship right now, and the AI should defer to it
 	}
 	else {
 		objp->orient = out_orient;
@@ -1951,35 +1954,28 @@ float get_wing_lowest_av_ab_speed(object *objp)
  */
 int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 {
-	// Not ignoring anything.
-	if (*ignore_objnum == UNUSED_OBJNUM)
-	{
-		return 0;									
+	// Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
+	Assertion(((*ignore_objnum <= UNUSED_OBJNUM) || (*ignore_objnum >= 0)), "Unexpected value for ignore_objnum %d. This is a coder error, please report.", *ignore_objnum); 
+	// whether this is an invalid OBJNUM or the official UNUSED_OBJNUM, we should just return here.
+	// As a note, if it was set to UNUSED_OBJNUM, it would be trying to ignore a wing and not an object. (at least according to previously written comments) 
+	if (*ignore_objnum < 0) {
+		return 0;
 	}
-	// This means it's ignoring an object, not a wing.
-	else if (*ignore_objnum >= 0)
-	{
-		// see if this object became invalid
-		if (Objects[*ignore_objnum].signature != *ignore_signature)
-		{
-			// reset
-			*ignore_objnum = UNUSED_OBJNUM;
-		}
-		// objects and signatures match
-		else if (*ignore_objnum == objnum)
-		{
-			// found it
-			return 1;
-		}
 
-		return 0;
-	}
-	// Ignoring a wing.
-	else
+	// see if this object became invalid
+	if (Objects[*ignore_objnum].signature != *ignore_signature)
 	{
-		Int3(); // Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
-		return 0;
+		// reset
+		*ignore_objnum = UNUSED_OBJNUM;
 	}
+	// objects and signatures match
+	else if (*ignore_objnum == objnum)
+	{
+		// found it
+		return 1;
+	}
+
+	return 0;
 }
 
 // Goober5000
@@ -2346,7 +2342,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index)
  * If issued an order to a ship that's awaiting repair, abort that process.
  * However, do not abort process for an object that is currently being repaired -- let it finish.
  */
-void ai_set_goal_maybe_abort_dock(object *objp, ai_info *aip)
+void ai_set_goal_abort_support_call(object *objp, ai_info *aip)
 {
 	if (aip->ai_flags[AI::AI_Flags::Awaiting_repair]) {
 		object	*repair_obj;
@@ -2374,24 +2370,28 @@ void force_avoid_player_check(object *objp, ai_info *aip)
  * If attacked == NULL, then attack any enemy object.
  * Attack point *rel_pos on object.  This is for supporting attacking subsystems.
  */
-void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int ship_info_index)
+void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 {
 	int temp;
-	ai_info	*aip;
+	ai_info* aip;
 
-	Assert(attacker != NULL);
+	Assert(attacker != nullptr);
 	Assert(attacker->instance != -1);
 	Assert(Ships[attacker->instance].ai_index != -1);
+	//	Bogus!  Who tried to get me to attack myself!
+	if (attacker == attacked) {
+		Warning(LOCATION, "%s was told to attack itself! This may be an error in the mission file.  If that checks out, please report to a coder!", Ships[attacker->instance].ship_name);
+		return;
+	}
+
+	if (attacker == nullptr || attacker->instance == -1) {
+		return;
+	}
 
 	aip = &Ai_info[Ships[attacker->instance].ai_index];
 	force_avoid_player_check(attacker, aip);
 
 	aip->ok_to_target_timestamp = timestamp(0);		//	Guarantee we can target.
-
-	if (attacker == attacked) {
-		Int3();		//	Bogus!  Who tried to get me to attack myself!  Trace out and fix!
-		return;
-	}
 
 	//	Only set to chase if a fighter or bomber, otherwise just return.
 	if (!(Ship_info[Ships[attacker->instance].ship_info_index].is_small_ship()) && (attacked != NULL)) {
@@ -2399,7 +2399,7 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int 
 	}
 
 	//	This is how "engage enemy" gets processed
-	if (attacked == NULL) {
+	if (attacked == nullptr) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
 		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, ship_info_index));
@@ -2411,7 +2411,10 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int 
 		set_target_objnum(aip, OBJ_INDEX(attacked));
 	}
 
-	ai_set_goal_maybe_abort_dock(attacker, aip);
+	// don't abort a support call if you're disabled!
+	if (ship_get_subsystem_strength(&Ships[attacker->instance], SUBSYSTEM_ENGINE) > 0.0f) 
+		ai_set_goal_abort_support_call(attacker, aip);
+
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
@@ -2429,13 +2432,9 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int 
 	aip->submode = SM_ATTACK;				// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
 	aip->submode_start_time = Missiontime;	// for AIM_CHASE... it may have been not set correctly here
 
-	if (ssp == NULL) {
-		set_targeted_subsys(aip, NULL, -1);
-		if (aip->target_objnum != -1) {
-			Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);	//	If ship had been protected, unprotect it.
-		}
-	} else {
-		Int3();	//	Not supported yet!
+	set_targeted_subsys(aip, nullptr , -1);
+	if (aip->target_objnum != -1) {
+		Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);	//	If ship had been protected, unprotect it.
 	}
 }
 
@@ -2471,7 +2470,7 @@ void ai_attack_wing(object *attacker, int wingnum)
 
 		set_target_objnum(aip, Ships[Wings[wingnum].ship_index[index]].objnum);
 
-		ai_set_goal_maybe_abort_dock(attacker, aip);
+		ai_set_goal_abort_support_call(attacker, aip);
 		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 	}
 }
@@ -3441,7 +3440,7 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 
 	ai_formation_object_recalculate_slotnums(aip->goal_objnum);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME*4);		//	Super extra long time until can target another ship.
 
 }
@@ -7699,7 +7698,7 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 
 	// -- Done at caller in ai_process_mission_orders -- attacked_objp->flags .add(Object::Object_Flags::Protected);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 
 	return 1;
@@ -7767,7 +7766,7 @@ void ai_set_guard_wing(object *objp, int wingnum)
 	aip = &Ai_info[shipp->ai_index];
 	force_avoid_player_check(objp, aip);
 
-	ai_set_goal_maybe_abort_dock(objp, aip);
+	ai_set_goal_abort_support_call(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 
 	//	This function is called whenever a guarded ship is destroyed, so this code
@@ -7837,7 +7836,7 @@ void ai_set_guard_object(object *objp, object *other_objp)
 
 		ai_set_guard_vec(objp, &Objects[other_objnum]);
 
-		ai_set_goal_maybe_abort_dock(objp, aip);
+		ai_set_goal_abort_support_call(objp, aip);
 		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
 	}
 }
@@ -11549,7 +11548,7 @@ void process_subobjects(int objnum)
 					//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 					//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
 					if (aip->mode != AIM_BAY_DEPART) {
-						ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
+					  ai_attack_object(objp, nullptr);		//	Regardless of current mode, enter attack mode.
 						aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 						aip->submode_start_time = Missiontime;
 					}

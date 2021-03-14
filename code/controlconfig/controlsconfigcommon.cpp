@@ -72,7 +72,7 @@ int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 //XSTR:OFF
 SCP_vector<CCI> Control_config;
 
-//! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings
+//! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings. [0] is the default preset.
 SCP_vector<CC_preset> Control_config_presets;
 
 /**
@@ -260,15 +260,7 @@ void control_config_common_init_bindings() {
 	preset.name = "default";
 
 	for (auto &item : Control_config) {
-		CCB bind;
-
-		bind.first.cid = CID_KEYBOARD;
-		bind.first.btn = item.key_id;
-
-		bind.second.cid = CID_JOY0;
-		bind.second.btn = item.joy_id;
-
-		preset.bindings.push_back(bind);
+		preset.bindings.push_back(CCB(item));
 	}
 
 	Control_config_presets.push_back(preset);
@@ -838,21 +830,25 @@ const char **Joy_button_text = Joy_button_text_english;
 
 int translate_key_to_index(const char *key, bool find_override)
 {
-	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
+	unsigned int max_scan_codes;
+	unsigned int i;
+	int index = -1;
+	bool alt = false;
+	bool shift = false;
 
 	max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
 
 	// look for modifiers
 	Assert(key);
 	if (!strnicmp(key, "Alt", 3)) {
-		alt = 1;
+		alt = true;
 		key += 3;
 		if (*key)
 			key++;
 	}
 
 	if (!strnicmp(key, "Shift", 5)) {
-		shift = 1;
+		shift = true;
 		key += 5;
 		if (*key)
 			key++;
@@ -876,22 +872,23 @@ int translate_key_to_index(const char *key, bool find_override)
 
 		// convert scancode to Control_config index
 		if (find_override) {
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
-					index = i;
+			for (i = 0; i < Control_config.size(); ++i) {
+				if (!Control_config[i].disabled && (Control_config[i].get_btn(CID_KEYBOARD) == index)) {
+					index = static_cast<int>(i);
 					break;
 				}
 			}
 		} else {
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
-					index = i;
+			const auto& default_bindings = Control_config_presets[0].bindings;
+			for (i = 0; i < Control_config.size(); ++i) {
+				if (!Control_config[i].disabled && (default_bindings[i].get_btn(CID_KEYBOARD) == index)) {
+					index = static_cast<int>(i);
 					break;
 				}
 			}
 		}
 
-		if (i == CCFG_MAX)
+		if (i == Control_config.size())
 			return -1;
 
 		return index;
@@ -913,8 +910,8 @@ char *translate_key(char *key)
 		return NULL;
 	}
 
-	key_code = Control_config[index].key_id;
-	joy_code = Control_config[index].joy_id;
+	key_code = Control_config[index].get_btn(CID_KEYBOARD);
+	joy_code = Control_config[index].get_btn(CID_JOY0);
 
 	Failed_key_index = index;
 
@@ -1396,7 +1393,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_5)
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	assert(mActionToVal.size() == CCFG_MAX);
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected.");
 }
 
 /*! Loads the various control configuration maps to allow the parsing functions to appropriately map string tokns to
@@ -1519,38 +1516,41 @@ void control_config_common_read_section(int s, bool first_override) {
 
 		// Assign the various attributes to this control
 		int iTemp;
+		short key = 0;
 		auto  item = &Control_config[item_id];
 		auto& new_binding = new_preset.bindings[item_id];
 
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {
 			if (optional_string("NONE")) {
-				new_binding.first.btn = (short)-1;
+				new_binding.take(CC_bind(CID_KEYBOARD, -1), -1);
 			} else {
 				stuff_string(szTempBuffer, F_NAME);
-				new_binding.first.btn = mKeyNameToVal[szTempBuffer];
+				key = mKeyNameToVal[szTempBuffer];
 			}
 		}
 
 		if (optional_string("$Key Mod Shift:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_SHIFTED : 0;
+			key |= (iTemp == 1) ? KEY_SHIFTED : 0;
 		}
 
 		if (optional_string("$Key Mod Alt:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_ALTED : 0;
+			key |= (iTemp == 1) ? KEY_ALTED : 0;
 		}
 
 		if (optional_string("$Key Mod Ctrl:")) {
 			stuff_int(&iTemp);
-			new_binding.first.btn |= (iTemp == 1) ? KEY_CTRLED : 0;
+			key |= (iTemp == 1) ? KEY_CTRLED : 0;
 		}
+
+		new_binding.take(CC_bind(CID_KEYBOARD, key), 0);
 
 		// Joy btn assignment
 		if (optional_string("$Joy Default:")) {
 			stuff_int(&iTemp);
-			new_binding.second.btn = (short)iTemp;
+			new_binding.take(CC_bind(CID_JOY0, static_cast<short>(iTemp)), 1);
 		}
 
 		// Section is #ControlConfigOverride
@@ -1677,7 +1677,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 					break;
 				}
 			}
-			Assert(buf_str != "");
+			Assertion(buf_str != "", "Unknown key found during ccfg.tbl write: 0x%X", key);
 		} else {
 			// Not bound
 			buf_str = "NONE";
@@ -1700,7 +1700,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assertion(buf_str != "", "Unknown tab found during ccfg.tbl write: %i", static_cast<int>(item.tab));
 		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
 
 		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
@@ -1714,7 +1714,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 				break;
 			}
 		}
-		Assert(buf_str != "");
+		Assertion(buf_str != "", "Unknown CC_type found during ccfg.tbl write: %i", static_cast<int>(item.type));
 		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
@@ -1754,6 +1754,211 @@ void control_config_common_load_overrides()
 	}
 }
 
+CC_bind& CC_bind::operator=(const CC_bind &A)
+{
+	cid = A.cid;
+	btn = A.btn;
+
+	return *this;
+}
+
+bool CC_bind::operator==(const CC_bind &B) const
+{
+	return (btn == B.btn) && (cid == B.cid);
+}
+
+bool CC_bind::operator==(const CCB &pair) const
+{
+	return (*this == pair.first) || (*this == pair.second);
+}
+
+bool CC_bind::operator!=(const CC_bind &B) const
+{
+	return !(*this == B);
+}
+
+bool CC_bind::operator!=(const CCB &pair) const
+{
+	return !(*this == pair);
+}
+
+void CC_bind::clear()
+{
+	cid = CID_NONE;
+	btn = -1;
+}
+
+bool CC_bind::empty() const
+{
+	return cid == CID_NONE;
+}
+
+SCP_string CC_bind::textify() const {
+	SCP_string retval;
+
+	switch (cid) {
+	case CID_KEYBOARD:
+		retval = textify_scancode(btn);
+		break;
+
+	case CID_MOUSE:
+		// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
+		// TODO: XSTR this
+		switch (btn) {
+		case 0:
+			retval = "Mouse Left";
+			break;
+		case 1:
+			retval = "Mouse Right";
+			break;
+		case 2:
+			retval = "Mouse Middle";
+			break;
+		case 3:
+			retval = "Mouse X1";
+			break;
+		case 4:
+			retval = "Mouse X2";
+			break;
+		case 5:
+			retval = "Mouse Wheel Up";
+			break;
+		case 6:
+			retval = "Mouse Wheel Down";
+			break;
+		case 7:
+			retval = "Mouse Wheel Left";
+			break;
+		case 8:
+			retval = "Mouse Wheel Right";
+			break;
+		default:
+			retval = "Unknown Mouse Input";
+			break;
+		}
+		break;
+
+	// TODO XSTR the "Joy #" prefix
+	case CID_JOY0:
+		retval = "Joy 0 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY1:
+		retval = "Joy 1 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY2:
+		retval = "Joy 2 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_JOY3:
+		retval = "Joy 3 " + SCP_string(Joy_button_text[btn]);
+		break;
+
+	case CID_NONE:
+	default:
+		retval = "None";
+		break;
+	}
+
+	return retval;
+}
+
+bool CCB::empty() const {
+	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
+}
+
+void CCB::take(CC_bind A, int order) {
+	// If the button isn't a valid index, nuke the cid.
+	if (A.btn < 0) {
+		A.cid = CID_NONE;
+	}
+	
+	switch (order) {
+	case 0:
+		first = A;
+
+		if (second.cid == A.cid) {
+			second.clear();
+		}
+		break;
+
+	case 1:
+		second = A;
+	
+		if (first.cid == A.cid) {
+			first.clear();
+		}
+		break;
+
+	case -1:
+		// Overwrite existing
+		if (first.cid == A.cid) {
+			first = A;
+
+		} else if (second.cid == A.cid) {
+			second = A;
+		}
+	break;
+
+	default:
+		return;
+	}
+}
+
+void CCB::clear() {
+	first.clear();
+	second.clear();
+}
+
+short CCB::get_btn(CID cid) const {
+	if (first.cid == cid) {
+		return first.btn;
+
+	} else if (second.cid == cid) {
+		return second.btn;
+
+	} else {
+		return -1;
+	}
+}
+
+CCB& CCB::operator=(const CCB& A) {
+	first = A.first;
+	second = A.second;
+
+	return *this;
+}
+
+bool CCB::has_first(const CCB& A) const {
+	return !first.empty() && ((first == A.first) || (first == A.second));
+}
+
+bool CCB::has_second(const CCB& A) const {
+	return !second.empty() && ((second == A.first) || (second == A.second));
+}
+
+CCI& CCI::operator=(const CCI& A) {
+	first = A.first;
+	second = A.second;
+	tab = A.tab;
+	indexXSTR = A.indexXSTR;
+	text = A.text;
+	type = A.type;
+	used = A.used;
+	disabled = A.disabled;
+	continuous_ongoing = A.continuous_ongoing;
+
+	return *this;;
+};
+
+CCI& CCI::operator=(const CCB& A) {
+	first = A.first;
+	second = A.second;
+
+	return *this;
+};
+
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
 	ControlConfig.resize(CCFG_MAX);
 };
@@ -1765,16 +1970,13 @@ CCI_builder& CCI_builder::start() {
 void CCI_builder::end() {};
 
 CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
-	assert(action_id < CCFG_MAX);
+	Assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 
-	// Assign the defaults.
-	item.joy_default = joy_default;
-	item.key_default = key_default;
-
-	// Initialize the current bindings to defaults. Current bindings will be overwritten once the player's bindings is read in.
-	item.joy_id = item.joy_default;
-	item.key_id = item.key_default;
+	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
+	// Current bindings will be overwritten once the player's bindings is read in.
+	item.take(CC_bind(CID_KEYBOARD, key_default), 0);
+	item.take(CC_bind(CID_JOY0, joy_default), 1);
 
 	// Assign the UI members
 	item.text.assign(text);
@@ -1784,12 +1986,15 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 	// Assign the CC_type
 	item.type = type;
 
+	if (tab == NO_TAB) {
+		mprintf(("Control item defined without a valid tab. Disabling: %s", item.text.c_str()));
+	}
+
 	// Assign disabled state
 	if ((tab == NO_TAB) || (disabled == true)) {
 		item.disabled = true;
 
-	}
-	else {
+	} else {
 		// Must have a valid tab, and not disabled by hardcode
 		item.disabled = false;
 	}

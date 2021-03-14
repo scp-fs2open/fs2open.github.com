@@ -39,8 +39,12 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	return ade_set_args(L, "s", Iff_info[tdx].iff_name);
 }
 
-ADE_FUNC(getColor, l_Team, nullptr, "Gets the IFF color of the specified Team",
-         ade_type_info({"number", "number", "number"}), "rgb color for the specified team or nil if invalid")
+ADE_FUNC(getColor,
+	l_Team,
+	nullptr,
+	"Gets the IFF color of the specified Team",
+	"number, number, number",
+	"rgb color for the specified team or nil if invalid")
 {
 	int idx;
 	int r,g,b;

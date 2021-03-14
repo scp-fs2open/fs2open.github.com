@@ -230,9 +230,15 @@ class ade_lib : public ade_lib_handle {
  */
 class ade_func : public ade_lib_handle {
   public:
-	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, ade_overload_list args, const char* desc,
-	         ade_type_info ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
-	         const char* deprecation_message);
+	ade_func(const char* name,
+		lua_CFunction func,
+		const ade_lib_handle& parent,
+		ade_overload_list args,
+		const char* desc,
+		const char* ret_type,
+		const char* ret_desc,
+		const gameversion::version& deprecation_version,
+		const char* deprecation_message);
 };
 
 /**
@@ -283,9 +289,15 @@ class ade_func : public ade_lib_handle {
  */
 class ade_virtvar : public ade_lib_handle {
   public:
-	ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
-	            ade_type_info ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
-	            const char* deprecation_message);
+	ade_virtvar(const char* name,
+		lua_CFunction func,
+		const ade_lib_handle& parent,
+		const char* args,
+		const char* desc,
+		const char* ret_type,
+		const char* ret_desc,
+		const gameversion::version& deprecation_version,
+		const char* deprecation_message);
 };
 
 /**
@@ -337,8 +349,12 @@ class ade_virtvar : public ade_lib_handle {
  */
 class ade_indexer : public ade_lib_handle {
   public:
-	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_overload_list overloads = ade_overload_list(),
-	            const char* desc = nullptr, ade_type_info ret_type = ade_type_info(), const char* ret_desc = nullptr);
+	ade_indexer(lua_CFunction func,
+		const ade_lib_handle& parent,
+		ade_overload_list overloads,
+		const char* desc,
+		const char* ret_type,
+		const char* ret_desc);
 };
 
 /**

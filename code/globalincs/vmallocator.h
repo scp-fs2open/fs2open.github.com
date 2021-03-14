@@ -2,6 +2,7 @@
 #define _VMALLOCATOR_H_INCLUDED_
 
 #include <deque>
+#include <iterator>
 #include <list>
 #include <locale>
 #include <map>

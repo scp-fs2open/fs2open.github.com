@@ -380,7 +380,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	iff_init();			// Goober5000
 	species_init();		// Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();
@@ -417,6 +417,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	asteroid_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)

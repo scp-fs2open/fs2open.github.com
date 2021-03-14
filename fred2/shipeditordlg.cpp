@@ -2013,7 +2013,7 @@ void CShipEditorDlg::OnSelchangeHotkey()
 	set_num = m_hotkey-1;			// use -1 since values associated with hotkey sets are 1 index based
 
 	// the first three sets are generally reserved for player starting wings.
-	if ( set_num < MAX_STARTING_WINGS ) {
+	if ( set_num >= 0 && set_num < MAX_STARTING_WINGS ) {
 		sprintf( buf, "This hotkey set should probably be reserved\nfor wing %s", Starting_wing_names[set_num] );
 		MessageBox(buf, NULL, MB_OK);
 	}

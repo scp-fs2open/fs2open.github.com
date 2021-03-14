@@ -542,6 +542,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
 
+				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{

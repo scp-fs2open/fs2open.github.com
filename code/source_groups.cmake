@@ -6,6 +6,66 @@ add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/ActionDefinition.cpp
+	actions/ActionDefinition.h
+	actions/ActionDefinitionManager.cpp
+	actions/ActionDefinitionManager.h
+	actions/BuiltinActionDefinition.h
+	actions/common.cpp
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/ActionExpression.cpp
+	actions/expression/ActionExpression.h
+	actions/expression/ExpressionParser.cpp
+	actions/expression/ExpressionParser.h
+	actions/expression/FunctionManager.cpp
+	actions/expression/FunctionManager.h
+	actions/expression/ParseContext.h
+	actions/expression/ProgramVariables.cpp
+	actions/expression/ProgramVariables.h
+	actions/expression/TypeDefinition.cpp
+	actions/expression/TypeDefinition.h
+	actions/expression/Value.cpp
+	actions/expression/Value.h
+)
+
+add_file_folder("Actions\\\\Expression\\\\Nodes"
+	actions/expression/nodes/AbstractExpression.cpp
+	actions/expression/nodes/AbstractExpression.h
+	actions/expression/nodes/FunctionCallExpression.cpp
+	actions/expression/nodes/FunctionCallExpression.h
+	actions/expression/nodes/LiteralExpression.cpp
+	actions/expression/nodes/LiteralExpression.h
+	actions/expression/nodes/RandomRangeExpression.cpp
+	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VariableReferenceExpression.cpp
+	actions/expression/nodes/VariableReferenceExpression.h
+	actions/expression/nodes/VectorConstructorExpression.cpp
+	actions/expression/nodes/VectorConstructorExpression.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
 add_file_folder("AI"
 	ai/ai.cpp
@@ -640,6 +700,11 @@ add_file_folder("Libs"
 	libs/jansson.cpp
 	libs/jansson.h
 )
+
+add_file_folder("Libs\\\\AntLR"
+	libs/antlr/ErrorListener.cpp
+	libs/antlr/ErrorListener.h
+	)
 
 add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.cpp
@@ -1462,6 +1527,7 @@ add_file_folder("Utils"
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
+	utils/join_string.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

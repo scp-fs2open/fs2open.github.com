@@ -126,7 +126,6 @@ void iff_init()
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
 	int i, j, k;
-	int string_idx;
 
 	try
 	{
@@ -340,7 +339,7 @@ void iff_init()
 
 			// get the list of iffs attacked
 			if (optional_string("$Attacks:"))
-				num_attack_names[cur_iff] = stuff_string_list(attack_names[cur_iff], MAX_IFFS);
+				num_attack_names[cur_iff] = (int)stuff_string_list(attack_names[cur_iff], MAX_IFFS);
 			else
 				num_attack_names[cur_iff] = 0;
 
@@ -384,23 +383,25 @@ void iff_init()
 			iff->flags = 0;
 			if (optional_string("$Flags:"))
 			{
-				char flag_strings[MAX_IFF_FLAGS][NAME_LENGTH];
+				SCP_vector<SCP_string> flag_strings;
+				stuff_string_list(flag_strings);
 
-				int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS);
-				for (string_idx = 0; string_idx < num_strings; string_idx++)
+				for (auto &item: flag_strings)
 				{
-					if (!stricmp(NOX("support allowed"), flag_strings[string_idx]))
+					auto flag_string = item.c_str();
+
+					if (!stricmp(NOX("support allowed"), flag_string))
 						iff->flags |= IFFF_SUPPORT_ALLOWED;
-					else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[string_idx]))
+					else if (!stricmp(NOX("exempt from all teams at war"), flag_string))
 						iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
-					else if (!stricmp(NOX("orders hidden"), flag_strings[string_idx]))
+					else if (!stricmp(NOX("orders hidden"), flag_string))
 						iff->flags |= IFFF_ORDERS_HIDDEN;
-					else if (!stricmp(NOX("orders shown"), flag_strings[string_idx]))
+					else if (!stricmp(NOX("orders shown"), flag_string))
 						iff->flags |= IFFF_ORDERS_SHOWN;
-					else if (!stricmp(NOX("wing name hidden"), flag_strings[string_idx]))
+					else if (!stricmp(NOX("wing name hidden"), flag_string))
 						iff->flags |= IFFF_WING_NAME_HIDDEN;
 					else
-						Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[string_idx]);
+						Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_string);
 				}
 			}
 

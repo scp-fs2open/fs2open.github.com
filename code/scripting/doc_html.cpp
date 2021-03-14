@@ -168,6 +168,9 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info)
 		fputs("...", fp);
 		break;
 	}
+	default:
+		Assertion(false, "Unhandled type!");
+		break;
 	}
 }
 
@@ -265,8 +268,6 @@ void OutputElement(FILE* fp,
 				if (!el->shortName.empty())
 					fprintf(fp, " (%s)", el->shortName.c_str());
 
-				fputs("</h2>\n", fp);
-
 				if (el->type == ElementType::Class) {
 					const auto classEl = static_cast<DocumentationElementClass*>(el.get());
 
@@ -277,6 +278,8 @@ void OutputElement(FILE* fp,
 							classEl->superClass.c_str());
 					}
 				}
+
+				fputs("</h2>\n", fp);
 			}
 			fputs("</dt>\n", fp);
 
@@ -385,8 +388,10 @@ void OutputElement(FILE* fp,
 					fputs(propEl->shortName.c_str(), fp);
 				fputs("</b>\n", fp);
 			}
-			if (!propEl->setterType.empty())
-				fprintf(fp, " = <i>%s</i>", propEl->setterType.c_str());
+			if (!propEl->setterType.isEmpty()) {
+				fprintf(fp, " = ");
+				ade_output_type_link(fp, propEl->setterType);
+			}
 			fputs("</dt>\n", fp);
 
 			//***Description

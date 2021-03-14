@@ -165,22 +165,22 @@ bool SourceOrigin::isValid() const {
 
 SourceOrientation::SourceOrientation() : m_orientation(vmd_identity_matrix) {}
 
-void SourceOrientation::setFromVector(const vec3d& vec) {
+void SourceOrientation::setFromVector(const vec3d& vec, bool relative) {
 	vec3d workVec = vec;
 
 	vm_vec_normalize(&workVec);
 
-	this->setFromNormalizedVector(workVec);
+	this->setFromNormalizedVector(workVec, relative);
 }
 
-void SourceOrientation::setFromNormalizedVector(const vec3d& vec) {
+void SourceOrientation::setFromNormalizedVector(const vec3d& vec, bool relative) {
 	vm_vector_2_matrix_norm(&m_orientation, &vec);
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
-void SourceOrientation::setFromMatrix(const matrix& mat) {
+void SourceOrientation::setFromMatrix(const matrix& mat, bool relative) {
 	m_orientation = mat;
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
 void SourceOrientation::setNormal(const vec3d& normal) {

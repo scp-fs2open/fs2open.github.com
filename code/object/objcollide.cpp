@@ -52,6 +52,9 @@ extern checkobject CheckObjects[MAX_OBJECTS];
 // returns true if we should reject object pair if one is child of other.
 int reject_obj_pair_on_parent(object *A, object *B)
 {
+	if (A->flags[Object::Object_Flags::Collides_with_parent] || B->flags[Object::Object_Flags::Collides_with_parent])
+		return 0;
+
 	if (A->type == OBJ_SHIP) {
 		if (B->type == OBJ_DEBRIS) {
 			if (B->parent_sig == A->signature) {

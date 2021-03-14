@@ -362,7 +362,7 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	return ade_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
-ADE_VIRTVAR(Species, l_Shipclass, "Species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
+ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
 	int idx;
 	int sidx = -1;

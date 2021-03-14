@@ -1815,7 +1815,7 @@ void game_init()
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	hud_init_comm_orders();	// Goober5000
 
@@ -3329,7 +3329,7 @@ void game_render_frame( camid cid )
 	nebl_render_all();
 
 	// render local player nebula
-	neb2_render_player();
+	neb2_render_poofs();
 
 	batching_render_all(false);
 

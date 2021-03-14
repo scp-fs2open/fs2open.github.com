@@ -176,7 +176,7 @@ int Default_command_persona;
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
-SCP_vector<SCP_string> generic_message_filenames;
+SCP_vector<SCP_string> Generic_message_filenames;
 
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
@@ -612,13 +612,13 @@ void parse_msgtbl()
 
 
 		// additional table part!
-		generic_message_filenames.clear();
-		generic_message_filenames.push_back("none");
-		generic_message_filenames.push_back("cuevoice");
-		generic_message_filenames.push_back("cue_voice");
-		generic_message_filenames.push_back("emptymsg");
-		generic_message_filenames.push_back("generic");
-		generic_message_filenames.push_back("msgstart");
+		Generic_message_filenames.clear();
+		Generic_message_filenames.push_back("none");
+		Generic_message_filenames.push_back("cuevoice");
+		Generic_message_filenames.push_back("cue_voice");
+		Generic_message_filenames.push_back("emptymsg");
+		Generic_message_filenames.push_back("generic");
+		Generic_message_filenames.push_back("msgstart");
 
 		if (optional_string("#Simulated Speech Overrides"))
 		{
@@ -648,7 +648,7 @@ void parse_msgtbl()
 				*ptr = '\0';
 
 				// add truncated file name
-				generic_message_filenames.push_back(filename);
+				Generic_message_filenames.push_back(filename);
 			}
 
 			required_string("#End");
@@ -1032,9 +1032,9 @@ bool message_filename_is_generic(char *filename)
 	*ptr = '\0';
 
 	// test against the list
-	for (unsigned int i = 0; i < generic_message_filenames.size(); i++)
+	for (unsigned int i = 0; i < Generic_message_filenames.size(); i++)
 	{
-		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
+		if (!stricmp(Generic_message_filenames[i].c_str(), truncated_filename))
 			return true;
 	}
 

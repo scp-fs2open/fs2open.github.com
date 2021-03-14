@@ -13,6 +13,7 @@
 #include "weapon/weapon.h"
 #include "menuui/techmenu.h"
 #include "fireball/fireballs.h"
+#include "mission/missionmessage.h"
 
 
 extern bool Ships_inited;
@@ -218,6 +219,26 @@ ADE_FUNC(__len, l_Tables_FireballClasses, NULL, "Number of fireball classes", "n
 
 	return ade_set_args(L, "i", Num_fireball_types);
 }
-}
+
+ADE_LIB_DERIV(l_Tables_SimulatedSpeechOverrides, "SimulatedSpeechOverrides", NULL, NULL, l_Tables);
+
+ADE_INDEXER(l_Tables_SimulatedSpeechOverrides, "number Index", nullptr, "string", "Truncated filenames of simulated speech overrides or empty string if index is out of range.")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "*i", &idx)) {
+		return ade_set_error(L, "s", "");
+	}
+	if (idx > 0 && (size_t) idx <= Generic_message_filenames.size()) {
+		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
+		return ade_set_args(L, "s", Generic_message_filenames[idx]);
+	}
+
+	return ade_set_error(L, "s", "");
 }
 
+ADE_FUNC(__len, l_Tables_SimulatedSpeechOverrides, nullptr, "Number of simulated speech overrides", "number", "Number of simulated speech overrides")
+{
+	return ade_set_args(L, "i", Generic_message_filenames.size());
+}
+}
+}

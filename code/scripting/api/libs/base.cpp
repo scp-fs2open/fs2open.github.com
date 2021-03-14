@@ -175,7 +175,7 @@ ADE_FUNC(findIntersection,
 	l_Base,
 	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
-	ade_type_info({ "vector", "number" }),
+	"vector, number",
 	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
 {
 	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;

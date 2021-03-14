@@ -43,7 +43,7 @@ struct DocumentationElementProperty : public DocumentationElement {
 	~DocumentationElementProperty() override = default;
 
 	scripting::ade_type_info getterType;
-	SCP_string setterType;
+	scripting::ade_type_info setterType;
 
 	SCP_string returnDocumentation;
 };
