@@ -196,7 +196,9 @@ void CEditContainerDlg::OnOK()
 {
 	if (m_current_container >=0) {
 		// if we can't save changed data, don't quit
-		if (m_data_changed) {
+		//if (m_data_changed) {
+		// FIXME TEMP: ignore m_data_changed
+		if (m_current_container >= 0) {
 			if (!save_current_container()) {
 				return;
 			}
@@ -319,7 +321,9 @@ void CEditContainerDlg::OnSelchangeContainerName()
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
 	// save the currently selected container before we do anything with the new one
-	if (m_data_changed) {
+	//if (m_data_changed) {
+	// FIXME TEMP: ignore m_data_changed
+	if (m_current_container >= 0) {
 		if (!save_current_container()) {
 			//we couldn't save the old container, so back out of the container change.
 			Assert(m_current_container >= 0);
@@ -727,7 +731,9 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
 	// try to save the old container first
-	if (m_data_changed) { 
+	//if (m_data_changed) {
+	// FIXME TEMP: ignore m_data_changed
+	if (m_current_container >= 0) {
 		if (!save_current_container()) {
 			// we couldn't save the old container, don't do anything with the new one yet. 
 			return; 
