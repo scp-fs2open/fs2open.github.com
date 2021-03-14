@@ -56,23 +56,12 @@ void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, 
 //This function checks the file header to see if the file is compressed, if so it fills the correct compression info.
 void cf_check_compression(CFILE* cfile)
 {
-	if (cfile->size <= 4)
+	if (cfile->size <= 16)
 		return;
-
-	char header[4];
-	fread(header, 1, 4, cfile->fp);
-	cfseek(cfile,0,SEEK_SET);
+	int header=cfread_int(cfile);
+	cfseek(cfile, 0, SEEK_SET);
 	if (comp_check_header(header) == COMP_HEADER_MATCH)
-	{
-		mprintf(("Compressed File Opened: %s \n", cfile->original_filename.c_str()));
 		comp_create_ci(cfile, header);
-		//mprintf(("(CI)Header: %s \n", cfile->compression_info.header));
-		mprintf(("(CI)NumOffsets: %d \n", cfile->compression_info.numOffsets));
-		mprintf(("(CI)Uncompressed FileSize: %d \n", cfile->size));
-		mprintf(("(CI)Compressed FileSize: %d \n", cfile->compression_info.compressed_size));
-		mprintf(("(CI)Block Size: %d \n", cfile->compression_info.block_size));
-	}
-
 }
 
 //This function is called to cleanup compression info when the cfile handle is reused.
@@ -237,7 +226,11 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
 	}else if (cfile->compression_info.isCompressed==1){
 		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
-		Assertion(bytes_read == size, "File decompression error!");
+		if (bytes_read != size)
+		{
+			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), bytes_read, size));
+			Assertion(bytes_read == size, "File decompression error!");
+		}
 	}else{
 		bytes_read = fread(buf, 1, size, cfile->fp);
 	}
@@ -248,6 +241,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 	}		
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
+	//Raw position is not the fp position with compressed files
     if (cfile->fp && cfile->compression_info.isCompressed == 0) {
 		auto tmp_offset = ftell(cfile->fp) - cfile->lib_offset;
 		Assert(tmp_offset == cfile->raw_position);

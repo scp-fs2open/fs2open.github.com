@@ -10,12 +10,12 @@ ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and ev
 -COMPRESSED FILE DATA STUCTURE: HEADER|N BLOCKS|N OFFSETS|NUM_OFFSETS|ORIGINAL_FILESIZE|BLOCK_SIZE
 */
 
-#ifndef _COMP_UNTILS_H
-#define _COMP_UNTILS_H
+#ifndef _CFILECOMPRESSION_H
+#define _CFILECOMPRESSION_H
 struct CFILE;
 
 struct compression_info {
-	char header[4] = { 'N','O','C','P' };
+	int header=0;
 	int isCompressed = 0;
 	size_t compressed_size = 0;
 	int block_size = 0;
@@ -28,7 +28,7 @@ struct compression_info {
 
 
 /*LZ41*/
-#define LZ41_FILE_HEADER "LZ41"
+#define LZ41_FILE_HEADER 0x31345A4C //"LZ41", inverted
 #define LZ41_DECOMPRESSION_ERROR -1
 #define LZ41_MAX_BLOCKS_OVERFLOW -2
 #define LZ41_HEADER_MISMATCH -3
@@ -37,19 +37,20 @@ struct compression_info {
 
 #define COMP_HEADER_MATCH 1
 #define COMP_HEADER_MISMATCH 0
+#define COMP_INVALID_LENGTH_REQUESTED -5
 
 /*
 	Returns COMP_HEADER_MATCH if header is a valid compressed file header,
 	returns COMP_HEADER_MISMATCH if it dosent.
 */
-int comp_check_header(char* header);
+int comp_check_header(int header);
 
 /*
 	This is called to generate the correct compression_info data
 	after the file has been indentified as a compressed file.
 	This must be done before calling any other function.
 */
-void comp_create_ci(CFILE* cf, char* header);
+void comp_create_ci(CFILE* cf, int header);
 
 /*
 	Read X bytes from the uncompressed file starting from X offset.

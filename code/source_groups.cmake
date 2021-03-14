@@ -64,6 +64,8 @@ add_file_folder("CFile"
 	cfile/cfilelist.cpp
 	cfile/cfilesystem.cpp
 	cfile/cfilesystem.h
+	cfile/cfilecompression.cpp
+	cfile/cfilecompression.h
 )
 
 # Cmdline files

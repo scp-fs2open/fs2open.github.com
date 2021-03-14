@@ -15,7 +15,7 @@
 #endif
 
 #include "globalincs/pstypes.h"
-#include "compression_utils.h"
+#include "cfilecompression.h"
 
 // The following Cfile_block data is private to cfile.cpp
 // DO NOT MOVE the Cfile_block* information to cfile.h / do not extern this data
