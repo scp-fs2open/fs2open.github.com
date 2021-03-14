@@ -1,11 +1,9 @@
 /*
 ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and everyone elsewho helped me in getting this done.
 
--Audio, movies and ANIs cant be used this way. DO NOT COMPRESS.
--Mission files and tables should stay in a readeable format, you can compress then, but i think it is better this way.
--The minimum size is a optimization, there is no need to compress very small files.
--The file header is a version, this is used to tell FSO how to decompress that file, always use 4 chars to mantain alignment, it is stored at the start of the file. "LZ41" for this implementation.
--The block size is used to tell how much information is compressed into a block, each block adds overhead, so a larger the block bytes result in smaller file size.
+-Audio, movies and .pcx cant be used this way. DO NOT COMPRESS.
+-The file header is a version, this is used to tell FSO how to decompress that file, always use 4 chars to mantain alignment, it is stored at the start of the file.
+
 ................................char[4]..........(n ints)...(int)..........(int)..........(int)
 -COMPRESSED FILE DATA STUCTURE: HEADER|N BLOCKS|N OFFSETS|NUM_OFFSETS|ORIGINAL_FILESIZE|BLOCK_SIZE
 */
