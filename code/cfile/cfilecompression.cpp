@@ -123,7 +123,6 @@ int fso_fseek(CFILE* cfile, int offset, int where)
 
 void lz41_create_ci(CFILE* cf, int header)
 {
-	cf->compression_info.isCompressed = 1;
 	cf->compression_info.header = header;
 	cf->compression_info.compressed_size = cf->size;
 	fso_fseek(cf, -12, SEEK_END);

@@ -81,7 +81,7 @@ void cf_clear_compression_info(CFILE* cfile)
 int cfeof(CFILE *cfile)
 {
 	Assert(cfile != NULL);
-	if (cfile->compression_info.isCompressed == 1)
+	if (cfile->compression_info.header != 0)
 		return comp_feof(cfile);
 	int result = 0;
 
@@ -109,7 +109,7 @@ int cfeof(CFILE *cfile)
 int cftell( CFILE * cfile )
 {
 	Assert(cfile != NULL);
-	if (cfile->compression_info.isCompressed == 1)
+	if (cfile->compression_info.header != 0)
 		return (int)comp_ftell(cfile);
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
@@ -136,7 +136,7 @@ int cfseek( CFILE *cfile, int offset, int where )
 
 	Assert(cfile != NULL);
 
-	if (cfile->compression_info.isCompressed == 1)
+	if (cfile->compression_info.header != 0)
 		return (int)comp_fseek(cfile, offset, where);
 
 	// TODO: seek to offset in memory mapped file
@@ -224,7 +224,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		// This is a file from memory
 		bytes_read = size;
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
-	}else if (cfile->compression_info.isCompressed==1){
+	}else if (cfile->compression_info.header != 0) {
 		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
 		if (bytes_read != size)
 		{
@@ -242,7 +242,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
 	//Raw position is not the fp position with compressed files
-    if (cfile->fp && cfile->compression_info.isCompressed == 0) {
+    if (cfile->fp && cfile->compression_info.header == 0) {
 		auto tmp_offset = ftell(cfile->fp) - cfile->lib_offset;
 		Assert(tmp_offset == cfile->raw_position);
 	}

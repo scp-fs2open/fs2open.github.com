@@ -16,7 +16,6 @@ struct CFILE;
 
 struct compression_info {
 	int header=0;
-	int isCompressed = 0;
 	size_t compressed_size = 0;
 	int block_size = 0;
 	int numOffsets = 0;
