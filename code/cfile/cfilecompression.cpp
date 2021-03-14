@@ -34,14 +34,14 @@ int comp_check_header(int header)
 
 void comp_create_ci(CFILE* cf, int header)
 {
-	mprintf(("(CI)Compressed File Opened: %s \n", cf->original_filename.c_str()));
+	//mprintf(("(CI)Compressed File Opened: %s \n", cf->original_filename.c_str()));
 
 	if (LZ41_FILE_HEADER == header)
 		lz41_create_ci(cf, header);
 
-	mprintf(("(CI)Uncompressed FileSize: %d \n", cf->size));
-	mprintf(("(CI)Compressed FileSize: %d \n", cf->compression_info.compressed_size));
-	mprintf(("(CI)Block Size: %d \n", cf->compression_info.block_size));
+	//mprintf(("(CI)Uncompressed FileSize: %d \n", cf->size));
+	//mprintf(("(CI)Compressed FileSize: %d \n", cf->compression_info.compressed_size));
+	//mprintf(("(CI)Block Size: %d \n", cf->compression_info.block_size));
 }
 
 size_t comp_fread(CFILE* cf, char* buffer, size_t length)
