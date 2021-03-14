@@ -1799,8 +1799,8 @@ int CFred_mission_save::save_containers()
 				}
 
 				fout("\n$Data: ( ");
-				for (int list_idx = 0; list_idx < (int)Sexp_containers[i].list_data.size(); list_idx++) {
-					fout("\"%s\" ", Sexp_containers[i].list_data[list_idx].c_str());
+				for (const auto &list_entry : Sexp_containers[i].list_data) {
+					fout("\"%s\" ", list_entry.c_str());
 				}
 
 				fout(")\n");
@@ -1844,8 +1844,8 @@ int CFred_mission_save::save_containers()
 				}
 
 				fout("\n$Data: ( ");
-				for (SCP_unordered_map<SCP_string, SCP_string>::iterator map_iter = Sexp_containers[i].map_data.begin(); map_iter != Sexp_containers[i].map_data.end(); map_iter++) {
-					fout("\"%s\" \"%s\" ", map_iter->first.c_str(), map_iter->second.c_str());
+				for (const auto &map_entry : Sexp_containers[i].map_data) {
+					fout("\"%s\" \"%s\" ", map_entry.first.c_str(), map_entry.second.c_str());
 				}
 
 				fout(")\n");

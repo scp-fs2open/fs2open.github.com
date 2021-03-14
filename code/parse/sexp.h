@@ -787,14 +787,10 @@ class waypoint_list;
 #define OP_NEBULA_CHANGE_FOG_COLOR			(0x0041 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
 #define OP_CONTAINER_ADD_TO_LIST			(0x0042 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_CONTAINER_ADD_TO_MAP				(0x0043 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CLEAR_CONTAINER					(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_ADD_TO_LIST			(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_ADD_TO_MAP				(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CLEAR_CONTAINER					(0x0048 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0049 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_LIST		(0x004a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_MAP		(0x004b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CLEAR_CONTAINER					(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_MAP_KEYS						(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1203,21 +1199,39 @@ typedef struct sexp_variable {
 struct sexp_container
 {
 	SCP_string container_name;
-	int type;
-	int opf_type;
+	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
+	int opf_type = OPF_ANYTHING;
 	SCP_deque<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string> map_data;
-};
 
-// TODO: maybe something like this
-// nail down the requirements and re-evaluate the design
-template <typename ContainerT>
-struct sexp_container_new // TODO: remove "_new"
-{
-	SCP_string container_name;
-	int type;
-	int opf_type;
-	ContainerT container_data;
+	inline bool is_list() const
+	{
+		return type & SEXP_CONTAINER_LIST;
+	}
+
+	inline bool is_map() const
+	{
+		return type & SEXP_CONTAINER_MAP;
+	}
+
+	bool empty() const
+	{
+		return (is_list() && list_data.empty()) || (is_map() && map_data.empty());
+	}
+
+	bool operator==(const sexp_container& rhs) const
+	{
+		if (this == &rhs) {
+			return true;
+		}
+		return container_name == rhs.container_name && type == rhs.type && opf_type == rhs.opf_type &&
+			   list_data == rhs.list_data && map_data == rhs.map_data;
+	}
+
+	bool operator!=(const sexp_container& rhs) const
+	{
+		return !(*this == rhs);
+	}
 };
 
 // next define used to eventually mark a directive as satisfied even though there may be more
@@ -1350,6 +1364,7 @@ int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // sexp_containers
+// TODO: consider returning sexp_container*, nullptr on failure
 int get_sexp_container_index(const char* name);
 bool sexp_replace_container_refs_with_values(char *text, int max_len); 
 bool sexp_replace_container_refs_with_values(SCP_string &text);

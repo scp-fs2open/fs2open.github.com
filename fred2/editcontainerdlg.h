@@ -30,9 +30,12 @@ public:
 	SCP_vector<sexp_container> edit_sexp_containers;
 	enum { IDD = IDD_EDIT_CONTAINER };
 
-	int			m_current_container;
+	int			m_current_container = -1;
+	sexp_container m_container_copy;
+	// TODO: container type enum class
 	bool		m_type_list;
 	bool		m_type_map;
+	// TODO: data type enum class, have one for data and another for keys (to use with maps)
 	bool		m_type_number;
 	bool		m_key_type_number;
 	bool		m_data_changed;
@@ -47,8 +50,8 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CEditContainerDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+  protected:
+	void DoDataExchange(CDataExchange* pDX) override; // DDX/DDV support
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -56,15 +59,17 @@ protected:
 
 	// Generated message map functions
 	//{{AFX_MSG(CEditContainerDlg)
-	virtual void OnOK();
-	virtual BOOL OnInitDialog();
+	void OnOK() override;
+	BOOL OnInitDialog() override;
 
+	// TODO OnContainerType* 
 	afx_msg void OnTypeMap();
 	afx_msg void OnTypeList();
 
 	afx_msg void OnTypeNumber();
 	afx_msg void OnTypeString();
 
+	// TODO: change set_ to update_
 	void set_container_type();
 	void set_argument_type();
 	void set_key_type();
@@ -84,11 +89,12 @@ protected:
 
 	void set_lister_data(int index);
 
+	//todo validate_*_boxws
 	BOOL edit_boxes_have_valid_data();
 	BOOL data_edit_box_has_valid_data();
 	BOOL key_edit_box_has_valid_data();
 
-	int get_index_edit_sexp_container_name(const char *text);
+	bool is_container_name_in_use(const char *text) const;
 	BOOL is_container_name_valid(CString &new_name);
 	BOOL is_data_valid();
 	BOOL is_valid_number(SCP_string test_string);

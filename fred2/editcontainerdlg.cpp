@@ -178,12 +178,12 @@ void CEditContainerDlg::set_lister_data(int index)
 	raw_data.clear(); 
 	
 	if (edit_sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		for (i = 0; i < (int)edit_sexp_containers[index].list_data.size(); i++) {
-			raw_data.push_back(edit_sexp_containers[index].list_data[i]);
+		for (const auto &list_entry : edit_sexp_containers[index].list_data) {
+			raw_data.emplace_back(list_entry);
 		}
 	}
 	else if  (edit_sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		for (SCP_unordered_map<SCP_string, SCP_string>::iterator map_iter = edit_sexp_containers[index].map_data.begin(); map_iter != edit_sexp_containers[index].map_data.end(); map_iter++) {
+		for (auto map_iter = edit_sexp_containers[index].map_data.begin(); map_iter != edit_sexp_containers[index].map_data.end(); map_iter++) {
 			raw_data.push_back(map_iter->first); 
 			raw_data.push_back(map_iter->second); 
 		}
@@ -336,8 +336,8 @@ void CEditContainerDlg::OnSelchangeContainerName()
 	m_current_container = cbox->GetCurSel(); 
 
 	set_selected_container(m_current_container);
-	
-	m_data_changed = false; 
+
+	m_data_changed = false;
 }
 
 
@@ -355,17 +355,15 @@ void CEditContainerDlg::OnEditchangeContainerName()
 }
 
 
-// basically the same as the function in sexp.cpp but checks the backed up edit_sexp_containers used by this dialog instead. 
-int CEditContainerDlg::get_index_edit_sexp_container_name(const char *text)
+bool CEditContainerDlg::is_container_name_in_use(const char *text) const
 {
 	for (int i = 0; i < (int)edit_sexp_containers.size() ; i++) {
 		if ( !stricmp(edit_sexp_containers[i].container_name.c_str(), text) ) {
-			return i;
+			return true;
 		}
 	}
 
-	// not found
-	return -1;
+	return false;
 }
 
 
@@ -395,11 +393,11 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
 			MessageBox("Container names cannot contain &.  Replacing with hyphens.");
 
 			// replace chars
-			new_name.Replace((TCHAR) ' ', (TCHAR) '-');
+			new_name.Replace((TCHAR) '&', (TCHAR) '-');
 		}
 
 		//not already in list and length > 0
-		if ( (strlen(new_name) > 0) && (get_index_edit_sexp_container_name(LPCTSTR(new_name)) == -1) ) { 			
+		if ( (strlen(new_name) > 0) && (!is_container_name_in_use(LPCTSTR(new_name)) == -1) ) { 			
 			name_validated = true;
 		}
 		else {
@@ -421,7 +419,7 @@ BOOL CEditContainerDlg::is_valid_number(SCP_string test_string) {
 	// verify valid number
 	int temp_num = atoi(test_string.c_str());
 	char buf[TOKEN_LENGTH];
-	sprintf(buf, "%d", temp_num);
+	sprintf(buf, "%d", temp_num); // TODO: use snprintf
 
 	if ( stricmp(buf, test_string.c_str()) ) {
 		return false;
@@ -438,6 +436,7 @@ BOOL CEditContainerDlg::is_data_valid()
 	if (m_type_map) {
 		if ( raw_data.size() %2 != 0 ) {
 			MessageBox("Data is corrupt, you have more keys than data entries.");
+			return FALSE;
 		}
 	}
 

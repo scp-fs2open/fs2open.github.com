@@ -23540,7 +23540,7 @@ int container_has_data(const char *container_name, const char *possible_data)
 		// or alternatively, use an ord ered map (std::map) instead of an unordered map
 		// the difference between expected constant time (unordered) and guaranteed log time (ordered) for operations may well be insignificant, even for large missions
 		// and with ordered map, the value of data_index will always be guaranteed consistent across all C++ implementations
-		for (SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
+		for (auto iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
 			if (!strcmp(iter->second.c_str(), possible_data)) {
 				return data_index;
 			}
@@ -23550,7 +23550,7 @@ int container_has_data(const char *container_name, const char *possible_data)
 		return -1;
 	}
 	if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		for (SCP_deque<SCP_string>::iterator iter = Sexp_containers[index].list_data.begin(); iter != Sexp_containers[index].list_data.end(); iter++) {
+		for (auto iter = Sexp_containers[index].list_data.begin(); iter != Sexp_containers[index].list_data.end(); iter++) {
 			if (!strcmp(iter->c_str(), possible_data)) {
 				return data_index;
 			}
@@ -23637,7 +23637,7 @@ int sexp_container_has_key(int node)
 	// and much cleaner/more concise to boot
 
 	// get a list of the keys
-	for (SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
+	for (auto iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
 		keys.push_back(iter->first);
 	}
 
@@ -23682,16 +23682,14 @@ int get_container_index_from_node (int node, int type)
 	}
 
 	return index;
-}			
+}
 
 /**
- * Removes an entry from a SEXP list container.
+ * Removes entries from a SEXP list container.
  */
 void sexp_remove_from_list(int node)
 {
-	int index_to_remove_from = -1;
 	const char *container_name = CTEXT(node);
-	const char *entry_to_remove;
 	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
@@ -23702,29 +23700,18 @@ void sexp_remove_from_list(int node)
 	if (!(Sexp_containers[index].type & SEXP_CONTAINER_LIST)) {
 		Warning(LOCATION, "Container %s is not a list container. Can not use the remove-from-list SEXP with it", container_name);
 		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the remove-from-list SEXP with it");
-		return; 
+		return;
 	}
 
 	node = CDR(node);
 
+	auto &list_data = Sexp_containers[index].list_data;
+
 	while (node != -1) {
-		entry_to_remove = CTEXT(node);
-		// Review notes:
-		// (1) why do we even need an index? why can't we use std::remove_if with a lambda as the predicate?
-		// (2) for a list container, should this sexp remove the first instance of the item-to-remove?
-		//     or should it remove *all* instances of that item in the list container?
-		// (3) if we need to be able to delete at any point in a list container, deque is the wrong data structure
-		//     deletion at arbitrary points in a deque is potentially expensive, see http://www.cplusplus.com/reference/deque/deque/erase/
-		//     and deques are intended for access at the front or back only (hence the name)
-		//     we should consider using an std::list to implement list containers instead
-		//     because deletion performance in a list (after the element is found ) is independent of list size
-		//     see http://www.cplusplus.com/reference/list/list/erase/
-		// (4) FREDders should be warned that element access in a list container other than head/tail is unavoidably expensive (requires traversing the list)
-		//     if they need fast access to arbitrary elements, they should consider using a map container instead
-		//     (although TBH, for short lists, it probably doesn't make a difference)
-		index_to_remove_from = container_has_data(container_name, entry_to_remove);
+		const char *entry_to_remove = CTEXT(node);
+		int index_to_remove_from = container_has_data(container_name, entry_to_remove);
 		if (index_to_remove_from >= 0) {
-			Sexp_containers[index].list_data.erase(Sexp_containers[index].list_data.begin() + index_to_remove_from);
+			Sexp_containers[index].list_data.erase(std::next(Sexp_containers[index].list_data.begin(), index_to_remove_from));
 		} else {
 			Warning(LOCATION, "Container %s does not contain an entry called %s. Can not use the remove-from-list SEXP to remove it", container_name, entry_to_remove);
 			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with an entry which is not in the list");
@@ -23936,7 +23923,7 @@ void sexp_get_map_keys(int node)
 	}
 
 	// TODO: switch to "foreach"-style loop
-	SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[map_index].map_data.begin();
+	auto iter = Sexp_containers[map_index].map_data.begin();
 
 	for (; iter != Sexp_containers[map_index].map_data.end(); ++iter) {
 		Sexp_containers[list_index].list_data.push_back(iter->first);
@@ -24014,7 +24001,7 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 		// FIXME TODO: what if '&' is not found? Is that possible?
 
 		const SCP_string key = text.substr(lookHere, key_ends_here - lookHere);
-		SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[con_index].map_data.find(key);
+		auto iter = Sexp_containers[con_index].map_data.find(key);
 
 		if (iter == Sexp_containers[con_index].map_data.end()) {
 			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
@@ -24047,10 +24034,10 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 		// FIXME TODO: handle case of modifier not found
 
 		int data_index;
-		int number_of_elements;
 		int number_length = 0;
 		SCP_string number_string;
 		auto &list_data = Sexp_containers[con_index].list_data;
+		auto list_it = list_data.begin();
 
 		switch (modifier_index) {
 
@@ -24073,22 +24060,21 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 				break;
 
 			case SNF_CONTAINER_GET_RANDOM:
-				number_of_elements = (int)list_data.size();
-				data_index = rand_internal(0, number_of_elements-1);
-				replacement_text = list_data.at(data_index);
+				data_index = rand_internal(0, (int)list_data.size() -1);
+				replacement_text = *std::next(list_it, data_index);
 				break;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
-				number_of_elements = (int)list_data.size();
-				data_index = rand_internal(0, number_of_elements-1);
-				replacement_text = list_data.at(data_index);
-				list_data.erase(std::next(list_data.begin(), data_index));
+				data_index = rand_internal(0, (int)list_data.size() -1);
+				std::advance(list_it, data_index);
+				replacement_text = *list_it;
+				list_data.erase(list_it);
 				break;
 
 			case SNF_CONTAINER_AT_INDEX:
 				number_string = text.substr(lookHere + 2);
 				data_index = atoi(number_string.c_str());
-				replacement_text = list_data.at(data_index);
+				replacement_text = *std::next(list_it, data_index);
 
 				//we'll need this later, so we might as well grab it now
 				number_length = (int)strspn(number_string.c_str(), "0123456789");
@@ -30951,9 +30937,9 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 			return false;
 		}
 
-		int number_of_elements;
 		int data_index;
 		auto &list_data = Sexp_containers[container_index].list_data;
+		auto list_it = list_data.begin();
 
 		switch (modifier_index) {
 			case SNF_CONTAINER_GET_FIRST:
@@ -30979,17 +30965,16 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				return true;
 
 			case SNF_CONTAINER_GET_RANDOM:
-				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1);
-				result = list_data.at(data_index);
+				data_index = rand_internal(0, list_data.size() -1);
+				result = *std::next(list_it, data_index);
 				return true;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
-				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements-1);
-				result = list_data.at(data_index);
+				data_index = rand_internal(0, list_data.size() -1);
+				std::advance(list_it, data_index);
+				result = *list_it;
 				if (allow_container_modifications()) {
-					list_data.erase(std::next(list_data.begin(), data_index));
+					list_data.erase(list_it);
 				}
 				return true;
 
@@ -31005,7 +30990,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				}
 				Assert(data_index >= 0);
 				Assert((size_t)data_index < Sexp_containers[container_index].list_data.size());
-				result = list_data.at(data_index);
+				result = *std::next(list_it, data_index);
 				return true;
 
 			default:
