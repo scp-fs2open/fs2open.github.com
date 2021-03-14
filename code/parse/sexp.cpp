@@ -17322,7 +17322,7 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 	}
 	else if (ammo[requested_bank] > maximum_allowed)
 	{
-		// Make sure the current ammo doesn't exceed the maximum
+		// Make sure the current ammo doesn't exceed the maximum (this can otherwise happen with the set-*-weapon SEXPs)
 		ammo[requested_bank] = maximum_allowed;
 	}
 
@@ -17335,7 +17335,7 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 
 		start_ammo[requested_bank] = rearm_limit;
 	}
-	else	// Cyborg17 - No matter what
+	else	// Even if no rearm limit is explicitly set, don't allow more weapons than the bank can actually hold (this can otherwise happen with the set-*-weapon SEXPs).
 	{
 		start_ammo[requested_bank] = maximum_allowed;
 	}
