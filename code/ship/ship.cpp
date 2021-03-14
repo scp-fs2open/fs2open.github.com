@@ -4352,6 +4352,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->a_decay_exponent = 1.0f;
 			}
 		}
+		else if (first_time)
+			ci->a_decay_exponent = 1.0f;
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
