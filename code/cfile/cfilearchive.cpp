@@ -70,7 +70,7 @@ void cf_clear_compression_info(CFILE* cfile)
 {
 	free(cfile->compression_info.offsets);
 	free(cfile->compression_info.decoderBuffer);
-	memset(&cfile->compression_info, 0, sizeof(compression_info));
+	memset(&cfile->compression_info, 0, sizeof(COMPRESSION_INFO));
 }
 
 

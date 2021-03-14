@@ -22,7 +22,7 @@
 #define CFILE_BLOCK_UNUSED		0
 #define CFILE_BLOCK_USED		1
 
-struct compression_info {
+struct COMPRESSION_INFO {
 	int header = 0;
 	size_t compressed_size = 0;
 	int block_size = 0;
@@ -54,7 +54,7 @@ struct CFILE {
 	SCP_string original_filename;
 	const char* source_file;
 	int line_num;
-	compression_info compression_info;
+	COMPRESSION_INFO compression_info;
 };
 
 #define MAX_CFILE_BLOCKS	64
