@@ -131,7 +131,7 @@ void lz41_create_ci(CFILE* cf, int header)
 	auto fBsize = fread(&cf->compression_info.block_size,4, 1, cf->fp);
 
 	#if !defined(NDEBUG)
-	if (cf->compression_info.numOffsets <= 0 || cf->size <= 0 || cf->compression_info.block_size <= 0 || fNumoffsets < sizeof(int) || fSize < sizeof(int) || fBsize < sizeof(int))
+	if (cf->compression_info.numOffsets <= 0 || cf->size <= 0 || cf->compression_info.block_size <= 0 || fNumoffsets < 1 || fSize < 1 || fBsize < 1)
 	{
 		//mprintf(("\n(CI) File: %s . Something went wrong reading the setup data, file is possibly in the wrong format.\n", cf->original_filename.c_str(), cf->compression_info.numOffsets, cf->compression_info.block_size));
 		Assertion(cf->compression_info.numOffsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format.");
@@ -154,7 +154,10 @@ void lz41_load_offsets(CFILE* cf)
 
 	fso_fseek(cf, (-4 * (cf->compression_info.numOffsets + 1)) - (sizeof(int)*2), SEEK_END);
 	for (block = 0; block <= cf->compression_info.numOffsets; ++block)
-		fread(offsetsPtr++, sizeof(int), 1, cf->fp);
+	{
+		auto bytes_read = fread(offsetsPtr++, sizeof(int), 1, cf->fp);
+		Assertion(bytes_read = 1, "Error reading offset list.");
+	}
 }
 
 size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size_t length)
@@ -185,7 +188,8 @@ size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size
 			char* cmpBuf = (char*)malloc(LZ4_compressBound(cf->compression_info.block_size));
 			/* The difference in offsets is the size of the block */
 			int cmpBytes = cf->compression_info.offsets[currentBlock + 1] - cf->compression_info.offsets[currentBlock];
-			fread(cmpBuf, cmpBytes, 1, cf->fp);
+			auto bytes_read = fread(cmpBuf, cmpBytes, 1, cf->fp);
+			Assertion(bytes_read == 1, "Error reading from compressed file.");
 
 			const int decBytes = LZ4_decompress_safe_continue(lz4StreamDecode, cmpBuf, cf->compression_info.decoderBuffer, cmpBytes, cf->compression_info.block_size);
 			if (decBytes <= 0)
