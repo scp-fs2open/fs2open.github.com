@@ -50,13 +50,13 @@ size_t comp_fread(CFILE* cf, char* buffer, size_t length)
 	if (length <= 0)
 	{
 		//mprintf(("\n(CI) File: %s . Invalid length requested: %d \n", cf->original_filename.c_str(), length));
-		return COMP_INVALID_LENGTH_REQUESTED;
+		return (size_t)COMP_INVALID_LENGTH_REQUESTED;
 	}
 	/* Check that we are not requesting to read beyond end of file */
 	if (length + cf->raw_position > cf->size)
 	{
 		//mprintf(("\n(CI) File: %s . Requested to read beyond end of file, Lenght requested: %d, Current Pos: %d, Filesize: d% \n", cf->original_filename.c_str(), length, cf->raw_position,cf->size));
-		return COMP_INVALID_LENGTH_REQUESTED;
+		return (size_t)COMP_INVALID_LENGTH_REQUESTED;
 	}
 
 	if (LZ41_FILE_HEADER == cf->compression_info.header)
@@ -126,12 +126,12 @@ void lz41_create_ci(CFILE* cf, int header)
 	cf->compression_info.header = header;
 	cf->compression_info.compressed_size = cf->size;
 	fso_fseek(cf, -12, SEEK_END);
-	fread(&cf->compression_info.numOffsets, 4, 1, cf->fp);
-	fread(&cf->size, 4, 1, cf->fp);
-	fread(&cf->compression_info.block_size,4, 1, cf->fp);
+	auto fNumoffsets = fread(&cf->compression_info.numOffsets, 4, 1, cf->fp);
+	auto fSize = fread(&cf->size, 4, 1, cf->fp);
+	auto fBsize = fread(&cf->compression_info.block_size,4, 1, cf->fp);
 
 	#if !defined(NDEBUG)
-	if (cf->compression_info.numOffsets <= 0 || cf->size <= 0 || cf->compression_info.block_size <= 0)
+	if (cf->compression_info.numOffsets <= 0 || cf->size <= 0 || cf->compression_info.block_size <= 0 || fNumoffsets < sizeof(int) || fSize < sizeof(int) || fBsize < sizeof(int))
 	{
 		//mprintf(("\n(CI) File: %s . Something went wrong reading the setup data, file is possibly in the wrong format.\n", cf->original_filename.c_str(), cf->compression_info.numOffsets, cf->compression_info.block_size));
 		Assertion(cf->compression_info.numOffsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format.");
@@ -167,7 +167,7 @@ size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size
 	size_t written_bytes = 0;
 
 	if (cf->compression_info.numOffsets <= (int)endBlock)
-		return LZ41_OFFSETS_MISMATCH;
+		return (size_t)LZ41_OFFSETS_MISMATCH;
 
 	/* Seek to the first block to read, if it matches the cached block, search the next one instead */
 	if (cf->compression_info.lastDecBlockNum == cf->compression_info.offsets[currentBlock] && currentBlock + 1 <= endBlock)
@@ -189,7 +189,7 @@ size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size
 
 			const int decBytes = LZ4_decompress_safe_continue(lz4StreamDecode, cmpBuf, cf->compression_info.decoderBuffer, cmpBytes, cf->compression_info.block_size);
 			if (decBytes <= 0)
-				return LZ41_DECOMPRESSION_ERROR;
+				return (size_t)LZ41_DECOMPRESSION_ERROR;
 
 			/* Write out the part of the data we care about */
 			size_t blockLength = ((length) < ((decBytes - offset)) ? (length) : ((decBytes - offset)));
