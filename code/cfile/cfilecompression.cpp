@@ -89,12 +89,12 @@ size_t comp_fseek(CFILE* cf, int offset, int where)
 	case SEEK_END: goal_position = cf->raw_position + offset; break;
 	default: return 1;
 	}
+
+	// Make sure we don't seek beyond the end of the file
+	CAP(goal_position,(size_t)0, cf->size);
+
 	cf->raw_position = goal_position;
-	if (goal_position > cf->size || goal_position<0)
-	{
-		mprintf(("\n(CI) File: %s . Requested to seek beyond end of compressed file or invalid seek. Goal Pos: %d, Filesize: d% \n", cf->original_filename.c_str(), goal_position, cf->size));
-		Assertion(goal_position <= cf->size || goal_position > 0, "Requested to seek beyond end of compressed file or invalid seek.");
-	}
+
 	return goal_position;
 }
 
