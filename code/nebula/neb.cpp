@@ -59,11 +59,9 @@ AccelStar II
 int Neb2_render_mode = NEB2_RENDER_NONE;
 
 // array of neb2 poofs
-char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN] = {
-	"", "", "", "", "", ""
-};
-int Neb2_poofs[MAX_NEB2_POOFS] = { -1, -1, -1, -1, -1, -1 };
-int Neb2_poof_flags = ( (1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5) );
+char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];
+int Neb2_poofs[MAX_NEB2_POOFS];
+int32_t Neb2_poof_flags = 0;
 int Neb2_poof_count = 0;
 
 // array of neb2 bitmaps
@@ -275,6 +273,12 @@ void neb2_init()
 {
 	char name[MAX_FILENAME_LEN];
 
+	for (int& bitmap : Neb2_poofs)
+		bitmap = -1;
+
+	for (auto& filename : Neb2_poof_filenames)
+		filename[0] = '\0';
+
 	try
 	{
 		// read in the nebula.tbl
@@ -310,9 +314,6 @@ void neb2_init()
 				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", MAX_NEB2_POOFS, name);
 			}
 		}
-
-		// should always have 6 neb poofs
-		Assert(Neb2_poof_count == 6);
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -443,6 +444,18 @@ void neb2_post_level_init()
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 	}
+
+	// truncate the poof flags down to the poofs we have
+	if (Neb2_poof_count < MAX_NEB2_POOFS) {
+		int available_poofs_mask = (1 << Neb2_poof_count) - 1;
+
+		// check for negative here too, because if we're not at max, 32, then we're gauranteed not to have the sign bit
+		if (Neb2_poof_flags > available_poofs_mask || Neb2_poof_flags < 0)
+			Warning(LOCATION, "One or more invalid nebula poofs detected!");
+
+		Neb2_poof_flags = Neb2_poof_flags & available_poofs_mask;
+	}
+
 }
 
 // shutdown nebula stuff
@@ -916,7 +929,7 @@ DCF(max_area, "")
 int frames_total = 0;
 int frame_count = 0;
 float frame_avg;
-void neb2_render_player()
+void neb2_render_poofs()
 {
 	GR_DEBUG_SCOPE("Nebula render player");
 
@@ -1295,34 +1308,33 @@ void neb2_get_eye_orient(matrix *eye_matrix)
 // get a (semi) random bitmap to use for a poof
 int neb2_get_bitmap()
 {
-	int count = 0;
-	int huh;
-	static int neb2_choose = 0;
+	if (Neb2_poof_flags == 0)
+		return -1;
 
-	// get a random count
-	count = (int)frand_range(1.0f, 5.0f);
+	int neb2_choose = 0;
+	int mission_num_poofs = 0;
 
-	// very ad-hoc
-	while(count > 0) {
-		// don't cycle too many times
-		huh = 0;
-		do {
-			if(neb2_choose == MAX_NEB2_POOFS - 1){
-				neb2_choose = 0;
-			} else {
-				neb2_choose++;
-			}
 
-			huh++;
+	// count up poofs in use
+	for (int i = 0; i < MAX_NEB2_POOFS; i++) {
+		if (Neb2_poof_flags & (1 << i))
+			mission_num_poofs++;
+	}
+
+	// a pick a random one of the available number
+	neb2_choose = (int)(golden_ratio_rand() * mission_num_poofs);
+
+	// grab that one from our poofs
+	for (int i = 0; i < MAX_NEB2_POOFS; i++) {
+		if (Neb2_poof_flags & (1 << i)) {
+			if (neb2_choose == 0) {
+				neb2_choose = i;
+				break;
+			} else
+				neb2_choose--;
 		}
-		while(!(Neb2_poof_flags & (1<<neb2_choose)) && (huh < 10));
-		count--;
 	}
 
-	// bitmap 0
-	if (Neb2_poofs[neb2_choose] < 0) {
-		return Neb2_poofs[0];
-	}
 	return Neb2_poofs[neb2_choose];
 }
 

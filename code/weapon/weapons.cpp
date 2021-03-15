@@ -182,6 +182,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "die on lost lock",               Weapon::Info_Flags::Die_on_lost_lock,                   true, true  }, //special case
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
+	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -1039,7 +1040,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_int(&wip->hud_target_lod);
 
 	if(optional_string("$Detail distance:")) {
-		wip->num_detail_levels = stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		wip->num_detail_levels = (int)stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
 	if ( optional_string("$External Model File:") )
@@ -3327,7 +3328,7 @@ void parse_weaponstbl(const char *filename)
 		// during weapon selection.
 		if ((!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:"))
 		{
-			Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			Num_player_weapon_precedence = (int)stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -5735,6 +5736,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
     default_flags.set(Object::Object_Flags::Renders);
     default_flags.set(Object::Object_Flags::Collides);
     default_flags.set(Object::Object_Flags::Physics);
+
+	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
+		default_flags.set(Object::Object_Flags::Collides_with_parent);
 
 	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags);
 	Assert(objnum >= 0);

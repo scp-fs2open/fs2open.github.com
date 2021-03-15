@@ -784,9 +784,12 @@ void beam_unpause_sounds()
 	}
 }
 
-void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam){
-		ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
-	if(fighter_beam)*gvec = objp->orient.vec.fvec;
+void beam_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp, bool fighter_beam)
+{
+	ship_get_global_turret_gun_info(objp, ssp, gpos, gvec, use_angles, targetp);
+
+	if (fighter_beam)
+		*gvec = objp->orient.vec.fvec;
 }
 
 // -----------------------------===========================------------------------------
@@ -1277,10 +1280,10 @@ void beam_render(beam *b, float u_offset)
 
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// if this beam tracks it's own u_offset, increment
+	// if this beam tracks its own u_offset, use that instead
 	if (bwi->flags[Weapon::Beam_Info_Flags::Track_own_texture_tiling]) {
-		b->u_offset_local += flFrametime;
-		u_offset = b->u_offset_local;
+		u_offset = b->u_offset_local;			// the parameter is passed by value so this won't interfere with the u_offset in the calling function
+		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
 	// draw all sections	
@@ -1365,8 +1368,8 @@ void beam_render(beam *b, float u_offset)
 		material material_params;
 		material_set_unlit_emissive(&material_params, bwsi->texture.first_frame + framenum, fade, 2.0f);
 		g3_render_primitives_colored_textured(&material_params, h1, 4, PRIM_TYPE_TRIFAN, false);
-	}		
-	
+	}
+
 	// turn backface culling back on
 	//gr_set_cull(cull);
 }
@@ -3585,7 +3588,7 @@ int beam_ok_to_fire(beam *b)
 				turret_normal = b->objp->orient.vec.fvec;
                 b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_alt_math);
 			} else {
-				vm_vec_unrotate(&turret_normal, &b->subsys->system_info->turret_norm, &b->objp->orient);
+				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient);
 			}
 
 			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {

@@ -9491,7 +9491,7 @@ int eval_when(int n, int when_op_num)
 
 		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
 		// each argument	
-		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(exp)) {	
+		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(actions)) {	
 			if (exp != -1) {
 				eval_when_do_all_exp(actions, when_op_num);
 			}
@@ -17320,15 +17320,24 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 		// Set the number of weapons
 		ammo[requested_bank] = requested_ammo;
 	}
+	else if (ammo[requested_bank] > maximum_allowed)
+	{
+		// Make sure the current ammo doesn't exceed the maximum (this can otherwise happen with the set-*-weapon SEXPs)
+		ammo[requested_bank] = maximum_allowed;
+	}
 
 	// Check rearm validity
 	if (rearm_limit >= 0)
 	{
-		// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+		// Don't allow more weapons than the bank can actually hold.
 		if (rearm_limit > maximum_allowed)
 			rearm_limit = maximum_allowed;
 
 		start_ammo[requested_bank] = rearm_limit;
+	}
+	else	// Even if no rearm limit is explicitly set, don't allow more weapons than the bank can actually hold (this can otherwise happen with the set-*-weapon SEXPs).
+	{
+		start_ammo[requested_bank] = maximum_allowed;
 	}
 }
 

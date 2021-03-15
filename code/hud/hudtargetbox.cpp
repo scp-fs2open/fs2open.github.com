@@ -1164,7 +1164,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			break;
 
 		default:
-			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->asteroid_type / NUM_DEBRIS_SIZES) - 1].species_name);
+			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].name);
 			break;
 	}
 

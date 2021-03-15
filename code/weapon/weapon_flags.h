@@ -85,6 +85,7 @@ namespace Weapon {
 		Has_display_name,					// Goober5000
 		No_impact_spew,						// Goober5000
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
+		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 
         NUM_VALUES
 	};

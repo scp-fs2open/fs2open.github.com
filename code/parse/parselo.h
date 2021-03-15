@@ -58,10 +58,10 @@ extern int Token_found_flag;
 // Karajorma - Used by the stuff_ship_list and stuff_weapon_list SEXPs
 #define NOT_SET_BY_SEXP_VARIABLE	-1
 
-#define MISSION_LOADOUT_SHIP_LIST		0
-#define MISSION_LOADOUT_WEAPON_LIST		1
-#define CAMPAIGN_LOADOUT_SHIP_LIST		2
-#define CAMPAIGN_LOADOUT_WEAPON_LIST	3
+#define MISSION_LOADOUT_SHIP_LIST		5
+#define MISSION_LOADOUT_WEAPON_LIST		6
+#define CAMPAIGN_LOADOUT_SHIP_LIST		7
+#define CAMPAIGN_LOADOUT_WEAPON_LIST	8
 
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
@@ -93,7 +93,7 @@ extern void ignore_gray_space();
 
 // error
 extern int get_line_num();
-extern char *next_tokens();
+extern char *next_tokens(bool terminate_before_parenthesis_or_comma = false);
 extern void diag_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 extern void error_display(int error_level, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
@@ -144,26 +144,26 @@ extern int stuff_long(long *l, bool optional = false);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_int_optional(int *i);
 extern int stuff_float_optional(float *f);
-extern int stuff_string_list(SCP_vector<SCP_string>& slp);
-extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
-extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
+extern void stuff_string_list(SCP_vector<SCP_string>& slp);
+extern size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings);
+extern void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size);
 
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
 // so that you can process it properly later
 template<class T, class Flagset>
-int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
+void parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
-    char(*slp)[NAME_LENGTH] = (char(*)[32])new char[n_defs*NAME_LENGTH];
-    int num_strings = stuff_string_list(slp, (int)n_defs);
+	SCP_vector<SCP_string> slp;
+    stuff_string_list(slp);
 
-    for (auto i = 0; i < num_strings; i++)
+	for (auto &item : slp)
     {
         bool string_parsed = false;
         for (size_t j = 0; j < n_defs; j++)
         {
-            if (!stricmp(slp[i], defs[j].name)) {
+            if (!stricmp(item.c_str(), defs[j].name)) {
 				if (defs[j].in_use) {
 					Assertion(defs[j].def != T::NUM_VALUES, "Error in definition for flag_def_list, flag '%s' has been given an invalid value but is still marked as in use.\n", defs[j].name);
 					dest.set(defs[j].def);
@@ -174,15 +174,9 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n
             }
         }
         if (!string_parsed && unparsed_or_special_strings != NULL) {
-            SCP_string s = SCP_string(slp[i]);
-            unparsed_or_special_strings->push_back(s);
+            unparsed_or_special_strings->push_back(item);
         }
     }
-
-    delete[] slp;	//>_>
-                    //nobody saw that right
-
-    return num_strings;
 }
 
 template<class T>
@@ -199,11 +193,11 @@ void stuff_flagset(T *dest) {
     diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
-extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
+extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
-extern int stuff_vec3d_list(vec3d *vlp, int max_vecs);
-extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
-extern int stuff_bool_list(bool *blp, int max_bools);
+extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
+extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
+extern size_t stuff_bool_list(bool *blp, size_t max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description);
@@ -235,8 +229,8 @@ extern int check_for_eof_raw();
 extern int check_for_eoln();
 
 // from aicode.cpp
-extern void parse_float_list(float *plist, int size);
-extern void parse_int_list(int *ilist, int size);
+extern void parse_float_list(float *plist, size_t size);
+extern void parse_int_list(int *ilist, size_t size);
 
 
 // general
@@ -248,7 +242,6 @@ extern void unpause_parse();
 extern void stop_parse();
 
 // utility
-extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
 extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
@@ -332,8 +325,16 @@ extern int parse_modular_table(const char *name_check, void (*parse_callback)(co
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 
-//Karajorma - Parses mission and campaign ship loadouts.
-int stuff_loadout_list (int *ilp, int max_ints, int lookup_type);
+struct loadout_row
+{
+	int index = -1;
+	int index_sexp_var = NOT_SET_BY_SEXP_VARIABLE;
+	int count = -1;
+	int count_sexp_var = NOT_SET_BY_SEXP_VARIABLE;
+};
+
+//Karajorma/Goober5000 - Parses mission and campaign ship loadouts.
+void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type);
 int get_string_or_variable (char *str);
 int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0

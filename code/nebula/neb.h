@@ -50,7 +50,7 @@ extern float Neb2_fog_far_mult;
 #define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
 #define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
 
-#define MAX_NEB2_POOFS				6
+#define MAX_NEB2_POOFS				32
 
 // poof names and flags (for fred)
 extern char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];	
@@ -117,7 +117,7 @@ void neb2_level_close();
 void neb2_render_setup(camid cid);
 
 // render the player nebula
-void neb2_render_player();
+void neb2_render_poofs();
 
 // call this when the player's viewpoint has changed, this will cause the code to properly reset
 // the eye's local poofs

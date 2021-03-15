@@ -136,6 +136,7 @@ namespace AI {
 		Require_exact_los,
 		Improved_missile_avoidance,
 		Friendlies_use_countermeasure_firechance,
+		Improved_subsystem_attack_pathing,
 
 		NUM_VALUES
 	};
