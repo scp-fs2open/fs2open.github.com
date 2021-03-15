@@ -29,7 +29,7 @@ struct COMPRESSION_INFO {
 	int numOffsets = 0;
 	int* offsets = nullptr;
 	char* decoderBuffer = nullptr;
-	int lastDecBlockNum = 0;
+	int lastDecBlockPos = 0;
 	int lastDecBytes = 0;
 };
 

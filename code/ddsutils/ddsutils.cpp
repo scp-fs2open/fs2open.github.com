@@ -85,12 +85,11 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	code = cfread_int(ddsfile);
 
 	// check it
-	
 	if (code != DDS_FILECODE) {
 		retval = DDS_ERROR_BAD_HEADER;
 		goto Done;
 	}
-	
+
 	// read header variables
 	dds_header.dwSize				= cfread_uint(ddsfile);
 	dds_header.dwFlags				= cfread_uint(ddsfile);

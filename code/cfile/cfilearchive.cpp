@@ -74,7 +74,7 @@ void cf_clear_compression_info(CFILE* cfile)
 	cfile->compression_info.decoderBuffer = nullptr;
 	cfile->compression_info.header = 0;
 	cfile->compression_info.block_size = 0;
-	cfile->compression_info.lastDecBlockNum = 0;
+	cfile->compression_info.lastDecBlockPos = 0;
 	cfile->compression_info.lastDecBytes = 0;
 	cfile->compression_info.numOffsets = 0;
 }
