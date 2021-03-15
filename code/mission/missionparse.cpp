@@ -4236,9 +4236,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
-		if (Game_mode & GM_MULTIPLAYER)
+		// Cyborg -- The original ships in the wave have their net_signature set at mission parse
+		// so only do this if this is a subsequent wave.
+		if (Game_mode & GM_MULTIPLAYER && wingp->num_waves > 1)
 		{
-			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
+			// Cyborg -- Also, then we need to subtract the original wave's number of fighters 
+			// and also subtract 1 to use the wing's starting signature
+			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count - (wingp->wave_count + 1));
 		}
 
 
@@ -4683,7 +4687,8 @@ void parse_wing(mission *pm)
 		int next_signature;
 
 		wingp->net_signature = multi_assign_network_signature( MULTI_SIG_SHIP );
-		next_signature = wingp->net_signature + (wingp->wave_count * wingp->num_waves);
+		// Cyborg -- Subtract one because the original wave already has its signatures set.
+		next_signature = wingp->net_signature + (wingp->wave_count * (wingp->num_waves - 1));
 		if ( next_signature > SHIP_SIG_MAX )
 			Error(LOCATION, "Too many total ships in mission (%d) for network signature assignment", SHIP_SIG_MAX);
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
