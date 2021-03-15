@@ -144,7 +144,7 @@ int cfseek( CFILE *cfile, int offset, int where )
 	Assert(cfile != NULL);
 
 	if (cfile->compression_info.header != 0)
-		return (int)comp_fseek(cfile, offset, where);
+		return comp_fseek(cfile, offset, where);
 
 	// TODO: seek to offset in memory mapped file
 	Assert( !cfile->mem_mapped );

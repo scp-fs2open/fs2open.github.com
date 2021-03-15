@@ -80,7 +80,7 @@ int comp_feof(CFILE* cf)
 	return result;
 }
 
-size_t comp_fseek(CFILE* cf, int offset, int where)
+int comp_fseek(CFILE* cf, int offset, int where)
 {
 	size_t goal_position;
 	switch (where) {
@@ -95,7 +95,7 @@ size_t comp_fseek(CFILE* cf, int offset, int where)
 
 	cf->raw_position = goal_position;
 
-	return goal_position;
+	return 0;
 }
 
 //Special fseek for compressed files handled by FSO, only SEEK_SET and SEEK_END is supported.
