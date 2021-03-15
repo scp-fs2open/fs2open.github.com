@@ -26,22 +26,8 @@ public:
 	
 // Dialog Data
 	//{{AFX_DATA(CEditContainerDlg)
-	
-	SCP_vector<sexp_container> edit_sexp_containers;
 	enum { IDD = IDD_EDIT_CONTAINER };
 
-	int			m_current_container = -1;
-	sexp_container m_container_copy;
-	// TODO: container type enum class
-	bool		m_type_list;
-	bool		m_type_map;
-	// TODO: data type enum class, have one for data and another for keys (to use with maps)
-	bool		m_type_number;
-	bool		m_key_type_number;
-	bool		m_data_changed;
-
-	SCP_vector<SCP_string> raw_data;
-	
 	CListBox	m_container_data_lister;
 	sexp_tree	*m_p_sexp_tree;
 	//}}AFX_DATA
@@ -71,12 +57,12 @@ protected:
 
 	// TODO: change set_ to update_
 	void set_container_type();
-	void set_argument_type();
+	void set_data_type();
 	void set_key_type();
 
 	afx_msg void OnEditchangeContainerName();
 	afx_msg void OnSelchangeContainerName(); 
-	void set_selected_container(int selected_container); 
+	void set_selected_container(); 
 
 	afx_msg void OnContainerAdd();
 	afx_msg void OnContainerInsert();
@@ -85,21 +71,23 @@ protected:
 	
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
-	afx_msg void updata_data_lister();
-
-	void set_lister_data(int index);
+	void update_data_lister();
+	void update_map_specific_controls();
+	void update_text_edit_boxes(const SCP_string &key, const SCP_string &data);
 
 	//todo validate_*_boxws
 	BOOL edit_boxes_have_valid_data();
 	BOOL data_edit_box_has_valid_data();
 	BOOL key_edit_box_has_valid_data();
 
+	void add_container_entry(int insert_index);
+
 	bool is_container_name_in_use(const char *text) const;
 	BOOL is_container_name_valid(CString &new_name);
-	BOOL is_data_valid();
+	//BOOL is_data_valid();
 	BOOL is_valid_number(SCP_string test_string);
 
-	BOOL save_current_container();
+	//BOOL save_current_container();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
@@ -108,6 +96,16 @@ public:
 	afx_msg void OnBnClickedStringKeys();
 	afx_msg void OnBnClickedNumberKeys();
 	afx_msg void OnBnClickedDeleteContainer();
+
+private:
+	sexp_container &get_current_container();
+
+	SCP_vector<sexp_container> edit_sexp_containers;
+	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
+	int			m_current_container = -1;
+	// FIXME TODO: maybe get rid of these
+	//SCP_string m_key;
+	//SCP_string m_data;
 };
 
 //{{AFX_INSERT_LOCATION}}

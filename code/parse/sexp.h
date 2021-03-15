@@ -1241,6 +1241,18 @@ struct sexp_container
 		return (is_list() && list_data.empty()) || (is_map() && map_data.empty());
 	}
 
+	int size() const
+	{
+		if (is_list()) {
+			return (int)list_data.size();
+		} else if (is_map()) {
+			return (int)map_data.size();
+		} else {
+			Assert(false);
+			return 0;
+		}
+	}
+
 	bool operator==(const sexp_container& rhs) const
 	{
 		if (this == &rhs) {

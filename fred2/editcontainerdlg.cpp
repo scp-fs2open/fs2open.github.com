@@ -81,37 +81,29 @@ BOOL CEditContainerDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_type_list = true;
-	m_type_map = false;
-	m_type_number = false; 
-	m_key_type_number = true; 
-	m_data_changed = false; 
-
 	//grab the existing list of containers and duplicate it. We only update it if the user clicks OK. 
 	edit_sexp_containers = Sexp_containers;
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
-		
-	raw_data.clear(); 
 
 	// do we already have any containers defined? 
 	if (!edit_sexp_containers.empty()) {
 		cbox->EnableWindow(true); 
-		for (int i = 0; i < (int)edit_sexp_containers.size(); i++) {
-			cbox->AddString(edit_sexp_containers[i].container_name.c_str()); 
+		for (const auto &container : edit_sexp_containers) {
+			cbox->AddString(container.container_name.c_str()); 
 		}
-		m_current_container = 0; 
+		m_current_container = 0;
 		cbox->SetCurSel(m_current_container); 
-		set_selected_container(m_current_container);
+		set_selected_container();
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
-	}
-	else {
-		set_container_type();
-		set_argument_type(); 
-		set_key_type();
+	} else {
+		// update model first
+		m_current_container = -1;
 
-		m_current_container = -1; 
+		set_container_type();
+		set_data_type();
+		update_map_specific_controls();
 	}
 
 	// Send default name and values into dialog box
@@ -121,232 +113,185 @@ BOOL CEditContainerDlg::OnInitDialog()
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CEditContainerDlg::set_selected_container(int selected_container)
+void CEditContainerDlg::set_selected_container()
 {
-	Assert (selected_container >= 0 && selected_container <  (int)edit_sexp_containers.size()); 
-
-	if (edit_sexp_containers[selected_container].type & SEXP_CONTAINER_NUMBER_DATA) {
-		m_type_number = true; 
-	}
-	else {
-		m_type_number = false;
-	}
-
-	if (edit_sexp_containers[selected_container].type & SEXP_CONTAINER_LIST) {
-		m_type_list = true;
-		m_type_map = false;	
-
-		GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(false);
-		GetDlgItem(IDC_KEY_TYPE)->EnableWindow(false);
-		GetDlgItem(IDC_STRING_KEYS)->EnableWindow(false);
-		GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(false);
-		GetDlgItem(IDC_CONTAINER_DATA)->EnableWindow(true);	
-	}
-	else {
-		m_type_list = false;
-		m_type_map = true;	
-
-		if (edit_sexp_containers[selected_container].type & SEXP_CONTAINER_NUMBER_KEYS) {
-			m_key_type_number = true;
-		}
-		else {
-			m_key_type_number = false;
-		}
-
-		GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(true);
-		GetDlgItem(IDC_KEY_TYPE)->EnableWindow(true);
-		GetDlgItem(IDC_STRING_KEYS)->EnableWindow(true);
-		GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(true);
-		GetDlgItem(IDC_CONTAINER_DATA)->EnableWindow(true);	
-	}	
-
-	raw_data.clear(); 
+	Assert (m_current_container >= 0 && m_current_container <  (int)edit_sexp_containers.size());
 		
 	set_container_type(); 
-	set_argument_type(); 
-	set_key_type();
-
-	set_lister_data(selected_container); 
-
-}
-
-void CEditContainerDlg::set_lister_data(int index)
-{
-	int i; 
-	Assert (index >= 0 && index <  (int)edit_sexp_containers.size()); 
-
-	raw_data.clear(); 
-	
-	if (edit_sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		for (const auto &list_entry : edit_sexp_containers[index].list_data) {
-			raw_data.emplace_back(list_entry);
-		}
-	}
-	else if  (edit_sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		for (auto map_iter = edit_sexp_containers[index].map_data.begin(); map_iter != edit_sexp_containers[index].map_data.end(); map_iter++) {
-			raw_data.push_back(map_iter->first); 
-			raw_data.push_back(map_iter->second); 
-		}
-	}
-
-	updata_data_lister();
+	set_data_type();
+	update_map_specific_controls();
 }
 
 void CEditContainerDlg::OnOK() 
 {
-	if (m_current_container >=0) {
-		// if we can't save changed data, don't quit
-		//if (m_data_changed) {
-		// FIXME TEMP: ignore m_data_changed
-		if (m_current_container >= 0) {
-			if (!save_current_container()) {
-				return;
-			}
-		}
-	}
+	//if (m_current_container >=0) {
+	//	// if we can't save changed data, don't quit
+	//	//if (m_data_changed) {
+	//	// FIXME TEMP: ignore m_data_changed
+	//	if (m_current_container >= 0) {
+	//		if (!save_current_container()) {
+	//			return;
+	//		}
+	//	}
+	//}
 
-	// swap the contents of the edit_sexp_containers vector into the real Sexp_containers vector
-	Sexp_containers.swap(edit_sexp_containers); 
+	Sexp_containers = std::move(edit_sexp_containers); 
+	edit_sexp_containers.clear();
 	CDialog::OnOK();
 }
 
 void CEditContainerDlg::OnBnClickedStringKeys()
 {
-	m_key_type_number = false;
-	m_data_changed = true; 
+	Assert(!edit_sexp_containers.empty() &&
+		(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
+
+	auto &container = get_current_container();
+	Assert(container.is_map());
+	Assert(container.empty());
+	if (!(container.type & SEXP_CONTAINER_STRING_KEYS)) {
+		container.type &= ~SEXP_CONTAINER_NUMBER_KEYS;
+		container.type |= SEXP_CONTAINER_STRING_KEYS;
+	}
 }
 
 void CEditContainerDlg::OnBnClickedNumberKeys()
 {
-	m_key_type_number = true;
-	m_data_changed = true; 
+	Assert(!edit_sexp_containers.empty() &&
+		   (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
+
+	auto& container = get_current_container();
+	Assert(container.is_map());
+	Assert(container.empty());
+	if (!(container.type & SEXP_CONTAINER_NUMBER_KEYS)) {
+		container.type &= ~SEXP_CONTAINER_STRING_KEYS;
+		container.type |= SEXP_CONTAINER_NUMBER_KEYS;
+	}
 }
 
-// Set type to list
 void CEditContainerDlg::OnTypeList() 
 {
-	m_type_list = true;
-	m_type_map = false; 
-	m_data_changed = true; 
+	Assert(!edit_sexp_containers.empty() && (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
 
-	//set_container_type(); 
-	updata_data_lister();
+	auto &container = edit_sexp_containers[m_current_container];
+	Assert(container.empty());
+	if (!container.is_list()) {
+		container.set_to_list();
 
-	GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(false);
-	GetDlgItem(IDC_KEY_TYPE)->EnableWindow(false);
-	GetDlgItem(IDC_STRING_KEYS)->EnableWindow(false);
-	GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(false);
-	GetDlgItem(IDC_CONTAINER_DATA)->EnableWindow(true);
+		update_map_specific_controls();
+	}
 }
 
-// Set type to map
 void CEditContainerDlg::OnTypeMap() 
 {
-	if (!raw_data.empty()) {
-		if (raw_data.size() %2 != 0) {
-			MessageBox("Can not switch to Map type with an odd number of entries. Entries will be switched to key - value pairs so there must be an even number of entries.");
-			set_container_type(); 
-			return; 
-		}
+	Assert(!edit_sexp_containers.empty() && (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
+
+	auto &container = get_current_container();
+	Assert(container.empty());
+	if (!container.is_map()) {
+		container.set_to_map();
+		container.type |= SEXP_CONTAINER_STRING_KEYS;
+
+		update_map_specific_controls();
 	}
-	m_type_list = false;
-	m_type_map = true;
-	m_data_changed = true; 
-
-	//set_container_type();   
-	updata_data_lister();
-
-	// since we're switching from a list, set the type of key to be the same as the type for the data. That way if there is already data entered, it will be the correct type. 
-	m_key_type_number = m_type_number; 
-
-	GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(true);
-	GetDlgItem(IDC_KEY_TYPE)->EnableWindow(true);
-	GetDlgItem(IDC_STRING_KEYS)->EnableWindow(true);
-	GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(true);
-	GetDlgItem(IDC_CONTAINER_DATA)->EnableWindow(true);
 }
 
-// Set type check boxes
 void CEditContainerDlg::set_container_type()
 {
 	CButton *button_list = (CButton *) GetDlgItem(IDC_CONTAINER_LIST);
 	CButton *button_map = (CButton *) GetDlgItem(IDC_CONTAINER_MAP);
+	
+	Assert(edit_sexp_containers.empty() || (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
 
-	button_list->SetCheck( m_type_list);
-	button_map->SetCheck(m_type_map);
+	const bool list_selected = !edit_sexp_containers.empty() && get_current_container().is_list();
+	const bool map_selected = !edit_sexp_containers.empty() && get_current_container().is_map();
+
+	button_list->SetCheck(list_selected);
+	button_map->SetCheck(map_selected);
 }
 
-
-// Set type to number
 void CEditContainerDlg::OnTypeNumber() 
 {
-	m_type_number = true;
-	m_data_changed = true; 
-//	set_argument_type();
+	// TODO: assert m_current_container is valid
+
+	auto &container = get_current_container();
+	Assert(container.empty());
+	container.type &= ~SEXP_CONTAINER_STRING_DATA;
+	container.type |= SEXP_CONTAINER_NUMBER_DATA;
+	// TODO: update container.opf_type?
 }
 
-
-// Set type to string
 void CEditContainerDlg::OnTypeString() 
 {
-	m_type_number = false;
-	m_data_changed = true; 
-//	set_argument_type();
+	// TODO: assert m_current_container is valid
+	
+	auto &container = get_current_container();
+	Assert(container.empty());
+	container.type &= ~SEXP_CONTAINER_NUMBER_DATA;
+	container.type |= SEXP_CONTAINER_STRING_DATA;
 }
 
-
-// Set type check boxes
-void CEditContainerDlg::set_argument_type()
+void CEditContainerDlg::set_data_type()
 {
 	CButton *button_string = (CButton *) GetDlgItem(IDC_CONTAINER_STRING);
 	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER);
 
-	button_number->SetCheck( m_type_number);
-	button_string->SetCheck(!m_type_number);
+	Assert(edit_sexp_containers.empty() || (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
+
+	const bool enabled = !edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].empty();
+	const bool number_selected =
+		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_NUMBER_DATA;
+	const bool string_selected =
+		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_STRING_DATA;
+
+	button_number->SetCheck(number_selected);
+	button_string->SetCheck(string_selected);
+
+	button_number->EnableWindow(enabled);
+	button_string->EnableWindow(enabled);
 }
 
-
-// Set type check boxes
 void CEditContainerDlg::set_key_type()
 {
 	CButton *button_string = (CButton *) GetDlgItem(IDC_STRING_KEYS);
 	CButton *button_number = (CButton *) GetDlgItem(IDC_NUMBER_KEYS);
 
-	button_number->SetCheck( m_key_type_number);
-	button_string->SetCheck(!m_key_type_number);
+	Assert(edit_sexp_containers.empty() ||
+		   (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
+
+	const bool map_selected =
+		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_MAP;
+	const bool enabled = map_selected && edit_sexp_containers[m_current_container].empty();
+	const bool number_keys_selected =
+		map_selected && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_NUMBER_KEYS;
+	const bool string_keys_selected =
+		map_selected && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_STRING_KEYS;
+	
+	button_number->SetCheck(number_keys_selected);
+	button_string->SetCheck(string_keys_selected);
+
+	button_number->EnableWindow(enabled);
+	button_string->EnableWindow(enabled);
 }
 
 void CEditContainerDlg::OnSelchangeContainerName()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
-	// save the currently selected container before we do anything with the new one
-	//if (m_data_changed) {
-	// FIXME TEMP: ignore m_data_changed
-	if (m_current_container >= 0) {
-		if (!save_current_container()) {
-			//we couldn't save the old container, so back out of the container change.
-			Assert(m_current_container >= 0);
-			cbox->SetCurSel(m_current_container); 
-			return;
-		}
+	const int selected_container = cbox->GetCurSel();
+	if (selected_container != m_current_container) {
+		m_current_container = selected_container;
+
+		set_selected_container();
 	}
-
-
-	m_current_container = cbox->GetCurSel(); 
-
-	set_selected_container(m_current_container);
-
-	m_data_changed = false;
 }
-
 
 void CEditContainerDlg::OnEditchangeContainerName()
 {
 	CString new_name;
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
-	int selected_container = cbox->GetCurSel();
+	// TODO: how could this value be different from m_current_container?
+	const int selected_container = cbox->GetCurSel();
 	cbox->GetWindowText(new_name);
 
 	if (is_container_name_valid(new_name)) {
@@ -354,19 +299,16 @@ void CEditContainerDlg::OnEditchangeContainerName()
 	}
 }
 
-
 bool CEditContainerDlg::is_container_name_in_use(const char *text) const
 {
-	for (int i = 0; i < (int)edit_sexp_containers.size() ; i++) {
-		if ( !stricmp(edit_sexp_containers[i].container_name.c_str(), text) ) {
+	for (const auto &container : edit_sexp_containers) {
+		if (!stricmp(container.container_name.c_str(), text)) {
 			return true;
 		}
 	}
 
 	return false;
 }
-
-
 
 // Check variable name (1) changed (2) > 0 length (3) does not already exist - pretty much stolen from addvariabledlg.cpp
 BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
@@ -399,8 +341,7 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
 		//not already in list and length > 0
 		if ( (strlen(new_name) > 0) && (!is_container_name_in_use(LPCTSTR(new_name)) == -1) ) { 			
 			name_validated = true;
-		}
-		else {
+		} else {
 			// conflicting container name
 			name_validated = false;
 			MessageBox("Conflicting container name. A container with this name already exists");
@@ -429,95 +370,90 @@ BOOL CEditContainerDlg::is_valid_number(SCP_string test_string) {
 }
 
 
-BOOL CEditContainerDlg::is_data_valid()
-{
-	int i; 
-
-	if (m_type_map) {
-		if ( raw_data.size() %2 != 0 ) {
-			MessageBox("Data is corrupt, you have more keys than data entries.");
-			return FALSE;
-		}
-	}
-
-	// type check data
-	// ToDo - type check strings if using strict type checking
-	int YouHaveMoreToDo; 
-
-	// if not strict typing all strings are fine regardless of whether we're dealing with maps or lists.
-	if (!m_type_number && (m_type_list || (m_type_map && !m_key_type_number))) {
-		return true; 
-	}
-
-	else if (m_type_map ) {
-		// start at the first data entry
-		for (i = 1; i < (int)raw_data.size(); i = i+2) {
-			if (!is_valid_number(raw_data[i])) {
-				return false; 
-			}
-		}
-	}
-	else if (m_type_list) {
-		for (i = 0; i < (int)raw_data.size(); i++) {
-			if (!is_valid_number(raw_data[i])) {
-				return false; 
-			}
-		}
-	}
-	// unknown container type
-	else {
-		return false; 
-	}
-
-	// if we made it this far, the data should be fine
-	return true;
-}
+//BOOL CEditContainerDlg::is_data_valid()
+//{
+//	int i; 
+//
+//	// type check data
+//	// ToDo - type check strings if using strict type checking
+//	int YouHaveMoreToDo; 
+//
+//	// if not strict typing all strings are fine regardless of whether we're dealing with maps or lists.
+//	if (!m_type_number && (m_type_list || (m_type_map && !m_key_type_number))) {
+//		return true; 
+//	}
+//
+//	else if (m_type_map ) {
+//		// start at the first data entry
+//		for (i = 1; i < (int)raw_data.size(); i = i+2) {
+//			if (!is_valid_number(raw_data[i])) {
+//				return false; 
+//			}
+//		}
+//	}
+//	else if (m_type_list) {
+//		for (i = 0; i < (int)raw_data.size(); i++) {
+//			if (!is_valid_number(raw_data[i])) {
+//				return false; 
+//			}
+//		}
+//	}
+//	// unknown container type
+//	else {
+//		return false; 
+//	}
+//
+//	// if we made it this far, the data should be fine
+//	return true;
+//}
 
 void CEditContainerDlg::OnListerSelectionChange()
-{	
-	int index = m_container_data_lister.GetCurSel(); 
+{
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_container_data_lister.GetCount() > 0);
 
-	if (m_type_map) {
-		index = index * 2; 
-		CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-		edit->SetWindowText(raw_data[index].c_str());
+	const auto &container = get_current_container();
+	Assert(!container.empty());
 
-		CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-		edit2->SetWindowText(raw_data[index+1].c_str());
-	}
-	else {
-		CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-		edit2->SetWindowText(raw_data[index].c_str());
+	const int index = m_container_data_lister.GetCurSel();
+	Assert(index >= 0 && index < m_lister_keys.size());
+
+	if (container.is_list()) {
+		update_text_edit_boxes("", m_lister_keys[index]);
+	} else if (container.is_map()) {
+		const SCP_string &key = m_lister_keys[index];
+		update_text_edit_boxes(key, container.map_data.at(key));
+	} else {
+		Assert(false);
 	}
 }
 
 void CEditContainerDlg::OnContainerAdd()
 {
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+
 	if (!edit_boxes_have_valid_data()) {
 		return;
 	}
-	
-	CString temp_string; 
-	SCP_string temp_scp_string; 
 
-	// for maps, we first need to get the key
-	if (m_type_map) {
-		CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-		edit->GetWindowText(temp_string);
-		raw_data.push_back(temp_scp_string.assign(temp_string));
+	CEdit *data_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_DATA);
+	CString data_str;
+	data_edit->GetWindowText(data_str);
+
+	auto& container = get_current_container();
+	if (container.is_list()) {
+		container.list_data.emplace_back(data_str);
+	} else if (container.is_map()) {
+		CEdit *key_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_KEY);
+		CString key_str;
+		key_edit->GetWindowText(key_str);
+		container.map_data.emplace(key_str, data_str);
 	}
-	
-	// for both types we need to get the data
-	CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-	edit2->GetWindowText(temp_string);
-	raw_data.push_back(temp_scp_string.assign(temp_string));
 
-	m_data_changed = true; 
-
-	updata_data_lister();
-
+	update_data_lister();
+	update_text_edit_boxes("", "");
 }
-
 
 void CEditContainerDlg::OnContainerInsert()
 {
@@ -530,44 +466,45 @@ void CEditContainerDlg::OnContainerInsert()
 
 	SCP_vector<SCP_string>::iterator iter ;
 	
-	// for both types we need to get the data
-	CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-	edit2->GetWindowText(temp_string);
-	ListerSelectionGetIter(iter);
-	raw_data.insert(iter, temp_scp_string.assign(temp_string));
+	//// for both types we need to get the data
+	//CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
+	//edit2->GetWindowText(temp_string);
+	//ListerSelectionGetIter(iter);
+	//raw_data.insert(iter, temp_scp_string.assign(temp_string));
 
-	// insert the key before the newly added data entry
-	if (m_type_map) {
-		CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-		edit->GetWindowText(temp_string);
-		ListerSelectionGetIter(iter);
-		raw_data.insert(iter, temp_scp_string.assign(temp_string));
-	}
+	//// insert the key before the newly added data entry
+	//if (m_type_map) {
+	//	CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
+	//	edit->GetWindowText(temp_string);
+	//	ListerSelectionGetIter(iter);
+	//	raw_data.insert(iter, temp_scp_string.assign(temp_string));
+	//}
 
-	m_data_changed = true; 
+	update_data_lister();
+}
 
-	updata_data_lister();
+void CEditContainerDlg::add_container_entry(const int insert_index)
+{
+	// TODO move "container add" stuff here
 }
 
 void CEditContainerDlg::OnContainerRemove()
 {
-	int index = m_container_data_lister.GetCurSel(); 
-	SCP_vector<SCP_string>::iterator iter = raw_data.begin();
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
 
-	// find the deletion point
-	if (m_type_map) {
-		index = index * 2; 
+	auto &container = get_current_container();
+	const int index = m_container_data_lister.GetCurSel(); 
+	Assert(index >= 0 && index < container.size());
+
+	if (container.is_list()) {
+		container.list_data.erase(std::next(container.list_data.begin(), index));
+	} else if (container.is_map()) {
+		const auto& key = m_lister_keys[index];
+		container.map_data.erase(key);
 	}
 
-	raw_data.erase(raw_data.begin() + index); 
-	// for maps we need to delete the key and data
-	if (m_type_map) {
-		raw_data.erase(raw_data.begin() + index); 
-	}
-	
-	m_data_changed = true; 
-
-	updata_data_lister();
+	update_data_lister();
 }
 
 void CEditContainerDlg::OnContainerUpdate()
@@ -576,7 +513,7 @@ void CEditContainerDlg::OnContainerUpdate()
 		return;
 	}
 
-	int index = m_container_data_lister.GetCurSel(); 
+	const int index = m_container_data_lister.GetCurSel(); 
 
 	if (index == LB_ERR) {
 		MessageBox("Nothing selected! Use Add to enter new data");
@@ -584,11 +521,6 @@ void CEditContainerDlg::OnContainerUpdate()
 	}
 
 	SCP_vector<SCP_string>::iterator iter = raw_data.begin();
-
-	// find the entry to update
-	if (m_type_map) {
-		index = index * 2;
-	}
 
 	CString temp_string; 
 	
@@ -609,25 +541,7 @@ void CEditContainerDlg::OnContainerUpdate()
 		raw_data[index].assign(temp_string);
 	}
 
-	m_data_changed = true; 	
-
-	updata_data_lister();
-}
-
-void CEditContainerDlg::ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter)
-{
-	
-	int index = m_container_data_lister.GetCurSel(); 
-
-	iter = raw_data.begin();
-
-	// find the entry to update
-	if (m_type_map) {
-		iter = iter + (index * 2);
-	}
-	else {
-		iter = iter + index; 
-	}
+	update_data_lister();
 }
 
 BOOL CEditContainerDlg::edit_boxes_have_valid_data()
@@ -674,8 +588,7 @@ BOOL CEditContainerDlg::key_edit_box_has_valid_data()
 		}
 
 		return true;
-	}
-	else {
+	} else {
 		MessageBox("You have not entered a key!");
 	}
 
@@ -690,54 +603,68 @@ BOOL CEditContainerDlg::data_edit_box_has_valid_data()
 
 	if (strlen(temp_name) > 0) {
 		return true;
-	}
-	else {
+	} else {
 		MessageBox("You have not entered any data!");
 		return false;
 	}
 }
 
-
-void CEditContainerDlg::updata_data_lister()
+void CEditContainerDlg::update_data_lister()
 {
 	m_container_data_lister.ResetContent(); 
+	m_lister_keys.clear();
 
-	// Data is displayed in one of two ways depending on whether we are populating a list or a map
-	if (m_type_list) {
-		for (int i = 0; i < (int)raw_data.size(); i++) {
-			m_container_data_lister.AddString(raw_data[i].c_str()); 
+	// Data is displayed in one of two ways depending on container type
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+
+	const auto &container = get_current_container();
+
+	if (container.is_list()) {
+		for (const auto &list_entry : container.list_data) {
+			m_lister_keys.emplace_back(list_entry);
+			m_container_data_lister.AddString(list_entry.c_str());
 		}
+	} else if (container.is_map()) {
+		for (const auto& map_entry : container.map_data) {
+			m_lister_keys.emplace_back(map_entry.first);
+		}
+
+		// TODO: if map key type is number, sort m_lister_keys in numeric order
+
+		for (const auto &key : m_lister_keys) {
+			const SCP_string  lister_entry = key + " - " + container.map_data[key];
+			m_container_data_lister.AddString(lister_entry.c_str());
+		}
+	} else {
+		Assert(false);
 	}
 
-	if (m_type_map) {
-		SCP_string lister_entry; 
+	m_container_data_lister.EnableWindow(m_container_data_lister.GetCount() > 0);
+}
 
-		if ( raw_data.size() %2 != 0 ) {
-			MessageBox("Data is corrupt, you have more keys than data entries.");
-		}
-		for (int i = 0; i < (int)raw_data.size(); i = i+2) {
-			lister_entry.assign(raw_data[i]); 
-			lister_entry.append(" - ");
-			lister_entry.append(raw_data[i+1]); 
+void CEditContainerDlg::update_map_specific_controls()
+{
+	const bool map_selected = !edit_sexp_containers.empty() && get_current_container().is_map();
 
-			m_container_data_lister.AddString(lister_entry.c_str()); 
-		}
-	}
+	GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(map_selected);
+	GetDlgItem(IDC_KEY_TYPE)->EnableWindow(map_selected);
+	
+	set_key_type();
 }
 
 void CEditContainerDlg::OnBnClickedAddNewContainer()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
-	// try to save the old container first
-	//if (m_data_changed) {
-	// FIXME TEMP: ignore m_data_changed
-	if (m_current_container >= 0) {
-		if (!save_current_container()) {
-			// we couldn't save the old container, don't do anything with the new one yet. 
-			return; 
-		}
-	}
+	//// try to save the old container first
+	////if (m_data_changed) {
+	//// FIXME TEMP: ignore m_data_changed
+	//if (m_current_container >= 0) {
+	//	if (!save_current_container()) {
+	//		// we couldn't save the old container, don't do anything with the new one yet. 
+	//		return; 
+	//	}
+	//}
 	
 	CEditContainerAddNewDlg dlg; 
 
@@ -754,111 +681,86 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 		return; 
 	}
 
-	sexp_container temp_container; 
-	temp_container.type = 0; 
-
-	temp_container.container_name = temp_name; 
-	if (m_type_map) {
-		temp_container.type |= SEXP_CONTAINER_MAP; 
-
-		if (m_key_type_number) {
-			temp_container.type |= SEXP_CONTAINER_NUMBER_KEYS; 
-		}
-		else {
-			temp_container.type |= SEXP_CONTAINER_STRING_KEYS;
-		}
-	}
-	else {
-		temp_container.type |= SEXP_CONTAINER_LIST; 
-	}
-
-	if (m_type_number) {
-		temp_container.type |= SEXP_CONTAINER_NUMBER_DATA;
-	}
-	else {
-		temp_container.type |= SEXP_CONTAINER_STRING_DATA;
-	}
-
-	edit_sexp_containers.push_back(temp_container); 
+	edit_sexp_containers.emplace_back(); 
+	auto &new_container = edit_sexp_containers.back();
 	
+	if (m_current_container >= 0) {
+		Assert(edit_sexp_containers.size() > 1);
+		Assert(m_current_container < (int)edit_sexp_containers.size() - 1);
+		const auto &container = edit_sexp_containers[m_current_container];
+		new_container.type = container.type;
+		new_container.opf_type = container.opf_type;
+	}
+
 	// add the new container to the list of containers combo box and make it the selected option
 	cbox->AddString(temp_name); 
-	m_current_container = (int) edit_sexp_containers.size() - 1; 
+	m_current_container = (int)edit_sexp_containers.size() - 1;
 	cbox->SetCurSel(m_current_container);
 
-	// get rid of any old data that might still be displayed
-	raw_data.clear(); 
-	
-	m_data_changed = false; 
+	update_data_lister();  
 
-	updata_data_lister();  
-
-	//maybe activate the delete container button
+	// in case this is the first container
 	if (edit_sexp_containers.size() == 1) {
 		cbox->EnableWindow(true);
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
 	}
 }
 
-BOOL CEditContainerDlg::save_current_container()
-{
-	if (!is_data_valid()) {
-		MessageBox("Since data is not valid, it can not be saved. Please correct the data before continuing.");
-		return false; 
-	}
-
-	Assert(m_current_container >= 0);
-	
-	edit_sexp_containers[m_current_container].type = 0; 
-
-	if (m_type_map) {
-		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_MAP; 
-
-		if (m_key_type_number) {
-			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_KEYS; 
-		}
-		else {
-			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_KEYS;
-		}
-
-		// write the raw data into edit_sexp_containers
-		Assertion(raw_data.size() % 2 == 0, "Invalid size for map type"); 
-		edit_sexp_containers[m_current_container].map_data.clear();
-
-		for (int i = 0; i < (int)raw_data.size(); i = i+2) {
-			edit_sexp_containers[m_current_container].map_data.insert(std::pair<SCP_string, SCP_string>(raw_data[i], raw_data[i+1]));
-		}
-	}
-	else {
-		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_LIST; 
-		edit_sexp_containers[m_current_container].list_data.clear();
-
-		// write the raw data into edit_sexp_containers
-		for (int i = 0; i < (int)raw_data.size(); i++) {
-			edit_sexp_containers[m_current_container].list_data.push_back(raw_data[i]);
-		}
-	} 
-
-	if (m_type_number) {
-		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_DATA;
-	}
-	else {
-		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_DATA;
-	}
-
-	return true; 
-}
+//BOOL CEditContainerDlg::save_current_container()
+//{
+//	if (!is_data_valid()) {
+//		MessageBox("Since data is not valid, it can not be saved. Please correct the data before continuing.");
+//		return false;
+//	}
+//
+//	Assert(m_current_container >= 0);
+//
+//	edit_sexp_containers[m_current_container].type = 0;
+//
+//	if (m_type_map) {
+//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_MAP;
+//
+//		if (m_key_type_number) {
+//			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_KEYS;
+//		} else {
+//			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_KEYS;
+//		}
+//
+//		// write the raw data into edit_sexp_containers
+//		Assertion(raw_data.size() % 2 == 0, "Invalid size for map type");
+//		edit_sexp_containers[m_current_container].map_data.clear();
+//
+//		for (int i = 0; i < (int)raw_data.size(); i = i + 2) {
+//			edit_sexp_containers[m_current_container].map_data.insert(
+//				std::pair<SCP_string, SCP_string>(raw_data[i], raw_data[i + 1]));
+//		}
+//	} else {
+//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_LIST;
+//		edit_sexp_containers[m_current_container].list_data.clear();
+//
+//		// write the raw data into edit_sexp_containers
+//		for (int i = 0; i < (int)raw_data.size(); i++) {
+//			edit_sexp_containers[m_current_container].list_data.push_back(raw_data[i]);
+//		}
+//	}
+//
+//	if (m_type_number) {
+//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_DATA;
+//	} else {
+//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_DATA;
+//	}
+//
+//	return true;
+//}
 void CEditContainerDlg::OnBnClickedDeleteContainer()
 {
-	// The button shouldn't even be enabled if there are no containers!
 	Assert(!edit_sexp_containers.empty()); 
-
-	Assert(m_current_container >= 0);
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
 
 	char buffer[256]; 
 
-	int times_used = m_p_sexp_tree->get_container_count(edit_sexp_containers[m_current_container].container_name.c_str()); 
-	if (times_used) {
+	const int times_used = m_p_sexp_tree->get_container_count(edit_sexp_containers[m_current_container].container_name.c_str()); 
+	if (times_used > 0) {
 		sprintf(buffer, "Container %s is used in %d events. Please edit those uses out first, then delete the container.", edit_sexp_containers[m_current_container].container_name.c_str(), times_used); 
 		MessageBox(buffer);
 		return;
@@ -873,24 +775,36 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 	}
 
 	edit_sexp_containers.erase(edit_sexp_containers.begin() + m_current_container);
-	m_data_changed = true;
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->DeleteString((int)cbox->GetCurSel()); 
-
-	m_data_changed = false; // because we don't want to risk trying to save whatever garbage is left back into the containers vector.  
 
 	//maybe de-activate the delete container button
 	if (edit_sexp_containers.empty()) {
 		m_current_container = -1; 
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);	
-	}
-	else {
+	} else {
 		// select the first container
 		m_current_container = 0; 
 		cbox->SetCurSel(m_current_container);
-		set_selected_container(m_current_container);
+		set_selected_container();
 	}
-
-	
 }
+
+void CEditContainerDlg::update_text_edit_boxes(const SCP_string &key, const SCP_string &data)
+{
+	CEdit *key_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_KEY);
+	key_edit->SetWindowText(key.c_str());
+
+	CEdit *data_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_DATA);
+	data_edit->SetWindowText(data.c_str());
+}
+
+sexp_container &CEditContainerDlg::get_current_container()
+{
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+
+	return edit_sexp_containers[m_current_container];
+}
+
