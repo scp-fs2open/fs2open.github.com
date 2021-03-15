@@ -156,7 +156,7 @@ void lz41_load_offsets(CFILE* cf)
 	for (block = 0; block <= cf->compression_info.numOffsets; ++block)
 	{
 		auto bytes_read = fread(offsetsPtr++, sizeof(int), 1, cf->fp);
-		Assertion(bytes_read = 1, "Error reading offset list.");
+		Assertion(bytes_read == 1, "Error reading offset list.");
 	}
 }
 
