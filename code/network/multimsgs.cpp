@@ -57,6 +57,7 @@
 #include "missionui/missiondebrief.h"
 #include "network/multi_log.h"
 #include "weapon/emp.h"
+#include "weapon/muzzleflash.h"
 #include "network/multi_kick.h"
 #include "cmdline/cmdline.h"
 #include "weapon/flak.h"
@@ -8551,7 +8552,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		}
 
 		// create a muzzle flash from a flak gun based upon firing position and weapon type
-		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
+		mflash_create(&pos, &dir, &objp->phys_info, Weapon_info[wid].muzzle_flash);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
 		flak_set_range(&Objects[weapon_objnum], (float)flak_range);

@@ -2027,9 +2027,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
 
 					// if the gun is a flak gun
-					if (wip->wi_flags[Weapon::Info_Flags::Flak]) {			
-						// show a muzzle flash
-						flak_muzzle_flash(turret_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
+					if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
 
 						if(predicted_pos != NULL)
 						{
@@ -2044,8 +2042,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							flak_set_range(objp, flak_range_override);
 						}
 					}
-					// otherwise just do mflash if the weapon has it
-					else if (wip->muzzle_flash >= 0) {
+
+					// do mflash if the weapon has it
+					if (wip->muzzle_flash >= 0) {
 						mflash_create(turret_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
