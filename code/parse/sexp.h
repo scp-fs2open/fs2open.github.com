@@ -1201,17 +1201,39 @@ struct sexp_container
 	SCP_string container_name;
 	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
 	int opf_type = OPF_ANYTHING;
-	SCP_deque<SCP_string> list_data;
-	SCP_unordered_map<SCP_string, SCP_string> map_data;
+	SCP_list<SCP_string> list_data;
+	SCP_map<SCP_string, SCP_string> map_data;
 
 	inline bool is_list() const
 	{
 		return type & SEXP_CONTAINER_LIST;
 	}
 
+	void set_to_list()
+	{
+		if (is_list()) {
+			return;
+		}
+
+		type &= ~SEXP_CONTAINER_MAP;
+		type &= ~(SEXP_CONTAINER_STRING_KEYS | SEXP_CONTAINER_NUMBER_KEYS);
+		type |= SEXP_CONTAINER_LIST;
+	}
+
 	inline bool is_map() const
 	{
 		return type & SEXP_CONTAINER_MAP;
+	}
+
+	void set_to_map()
+	{
+		if (is_map()) {
+			return;
+		}
+
+		type &= ~SEXP_CONTAINER_LIST;
+		type |= SEXP_CONTAINER_MAP;
+		// setting key type is up to the caller
 	}
 
 	bool empty() const
