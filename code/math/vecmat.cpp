@@ -2261,10 +2261,11 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vec3d temp;
 
 	// point somewhere in the plane
-	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
+	// sqrtf for uniform distribution
+	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : sqrtf(frand()) * radius);
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
 // given a start vector and a radius, generate a point in a spherical volume

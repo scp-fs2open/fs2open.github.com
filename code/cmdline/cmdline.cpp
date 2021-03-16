@@ -2068,7 +2068,7 @@ bool SetCmdlineParams()
 		Cmdline_reparse_mainhall = 1;
 	}
 
-	if( enable_shadows_arg.found() )
+	if( false && enable_shadows_arg.found() )
 	{
 		Shadow_quality = ShadowQuality::Medium;
 	}
