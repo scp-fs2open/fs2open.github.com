@@ -3802,6 +3802,16 @@ void weapon_generate_indexes_for_substitution() {
 								  -1);
 						break;
 					}
+
+					if (Weapon_info[weapon_index].wi_flags[Weapon::Info_Flags::Beam] != wip->wi_flags[Weapon::Info_Flags::Beam]) {
+						// Check to make sure beams and non-beams aren't being mixed
+						Warning(LOCATION, "Beams and non-beams cannot be mixed in substitution for weapon '%s'.", wip->name);
+						wip->num_substitution_patterns = 0;
+						std::fill(std::begin(wip->weapon_substitution_pattern),
+							std::end(wip->weapon_substitution_pattern),
+							-1);
+						break;
+					}
 				}
 
 				wip->weapon_substitution_pattern[j] = weapon_index;
@@ -5560,9 +5570,10 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret)
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys * src_turret)
 {
-	Assert( shipp != NULL );
+	Assertion(ship_idx >= 0 && ship_idx < MAX_SHIPS, "Invalid ship index in get_pointer_to_weapon_fire_pattern_index()");
+	ship* shipp = &Ships[ship_idx];
 	ship_weapon* ship_weapon_p = &(shipp->weapons);
 	if(src_turret)
 	{
@@ -5626,7 +5637,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		ship* parent_shipp = &(Ships[parent_objp->instance]);
 		Assert( parent_shipp != NULL );
 
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
+		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_objp->instance, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
