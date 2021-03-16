@@ -1202,7 +1202,7 @@ struct sexp_container
 	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
 	int opf_type = OPF_ANYTHING;
 	SCP_list<SCP_string> list_data;
-	SCP_map<SCP_string, SCP_string> map_data;
+	SCP_unordered_map<SCP_string, SCP_string> map_data;
 
 	inline bool is_list() const
 	{
