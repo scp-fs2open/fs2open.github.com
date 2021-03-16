@@ -86,7 +86,7 @@ int comp_fseek(CFILE* cf, int offset, int where)
 	switch (where) {
 	case SEEK_SET: goal_position = offset; break;
 	case SEEK_CUR: goal_position = cf->raw_position + offset; break;
-	case SEEK_END: goal_position = cf->raw_position + offset; break;
+	case SEEK_END: goal_position = cf->size + offset; break;
 	default: return 1;
 	}
 

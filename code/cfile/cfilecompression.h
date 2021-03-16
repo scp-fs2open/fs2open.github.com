@@ -1,7 +1,6 @@
 /*
 ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and everyone elsewho helped me in getting this done.
 
--.pcx images cant be used this way. DO NOT COMPRESS.
 -The file header is a version, this is used to tell FSO how to decompress that file, always use 4 chars to mantain alignment, it is stored at the start of the file.
 
 ................................char[4]..........(n ints)...(int)..........(int)..........(int)
