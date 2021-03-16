@@ -339,7 +339,7 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
 		}
 
 		//not already in list and length > 0
-		if ( (strlen(new_name) > 0) && (!is_container_name_in_use(LPCTSTR(new_name)) == -1) ) { 			
+		if (!new_name.IsEmpty() && !is_container_name_in_use(LPCTSTR(new_name))) {
 			name_validated = true;
 		} else {
 			// conflicting container name
