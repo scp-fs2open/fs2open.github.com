@@ -519,26 +519,21 @@ void CEditContainerDlg::OnContainerUpdate()
 		MessageBox("Nothing selected! Use Add to enter new data");
 		return; 
 	}
-
-	SCP_vector<SCP_string>::iterator iter = raw_data.begin();
-
-	CString temp_string; 
 	
-	// for maps, we first need to get the key
-	if (m_type_map) {
-		CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-		edit->GetWindowText(temp_string);
-		raw_data[index].assign(temp_string);
-	}
+	auto &container = get_current_container();
 	
-	// for both types we need to get the data
-	CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-	edit2->GetWindowText(temp_string);
-	if (m_type_map) {
-		raw_data[index+1].assign(temp_string);
-	}
-	else {
-		raw_data[index].assign(temp_string);
+	CEdit *data_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
+	CString data_str;
+	data_edit->GetWindowText(data_str);
+	if (container.is_list()) {
+		*std::next(container.list_data.begin(), index) = SCP_string(data_str);
+	} else if (container.is_map()) {
+		CEdit *key_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_KEY);
+		CString key_str;
+		key_edit->GetWindowText(key_str);
+		container.map_data[SCP_string(key_str)] = data_str;
+	} else {
+		Assert(false);
 	}
 
 	update_data_lister();
@@ -549,7 +544,7 @@ BOOL CEditContainerDlg::edit_boxes_have_valid_data()
 	// if we are in list mode, check that the container data box has data in it. 
 	if (data_edit_box_has_valid_data()) {
 		// if we are in map mode we must check that key box has data and that the key doesn't match an existing key.
-		if (m_type_map) {
+		if (get_current_container().is_map()) {
 			if (!key_edit_box_has_valid_data()) {
 				return false;
 			}
@@ -564,26 +559,27 @@ BOOL CEditContainerDlg::edit_boxes_have_valid_data()
 
 BOOL CEditContainerDlg::key_edit_box_has_valid_data()
 {
-	CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-	CString temp_name;
-	edit->GetWindowText(temp_name);
+	CEdit *key_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
+	CString key_str;
+	key_edit->GetWindowText(key_str);
 
-	if (strlen(temp_name) > 0) {		
-		if ( raw_data.size() %2 != 0 ) {
-			MessageBox("Data is corrupt, you have more keys than data entries.");
+	const auto &container = get_current_container();
+
+	if (!key_str.IsEmpty()) {
+		const auto &map_data = container.map_data;
+		const auto count = std::count_if(map_data.cbegin(),
+			map_data.cend(),
+			[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
+				return !stricmp(map_entry.first.c_str(), key_str);
+			});
+		if (count > 0) {
+			MessageBox("This key already exists. You may not reuse keys in a SEXP map!");
 			return false;
 		}
 
-		for (int i = 0; i < (int)raw_data.size(); i = i+2) {
-			if (stricmp(raw_data[i].c_str(), temp_name) == 0) {
-				MessageBox("This key already exists. You may not reuse keys in a SEXP map!");
-				return false;
-			}
-		}
-
-		// if we have number keys, we need to check if this key is a number. 
-		if (m_key_type_number && !is_valid_number(SCP_string(temp_name))) {
-			MessageBox("This key is not a valid number and you have selected number keys! Choose strings if you don't want to use a number");
+		if ((container.type & SEXP_CONTAINER_NUMBER_KEYS) && !is_valid_number(SCP_string(key_str))) {
+			Assert(container.is_map());
+			MessageBox("This key is not a valid number and this map container uses numeric keys!");
 			return false;
 		}
 
@@ -597,11 +593,15 @@ BOOL CEditContainerDlg::key_edit_box_has_valid_data()
 
 BOOL CEditContainerDlg::data_edit_box_has_valid_data()
 {		
-	CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-	CString temp_name;
-	edit->GetWindowText(temp_name);
+	CEdit *data_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
+	CString data_str;
+	data_edit->GetWindowText(data_str);
+	if (!data_str.IsEmpty()) {
+		if ((get_current_container().type & SEXP_CONTAINER_NUMBER_DATA) && !is_valid_number(SCP_string(data_str))) {
+			MessageBox("This data is not a valid number and this container uses numeric data!");
+			return false;
+		}
 
-	if (strlen(temp_name) > 0) {
 		return true;
 	} else {
 		MessageBox("You have not entered any data!");
@@ -626,13 +626,24 @@ void CEditContainerDlg::update_data_lister()
 		}
 	} else if (container.is_map()) {
 		for (const auto& map_entry : container.map_data) {
+			// TODO: type check key, maybe also value
 			m_lister_keys.emplace_back(map_entry.first);
 		}
 
-		// TODO: if map key type is number, sort m_lister_keys in numeric order
+		if (container.type & SEXP_CONTAINER_STRING_KEYS) {
+			std::sort(m_lister_keys.begin(), m_lister_keys.end());
+		} else if (container.type & SEXP_CONTAINER_STRING_KEYS) {
+			std::sort(m_lister_keys.begin(),
+				m_lister_keys.end(),
+				[](const SCP_string& str1, const SCP_string& str2) -> bool {
+					return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
+				});
+		} else {
+			Assert(false);
+		}
 
 		for (const auto &key : m_lister_keys) {
-			const SCP_string  lister_entry = key + " - " + container.map_data[key];
+			const SCP_string  lister_entry = key + " - " + container.map_data.at(key);
 			m_container_data_lister.AddString(lister_entry.c_str());
 		}
 	} else {
