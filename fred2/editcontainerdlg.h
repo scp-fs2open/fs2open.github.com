@@ -71,8 +71,10 @@ protected:
 	
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
+
+	void update_type_controls();
+	void update_data_entry_controls();
 	void update_data_lister();
-	void update_map_specific_controls();
 	void update_text_edit_boxes(const SCP_string &key, const SCP_string &data);
 
 	//todo validate_*_boxws
@@ -101,6 +103,7 @@ private:
 	sexp_container &get_current_container();
 
 	SCP_vector<sexp_container> edit_sexp_containers;
+	sexp_container m_dummy_container; // used as placeholder when there are no containers
 	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
 	int			m_current_container = -1;
 	// FIXME TODO: maybe get rid of these

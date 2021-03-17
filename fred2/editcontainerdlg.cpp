@@ -95,16 +95,11 @@ BOOL CEditContainerDlg::OnInitDialog()
 		}
 		m_current_container = 0;
 		cbox->SetCurSel(m_current_container); 
-		set_selected_container();
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
 	} else {
-		// update model first
 		m_current_container = -1;
-
-		set_container_type();
-		set_data_type();
-		update_map_specific_controls();
 	}
+	set_selected_container();
 
 	// Send default name and values into dialog box
 	UpdateData(FALSE);
@@ -114,12 +109,14 @@ BOOL CEditContainerDlg::OnInitDialog()
 }
 
 void CEditContainerDlg::set_selected_container()
-{
-	Assert (m_current_container >= 0 && m_current_container <  (int)edit_sexp_containers.size());
-		
+{	
+	update_type_controls();
+	update_data_entry_controls();
 	set_container_type(); 
 	set_data_type();
-	update_map_specific_controls();
+	if (get_current_container().is_map()) {
+		set_key_type();
+	}
 }
 
 void CEditContainerDlg::OnOK() 
@@ -142,9 +139,6 @@ void CEditContainerDlg::OnOK()
 
 void CEditContainerDlg::OnBnClickedStringKeys()
 {
-	Assert(!edit_sexp_containers.empty() &&
-		(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
 	auto &container = get_current_container();
 	Assert(container.is_map());
 	Assert(container.empty());
@@ -156,10 +150,7 @@ void CEditContainerDlg::OnBnClickedStringKeys()
 
 void CEditContainerDlg::OnBnClickedNumberKeys()
 {
-	Assert(!edit_sexp_containers.empty() &&
-		   (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
-	auto& container = get_current_container();
+	auto &container = get_current_container();
 	Assert(container.is_map());
 	Assert(container.empty());
 	if (!(container.type & SEXP_CONTAINER_NUMBER_KEYS)) {
@@ -170,28 +161,24 @@ void CEditContainerDlg::OnBnClickedNumberKeys()
 
 void CEditContainerDlg::OnTypeList() 
 {
-	Assert(!edit_sexp_containers.empty() && (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
-	auto &container = edit_sexp_containers[m_current_container];
+	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_list()) {
 		container.set_to_list();
-
-		update_map_specific_controls();
+		update_type_controls();
 	}
 }
 
 void CEditContainerDlg::OnTypeMap() 
 {
-	Assert(!edit_sexp_containers.empty() && (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_map()) {
 		container.set_to_map();
 		container.type |= SEXP_CONTAINER_STRING_KEYS;
 
-		update_map_specific_controls();
+		update_type_controls();
+		set_key_type();
 	}
 }
 
@@ -199,11 +186,11 @@ void CEditContainerDlg::set_container_type()
 {
 	CButton *button_list = (CButton *) GetDlgItem(IDC_CONTAINER_LIST);
 	CButton *button_map = (CButton *) GetDlgItem(IDC_CONTAINER_MAP);
-	
-	Assert(edit_sexp_containers.empty() || (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
 
-	const bool list_selected = !edit_sexp_containers.empty() && get_current_container().is_list();
-	const bool map_selected = !edit_sexp_containers.empty() && get_current_container().is_map();
+	const auto &container = get_current_container();
+	const bool list_selected = container.is_list();
+	const bool map_selected = container.is_map();
+	Assert((int)list_selected ^ (int)map_selected);
 
 	button_list->SetCheck(list_selected);
 	button_map->SetCheck(map_selected);
@@ -211,8 +198,6 @@ void CEditContainerDlg::set_container_type()
 
 void CEditContainerDlg::OnTypeNumber() 
 {
-	// TODO: assert m_current_container is valid
-
 	auto &container = get_current_container();
 	Assert(container.empty());
 	container.type &= ~SEXP_CONTAINER_STRING_DATA;
@@ -222,8 +207,6 @@ void CEditContainerDlg::OnTypeNumber()
 
 void CEditContainerDlg::OnTypeString() 
 {
-	// TODO: assert m_current_container is valid
-	
 	auto &container = get_current_container();
 	Assert(container.empty());
 	container.type &= ~SEXP_CONTAINER_NUMBER_DATA;
@@ -235,19 +218,12 @@ void CEditContainerDlg::set_data_type()
 	CButton *button_string = (CButton *) GetDlgItem(IDC_CONTAINER_STRING);
 	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER);
 
-	Assert(edit_sexp_containers.empty() || (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
-	const bool enabled = !edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].empty();
-	const bool number_selected =
-		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_NUMBER_DATA;
-	const bool string_selected =
-		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_STRING_DATA;
+	const auto &container = get_current_container();
+	const bool number_selected = container.type & SEXP_CONTAINER_NUMBER_DATA;
+	const bool string_selected = container.type & SEXP_CONTAINER_STRING_DATA;
 
 	button_number->SetCheck(number_selected);
 	button_string->SetCheck(string_selected);
-
-	button_number->EnableWindow(enabled);
-	button_string->EnableWindow(enabled);
 }
 
 void CEditContainerDlg::set_key_type()
@@ -255,22 +231,13 @@ void CEditContainerDlg::set_key_type()
 	CButton *button_string = (CButton *) GetDlgItem(IDC_STRING_KEYS);
 	CButton *button_number = (CButton *) GetDlgItem(IDC_NUMBER_KEYS);
 
-	Assert(edit_sexp_containers.empty() ||
-		   (m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size()));
-
-	const bool map_selected =
-		!edit_sexp_containers.empty() && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_MAP;
-	const bool enabled = map_selected && edit_sexp_containers[m_current_container].empty();
-	const bool number_keys_selected =
-		map_selected && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_NUMBER_KEYS;
-	const bool string_keys_selected =
-		map_selected && edit_sexp_containers[m_current_container].type & SEXP_CONTAINER_STRING_KEYS;
+	const auto &container = get_current_container();
+	Assert(container.is_map());
+	const bool number_keys_selected = container.type & SEXP_CONTAINER_NUMBER_KEYS;
+ 	const bool string_keys_selected = container.type & SEXP_CONTAINER_STRING_KEYS;
 	
 	button_number->SetCheck(number_keys_selected);
 	button_string->SetCheck(string_keys_selected);
-
-	button_number->EnableWindow(enabled);
-	button_string->EnableWindow(enabled);
 }
 
 void CEditContainerDlg::OnSelchangeContainerName()
@@ -409,14 +376,18 @@ BOOL CEditContainerDlg::is_valid_number(SCP_string test_string) {
 
 void CEditContainerDlg::OnListerSelectionChange()
 {
-	Assert(!edit_sexp_containers.empty());
-	Assert(m_container_data_lister.GetCount() > 0);
-
-	const auto &container = get_current_container();
-	Assert(!container.empty());
-
 	const int index = m_container_data_lister.GetCurSel();
-	Assert(index >= 0 && index < m_lister_keys.size());
+
+	if (index == LB_ERR) {
+		// TODO: clear key and data text  edit boxes?
+		return;
+	}
+
+	Assert(m_container_data_lister.GetCount() > 0);
+	Assert(index >= 0 && index < get_current_container().size());
+
+	const auto& container = get_current_container();
+	Assert(!container.empty());
 
 	if (container.is_list()) {
 		update_text_edit_boxes("", m_lister_keys[index]);
@@ -441,7 +412,7 @@ void CEditContainerDlg::OnContainerAdd()
 	CString data_str;
 	data_edit->GetWindowText(data_str);
 
-	auto& container = get_current_container();
+	auto &container = get_current_container();
 	if (container.is_list()) {
 		container.list_data.emplace_back(data_str);
 	} else if (container.is_map()) {
@@ -451,12 +422,19 @@ void CEditContainerDlg::OnContainerAdd()
 		container.map_data.emplace(key_str, data_str);
 	}
 
+	if (container.size() == 1) {
+		update_data_entry_controls();
+	}
+
 	update_data_lister();
 	update_text_edit_boxes("", "");
 }
 
 void CEditContainerDlg::OnContainerInsert()
 {
+	// TODO: use add_container_entry() funtion below instead of this
+	// pass m_lister_index, once added
+
 	if (!edit_boxes_have_valid_data()) {
 		return;
 	}
@@ -492,9 +470,11 @@ void CEditContainerDlg::OnContainerRemove()
 {
 	Assert(!edit_sexp_containers.empty());
 	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(!get_current_container().empty());
 
 	auto &container = get_current_container();
 	const int index = m_container_data_lister.GetCurSel(); 
+	// TODO: check for LB_ERR, see OnContainerUpdate()
 	Assert(index >= 0 && index < container.size());
 
 	if (container.is_list()) {
@@ -504,11 +484,19 @@ void CEditContainerDlg::OnContainerRemove()
 		container.map_data.erase(key);
 	}
 
+	if (container.empty()) {
+		update_data_entry_controls();
+	}
+
 	update_data_lister();
 }
 
 void CEditContainerDlg::OnContainerUpdate()
 {
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(!get_current_container().empty());
+
 	if (!data_edit_box_has_valid_data()) {
 		return;
 	}
@@ -609,6 +597,45 @@ BOOL CEditContainerDlg::data_edit_box_has_valid_data()
 	}
 }
 
+void CEditContainerDlg::update_type_controls()
+{
+	const auto& container = get_current_container();
+	const bool container_empty = container.empty();
+	const bool map_selected = container.is_map();
+
+	// container type
+	GetDlgItem(IDC_CONTAINER_LIST)->EnableWindow(container_empty);
+	GetDlgItem(IDC_CONTAINER_MAP)->EnableWindow(container_empty);
+
+	// data type
+	GetDlgItem(IDC_CONTAINER_STRING)->EnableWindow(container_empty);
+	GetDlgItem(IDC_CONTAINER_NUMBER)->EnableWindow(container_empty);
+
+	// key type
+	GetDlgItem(IDC_STRING_KEYS)->EnableWindow(container_empty && map_selected);
+	GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(container_empty && map_selected);
+}
+
+void CEditContainerDlg::update_data_entry_controls()
+{
+	const bool has_container = !edit_sexp_containers.empty();
+	const auto &container = get_current_container();
+	const bool container_empty = container.empty();
+	const bool map_selected = container.is_map();
+
+	// data manipulation buttons
+	GetDlgItem(IDC_CONTAINER_ADD)->EnableWindow(has_container);
+	// TODO: also check that m_lister_index is valid
+	GetDlgItem(IDC_CONTAINER_INSERT)->EnableWindow(has_container && !map_selected);
+	GetDlgItem(IDC_CONTAINER_REMOVE)->EnableWindow(has_container && !container_empty);
+	// TODO: also check that m_lister_index is valid
+	GetDlgItem(IDC_CONTAINER_UPDATE)->EnableWindow(has_container && !container_empty);
+
+	// text edit boxes
+	GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(has_container && map_selected);
+	GetDlgItem(IDC_CONTAINER_DATA)->EnableWindow(has_container);
+}
+
 void CEditContainerDlg::update_data_lister()
 {
 	m_container_data_lister.ResetContent(); 
@@ -653,16 +680,6 @@ void CEditContainerDlg::update_data_lister()
 	m_container_data_lister.EnableWindow(m_container_data_lister.GetCount() > 0);
 }
 
-void CEditContainerDlg::update_map_specific_controls()
-{
-	const bool map_selected = !edit_sexp_containers.empty() && get_current_container().is_map();
-
-	GetDlgItem(IDC_CONTAINER_KEY)->EnableWindow(map_selected);
-	GetDlgItem(IDC_KEY_TYPE)->EnableWindow(map_selected);
-	
-	set_key_type();
-}
-
 void CEditContainerDlg::OnBnClickedAddNewContainer()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
@@ -695,13 +712,9 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	edit_sexp_containers.emplace_back(); 
 	auto &new_container = edit_sexp_containers.back();
 	
-	if (m_current_container >= 0) {
-		Assert(edit_sexp_containers.size() > 1);
-		Assert(m_current_container < (int)edit_sexp_containers.size() - 1);
-		const auto &container = edit_sexp_containers[m_current_container];
-		new_container.type = container.type;
-		new_container.opf_type = container.opf_type;
-	}
+	const auto &container = get_current_container();
+	new_container.type = container.type;
+	new_container.opf_type = container.opf_type;
 
 	// add the new container to the list of containers combo box and make it the selected option
 	cbox->AddString(temp_name); 
@@ -779,10 +792,18 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 
 	sprintf(buffer, "This will delete the %s container. Are you sure?", edit_sexp_containers[m_current_container].container_name.c_str()); 
 
-	int r = MessageBox(buffer, "Delete?", MB_OKCANCEL | MB_ICONEXCLAMATION);
+	const int ret = MessageBox(buffer, "Delete?", MB_OKCANCEL | MB_ICONEXCLAMATION);
 
-	if (r == IDCANCEL) {
+	if (ret == IDCANCEL) {
 		return;
+	}
+
+	// prevent sudden change in type selection buttons
+	if (edit_sexp_containers.size() == 1) {
+		Assert(m_current_container == 0);
+		const auto &last_container = edit_sexp_containers.front();
+		m_dummy_container.type = last_container.type;
+		m_dummy_container.opf_type = last_container.opf_type;
 	}
 
 	edit_sexp_containers.erase(edit_sexp_containers.begin() + m_current_container);
@@ -795,11 +816,10 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 		m_current_container = -1; 
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);	
 	} else {
-		// select the first container
 		m_current_container = 0; 
 		cbox->SetCurSel(m_current_container);
-		set_selected_container();
 	}
+	set_selected_container();
 }
 
 void CEditContainerDlg::update_text_edit_boxes(const SCP_string &key, const SCP_string &data)
@@ -813,9 +833,8 @@ void CEditContainerDlg::update_text_edit_boxes(const SCP_string &key, const SCP_
 
 sexp_container &CEditContainerDlg::get_current_container()
 {
-	Assert(!edit_sexp_containers.empty());
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(m_current_container >= -1 && m_current_container < (int)edit_sexp_containers.size());
 
-	return edit_sexp_containers[m_current_container];
+	return edit_sexp_containers.empty() ? m_dummy_container : edit_sexp_containers[m_current_container];
 }
 
