@@ -95,8 +95,7 @@ typedef struct fireball {
 } fireball;
 // end move
 
-extern fireball Fireballs[MAX_FIREBALLS];
-extern int Num_fireballs;
+extern SCP_vector<fireball> Fireballs;
 
 extern bool fireballs_inited;
 
@@ -145,5 +144,8 @@ float fireball_wormhole_intensity( fireball *fb );
 extern int Knossos_warp_ani_used;
 
 extern bool Fireball_use_3d_warp;
+
+// Cyborg - get a count of how many valid fireballs are in the mission.
+int fireball_get_count();
 
 #endif /* _FIREBALLS_H */
