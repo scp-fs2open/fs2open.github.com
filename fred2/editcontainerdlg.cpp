@@ -835,6 +835,6 @@ sexp_container &CEditContainerDlg::get_current_container()
 {
 	Assert(m_current_container >= -1 && m_current_container < (int)edit_sexp_containers.size());
 
-	return edit_sexp_containers.empty() ? m_dummy_container : edit_sexp_containers[m_current_container];
+	return m_current_container < 0 ? m_dummy_container : edit_sexp_containers[m_current_container];
 }
 
