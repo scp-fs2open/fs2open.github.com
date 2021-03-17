@@ -659,7 +659,7 @@ void mod_table_reset()
 	Use_engine_wash_intensity = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
-	Third_Person_is_Default = false;
+	Chase_view_default = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
