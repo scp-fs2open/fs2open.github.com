@@ -182,6 +182,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
+	{ "pierce ships",					Weapon::Info_Flags::Pierce_ships,						true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -6817,40 +6818,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		other_objp = &Objects[so->objnum];
-		Assert(other_objp->instance != -1);
-        
-		shipp = &Ships[other_objp->instance];
-		Assert(shipp->ai_index != -1);
-        
-		ai_info	*aip = &Ai_info[shipp->ai_index];
-        
-		if (aip->target_objnum == objnum) {
-			set_target_objnum(aip, -1);
-			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
-			if (aip->resume_goal_time != -1)
-				aip->active_goal = AI_GOAL_NONE;
-		}
-        
-		if (aip->goal_objnum == objnum) {
-			aip->goal_objnum = -1;
-			aip->goal_signature = -1;
-		}
-        
-		if (aip->guard_objnum == objnum) {
-			aip->guard_objnum = -1;
-			aip->guard_signature = -1;
-		}
-        
-		if (aip->hitter_objnum == objnum) {
-			aip->hitter_objnum = -1;
-        }
-	}
-
-    weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
-
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
@@ -6898,6 +6865,44 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			spawn_child_weapons(weapon_obj);
 		}
 	}
+
+	//No other_obj means this weapon detonates
+	if (wip->wi_flags[Weapon::Info_Flags::Pierce_ships] && other_obj)
+		return;
+
+	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		other_objp = &Objects[so->objnum];
+		Assert(other_objp->instance != -1);
+        
+		shipp = &Ships[other_objp->instance];
+		Assert(shipp->ai_index != -1);
+        
+		ai_info	*aip = &Ai_info[shipp->ai_index];
+        
+		if (aip->target_objnum == objnum) {
+			set_target_objnum(aip, -1);
+			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
+			if (aip->resume_goal_time != -1)
+				aip->active_goal = AI_GOAL_NONE;
+		}
+        
+		if (aip->goal_objnum == objnum) {
+			aip->goal_objnum = -1;
+			aip->goal_signature = -1;
+		}
+        
+		if (aip->guard_objnum == objnum) {
+			aip->guard_objnum = -1;
+			aip->guard_signature = -1;
+		}
+        
+		if (aip->hitter_objnum == objnum) {
+			aip->hitter_objnum = -1;
+        }
+	}
+
+    weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 	// decrement parent's number of active remote detonators if applicable
 	if (wip->wi_flags[Weapon::Info_Flags::Remote] && weapon_obj->parent >= 0 && (weapon_obj->parent < MAX_OBJECTS)) {
