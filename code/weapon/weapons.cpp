@@ -104,7 +104,8 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
 flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
-	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false }
+	{ "burst shares random target",		Weapon::Beam_Info_Flags::Burst_share_random,		        true, false },
+	{ "track own texture tiling",       Weapon::Beam_Info_Flags::Track_own_texture_tiling,          true, false }
 };
 
 const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
@@ -180,6 +181,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "die on lost lock",               Weapon::Info_Flags::Die_on_lost_lock,                   true, true  }, //special case
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
+	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -679,7 +681,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
 
     if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
     {
-        Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+        Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nThe AI can not use this weapon on any targets", weaponp->name);
     }
 
     if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
@@ -1037,7 +1039,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_int(&wip->hud_target_lod);
 
 	if(optional_string("$Detail distance:")) {
-		wip->num_detail_levels = stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		wip->num_detail_levels = (int)stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
 	if ( optional_string("$External Model File:") )
@@ -2328,6 +2330,33 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Lock Range:")) {
 			stuff_float(&wip->lssm_lock_range);
 		}
+
+		if (optional_string("+Warp Effect:")) {
+			int temp;
+			if (stuff_int_optional(&temp) != 2) {
+				// We have a string to parse instead.
+				char unique_id[NAME_LENGTH];
+				memset(unique_id, 0, NAME_LENGTH);
+				stuff_string(unique_id, F_NAME, NAME_LENGTH);
+				int fireball_type = fireball_info_lookup(unique_id);
+				if (fireball_type < 0) {
+					error_display(0, "Unknown fireball [%s] to use as warp effect for LSSM weapon [%s].", unique_id, wip->name);
+					wip->lssm_warpeffect = FIREBALL_WARP;
+				}
+				else {
+					wip->lssm_warpeffect = fireball_type;
+				}
+			}
+			else {
+				if ((temp < 0) || (temp >= Num_fireball_types)) {
+					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, Num_fireball_types - 1, wip->name);
+					wip->lssm_warpeffect = FIREBALL_WARP;
+				}
+				else {
+					wip->lssm_warpeffect = temp;
+				}
+			}
+		}
 	}
 
 	if (optional_string("$Countermeasure:"))
@@ -3298,7 +3327,7 @@ void parse_weaponstbl(const char *filename)
 		// during weapon selection.
 		if ((!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:"))
 		{
-			Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			Num_player_weapon_precedence = (int)stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -5258,7 +5287,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
-			wp->lssm_warp_idx = fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
+			wp->lssm_warp_idx = fireball_create(&warpout, wip->lssm_warpeffect, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, true, &vmd_zero_vector, wp->lssm_warp_time, 0, &obj->orient);
 
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -5327,7 +5356,7 @@ void weapon_process_post(object * obj, float frame_time)
 				warp_size = model_get_radius(wip->model_num);
 
 			//create a warpin effect
-			wp->lssm_warp_idx = fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
+			wp->lssm_warp_idx = fireball_create(&warpin, wip->lssm_warpeffect, FIREBALL_WARP_EFFECT, -1, warp_size * 1.5f, false, &vmd_zero_vector, wp->lssm_warp_time, 0, &orient);
 			
 			if (wp->lssm_warp_idx < 0) {
 				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
@@ -5706,6 +5735,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
     default_flags.set(Object::Object_Flags::Renders);
     default_flags.set(Object::Object_Flags::Collides);
     default_flags.set(Object::Object_Flags::Physics);
+
+	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
+		default_flags.set(Object::Object_Flags::Collides_with_parent);
 
 	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags);
 	Assert(objnum >= 0);
@@ -8347,6 +8379,7 @@ void weapon_info::reset()
 	this->lssm_stage5_vel = 0;		//velocity during final stage
 	this->lssm_warpin_radius = 0;
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
+	this->lssm_warpeffect = FIREBALL_WARP;		//Which fireballtype is used for the warp effect
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;

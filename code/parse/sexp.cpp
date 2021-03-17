@@ -242,7 +242,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Ship Status Sub-Category
 	{ "is-in-mission",					OP_IS_IN_MISSION,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "is-docked",						OP_IS_DOCKED,							1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
-	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-friendly-stealth-visible",	OP_IS_FRIENDLY_STEALTH_VISIBLE,			1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-iff",							OP_IS_IFF,								2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -549,6 +549,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
+	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -3452,6 +3453,18 @@ void preload_turret_change_weapon(const char *text)
 	weapon_mark_as_used(idx);
 }
 
+void preload_texture(const char* text)
+{
+	int texture = bm_load(text);
+
+	if (texture < 0) {
+		Warning(LOCATION, "Could not preload texture %s", text);
+		return;
+	}
+
+	bm_page_in_texture(texture);
+}
+
 // Goober5000
 // we don't use the do_preload function because the preloader needs to access two nodes at a time
 // also we're not using CTEXT or eval_num here because XSTR should really be constant, and
@@ -3757,6 +3770,12 @@ int get_sexp()
 			case OP_MODIFY_VARIABLE_XSTR:
 				n = CDDR(start); // First parameter is the variable name so we need to get the second parameter
 				localize_sexp(n, CDR(n));
+				break;
+
+			case OP_REPLACE_TEXTURE:
+				//Texture name is argument 2
+				n = CDDR(start);
+				do_preload_for_arguments(preload_texture, n, arg_handler);
 				break;
 		}
 	}
@@ -4361,6 +4380,8 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
  */
 const ship_registry_entry *eval_ship(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4400,6 +4421,8 @@ const ship_registry_entry *eval_ship(int node)
  */
 wing *eval_wing(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4443,6 +4466,7 @@ wing *eval_wing(int node)
 int sexp_atoi(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -4479,6 +4503,7 @@ int sexp_atoi(int node)
 bool sexp_can_construe_as_integer(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
 		return true;
@@ -4503,6 +4528,8 @@ bool sexp_can_construe_as_integer(int node)
  */
 int sexp_get_variable_index(int node)
 {
+	Assert(node >= 0);
+
 	if (Sexp_nodes[node].cached_variable_index >= 0)
 		return Sexp_nodes[node].cached_variable_index;
 
@@ -6789,32 +6816,45 @@ int sexp_hits_left(int node, bool sim_hull)
  */
 int sexp_is_ship_visible(int node)
 {
-	int ship_is_visible = 0;
-
-	// if multiplayer, bail
-	if (Game_mode & GM_MULTIPLAYER) {
-		return SEXP_NAN_FOREVER;
-	}
+	ship *viewer_shipp = nullptr;
+	int n = node, ship_is_visible = 0;
 
 	// get the ship
-	auto ship_entry = eval_ship(node);
+	auto ship_entry = eval_ship(n);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
+	n = CDR(n);
+
+	// the second argument is the viewer
+	if (n >= 0)
+	{
+		auto viewer_entry = eval_ship(n);
+		if (viewer_entry)
+			viewer_shipp = viewer_entry->shipp;
+	}
+	else
+	{
+		// if the second argument is not supplied, default to the player, per retail
+		if (Game_mode & GM_MULTIPLAYER)
+			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		else
+			viewer_shipp = Player_ship;
+	}
 
 	// get ship's *radar* visiblity
-	if (Player_ship)
+	if (viewer_shipp)
 	{
-		if (ship_is_visible_by_team(ship_entry->objp, Player_ship))
+		if (ship_is_visible_by_team(ship_entry->objp, viewer_shipp))
 		{
 			ship_is_visible = 2;
 		}
 	}
 
 	// only check awacs level if ship is not visible by team
-	if (Player_ship && !ship_is_visible) {
-		float awacs_level = awacs_get_level(ship_entry->objp, Player_ship);
+	if (viewer_shipp && !ship_is_visible) {
+		float awacs_level = awacs_get_level(ship_entry->objp, viewer_shipp);
 		if (awacs_level >= 1.0f) {
 			ship_is_visible = 2;
 		} else if (awacs_level > 0) {
@@ -9442,7 +9482,7 @@ int eval_when(int n, int when_op_num)
 
 		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
 		// each argument	
-		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(exp)) {	
+		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(actions)) {	
 			if (exp != -1) {
 				eval_when_do_all_exp(actions, when_op_num);
 			}
@@ -16065,10 +16105,6 @@ void sexp_weapon_create(int n)
 // make ship vanish without a trace (and what it's docked to)
 void sexp_ship_vanish(int n)
 {
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER)
-		return;
-
 	for ( ; n != -1; n = CDR(n) )
 	{
 		auto ship_entry = eval_ship(n);
@@ -17273,15 +17309,24 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 		// Set the number of weapons
 		ammo[requested_bank] = requested_ammo;
 	}
+	else if (ammo[requested_bank] > maximum_allowed)
+	{
+		// Make sure the current ammo doesn't exceed the maximum (this can otherwise happen with the set-*-weapon SEXPs)
+		ammo[requested_bank] = maximum_allowed;
+	}
 
 	// Check rearm validity
 	if (rearm_limit >= 0)
 	{
-		// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+		// Don't allow more weapons than the bank can actually hold.
 		if (rearm_limit > maximum_allowed)
 			rearm_limit = maximum_allowed;
 
 		start_ammo[requested_bank] = rearm_limit;
+	}
+	else	// Even if no rearm limit is explicitly set, don't allow more weapons than the bank can actually hold (this can otherwise happen with the set-*-weapon SEXPs).
+	{
+		start_ammo[requested_bank] = maximum_allowed;
 	}
 }
 
@@ -17735,6 +17780,90 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
 		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
 			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
+	}
+}
+
+void sexp_replace_texture(int n)
+{
+	auto old_name = CTEXT(n);
+	n = CDR(n);
+
+	auto new_name = CTEXT(n);
+	n = CDR(n);
+
+	for (; n != -1; n = CDR(n))
+	{
+
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
+
+		// we only handle ships and wings that are present
+		switch (oswpt.type)
+		{
+		case OSWPT_TYPE_PARSE_OBJECT:
+		case OSWPT_TYPE_SHIP:
+		{
+			auto ship_entry = oswpt.ship_entry;
+
+			if (ship_entry->status == ShipStatus::EXITED)
+				continue;
+
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			{
+				p_object* pobjp = ship_entry->p_objp;
+
+				texture_replace replace;
+
+				strcpy(replace.ship_name, ship_entry->name);
+				strcpy(replace.old_texture, old_name);
+				strcpy(replace.new_texture, new_name);
+				replace.new_texture_id = bm_load(new_name);
+
+				pobjp->replacement_textures.push_back(replace);
+			}
+			// If the ship is already in the mission
+			else
+			{
+				ship_replace_active_texture(ship_entry->objp->instance, old_name, new_name);
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_WING:
+		{
+			auto wp = oswpt.wingp;
+			for (int i = 0; i < wp->current_count; ++i)
+			{
+				if (wp->ship_index[i] >= 0)
+				{
+					ship_replace_active_texture(wp->ship_index[i], old_name, new_name);
+				}
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			for (p_object* p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+				{
+					texture_replace replace;
+
+					strcpy(replace.ship_name, p_objp->name);
+					strcpy(replace.old_texture, old_name);
+					strcpy(replace.new_texture, new_name);
+					replace.new_texture_id = bm_load(new_name);
+
+					p_objp->replacement_textures.push_back(replace);
+				}
+			}
+			break;
+		}
+
+		default:
+			mprintf(("Invalid Shipname in SEXP ship-effect\n"));
+		}
 	}
 }
 
@@ -25542,6 +25671,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
 
+			case OP_REPLACE_TEXTURE:
+				sexp_val = SEXP_TRUE;
+				sexp_replace_texture(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -26638,6 +26772,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
+		case OP_REPLACE_TEXTURE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29030,6 +29165,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_BOOL;
 
+		case OP_REPLACE_TEXTURE:
+			if (argnum == 0 || argnum == 1)
+				return OPF_STRING;
+			else
+				return OPF_SHIP_WING;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -30525,6 +30666,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_FROM_COLGROUP2:
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
+		case OP_REPLACE_TEXTURE:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -33819,9 +33961,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
-		"\tCheck whether ship is visible on Player's radar\r\n"
-		"\tSingle Player Only!  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\t1: Name of ship to check\r\n"},
+		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tTakes 1 or 2 arguments...\r\n"
+		"\t1: Name of ship to check\r\n"
+		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
 
 	// Goober5000
 	{ OP_IS_SHIP_STEALTHY, "is-ship-stealthy\r\n"
@@ -34859,6 +35003,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of Variable.\r\n"
 		"\t2:\tThe default text if no localized version is available.\r\n"
 		"\t3:\tThe XSTR index. If set to -1 then the default value will be used\r\n"
+	},
+
+	{ OP_REPLACE_TEXTURE, "replace-texture\r\n"
+		"\tChanges a texture of a ship to a different texture, similar to the FRED texture replace.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1: Name of the texture to be replaced.\r\n"
+		"\t2: Name of the texture to be changed to.\r\n"
+		"\tRest: Name of the ship or wing.\r\n"
 	},
 };
 // clang-format on

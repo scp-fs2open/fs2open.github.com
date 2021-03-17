@@ -335,7 +335,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			case 1:
 				int shiparray[256];
 
-				n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+				n_ships = (int)stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
 
 				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);

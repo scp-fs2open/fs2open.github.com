@@ -39,8 +39,9 @@ extern float Neb2_awacs;
 // The visual render distance multipliers for the nebula
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
+
 extern int Neb2_poof_flags;
-const size_t MAX_NEB2_POOFS = 6;
+const size_t MAX_NEB2_POOFS = 32;
 
 #define MAX_NEB2_BITMAPS			10
 
@@ -66,11 +67,11 @@ typedef struct poof_info {
 		bitmap = -1;
 		scale_min = 150.0f;
 		scale_max = 150.0f;
-		density = 37.f;
+		density = 150.f;
 		rotation_min = -0.065f;
 		rotation_max = 0.065f;
-		view_dist = 750.f;
-		peak_alpha = 0.2f;
+		view_dist = 360.f;
+		peak_alpha = 0.35f;
 	}
 } poof_info;
 

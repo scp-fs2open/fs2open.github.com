@@ -3305,7 +3305,7 @@ void game_render_frame( camid cid )
 	nebl_render_all();
 
 	// render local player nebula
-	neb2_render_player();
+	neb2_render_poofs();
 
 	batching_render_all(false);
 

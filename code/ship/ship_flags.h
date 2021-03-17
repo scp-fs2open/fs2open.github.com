@@ -232,6 +232,7 @@ namespace Ship {
         AI_turrets_attack,
         AI_can_form_wing,
         AI_protected_on_cripple,
+		Targeted_by_huge_Ignored_by_small_only,
 
         NUM_VALUES
     };

@@ -23,7 +23,7 @@ void main()
 
 	// If the scene is in fog then we change the color we operate on based on the depth of the pixel
 	float depth_val = texture(depth_tex, fragTexCoord.xy).x;
-	// Transform depth value from [-1, 1] to [0, 1]
+	// Transform depth value from [0, 1] to [-1, 1]
 	float depth_normalized = 2 * depth_val - 1;
 	// Now we compute the depth value in projection space using the clipping plane information
 	float view_depth = 2.0 * zNear * zFar / (zFar + zNear - depth_normalized * (zFar - zNear));

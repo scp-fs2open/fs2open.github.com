@@ -460,6 +460,7 @@ struct weapon_info
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
 	float lssm_lock_range;
+	int lssm_warpeffect;		//Which fireballtype is used for the warp effect
 
 	// Beam weapon effect	
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
