@@ -62,6 +62,7 @@ bool Use_engine_wash_intensity;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
+bool Third_Person_is_Default;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
@@ -658,6 +659,7 @@ void mod_table_reset()
 	Use_engine_wash_intensity = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
+	Third_Person_is_Default = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
