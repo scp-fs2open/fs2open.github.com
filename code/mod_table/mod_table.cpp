@@ -577,7 +577,11 @@ void parse_mod_table(const char *filename)
 				Warning(LOCATION, "\'AI respect tabled turn time and rotdamp\' requires \'AI use framerate independent turning\' in order to function.\n");
 			}
 		}
-
+		
+		if (optional_string("$Player starts in third person/chase view by default:")) {
+			stuff_boolean(&Chase_view_default);
+		}
+		
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
