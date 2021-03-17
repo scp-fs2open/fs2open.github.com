@@ -1380,7 +1380,7 @@ void player_level_init()
 	Viewer_external_info.current_distance = 0.0f;
 
 	
-	if (Chase_view_default == true)
+	if (Chase_view_default)
 	{
 		Viewer_mode = VM_CHASE;
 	}
