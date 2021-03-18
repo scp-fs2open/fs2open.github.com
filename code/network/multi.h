@@ -366,6 +366,9 @@ class player;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
+// minor hack
+constexpr int PLAYER_COLLISION_TIMESTAMP = 200; // how often the server should allow a client to go through ship-ship collisions
+
 // ----------------------------------------------------------------------------------------
 
 
@@ -418,6 +421,9 @@ typedef struct net_player_server_info {
 
 	// common targeting information
 	int				target_objnum;
+
+	// for collision hack -- to fix, enough bandwidth would be needed for full physics info to be transmitted uncompressed
+	int				player_collision_timestamp;		// gets around limitations on oo update packets by having collisions only occur so often								
 
 	// rate limiting information
 	int				rate_stamp;							// rate limiting timestamp
