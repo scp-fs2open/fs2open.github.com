@@ -32,7 +32,8 @@ extern int Token_found_flag;
 
 
 #define	COMMENT_CHAR	(char)';'
-#define	EOLN				(char)0x0a
+#define	EOLN			(char)0x0a
+#define CARRIAGE_RETURN (char)0x0d
 
 #define	F_NAME					1
 #define	F_DATE					2
