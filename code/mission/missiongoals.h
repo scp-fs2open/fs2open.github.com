@@ -155,7 +155,6 @@ void	mission_show_goals_init();
 void	mission_show_goals_close();
 void	mission_show_goals_do_frame(float frametime);	// displays goals on screen
 void	mission_eval_goals();									// evaluate player goals
-void	mission_evaluate_all_directives_client();							// do a few directives things for multiplayer clients only.
 int	mission_evaluate_primary_goals(void);	// determine if the primary goals for the mission are complete -- returns one of the above defines
 int	mission_goals_met();
 
