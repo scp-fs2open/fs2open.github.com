@@ -47,17 +47,10 @@ void comp_create_ci(CFILE* cf, int header)
 size_t comp_fread(CFILE* cf, char* buffer, size_t length)
 {
 	/* Check the request to be at least 1 byte */
-	if (length <= 0)
-	{
-		//mprintf(("\n(CI) File: %s . Invalid length requested: %d \n", cf->original_filename.c_str(), length));
-		return (size_t)COMP_INVALID_LENGTH_REQUESTED;
-	}
+	Assertion(length > 0, "Invalid length requested.");
+
 	/* Check that we are not requesting to read beyond end of file */
-	if (length + cf->raw_position > cf->size)
-	{
-		//mprintf(("\n(CI) File: %s . Requested to read beyond end of file, Lenght requested: %d, Current Pos: %d, Filesize: d% \n", cf->original_filename.c_str(), length, cf->raw_position,cf->size));
-		return (size_t)COMP_INVALID_LENGTH_REQUESTED;
-	}
+	Assertion(cf->raw_position + length <= cf->size, "Invalid length requested.");
 
 	if (LZ41_FILE_HEADER == cf->compression_info.header)
 		return lz41_stream_random_access(cf, buffer, cf->raw_position, length);
@@ -72,12 +65,10 @@ size_t comp_ftell(CFILE* cf)
 
 int comp_feof(CFILE* cf)
 {
-	int result = 0;
 	if (cf->raw_position >= cf->size)
-		result = 1;
+		return 1;
 	else
-		result = 0;
-	return result;
+		return 0;
 }
 
 int comp_fseek(CFILE* cf, int offset, int where)
@@ -125,95 +116,94 @@ void lz41_create_ci(CFILE* cf, int header)
 {
 	cf->compression_info.header = header;
 	cf->compression_info.compressed_size = cf->size;
-	fso_fseek(cf, -12, SEEK_END);
-	auto fNumoffsets = fread(&cf->compression_info.numOffsets, 4, 1, cf->fp);
-	auto fSize = fread(&cf->size, 4, 1, cf->fp);
-	auto fBsize = fread(&cf->compression_info.block_size,4, 1, cf->fp);
+	fso_fseek(cf, (int)sizeof(int)*-3, SEEK_END);
+	auto fNumoffsets = fread(&cf->compression_info.num_offsets, sizeof(int), 1, cf->fp);
+	auto fSize = fread(&cf->size, sizeof(int), 1, cf->fp);
+	auto fBsize = fread(&cf->compression_info.block_size, sizeof(int), 1, cf->fp);
 
 	#if !defined(NDEBUG)
-	if (cf->compression_info.numOffsets <= 0 || cf->size <= 0 || cf->compression_info.block_size <= 0 || fNumoffsets < 1 || fSize < 1 || fBsize < 1)
-	{
-		//mprintf(("\n(CI) File: %s . Something went wrong reading the setup data, file is possibly in the wrong format.\n", cf->original_filename.c_str(), cf->compression_info.numOffsets, cf->compression_info.block_size));
-		Assertion(cf->compression_info.numOffsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format.");
-		Assertion(cf->size > 4, "Invalid filesize, compressed file is possibly in the wrong format.");
-		Assertion(cf->compression_info.block_size > 16, "Invalid block size, compressed file is possibly in the wrong format.");
-	}
+	Assertion(cf->compression_info.num_offsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(cf->size > 4, "Invalid filesize, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(cf->compression_info.block_size > 16, "Invalid block size, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(fNumoffsets == 1, "Error while reading the number of offsets, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(fSize == 1, "Error while reading original filesize, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(fBsize == 1, "Error while reading block size, compressed file is possibly in the wrong format or corrupted.");
 	#endif
-	cf->compression_info.decoderBuffer = (char*)malloc(LZ4_compressBound(cf->compression_info.block_size));
-	cf->compression_info.lastDecBlockPos = 0;
-	cf->compression_info.lastDecBytes = 0;
+
+	cf->compression_info.decoder_buffer = (char*)malloc(LZ4_compressBound(cf->compression_info.block_size));
+	cf->compression_info.last_decoded_block_pos = 0;
+	cf->compression_info.last_decoded_block_bytes = 0;
 	lz41_load_offsets(cf);
 }
 
 void lz41_load_offsets(CFILE* cf)
 {
-	int maxBlocks = (int)cf->size + 8 / cf->compression_info.block_size;
-	cf->compression_info.offsets = (int*)malloc(maxBlocks);
+	int max_blocks = (int)cf->size + 8 / cf->compression_info.block_size;
+	cf->compression_info.offsets = (int*)malloc(max_blocks);
 	int block;
-	int* offsetsPtr = cf->compression_info.offsets;
+	int* offsets_ptr = cf->compression_info.offsets;
 
-	fso_fseek(cf, (-4 * (cf->compression_info.numOffsets + 1)) - (sizeof(int)*2), SEEK_END);
-	for (block = 0; block <= cf->compression_info.numOffsets; ++block)
+	Assertion(cf->compression_info.num_offsets * sizeof(int) <= max_blocks, "The number of offsets cant be higher than max possible blocks(size/blocksize), compressed file is possibly in the wrong format or corrupted.");
+
+	/* Seek to the first offset position, remember to consider the trailing ints */
+	fso_fseek(cf, ( ( sizeof(int) * cf->compression_info.num_offsets ) * -1 ) - (sizeof(int)*3 ), SEEK_END);
+	for (block = 0; block <= cf->compression_info.num_offsets; ++block)
 	{
-		auto bytes_read = fread(offsetsPtr++, sizeof(int), 1, cf->fp);
+		auto bytes_read = fread(offsets_ptr++, sizeof(int), 1, cf->fp);
 		Assertion(bytes_read == 1, "Error reading offset list.");
 	}
 }
 
 size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size_t length)
 {
-	LZ4_streamDecode_t lz4StreamDecode_body;
-	LZ4_streamDecode_t* lz4StreamDecode = &lz4StreamDecode_body;
-	/* The blocks (currentBlock to endBlock) contain the data we want */
-	size_t currentBlock = offset / cf->compression_info.block_size;
-	size_t endBlock = ((offset + length - 1) / cf->compression_info.block_size) + 1;
+	LZ4_streamDecode_t lz4_stream_decode_body;
+	LZ4_streamDecode_t* lz4_stream_decode = &lz4_stream_decode_body;
+	/* The blocks (current_block to end_block) contain the data we want */
+	size_t current_block = offset / cf->compression_info.block_size;
+	size_t end_block = ((offset + length - 1) / cf->compression_info.block_size) + 1;
 	size_t written_bytes = 0;
 
-	if (cf->compression_info.numOffsets <= (int)endBlock)
+	if (cf->compression_info.num_offsets <= (int)end_block)
 		return (size_t)LZ41_OFFSETS_MISMATCH;
 
 	/* Seek to the first block to read, if it matches the cached block, search the next one instead */
-	if (cf->compression_info.lastDecBlockPos == cf->compression_info.offsets[currentBlock] && currentBlock + 1 <= endBlock)
-		fso_fseek(cf, cf->compression_info.offsets[currentBlock+1], SEEK_SET);
+	if (cf->compression_info.last_decoded_block_pos == cf->compression_info.offsets[current_block] && current_block + 1 <= end_block)
+		fso_fseek(cf, cf->compression_info.offsets[current_block+1], SEEK_SET);
 	else
-		fso_fseek(cf, cf->compression_info.offsets[currentBlock], SEEK_SET);
+		fso_fseek(cf, cf->compression_info.offsets[current_block], SEEK_SET);
 	
 	offset = offset % cf->compression_info.block_size;
+	char* cmp_buf = (char*)malloc(LZ4_compressBound(cf->compression_info.block_size));
 
 	/* Start decoding */
-	for (; currentBlock < endBlock; ++currentBlock)
+	for (; current_block < end_block; ++current_block)
 	{
-		if (cf->compression_info.lastDecBlockPos != cf->compression_info.offsets[currentBlock])
+		/* Only read and decode if the requested block is not the cached one */
+		if (cf->compression_info.last_decoded_block_pos != cf->compression_info.offsets[current_block])
 		{
-			char* cmpBuf = (char*)malloc(LZ4_compressBound(cf->compression_info.block_size));
+			cf->compression_info.last_decoded_block_pos = cf->compression_info.offsets[current_block];
+
 			/* The difference in offsets is the size of the block */
-			int cmpBytes = cf->compression_info.offsets[currentBlock + 1] - cf->compression_info.offsets[currentBlock];
-			auto bytes_read = fread(cmpBuf, cmpBytes, 1, cf->fp);
+			int cmp_bytes = cf->compression_info.offsets[current_block + 1] - cf->compression_info.offsets[current_block];
+			auto bytes_read = fread(cmp_buf, cmp_bytes, 1, cf->fp);
 			Assertion(bytes_read == 1, "Error reading from compressed file.");
 
-			const int decBytes = LZ4_decompress_safe_continue(lz4StreamDecode, cmpBuf, cf->compression_info.decoderBuffer, cmpBytes, cf->compression_info.block_size);
-			if (decBytes <= 0)
+			cf->compression_info.last_decoded_block_bytes = LZ4_decompress_safe_continue(lz4_stream_decode, cmp_buf, cf->compression_info.decoder_buffer, cmp_bytes, cf->compression_info.block_size);
+			if (cf->compression_info.last_decoded_block_bytes <= 0)
+			{
+				free(cmp_buf);
 				return (size_t)LZ41_DECOMPRESSION_ERROR;
+			}
+		}
 
-			/* Write out the part of the data we care about */
-			size_t blockLength = ((length) < ((decBytes - offset)) ? (length) : ((decBytes - offset)));
-			memcpy(bytes_out + written_bytes, cf->compression_info.decoderBuffer + offset, blockLength);
-			written_bytes += blockLength;
-			offset = 0;
-			length -= blockLength;
-			free(cmpBuf);
-			cf->compression_info.lastDecBlockPos = cf->compression_info.offsets[currentBlock];
-			cf->compression_info.lastDecBytes = decBytes;
-		}
-		else
-		{
-			/* Write out the part of the data we care about from buffer*/
-			size_t blockLength = ((length) < ((cf->compression_info.lastDecBytes - offset)) ? (length) : ((cf->compression_info.lastDecBytes - offset)));
-			memcpy(bytes_out + written_bytes, cf->compression_info.decoderBuffer + offset, (size_t)blockLength);
-			written_bytes += blockLength;
-			offset = 0;
-			length -= blockLength;
-		}
+		/* Write out the part of the data we care about from buffer */
+		size_t block_length = (length < (cf->compression_info.last_decoded_block_bytes - offset) ? length : (cf->compression_info.last_decoded_block_bytes - offset));
+		memcpy(bytes_out + written_bytes, cf->compression_info.decoder_buffer + offset, (size_t)block_length);
+		written_bytes += block_length;
+		offset = 0;
+		length -= block_length;
 	}
+
+	free(cmp_buf);
 	return written_bytes;
 }

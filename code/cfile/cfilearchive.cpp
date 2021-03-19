@@ -68,15 +68,18 @@ void cf_check_compression(CFILE* cfile)
 //This function is called to cleanup compression info when the cfile handle is reused.
 void cf_clear_compression_info(CFILE* cfile)
 {
-	free(cfile->compression_info.offsets);
-	free(cfile->compression_info.decoderBuffer);
-	cfile->compression_info.offsets = nullptr;
-	cfile->compression_info.decoderBuffer = nullptr;
-	cfile->compression_info.header = 0;
-	cfile->compression_info.block_size = 0;
-	cfile->compression_info.lastDecBlockPos = 0;
-	cfile->compression_info.lastDecBytes = 0;
-	cfile->compression_info.numOffsets = 0;
+	if (cfile->compression_info.header != 0)
+	{
+		free(cfile->compression_info.offsets);
+		free(cfile->compression_info.decoder_buffer);
+		cfile->compression_info.offsets = nullptr;
+		cfile->compression_info.decoder_buffer = nullptr;
+		cfile->compression_info.header = 0;
+		cfile->compression_info.block_size = 0;
+		cfile->compression_info.last_decoded_block_pos = 0;
+		cfile->compression_info.last_decoded_block_bytes = 0;
+		cfile->compression_info.num_offsets = 0;
+	}
 }
 
 
@@ -231,14 +234,14 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		// This is a file from memory
 		bytes_read = size;
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
-	}else if (cfile->compression_info.header != 0) {
+	} else if (cfile->compression_info.header != 0) {
 		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
 		if (bytes_read != size)
 		{
 			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), (int)bytes_read, (int)size));
 			Assertion(bytes_read == size, "File decompression error!");
 		}
-	}else{
+	} else {
 		bytes_read = fread(buf, 1, size, cfile->fp);
 	}
 
@@ -301,4 +304,5 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 	#endif
 
 	return items_read;
+
 }

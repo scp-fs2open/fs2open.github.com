@@ -26,11 +26,11 @@ struct COMPRESSION_INFO {
 	int header = 0;
 	size_t compressed_size = 0;
 	int block_size = 0;
-	int numOffsets = 0;
+	int num_offsets = 0;
 	int* offsets = nullptr;
-	char* decoderBuffer = nullptr;
-	int lastDecBlockPos = 0;
-	int lastDecBytes = 0;
+	char* decoder_buffer = nullptr;
+	int last_decoded_block_pos = 0;
+	int last_decoded_block_bytes = 0;
 };
 
 struct CFILE {

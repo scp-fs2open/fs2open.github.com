@@ -12,7 +12,7 @@ ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and ev
 struct CFILE;
 
 /*LZ41*/
-#define LZ41_FILE_HEADER 0x31345A4C //"LZ41", inverted
+#define LZ41_FILE_HEADER 0x31345A4C // "14ZL" -> "LZ41", inverted
 #define LZ41_DECOMPRESSION_ERROR -1
 #define LZ41_MAX_BLOCKS_OVERFLOW -2
 #define LZ41_HEADER_MISMATCH -3
@@ -21,7 +21,6 @@ struct CFILE;
 
 #define COMP_HEADER_MATCH 1
 #define COMP_HEADER_MISMATCH 0
-#define COMP_INVALID_LENGTH_REQUESTED -5
 
 /*
 	Returns COMP_HEADER_MATCH if header is a valid compressed file header,
