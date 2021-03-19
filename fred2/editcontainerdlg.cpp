@@ -659,7 +659,7 @@ void CEditContainerDlg::update_data_lister()
 
 		if (container.type & SEXP_CONTAINER_STRING_KEYS) {
 			std::sort(m_lister_keys.begin(), m_lister_keys.end());
-		} else if (container.type & SEXP_CONTAINER_STRING_KEYS) {
+		} else if (container.type & SEXP_CONTAINER_NUMBER_KEYS) {
 			std::sort(m_lister_keys.begin(),
 				m_lister_keys.end(),
 				[](const SCP_string& str1, const SCP_string& str2) -> bool {
