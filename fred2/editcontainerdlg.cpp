@@ -117,6 +117,7 @@ void CEditContainerDlg::set_selected_container()
 	if (get_current_container().is_map()) {
 		set_key_type();
 	}
+	update_data_lister();
 }
 
 void CEditContainerDlg::OnOK() 
