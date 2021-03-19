@@ -1123,9 +1123,8 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
 							vec3d v2e;
-							float dist;
 							bool in_fov;
-							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
+							vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
 
 							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
 
