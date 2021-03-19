@@ -3890,6 +3890,13 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 	required_string("$Name:");
 	stuff_string(name, F_NAME);
 
+	// TODO: do other container name validation
+	if (name.empty()) {
+		Warning(LOCATION, "SEXP Container with empty name found");
+		log_printf(LOGFILE_EVENT_LOG, "SEXP Container with empty name found");
+		return false;
+	}
+
 	required_string("$Data Type:");
 	stuff_string(temp_type_string, F_NAME);
 	if (!strcmp(temp_type_string.c_str(), "Number")) {
@@ -3919,11 +3926,13 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 		}
 	}
 
+	// TODO: change to Strictly Typed
 	if (optional_string("+Strongly Typed Keys")) {
 		Assertion ((type & SEXP_CONTAINER_MAP), "+Strongly Typed Keys found for container which doesn't use keys!");  
 		type |= SEXP_CONTAINER_STRONGLY_TYPED_KEYS;
 	}
 
+	// TODO: change to Strictly Typed
 	if (optional_string("+Strongly Typed Data")) {
 		type |= SEXP_CONTAINER_STRONGLY_TYPED_DATA;
 	}
