@@ -345,7 +345,7 @@ struct weapon_info
 	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
 	bool pierce_objects;
-	bool spawn_childs_on_pierce;
+	bool spawn_children_on_pierce;
 
     // spawn weapons
     int num_spawn_weapons_defined;

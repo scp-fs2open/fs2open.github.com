@@ -1757,8 +1757,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Pierce Objects:")) {
 		stuff_boolean(&wip->pierce_objects);
 
-		if (optional_string("+Spawn Childs On Hit:")) {
-			stuff_boolean(&wip->spawn_childs_on_pierce);
+		if (optional_string("+Spawn Children On Pierce:")) {
+			stuff_boolean(&wip->spawn_children_on_pierce);
 		}
 	}
 
@@ -6866,7 +6866,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	if (!wip->pierce_objects || wip->spawn_childs_on_pierce || other_obj) {
+	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !other_obj) {
 		// spawn weapons - note the change from FS 1 multiplayer.
 		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
@@ -8274,7 +8274,7 @@ void weapon_info::reset()
 	this->WeaponMinRange = 0.0f;
 
 	this->pierce_objects = false;
-	this->spawn_childs_on_pierce = false;
+	this->spawn_children_on_pierce = false;
 
 	this->num_spawn_weapons_defined = 0;
 	this->maximum_children_spawned = 0;
