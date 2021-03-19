@@ -702,8 +702,8 @@ ADE_FUNC(perturb,
 
 ADE_FUNC(randomInCircle,
 	l_Vector,
-	"orientation orient, number radius, boolean on_edge",
-	"Given this vector (the origin point), an orientation, and a radius, generate a point on the plane of the circle.  If on_edge is true, the point will be on the edge of the circle.",
+	"orientation orient, number radius, boolean on_edge, [boolean bias_towards_center = true]",
+	"Given this vector (the origin point), an orientation, and a radius, generate a point on the plane of the circle.  If on_edge is true, the point will be on the edge of the circle. If bias_towards_center is true, the probability will be higher towards the center.",
 	"vector",
 	"A point within the plane of the circle")
 {
@@ -711,30 +711,32 @@ ADE_FUNC(randomInCircle,
 	matrix_h* mh = nullptr;
 	float radius;
 	bool on_edge;
+	bool bias_towards_center = true;
 
-	if (!ade_get_args(L, "oofb", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge))
+	if (!ade_get_args(L, "oofb|b", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge, &bias_towards_center))
 		return ADE_RETURN_NIL;
 
-	vm_vec_random_in_circle(&out, in, mh->GetMatrix(), radius, on_edge);
+	vm_vec_random_in_circle(&out, in, mh->GetMatrix(), radius, on_edge, bias_towards_center);
 
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
 ADE_FUNC(randomInSphere,
 	l_Vector,
-	"number radius, boolean on_surface",
-	"Given this vector (the origin point) and a radius, generate a point in the volume of the sphere.  If on_surface is true, the point will be on the surface of the sphere.",
+	"number radius, boolean on_surface, [boolean bias_towards_center = true]",
+	"Given this vector (the origin point) and a radius, generate a point in the volume of the sphere.  If on_surface is true, the point will be on the surface of the sphere. If bias_towards_center is true, the probability will be higher towards the center",
 	"vector",
 	"A point within the plane of the circle")
 {
 	vec3d *in, out;
 	float radius;
 	bool on_surface;
+	bool bias_towards_center = true;
 
-	if (!ade_get_args(L, "ofb", l_Vector.GetPtr(&in), &radius, &on_surface))
+	if (!ade_get_args(L, "ofb|b", l_Vector.GetPtr(&in), &radius, &on_surface, &bias_towards_center))
 		return ADE_RETURN_NIL;
 
-	vm_vec_random_in_sphere(&out, in, radius, on_surface);
+	vm_vec_random_in_sphere(&out, in, radius, on_surface, bias_towards_center);
 
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
