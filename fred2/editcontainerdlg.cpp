@@ -281,50 +281,35 @@ bool CEditContainerDlg::is_container_name_in_use(const char *text) const
 	return false;
 }
 
-// Check variable name (1) changed (2) > 0 length (3) does not already exist - pretty much stolen from addvariabledlg.cpp
 BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
 {
 	bool name_validated = false;	// assume invalid until proved wrong
 
-	// Check if not default name
-	if ( stricmp(new_name, "<New Container Name>") ) {
-		bool to_do_check_if_spaces_okay; 
-		/*
+	if (new_name.IsEmpty()) {
+		MessageBox("Container name can't be empty.");
+	} else if (!stricmp(new_name, "<New Container Name>")) {
+		MessageBox("Invalid container name.");
+	} else {
 		// remove any spaces
 		if (strchr(new_name, ' ') != NULL) {
-			// display msg
 			MessageBox("Container names cannot contain spaces.  Replacing with hyphens.");
-
-			// replace chars
-			new_name.Replace((TCHAR) ' ', (TCHAR) '-');
+			new_name.Replace((TCHAR)' ', (TCHAR)'-');
 		}
-		*/
 
-		// remove any ampersands too
 		if (strchr(new_name, '&') != NULL) {
-			// display msg
 			MessageBox("Container names cannot contain &.  Replacing with hyphens.");
-
-			// replace chars
-			new_name.Replace((TCHAR) '&', (TCHAR) '-');
+			new_name.Replace((TCHAR)'&', (TCHAR)'-');
 		}
 
-		//not already in list and length > 0
-		if (!new_name.IsEmpty() && !is_container_name_in_use(LPCTSTR(new_name))) {
-			name_validated = true;
-		} else {
-			// conflicting container name
-			name_validated = false;
+		// TODO: ensure it's ok to leave the container's current name unchanged
+		if (is_container_name_in_use(LPCTSTR(new_name))) {
 			MessageBox("Conflicting container name. A container with this name already exists");
+		} else {
+			name_validated = true;
 		}
 	}
-	else {
-		// name unchanged from default
-		name_validated = false;
-		MessageBox("Invalid container name. Please write a name in the box above then click Add Container.");
-	}
 
-	return name_validated; 
+	return name_validated;
 }
 
 BOOL CEditContainerDlg::is_valid_number(SCP_string test_string) {
