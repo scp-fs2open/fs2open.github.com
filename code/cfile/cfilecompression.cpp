@@ -143,7 +143,7 @@ void lz41_load_offsets(CFILE* cf)
 	int block;
 	int* offsets_ptr = cf->compression_info.offsets;
 
-	Assertion(cf->compression_info.num_offsets * sizeof(int) <= max_blocks, "The number of offsets cant be higher than max possible blocks(size/blocksize), compressed file is possibly in the wrong format or corrupted.");
+	Assertion(cf->compression_info.num_offsets * (int)sizeof(int) <= max_blocks, "The number of offsets cant be higher than max possible blocks(size/blocksize), compressed file is possibly in the wrong format or corrupted.");
 
 	/* Seek to the first offset position, remember to consider the trailing ints */
 	fso_fseek(cf, ( ( sizeof(int) * cf->compression_info.num_offsets ) * -1 ) - (sizeof(int)*3 ), SEEK_END);
