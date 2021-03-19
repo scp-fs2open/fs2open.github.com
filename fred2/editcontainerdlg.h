@@ -84,8 +84,8 @@ protected:
 
 	void add_container_entry(int insert_index);
 
-	bool is_container_name_in_use(const char *text) const;
-	BOOL is_container_name_valid(CString &new_name);
+	bool is_container_name_in_use(const char *text, bool ignore_current) const;
+	BOOL is_container_name_valid(CString &new_name, bool is_rename);
 	//BOOL is_data_valid();
 	BOOL is_valid_number(SCP_string test_string);
 

@@ -109,7 +109,15 @@ BOOL CEditContainerDlg::OnInitDialog()
 }
 
 void CEditContainerDlg::set_selected_container()
-{	
+{
+	if (m_current_container != -1) {
+		CComboBox* cbox = (CComboBox*)GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
+		Assert(!edit_sexp_containers.empty());
+		Assert(cbox->GetCount() == (int)edit_sexp_containers.size());
+		Assert(m_current_container < cbox->GetCount());
+		cbox->SetCurSel(m_current_container);
+	}
+
 	update_type_controls();
 	update_data_entry_controls();
 	set_container_type(); 
@@ -260,20 +268,28 @@ void CEditContainerDlg::OnEditchangeContainerName()
 {
 	CString new_name;
 
+
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
-	// TODO: how could this value be different from m_current_container?
-	const int selected_container = cbox->GetCurSel();
+	Assert(cbox->IsWindowEnabled());
+	Assert(cbox->GetCount() > 0);
+	Assert(!edit_sexp_containers.empty());
+	Assert(m_current_container >= 0);
 	cbox->GetWindowText(new_name);
 
-	if (is_container_name_valid(new_name)) {
-		edit_sexp_containers[selected_container].container_name = new_name; 
+	auto &container = get_current_container();
+	if (is_container_name_valid(new_name, true)) {
+		container.container_name = new_name;
 	}
+	// since container name validation can change the name, always update the UI
+	cbox->SetWindowText(container.container_name.c_str());
 }
 
-bool CEditContainerDlg::is_container_name_in_use(const char *text) const
+bool CEditContainerDlg::is_container_name_in_use(const char *text, bool ignore_current) const
 {
-	for (const auto &container : edit_sexp_containers) {
-		if (!stricmp(container.container_name.c_str(), text)) {
+	for (int i = 0; i < (int)edit_sexp_containers.size(); ++i) {
+		if (ignore_current && (m_current_container == i)) {
+			continue;
+		} else if (!stricmp(edit_sexp_containers[i].container_name.c_str(), text)) {
 			return true;
 		}
 	}
@@ -281,7 +297,7 @@ bool CEditContainerDlg::is_container_name_in_use(const char *text) const
 	return false;
 }
 
-BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
+BOOL CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_rename)
 {
 	bool name_validated = false;	// assume invalid until proved wrong
 
@@ -301,8 +317,7 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name)
 			new_name.Replace((TCHAR)'&', (TCHAR)'-');
 		}
 
-		// TODO: ensure it's ok to leave the container's current name unchanged
-		if (is_container_name_in_use(LPCTSTR(new_name))) {
+		if (is_container_name_in_use(LPCTSTR(new_name), is_rename)) {
 			MessageBox("Conflicting container name. A container with this name already exists");
 		} else {
 			name_validated = true;
@@ -694,7 +709,7 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 
 	CString temp_name = dlg.m_new_container_name; 
 
-	if (!is_container_name_valid(temp_name)) {	
+	if (!is_container_name_valid(temp_name, false)) {
 		return; 
 	}
 
