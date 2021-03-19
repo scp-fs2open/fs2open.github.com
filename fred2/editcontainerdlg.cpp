@@ -164,7 +164,7 @@ void CEditContainerDlg::OnTypeList()
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_list()) {
-		container.set_to_list();
+		container.set_to_list(false);
 		update_type_controls();
 	}
 }
@@ -175,7 +175,9 @@ void CEditContainerDlg::OnTypeMap()
 	Assert(container.empty());
 	if (!container.is_map()) {
 		container.set_to_map();
-		container.type |= SEXP_CONTAINER_STRING_KEYS;
+		if (!(container.type & SEXP_CONTAINER_NUMBER_KEYS)) {
+			container.type |= SEXP_CONTAINER_STRING_KEYS;
+		}
 
 		update_type_controls();
 		set_key_type();
@@ -235,6 +237,7 @@ void CEditContainerDlg::set_key_type()
 	Assert(container.is_map());
 	const bool number_keys_selected = container.type & SEXP_CONTAINER_NUMBER_KEYS;
  	const bool string_keys_selected = container.type & SEXP_CONTAINER_STRING_KEYS;
+	Assert((int)number_keys_selected ^ (int)string_keys_selected);
 	
 	button_number->SetCheck(number_keys_selected);
 	button_string->SetCheck(string_keys_selected);

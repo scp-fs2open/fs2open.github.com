@@ -1209,14 +1209,16 @@ struct sexp_container
 		return type & SEXP_CONTAINER_LIST;
 	}
 
-	void set_to_list()
+	void set_to_list(bool clear_key_type)
 	{
 		if (is_list()) {
 			return;
 		}
 
 		type &= ~SEXP_CONTAINER_MAP;
-		type &= ~(SEXP_CONTAINER_STRING_KEYS | SEXP_CONTAINER_NUMBER_KEYS);
+		if (clear_key_type) {
+			type &= ~(SEXP_CONTAINER_STRING_KEYS | SEXP_CONTAINER_NUMBER_KEYS);
+		}
 		type |= SEXP_CONTAINER_LIST;
 	}
 
