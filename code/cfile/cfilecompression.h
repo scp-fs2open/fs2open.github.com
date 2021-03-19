@@ -1,7 +1,14 @@
 /*
 ShivanSpS - Compressed files support for FSO. Many thanks to ngld, taylor and everyone elsewho helped me in getting this done.
 
--The file header is a version, this is used to tell FSO how to decompress that file, always use 4 chars to mantain alignment, it is stored at the start of the file.
+-The file header is a version, this is used to tell FSO how to decompress that file, always use 4 chars to mantain alignment.
+-The header ID can be used to add diferent revisions to LZ41 decompression system or to add other compression format supports whiout breaking compatibility.
+-The system uses a offset list to record the position of every block in file, this list, along with the number of offsets, original filesize,
+and block size, must be written by the compressor app.
+-A decoder cache is used to store the last decoded block, this ensures each block is read and decoded only once in sequential reads. This cache
+is a little bit bigger than the block size, a higher block size means less overhead added to the file, but it also means a little more ram will
+be used during decompression.
+-All this dynamic memory is assigned at cfopen() and it is cleared on cfclose().
 
 ................................char[4]..........(n ints)...(int)..........(int)..........(int)
 -COMPRESSED FILE DATA STUCTURE: HEADER|N BLOCKS|N OFFSETS|NUM_OFFSETS|ORIGINAL_FILESIZE|BLOCK_SIZE
