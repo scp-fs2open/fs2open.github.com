@@ -182,7 +182,6 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
-	{ "pierce ships",					Weapon::Info_Flags::Pierce_ships,						true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -1752,6 +1751,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		else
 		{
 			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
+		}
+	}
+
+	if (optional_string("$Pierce Objects:")) {
+		stuff_boolean(&wip->pierce_objects);
+
+		if (optional_string("+Spawn Childs On Hit:")) {
+			stuff_boolean(&wip->spawn_childs_on_pierce);
 		}
 	}
 
@@ -6859,15 +6866,17 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	// spawn weapons - note the change from FS 1 multiplayer.
-	if (wip->wi_flags[Weapon::Info_Flags::Spawn]){
-		if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
-			spawn_child_weapons(weapon_obj);
+	if (!wip->pierce_objects || wip->spawn_childs_on_pierce || other_obj) {
+		// spawn weapons - note the change from FS 1 multiplayer.
+		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
+			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+				spawn_child_weapons(weapon_obj);
+			}
 		}
 	}
 
 	//No other_obj means this weapon detonates
-	if (wip->wi_flags[Weapon::Info_Flags::Pierce_ships] && other_obj)
+	if (wip->pierce_objects && other_obj)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
@@ -8263,6 +8272,9 @@ void weapon_info::reset()
 	this->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1
 	this->WeaponMinRange = 0.0f;
+
+	this->pierce_objects = false;
+	this->spawn_childs_on_pierce = false;
 
 	this->num_spawn_weapons_defined = 0;
 	this->maximum_children_spawned = 0;

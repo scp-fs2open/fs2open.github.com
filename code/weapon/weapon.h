@@ -344,6 +344,9 @@ struct weapon_info
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
+	bool pierce_objects;
+	bool spawn_childs_on_pierce;
+
     // spawn weapons
     int num_spawn_weapons_defined;
     int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi

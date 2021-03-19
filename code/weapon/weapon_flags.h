@@ -86,7 +86,6 @@ namespace Weapon {
 		No_impact_spew,						// Goober5000
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
-		Pierce_ships,						// This flag will allow Weapons to pierce throug ship. They'll still do damage but won't despawn
 
         NUM_VALUES
 	};
