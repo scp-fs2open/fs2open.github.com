@@ -1054,6 +1054,7 @@
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
+#define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
 #define IDC_PATH_LIST                   1585
 #define IDC_BACKGROUND                  1586

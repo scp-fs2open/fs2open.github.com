@@ -888,6 +888,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="toggleChaseViewStart">
+          <property name="text">
+           <string>Player Starts in Chase View</string>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="toggle2DMission">
           <property name="text">
            <string>2D Mission</string>
