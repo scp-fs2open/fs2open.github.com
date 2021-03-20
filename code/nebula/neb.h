@@ -40,6 +40,17 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
+#define NEB_FOG_VISIBILITY_MULT_TRAIL			1.0f
+#define NEB_FOG_VISIBILITY_MULT_THRUSTER		1.5f
+#define NEB_FOG_VISIBILITY_MULT_WEAPON			1.3f
+#define NEB_FOG_VISIBILITY_MULT_SHIELD			1.2f
+#define NEB_FOG_VISIBILITY_MULT_GLOWPOINT		1.2f
+#define NEB_FOG_VISIBILITY_MULT_BEAM(size)		4.0f + (size / 10)
+#define NEB_FOG_VISIBILITY_MULT_B_MUZZLE(size)  NEB_FOG_VISIBILITY_MULT_BEAM(size)
+#define NEB_FOG_VISIBILITY_MULT_PARTICLE(size)  1.0f + (size / 12)
+#define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
+#define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
+
 #define MAX_NEB2_POOFS				32
 
 // poof names and flags (for fred)
@@ -117,11 +128,14 @@ void neb2_eye_changed();
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *obj = NULL);
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
 
-// given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_intensity(object *obj);
-float neb2_get_fog_intensity(vec3d *pos);
+// given an object, returns 0 - 1 the fog visibility of its center, 0 = completely obscured
+float neb2_get_fog_visibility(object *obj);
+
+// given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
+float neb2_get_fog_visibility (vec3d* pos, float distance_mult);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);
