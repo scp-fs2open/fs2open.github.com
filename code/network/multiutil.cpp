@@ -3522,25 +3522,25 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, physics_info 
 		f = vm_vec_dot( &orient->vec.fvec, &pi->vel );
 
 		// Cyborg17 - using round here allows us keep part of the decimal accuracy that would have been dropped with just fl2i
-		a = fl2i(round(r * 2.0f)); 
-		b = fl2i(round(u * 2.0f));
-		c = fl2i(round(f * 4.0f));
-		CAP(a,-512,511);
-		CAP(b,-512,511);
-		CAP(c,-2048,2047);
-		bitbuffer_put( &buf, (uint)a, 10 );
-		bitbuffer_put( &buf, (uint)b, 10 );
-		bitbuffer_put( &buf, (uint)c, 12 );
+		a = fl2i(round(r * 16.0f)); 
+		b = fl2i(round(u * 16.0f));
+		c = fl2i(round(f * 32.0f));
+		CAP(a,-2048,2047);
+		CAP(b,-2048,2047);
+		CAP(c,-4096,4095);
+		bitbuffer_put( &buf, (uint)a, 13 );
+		bitbuffer_put( &buf, (uint)b, 13 );
+		bitbuffer_put( &buf, (uint)c, 14 );
 
 		return bitbuffer_write_flush(&buf);
 	} else {
 		// unpack velocity
-		a = bitbuffer_get_signed(&buf,10);
-		b = bitbuffer_get_signed(&buf,10);
-		c = bitbuffer_get_signed(&buf,12);
-		r = i2fl(a)/2.0f;
-		u = i2fl(b)/2.0f;
-		f = i2fl(c)/4.0f;
+		a = bitbuffer_get_signed(&buf,13);
+		b = bitbuffer_get_signed(&buf,13);
+		c = bitbuffer_get_signed(&buf,14);
+		r = i2fl(a)/16.0f;
+		u = i2fl(b)/16.0f;
+		f = i2fl(c)/32.0f;
 
 		// Convert into world coordinates
 		vm_vec_zero(&pi->vel);
