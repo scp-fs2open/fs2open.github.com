@@ -486,11 +486,13 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center = false);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment

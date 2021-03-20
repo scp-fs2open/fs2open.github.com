@@ -63,11 +63,11 @@ static size_t Parse_text_size = 0;
 //	Return true if this character is white space, else false.
 int is_white_space(char ch)
 {
-	return ((ch == ' ') || (ch == '\t') || (ch == EOLN));
+	return ((ch == ' ') || (ch == '\t') || (ch == EOLN) || (ch == CARRIAGE_RETURN));
 }
 int is_white_space(unicode::codepoint_t cp)
 {
-	return ((cp == UNICODE_CHAR(' ')) || (cp == UNICODE_CHAR('\t')) || (cp == (unicode::codepoint_t)EOLN));
+	return ((cp == UNICODE_CHAR(' ')) || (cp == UNICODE_CHAR('\t')) || (cp == (unicode::codepoint_t)EOLN) || (cp == (unicode::codepoint_t)CARRIAGE_RETURN));
 }
 
 // Returns true if this character is gray space, else false (gray space is white space except for EOLN).

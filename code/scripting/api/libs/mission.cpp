@@ -705,26 +705,27 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 
-	//Remember, Lua indices start at 0.
+	//Remember, Lua indices start at 1.
 	int count = 1;
 
-	for (int i = 0; i < MAX_FIREBALLS; i++)
-	{
-		if (Fireballs[i].fireball_info_index < 0 || Fireballs[i].objnum < 0 || Objects[Fireballs[i].objnum].type != OBJ_FIREBALL)
+	for (auto& current_fireball : Fireballs) {
+		if (current_fireball.fireball_info_index < 0 || current_fireball.objnum < 0 || Objects[current_fireball.objnum].type != OBJ_FIREBALL)
 			continue;
 
 		if (count == idx) {
-			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[Fireballs[i].objnum])));
+			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[current_fireball.objnum])));
 		}
 
 		count++;
+
 	}
 
 	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	return ade_set_args(L, "i", Num_fireballs);
+	int count = fireball_get_count();
+	return ade_set_args(L, "i", count);
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
