@@ -82,15 +82,15 @@ BOOL CEditContainerDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//grab the existing list of containers and duplicate it. We only update it if the user clicks OK. 
-	edit_sexp_containers = Sexp_containers;
+	m_containers = Sexp_containers;
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
 
 	// do we already have any containers defined? 
-	if (!edit_sexp_containers.empty()) {
+	if (has_containers()) {
 		cbox->EnableWindow(true); 
-		for (const auto &container : edit_sexp_containers) {
+		for (const auto &container : m_containers) {
 			cbox->AddString(container.container_name.c_str()); 
 		}
 		m_current_container = 0;
@@ -112,8 +112,8 @@ void CEditContainerDlg::set_selected_container()
 {
 	if (m_current_container != -1) {
 		CComboBox* cbox = (CComboBox*)GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
-		Assert(!edit_sexp_containers.empty());
-		Assert(cbox->GetCount() == (int)edit_sexp_containers.size());
+		Assert(has_containers());
+		Assert(cbox->GetCount() == num_containers());
 		Assert(m_current_container < cbox->GetCount());
 		cbox->SetCurSel(m_current_container);
 	}
@@ -141,8 +141,8 @@ void CEditContainerDlg::OnOK()
 	//	}
 	//}
 
-	Sexp_containers = std::move(edit_sexp_containers); 
-	edit_sexp_containers.clear();
+	Sexp_containers = std::move(m_containers);
+	m_containers.clear();
 	CDialog::OnOK();
 }
 
@@ -272,7 +272,7 @@ void CEditContainerDlg::OnEditchangeContainerName()
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	Assert(cbox->IsWindowEnabled());
 	Assert(cbox->GetCount() > 0);
-	Assert(!edit_sexp_containers.empty());
+	Assert(has_containers());
 	Assert(m_current_container >= 0);
 	cbox->GetWindowText(new_name);
 
@@ -286,10 +286,10 @@ void CEditContainerDlg::OnEditchangeContainerName()
 
 bool CEditContainerDlg::is_container_name_in_use(const char *text, bool ignore_current) const
 {
-	for (int i = 0; i < (int)edit_sexp_containers.size(); ++i) {
+	for (int i = 0; i < num_containers(); ++i) {
 		if (ignore_current && (m_current_container == i)) {
 			continue;
-		} else if (!stricmp(edit_sexp_containers[i].container_name.c_str(), text)) {
+		} else if (!stricmp(m_containers[i].container_name.c_str(), text)) {
 			return true;
 		}
 	}
@@ -405,8 +405,8 @@ void CEditContainerDlg::OnListerSelectionChange()
 
 void CEditContainerDlg::OnContainerAdd()
 {
-	Assert(!edit_sexp_containers.empty());
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(has_containers());
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
 	if (!edit_boxes_have_valid_data()) {
 		return;
@@ -472,8 +472,8 @@ void CEditContainerDlg::add_container_entry(const int insert_index)
 
 void CEditContainerDlg::OnContainerRemove()
 {
-	Assert(!edit_sexp_containers.empty());
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(has_containers());
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
 	Assert(!get_current_container().empty());
 
 	auto &container = get_current_container();
@@ -497,8 +497,8 @@ void CEditContainerDlg::OnContainerRemove()
 
 void CEditContainerDlg::OnContainerUpdate()
 {
-	Assert(!edit_sexp_containers.empty());
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(has_containers());
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
 	Assert(!get_current_container().empty());
 
 	if (!data_edit_box_has_valid_data()) {
@@ -622,7 +622,7 @@ void CEditContainerDlg::update_type_controls()
 
 void CEditContainerDlg::update_data_entry_controls()
 {
-	const bool has_container = !edit_sexp_containers.empty();
+	const bool has_container = has_containers();
 	const auto &container = get_current_container();
 	const bool container_empty = container.empty();
 	const bool map_selected = container.is_map();
@@ -646,7 +646,7 @@ void CEditContainerDlg::update_data_lister()
 	m_lister_keys.clear();
 
 	// Data is displayed in one of two ways depending on container type
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
 	const auto &container = get_current_container();
 
@@ -713,8 +713,8 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 		return; 
 	}
 
-	edit_sexp_containers.emplace_back(); 
-	auto &new_container = edit_sexp_containers.back();
+	m_containers.emplace_back(); 
+	auto &new_container = m_containers.back();
 	
 	const auto &container = get_current_container();
 	new_container.type = container.type;
@@ -722,13 +722,13 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 
 	// add the new container to the list of containers combo box and make it the selected option
 	cbox->AddString(temp_name); 
-	m_current_container = (int)edit_sexp_containers.size() - 1;
+	m_current_container = num_containers() - 1;
 	cbox->SetCurSel(m_current_container);
 
 	update_data_lister();  
 
 	// in case this is the first container
-	if (edit_sexp_containers.size() == 1) {
+	if (num_containers() == 1) {
 		cbox->EnableWindow(true);
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
 	}
@@ -743,58 +743,58 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 //
 //	Assert(m_current_container >= 0);
 //
-//	edit_sexp_containers[m_current_container].type = 0;
+//	m_containers[m_current_container].type = 0;
 //
 //	if (m_type_map) {
-//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_MAP;
+//		m_containers[m_current_container].type |= SEXP_CONTAINER_MAP;
 //
 //		if (m_key_type_number) {
-//			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_KEYS;
+//			m_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_KEYS;
 //		} else {
-//			edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_KEYS;
+//			m_containers[m_current_container].type |= SEXP_CONTAINER_STRING_KEYS;
 //		}
 //
-//		// write the raw data into edit_sexp_containers
+//		// write the raw data into m_containers
 //		Assertion(raw_data.size() % 2 == 0, "Invalid size for map type");
-//		edit_sexp_containers[m_current_container].map_data.clear();
+//		m_containers[m_current_container].map_data.clear();
 //
 //		for (int i = 0; i < (int)raw_data.size(); i = i + 2) {
-//			edit_sexp_containers[m_current_container].map_data.insert(
+//			m_containers[m_current_container].map_data.insert(
 //				std::pair<SCP_string, SCP_string>(raw_data[i], raw_data[i + 1]));
 //		}
 //	} else {
-//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_LIST;
-//		edit_sexp_containers[m_current_container].list_data.clear();
+//		m_containers[m_current_container].type |= SEXP_CONTAINER_LIST;
+//		m_containers[m_current_container].list_data.clear();
 //
-//		// write the raw data into edit_sexp_containers
+//		// write the raw data into m_containers
 //		for (int i = 0; i < (int)raw_data.size(); i++) {
-//			edit_sexp_containers[m_current_container].list_data.push_back(raw_data[i]);
+//			m_containers[m_current_container].list_data.push_back(raw_data[i]);
 //		}
 //	}
 //
 //	if (m_type_number) {
-//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_DATA;
+//		m_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_DATA;
 //	} else {
-//		edit_sexp_containers[m_current_container].type |= SEXP_CONTAINER_STRING_DATA;
+//		m_containers[m_current_container].type |= SEXP_CONTAINER_STRING_DATA;
 //	}
 //
 //	return true;
 //}
 void CEditContainerDlg::OnBnClickedDeleteContainer()
 {
-	Assert(!edit_sexp_containers.empty()); 
-	Assert(m_current_container >= 0 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(has_containers()); 
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
 	char buffer[256]; 
 
-	const int times_used = m_p_sexp_tree->get_container_count(edit_sexp_containers[m_current_container].container_name.c_str()); 
+	const int times_used = m_p_sexp_tree->get_container_count(m_containers[m_current_container].container_name.c_str()); 
 	if (times_used > 0) {
-		sprintf(buffer, "Container %s is used in %d events. Please edit those uses out first, then delete the container.", edit_sexp_containers[m_current_container].container_name.c_str(), times_used); 
+		sprintf(buffer, "Container %s is used in %d events. Please edit those uses out first, then delete the container.", m_containers[m_current_container].container_name.c_str(), times_used); 
 		MessageBox(buffer);
 		return;
 	}
 
-	sprintf(buffer, "This will delete the %s container. Are you sure?", edit_sexp_containers[m_current_container].container_name.c_str()); 
+	sprintf(buffer, "This will delete the %s container. Are you sure?", m_containers[m_current_container].container_name.c_str()); 
 
 	const int ret = MessageBox(buffer, "Delete?", MB_OKCANCEL | MB_ICONEXCLAMATION);
 
@@ -803,20 +803,20 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 	}
 
 	// prevent sudden change in type selection buttons
-	if (edit_sexp_containers.size() == 1) {
+	if (num_containers() == 1) {
 		Assert(m_current_container == 0);
-		const auto &last_container = edit_sexp_containers.front();
+		const auto &last_container = m_containers.front();
 		m_dummy_container.type = last_container.type;
 		m_dummy_container.opf_type = last_container.opf_type;
 	}
 
-	edit_sexp_containers.erase(edit_sexp_containers.begin() + m_current_container);
+	m_containers.erase(m_containers.begin() + m_current_container);
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->DeleteString((int)cbox->GetCurSel()); 
 
 	//maybe de-activate the delete container button
-	if (edit_sexp_containers.empty()) {
+	if (m_containers.empty()) {
 		m_current_container = -1; 
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);	
 	} else {
@@ -837,8 +837,8 @@ void CEditContainerDlg::update_text_edit_boxes(const SCP_string &key, const SCP_
 
 sexp_container &CEditContainerDlg::get_current_container()
 {
-	Assert(m_current_container >= -1 && m_current_container < (int)edit_sexp_containers.size());
+	Assert(m_current_container >= -1 && m_current_container < num_containers());
 
-	return m_current_container < 0 ? m_dummy_container : edit_sexp_containers[m_current_container];
+	return m_current_container < 0 ? m_dummy_container : m_containers[m_current_container];
 }
 

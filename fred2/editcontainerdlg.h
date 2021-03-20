@@ -100,9 +100,11 @@ public:
 	afx_msg void OnBnClickedDeleteContainer();
 
 private:
+	bool has_containers() const { return !m_containers.empty(); }
+	int num_containers() const { return (int)m_containers.size(); }
 	sexp_container &get_current_container();
 
-	SCP_vector<sexp_container> edit_sexp_containers;
+	SCP_vector<sexp_container> m_containers;
 	sexp_container m_dummy_container; // used as placeholder when there are no containers
 	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
 	int			m_current_container = -1;
