@@ -57,6 +57,7 @@
 #include "missionui/missiondebrief.h"
 #include "network/multi_log.h"
 #include "weapon/emp.h"
+#include "weapon/muzzleflash.h"
 #include "network/multi_kick.h"
 #include "cmdline/cmdline.h"
 #include "weapon/flak.h"
@@ -74,6 +75,7 @@
 #include "network/multi_sw.h"
 #include "network/multi_sexp.h"
 #include "network/multi_mdns.h"
+#include "mission/missiongoals.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -8330,6 +8332,14 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	else if((store_flags & MEF_DIRECTIVE_SPECIAL) && !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
 	}	
+
+	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time) {
+		Mission_events[u_event].satisfied_time = Missiontime;
+		if ( Mission_events[u_event].objective_text ) {
+			mission_event_set_completion_sound_timestamp();
+		}
+	}
+
 }
 
 // Karajorma - Sends a packet to all clients telling them that a SEXP variable has changed its value
@@ -8551,7 +8561,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		}
 
 		// create a muzzle flash from a flak gun based upon firing position and weapon type
-		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
+		mflash_create(&pos, &dir, &objp->phys_info, Weapon_info[wid].muzzle_flash);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
 		flak_set_range(&Objects[weapon_objnum], (float)flak_range);

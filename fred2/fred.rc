@@ -438,7 +438,7 @@ BEGIN
     POPUP "Edit sexp tree"
     BEGIN
         MENUITEM "&Delete Item\tDelete",        ID_DELETE
-        MENUITEM "&Edit Data",                  ID_EDIT_TEXT
+        MENUITEM "&Edit Data\tSpace Bar",       ID_EDIT_TEXT
         MENUITEM "Expand All",                  ID_EXPAND_ALL
         MENUITEM SEPARATOR
         MENUITEM "Edit Comment",                ID_EDIT_COMMENT, GRAYED

@@ -5411,6 +5411,10 @@ static void parse_ship_type(const char *filename, const bool replace)
 		if(optional_string("+Ignored on cripple by:")) {
 			stuff_string_list(stp->ai_cripple_ignores_temp); 
 		}
+
+		if (optional_string("+Targeted by 'Huge' weapons and Ignored by 'small only' weapons:")) {
+			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only);
+		}
 	}
 
 	if(optional_string("$Explosion Animations:"))
@@ -11891,11 +11895,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 								else
 								{
 									flak_set_range(&Objects[weapon_objnum], flak_range - winfo_p->untargeted_flak_range_penalty);
-								}
-
-								if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
-								{
-									flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, &obj->phys_info, swp->primary_bank_weapons[bank_to_fire]);
 								}
 							}
 							// create the muzzle flash effect
