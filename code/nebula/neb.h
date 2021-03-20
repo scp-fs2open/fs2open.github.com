@@ -40,6 +40,7 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
+#define NEB_FOG_VISIBILITY_MULT_TRAIL			1.0f
 #define NEB_FOG_VISIBILITY_MULT_THRUSTER		1.5f
 #define NEB_FOG_VISIBILITY_MULT_WEAPON			1.3f
 #define NEB_FOG_VISIBILITY_MULT_SHIELD			1.2f

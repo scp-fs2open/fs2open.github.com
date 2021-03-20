@@ -227,7 +227,7 @@ void trail_render( trail * trailp )
 		}
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb])
-			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], 1.0f));
+			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
 
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{
