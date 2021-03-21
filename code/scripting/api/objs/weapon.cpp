@@ -231,6 +231,7 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 		{
 			wp->homing_pos = vmd_zero_vector;
 		}
+
 		// need to update the position for multiplayer.
 		if (Game_mode & GM_MULTIPLAYER) {
 			wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_homing_update_needed);
@@ -273,6 +274,7 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 			wp->homing_pos = vmd_zero_vector;
 			wp->homing_subsys = NULL;
 		}
+
 		// need to update the position for multiplayer.
 		if (Game_mode & GM_MULTIPLAYER) {
 			wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_homing_update_needed);

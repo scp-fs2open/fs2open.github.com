@@ -7522,6 +7522,7 @@ void send_homing_weapon_info( int weapon_num )
 	// homing signature.
 	homing_signature = 0;
 	homing_object = wp->homing_object;
+
 	if ( homing_object != &obj_used_list ) {
 		homing_signature = homing_object->net_signature;
 
@@ -7545,7 +7546,7 @@ void send_homing_weapon_info( int weapon_num )
 
 	if (flags & HWIF_BIG_UPDATE) {
 		fix current_lifetime = Missiontime - wp->creation_time;
-		ADD_DATA(current_lifetime);
+		ADD_INT(current_lifetime);
 		ADD_VECTOR(Objects[wp->objnum].pos);
 		ADD_FLOAT(wp->launch_speed);
 		ADD_ORIENT(Objects[wp->objnum].orient);
@@ -7579,7 +7580,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	GET_VECTOR( homing_goal );
 
 	if (flags & HWIF_BIG_UPDATE) {
-		GET_DATA(missile_lifetime);
+		GET_INT(missile_lifetime);
 		GET_VECTOR(missile_pos);
 		GET_FLOAT(launch_speed);
 		GET_ORIENT(orient_in);
@@ -7588,15 +7589,18 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 
 	// deal with changing this weapons homing information
 	weapon_objp = multi_get_network_object( weapon_signature );
+
 	if ( weapon_objp == nullptr ) {
 		nprintf(("Network", "Couldn't find weapon object for homing update -- skipping update\n"));
 		return;
 	}
+
 	Assert( weapon_objp->type == OBJ_WEAPON );
 	wp = &Weapons[weapon_objp->instance];
 
 	// be sure that we can find these weapons and 
 	homing_object = multi_get_network_object( homing_signature );
+
 	if ( homing_object == nullptr ) {
 		wp->homing_object = &obj_used_list;
 		wp->homing_subsys = nullptr;
@@ -7622,6 +7626,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	wp->target_num = OBJ_INDEX(homing_object);
 	wp->target_sig = homing_object->signature;
 	wp->homing_pos = homing_goal;
+
 	if ( h_subsys != -1 ) {
 		Assert( homing_object->type == OBJ_SHIP );
 		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
