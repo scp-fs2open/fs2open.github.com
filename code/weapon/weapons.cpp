@@ -5160,7 +5160,7 @@ void weapon_process_post(object * obj, float frame_time)
 				}
 
 				if (MULTIPLAYER_MASTER) {
-					send_weapon_kill_packet(obj);
+					send_missile_kill_packet(obj);
 				}
 
 			} else {
