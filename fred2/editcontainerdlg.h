@@ -22,14 +22,13 @@ class CEditContainerDlg : public CDialog
 {
 // Construction
 public:
-	CEditContainerDlg(CWnd* pParent = NULL);   // standard constructor
+	CEditContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent = nullptr);
 	
 // Dialog Data
 	//{{AFX_DATA(CEditContainerDlg)
 	enum { IDD = IDD_EDIT_CONTAINER };
 
 	CListBox	m_container_data_lister;
-	sexp_tree	*m_p_sexp_tree;
 	//}}AFX_DATA
 
 	
@@ -104,6 +103,7 @@ private:
 	int num_containers() const { return (int)m_containers.size(); }
 	sexp_container &get_current_container();
 
+	const sexp_tree * const m_p_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
 	sexp_container m_dummy_container; // used as placeholder when there are no containers
 	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys

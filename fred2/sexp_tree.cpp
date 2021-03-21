@@ -1753,10 +1753,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	// Add Container
 	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
-		CEditContainerDlg dlg; 
-
-		// get pointer to tree
-		dlg.m_p_sexp_tree = this;
+		CEditContainerDlg dlg(this);
 
 		dlg.DoModal();
 
@@ -6898,7 +6895,7 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	return count; 
 }
 
-int sexp_tree::get_container_count(const char *container_name)
+int sexp_tree::get_container_count(const char *container_name) const
 {
 	uint idx;
 	int count = 0;

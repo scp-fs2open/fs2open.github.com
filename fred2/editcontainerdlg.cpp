@@ -25,10 +25,9 @@ static char THIS_FILE[] = __FILE__;
 // EditContainerDlg dialog
 
 
-CEditContainerDlg::CEditContainerDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CEditContainerDlg::IDD, pParent)
+CEditContainerDlg::CEditContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent /*=nullptr*/)
+	: CDialog(CEditContainerDlg::IDD, pParent), m_p_sexp_tree(p_sexp_tree)
 {
-
 	//{{AFX_DATA_INIT(CEditContainerDlg)
 	/*
 	m_default_value = _T("");
