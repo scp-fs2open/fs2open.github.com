@@ -1755,6 +1755,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Pierce Objects:")) {
+		stuff_boolean(&wip->pierce_objects);
+
+		if (optional_string("+Spawn Children On Pierce:")) {
+			stuff_boolean(&wip->spawn_children_on_pierce);
+		}
+	}
+
 	parse_wi_flags(wip, preset_wi_flags);
 
 	// preset_wi_flags does not need to be maintained after the above function is called
@@ -6818,40 +6826,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		other_objp = &Objects[so->objnum];
-		Assert(other_objp->instance != -1);
-        
-		shipp = &Ships[other_objp->instance];
-		Assert(shipp->ai_index != -1);
-        
-		ai_info	*aip = &Ai_info[shipp->ai_index];
-        
-		if (aip->target_objnum == objnum) {
-			set_target_objnum(aip, -1);
-			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
-			if (aip->resume_goal_time != -1)
-				aip->active_goal = AI_GOAL_NONE;
-		}
-        
-		if (aip->goal_objnum == objnum) {
-			aip->goal_objnum = -1;
-			aip->goal_signature = -1;
-		}
-        
-		if (aip->guard_objnum == objnum) {
-			aip->guard_objnum = -1;
-			aip->guard_signature = -1;
-		}
-        
-		if (aip->hitter_objnum == objnum) {
-			aip->hitter_objnum = -1;
-        }
-	}
-
-    weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
-
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
@@ -6893,12 +6867,52 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	// spawn weapons - note the change from FS 1 multiplayer.
-	if (wip->wi_flags[Weapon::Info_Flags::Spawn]){
-		if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
-			spawn_child_weapons(weapon_obj);
+	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !other_obj) {
+		// spawn weapons - note the change from FS 1 multiplayer.
+		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
+			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+				spawn_child_weapons(weapon_obj);
+			}
 		}
 	}
+
+	//No other_obj means this weapon detonates
+	if (wip->pierce_objects && other_obj)
+		return;
+
+	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		other_objp = &Objects[so->objnum];
+		Assert(other_objp->instance != -1);
+        
+		shipp = &Ships[other_objp->instance];
+		Assert(shipp->ai_index != -1);
+        
+		ai_info	*aip = &Ai_info[shipp->ai_index];
+        
+		if (aip->target_objnum == objnum) {
+			set_target_objnum(aip, -1);
+			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
+			if (aip->resume_goal_time != -1)
+				aip->active_goal = AI_GOAL_NONE;
+		}
+        
+		if (aip->goal_objnum == objnum) {
+			aip->goal_objnum = -1;
+			aip->goal_signature = -1;
+		}
+        
+		if (aip->guard_objnum == objnum) {
+			aip->guard_objnum = -1;
+			aip->guard_signature = -1;
+		}
+        
+		if (aip->hitter_objnum == objnum) {
+			aip->hitter_objnum = -1;
+        }
+	}
+
+    weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 	// decrement parent's number of active remote detonators if applicable
 	if (wip->wi_flags[Weapon::Info_Flags::Remote] && weapon_obj->parent >= 0 && (weapon_obj->parent < MAX_OBJECTS)) {
@@ -8265,6 +8279,9 @@ void weapon_info::reset()
 	this->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1
 	this->WeaponMinRange = 0.0f;
+
+	this->pierce_objects = false;
+	this->spawn_children_on_pierce = false;
 
 	this->num_spawn_weapons_defined = 0;
 	this->maximum_children_spawned = 0;
