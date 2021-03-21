@@ -338,17 +338,16 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_renam
 	return name_validated;
 }
 
-BOOL CEditContainerDlg::is_valid_number(SCP_string test_string) {
-	// verify valid number
-	int temp_num = atoi(test_string.c_str());
+bool CEditContainerDlg::is_valid_number(const char *test_str) const
+{
+	const int temp_num = atoi(test_str);
 	char buf[TOKEN_LENGTH];
-	sprintf(buf, "%d", temp_num); // TODO: use snprintf
-
-	if ( stricmp(buf, test_string.c_str()) ) {
+	const int ret = snprintf(buf, sizeof(buf), "%d", temp_num);
+	if (ret <= 0) {
 		return false;
-	} else {
-		return true; 
 	}
+	buf[ret] = '\0';
+	return !strcmp(buf, test_str);
 }
 
 
@@ -506,15 +505,21 @@ void CEditContainerDlg::OnContainerRemove()
 	update_data_lister();
 }
 
+// TODO: if the current container is a map, enable the Update button only when the value in the key edit box is one of the map keys
+
 void CEditContainerDlg::OnContainerUpdate()
 {
 	Assert(has_containers());
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
 	Assert(!get_current_container().empty());
 
-	if (!data_edit_box_has_valid_data()) {
+	if (!edit_boxes_have_valid_data()) {
 		return;
 	}
+
+	// TODO: for lists, enable Update button only when an item in the list is selected
+	// TODO: for maps, enable Update (and disable Add) when the value in the key edit box is already a map key.
+	// Or maybe all this is more work than it's worth
 
 	const int index = m_container_data_lister.GetCurSel(); 
 
@@ -542,74 +547,72 @@ void CEditContainerDlg::OnContainerUpdate()
 	update_data_lister();
 }
 
-BOOL CEditContainerDlg::edit_boxes_have_valid_data()
+bool CEditContainerDlg::edit_boxes_have_valid_data()
 {
-	// if we are in list mode, check that the container data box has data in it. 
-	if (data_edit_box_has_valid_data()) {
-		// if we are in map mode we must check that key box has data and that the key doesn't match an existing key.
-		if (get_current_container().is_map()) {
-			if (!key_edit_box_has_valid_data()) {
-				return false;
-			}
-		}
+	if (!data_edit_box_has_valid_data()) {
+		return false;
 	}
-	else {
-		return false; 
+	if (get_current_container().is_map() && !key_edit_box_has_valid_data()) {
+		return false;
 	}
 
 	return true; 
 }
 
-BOOL CEditContainerDlg::key_edit_box_has_valid_data()
+bool CEditContainerDlg::key_edit_box_has_valid_data()
 {
+	Assert(has_containers());
+	Assert(m_current_container >= 0 && m_current_container < num_containers());
+	const auto& container = get_current_container();
+	Assert(container.is_map());
+
 	CEdit *key_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
 	CString key_str;
 	key_edit->GetWindowText(key_str);
 
-	const auto &container = get_current_container();
-
-	if (!key_str.IsEmpty()) {
-		const auto &map_data = container.map_data;
-		const auto count = std::count_if(map_data.cbegin(),
-			map_data.cend(),
-			[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
-				return !stricmp(map_entry.first.c_str(), key_str);
-			});
-		if (count > 0) {
-			MessageBox("This key already exists. You may not reuse keys in a SEXP map!");
-			return false;
-		}
-
-		if ((container.type & SEXP_CONTAINER_NUMBER_KEYS) && !is_valid_number(SCP_string(key_str))) {
-			Assert(container.is_map());
-			MessageBox("This key is not a valid number and this map container uses numeric keys!");
-			return false;
-		}
-
-		return true;
-	} else {
+	if (key_str.IsEmpty()) {
 		MessageBox("You have not entered a key!");
+		return false;
 	}
 
-	return false; 
+	const auto& map_data = container.map_data;
+	const auto count = std::count_if(map_data.cbegin(),
+		map_data.cend(),
+		[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
+			return !stricmp(map_entry.first.c_str(), key_str);
+		});
+
+	if (count > 0) {
+		MessageBox("This key already exists. You may not reuse keys in a SEXP map!");
+		return false;
+	}
+
+	if ((container.type & SEXP_CONTAINER_NUMBER_KEYS) && !is_valid_number(key_str)) {
+		Assert(container.is_map());
+		MessageBox("This key is not a valid number and this map container uses numeric keys!");
+		return false;
+	}
+
+	return true; 
 }
 
-BOOL CEditContainerDlg::data_edit_box_has_valid_data()
-{		
+bool CEditContainerDlg::data_edit_box_has_valid_data()
+{
 	CEdit *data_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
 	CString data_str;
 	data_edit->GetWindowText(data_str);
-	if (!data_str.IsEmpty()) {
-		if ((get_current_container().type & SEXP_CONTAINER_NUMBER_DATA) && !is_valid_number(SCP_string(data_str))) {
-			MessageBox("This data is not a valid number and this container uses numeric data!");
-			return false;
-		}
 
-		return true;
-	} else {
+	if (data_str.IsEmpty()) {
 		MessageBox("You have not entered any data!");
 		return false;
 	}
+
+	if ((get_current_container().type & SEXP_CONTAINER_NUMBER_DATA) && !is_valid_number(data_str)) {
+		MessageBox("This data is not a valid number and this container uses numeric data!");
+		return false;
+	}
+
+	return true;
 }
 
 void CEditContainerDlg::update_type_controls()

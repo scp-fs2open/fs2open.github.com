@@ -78,16 +78,16 @@ protected:
 	void update_text_edit_boxes(const SCP_string &key, const SCP_string &data);
 
 	//todo validate_*_boxws
-	BOOL edit_boxes_have_valid_data();
-	BOOL data_edit_box_has_valid_data();
-	BOOL key_edit_box_has_valid_data();
+	bool edit_boxes_have_valid_data();
+	bool data_edit_box_has_valid_data();
+	bool key_edit_box_has_valid_data();
 
 	void add_container_entry(int insert_index);
 
 	bool is_container_name_in_use(const char *text, bool ignore_current) const;
 	BOOL is_container_name_valid(CString &new_name, bool is_rename);
 	//BOOL is_data_valid();
-	BOOL is_valid_number(SCP_string test_string);
+	bool is_valid_number(const char *test_str) const;
 
 	//BOOL save_current_container();
 
