@@ -7568,7 +7568,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	vec3d missile_pos = vmd_zero_vector, homing_goal = vmd_zero_vector;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
-	matrix orient_in;
+	matrix orient_in = vmd_identity_matrix;
 
 	offset = HEADER_LENGTH;
 
