@@ -732,6 +732,7 @@ namespace joystick
 		_name.assign(SDL_JoystickName(_joystick));
 		_guidStr = getJoystickGUID(_joystick);
 		_id = SDL_JoystickInstanceID(_joystick);
+		_isHaptic = SDL_JoystickIsHaptic(_joystick);
 
 		// Initialize values of the axes
 		auto numSticks = SDL_JoystickNumAxes(_joystick);
@@ -931,11 +932,16 @@ namespace joystick
 	json_t* Joystick::getJSON() {
 		json_t* object;
 
-		object = json_pack("{s:s, s:s, s:i, s:i}",
-			"name", getName().c_str(),
-			"guid", getGUID().c_str(),
-			"id", static_cast<int>( getID() ),
-			"device", _device_id
+		object = json_pack("{s:s, s:s, s:i, s:i, s:i, s:i, s:i, s:i, s:b}",
+			"name", getName().c_str(),          // s:s
+			"guid", getGUID().c_str(),          // s:s
+			"id", static_cast<int>( getID() ),  // s:i
+			"device", _device_id,               // s:i
+			"num_axes", numAxes(),              // s:i
+			"num_balls", numBalls(),            // s:i
+			"num_buttons", numButtons(),        // s:i
+			"num_hats", numHats(),              // s:i
+			"is_haptic", _isHaptic              // s:b
 		);
 
 		return object;
@@ -1085,52 +1091,13 @@ namespace joystick
 		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 	}
 
-	SCP_vector<JoystickInformation> getJoystickInformations() {
-		SCP_vector<JoystickInformation> joystickInfo;
-
-		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
-			return SCP_vector<JoystickInformation>();
-		}
-
-		auto num_joysticks = SDL_NumJoysticks();
-		for (auto i = 0; i < num_joysticks; ++i) {
-			auto joystick = SDL_JoystickOpen(i);
-
-			JoystickInformation info{};
-
-			auto name = SDL_JoystickName(joystick);
-			if (name != nullptr) {
-				info.name = name;
-			}
-			info.guid = getJoystickGUID(joystick);
-
-			info.num_axes = static_cast<uint32_t>(SDL_JoystickNumAxes(joystick));
-			info.num_balls = static_cast<uint32_t>(SDL_JoystickNumBalls(joystick));
-			info.num_buttons = static_cast<uint32_t>(SDL_JoystickNumButtons(joystick));
-			info.num_hats = static_cast<uint32_t>(SDL_JoystickNumHats(joystick));
-
-			info.is_haptic = SDL_JoystickIsHaptic(joystick) == SDL_TRUE;
-
-			joystickInfo.push_back(info);
-
-			SDL_JoystickClose(joystick);
-		}
-
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-
-		return joystickInfo;
-	}
-
-	void printJoyJSON() {
+	json_t* getJsonArray() {
+		// Do a full init of the SDL_JOYSTICK systems
 		init();
 
-		json_t* root = json_object();
 		json_t* array = json_array();
 		size_t len = 0;
 
-		// Attach array to root
-		json_object_set_new(root, "joysticks", array);
-		
 		// Get the JSON info of each detected joystick and attach it to array
 		for (auto& joystick : joysticks) {
 			json_t* object = joystick->getJSON();
@@ -1141,10 +1108,10 @@ namespace joystick
 			}
 		}
 
-		// Dump to STDOUT
-		json_dumpf(root, stdout, JSON_INDENT(4));
-
+		// Do a full de-init of the SDL_JOYSTICK systems
 		shutdown();
+
+		return array;
 	}
 }
 }

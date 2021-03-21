@@ -1410,24 +1410,7 @@ static json_t* json_get_v1() {
 		json_object_set_new(root, "openal", openal_obj);
 	}
 	{
-		auto joystick_array = json_array();
-
-		auto joysticks = io::joystick::getJoystickInformations();
-		for (auto& info : joysticks) {
-			auto joystick_obj = json_object();
-
-			json_object_set_new(joystick_obj, "name", json_string(info.name.c_str()));
-			json_object_set_new(joystick_obj, "guid", json_string(info.guid.c_str()));
-
-			json_object_set_new(joystick_obj, "num_axes", json_integer(info.num_axes));
-			json_object_set_new(joystick_obj, "num_balls", json_integer(info.num_balls));
-			json_object_set_new(joystick_obj, "num_buttons", json_integer(info.num_buttons));
-			json_object_set_new(joystick_obj, "num_hats", json_integer(info.num_hats));
-
-			json_object_set_new(joystick_obj, "is_haptic", json_boolean(info.is_haptic));
-
-			json_array_append_new(joystick_array, joystick_obj);
-		}
+		auto joystick_array = io::joystick::getJsonArray();
 
 		json_object_set_new(root, "joysticks", joystick_array);
 	}
@@ -1528,11 +1511,6 @@ bool SetCmdlineParams()
 		write_flags();
 		
 		return false; 
-	}
-
-	if (joy_info.found()) {
-		io::joystick::printJoyJSON();
-		return false;
 	}
 
 	if (no_fpscap.found())
