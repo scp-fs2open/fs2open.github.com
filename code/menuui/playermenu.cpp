@@ -1450,7 +1450,7 @@ void player_finish_select(const char* callsign, bool is_multi) {
 
 	// now read in a the pilot data
 	if ( !Pilot.load_player(callsign, Player) ) {
-		Error(LOCATION,"Couldn't load pilot file, bailing");
+		Error(LOCATION,"Couldn't load pilot file for pilot \"%s\", bailing", callsign);
 		Player = nullptr;
 	} else {
 		// NOTE: this may fail if there is no current campaign, it's not fatal
