@@ -707,7 +707,7 @@ int cc_line_query_visible(int n)
  */
 void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 {
-	int sel;
+	int sel = -1;
 	switch (order) {
 		// Bind states. Saving covered by below
 		case selItem::Primary:
@@ -724,7 +724,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 
 		// Error
 		default:
-			UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", order);
+			UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", static_cast<int>(order));
 	}
 
 	// Save both bindings, because ::take() can clear the other binding if it is equal.
