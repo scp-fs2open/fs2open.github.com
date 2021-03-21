@@ -5158,6 +5158,7 @@ void weapon_process_post(object * obj, float frame_time)
 				if ( !MULTIPLAYER_CLIENT || (MULTIPLAYER_CLIENT && (wip->wi_flags[Weapon::Info_Flags::Child]))) {					// don't call this function multiplayer client -- host will send this packet to us
 					weapon_detonate(obj);					
 				}
+
 				if (MULTIPLAYER_MASTER) {
 					send_weapon_kill_packet(obj);
 				}
