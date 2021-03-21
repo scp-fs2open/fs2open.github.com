@@ -71,6 +71,7 @@ protected:
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
 
+	void update_controls();
 	void update_type_controls();
 	void update_data_entry_controls();
 	void update_data_lister();

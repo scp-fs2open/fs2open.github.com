@@ -117,8 +117,7 @@ void CEditContainerDlg::set_selected_container()
 		cbox->SetCurSel(m_current_container);
 	}
 
-	update_type_controls();
-	update_data_entry_controls();
+	update_controls();
 	set_container_type(); 
 	set_data_type();
 	if (get_current_container().is_map()) {
@@ -173,7 +172,7 @@ void CEditContainerDlg::OnTypeList()
 	Assert(container.empty());
 	if (!container.is_list()) {
 		container.set_to_list(false);
-		update_type_controls();
+		update_controls();
 	}
 }
 
@@ -187,7 +186,7 @@ void CEditContainerDlg::OnTypeMap()
 			container.type |= SEXP_CONTAINER_STRING_KEYS;
 		}
 
-		update_type_controls();
+		update_controls();
 		set_key_type();
 	}
 }
@@ -436,7 +435,7 @@ void CEditContainerDlg::OnContainerAdd()
 	}
 
 	if (container.size() == 1) {
-		update_data_entry_controls();
+		update_controls();
 	}
 
 	update_data_lister();
@@ -498,7 +497,7 @@ void CEditContainerDlg::OnContainerRemove()
 	}
 
 	if (container.empty()) {
-		update_data_entry_controls();
+		update_controls();
 	}
 
 	update_data_lister();
@@ -612,6 +611,12 @@ bool CEditContainerDlg::data_edit_box_has_valid_data()
 	}
 
 	return true;
+}
+
+void CEditContainerDlg::update_controls()
+{
+	update_type_controls();
+	update_data_entry_controls();
 }
 
 void CEditContainerDlg::update_type_controls()
