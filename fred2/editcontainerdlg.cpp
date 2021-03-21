@@ -279,9 +279,10 @@ void CEditContainerDlg::OnEditchangeContainerName()
 	auto &container = get_current_container();
 	if (is_container_name_valid(new_name, true)) {
 		container.container_name = new_name;
+	} else {
+		// restore unmodified name
+		cbox->SetWindowText(container.container_name.c_str());
 	}
-	// since container name validation can change the name, always update the UI
-	cbox->SetWindowText(container.container_name.c_str());
 }
 
 bool CEditContainerDlg::is_container_name_in_use(const char *text, bool ignore_current) const
@@ -307,14 +308,24 @@ BOOL CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_renam
 		MessageBox("Invalid container name.");
 	} else {
 		// remove any spaces
-		if (strchr(new_name, ' ') != NULL) {
-			MessageBox("Container names cannot contain spaces.  Replacing with hyphens.");
-			new_name.Replace((TCHAR)' ', (TCHAR)'-');
+		if (strchr(new_name, ' ') != nullptr) {
+			if (is_rename) {
+				MessageBox("Container names cannot contain spaces.");
+				return false;
+			} else {
+				MessageBox("Container names cannot contain spaces. Replacing with hyphens.");
+				new_name.Replace((TCHAR)' ', (TCHAR)'-');
+			}
 		}
 
-		if (strchr(new_name, '&') != NULL) {
-			MessageBox("Container names cannot contain &.  Replacing with hyphens.");
-			new_name.Replace((TCHAR)'&', (TCHAR)'-');
+		if (strchr(new_name, '&') != nullptr) {
+			if (is_rename) {
+				MessageBox("Container names cannot contain &.");
+				return false;
+			} else {
+				MessageBox("Container names cannot contain &. Replacing with hyphens.");
+				new_name.Replace((TCHAR)'&', (TCHAR)'-');
+			}
 		}
 
 		if (is_container_name_in_use(LPCTSTR(new_name), is_rename)) {
