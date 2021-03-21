@@ -3574,7 +3574,6 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, physics_info *pi)
 		bitbuffer_put( &buf, (uint)b, 10 );
 		bitbuffer_put( &buf, (uint)c, 10 );
 
-
 		return bitbuffer_write_flush(&buf);
 
 	} else {
@@ -3637,8 +3636,10 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 		if (pi->max_vel.xyz.y > 0.0f) {
 			e = fl2i(round( (local_desired_vel->xyz.y / pi->max_vel.xyz.y) * 7.0f));
 		}
-		float z_divisor = MAX(pi->afterburner_max_vel.xyz.z, pi->max_vel.xyz.z);
+
 		// for z velocity, take into account afterburner.
+		float z_divisor = MAX(pi->afterburner_max_vel.xyz.z, pi->max_vel.xyz.z);
+
 		if (z_divisor > 0.0f) {
 			f = fl2i(round( (local_desired_vel->xyz.z / z_divisor) * 255.0f));
 		}
@@ -3648,8 +3649,8 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 		CAP(f,-z_capfactor,z_capfactor);
 		bitbuffer_put( &buf, (uint)d,4);
 		bitbuffer_put( &buf, (uint)e,4);
-
 		bitbuffer_put( &buf, (uint)f,z_bitcount); // either 9 or 16 bits.
+
 		return bitbuffer_write_flush(&buf);
 
 	} else {
