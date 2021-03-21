@@ -295,8 +295,8 @@ void send_object_update_packet(int force_all = 0);
 // send a packet indicating a ship has been killed
 void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_killed, int self_destruct );
 
-// send a packet indicating that a weapon collided
-void send_weapon_kill_packet(object* objp);
+// send a packet indicating that a missile died.
+void send_missile_kill_packet(object* objp);
 
 void process_weapon_kill_packet(ubyte* data, header* hinfo);
 

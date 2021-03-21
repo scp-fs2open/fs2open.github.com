@@ -2702,21 +2702,21 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 
 constexpr int WK_FLAGS_WEAPON_WEAPON = (1<<0);
 
-//simply removes the weapon from existence on the client.
-void send_weapon_kill_packet(object* objp)
+// simply removes a missile from existence on the client.
+void send_missile_kill_packet(object* objp)
 {
 	Assert(objp != nullptr);
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(MULTIPLAYER_MASTER);
 
-	if (objp == nullptr || objp->type != OBJ_WEAPON || MULTIPLAYER_CLIENT) {
+	if (objp == nullptr || objp->type != OBJ_WEAPON || MULTIPLAYER_CLIENT || !(Weapon_info[Weapons[objp->instance].weapon_info_index].subtype & WP_MISSILE)) {
 		return;
 	}
 
 	ubyte data[MAX_PACKET_SIZE], flags = 0;
 	int packet_size;
 	
-	BUILD_HEADER(WEAPON_KILL);
+	BUILD_HEADER(MISSILE_KILL);
 
 	ADD_USHORT(objp->net_signature);
 	if (objp->instance > -1) {
@@ -2746,7 +2746,7 @@ void process_weapon_kill_packet(ubyte *data, header *hinfo )
 	object* missile = multi_get_network_object(missile_net_signature);
 
 	// make sure it's valid before implementing.
-	if (missile == nullptr || missile->type != OBJ_WEAPON || missile->instance < 0) {
+	if (missile == nullptr || missile->type != OBJ_WEAPON || missile->instance < 0 || !(Weapon_info[Weapons[missile->instance].weapon_info_index].subtype & WP_MISSILE)) {
 		return;
 	}
 	
@@ -2755,18 +2755,14 @@ void process_weapon_kill_packet(ubyte *data, header *hinfo )
 		Weapons[missile->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 	}
 	
-	Weapons[missile->instance].lifeleft = -1.0f;
+	// kill the missile! 
 	if (Weapon_info[Weapons[missile->instance].weapon_info_index].weapon_hitpoints > 0.0f) {
 		missile->hull_strength = -1.0f;
 	}
 
-	// kill the weapon!
-	if (Weapon_info[Weapons[missile->instance].weapon_info_index].subtype & WP_MISSILE) {
-		weapon_detonate(missile);
-	}
-	else {
-		missile->flags.set(Object::Object_Flags::Should_be_dead);
-	}
+	weapon_detonate(missile);
+	missile->flags.set(Object::Object_Flags::Should_be_dead);
+	Weapons[missile->instance].lifeleft = -1.0f;
 }
 
 // send a packet indicating a ship should be created
