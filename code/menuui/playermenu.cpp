@@ -413,6 +413,12 @@ void player_select_do()
 	gr_set_bitmap(Player_select_background_bitmap);
 	gr_bitmap(0,0,GR_RESIZE_MENU);
 
+	//skip this if pilot is given through cmdline, assuming single-player
+	if (Cmdline_pilot) {
+		player_finish_select(Cmdline_pilot, false);
+		return;
+	}
+
 	// press the accept button
 	if (Player_select_autoaccept) {
 		Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button.press_button();
