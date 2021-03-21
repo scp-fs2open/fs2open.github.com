@@ -7561,11 +7561,11 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 {
 	ubyte flags;
 	int offset;
-	fix missile_lifetime;
+	fix missile_lifetime = 0;
 	ushort weapon_signature, homing_signature;
 	short h_subsys;
-	float launch_speed;
-	vec3d missile_pos, homing_goal;
+	float launch_speed = 0.0f;
+	vec3d missile_pos = vmd_zero_vector, homing_goal = vmd_zero_vector;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
 	matrix orient_in;
