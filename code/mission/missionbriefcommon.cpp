@@ -1611,19 +1611,19 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 			{
 				if (brief_verify_color_tag(*iter)) {
 					active_color_index = (char)*iter;
-				}
-				++iter; // Consume the color identifier and focus on the white character (if any)
+					++iter; // Consume the color identifier and focus on the white character (if any)
 
-				// special case: color spans (different default color within braces)
-				// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-				if (*iter == UNICODE_CHAR('{'))
-				{
-					if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+					// special case: color spans (different default color within braces)
+					// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
+					if (*iter == UNICODE_CHAR('{'))
 					{
-						color_stack_index++;
-						default_color_stack[color_stack_index] = active_color_index;
+						if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+						{
+							color_stack_index++;
+							default_color_stack[color_stack_index] = active_color_index;
+						}
+						++iter;	// consume the {
 					}
-					++iter;	// consume the {
 				}
 			}
 
