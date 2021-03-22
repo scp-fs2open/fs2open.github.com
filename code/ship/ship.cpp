@@ -4357,9 +4357,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
+		ci->max_life = 3.0f;
 
 		if (optional_string("+Spread:"))
 			stuff_float(&ci->spread);
+		ci->spread = 1.0f;
 		
 		required_string("+Spew Time:");
 		stuff_int(&ci->stamp);		

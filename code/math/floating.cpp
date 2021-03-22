@@ -78,9 +78,12 @@ static float accum_golden_ratio_rand_seed = 0.0f;
 // generates a quasirandom, low discrepancy number sequence
 // acts very much like a random number generator, but has the property of being very well distributed
 // use if you need quasirandom numbers, but don't want ugly 'runs' or 'clumps' of similar numbers 
-float golden_ratio_rand() {
-	accum_golden_ratio_rand_seed += GOLDEN_RATIO;
-	if (accum_golden_ratio_rand_seed >= 1.0f)
-		accum_golden_ratio_rand_seed -= 1.0f;
-	return accum_golden_ratio_rand_seed;
+float golden_ratio_rand(float* seed) {
+	float* accum = seed == nullptr ? &accum_golden_ratio_rand_seed : seed;
+	*accum += GOLDEN_RATIO;
+
+	if (*accum >= 1.0f)
+		*accum -= 1.0f;
+
+	return *accum;
 }

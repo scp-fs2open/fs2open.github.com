@@ -18,6 +18,7 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "utils/RandomRange.h"
 
 class ship;
 class object;
@@ -54,24 +55,20 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 typedef struct poof_info {
 	char bitmap_filename[MAX_FILENAME_LEN];
 	int bitmap;
-	float scale_min;
-	float scale_max;
+	::util::UniformFloatRange scale;
 	float density;   // IN CUBIC KILOMETERS!!!
-	float rotation_min;
-	float rotation_max;
+	::util::UniformFloatRange rotation;
 	float view_dist;
-	float peak_alpha;
+	::util::UniformFloatRange alpha;
 
 	poof_info() {
 		bitmap_filename[0] = '\0';
 		bitmap = -1;
-		scale_min = 150.0f;
-		scale_max = 150.0f;
+		scale = ::util::UniformFloatRange(150.0f, 150.0f);
 		density = 150.f;
-		rotation_min = -0.065f;
-		rotation_max = 0.065f;
+		rotation = ::util::UniformFloatRange(-0.065f, 0.065f);
 		view_dist = 360.f;
-		peak_alpha = 0.35f;
+		alpha = ::util::UniformFloatRange(0.5f, 0.5f);
 	}
 } poof_info;
 
@@ -85,6 +82,7 @@ typedef struct poof {
 	float		rot;				// rotation angle
 	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
+	float		alpha;			// base amount of alpha to start with
 } poof;
 
 extern SCP_vector<poof> Neb2_poofs;
