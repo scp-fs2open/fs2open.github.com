@@ -5299,10 +5299,15 @@ void game_leave_state( int old_state, int new_state )
 
 				// set the game mode
 				Game_mode |= GM_IN_MISSION;
+
+				main_hall_stop_music(true);
+				main_hall_stop_ambient();		
+
+				// any other state needs to close out the mission, because we're not going in to gameplay.
+			} else {
+				freespace_stop_mission();
 			}
 
-			main_hall_stop_music(true);
-			main_hall_stop_ambient();		
 			break;		
    
 		case GS_STATE_VIEW_CUTSCENES:

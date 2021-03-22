@@ -13,6 +13,8 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "render/3d.h" 
 #include "ship/ship.h"
 #include "tracing/tracing.h"
@@ -223,6 +225,9 @@ void trail_render( trail * trailp )
 		} else {
 			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
+
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
 
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{

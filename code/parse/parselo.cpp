@@ -2229,36 +2229,26 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 				// SDL2 has iconv functionality so we use that to convert from Latin1 to UTF-8
 
-				// We need the raw_text as the output buffer so we first need to copy the current
+				// We need the raw_text as fallback so we first need to copy the current
 				SCP_string input_str = raw_text;
 
-				do {
-					auto in_str = input_str.c_str();
-					auto in_size = input_str.size();
-					auto out_str = Parse_text_raw;
-					auto out_size = Parse_text_size;
+				SCP_string buffer;
+				bool success = unicode::convert_encoding(buffer, raw_text, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
 
-					auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-					auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-					SDL_iconv_close(iconv);
+				if (Parse_text_size < buffer.length()) {
+					allocate_parse_text(buffer.length());
+				}
 
-					// SDL returns the number of processed character on success;
-					// error codes are (size_t)-1 through -4
-					if (err < (size_t)-100) {
-						break;
-					} else if (err == SDL_ICONV_E2BIG) {
-						// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-						// increment since the additional size required is probably pretty small
-						allocate_parse_text(Parse_text_size + 300);
-					} else {
-						Warning(LOCATION, "File reencoding failed (error code " SIZE_T_ARG ")!\n"
-							"You will probably encounter encoding issues.", err);
+				if (success) {
+					strncpy(Parse_text_raw, buffer.c_str(), buffer.length());
+				}
+				else {
+					Warning(LOCATION, "File reencoding failed!\n"
+						"You will probably encounter encoding issues.");
 
-						// Copy the original data back to the mission text pointer so that we don't loose any data here
-						strcpy(Parse_text_raw, input_str.c_str());
-						break;
-					}
-				} while(true);
+					// Copy the original data back to the mission text pointer so that we don't loose any data here
+					strcpy(Parse_text_raw, input_str.c_str());
+				}
 			} else {
 				Warning(LOCATION, "Found invalid UTF-8 encoding in file %s at position " PTRDIFF_T_ARG "!\n"
 					"This may cause parsing errors and should be fixed!", filename, invalid - raw_text);
@@ -2288,41 +2278,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	// we can convert it
 	if (isLatin1)
 	{
-		size_t newlen = len;
-		std::unique_ptr<char[]> newstr(new char[newlen]);
-
-		do {
-			auto in_str = str;
-			auto in_size = len;
-			auto out_str = newstr.get();
-			auto out_size = newlen;
-
-			auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
-			auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
-			SDL_iconv_close(iconv);
-
-			// SDL returns the number of processed character on success;
-			// error codes are (size_t)-1 through -4
-			if (err < (size_t)-100)
-			{
-				// successful re-encoding
-				buffer.assign(newstr.get(), newlen - out_size);
-				mprintf(("Re-encoding non-UTF-8 string '%s' to '%s'!\n", str, buffer.c_str()));
-				return;
-			}
-			else if (err == SDL_ICONV_E2BIG)
-			{
-				// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
-				// increment since the additional size required is probably pretty small
-				newlen += 10;
-				newstr.reset(new char[newlen]);
-			}
-			else
-			{
-				// re-encoding failed, so use truncation
-				break;
-			}
-		} while (true);
+		unicode::convert_encoding(buffer, str, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
 	}
 
 	// unknown encoding, so just truncate
@@ -2331,10 +2287,19 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 }
 
 // Goober5000
-void process_raw_file_text(char *processed_text, char *raw_text)
+void process_raw_file_text(char* processed_text, char* raw_text)
 {
-	char	*mp;
-	char	*mp_raw;
+	SCP_string parse_exception_1402;
+	unicode::convert_encoding(parse_exception_1402, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n", unicode::Encoding::Encoding_iso8859_1);
+	SCP_string parse_exception_1117;
+	unicode::convert_encoding(parse_exception_1117, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n", unicode::Encoding::Encoding_iso8859_1);
+	SCP_string parse_exception_1337;
+	unicode::convert_encoding(parse_exception_1337, "1337, \"(fr)Loading\"\n", unicode::Encoding::Encoding_iso8859_1);
+	SCP_string parse_exception_3966;
+	unicode::convert_encoding(parse_exception_3966, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n", unicode::Encoding::Encoding_iso8859_1);
+
+	char* mp;
+	char* mp_raw;
 	char outbuf[PARSE_BUF_SIZE];
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
@@ -2347,32 +2312,38 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	if (raw_text == NULL)
 		raw_text = Parse_text_raw;
 
-	Assert( processed_text != NULL );
-	Assert( raw_text != NULL );
+	Assert(processed_text != NULL);
+	Assert(raw_text != NULL);
 
 	mp = processed_text;
 	mp_raw = raw_text;
 
 	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
+	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0) {
 		mp_raw += num_chars_read;
 
 		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
-		if (!strcmp(outbuf, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n")) {
-			outbuf[121] = ' ';
-			outbuf[122] = ' ';
-		} else if (!strcmp(outbuf, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n")) {
-			char *ch = &outbuf[11];
+		if (!strcmp(outbuf, parse_exception_1402.c_str())) {
+
+			int offset = Unicode_text_mode ? 1 : 0;
+			outbuf[121 + offset] = ' ';
+			outbuf[122 + offset] = ' ';
+		}
+		else if (!strcmp(outbuf, parse_exception_1117.c_str())) {
+			char* ch = &outbuf[11];
 			do {
-				*ch = *(ch+1);
+				*ch = *(ch + 1);
 				++ch;
 			} while (*ch);
-		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
+		}
+		else if (!strcmp(outbuf, parse_exception_1337.c_str())) {
 			outbuf[3] = '6';
-		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
-			outbuf[171] = '\'';
-			outbuf[181] = '\'';
+		}
+		else if (!strcmp(outbuf, parse_exception_3966.c_str())) {
+			int offset = Unicode_text_mode ? 1 : 0;
+			outbuf[171 + offset] = '\'';
+			outbuf[181 + offset * 2] = '\'';
 		}
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
