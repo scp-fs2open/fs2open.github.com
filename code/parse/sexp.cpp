@@ -916,7 +916,8 @@ bool Container_edits_off; // TODO: maybe "Container_editing_disabled"?
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
 // TODO: altnertiave key: std::pair<char,char> being the first and last char of the name
 static SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
-static const char *Empty_str = "";
+static constexpr char SEXP_CONTAINER_CHAR = '&';
+static constexpr char *Empty_str = "";
 
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
 char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
@@ -30901,38 +30902,36 @@ int check_text_for_variable_name(const char *text)
 	 }
 }
 
-bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
+bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result)
 {
-	if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
-		const char *buffer = CTEXT(node);
-		// TODO: watch out for overhead from implicit SCP_string construction like here
-		auto valueIt = Sexp_containers[container_index].map_data.find(buffer);
+	auto &container = Sexp_containers[container_index];
+	if (container.is_map()) {
+		const char *key = CTEXT(node);
+		const auto value_it = container.map_data.find(SCP_string(key));
 
-		// not found
-		if (valueIt == Sexp_containers[container_index].map_data.end()) {
+		if (value_it != container.map_data.end()) {
+			result = value_it->second;
+			return true;
+		} else {
 			if (Log_event) {
-				SCP_string log_string = Sexp_containers[container_index].container_name;
+				SCP_string log_string = container.container_name;
 				log_string.append(" map container returned nothing when searched for key ");
-				log_string.append(buffer);
+				log_string.append(key);
 				Current_event_log_container_buffer->emplace_back(log_string);
 			}
 			return false;
- 		}	
-
-		result = valueIt->second;
-		return true; 
-	}
-	else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
-		// if the container is empty, we might as well quit now
-		if (Sexp_containers[container_index].list_data.empty()) {
+ 		}
+	} else if (container.is_list()) {
+		// no point in continuing if the list is empty
+		if (container.list_data.empty()) {
 			return false;
 		}
 
 		const char *modifier = CTEXT(node); 
 
-		int modifier_index;
+		int modifier_index = 0;
 		bool found = false; 
-		for (modifier_index = 0; modifier_index < NUM_CONTAINER_MODIFIERS; modifier_index++) {
+		for (; modifier_index < NUM_CONTAINER_MODIFIERS; ++modifier_index) {
 			if (!stricmp(modifier, Container_modifiers[modifier_index].name)) {
 				found = true;
 				break;
@@ -30940,14 +30939,20 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 		}
 
 		if (!found) {
-			const char *container_name = Sexp_containers[container_index].container_name.c_str();
-			Warning(LOCATION, "Illegal operation attempted on %s container. There is no modifier called %s.", container_name, modifier );	
-			log_printf(LOGFILE_EVENT_LOG, "Illegal operation attempted on %s container. There is no modifier called %s.", container_name, modifier );	
+			const SCP_string &container_name = container.container_name;
+			Warning(LOCATION,
+				"Illegal operation attempted on %s container. There is no modifier called %s.",
+				container_name.c_str(),
+				modifier);
+			log_printf(LOGFILE_EVENT_LOG,
+				"Illegal operation attempted on %s container. There is no modifier called %s.",
+				container_name.c_str(),
+				modifier);
 			return false;
 		}
 
 		int data_index;
-		auto &list_data = Sexp_containers[container_index].list_data;
+		auto &list_data = container.list_data;
 		auto list_it = list_data.begin();
 
 		switch (modifier_index) {
@@ -30974,12 +30979,12 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				return true;
 
 			case SNF_CONTAINER_GET_RANDOM:
-				data_index = rand_internal(0, list_data.size() -1);
+				data_index = rand_internal(0, (int)list_data.size() - 1);
 				result = *std::next(list_it, data_index);
 				return true;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
-				data_index = rand_internal(0, list_data.size() -1);
+				data_index = rand_internal(0, (int)list_data.size() -1);
 				std::advance(list_it, data_index);
 				result = *list_it;
 				if (allow_container_modifications()) {
@@ -30998,12 +31003,13 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 					return false;
 				}
 				Assert(data_index >= 0);
-				Assert((size_t)data_index < Sexp_containers[container_index].list_data.size());
+				Assert(data_index < (int)list_data.size());
 				result = *std::next(list_it, data_index);
 				return true;
 
 			default:
 				Error(LOCATION, "Unknown modifier type found in container"); 
+				break;
 		}
 	}
 
@@ -31023,52 +31029,55 @@ int container_push_return_string(const SCP_string &result)
 	return Ctext_strings_last_index++; 
 }
 
-const char* deal_with_container(int node, int container_index)
+const char *ctext_for_containers(int node, int container_index)
 {
-	bool success = true;
-	int sanity = 0; 
+	Assertion(((container_index > -1) && (container_index < (int)Sexp_containers.size())), "ctext_for_containers() called for index %d when there are only %d containers", container_index, Sexp_containers.size());
+
 	SCP_string result;
 
-	Assertion (((container_index > -1) && (container_index < (int)Sexp_containers.size())), "deal_with_container() called for index %d when there are only %d containers", container_index, Sexp_containers.size());
-
-	do {
-		sanity++;
-		success = deal_with_container_sub(node, container_index, result);
+	for (int sanity = 0; sanity < 20; ++sanity) {
+		bool success = ctext_for_containers_sub(node, container_index, result);
 
 		if (Log_event) {
 			SCP_string log_string = Sexp_containers[container_index].container_name; 
-			log_string.append(" container returned ");
 			if (success) {
-				log_string.append(result);
+				log_string += " container returned ";
+				log_string += result;
+			} else {
+				log_string += " container lookup failed";
 			}
 			Current_event_log_container_buffer->emplace_back(log_string);
 		}
 
-		// if this isn't an array or is empty we exit
-		if (!success) {
+		// TODO: call Warning() is result is empty?
+		if (!success || result.empty()) {
 			return Empty_str;
 		}
 
-		if ( result.at(0) != SEXP_CONTAINER_CHAR ) {
+		if (result.front() != SEXP_CONTAINER_CHAR) {
 			// FIXME: ugh. Instead of this hackishness, store the resulting string as cached data on the Sexp node in question
 			// if the node already has cached data attached, reuse the cached_data object
 			int result_index = container_push_return_string(result);
+			// TODO: should Container_edits_off be re-enabled? It was turned off in CTEXT()
 			return Ctext_strings[result_index];
+		} else {
+			// we're dealing with a multidimentional container
+			node = CDR(node);
+
+			// "- 2" because we're skipping the first and last chars, which are/should both be &
+			const int next_container_index = get_sexp_container_index(result.substr(1, (result.length() - 2)).c_str());
+
+			if (next_container_index != -1) {
+				container_index = next_container_index;
+				result.clear();
+			} else {
+				Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
+				return Empty_str;
+			}
 		}
+	}
 
-		// we're dealing with a multidimentional array
-		node = CDR(node);
-
-		const int next_container_index = get_sexp_container_index(result.substr(1, (result.length() - 2)).c_str());
-
-		// if it's still nonsense, warn then bail
-		if (next_container_index == -1) {
-			Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
-			return Empty_str;
-		}
-
-	} while (sanity++ < 20);
-
+	// we've hit sanity limit; give up
 	return Empty_str;
 }
 
@@ -31165,14 +31174,11 @@ const char *CTEXT(int n, bool do_not_edit)
 	}
 	// Karajorma - check we're not dealing with a container
 	else if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) {
-		// TODO: remove unneeded assertion
-		Assertion((Sexp_nodes[n].type & SEXP_FLAG_CONTAINER), "deal_with_container() called for an unknown type of container"); 
- 
 		const int container_index = get_sexp_container_index(Sexp_nodes[n].text);
 
 		if (container_index < 0)  {
-			Warning(LOCATION, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
-			log_printf(LOGFILE_EVENT_LOG, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
+			Warning(LOCATION, "ctext_for_containers() called for %s, a container which does not exist!", Sexp_nodes[n].text); 
+			log_printf(LOGFILE_EVENT_LOG, "ctext_for_containers called for %s, a container which does not exist!", Sexp_nodes[n].text); 
 			return Empty_str;
 		}
 
@@ -31181,8 +31187,7 @@ const char *CTEXT(int n, bool do_not_edit)
 		// set containers back to editable.
 		Container_edits_off = false;
 
-		return deal_with_container(n, container_index);
-
+		return ctext_for_containers(n, container_index);
 	}
 	else
 	{

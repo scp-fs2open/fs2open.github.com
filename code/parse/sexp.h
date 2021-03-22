@@ -972,8 +972,6 @@ const char *CTEXT(int n, bool do_not_edit = false);
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 
 // sexp container definitions
-// FIXME TODO: find a more descriptive name, maybe _CHAR_DELIM
-#define SEXP_CONTAINER_CHAR					('&')
 // TODO: maybe SEXP_CONTAINER_LIST_TYPE and similar for MAP						(1<<0)
 #define SEXP_CONTAINER_LIST							(1<<0)
 #define SEXP_CONTAINER_MAP							(1<<1)
