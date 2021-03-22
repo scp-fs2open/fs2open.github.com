@@ -78,9 +78,9 @@ protected:
 	void update_text_edit_boxes(const SCP_string &key, const SCP_string &data);
 
 	//todo validate_*_boxws
-	bool edit_boxes_have_valid_data();
+	bool edit_boxes_have_valid_data(bool dup_key_ok);
 	bool data_edit_box_has_valid_data();
-	bool key_edit_box_has_valid_data();
+	bool key_edit_box_has_valid_data(bool dup_ok);
 
 	void add_container_entry(int insert_index);
 

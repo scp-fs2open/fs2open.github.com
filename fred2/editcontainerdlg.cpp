@@ -439,7 +439,7 @@ void CEditContainerDlg::add_container_entry(const int insert_index)
 	Assert(has_containers());
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
-	if (!edit_boxes_have_valid_data()) {
+	if (!edit_boxes_have_valid_data(false)) {
 		return;
 	}
 
@@ -504,7 +504,7 @@ void CEditContainerDlg::OnContainerUpdate()
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
 	Assert(!get_current_container().empty());
 
-	if (!edit_boxes_have_valid_data()) {
+	if (!edit_boxes_have_valid_data(true)) {
 		return;
 	}
 
@@ -538,19 +538,19 @@ void CEditContainerDlg::OnContainerUpdate()
 	update_data_lister();
 }
 
-bool CEditContainerDlg::edit_boxes_have_valid_data()
+bool CEditContainerDlg::edit_boxes_have_valid_data(bool dup_key_ok)
 {
 	if (!data_edit_box_has_valid_data()) {
 		return false;
 	}
-	if (get_current_container().is_map() && !key_edit_box_has_valid_data()) {
+	if (get_current_container().is_map() && !key_edit_box_has_valid_data(dup_key_ok)) {
 		return false;
 	}
 
 	return true; 
 }
 
-bool CEditContainerDlg::key_edit_box_has_valid_data()
+bool CEditContainerDlg::key_edit_box_has_valid_data(bool dup_ok)
 {
 	Assert(has_containers());
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
@@ -566,16 +566,18 @@ bool CEditContainerDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	const auto& map_data = container.map_data;
-	const auto count = std::count_if(map_data.cbegin(),
-		map_data.cend(),
-		[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
-			return !stricmp(map_entry.first.c_str(), key_str);
-		});
+	if (!dup_ok) {
+		const auto &map_data = container.map_data;
+		const auto count = std::count_if(map_data.cbegin(),
+			map_data.cend(),
+			[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
+				return !stricmp(map_entry.first.c_str(), key_str);
+			});
 
-	if (count > 0) {
-		MessageBox("This key already exists. You may not reuse keys in a SEXP map!");
-		return false;
+		if (count > 0) {
+			MessageBox("This key already exists! Use Update to change an existing key's data.");
+			return false;
+		}
 	}
 
 	if ((container.type & SEXP_CONTAINER_NUMBER_KEYS) && !is_valid_number(key_str)) {
