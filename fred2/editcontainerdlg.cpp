@@ -415,6 +415,27 @@ void CEditContainerDlg::OnListerSelectionChange()
 
 void CEditContainerDlg::OnContainerAdd()
 {
+	add_container_entry((int)get_current_container().size());
+}
+
+void CEditContainerDlg::OnContainerInsert()
+{
+	Assert(get_current_container().is_list());
+
+	// TODO: create/use m_lister_index instead
+	const int index = m_container_data_lister.GetCurSel();
+
+	// TODO: enable Insert button only when a lister entry is selected
+	if (index == LB_ERR) {
+		MessageBox("Nothing selected! Use Add to append new data");
+		return;
+	}
+
+	add_container_entry(index);
+}
+
+void CEditContainerDlg::add_container_entry(const int insert_index)
+{
 	Assert(has_containers());
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
@@ -428,7 +449,13 @@ void CEditContainerDlg::OnContainerAdd()
 
 	auto &container = get_current_container();
 	if (container.is_list()) {
-		container.list_data.emplace_back(data_str);
+		Assert(insert_index >= 0 && insert_index <= (int)container.size());
+		if (insert_index == (int)container.size()) {
+			container.list_data.emplace_back(data_str);
+		} else {
+			auto insert_it = std::next(container.list_data.begin(), insert_index);
+			container.list_data.emplace(insert_it, data_str);
+		}
 	} else if (container.is_map()) {
 		CEdit *key_edit = (CEdit*)GetDlgItem(IDC_CONTAINER_KEY);
 		CString key_str;
@@ -442,42 +469,6 @@ void CEditContainerDlg::OnContainerAdd()
 
 	update_data_lister();
 	update_text_edit_boxes("", "");
-}
-
-void CEditContainerDlg::OnContainerInsert()
-{
-	// TODO: use add_container_entry() funtion below instead of this
-	// pass m_lister_index, once added
-
-	if (!edit_boxes_have_valid_data()) {
-		return;
-	}
-	
-	CString temp_string; 
-	SCP_string temp_scp_string; 
-
-	SCP_vector<SCP_string>::iterator iter ;
-	
-	//// for both types we need to get the data
-	//CEdit *edit2 = (CEdit *) GetDlgItem(IDC_CONTAINER_DATA);
-	//edit2->GetWindowText(temp_string);
-	//ListerSelectionGetIter(iter);
-	//raw_data.insert(iter, temp_scp_string.assign(temp_string));
-
-	//// insert the key before the newly added data entry
-	//if (m_type_map) {
-	//	CEdit *edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
-	//	edit->GetWindowText(temp_string);
-	//	ListerSelectionGetIter(iter);
-	//	raw_data.insert(iter, temp_scp_string.assign(temp_string));
-	//}
-
-	update_data_lister();
-}
-
-void CEditContainerDlg::add_container_entry(const int insert_index)
-{
-	// TODO move "container add" stuff here
 }
 
 void CEditContainerDlg::OnContainerRemove()
