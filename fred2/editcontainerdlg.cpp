@@ -723,7 +723,8 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 
 	m_containers.emplace_back(); 
 	auto &new_container = m_containers.back();
-	
+	new_container.container_name = temp_name;
+
 	const auto &container = get_current_container();
 	new_container.type = container.type;
 	new_container.opf_type = container.opf_type;
@@ -731,7 +732,6 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	// add the new container to the list of containers combo box and make it the selected option
 	cbox->AddString(temp_name); 
 	m_current_container = num_containers() - 1;
-	cbox->SetCurSel(m_current_container);
 
 	// in case this is the first container
 	if (num_containers() == 1) {
