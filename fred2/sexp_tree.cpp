@@ -1926,11 +1926,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
 			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count, true);
-		}
-		else {
-			// TODO: determine if this leftover from merge conflict is needed
-			//op = get_operator_index(tree_nodes[item_index].text);
-			//Assert(op >= 0);
+		} else {
+			op = get_operator_index(tree_nodes[item_index].text);
+			Assert(op >= 0);
 
 			auto type = query_operator_argument_type(op, Add_count);
 			list = get_listing_opf(type, item_index, Add_count);
@@ -1958,11 +1956,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
 			list = modifier_get_listing_opf(tree_nodes[item_index].parent, Replace_count);
-		}
-		else {
-			// TODO: determine if this leftover from merge conflict is needed
-			//op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
-			//Assert(op >= 0);
+		} else {
+			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
+			Assert(op >= 0);
 
 			auto type = query_operator_argument_type(op, Replace_count); // check argument type at this position
 			list = get_listing_opf(type, tree_nodes[item_index].parent, Replace_count);
