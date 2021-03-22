@@ -1036,6 +1036,8 @@ void sexp_tree::right_clicked(int mode)
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
 			add_type = OPR_STRING;
 
+			// FIXME TODO: shouldn't we add the list modifiers only if the container is a list
+			//             and then add the map keys instead if the container is a map?
 			// when dealing with multidimentional containers the next thing we want to add could literally be any legal key for any map or the legal entries for a list container. So give the FREDder a hand and offer them the latter.
 			list = get_listing_opf(OPF_LIST_MODIFIER, item_index, Add_count);
 			Assert (list);
