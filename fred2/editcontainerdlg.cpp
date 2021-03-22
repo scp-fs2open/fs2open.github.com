@@ -706,18 +706,7 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
-	//// try to save the old container first
-	////if (m_data_changed) {
-	//// FIXME TEMP: ignore m_data_changed
-	//if (m_current_container >= 0) {
-	//	if (!save_current_container()) {
-	//		// we couldn't save the old container, don't do anything with the new one yet. 
-	//		return; 
-	//	}
-	//}
-	
 	CEditContainerAddNewDlg dlg; 
-
 	dlg.DoModal(); 
 
 	// if we didn't enter a name
@@ -726,7 +715,6 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	}
 
 	CString temp_name = dlg.m_new_container_name; 
-
 	if (!is_container_name_valid(temp_name, false)) {
 		return; 
 	}
@@ -743,13 +731,13 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	m_current_container = num_containers() - 1;
 	cbox->SetCurSel(m_current_container);
 
-	update_data_lister();  
-
 	// in case this is the first container
 	if (num_containers() == 1) {
 		cbox->EnableWindow(true);
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
 	}
+
+	set_selected_container();
 }
 
 //BOOL CEditContainerDlg::save_current_container()
