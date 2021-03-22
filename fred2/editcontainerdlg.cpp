@@ -296,44 +296,46 @@ bool CEditContainerDlg::is_container_name_in_use(const char *text, bool ignore_c
 	return false;
 }
 
-BOOL CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_rename)
+bool CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_rename)
 {
-	bool name_validated = false;	// assume invalid until proved wrong
-
 	if (new_name.IsEmpty()) {
 		MessageBox("Container name can't be empty.");
-	} else if (!stricmp(new_name, "<New Container Name>")) {
+		return false;
+	}
+
+	if (!stricmp(new_name, "<New Container Name>")) {
 		MessageBox("Invalid container name.");
-	} else {
-		// remove any spaces
-		if (strchr(new_name, ' ') != nullptr) {
-			if (is_rename) {
-				MessageBox("Container names cannot contain spaces.");
-				return false;
-			} else {
-				MessageBox("Container names cannot contain spaces. Replacing with hyphens.");
-				new_name.Replace((TCHAR)' ', (TCHAR)'-');
-			}
-		}
+		return false;
+	}
 
-		if (strchr(new_name, '&') != nullptr) {
-			if (is_rename) {
-				MessageBox("Container names cannot contain &.");
-				return false;
-			} else {
-				MessageBox("Container names cannot contain &. Replacing with hyphens.");
-				new_name.Replace((TCHAR)'&', (TCHAR)'-');
-			}
-		}
-
-		if (is_container_name_in_use(LPCTSTR(new_name), is_rename)) {
-			MessageBox("Conflicting container name. A container with this name already exists");
+	// handle spaces
+	if (strchr(new_name, ' ') != nullptr) {
+		if (is_rename) {
+			MessageBox("Container names cannot contain spaces.");
+			return false;
 		} else {
-			name_validated = true;
+			MessageBox("Container names cannot contain spaces. Replacing with hyphens.");
+			new_name.Replace((TCHAR)' ', (TCHAR)'-');
 		}
 	}
 
-	return name_validated;
+	// handle & chars
+	if (strchr(new_name, '&') != nullptr) {
+		if (is_rename) {
+			MessageBox("Container names cannot contain &.");
+			return false;
+		} else {
+			MessageBox("Container names cannot contain &. Replacing with hyphens.");
+			new_name.Replace((TCHAR)'&', (TCHAR)'-');
+		}
+	}
+
+	if (is_container_name_in_use(LPCTSTR(new_name), is_rename)) {
+		MessageBox("Conflicting container name. A container with this name already exists");
+		return false;
+	}
+
+	return true;
 }
 
 bool CEditContainerDlg::is_valid_number(const char *test_str) const
