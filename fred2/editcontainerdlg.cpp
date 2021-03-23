@@ -659,8 +659,6 @@ void CEditContainerDlg::update_data_lister()
 	m_lister_keys.clear();
 
 	// Data is displayed in one of two ways depending on container type
-	Assert(m_current_container >= 0 && m_current_container < num_containers());
-
 	const auto &container = get_current_container();
 
 	if (container.is_list()) {
@@ -670,7 +668,6 @@ void CEditContainerDlg::update_data_lister()
 		}
 	} else if (container.is_map()) {
 		for (const auto& map_entry : container.map_data) {
-			// TODO: type check key, maybe also value
 			m_lister_keys.emplace_back(map_entry.first);
 		}
 
