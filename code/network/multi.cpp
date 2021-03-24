@@ -569,7 +569,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_ship_kill_packet( data, header_info );
 			break;
 
-		case WEAPON_KILL:
+		case MISSILE_KILL:
 			process_weapon_kill_packet(data, header_info);
 			break;
 
