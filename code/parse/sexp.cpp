@@ -13983,7 +13983,7 @@ void sexp_nebula_change_fog_color(int node)
 {
 	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
 
-	int red, green, blue, level = 0;
+	int red, green, blue = 0;
 	bool is_nan, is_nan_forever;
 
 	Assert(node >= 0);
