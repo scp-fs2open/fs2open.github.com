@@ -517,7 +517,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	if (!global_damage) {
 		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
 
-		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) {
+		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris] ||
+			!Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_debris]) {
 			create_generic_debris(ship_objp, hitpos, 1.0f, 5.0f, 1.0f, false);
 		}
 	}
@@ -1556,8 +1557,9 @@ static void ship_vaporize(ship *shipp)
 	ship_objp = &Objects[shipp->objnum];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	// create debris shards
-	create_generic_debris(ship_objp, &ship_objp->pos, (float)sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
+	// create debris shards if allowed
+	if (!sip->flags[Ship::Info_Flags::No_impact_debris])
+		create_generic_debris(ship_objp, &ship_objp->pos, (float)sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
