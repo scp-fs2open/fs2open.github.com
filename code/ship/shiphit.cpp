@@ -1557,7 +1557,7 @@ static void ship_vaporize(ship *shipp)
 	ship_objp = &Objects[shipp->objnum];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	// create debris shards if allowed
+	// create debris shards
 	create_generic_debris(ship_objp, &ship_objp->pos, (float)sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
 }
 
