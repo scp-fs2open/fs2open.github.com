@@ -5485,11 +5485,20 @@ void parse_bitmaps(mission *pm)
 	Mission_palette = 1;
 
 	// neb2 info
-	strcpy_s(Neb2_texture_name, "Eraseme3");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
-	if(optional_string("+Neb2:")){
+	bool nebula = false;
+	if (optional_string("+Neb2:")) {
+		nebula = true;
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-
+	} else if (optional_string("+Neb2Color:")) {
+		nebula = true;
+		int color[3];
+		stuff_int_list(color, 3, RAW_INTEGER_TYPE);
+		Neb2_fog_color[0] = (ubyte)color[0];
+		Neb2_fog_color[1] = (ubyte)color[1];
+		Neb2_fog_color[2] = (ubyte)color[2];
+	}
+	if (nebula) {
 		required_string("+Neb2Flags:");			
 		stuff_int(&Neb2_poof_flags);
 

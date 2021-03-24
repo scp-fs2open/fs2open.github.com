@@ -68,6 +68,9 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 // how many "slices" are in the current player nebuls
 extern int Neb2_slices;
 
+// the color of the fog/background
+extern ubyte Neb2_fog_color[3];
+
 // nebula poofs
 typedef struct cube_poof {
 	vec3d	pt;				// point in space
