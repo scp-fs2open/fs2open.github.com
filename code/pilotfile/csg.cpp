@@ -1221,6 +1221,8 @@ void pilotfile::csg_read_controls()
 		if (idx < CCFG_MAX) {
 			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
 			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if(id3 != -1) // This means the mouse was bound.
+				Control_config[idx].take(CC_bind(CID_MOUSE, id3), 1);
 		}
 	}
 }
@@ -1236,8 +1238,7 @@ void pilotfile::csg_write_controls()
 	for (idx = 0; idx < CCFG_MAX; idx++) {
 		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
 		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
-		// placeholder? for future mouse_id?
-		cfwrite_short(-1, cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_MOUSE), cfp);
 	}
 
 	endSection();
