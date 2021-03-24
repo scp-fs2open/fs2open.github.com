@@ -5485,6 +5485,7 @@ void parse_bitmaps(mission *pm)
 	Mission_palette = 1;
 
 	// neb2 info
+	strcpy_s(Neb2_texture_name, "");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
