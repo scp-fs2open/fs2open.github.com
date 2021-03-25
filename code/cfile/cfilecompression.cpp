@@ -121,8 +121,8 @@ void lz41_create_ci(CFILE* cf, int header)
 	auto fSize = fread(&cf->size, sizeof(int), 1, cf->fp);
 	auto fBsize = fread(&cf->compression_info.block_size, sizeof(int), 1, cf->fp);
 
-	#if !defined(NDEBUG)
 	Assertion(cf->compression_info.num_offsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format or corrupted.");
+	#if !defined(NDEBUG)
 	Assertion(cf->size > 4, "Invalid filesize, compressed file is possibly in the wrong format or corrupted.");
 	Assertion(cf->compression_info.block_size > 16, "Invalid block size, compressed file is possibly in the wrong format or corrupted.");
 	Assertion(fNumoffsets == 1, "Error while reading the number of offsets, compressed file is possibly in the wrong format or corrupted.");
@@ -138,16 +138,13 @@ void lz41_create_ci(CFILE* cf, int header)
 
 void lz41_load_offsets(CFILE* cf)
 {
-	int max_blocks = (int)cf->size + 8 / cf->compression_info.block_size;
-	cf->compression_info.offsets = (int*)malloc(max_blocks);
+	cf->compression_info.offsets = (int*)malloc(cf->compression_info.num_offsets * sizeof(int));
 	int block;
 	int* offsets_ptr = cf->compression_info.offsets;
 
-	Assertion(cf->compression_info.num_offsets * (int)sizeof(int) <= max_blocks, "The number of offsets cant be higher than max possible blocks(size/blocksize), compressed file is possibly in the wrong format or corrupted.");
-
 	/* Seek to the first offset position, remember to consider the trailing ints */
 	fso_fseek(cf, ( ( sizeof(int) * cf->compression_info.num_offsets ) * -1 ) - (sizeof(int)*3 ), SEEK_END);
-	for (block = 0; block <= cf->compression_info.num_offsets; ++block)
+	for (block = 0; block < cf->compression_info.num_offsets; ++block)
 	{
 		auto bytes_read = fread(offsets_ptr++, sizeof(int), 1, cf->fp);
 		Assertion(bytes_read == 1, "Error reading offset list.");
