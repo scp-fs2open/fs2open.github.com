@@ -7545,13 +7545,24 @@ int main(int argc, char *argv[])
 
 	SCP_mspdbcs_Initialise();
 
-	// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
-	// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
-	// seems to close or otherwise grab the streams for somthing else.
-	if (AttachConsole(ATTACH_PARENT_PROCESS)) {
-		freopen("CONIN$", "r", stdin);
-		freopen("CONOUT$", "w", stdout);
-		freopen("CONOUT$", "w", stderr);
+	bool keep_stdout = false;
+	char envbuf[2];
+	// GetEnvironmentVariable returns the amount of stored characters on success, we're looking for the value "1"
+	// so we only care about the case where it successfully read exactly one character (not including the null byte).
+	if (GetEnvironmentVariable("FSO_KEEP_STDOUT", envbuf, 2) == 1) {
+		keep_stdout = envbuf[0] == '1';
+	}
+
+	// Only try redirecting stdout if FSO_KEEP_STDOUT is not set to "1".
+	if (!keep_stdout) {
+		// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
+		// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
+		// seems to close or otherwise grab the streams for somthing else.
+		if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+			freopen("CONIN$", "r", stdin);
+			freopen("CONOUT$", "w", stdout);
+			freopen("CONOUT$", "w", stderr);
+		}
 	}
 #else
 #ifdef APPLE_APP
