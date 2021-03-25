@@ -566,18 +566,20 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	short id1, id2;
+	short id1, id2, id3;
 	int axi, inv;
 
 	auto list_size = handler->startArrayRead("controls", true);
 	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		id1 = handler->readShort("key");
 		id2 = handler->readShort("joystick");
-		handler->readShort("mouse");	// unused, at the moment
+		id3 = handler->readShort("mouse");
 
 		if (idx < Control_config.size()) {
 			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
 			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if (id3 != -1)
+				Control_config[idx].take(CC_bind(CID_MOUSE, id3), 1);
 		}
 	}
 	handler->endArrayRead();
@@ -606,8 +608,7 @@ void pilotfile::plr_write_controls()
 
 		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
 		handler->writeShort("joystick", item.get_btn(CID_JOY0));
-		// placeholder? for future mouse_id?
-		handler->writeShort("mouse", -1);
+		handler->writeShort("mouse", item.get_btn(CID_MOUSE));
 
 		handler->endSectionWrite();
 	}
