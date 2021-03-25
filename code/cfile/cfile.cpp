@@ -866,6 +866,7 @@ static int cfget_cfile_block()
 			cfile->data = nullptr;
 			cfile->fp = nullptr;
 			cfile->type = CFILE_BLOCK_USED;
+			cf_clear_compression_info(cfile);
 			return i;
 		}
 	}
@@ -921,7 +922,7 @@ int cfclose( CFILE * cfile )
 	} else {
 		// VP  do nothing
 	}
-
+	cf_clear_compression_info(cfile);
 	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
@@ -973,7 +974,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		if(pos == -1L)
 			pos = 0;
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 }
@@ -1008,7 +1009,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 
@@ -1052,6 +1053,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const ch
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
+		
 #if defined _WIN32
 		cfp->hMapFile = CreateFileMapping(cfp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (cfp->hMapFile == NULL) {
