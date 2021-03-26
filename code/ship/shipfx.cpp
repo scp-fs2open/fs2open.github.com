@@ -2172,7 +2172,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
-		int lifetime = (util::Random::next((b)-(a)+1))+(a);
+		int lifetime = util::Random::next(a, b);
 
 		// Create the arc effects
 		for (i=0; i<MAX_SHIP_ARCS; i++ )	{

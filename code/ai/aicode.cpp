@@ -9757,6 +9757,7 @@ void remove_farthest_attacker(int objnum)
 				aip->ignore_objnum = aip->target_objnum;
 				aip->ignore_signature = Objects[aip->target_objnum].signature;
 				aip->ai_flags.set(AI::AI_Flags::Temporary_ignore);
+				// DISCUSSME: should we fix the code to match the comment? Or the other way around?
 				aip->ignore_expire_timestamp = timestamp((util::Random::next(10) + 20) * 1000);	//	OK to attack again in 20 to 24 seconds.
 			}
 			aip->target_objnum = -1;

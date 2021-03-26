@@ -98,7 +98,7 @@ int timestamp();
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
-	return timestamp(util::Random::next(b - a + 1) + a);
+	return timestamp(util::Random::next(a, b));
 }
 
 // Example that makes a ship fire in 1/2 second

@@ -21,7 +21,8 @@
 #include "utils/strings.h"
 
 #include <cstdio>    // For NULL, etc
-//#include <cstdlib>
+// DISCUSSME: with rand() gone, should we reconsider how much we need to include stdlib.h/cstdlib?
+#include <cstdlib>
 #include <memory.h>
 #include <cstring>
 #include <algorithm>

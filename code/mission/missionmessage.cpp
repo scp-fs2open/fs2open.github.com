@@ -2102,7 +2102,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	
 	// since we may have multiple builtins we need to pick one at random
-	random_selection = util::Random::next(num_matching_builtins) + 1; 
+	random_selection = util::Random::next(1, num_matching_builtins);
 
 	// loop through the vector until we have found enough elements of the correct matching type
 	for (i = 0; i < (int)matching_builtins.size(); i++) {
