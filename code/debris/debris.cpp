@@ -284,9 +284,7 @@ void debris_process_post(object * obj, float frame_time)
 
 			n = 0;
 
-			int a = 100, b = 1000;
-			//int lifetime = (myrand()%((b)-(a)+1))+(a);
-			int lifetime = util::Random::next(b)-((a)+1)+(a);
+			int lifetime = util::Random::next(100, 1000);
 
 			// Create the spark effects
 			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
