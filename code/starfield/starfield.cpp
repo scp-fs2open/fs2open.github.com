@@ -31,6 +31,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -869,19 +870,21 @@ void stars_post_level_init()
 	for (i=0; i<MAX_STARS; i++) {
 		dist = dist_max;
 		while (dist >= dist_max) {
-			v.xyz.x = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.y = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.z = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.x = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.y = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.z = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
 
 			dist = v.xyz.x * v.xyz.x + v.xyz.y * v.xyz.y + v.xyz.z * v.xyz.z;
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
 		{
-			red= (ubyte)(myrand() % 63 +192);		//192-255
-			green= (ubyte)(myrand() % 63 +192);		//192-255
-			blue= (ubyte)(myrand() % 63 +192);		//192-255
-			alpha = (ubyte)(myrand () % 192 + 24);	//24-216
+			// DISCUSSME: the max value for these ranges is 254 and not 255. Do we fix it?
+			red= (ubyte)(util::Random::next(63) +192);		//192-255
+			green= (ubyte)(util::Random::next(63) +192);		//192-255
+			blue= (ubyte)(util::Random::next(63) +192);		//192-255
+			// DISCUSSME: despite the comment, the range is actually 24-215. Do we fix it?
+			alpha = (ubyte)(util::Random::next(192) + 24);	//24-216
 
 			gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
 		}
@@ -1750,9 +1753,9 @@ void stars_draw_debris()
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
 		if (!d->active)	{
-			d->pos.xyz.x = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.y = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.z = f2fl(myrand() - RAND_MAX_2);
+			d->pos.xyz.x = f2fl(util::Random::next() - RAND_MAX_2);
+			d->pos.xyz.y = f2fl(util::Random::next() - RAND_MAX_2);
+			d->pos.xyz.z = f2fl(util::Random::next() - RAND_MAX_2);
 
 			vm_vec_normalize(&d->pos);
 
@@ -1762,10 +1765,11 @@ void stars_draw_debris()
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
+			const float size_multiplier = i2fl(util::Random::next(4));
 			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
+				d->size = size_multiplier * BASE_SIZE_NEB;
 			} else {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE;
+				d->size = size_multiplier * BASE_SIZE;
 			}
 
 			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );

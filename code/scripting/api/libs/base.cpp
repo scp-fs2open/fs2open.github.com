@@ -21,6 +21,7 @@
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
+#include "utils/Random.h"
 
 namespace scripting {
 namespace api {
@@ -52,7 +53,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 ADE_FUNC(rand32,
 	l_Base,
 	"[number a, number b]",
-	"Calls FSO's rand32() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff).  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
+	"Calls FSO's Random::next() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff].  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
 	"number",
 	"A random integer")
 {
@@ -61,11 +62,11 @@ ADE_FUNC(rand32,
 
 	int result;
 	if (numargs == 2)
-		result = rand32(a, b);
+		result = ::util::Random::next(a, b);
 	else if (numargs == 1)
-		result = rand32() % a;
+		result = ::util::Random::next(a);
 	else
-		result = rand32();
+		result = ::util::Random::next();
 
 	return ade_set_error(L, "i", result);
 }
@@ -73,14 +74,15 @@ ADE_FUNC(rand32,
 ADE_FUNC(rand32f,
 	l_Base,
 	"[number max]",
-	"Calls FSO's rand32() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
+	"Calls FSO's Random::next() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
 	"number",
 	"A random float")
 {
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	float result = static_cast<float>(rand32()) / static_cast<float>(0x7fffffff);
+	// DISCUSSME: is division at the level of 2**31 ok for floats?
+	float result = static_cast<float>(::util::Random::next()) / static_cast<float>(::util::Random::MAX_VALUE);
 
 	if (numargs > 0)
 		result *= _max;

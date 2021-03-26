@@ -80,6 +80,9 @@
 #include "ship/shiphit.h"
 #include "ship/subsysdamage.h"
 #include "species_defs/species_defs.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
@@ -87,9 +90,6 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
-#include "tracing/Monitor.h"
-#include "tracing/tracing.h"
-
 
 using namespace Ship;
 
@@ -6533,7 +6533,7 @@ void ship_weapon::clear()
         primary_bank_pattern_index[i] = 0;
 
         burst_counter[i] = 0;
-		burst_seed[i] = rand32();
+		burst_seed[i] = util::Random::next();
         external_model_fp_counter[i] = 0;
     }
 
@@ -9672,7 +9672,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_primary_fire_stamp[i] = timestamp(0);
 		swp->last_primary_fire_stamp[i] = -1;
 		swp->burst_counter[i] = 0;
-		swp->burst_seed[i] = rand32();
+		swp->burst_seed[i] = util::Random::next();
 		swp->last_primary_fire_sound_stamp[i] = timestamp(0);
 	}
 
@@ -9680,7 +9680,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
 		swp->last_secondary_fire_stamp[i] = -1;
 		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
-		swp->burst_seed[i + MAX_SHIP_PRIMARY_BANKS] = rand32();
+		swp->burst_seed[i + MAX_SHIP_PRIMARY_BANKS] = util::Random::next();
 	}
 
 	//Countermeasures
@@ -10864,7 +10864,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 	int arand;
 	if(rand_val < 0) {
-		arand = myrand();
+		arand = util::Random::next();
 	} else {
 		arand = rand_val;
 	}
@@ -11440,7 +11440,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		} else {
 			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
-			swp->burst_seed[bank_to_fire] = rand32();
+			swp->burst_seed[bank_to_fire] = util::Random::next();
 		}
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
@@ -12408,7 +12408,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	} else {
 		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
-		swp->burst_seed[bank_adjusted] = rand32();
+		swp->burst_seed[bank_adjusted] = util::Random::next();
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int)(t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
@@ -15962,7 +15962,7 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 // player has just killed a ship, maybe offer send a 'good job' message
 void ship_maybe_praise_player(ship *deader_sp)
 {
-	if ( myrand()&1 ) {
+	if (util::Random::next()&1 ) {
 		return;
 	}
 

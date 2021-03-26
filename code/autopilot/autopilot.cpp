@@ -716,7 +716,7 @@ bool StartAutopilot()
 		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
 		vm_vec_add(&pos, &pos, &Autopilot_flight_leader->pos); // pos is now 5*speed cap in front of player ship
 
-		switch (myrand()%24) 
+		switch (util::Random::next(24))
 		// 8 different ways of getting perp points
 		// 4 of which will not be used when capships are present (anything below, or straight above)
 		{
@@ -795,7 +795,8 @@ bool StartAutopilot()
 		vm_vec_scale(&perp,  Autopilot_flight_leader->radius+radius);
 
 		// randomly scale up/down by up to 20%
-		j = 20-myrand()%40; // [-20,20]
+		// DISCUSSME: despite the comment, the range is actually [-19,20]. Should we fix?
+		j = 20- util::Random::next(40); // [-20,20]
 
 		vm_vec_scale(&perp, 1.0f+(float(j)/100.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);

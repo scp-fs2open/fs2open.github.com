@@ -97,6 +97,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
@@ -4762,9 +4763,9 @@ int rand_internal(int low, int high, int seed = 0)
 {
 	// maybe seed it
 	if (seed > 0)
-		srand(seed);
+		util::Random::seed(seed);
 
-	return rand32(low, high);
+	return util::Random::next(low, high);
 }
 
 // Goober5000
@@ -12720,7 +12721,7 @@ void sexp_send_random_message(int n)
 	Assert ( num_messages >= 1 );
 	
 	// get a random message, and pass the parameters to send_one_message
-	message_num = myrand() % num_messages;
+	message_num = util::Random::next(num_messages);
 	n = temp;
 	while ( n != -1 ) {
 		if ( message_num == 0 )

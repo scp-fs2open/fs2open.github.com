@@ -30,8 +30,9 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
-#include "weapon/weapon.h"
 #include "tracing/Monitor.h"
+#include "utils/Random.h"
+#include "weapon/weapon.h"
 
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
@@ -284,7 +285,8 @@ void debris_process_post(object * obj, float frame_time)
 			n = 0;
 
 			int a = 100, b = 1000;
-			int lifetime = (myrand()%((b)-(a)+1))+(a);
+			//int lifetime = (myrand()%((b)-(a)+1))+(a);
+			int lifetime = util::Random::next(b)-((a)+1)+(a);
 
 			// Create the spark effects
 			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
@@ -351,8 +353,8 @@ void debris_process_post(object * obj, float frame_time)
 				db->arc_timestamp[i] = timestamp(-1);
 			} else {
 				// Maybe move a vertex....  20% of the time maybe?
-				int mr = myrand();
-				if ( mr < RAND_MAX/5 )	{
+				int mr = util::Random::next();
+				if ( mr < util::Random::MAX_VALUE/5 )	{
 					vec3d v1, v2;
 
 					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
@@ -460,15 +462,15 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	if (!hull_flag) {
 		if (model_num >= 0) {
 			db->model_num = model_num;
-			db->submodel_num = (myrand() >> 4) % sip->generic_debris_num_submodels;
+			db->submodel_num = (util::Random::next() >> 4) % sip->generic_debris_num_submodels;
 		}
 		else if (vaporize) {
 			db->model_num = Debris_vaporize_model;
-			db->submodel_num = (myrand() >> 4) % Debris_num_submodels;
+			db->submodel_num = (util::Random::next() >> 4) % Debris_num_submodels;
 		}
 		else {
 			db->model_num = Debris_model;
-			db->submodel_num = (myrand() >> 4) % Debris_num_submodels;
+			db->submodel_num = (util::Random::next() >> 4) % Debris_num_submodels;
 		}
 	}
 	else {
@@ -539,7 +541,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
-	db->next_distance_check = (myrand() % 2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
+	db->next_distance_check = util::Random::next(2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
 	db->parent_alt_name = shipp->alt_type_index;
 	db->damage_mult = 1.0f;
 
@@ -629,7 +631,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	if ( hull_flag )	{
 		float t;
-		scale = exp_force * i2fl((myrand()%20) + 10);	// for radial_vel away from location of blast center
+		scale = exp_force * i2fl(util::Random::next(20) + 10);	// for radial_vel away from location of blast center
 		db->sound_delay = timestamp(DEBRIS_SOUND_DELAY);
 
 		// set up physics mass and I_inv for hull debris pieces
@@ -641,7 +643,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 		// limit the amount of time that fireballs appear
 		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
-		t = 1000*Objects[db->source_objnum].radius/3 + myrand()%(fl2i(1000*3*Objects[db->source_objnum].radius));
+		t = 1000*Objects[db->source_objnum].radius/3 + util::Random::next(fl2i(1000*3*Objects[db->source_objnum].radius));
 		db->fire_timeout = timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		
 		if ( Objects[db->source_objnum].radius < MIN_RADIUS_FOR_PERSISTANT_DEBRIS ) {
@@ -652,7 +654,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 	else {
-		scale = exp_force * i2fl((myrand()%20) + 10);	// for radial_vel away from blast center (non-hull)
+		scale = exp_force * i2fl(util::Random::next(20) + 10);	// for radial_vel away from blast center (non-hull)
 	}
 
 	if ( vm_vec_mag_squared( &to_center ) < 0.1f )	{
@@ -679,7 +681,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		radius = 1.0f;
 	}
 
-	scale = ( 6.0f + i2fl(myrand()%4) ) / radius;
+	scale = (6.0f + i2fl(util::Random::next(4))) / radius;
 
 	vm_vec_rand_vec_quick(&rotvel);
 	vm_vec_scale(&rotvel, scale);

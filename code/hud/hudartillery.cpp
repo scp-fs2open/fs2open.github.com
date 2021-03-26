@@ -23,6 +23,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
@@ -302,7 +303,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 
 	count = Ssm_info[ssm_index].count;
 	if (Ssm_info[ssm_index].max_count != -1) {
-		count += rand32(count, Ssm_info[ssm_index].max_count);
+		count += util::Random::next(count, Ssm_info[ssm_index].max_count);
 	}
 
 	// override in multiplayer

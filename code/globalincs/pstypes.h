@@ -17,10 +17,11 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
+#include "utils/Random.h"
 #include "utils/strings.h"
 
 #include <cstdio>    // For NULL, etc
-#include <cstdlib>
+//#include <cstdlib>
 #include <memory.h>
 #include <cstring>
 #include <algorithm>
@@ -303,8 +304,9 @@ constexpr bool LoggingEnabled = false;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
-const int RAND_MAX_2	= (RAND_MAX/2);
-const float RAND_MAX_1f	= (1.0f / RAND_MAX);
+constexpr int RAND_MAX_2 = (util::Random::MAX_VALUE / 2);
+// DISCUSSME: RAND_MAX_1f was probably ok when RAND_MAX was 32767, but what about now?
+constexpr float RAND_MAX_1f = (1.0f / util::Random::MAX_VALUE);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
@@ -349,14 +351,6 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 #define TRUE	1
 #define FALSE	0
-
-int myrand();
-
-// Returns a random number between 0 and 0x7fffffff
-int rand32();
-
-// Returns a random integer from low to high, inclusive
-int rand32(int low, int high);
 
 
 // lod checker for (modular) table parsing

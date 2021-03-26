@@ -39,6 +39,7 @@
 #include "scripting/hook_api.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
+#include "utils/Random.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
@@ -354,7 +355,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 	// on all clients in the game -- the net_signature of the object works nicely -- since doing so should
 	// ensure that all pieces of debris will get scattered in same direction on all machines
 	if ( Game_mode & GM_MULTIPLAYER )
-		srand( obj->net_signature );
+		util::Random::seed( obj->net_signature );
 
 	// made a change to allow anyone but multiplayer client to blow up hull.  Clients will do it when
 	// they get the create packet
@@ -1199,7 +1200,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = myrand() % shipp->num_hits;
+		spark_num = util::Random::next(shipp->num_hits);
 	} else {
 		spark_num = sn;
 	}
@@ -2171,7 +2172,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
-		int lifetime = (myrand()%((b)-(a)+1))+(a);
+		int lifetime = (util::Random::next((b)-(a)+1))+(a);
 
 		// Create the arc effects
 		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
@@ -2240,8 +2241,8 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
-				int mr = myrand();
-				if ( mr < RAND_MAX/5 )	{
+				int mr = util::Random::next();
+				if ( mr < util::Random::MAX_VALUE/5 )	{
 					vec3d v1, v2;
 					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
 

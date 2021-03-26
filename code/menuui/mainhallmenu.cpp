@@ -38,6 +38,7 @@
 #include "popup/popup.h"
 #include "scripting/scripting.h"
 #include "sound/audiostr.h"
+#include "utils/Random.h"
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
@@ -1555,7 +1556,7 @@ void main_hall_handle_random_intercom_sounds()
 
 	// if we have no timestamp for the next random sound, then set one
 	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
-		int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+		int delta_ms = util::Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
 		Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 	}
 
@@ -1593,7 +1594,7 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+			int delta_ms = util::Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
 			Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 
 			// release the sound handle

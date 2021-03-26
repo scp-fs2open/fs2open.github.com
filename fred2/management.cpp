@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "utils/Random.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -296,7 +297,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	srand( (unsigned) time(NULL) );
+	util::Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
