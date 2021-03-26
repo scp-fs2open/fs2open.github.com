@@ -208,6 +208,7 @@ static int math_random (lua_State *L) {
 
 
 static int math_randomseed (lua_State *L) {
+    // DISCUSSME: what do we do here?
   srand(luaL_checkint(L, 1));
   return 0;
 }
