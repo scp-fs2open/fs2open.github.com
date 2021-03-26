@@ -979,9 +979,9 @@ int fireball_ship_explosion_type(ship_info *sip)
 	}
 
 	if(ship_fireballs > 0){
-		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
+		index = sip->explosion_bitmap_anims[util::Random::next(ship_fireballs)];
 	} else if(objecttype_fireballs > 0){
-		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
+		index = Ship_types[sip->class_type].explosion_bitmap_anims[util::Random::next(objecttype_fireballs)];
 	}
 
 	return index;
@@ -998,7 +998,7 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	int roid_fireballs = (int)aip->explosion_bitmap_anims.size();
 
 	if (roid_fireballs > 0) {
-		index = aip->explosion_bitmap_anims[rand()%roid_fireballs];
+		index = aip->explosion_bitmap_anims[util::Random::next(roid_fireballs)];
 	}
 
 	return index;

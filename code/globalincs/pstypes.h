@@ -304,9 +304,8 @@ constexpr bool LoggingEnabled = false;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
-constexpr int RAND_MAX_2 = (util::Random::MAX_VALUE / 2);
-// DISCUSSME: RAND_MAX_1f was probably ok when RAND_MAX was 32767, but what about now?
-constexpr float RAND_MAX_1f = (1.0f / util::Random::MAX_VALUE);
+constexpr int RAND_MAX_2 = util::Random::MAX_VALUE / 2;
+constexpr float RAND_MAX_1f = 1.0f / util::Random::MAX_VALUE;
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?

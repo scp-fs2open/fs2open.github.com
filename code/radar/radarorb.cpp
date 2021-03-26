@@ -217,7 +217,7 @@ void HudGaugeRadarOrb::blipDrawFlicker(blip *b, vec3d *pos)
 		return;
 	}
 
-	if ( rand() & 1 ) {
+	if (util::Random::next() & 1 ) {
 
 		distortion_angle *= frand_range(0.1f,2.0f);
 		dist *= frand_range(0.75f, 1.25f);

@@ -971,9 +971,9 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");

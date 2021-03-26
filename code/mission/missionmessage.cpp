@@ -1133,7 +1133,7 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 		int num_frames_extra;
 		num_frames_extra = (int)std::lround(fps * (anim_time - wave_time));
 		if ( num_frames_extra > 0 ) {
-			start_frame=rand()%num_frames_extra;
+			start_frame= util::Random::next(num_frames_extra);
 		}
 	}
 
@@ -1801,7 +1801,7 @@ int message_get_persona( ship *shipp )
 		// we didn't find an unused one - so we randomly select one
 		if(count != 0)
 		{
-			i = (rand() % count);
+			i = util::Random::next(count);
 			i = slist[i];
 		}
 		// RT Protect against count being zero

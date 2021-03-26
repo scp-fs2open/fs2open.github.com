@@ -1234,7 +1234,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 							// if the entire group is paused and off, pick a random one to regenerate
 							if (all_neg1) {
 								Assert(group_indexes.size() < INT_MAX);
-								regen_idx = group_indexes[rand() % (int)group_indexes.size()];
+								regen_idx = group_indexes[util::Random::next((int)group_indexes.size())];
 							}
 						}
 					} else { // not part of a group, so just handle this index

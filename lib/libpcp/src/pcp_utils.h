@@ -219,8 +219,10 @@ static inline void createNonce(struct pcp_nonce *nonce_field)
     int i;
     for (i = 2; i >= 0; --i)
 #ifdef WIN32
+		// DISCUSSME: what should we do here?
         nonce_field->n[i]=htonl (rand());
 #else  //WIN32
+		// DISCUSSME: what should we do here?
         nonce_field->n[i]=htonl(random());
 #endif //WIN32
 }

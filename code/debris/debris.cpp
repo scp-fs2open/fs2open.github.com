@@ -76,7 +76,7 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[debris_p->ship_info_index]);
 		if(fireball_type < 0) {
-			fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+			fireball_type = FIREBALL_EXPLOSION_LARGE1 + util::Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 		}
 		fireball_create( &debris_obj->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
 
@@ -275,7 +275,7 @@ void debris_process_post(object * obj, float frame_time)
 
 		if (db->is_hull)	{
 
-			int n, n_arcs = ((rand()>>5) % 3)+1;		// Create 1-3 sparks
+			int n, n_arcs = util::Random::next(1, 3);		// Create 1-3 sparks
 
 			vec3d v1, v2, v3, v4;
 
@@ -493,7 +493,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	{
 		// Create Debris piece n!
 		if ( hull_flag ) {
-			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
+			if (util::Random::next() < (util::Random::MAX_VALUE/6))	// Make some pieces blow up shortly after explosion.
 				db->lifeleft = 2.0f * (frand()) + 0.5f;
 			else {
 				db->flags.set(Debris_Flags::DoNotExpire);

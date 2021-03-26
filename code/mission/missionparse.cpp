@@ -1209,7 +1209,7 @@ void parse_music(mission *pm, int flags)
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
 		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
-		strcpy_s(pm->event_music_name, Soundtracks[rand() % num].name);
+		strcpy_s(pm->event_music_name, Soundtracks[util::Random::next(num)].name);
 
 
 done_event_music:
@@ -1236,7 +1236,7 @@ done_event_music:
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
 		num = (Num_music_files < 7) ? Num_music_files : 7;
-		strcpy_s(pm->briefing_music_name, Spooled_music[rand() % num].name);
+		strcpy_s(pm->briefing_music_name, Spooled_music[util::Random::next(num)].name);
 
 
 done_briefing_music:
@@ -6874,8 +6874,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			// If these are not available, this would be an expensive method.
 			x = cosf(fl_radians(45.0f));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = rand() < RAND_MAX_2 ? -1 : 1;
-				r2 = rand() < RAND_MAX_2 ? -1 : 1;
+				r1 = util::Random::next() < RAND_MAX_2 ? -1 : 1;
+				r2 = util::Random::next() < RAND_MAX_2 ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.

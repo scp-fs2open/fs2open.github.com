@@ -8339,7 +8339,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				int fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
-					fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + util::Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 				}
 				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
@@ -8374,7 +8374,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				int fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
-					fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + util::Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 				}
 				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
@@ -8548,7 +8548,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				float explosion_life;
 				big_rad = objp->radius*1.75f;
 
-				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + util::Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 				if (knossos_ship) {
 					big_rad = objp->radius * 1.2f;
 					default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
@@ -14993,7 +14993,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 	}
 
 	// now get a random one from the list
-	which_one = (rand() % count);
+	which_one = util::Random::next(count);
 	ship_index = slist[which_one];
 
 	Assert ( Ships[ship_index].objnum != -1 );
@@ -15048,7 +15048,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 	}
 
 	// now get a random one from the list
-	which_one = (rand() % count);
+	which_one = util::Random::next(count);
 	ship_index = slist[which_one];
 
 	Assert ( Ships[ship_index].objnum != -1 );
@@ -15106,7 +15106,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 	if ( num == 0 )
 		return -1;
 
-	which_one = (rand() % num);
+	which_one = util::Random::next(num);
 	objp = obj_list[which_one];
 
 	Assert ( objp->instance != -1 );
@@ -16176,7 +16176,7 @@ void ship_maybe_lament()
 	if (Game_mode & GM_MULTIPLAYER)
 		return;
 
-	if (rand() % 4 == 0)
+	if (util::Random::next(4) == 0)
 	{
 		ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if (ship_index >= 0)
@@ -16414,7 +16414,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	if (message_type >= 0)
 	{
-		if (rand() & 1)
+		if (util::Random::next() & 1)
 			message_send_builtin_to_player(message_type, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
 
 		Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
@@ -17360,7 +17360,7 @@ int ship_get_random_targetable_ship()
 	if (idx == 0)
 		return -1;
 
-	rand_ship = (rand() % idx);
+	rand_ship = util::Random::next(idx);
 
 	return target_list[rand_ship];
 }

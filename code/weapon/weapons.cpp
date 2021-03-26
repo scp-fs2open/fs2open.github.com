@@ -8191,7 +8191,7 @@ int weapon_get_random_player_usable_weapon()
 	if (weapon_list.empty())
 		return -1;
 
-	auto rand_wep = (rand() % weapon_list.size());
+	auto rand_wep = util::Random::next(weapon_list.size());
 
 	return weapon_list[rand_wep];
 }

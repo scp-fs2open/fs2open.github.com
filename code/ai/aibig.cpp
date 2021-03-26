@@ -1471,7 +1471,7 @@ void ai_big_strafe_attack()
 		if ( t > 0.0f && t < 1.5f ) {
 			// set up goal_point for avoid path to turn towards
 			aip->goal_point = Pl_objp->pos;
-			switch(rand()%4) {
+			switch(util::Random::next(4)) {
 			case 0:
 				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, 2.0f);
 				break;
@@ -1703,7 +1703,7 @@ void ai_big_strafe_retreat1()
 	if (Missiontime - aip->submode_start_time > fl2f(1.50f)) {
 		// set up goal_point for avoid path to turn towards
 		aip->prev_goal_point = Pl_objp->pos;
-		switch(rand()%4) {
+		switch(util::Random::next(4)) {
 		case 0:
 			vm_vec_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec);
 			break;

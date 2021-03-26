@@ -1440,7 +1440,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	float init_clip_plane_dist;
 	if (pm->num_split_plane > 0) {
-		int index = rand()%pm->num_split_plane;
+		int index = util::Random::next(pm->num_split_plane);
 		init_clip_plane_dist = pm->split_plane[index];
 	} else {
 		init_clip_plane_dist = 0.5f * (0.5f - frand())*pm->core_radius;
@@ -1836,7 +1836,7 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* handle_arra
 	// multiplier for range (near and far distances) to apply attenuation
 	float sound_range = 1.0f + 0.0043f*radius;
 
-	int handle_index = rand()%NUM_SUB_EXPL_HANDLES;
+	int handle_index = util::Random::next(NUM_SUB_EXPL_HANDLES);
 
 	auto sound_index = GameSounds::SHIP_EXPLODE_1;
 	auto handle      = handle_array[handle_index];
@@ -1901,7 +1901,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 
 			int fireball_type = fireball_ship_explosion_type(sip);
 			if(fireball_type < 0) {
-				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+				fireball_type = FIREBALL_EXPLOSION_LARGE1 + util::Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 			}
 			int low_res_fireballs = Bs_exp_fire_low;
 			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
@@ -2130,7 +2130,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 
 		shipp->arc_next_time = timestamp(-1);		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = ((rand()>>5) % 3)+1;		// Create 1-3 sparks
+		int n, n_arcs = util::Random::next(1, 3);		// Create 1-3 sparks
 
 		vec3d v1, v2, v3, v4;
 		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);

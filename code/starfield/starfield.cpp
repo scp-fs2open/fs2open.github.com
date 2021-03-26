@@ -1762,6 +1762,7 @@ void stars_draw_debris()
 			vm_vec_scale(&d->pos, MAX_DIST);
 			vm_vec_add2(&d->pos, &Eye_position );
 			d->active = 1;
+			// DISCUSSME: is the following line correct? What was the author trying to do?
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
