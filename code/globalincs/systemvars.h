@@ -94,7 +94,6 @@ extern int Game_mode;
 #define SINGLEPLAYER !(Game_mode & GM_MULTIPLAYER)
 
 extern int Viewer_mode;
-extern int Rand_count;
 
 extern int Game_restoring;		// If set, this means we are restoring data from disk
 

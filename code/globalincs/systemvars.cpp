@@ -57,7 +57,6 @@ vci		Viewer_chase_info;			// View chase camera information
 vec3d leaning_position;
 
 int Is_standalone;
-int Rand_count;
 
 int Interface_last_tick = -1;			// last timer tick on flip
 
