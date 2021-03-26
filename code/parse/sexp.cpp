@@ -679,6 +679,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
+	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -13978,6 +13979,28 @@ void sexp_nebula_change_pattern(int n)
 	neb2_post_level_init();
 }
 
+void sexp_nebula_change_fog_color(int node)
+{
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+
+	int red, green, blue = 0;
+	bool is_nan, is_nan_forever;
+
+	Assert(node >= 0);
+
+	eval_nums(node, is_nan, is_nan_forever, red, green, blue);
+	if (is_nan || is_nan_forever)
+		return;
+
+	CLAMP(red, 0, 255);
+	CLAMP(green, 0, 255);
+	CLAMP(blue, 0, 255);
+
+	Neb2_fog_color[0] = (ubyte)red;
+	Neb2_fog_color[1] = (ubyte)green;
+	Neb2_fog_color[2] = (ubyte)blue;
+}
+
 /**
  * End the mission.
  *
@@ -24592,6 +24615,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_NEBULA_CHANGE_FOG_COLOR:
+				sexp_nebula_change_fog_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
@@ -26784,6 +26812,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29061,6 +29090,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_CHANGE_FOG_COLOR:
+			return OPF_POSITIVE;
+
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL:
@@ -30806,6 +30838,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
@@ -34816,6 +34849,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	"\tChanges the current nebula background pattern (as defined in nebula.tbl)\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tNebula background pattern to change to\r\n"
+	},
+
+	{ OP_NEBULA_CHANGE_FOG_COLOR, "nebula-change-fog-color\r\n"
+	"\tChanges the current nebula fog color\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tRed (0 - 255)\r\n"
+		"\t2:\tGreen (0 - 255)\r\n"
+		"\t3:\tBlue (0 - 255)\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"

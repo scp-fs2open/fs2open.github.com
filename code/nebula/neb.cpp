@@ -35,9 +35,7 @@
 
 bool Nebula_sexp_used = false;
 
-static ubyte Neb2_fog_color_r = 0;
-static ubyte Neb2_fog_color_g = 0;
-static ubyte Neb2_fog_color_b = 0;
+ubyte Neb2_fog_color[3] = { 0,0,0 };
 
 static ubyte *Neb2_htl_fog_data = NULL;
 
@@ -343,9 +341,9 @@ void neb2_set_detail_level(int level)
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 {
-	if (r) *r = Neb2_fog_color_r;
-	if (g) *g = Neb2_fog_color_g;
-	if (b) *b = Neb2_fog_color_b;
+	if (r) *r = Neb2_fog_color[0];
+	if (g) *g = Neb2_fog_color[1];
+	if (b) *b = Neb2_fog_color[2];
 }
 
 void neb2_level_init()
@@ -377,13 +375,13 @@ void neb2_post_level_init()
 		return;
 	}
 
-	// Set a default colour just in case something goes wrong
-	Neb2_fog_color_r =  30;
-	Neb2_fog_color_g =  52;
-	Neb2_fog_color_b = 157;
-
 	// OK, lets try something a bit more interesting
 	if (strlen(Neb2_texture_name)) {
+		// Set a default colour just in case something goes wrong
+		Neb2_fog_color[0] = 30;
+		Neb2_fog_color[1] = 52;
+		Neb2_fog_color[2] = 157;
+
 		Neb2_htl_fog_data = new ubyte[768];
 
 		if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
@@ -399,12 +397,12 @@ void neb2_post_level_init()
 			}
 
 			if (pcount > 0) {
-				Neb2_fog_color_r = (ubyte)(r / pcount);
-				Neb2_fog_color_g = (ubyte)(g / pcount);
-				Neb2_fog_color_b = (ubyte)(b / pcount);
+				Neb2_fog_color[0] = (ubyte)(r / pcount);
+				Neb2_fog_color[1] = (ubyte)(g / pcount);
+				Neb2_fog_color[2] = (ubyte)(b / pcount);
 			} else {
 				// it's just black
-				Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
+				Neb2_fog_color[0] = Neb2_fog_color[1] = Neb2_fog_color[2] = 0;
 			}
 
 			// done, now free up the palette data
@@ -1495,7 +1493,7 @@ DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
 	dc_stuff_ubyte(&g);
 	dc_stuff_ubyte(&b);
 
-	Neb2_fog_color_r = r;
-	Neb2_fog_color_g = g;
-	Neb2_fog_color_b = b;
+	Neb2_fog_color[0] = r;
+	Neb2_fog_color[1] = g;
+	Neb2_fog_color[2] = b;
 }
