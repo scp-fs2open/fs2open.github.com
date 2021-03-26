@@ -5286,7 +5286,7 @@ void evade_ship()
 		}
 	} else {
 evade_ship_l1: ;
-		if (aip->ai_evasion > util::Random::next()*100.0f/32767.0f) {
+		if (aip->ai_evasion > util::Random::next()*RAND_MAX_1f*100.0f) {
 			int	temp;
 			float	scale;
 			float	psrandval;	//	some value close to zero to choose whether to turn right or left.
