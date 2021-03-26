@@ -2030,8 +2030,21 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height,
-					  tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+			// Split frame profile into two columns if necessary to avoid losing trace data
+			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
+			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
+			size_t fp_column_break = 0;
+			auto fp_trace_str = tracing::get_frame_profile_output();
+
+			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
+				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
+			}
+
+			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
+
+			if (fp_column_break < fp_trace_str.length()) {
+				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
+			}
 		}
 
 		if (Show_framerate) {
