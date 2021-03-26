@@ -49,7 +49,7 @@ int Random::next()
 
 int Random::next(int modulus)
 {
-	Assert(modulus > 1);
+	Assert(modulus > 0);
 
 	return next() % modulus;
 }
