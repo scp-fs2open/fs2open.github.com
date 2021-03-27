@@ -835,7 +835,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 //
 // Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
-vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
+vec3d *vm_matrix_x_vector(vec3d *dest, const matrix *m, const vec3d* src)
 {
 	Assert(dest != src);
 
@@ -861,7 +861,7 @@ vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 //
 // Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
-vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
+vec3d *vm_vector_x_matrix(vec3d *dest, const vec3d *src, const matrix *m)
 {
 	Assert(dest != src);
 
@@ -1141,7 +1141,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
 
 	vm_vec_outer_product(&mat, &norm);
 
-	vm_vec_rotate(&projected_point, &xlated_int_pnt, &mat);
+	vm_matrix_x_vector(&projected_point, &mat, &xlated_int_pnt);
 	vm_vec_add(nearest_point, &projected_point, p0);
 
 	dot = vm_vec_dot(&norm, &projected_point);

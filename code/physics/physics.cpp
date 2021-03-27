@@ -775,7 +775,7 @@ void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info 
 	vm_vec_rotate ( &local_angular_impulse, &angular_impulse, orient );
 
 	vec3d delta_rotvel;
-	vm_vec_rotate(&delta_rotvel, &local_angular_impulse, inv_moi);
+	vm_matrix_x_vector(&delta_rotvel, inv_moi, &local_angular_impulse);
 
 	vec3d delta_vel = *impulse * (1.0f / pi->mass);
 

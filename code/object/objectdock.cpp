@@ -423,7 +423,7 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 
 	// calculate the change in rotvel caused by the whack in world coords
 	vec3d delta_rotvel;
-	vm_vec_rotate(&delta_rotvel, &angular_impulse, &inv_moi);
+	vm_matrix_x_vector(&delta_rotvel, &inv_moi, &angular_impulse);
 
 	// get the total change in vel for the entire docked assembly
 	vec3d center_mass_delta_vel = *impulse * (1.0f / total_mass);

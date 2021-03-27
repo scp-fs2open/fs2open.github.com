@@ -681,7 +681,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	} else {
 		vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
 		get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
-		vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
+		vm_matrix_x_vector(&delta_rotvel_heavy, &heavy_I_inv, &rotational_impulse_heavy);
 		float rotation_factor = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_heavy, rotation_factor);		// hack decrease rotation (delta_rotvel)
 		vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
@@ -705,7 +705,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	} else {
 		vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
 		get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
-		vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
+		vm_matrix_x_vector(&delta_rotvel_light, &light_I_inv, &rotational_impulse_light);
 		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
 		vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
