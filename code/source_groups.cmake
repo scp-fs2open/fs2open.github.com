@@ -1530,6 +1530,8 @@ add_file_folder("Utils"
 	utils/join_string.h
 	utils/Random.cpp
 	utils/Random.h
+	utils/RandomCCompat.cpp
+	utils/RandomCCompat.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

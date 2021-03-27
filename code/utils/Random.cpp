@@ -16,7 +16,12 @@ void seed(const unsigned int val) {
 	static_assert(RngType::min() == 0, "RNG min must be 0");
 	static_assert(RngType::max() == std::numeric_limits<uint32_t>::max(), "RNG max must be INT32_MAX");
 
-	m_rng.seed(val);
+	// follow srand semantics
+	if (val == 1) {
+		m_rng.seed();
+	} else {
+		m_rng.seed(val);
+	}
 }
 
 int next()
