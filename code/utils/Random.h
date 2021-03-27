@@ -16,5 +16,7 @@ class Random {
 
 	// jump ahead in the RNG sequence
 	static void advance(unsigned long long distance);
+private:
+	Random();
 };
 } // namespace util

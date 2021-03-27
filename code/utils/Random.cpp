@@ -36,6 +36,8 @@ private:
 RandomImpl<std::mt19937> SCP_rng;
 } // namespace
 
+Random::Random() = default;
+
 void Random::seed(unsigned int val)
 {
 	Assert(val > 0);
