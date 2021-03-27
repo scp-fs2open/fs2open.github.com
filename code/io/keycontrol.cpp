@@ -692,15 +692,6 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_H:
 			hud_target_toggle_hidden_from_sensors();
 			break;
-
-		case KEY_DEBUGGED + KEY_F: 
-			extern int wacky_scheme;
-			if(wacky_scheme == 3){
-				wacky_scheme = 0;
-			} else {
-				wacky_scheme++;
-			}
-			break;
 		
 		case KEY_DEBUGGED + KEY_ALTED + KEY_F:
 			Framerate_delay += 10;

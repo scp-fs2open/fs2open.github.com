@@ -1284,9 +1284,6 @@ void neb2_pre_render(camid cid)
 	}
 }
 
-// wacky scheme for smoothing colors
-int wacky_scheme = 3;
-
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye_vector)
 {
@@ -1395,17 +1392,6 @@ DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
 DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
 {
 	dc_stuff_float(&Nd->break_alpha);
-}
-
-DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
-{
-	int index;
-	dc_stuff_int(&index);
-	if ( (index >= 0) && (index <= 3) ) {
-		wacky_scheme = index;
-	} else {
-		dc_printf("Invalid smooth mode %i", index);
-	}
 }
 
 DCF(neb2_select, "Enables/disables a poof bitmap")
