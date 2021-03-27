@@ -422,16 +422,9 @@ void neb2_post_level_init()
 		}
 	}
 
-	float height = Neb2_detail[MAX_DETAIL_LEVEL-1].break_y;
-	for (auto poof : Neb2_poofs) {
-		int bm_height;
-		bm_get_info(poof, nullptr, &bm_height);
-		height = MAX(height, static_cast<float>(bm_height * 2));
-	}
-
 	for (auto& detail : Neb2_detail) {
-		detail.break_y = height;
-		detail.break_x = height * gr_screen.aspect;
+		detail.break_y = gr_screen.max_h;
+		detail.break_x = gr_screen.max_w;
 	}
 
 	pneb_tried = 0;
