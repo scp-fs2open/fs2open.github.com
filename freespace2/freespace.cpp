@@ -5328,7 +5328,7 @@ void game_leave_state( int old_state, int new_state )
 				main_hall_stop_ambient();		
 
 				// any other state needs to close out the mission, because we're not going in to gameplay.
-			} else {
+			} else if (new_state == GS_STATE_PXO || new_state == GS_STATE_MULTI_JOIN_GAME) {
 				freespace_stop_mission();
 			}
 
