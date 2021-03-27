@@ -181,7 +181,6 @@ static int math_max (lua_State *L) {
 static int math_random (lua_State *L) {
   /* the `%' avoids the (rare) case of r==1, and is needed also because on
      some systems (SunOS!) `rand()' may return a value larger than RAND_MAX */
-    // DISCUSSME: what do we do here?
   lua_Number r = (lua_Number)(rand()%RAND_MAX) / (lua_Number)RAND_MAX;
   switch (lua_gettop(L)) {  /* check number of arguments */
     case 0: {  /* no arguments */
@@ -208,7 +207,6 @@ static int math_random (lua_State *L) {
 
 
 static int math_randomseed (lua_State *L) {
-    // DISCUSSME: what do we do here?
   srand(luaL_checkint(L, 1));
   return 0;
 }

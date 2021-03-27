@@ -61,7 +61,6 @@
 
 #define MIN(a, b) (a<b?a:b)
 #define MAX(a, b) (a>b?a:b)
-// DISCUSSME: what should we do here?
 #define PCP_RT(rtprev) ((rtprev=rtprev<<1),(((8192+(1024-(rand()&2047))) \
         * MIN (MAX(rtprev,PCP_RETX_IRT), PCP_RETX_MRT))>>13))
 
