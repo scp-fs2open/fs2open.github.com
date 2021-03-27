@@ -175,7 +175,7 @@ TEST_F(VecmatTest, test_vm_vec_add)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec_unnormalized(util::Random(), &v1);
+		static_randvec_unnormalized(util::Random::next(), &v1);
 		static_randvec_unnormalized(util::Random::next(), &v2);
 
 		vm_vec_add(&v3, &v1, &v2);
