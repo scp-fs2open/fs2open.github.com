@@ -12,27 +12,28 @@ namespace {
 template <typename RngType>
 class RandomImpl {
 public:
-void seed(const unsigned int val) {
-	static_assert(RngType::min() == 0, "RNG min must be 0");
-	static_assert(RngType::max() == std::numeric_limits<uint32_t>::max(), "RNG max must be INT32_MAX");
+	void seed(const unsigned int val)
+	{
+		static_assert(RngType::min() == 0, "RNG min must be 0");
+		static_assert(RngType::max() == std::numeric_limits<uint32_t>::max(), "RNG max must be INT32_MAX");
 
-	// follow srand semantics
-	if (val == 1) {
-		m_rng.seed();
-	} else {
-		m_rng.seed(val);
+		// follow srand semantics
+		if (val == 1) {
+			m_rng.seed();
+		} else {
+			m_rng.seed(val);
+		}
 	}
-}
 
-int next()
-{
-	return m_rng() & Random::MAX_VALUE;
-}
+	int next()
+	{
+		return m_rng() & Random::MAX_VALUE;
+	}
 
-void advance(unsigned long long distance)
-{
-	m_rng.discard(distance);
-}
+	void advance(unsigned long long distance)
+	{
+		m_rng.discard(distance);
+	}
 
 private:
 	RngType m_rng;
@@ -58,7 +59,7 @@ int Random::next(int modulus)
 {
 	Assert(modulus > 0);
 
-	return next() % modulus;
+	return SCP_rng.next() % modulus;
 }
 
 int Random::next(int low, int high)
