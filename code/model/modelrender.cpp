@@ -850,7 +850,6 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
-			// DISCUSSME: given >> 4, did this line assume RAND_MAX was 0x7ff?
 			if ( (Random::next()>>4) & 1 )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
 			} else {
@@ -862,7 +861,6 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
-			// DISCUSSME: given >> 4, did this line assume RAND_MAX was 0x7ff?
 			if ( (Random::next()>>4) & 1 )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
 			} else {

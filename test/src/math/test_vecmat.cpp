@@ -195,7 +195,6 @@ TEST_F(VecmatTest, test_vm_vec_sub)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		// DISCUSSME: what should we do here?
 		static_randvec_unnormalized(Random::next(), &v1);
 		static_randvec_unnormalized(Random::next(), &v2);
 
