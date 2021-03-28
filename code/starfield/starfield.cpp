@@ -1753,9 +1753,9 @@ void stars_draw_debris()
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
 		if (!d->active)	{
-			d->pos.xyz.x = f2fl(Random::next() - RAND_MAX_2);
-			d->pos.xyz.y = f2fl(Random::next() - RAND_MAX_2);
-			d->pos.xyz.z = f2fl(Random::next() - RAND_MAX_2);
+			d->pos.xyz.x = f2fl(Random::next() - Random::HALF_MAX_VALUE);
+			d->pos.xyz.y = f2fl(Random::next() - Random::HALF_MAX_VALUE);
+			d->pos.xyz.z = f2fl(Random::next() - Random::HALF_MAX_VALUE);
 
 			vm_vec_normalize(&d->pos);
 

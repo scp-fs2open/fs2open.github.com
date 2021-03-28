@@ -40,7 +40,7 @@ float frand()
 	do {
 		i_rval = Random::next();
 	} while (i_rval == Random::MAX_VALUE);
-	float rval = i2fl(i_rval) * RAND_MAX_1f;
+	float rval = i2fl(i_rval) * Random::INV_F_MAX_VALUE;
 	return rval;
 }
 

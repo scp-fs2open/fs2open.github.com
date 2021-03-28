@@ -2841,7 +2841,7 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 {
 	int r = Random::next();
 
-	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
+	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);

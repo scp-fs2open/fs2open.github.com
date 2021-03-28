@@ -17,7 +17,6 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
-#include "utils/Random.h"
 #include "utils/strings.h"
 
 #include <cstdio>    // For NULL, etc
@@ -305,8 +304,6 @@ constexpr bool LoggingEnabled = false;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
-constexpr int RAND_MAX_2 = util::Random::MAX_VALUE / 2;
-constexpr float RAND_MAX_1f = 1.0f / util::Random::MAX_VALUE;
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?

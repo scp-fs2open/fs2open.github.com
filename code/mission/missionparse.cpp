@@ -6874,8 +6874,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			// If these are not available, this would be an expensive method.
 			x = cosf(fl_radians(45.0f));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = Random::next() < RAND_MAX_2 ? -1 : 1;
-				r2 = Random::next() < RAND_MAX_2 ? -1 : 1;
+				r1 = Random::next() < Random::HALF_MAX_VALUE ? -1 : 1;
+				r2 = Random::next() < Random::HALF_MAX_VALUE ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
