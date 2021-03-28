@@ -13,6 +13,8 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "render/3d.h" 
 #include "ship/ship.h"
 #include "tracing/tracing.h"
@@ -224,6 +226,9 @@ void trail_render( trail * trailp )
 			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
 
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
+
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{
 				vm_vec_sub(&tmp_fvec, &trailp->pos[n], &trailp->pos[sections[i+1]] );
@@ -332,7 +337,7 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 	trailp->val[next] = 0.0f;
 
 	if (orient != nullptr && trailp->info.spread > 0.0f) {
-		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
+		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false, true);
 	} else 
 		vm_vec_zero(&trailp->vel[next]);
 }		

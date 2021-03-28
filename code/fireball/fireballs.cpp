@@ -14,6 +14,7 @@
 #include "graphics/tmapper.h"
 #include "localization/localize.h"
 #include "model/model.h"
+#include "nebula/neb.h"
 #include "object/object.h"
 #include "options/Option.h"
 #include "parse/parselo.h"
@@ -1037,19 +1038,24 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 	if ( fb->current_bitmap < 0 )
 		return;
+
+	float alpha = 1.0f;
+
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_fireballs)
+		alpha *= neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_FIREBALL(obj->radius));
 	
 	g3_transfer_vertex(&p, &obj->pos);
 
 	switch ( fb->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION: {
-			batching_add_volume_bitmap(fb->current_bitmap, &p, fb->orient, obj->radius);
+			batching_add_volume_bitmap(fb->current_bitmap, &p, fb->orient, obj->radius, alpha);
 		}
 		break;
 
 		case FIREBALL_LARGE_EXPLOSION: {
 			// Make the big explosions rotate with the viewer.
-			batching_add_volume_bitmap_rotated(fb->current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius);
+			batching_add_volume_bitmap_rotated(fb->current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius, alpha);
 		}
 		break;
 

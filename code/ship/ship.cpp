@@ -351,6 +351,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
 	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
 	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
 	{ "large ship deathroll",		Info_Flags::Large_ship_deathroll,	true, false },
+	{ "no impact debris",			Info_Flags::No_impact_debris,		true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -19687,8 +19688,8 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {
 		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->is_small_ship() ) ) {			
 			// force detail levels
-			float fog_val = neb2_get_fog_intensity(obj);
-			if ( fog_val >= 0.6f ) {
+			float fog_val = neb2_get_fog_visibility(obj);
+			if ( fog_val <= 0.15f ) {
 				render_info.set_detail_level_lock(2);
 			}
 		}

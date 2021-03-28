@@ -88,6 +88,7 @@ struct oo_packet_and_interp_tracking {
 	int prev_pack_pos_frame;			// the prev position packet arrival frame
 
 	bool client_simulation_mode;		// if the packets come in too late, a toggle to sim things like normal
+										// now also triggered after a ship-ship collision
 
 	bool prev_packet_positionless;		// a flag that marks if the last packet as having no new position or orientation info.
 
@@ -3239,7 +3240,7 @@ void multi_oo_interp(object* objp)
 			objp->orient = interp_data->new_orientation;
 			objp->phys_info.vel = vmd_zero_vector;
 		} // Overshoting in this frame or some edge case bug. Just sim the ship from the known values.
-		else if (time_factor > 4.0f || time_factor < 1.0f) {
+		else if (time_factor > 4.0f || time_factor < 1.0f || interp_data->client_simulation_mode) {
 			// if transitioning to uninterpolated movement, we need to jump to the end of the simulated points 
 			// and then simulate forward some if there's extra time. 
 			float regular_sim_delta;
@@ -3254,6 +3255,7 @@ void multi_oo_interp(object* objp)
 				regular_sim_delta = flFrametime;
 			}
 			// Continue simulating if we have time that we need to simulate and exclude fake values.
+			// Note, whenever client_simulation_mode is on the following will be true.
 			if (regular_sim_delta > 0.001f && regular_sim_delta < 0.500f) {
 				// make sure to bash desired velocity and rotational velocity in this case.
 				objp->phys_info.desired_vel = interp_data->cur_pack_des_vel;
@@ -3447,6 +3449,9 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 
 	// Set the points to the bezier
 	Oo_info.interp[net_sig_idx].pos_spline.bez_set_points(3, pts);
+
+	// unset client mode, now that we have brand new data!
+	Oo_info.interp[net_sig_idx].client_simulation_mode = false;
 }
 
 // Calculates how much time has gone by between the two most recent frames 
@@ -3484,6 +3489,16 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx)
 	temp_sum /= TIMESTAMP_FREQUENCY; // convert from timestamp to float frame time
 
 	return temp_sum;
+}
+
+// temporarily sets this as a client interpolated ship 
+void multi_oo_set_client_simulation_mode(ushort netsig) 
+{
+	if (netsig == 0 || netsig >= Oo_info.interp.size()) {
+		return;
+	}
+
+	Oo_info.interp[netsig].client_simulation_mode = true;
 }
 
 bool display_oo_bez = false;

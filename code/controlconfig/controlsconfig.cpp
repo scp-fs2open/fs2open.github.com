@@ -1934,7 +1934,7 @@ void control_config_do_frame(float frametime)
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
 						if (mouse_down(1 << i)) {
 							Assert(!(z & JOY_AXIS));
-							control_config_bind_btn(z, CC_bind(CID_MOUSE, static_cast<short>(i)), 1);
+							control_config_bind_btn(z, CC_bind(CID_JOY0, static_cast<short>(i)), 1);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;

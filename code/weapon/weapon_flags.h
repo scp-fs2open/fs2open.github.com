@@ -99,9 +99,10 @@ namespace Weapon {
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
 		Spawned,					//Spawned from a spawning type weapon
-		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
+		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
+		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
 
 		NUM_VALUES
 	};

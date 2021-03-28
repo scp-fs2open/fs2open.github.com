@@ -35,9 +35,7 @@
 
 bool Nebula_sexp_used = false;
 
-static ubyte Neb2_fog_color_r = 0;
-static ubyte Neb2_fog_color_g = 0;
-static ubyte Neb2_fog_color_b = 0;
+ubyte Neb2_fog_color[3] = { 0,0,0 };
 
 static ubyte *Neb2_htl_fog_data = NULL;
 
@@ -158,6 +156,10 @@ float Neb2_awacs = -1.0f;
 // The visual render distance multipliers for the nebula
 float Neb2_fog_near_mult = 1.0f;
 float Neb2_fog_far_mult = 1.0f;
+
+
+// this is the percent of visibility at the fog far distance
+const float NEB_FOG_FAR_PCT = 0.1f;
 
 // how many "slices" are in the current player nebuls
 int Neb2_slices = 5;
@@ -339,9 +341,9 @@ void neb2_set_detail_level(int level)
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 {
-	if (r) *r = Neb2_fog_color_r;
-	if (g) *g = Neb2_fog_color_g;
-	if (b) *b = Neb2_fog_color_b;
+	if (r) *r = Neb2_fog_color[0];
+	if (g) *g = Neb2_fog_color[1];
+	if (b) *b = Neb2_fog_color[2];
 }
 
 void neb2_level_init()
@@ -373,13 +375,13 @@ void neb2_post_level_init()
 		return;
 	}
 
-	// Set a default colour just in case something goes wrong
-	Neb2_fog_color_r =  30;
-	Neb2_fog_color_g =  52;
-	Neb2_fog_color_b = 157;
-
 	// OK, lets try something a bit more interesting
 	if (strlen(Neb2_texture_name)) {
+		// Set a default colour just in case something goes wrong
+		Neb2_fog_color[0] = 30;
+		Neb2_fog_color[1] = 52;
+		Neb2_fog_color[2] = 157;
+
 		Neb2_htl_fog_data = new ubyte[768];
 
 		if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
@@ -395,12 +397,12 @@ void neb2_post_level_init()
 			}
 
 			if (pcount > 0) {
-				Neb2_fog_color_r = (ubyte)(r / pcount);
-				Neb2_fog_color_g = (ubyte)(g / pcount);
-				Neb2_fog_color_b = (ubyte)(b / pcount);
+				Neb2_fog_color[0] = (ubyte)(r / pcount);
+				Neb2_fog_color[1] = (ubyte)(g / pcount);
+				Neb2_fog_color[2] = (ubyte)(b / pcount);
 			} else {
 				// it's just black
-				Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
+				Neb2_fog_color[0] = Neb2_fog_color[1] = Neb2_fog_color[2] = 0;
 			}
 
 			// done, now free up the palette data
@@ -555,7 +557,7 @@ DCF(neb_skip, "Toggles culling of objects obscured by nebula")
 }
 int neb2_skip_render(object *objp, float z_depth)
 {
-	float fog_near, fog_far;
+	float fog_near, fog_far, fog_density;
 
 	// if we're never skipping
 	if (!neb_skip_opt) {
@@ -563,7 +565,8 @@ int neb2_skip_render(object *objp, float z_depth)
 	}
 	
 	// get near and far fog values based upon object type and rendering mode
-	neb2_get_adjusted_fog_values(&fog_near, &fog_far, objp);
+	neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
+	float fog = pow(fog_density, z_depth - fog_near + objp->radius);
 
 	// by object type
 	switch( objp->type ) {
@@ -579,34 +582,15 @@ int neb2_skip_render(object *objp, float z_depth)
 		// any weapon over 500 meters away
 		// Use the "far" distance multiplier here
 		case OBJ_WEAPON:
-			if (z_depth >= 500.0f * Neb2_fog_far_mult) {
+			if (fog < 0.05f) {
 				return 1;
 			}
 			break;
 
-		// any small ship over the fog limit, or any cruiser 50% further than the fog limit
+		// any ship less than 3% visible at their closest point
 		case OBJ_SHIP:
-			ship_info *sip;
-			if ( (objp->instance >= 0) && (Ships[objp->instance].ship_info_index >= 0) ) {
-				sip = &Ship_info[Ships[objp->instance].ship_info_index];
-			} else {
-				return 0;
-			}
-
-			// small ships over the fog limit by a small factor
-			if ( (sip->is_small_ship()) && (z_depth >= (fog_far * 1.5f)) ) {
+			if (fog < 0.03f)
 				return 1;
-			}
-
-			// big ships
-			if ( (sip->is_big_ship()) && (z_depth >= (fog_far * 2.0f)) ) {
-				return 1;
-			}
-
-			// huge ships
-			if ( (sip->is_huge_ship()) && (z_depth >= (fog_far * 3.0f)) ) {
-				return 1;
-			}
 			break;
 
 		// any fireball over the fog limit for small ships
@@ -619,11 +603,10 @@ int neb2_skip_render(object *objp, float z_depth)
 			return 0;
 			break;
 
-		// any asteroids 50% farther than the fog limit for small ships
+		// any asteroid less than 3% visible at their closest point
 		case OBJ_ASTEROID:
-			if (z_depth >= (fog_far * 1.5f)) {
+			if (fog < 0.03f)
 				return 1;
-			}
 			break;
 
 		// hmmm. unknown object type - should probably let it through
@@ -1185,7 +1168,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 }
 
 // This version of the function allows for global adjustment to fog values
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *objp)
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, object *objp)
 {
 	neb2_get_fog_values(fnear, ffar, objp);
 
@@ -1196,33 +1179,36 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *objp)
 	// Avoide divide-by-zero
 	if ((*fnear - *ffar) == 0)
 		*ffar = *fnear + 1.0f;
+
+	if (fdensity != nullptr)
+		*fdensity = powf(NEB_FOG_FAR_PCT, 1 / (*ffar - *fnear));
 }
 
-float nNf_near, nNf_far;
+float nNf_near, nNf_density;
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_intensity(object *obj)
+float neb2_get_fog_visibility(object *obj)
 {
-	float pct;
+	float fog_far;
 
 	// get near and far fog values based upon object type and rendering mode
-	neb2_get_adjusted_fog_values(&nNf_near, &nNf_far, obj);
+	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, obj);
 
 	// get the fog pct
-	pct = vm_vec_dist_quick(&Eye_position, &obj->pos) / (nNf_far - nNf_near);
-    
-    CLAMP(pct, 0.0f, 1.0f);
+	float pct = pow(nNf_density, vm_vec_dist(&Eye_position, &obj->pos) - nNf_near);
+
+	CLAMP(pct, 0.0f, 1.0f);
 
 	return pct;
 }
 
 //this only gets called after the one above has been called as it assumes you have set the near and far planes properly
-//doun't use this outside of ship rendering
-float neb2_get_fog_intensity(vec3d *pos)
+//don't use this outside of ship rendering
+float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
 {
 	float pct;
 
 	// get the fog pct
-	pct = vm_vec_dist_quick(&Eye_position, pos) / ((nNf_far*2) - nNf_near);
+	pct = powf(nNf_density, (vm_vec_dist(&Eye_position, pos) - nNf_near) / distance_mult);
 	
     CLAMP(pct, 0.0f, 1.0f);
 
@@ -1507,7 +1493,7 @@ DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
 	dc_stuff_ubyte(&g);
 	dc_stuff_ubyte(&b);
 
-	Neb2_fog_color_r = r;
-	Neb2_fog_color_g = g;
-	Neb2_fog_color_b = b;
+	Neb2_fog_color[0] = r;
+	Neb2_fog_color[1] = g;
+	Neb2_fog_color[2] = b;
 }

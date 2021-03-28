@@ -13,6 +13,7 @@
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "model/modelrender.h"
+#include "nebula/neb.h"
 #include "object/object.h"
 #include "options/Option.h"
 #include "render/3d.h"
@@ -392,6 +393,11 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	if ( (sw->current_bitmap < 0) && (sw->model_id < 0) )
 		return;
 
+
+	float alpha = 1.0f;
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
+		alpha *= neb2_get_fog_visibility(&objp->pos, NEB_FOG_VISIBILITY_MULT_SHOCKWAVE);
+
 	if (sw->model_id > -1) {
 		vec3d scale;
 		scale.xyz.x = scale.xyz.y = scale.xyz.z = sw->radius / 50.0f;
@@ -422,7 +428,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, alpha);
 	}
 }
 

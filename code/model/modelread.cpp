@@ -4237,11 +4237,11 @@ void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *
 }
 
 // the same as model_find_world_dir - just taking model instance data into account
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool parent)
+void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
+	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
 void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)

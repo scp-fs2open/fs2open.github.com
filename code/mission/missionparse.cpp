@@ -4236,9 +4236,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
-		if (Game_mode & GM_MULTIPLAYER)
+		// Cyborg -- The original ships in the wave have their net_signature set at mission parse
+		// so only do this if this is a subsequent wave.
+		if (Game_mode & GM_MULTIPLAYER && wingp->num_waves > 1)
 		{
-			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
+			// Cyborg -- Also, then we need to subtract the original wave's number of fighters 
+			// and also subtract 1 to use the wing's starting signature
+			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count - (wingp->wave_count + 1));
 		}
 
 
@@ -4683,7 +4687,8 @@ void parse_wing(mission *pm)
 		int next_signature;
 
 		wingp->net_signature = multi_assign_network_signature( MULTI_SIG_SHIP );
-		next_signature = wingp->net_signature + (wingp->wave_count * wingp->num_waves);
+		// Cyborg -- Subtract one because the original wave already has its signatures set.
+		next_signature = wingp->net_signature + (wingp->wave_count * (wingp->num_waves - 1));
 		if ( next_signature > SHIP_SIG_MAX )
 			Error(LOCATION, "Too many total ships in mission (%d) for network signature assignment", SHIP_SIG_MAX);
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
@@ -5480,11 +5485,21 @@ void parse_bitmaps(mission *pm)
 	Mission_palette = 1;
 
 	// neb2 info
-	strcpy_s(Neb2_texture_name, "Eraseme3");
+	strcpy_s(Neb2_texture_name, "");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
-	if(optional_string("+Neb2:")){
+	bool nebula = false;
+	if (optional_string("+Neb2:")) {
+		nebula = true;
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-
+	} else if (optional_string("+Neb2Color:")) {
+		nebula = true;
+		int neb_colors[3];
+		stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
+		Neb2_fog_color[0] = (ubyte)neb_colors[0];
+		Neb2_fog_color[1] = (ubyte)neb_colors[1];
+		Neb2_fog_color[2] = (ubyte)neb_colors[2];
+	}
+	if (nebula) {
 		required_string("+Neb2Flags:");			
 		stuff_int(&Neb2_poof_flags);
 

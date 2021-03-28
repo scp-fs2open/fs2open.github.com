@@ -301,8 +301,8 @@ void gr_opengl_deferred_lighting_finish()
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_emissive_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-		float fog_near, fog_far;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr);
+		float fog_near, fog_far, fog_density;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
@@ -311,7 +311,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_set_generic_uniform_data<graphics::generic_data::fog_data>([&](graphics::generic_data::fog_data* data) {
 			data->fog_start       = fog_near;
-			data->fog_scale       = 1.0f / (fog_far - fog_near);
+			data->fog_density     = fog_density;
 			data->fog_color.xyz.x = r / 255.f;
 			data->fog_color.xyz.y = g / 255.f;
 			data->fog_color.xyz.z = b / 255.f;

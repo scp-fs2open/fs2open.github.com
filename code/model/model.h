@@ -962,7 +962,7 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 // return the point in 3-space in outpnt.
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient);
-extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool parent = false);
+extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent = false);
 extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 // Clears all the submodel instances stored in a model to their defaults.
