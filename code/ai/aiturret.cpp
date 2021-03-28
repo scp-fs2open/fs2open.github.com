@@ -87,6 +87,18 @@ typedef struct eval_enemy_obj_struct {
 	int			nearest_objnum;
 }	eval_enemy_obj_struct;
 
+// the current world orientation of the turret matrix, corresponding to its fvec and uvec defined in the model
+// is NOT affected by the turret's current aiming
+void turret_instance_find_world_orient(matrix* out_mat, int model_instance_num, int submodel_num, const matrix* objorient)
+{
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	vec3d fvec, uvec;
+	model_instance_find_world_dir(&fvec, &pm->submodel[submodel_num].frame_of_reference.vec.fvec, pm, pmi, pm->submodel[submodel_num].parent, objorient);
+	model_instance_find_world_dir(&uvec, &pm->submodel[submodel_num].frame_of_reference.vec.uvec, pm, pmi, pm->submodel[submodel_num].parent, objorient);
+	vm_vector_2_matrix_norm(out_mat, &fvec, &uvec);
+}
+
 /**
  * Is object in turret field of view?
  *
@@ -1177,7 +1189,7 @@ void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, 
 	if (gpos)
 		model_instance_find_world_point(gpos, &vmd_zero_vector, model_instance_num, tp->subobj_num, &objp->orient, &objp->pos);
 	if (gvec)
-		model_instance_find_world_dir(gvec, &tp->turret_norm, model_instance_num, tp->subobj_num, &objp->orient);
+		model_instance_find_world_dir(gvec, &tp->turret_norm, model_instance_num, tp->subobj_num, &objp->orient, true);
 }
 
 void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss);
@@ -1238,7 +1250,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 			} else {
 				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge())) {
                     // the turret norm here is from the perspective of the base submodel, not the gun submodel
-					model_instance_find_world_dir(&turret_norm, &tp->turret_norm, pm, pmi, tp->subobj_num, &objp->orient);
+					model_instance_find_world_dir(&turret_norm, &tp->turret_norm, pm, pmi, pm->submodel[tp->subobj_num].parent, &objp->orient);
 					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &turret_norm, &enemy_point, MIN(wip->max_speed * wip->lifetime, wip->weapon_range), tp->turret_fov);
 				}
 				else {
@@ -1407,7 +1419,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 	if (ship_subsystem_in_sight(enemy_objp, enemy_subsysp, abs_gunposp, &subobj_pos, 1, &dot_out, &vector_out)) {
 		vec3d	turret_norm;
 
-		model_instance_find_world_dir(&turret_norm, &turret_subsysp->system_info->turret_norm, Ships[objp->instance].model_instance_num, turret_subsysp->system_info->subobj_num, &objp->orient);
+		model_instance_find_world_dir(&turret_norm, &turret_subsysp->system_info->turret_norm, Ships[objp->instance].model_instance_num, turret_subsysp->system_info->subobj_num, &objp->orient, true);
 		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
 
 		if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_subsystem_targeting_for_turrets]) {
@@ -2728,25 +2740,20 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
 	if (((dot + size_mod) >= tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
-
-		// Since we no longer maintain world_to_turret_matrix, regenerate it here.
-		object *objp = &Objects[ss->parent_objnum];
-		vec3d turret_norm;
-		matrix turret_matrix, world_to_turret_matrix;
-		model_instance_find_world_dir(&turret_norm, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->subobj_num, &vmd_identity_matrix);
-		vm_vector_2_matrix(&turret_matrix, &turret_norm, nullptr, nullptr);
-		vm_matrix_x_matrix(&world_to_turret_matrix, &objp->orient, &turret_matrix);
+		object* objp = &Objects[ss->parent_objnum];
+		matrix turret_matrix;
+		turret_instance_find_world_orient(&turret_matrix, Ships[objp->instance].model_instance_num, tp->subobj_num, &objp->orient);
 
 		vec3d of_dst;
-		vm_vec_rotate( &of_dst, v2e, &world_to_turret_matrix );
-		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
-			return true;
-		} else {
-			of_dst.xyz.z = 0;
+		vm_vec_rotate(&of_dst, v2e, &turret_matrix);
+		if ((of_dst.xyz.x == 0) && (of_dst.xyz.z == 0)) 
+			return true; 
+		else {
+			of_dst.xyz.y = 0;
 			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
 				vm_vec_normalize(&of_dst);
 				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
-				if ((-of_dst.xyz.y + size_mod) >= tp->turret_y_fov)
+				if ((of_dst.xyz.z + size_mod) >= tp->turret_base_fov)
 					return true;
 			}
 		}
@@ -2757,7 +2764,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 {
 	bool in_fov = false;
-	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_alt_math])
+	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_restricted_fov])
 		in_fov = turret_adv_fov_test(ss, gvec, v2e, size_mod);
 	else
 		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);

@@ -697,7 +697,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", "number,
 
 	fov = tp->turret_fov;
 	fov_e = tp->turret_max_fov;
-	fov_y = tp->turret_y_fov;
+	fov_y = tp->turret_base_fov;
 
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
