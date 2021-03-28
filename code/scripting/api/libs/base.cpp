@@ -82,8 +82,7 @@ ADE_FUNC(rand32f,
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	// DISCUSSME: is division at the level of 2**31 ok for floats?
-	float result = static_cast<float>(::util::Random::next()) / static_cast<float>(::util::Random::MAX_VALUE);
+	float result = (float)Random::next() * Random::INV_F_MAX_VALUE;
 
 	if (numargs > 0)
 		result *= _max;
