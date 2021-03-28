@@ -552,7 +552,7 @@ namespace particle
 		n2 = (pe->num_high * percent) / 100;
 
 		// How many to emit?
-		n = ::Random::next(n1, n2);
+		n = Random::next(n1, n2);
 
 		if (n < 1) return;
 
