@@ -969,14 +969,12 @@ void multi_ingame_handle_timeout()
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
-    std::uint64_t oflags, sflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
 	int team_val, slot_index, idx;
 	char ship_name[255] = "";
 	object *objp;
-	int net_sig_modify;
 
 	// go through the ship obj list and delete everything. YEAH
 	if(!Ingame_ships_deleted){
@@ -1003,17 +1001,31 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
 		int ship_num, objnum;
+		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_ULONG( sflags );
-		GET_ULONG( oflags );
+		GET_DATA( flag_size );
+
+		ubyte temp;
+		SCP_vector<ubyte> ship_flags, object_flags;
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			ship_flags.push_back(temp);
+		}
+
+		GET_DATA( flag_size );
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			object_flags.push_back(temp);
+		}
+
 		GET_INT( team );		
 		GET_SHORT( wing_data );
-		net_sig_modify = 0;
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
-			net_sig_modify = Wings[wing_data].current_wave - 1;
 		}
 
 		// lookup ship in the original ships array
@@ -1036,7 +1048,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-        Objects[objnum].flags.from_u64(oflags);
+		Objects[objnum].flags.reset();
+		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
 
 		// Cyborg17 also add this ship to the multi ship tracking and interpolation struct
@@ -1044,7 +1057,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags.from_u64(sflags);
+		Ships[ship_num].flags.reset();
+		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1126,13 +1140,35 @@ void send_ingame_ships_packet(net_player *player)
 			continue;
 		}
 
+		SCP_vector<ubyte> ship_flags_out, obj_flags_out;
+
 		//  add the ship name and other information such as net signature, ship and object(?) flags.
 		p_type = INGAME_SHIP_NEXT;
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_ULONG( shipp->flags.to_u64() );
-		ADD_ULONG( Objects[so->objnum].flags.to_u64() );
+		
+		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		auto temp_size = static_cast<ubyte>(check);
+		ADD_DATA(temp_size);
+
+		for (auto& item : ship_flags_out){
+			ADD_DATA(item);
+		} 
+
+		check = shipp->flags.to_ubyte_vector(ship_flags_out);
+
+		Assertion(check <= 255, "Somehow FSO thinks there are too many object flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		temp_size = static_cast<ubyte>(Objects[so->objnum].flags.to_ubyte_vector(obj_flags_out));
+
+		ADD_DATA(temp_size);
+		for (auto& item : obj_flags_out){
+			ADD_DATA(item);
+		} 
+
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
 		ADD_SHORT(wing_data);
@@ -1600,6 +1636,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
         objp->flags.remove(Object::Object_Flags::Could_be_player);
 		objp->flags.set(Object::Object_Flags::Player_ship);
 
+		// remove any potentially problemantic AI only flags.
+		Ai_info[Ships[objp->instance].ai_index].ai_flags.remove(AI::AI_Flags::Formation_object);
+
 		// send a player settings packet to update all other players of this guy's final choices
 		send_player_settings_packet();
 
@@ -1620,7 +1659,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	case INGAME_SR_DENY :
 		PACKET_SET_SIZE();
 
-		// set this to -1 so we can pick again
+		// set this to 0 so we can pick again
 		Multi_ingame_join_sig = 0;
 
 		// display a popup
@@ -1805,10 +1844,25 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 
 	BUILD_HEADER(INGAME_SHIP_UPDATE);
 	
-	// just send net signature, shield and hull percentages
+	// just send net signature, flags and shield and hull percentages
 	objp = &Objects[sp->objnum];
+
 	ADD_USHORT(objp->net_signature);
-	ADD_ULONG(objp->flags.to_u64());
+
+	// flags
+	SCP_vector<ubyte> obj_flags_out;
+	objp->flags.to_ubyte_vector(obj_flags_out);
+
+	Assertion(obj_flags_out.size() <= 255, "FSO thinks there are too many object flags to send over multiplayer, specifically %d * 8. Please report!", static_cast<int>(obj_flags_out.size()));
+
+	auto temp_size = static_cast<ubyte>(obj_flags_out.size());
+
+	// Add flag entries
+	ADD_DATA(temp_size);
+	for (auto& entry : obj_flags_out){
+		ADD_DATA(entry);
+	}
+
 	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
@@ -1825,7 +1879,6 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 {
 	int offset;
 	float garbage;
-	uint64_t flags;
 	int idx;
 	int n_quadrants;
 	ushort net_sig;
@@ -1835,7 +1888,17 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
-	GET_ULONG(flags);
+
+	// retrieve object flags
+	ubyte temp_size, temp;
+	SCP_vector<ubyte> flags_final;
+	GET_DATA(temp_size);
+
+	for (size_t i = 0; i < temp_size; i++){
+		GET_DATA(temp);
+		flags_final.push_back(temp);
+	}
+
 	GET_INT(n_quadrants);
 
 	// get the object
@@ -1851,8 +1914,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		PACKET_SET_SIZE();
 		return;
 	}
+
 	// otherwise read in the ship values
-	lookup->flags.from_u64(flags);
+	lookup->flags.set_from_vector(flags_final);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){
