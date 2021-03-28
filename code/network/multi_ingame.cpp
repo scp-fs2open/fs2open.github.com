@@ -1017,10 +1017,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 
 		// lookup ship in the original ships array
-		p_objp = mission_parse_get_parse_object(net_signature);
+		p_objp = mission_parse_get_parse_object(ship_name);
 		if(p_objp == NULL){
 			// if this ship is part of wing not on its current wave, look for its "original" by subtracting out wave #
-			p_objp = mission_parse_get_arrival_ship((ushort)(net_signature - (ushort)net_sig_modify));
+			p_objp = mission_parse_get_arrival_ship(ship_name);
 		}
 		if(p_objp == NULL){
 			Int3();
@@ -1064,13 +1064,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				continue;
 			}
 
-			// get the team and slot.  Team will be -1 when it isn't a part of player wing.  So, if
-			// not -1, then be sure we have a valid slot, then change the ship type, etc.
+			// get the team and slot.  Team and slot will be -1 when it isn't a part of player wing.
+			// So, if not -1, then change the ship type, etc.
 			objp = &Objects[Ships[idx].objnum];		
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
-			if ( team_val != -1 ) {
-				Assert( slot_index != -1 );
 
+			if ( (team_val != -1) && (slot_index != -1) ) {
 				// change the ship type and the weapons
 				change_ship_type(objp->instance, Wss_slots_teams[team_val][slot_index].ship_class);
 				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
