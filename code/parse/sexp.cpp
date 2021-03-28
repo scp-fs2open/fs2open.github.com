@@ -737,7 +737,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-to-list",					OP_CONTAINER_ADD_TO_LIST,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
-	{ "get-map-keys",					OP_GET_MAP_KEYS,						2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "remove-from-list",				OP_CONTAINER_REMOVE_FROM_LIST,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -24840,7 +24840,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;		
 
-			case OP_GET_MAP_KEYS:
+			case OP_CONTAINER_GET_MAP_KEYS:
 				sexp_get_map_keys(node);
 				sexp_val = SEXP_TRUE;
 				break;
@@ -27855,7 +27855,7 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_ADD_TO_LIST:
 		case OP_CONTAINER_ADD_TO_MAP:
 		case OP_CLEAR_CONTAINER:
-		case OP_GET_MAP_KEYS:
+		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CONTAINER_REMOVE_FROM_LIST:
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 			return OPR_NULL;
@@ -28467,7 +28467,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLEAR_CONTAINER:
 			return OPF_CONTAINER_NAME;
 
-		case OP_GET_MAP_KEYS:
+		case OP_CONTAINER_GET_MAP_KEYS:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
 			}
@@ -32256,7 +32256,7 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_ADD_TO_LIST:
 		case OP_CONTAINER_ADD_TO_MAP:
 		case OP_CLEAR_CONTAINER:
-		case OP_GET_MAP_KEYS:
+		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CONTAINER_REMOVE_FROM_LIST:
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
@@ -33509,7 +33509,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container.\r\n" },
 
-	{ OP_GET_MAP_KEYS, "get-map-keys\r\n"
+	{ OP_CONTAINER_GET_MAP_KEYS, "get-map-keys\r\n"
 		"\tTakes the keys of a SEXP map container and puts them into a SEXP list container.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of the map container.\r\n"
