@@ -795,8 +795,8 @@ bool StartAutopilot()
 		vm_vec_scale(&perp,  Autopilot_flight_leader->radius+radius);
 
 		// randomly scale up/down by up to 20%
-		// DISCUSSME: despite the comment, the range is actually [-19,20]. Should we fix?
-		j = 20 - Random::next(40); // [-20,20]
+		// jg18 - original comment said [-20,20] but preserving existing behavior
+		j = Random::next(-19, 20);
 
 		vm_vec_scale(&perp, 1.0f+(float(j)/100.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);

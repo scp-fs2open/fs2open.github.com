@@ -2288,7 +2288,7 @@ int num_turrets_attacking(object *turret_parent, int target_objnum)
  */
 int get_enemy_timestamp()
 {
-	return (NUM_SKILL_LEVELS - Game_skill_level) * (Random::next(500) + 500);
+	return (NUM_SKILL_LEVELS - Game_skill_level) * Random::next(500, 999);
 }
 
 /**
@@ -9757,8 +9757,7 @@ void remove_farthest_attacker(int objnum)
 				aip->ignore_objnum = aip->target_objnum;
 				aip->ignore_signature = Objects[aip->target_objnum].signature;
 				aip->ai_flags.set(AI::AI_Flags::Temporary_ignore);
-				// DISCUSSME: should we fix the code to match the comment? Or the other way around?
-				aip->ignore_expire_timestamp = timestamp((Random::next(10) + 20) * 1000);	//	OK to attack again in 20 to 24 seconds.
+				aip->ignore_expire_timestamp = timestamp(Random::next(20, 29) * 1000);	//	OK to attack again in 20 to 29 seconds.
 			}
 			aip->target_objnum = -1;
 			ai_do_default_behavior(farthest_objp);
@@ -13611,7 +13610,7 @@ void ai_maybe_depart(object *objp)
 		if (sip->is_fighter_bomber()) {
 			if (aip->warp_out_timestamp == 0) {
 				//if (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) == 0.0f) {
-				//	aip->warp_out_timestamp = timestamp(((Random::next() % 10) + 10) * 1000);
+				//	aip->warp_out_timestamp = timestamp(Random::next(10, 19) * 1000);
 				//}
 			} else if (timestamp_elapsed(aip->warp_out_timestamp)) {
 				mission_do_departure(objp);

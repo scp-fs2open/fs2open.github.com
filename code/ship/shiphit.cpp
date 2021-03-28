@@ -1048,7 +1048,6 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 
 	int n = ship_p->num_hits;
 	if (n >= MAX_SHIP_HITS)	{
-		// DISCUSSME: was the minimum really intended to be 0?
 		n = Random::next(MAX_SHIP_HITS);
 	} else {
 		ship_p->num_hits++;
@@ -1228,7 +1227,6 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 			n = choose_next_spark(ship_objp, hitpos);
 		} else {
 			// otherwise, normal choice
-			// DISCUSSME: was the minimum number of sparks really intended to be 0?
 			n = Random::next(max_sparks);
 		}
 	} else {

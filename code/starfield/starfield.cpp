@@ -879,12 +879,10 @@ void stars_post_level_init()
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
 		{
-			// DISCUSSME: the max value for these ranges is 254 and not 255. Do we fix it?
-			red= (ubyte)(Random::next(63) +192);		//192-255
-			green= (ubyte)(Random::next(63) +192);		//192-255
-			blue= (ubyte)(Random::next(63) +192);		//192-255
-			// DISCUSSME: despite the comment, the range is actually 24-215. Do we fix it?
-			alpha = (ubyte)(Random::next(192) + 24);	//24-216
+			red = (ubyte)Random::next(192, 255);
+			green = (ubyte)Random::next(192, 255);
+			blue = (ubyte)Random::next(192, 255);
+			alpha = (ubyte)Random::next(24, 216);
 
 			gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
 		}

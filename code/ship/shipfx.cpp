@@ -2130,7 +2130,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 
 		shipp->arc_next_time = timestamp(-1);		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
+		int n, n_arcs = Random::next(1, 3);
 
 		vec3d v1, v2, v3, v4;
 		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);

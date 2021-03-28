@@ -2252,12 +2252,12 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 	if (Message_wave_duration == 0) {
 		SCP_string result_str;
 
-		size_t next_distort = 5 + Random::next(5);
+		size_t next_distort = Random::next(5, 9);
 		size_t i            = 0;
 		size_t run = 0;
 		for (auto cp : unicode::codepoint_range(text.c_str())) {
 			if (i == next_distort) {
-				run = 3 + Random::next(5);
+				run = Random::next(3, 7);
 				if (i + run > len)
 					run = len - i;
 			}
@@ -2267,7 +2267,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 				--run;
 
 				if (run <= 0) {
-					next_distort = i + (5 + Random::next(5));
+					next_distort = i + Random::next(5, 9);
 				}
 			} else {
 				unicode::encode(cp, std::back_inserter(result_str));

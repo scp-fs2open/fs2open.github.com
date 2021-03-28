@@ -2734,7 +2734,7 @@ void multi_sg_init_gamenet()
 	
 	Net_player->tracker_player_id = Multi_tracker_id;
 
-	Multi_sg_netgame->security = Random::next(32766) + 1;			// get some random security number	
+	Multi_sg_netgame->security = Random::next(1, 32766);			// get some random security number	
 	Multi_sg_netgame->mode = NG_MODE_OPEN;
 	Multi_sg_netgame->rank_base = RANK_ENSIGN;
 	if(Multi_sg_netgame->security < 16){

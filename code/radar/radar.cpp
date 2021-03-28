@@ -57,9 +57,8 @@ void HudGaugeRadarStd::blipDrawDistorted(blip *b, int x, int y)
 {
 	int xdiff, ydiff;
 	float scale;
-	// DISCUSSME: These values are in [-10,9]. Was [-10,10] intended?
-	xdiff = -10 + Random::next(20);
-	ydiff = -10 + Random::next(20);
+	xdiff =  Random::next(-10, 9);
+	ydiff =  Random::next(-10, 9);
 
 	// maybe scale the effect if EMP is active
 	if(emp_active_local()){
@@ -91,9 +90,8 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 	}
 
 	if (Random::flip_coin()) {
-		// DISCUSSME: these values are in [-2,1]. Was [-2,2] intended?
-		xdiff = -2 + Random::next(4);
-		ydiff = -2 + Random::next(4);
+		xdiff = Random::next(-2, 1);
+		ydiff = Random::next(-2, 1);
 	}
 
 	drawContactCircle(x + xdiff, y + ydiff, b->rad);

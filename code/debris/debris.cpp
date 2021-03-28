@@ -629,7 +629,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	if ( hull_flag )	{
 		float t;
-		scale = exp_force * i2fl(Random::next(20) + 10);	// for radial_vel away from location of blast center
+		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from location of blast center
 		db->sound_delay = timestamp(DEBRIS_SOUND_DELAY);
 
 		// set up physics mass and I_inv for hull debris pieces
@@ -652,7 +652,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 	else {
-		scale = exp_force * i2fl(Random::next(20) + 10);	// for radial_vel away from blast center (non-hull)
+		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from blast center (non-hull)
 	}
 
 	if ( vm_vec_mag_squared( &to_center ) < 0.1f )	{
