@@ -170,8 +170,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.13f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		150.0f, 150.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.013f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		510.0f,							// total dimension of player poof cube
 		50.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -181,8 +180,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.0125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		550.0f,							// total dimension of player poof cube
 		100.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -192,8 +190,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd highest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.1f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.01f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		550.0f,							// total dimension of player poof cube
 		150.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -203,8 +200,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // higest detail level
 		0.475f,							// max alpha for this detail level in Glide
 		0.575f,							// max alpha for this detail level in D3d
-		0.05f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		200.0f, 200.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.005f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		750.0f,							// total dimension of player poof cube
 		200.0f,							// inner radius of the player poof cube
 		360.0f,							// outer radius of the player pood cube
@@ -692,8 +688,8 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 {
 	float alpha = 0.0f;
-	float per_pixel_x = incoming_alpha / (float)Nd->break_x;
-	float per_pixel_y = incoming_alpha / (float)Nd->break_y;
+	float per_pixel_x = incoming_alpha / (float)gr_screen.max_w;
+	float per_pixel_y = incoming_alpha / (float)gr_screen.max_h;
 	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));
 	int off_y = ((sy < 0.0f) || (sy > (float)gr_screen.max_h));
 	float off_x_amount = 0.0f;
@@ -1288,9 +1284,6 @@ void neb2_pre_render(camid cid)
 	}
 }
 
-// wacky scheme for smoothing colors
-int wacky_scheme = 3;
-
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye_vector)
 {
@@ -1399,25 +1392,6 @@ DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
 DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
 {
 	dc_stuff_float(&Nd->break_alpha);
-}
-
-DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent.")
-{
-	int value;
-	dc_stuff_int(&value);
-	Nd->break_y = (float)value;
-	Nd->break_x = Nd->break_y * gr_screen.aspect;
-}
-
-DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
-{
-	int index;
-	dc_stuff_int(&index);
-	if ( (index >= 0) && (index <= 3) ) {
-		wacky_scheme = index;
-	} else {
-		dc_printf("Invalid smooth mode %i", index);
-	}
 }
 
 DCF(neb2_select, "Enables/disables a poof bitmap")
