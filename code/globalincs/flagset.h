@@ -6,6 +6,8 @@
 
 #include "osapi/dialogs.h"
 
+constexpr size_t UBYTE_SIZE = 8;
+
 template<typename TEnum, size_t SIZE>
 struct flag_combinator;
 
@@ -114,6 +116,66 @@ class flagset {
 		return *this;
 	}
 
+	size_t to_ubyte_vector(SCP_vector<ubyte>& vector_out)
+	{
+		int counter = 0;		// a counter to determine how far to bitshift
+		ubyte  ubyte_out= 0;	// the holder for our bitshifted flags
+
+		for (size_t i = 0; i < SIZE; i++) {
+
+			// this needs to be at the beginning for push_back after the loop
+			// to work properly.
+			if (counter == UBYTE_SIZE) {
+				vector_out.push_back(ubyte_out);
+				counter = 0;
+				ubyte_out = 0;
+			}
+			
+			// check whether that flag was set
+			// there is probably a more efficient way to do this,
+			// but not unless we can copy the underlying data safely.
+			if (values[i]) {
+				ubyte_out |= 1 << counter; 
+			}	
+
+			// iterate
+			++counter;
+		}
+
+		vector_out.push_back(ubyte_out);
+		
+		return vector_out.size();
+	}
+
+	void set_from_vector(const SCP_vector<ubyte>& vector_in) 
+	{
+		size_t flag = 0; 
+		int bitshift = 0;
+
+		// just iterate through the entries, and set flags as appropriate.
+		for (auto& entry : vector_in) {
+
+			if (entry & (1 << bitshift)) {
+				values.set(flag, true);
+			}
+
+			++flag;
+
+			// this function is used in multi where the size of flagsets can be different
+			// on server and client.  Small differences in flagset sizes should not affect
+			// gameplay, but we have to make sure not to exceed the size of the flagset.
+			if (flag >= SIZE){
+				return;
+			} 
+
+			++bitshift;
+
+			if (bitshift == UBYTE_SIZE){
+				bitshift = 0;
+			}
+		}
+	}
+
 	flagset<T>& toggle(T idx) {
 		values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 
@@ -124,6 +186,7 @@ class flagset {
 	bool none_set() { return values.none(); }
 
 	void from_u64(std::uint64_t num) { values = (unsigned long) num; }
+
 	std::uint64_t to_u64() const { return (std::uint64_t) values.to_ulong(); }
 
 	size_t hash() const { return std::hash<std::bitset<SIZE>>()(values); }
