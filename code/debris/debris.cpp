@@ -460,15 +460,15 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	if (!hull_flag) {
 		if (model_num >= 0) {
 			db->model_num = model_num;
-			db->submodel_num = (Random::next() >> 4) % sip->generic_debris_num_submodels;
+			db->submodel_num = Random::next(sip->generic_debris_num_submodels);
 		}
 		else if (vaporize) {
 			db->model_num = Debris_vaporize_model;
-			db->submodel_num = (Random::next() >> 4) % Debris_num_submodels;
+			db->submodel_num = Random::next(Debris_num_submodels);
 		}
 		else {
 			db->model_num = Debris_model;
-			db->submodel_num = (Random::next() >> 4) % Debris_num_submodels;
+			db->submodel_num = Random::next(Debris_num_submodels);
 		}
 	}
 	else {
