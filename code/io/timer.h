@@ -18,6 +18,8 @@
 
 #include <cstdint>
 
+using Random = util::Random;
+
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
 // count_val.  If 'function' isn't 0, the function pointed to by function will
@@ -98,7 +100,7 @@ int timestamp();
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
-	return timestamp(util::Random::next(a, b));
+	return timestamp(Random::next(a, b));
 }
 
 // Example that makes a ship fire in 1/2 second

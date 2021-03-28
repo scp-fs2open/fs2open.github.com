@@ -553,7 +553,7 @@ namespace particle
 
 		// How many to emit?
 		// DISCUSSME: does this rewrite look correct?
-		n = ::util::Random::next(n1, n2);
+		n = ::Random::next(n1, n2);
 
 		if (n < 1) return;
 

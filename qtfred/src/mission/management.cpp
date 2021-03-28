@@ -57,7 +57,7 @@ bool
 initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor, const InitializerCallback& listener) {
 	std::setlocale(LC_ALL, "C");
 
-	util::Random::seed(static_cast<unsigned int>(time(nullptr)));
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	listener(SubSystem::OS);
 	os_init(Osreg_class_name, Osreg_app_name);

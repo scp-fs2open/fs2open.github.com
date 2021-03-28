@@ -297,7 +297,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	util::Random::seed(static_cast<unsigned int>(time(nullptr)));
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -971,9 +971,9 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (util::Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");

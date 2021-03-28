@@ -904,7 +904,7 @@ void game_level_init()
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// seed the generator from the netgame security flags -- ensures that all players in
 		// multiplayer will have the same random number sequence (with static rand functions)
-		util::Random::seed( Netgame.security );
+		Random::seed( Netgame.security );
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
@@ -1596,7 +1596,7 @@ void game_init()
 	Game_current_mission_filename[0] = 0;
 
 	// seed the random number generator
-	util::Random::seed(static_cast<unsigned int>(time(nullptr)));
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	Framerate_delay = 0;
 
@@ -2839,7 +2839,7 @@ void game_shudder_apply(int time, float intensity)
 
 float get_shake(float intensity, int decay_time, int max_decay_time)
 {
-	int r = util::Random::next();
+	int r = Random::next();
 
 	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
 	

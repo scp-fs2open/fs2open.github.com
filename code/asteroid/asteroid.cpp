@@ -564,7 +564,7 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int subtype = util::Random::next(NUM_DEBRIS_POFS);
+			int subtype = Random::next(NUM_DEBRIS_POFS);
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
 				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
@@ -758,7 +758,7 @@ static void maybe_throw_asteroid(int count)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object *A = &Objects[so->objnum];
 		if (so->objnum == Asteroid_throw_objnum) {
-			int subtype = util::Random::next(NUM_DEBRIS_POFS);
+			int subtype = Random::next(NUM_DEBRIS_POFS);
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
 				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
@@ -1484,7 +1484,7 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 						int num_roids_var = split->max - split->min;
 
 						if (num_roids_var > 0)
-							num_roids += util::Random::next(num_roids_var);
+							num_roids += Random::next(num_roids_var);
 
 						if (num_roids > 0)
 							for (int i=0; i<num_roids; i++)

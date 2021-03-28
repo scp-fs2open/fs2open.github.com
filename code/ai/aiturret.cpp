@@ -1687,11 +1687,11 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 			wait *= wip->fire_wait;
 		}
 		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-			turret->weapons.burst_counter[weapon_num] = util::Random::next(wip->burst_shots);
-			turret->weapons.burst_seed[weapon_num] = util::Random::next();
+			turret->weapons.burst_counter[weapon_num] = Random::next(wip->burst_shots);
+			turret->weapons.burst_seed[weapon_num] = Random::next();
 		} else {
 			turret->weapons.burst_counter[weapon_num] = 0;
-			turret->weapons.burst_seed[weapon_num] = util::Random::next();
+			turret->weapons.burst_seed[weapon_num] = Random::next();
 		}
 	}
 

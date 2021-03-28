@@ -1234,8 +1234,8 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		return;
 	}
 
-	int vn1 = util::Random::next(nv);
-	int vn2 = util::Random::next(nv);
+	int vn1 = Random::next(nv);
+	int vn2 = Random::next(nv);
 
 	*v1 = *Interp_verts[vn1];
 	*v2 = *Interp_verts[vn2];
@@ -1280,7 +1280,7 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-		int seed_num = seed == -1 ? util::Random::next() : seed;
+		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
 		int vn2 = static_rand(seed_num) % nv;
 
@@ -1367,7 +1367,7 @@ void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, fl
 		vm_vec_make(&best1, 0, 0, 999999);
 		vm_vec_make(&best2, 0, 0, 999999);
 		for (int i = 0; i < 15; i++) {
-			vec3d rand_point = tree->point_list[util::Random::next(nv)];
+			vec3d rand_point = tree->point_list[Random::next(nv)];
 			if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best1.xyz.z - z_slice_pos))
 				best1 = rand_point;
 			else if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best2.xyz.z - z_slice_pos))

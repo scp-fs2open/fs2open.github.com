@@ -38,8 +38,8 @@ float frand()
 {
 	int i_rval;
 	do {
-		i_rval = util::Random::next();
-	} while (i_rval == util::Random::MAX_VALUE);
+		i_rval = Random::next();
+	} while (i_rval == Random::MAX_VALUE);
 	float rval = i2fl(i_rval) * RAND_MAX_1f;
 	return rval;
 }

@@ -217,8 +217,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (util::Random::next()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
-		tangles.h += (float) (util::Random::next()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.p += (float) (Random::next()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.h += (float) (Random::next()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
 	}
 
 

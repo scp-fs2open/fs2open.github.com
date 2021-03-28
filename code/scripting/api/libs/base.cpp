@@ -25,6 +25,7 @@
 
 namespace scripting {
 namespace api {
+using Random = ::util::Random;
 
 //**********LIBRARY: Base
 ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
@@ -62,11 +63,11 @@ ADE_FUNC(rand32,
 
 	int result;
 	if (numargs == 2)
-		result = ::util::Random::next(a, b);
+		result = Random::next(a, b);
 	else if (numargs == 1)
-		result = ::util::Random::next(a);
+		result = Random::next(a);
 	else
-		result = ::util::Random::next();
+		result = Random::next();
 
 	return ade_set_error(L, "i", result);
 }

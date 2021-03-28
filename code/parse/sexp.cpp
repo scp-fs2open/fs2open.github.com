@@ -4763,9 +4763,9 @@ int rand_internal(int low, int high, int seed = 0)
 {
 	// maybe seed it
 	if (seed > 0)
-		util::Random::seed(seed);
+		Random::seed(seed);
 
-	return util::Random::next(low, high);
+	return Random::next(low, high);
 }
 
 // Goober5000
@@ -12721,7 +12721,7 @@ void sexp_send_random_message(int n)
 	Assert ( num_messages >= 1 );
 	
 	// get a random message, and pass the parameters to send_one_message
-	message_num = util::Random::next(num_messages);
+	message_num = Random::next(num_messages);
 	n = temp;
 	while ( n != -1 ) {
 		if ( message_num == 0 )

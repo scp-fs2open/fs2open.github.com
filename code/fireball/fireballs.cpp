@@ -844,11 +844,11 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	switch( new_fireball->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION:	
-			new_fireball->orient = (util::Random::next()>>8) & 7;							// 0 - 7
+			new_fireball->orient = (Random::next()>>8) & 7;							// 0 - 7
 			break;
 
 		case FIREBALL_LARGE_EXPLOSION:
-			new_fireball->orient = (util::Random::next()>>8) % 360;						// 0 - 359
+			new_fireball->orient = (Random::next()>>8) % 360;						// 0 - 359
 			break;
 
 		case FIREBALL_WARP_EFFECT:
@@ -979,9 +979,9 @@ int fireball_ship_explosion_type(ship_info *sip)
 	}
 
 	if(ship_fireballs > 0){
-		index = sip->explosion_bitmap_anims[util::Random::next(ship_fireballs)];
+		index = sip->explosion_bitmap_anims[Random::next(ship_fireballs)];
 	} else if(objecttype_fireballs > 0){
-		index = Ship_types[sip->class_type].explosion_bitmap_anims[util::Random::next(objecttype_fireballs)];
+		index = Ship_types[sip->class_type].explosion_bitmap_anims[Random::next(objecttype_fireballs)];
 	}
 
 	return index;
@@ -998,7 +998,7 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	int roid_fireballs = (int)aip->explosion_bitmap_anims.size();
 
 	if (roid_fireballs > 0) {
-		index = aip->explosion_bitmap_anims[util::Random::next(roid_fireballs)];
+		index = aip->explosion_bitmap_anims[Random::next(roid_fireballs)];
 	}
 
 	return index;

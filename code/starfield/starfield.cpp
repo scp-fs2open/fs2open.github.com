@@ -870,9 +870,9 @@ void stars_post_level_init()
 	for (i=0; i<MAX_STARS; i++) {
 		dist = dist_max;
 		while (dist >= dist_max) {
-			v.xyz.x = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.y = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.z = (float) ((util::Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.x = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.y = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.z = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
 
 			dist = v.xyz.x * v.xyz.x + v.xyz.y * v.xyz.y + v.xyz.z * v.xyz.z;
 		}
@@ -880,11 +880,11 @@ void stars_post_level_init()
 
 		{
 			// DISCUSSME: the max value for these ranges is 254 and not 255. Do we fix it?
-			red= (ubyte)(util::Random::next(63) +192);		//192-255
-			green= (ubyte)(util::Random::next(63) +192);		//192-255
-			blue= (ubyte)(util::Random::next(63) +192);		//192-255
+			red= (ubyte)(Random::next(63) +192);		//192-255
+			green= (ubyte)(Random::next(63) +192);		//192-255
+			blue= (ubyte)(Random::next(63) +192);		//192-255
 			// DISCUSSME: despite the comment, the range is actually 24-215. Do we fix it?
-			alpha = (ubyte)(util::Random::next(192) + 24);	//24-216
+			alpha = (ubyte)(Random::next(192) + 24);	//24-216
 
 			gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
 		}
@@ -1753,9 +1753,9 @@ void stars_draw_debris()
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
 		if (!d->active)	{
-			d->pos.xyz.x = f2fl(util::Random::next() - RAND_MAX_2);
-			d->pos.xyz.y = f2fl(util::Random::next() - RAND_MAX_2);
-			d->pos.xyz.z = f2fl(util::Random::next() - RAND_MAX_2);
+			d->pos.xyz.x = f2fl(Random::next() - RAND_MAX_2);
+			d->pos.xyz.y = f2fl(Random::next() - RAND_MAX_2);
+			d->pos.xyz.z = f2fl(Random::next() - RAND_MAX_2);
 
 			vm_vec_normalize(&d->pos);
 
@@ -1766,7 +1766,7 @@ void stars_draw_debris()
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
-			const float size_multiplier = i2fl(util::Random::next(4));
+			const float size_multiplier = i2fl(Random::next(4));
 			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
 				d->size = size_multiplier * BASE_SIZE_NEB;
 			} else {

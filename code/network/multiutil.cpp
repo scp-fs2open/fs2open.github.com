@@ -302,7 +302,7 @@ const char *multi_random_death_word()
 {
 	int index;
 
-	index = util::Random::next(NUM_DEATH_WORDS);
+	index = Random::next(NUM_DEATH_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("zapped",853);
@@ -401,7 +401,7 @@ const char *multi_random_chat_start()
 {
 	int index;
 
-	index = util::Random::next(NUM_CHAT_START_WORDS);
+	index = Random::next(NUM_CHAT_START_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("says",893);

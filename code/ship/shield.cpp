@@ -604,7 +604,7 @@ int get_global_shield_tri()
 			break;
 
 	if (shnum == MAX_SHIELD_HITS) {
-		shnum = util::Random::next(MAX_SHIELD_HITS);
+		shnum = Random::next(MAX_SHIELD_HITS);
 	}
 
 	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));
