@@ -15962,7 +15962,7 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 // player has just killed a ship, maybe offer send a 'good job' message
 void ship_maybe_praise_player(ship *deader_sp)
 {
-	if (Random::next()&1 ) {
+	if (Random::flip_coin()) {
 		return;
 	}
 
@@ -16414,7 +16414,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	if (message_type >= 0)
 	{
-		if (Random::next() & 1)
+		if (Random::flip_coin())
 			message_send_builtin_to_player(message_type, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
 
 		Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);

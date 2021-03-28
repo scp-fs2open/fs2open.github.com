@@ -20,6 +20,9 @@ public:
 	// return a value in [low, high]
 	static int next(int low, int high);
 
+	// return true/false with equal probability
+	static bool flip_coin();
+
 	// jump ahead in the RNG sequence
 	static void advance(unsigned long long distance);
 private:

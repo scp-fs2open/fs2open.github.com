@@ -70,6 +70,12 @@ int Random::next(int low, int high)
 	return low + (SCP_rng.next() % range);
 }
 
+bool Random::flip_coin()
+{
+	// [0, HALF_MAX_VALUE] and [HALF_MAX_VALUE+1,MAX_VALUE] are the same size
+	return SCP_rng.next() <= Random::HALF_MAX_VALUE;
+}
+
 void Random::advance(unsigned long long distance)
 {
 	SCP_rng.advance(distance);

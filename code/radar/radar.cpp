@@ -90,7 +90,7 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 		return;
 	}
 
-	if (Random::next() & 1 ) {
+	if (Random::flip_coin()) {
 		// DISCUSSME: these values are in [-2,1]. Was [-2,2] intended?
 		xdiff = -2 + Random::next(4);
 		ydiff = -2 + Random::next(4);
