@@ -24119,6 +24119,11 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 **/
 bool sexp_replace_container_refs_with_values(SCP_string &text)
 {
+	// DISCUSSME: should we Assert(!text.empty())?
+	if (text.empty()) {
+		return false;
+	}
+
 	bool replaced_anything = false;
 
 	size_t lookHere = 0;
@@ -24135,63 +24140,64 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 			if (con_index >= 0)	{				
 				// we have to replace &container&modifier/key& with the value but since we don't know the length of the modifier yet, this is going to get complicated. 
 				SCP_string replace_this = "&"; 
-				replace_this.append(Sexp_containers[con_index].container_name); 
-				replace_this.append("&");
+				replace_this += Sexp_containers[con_index].container_name;
+				replace_this += "&";
 
 				// no modifier/key - skip past this container as it's malformed
-				if (text.compare((foundHere + 1 + Sexp_containers[con_index].container_name.length()), 1, "&")) {
-					lookHere = foundHere + 1; 
+				size_t expected_amp_pos = foundHere + 1 + Sexp_containers[con_index].container_name.length();
+				if (expected_amp_pos >= text.length() || text[expected_amp_pos] != '&') {
+					lookHere = foundHere + 1;
 					Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but there is no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This format is expected for maps &Container_Name&Key&", Sexp_containers[con_index].container_name.c_str());
-					continue; 
+					continue;
 				}
 
-				lookHere = foundHere + 2 + strlen(Sexp_containers[con_index].container_name.c_str()); 
-
+				// `+ 2` to skip past the two '&' chars
+				lookHere = foundHere + 2 + Sexp_containers[con_index].container_name.length();
 
 				SCP_string replacement_text; // this is what the &Container_Name&Modifier/Key& combo will be replaced with
-				bool result_found = false; 
-				bool error_found = false; 
+				bool result_found = false;
+				bool error_found = false;
 
 				do {
 					if (get_replace_text_for_modifier(text, con_index, lookHere, replacement_text, replace_this)) {
+						Assert(!replacement_text.empty());
 						// in the case of multidimentional containers the inner containers name will be in this format &Container_Name&
-						if (replacement_text.find('&') == 0) {
-							con_index = get_sexp_container_index(replacement_text.substr(1, replacement_text.length() - 2).c_str());
-
-							// not entirely sure why the FREDder has decided to start the value with an & if this is not a multidimentional container, but since it's legal to do so.....
-							if (con_index == -1) {
-								result_found = true; 
+						if (replacement_text[0] == '&' && replacement_text.length() > 2) {
+							if (get_sexp_container_index(replacement_text.substr(1, replacement_text.length() - 2).c_str()) != -1) {
+								// TODO: split the string into two new strings
+								// the first string is everything before this replacement, aka everything already processed
+								// the second string is the part you've replaced that's resulted in the replacement_text being another container name, plus the rest of the string (not yet processed)
+								// recursively call sexp_replace_container_refs_with_values on the second string
+								// if the return value from that call is false, maybe issue a warning?
+								// in any case, set `text` to be the first string concatenated with the second string (which has at this point been fully processed by the recursive call)
+								// return true
+							} else {
+								// not entirely sure why the FREDder decided to start the value with an & if this is not a multidimentional container, but it's legal to do so
+								result_found = true;
 							}
-						}
-						// this isn't a container - so it's data
-						else {
+						} else { // this isn't a container - so it's data
 							result_found = true;
 						}
-					}
-					// modifier wasn't found
-					else {
+					} else { // modifier wasn't found
 						error_found = true;
-						break;
 					}
-				} while (!result_found);
+				} while (!result_found && !error_found);
 
 				if (error_found) {					
 					lookHere = foundHere + replacement_text.length();
 					continue; 
 				}
-				
 
-				// both maps and strings need to do this bit
+				// perform the replacement
 				text.replace(foundHere, replace_this.length(), replacement_text);
 				replaced_anything = true;
 
 				lookHere = foundHere + replacement_text.length();
-			}
-			else {
+			} else { // no container found 
 				lookHere = foundHere + 1;
 			}
 		}
-	}while (foundHere != SCP_string::npos);
+	} while (lookHere < text.length() && foundHere != SCP_string::npos);
 
 	return replaced_anything;
 }
