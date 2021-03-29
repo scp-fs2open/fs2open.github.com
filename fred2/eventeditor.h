@@ -92,7 +92,7 @@ public:
 	CString	m_message_text;
 	int		m_persona;
 	CString	m_wave_filename;
-	int		m_cur_msg;
+	int		m_cur_msg, m_cur_msg_old;
 	int		m_team;
 	int		m_message_team;
 	int		m_last_message_node;
