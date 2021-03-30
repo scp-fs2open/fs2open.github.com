@@ -11,6 +11,7 @@
 
 #include "io/timer.h"
 #include "math/floating.h"
+#include "math/staticrand.h"
 
 
 /**
@@ -70,4 +71,16 @@ int rand_chance(float frametime, float chance)
 			return 1;
 
 	return frand() < (frametime * (chance + 1.0f));
+}
+
+static float accum_golden_ratio_rand_seed = 0.0f;
+
+// generates a quasirandom, low discrepancy number sequence
+// acts very much like a random number generator, but has the property of being very well distributed
+// use if you need quasirandom numbers, but don't want ugly 'runs' or 'clumps' of similar numbers 
+float golden_ratio_rand() {
+	accum_golden_ratio_rand_seed += GOLDEN_RATIO;
+	if (accum_golden_ratio_rand_seed >= 1.0f)
+		accum_golden_ratio_rand_seed -= 1.0f;
+	return accum_golden_ratio_rand_seed;
 }

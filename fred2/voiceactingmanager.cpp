@@ -280,7 +280,7 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 		size_t j;
 		for( j = 0; sender[j] != '\0'; j++ ) {
 			// lower case letter
-			sender[j] = (char)tolower(sender[j]);
+			sender[j] = SCP_tolower(sender[j]);
 
 			// replace any non alpha numeric with a underscore
 			if ( !isalnum( sender[j] ) )

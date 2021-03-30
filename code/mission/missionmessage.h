@@ -164,6 +164,8 @@ extern int Num_messages;
 extern int Num_builtin_messages;				// from messages.tbl -- index of message location to load mission specific messages into
 extern int Message_shipnum;					// used to display info on hud when message is sent
 
+extern SCP_vector<SCP_string> Generic_message_filenames;
+
 // variable, etc for persona information
 #define MAX_PERSONA_TYPES		4
 

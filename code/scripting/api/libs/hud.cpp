@@ -81,8 +81,12 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getHUDGaugeColor, l_HUD, "number gaugeIndex", "Color specified in the config to draw the gauge",
-         ade_type_info({"number", "number", "number", "number"}), "Red, green, blue, and alpha of the gauge")
+ADE_FUNC(getHUDGaugeColor,
+	l_HUD,
+	"number gaugeIndex",
+	"Color specified in the config to draw the gauge",
+	"number, number, number, number",
+	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = -1;
 
@@ -118,8 +122,12 @@ ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getHUDGaugeColorInMission, l_HUD, "number gaugeIndex", "Color currently used to draw the gauge",
-         ade_type_info({"number", "number", "number", "number"}), "Red, green, blue, and alpha of the gauge")
+ADE_FUNC(getHUDGaugeColorInMission,
+	l_HUD,
+	"number gaugeIndex",
+	"Color currently used to draw the gauge",
+	"number, number, number, number",
+	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = -1;
 

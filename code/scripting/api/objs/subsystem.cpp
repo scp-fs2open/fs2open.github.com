@@ -10,7 +10,7 @@
 #include "hud/hudtarget.h"
 #include "ship/shiphit.h"
 
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f);
 
 namespace scripting {
 namespace api {
@@ -643,21 +643,13 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
-	vec3d gpos, gvec;
+	vec3d gpos;
 	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
-
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &objp->orient);
-
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &objp->pos);
+	ship_get_global_turret_info(objp, tp, &gpos, nullptr);
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
-
-	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
 
 	int ret_val = model_rotate_gun(objp, pm, pmi, tp, &pos, reset);
 
@@ -690,7 +682,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
-ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type_info({"number", "number", "number"}),
+ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", "number, number, number",
          "Standard FOV, maximum barrel elevation, turret base fov.")
 {
 	ship_subsys_h *sso;
@@ -705,7 +697,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type
 
 	fov = tp->turret_fov;
 	fov_e = tp->turret_max_fov;
-	fov_y = tp->turret_y_fov;
+	fov_y = tp->turret_base_fov;
 
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
@@ -713,7 +705,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type
 ADE_FUNC(
     getNextFiringPosition, l_Subsystem, nullptr,
     "Retrieves the next position and firing normal this turret will fire from. This function returns a world position",
-    ade_type_info({"vector", "vector"}), "vector or null vector on error")
+    "vector, vector", "vector or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
@@ -741,7 +733,8 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turr
 
 	model_subsystem *tp = sso->ss->system_info;
 
-	m = tp->turret_matrix;
+	// we have to fake a turret matrix because that field is no longer part of model_subsystem
+	vm_vector_2_matrix(&m, &tp->turret_norm, nullptr, nullptr);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }

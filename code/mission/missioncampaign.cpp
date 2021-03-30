@@ -379,7 +379,7 @@ void mission_campaign_get_sw_info()
 	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
 
     if (optional_string("+Starting Ships:")) {
-        count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+        count = (int)stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
         // now set the array elements stating which ships we are allowed
         for (i = 0; i < count; i++) {
@@ -396,7 +396,7 @@ void mission_campaign_get_sw_info()
 	}
 
     if (optional_string("+Starting Weapons:")) {
-        count = stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
+        count = (int)stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
 
         // now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++) {
@@ -1588,8 +1588,7 @@ bool campaign_is_ignored(const char *filename)
 {
 	SCP_string filename_no_ext = filename;
 	drop_extension(filename_no_ext);
-	std::transform(filename_no_ext.begin(), filename_no_ext.end(), filename_no_ext.begin(),
-	               [](char c) { return (char)::tolower(c); });
+	SCP_tolower(filename_no_ext);
 
 	for (auto &ii: Ignored_campaigns) {
 		if (ii == filename_no_ext) {

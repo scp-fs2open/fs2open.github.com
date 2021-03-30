@@ -133,7 +133,7 @@ ADE_VIRTVAR(ErrorCount, l_UserInterface_PilotSelect, nullptr, "The amount of err
 }
 
 ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
-         "Lists all pilots available for the pilot selection<br>", ade_type_array("string"),
+         "Lists all pilots available for the pilot selection<br>", "string[]",
          "A table containing the pilots (without a file extension) or nil on error")
 {
 	using namespace luacpp;
@@ -220,7 +220,17 @@ ADE_FUNC(isAutoselect, l_UserInterface_PilotSelect, nullptr,
          "Determines if the pilot selection screen should automatically select the default user.", "boolean",
          "true if autoselect is enabled, false otherwise")
 {
-	return ade_set_args(L, "b", Cmdline_benchmark_mode);
+	return ade_set_args(L, "b", Cmdline_benchmark_mode || Cmdline_pilot);
+}
+
+ADE_VIRTVAR(CmdlinePilot, l_UserInterface_PilotSelect, nullptr,
+			"The pilot chosen from commandline, if any.", "string",
+			"The name if specified, nil otherwise")
+{
+	if (Cmdline_pilot)
+		return ade_set_args(L, "s", Cmdline_pilot);
+	else
+		return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/MainHall
@@ -243,7 +253,7 @@ ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
-         ade_type_array("string"), "The list of pilot filenames or nil on error")
+         "string[]", "The list of pilot filenames or nil on error")
 {
 	pilot_load_pic_list();
 
@@ -257,7 +267,7 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
-         ade_type_array("string"), "The list of squad filenames or nil on error")
+         "string[]", "The list of squad filenames or nil on error")
 {
 	pilot_load_squad_pic_list();
 
@@ -326,7 +336,7 @@ ADE_FUNC(getCampaignList,
 	l_UserInterface_Campaign,
 	nullptr,
 	"Get the campaign name and description lists",
-	ade_type_info({ade_type_array("string"), ade_type_array("string"), ade_type_array("string")}),
+	"string[], string[], string[]",
 	"Three tables with the names, file names, and descriptions of the campaigns")
 {
 	luacpp::LuaTable nameTable        = luacpp::LuaTable::create(L);
@@ -394,7 +404,7 @@ ADE_VIRTVAR(ColorTags,
 	l_UserInterface_CmdBrief,
 	nullptr,
 	"The available tagged colors",
-	ade_type_map("string", "color"),
+	"{ string => color ... }",
 	"A mapping from tag string to color value")
 {
 	using namespace luacpp;

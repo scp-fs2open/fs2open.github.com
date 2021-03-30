@@ -365,6 +365,8 @@ public:
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
 
+	float   turret_inaccuracy;						// additional SEXP inaccuracy, field of fire degrees
+
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 
@@ -400,7 +402,6 @@ public:
 	flagset<Ship::Subsys_Sound_Flags> subsys_snd_flags;
 
 	int      rotation_timestamp;
-	matrix   world_to_turret_matrix;			// This is now only used for Turret_alt_math
 
 	// target priority setting for turrets
 	int      target_priority[32];
@@ -605,7 +606,6 @@ public:
 
 	int	num_swarm_missiles_to_fire;	// number of swarm missiles that need to be launched
 	int	next_swarm_fire;					// timestamp of next swarm missile to fire
-	int	next_swarm_path;					// next path number for swarm missile to take
 	int	num_turret_swarm_info;			// number of turrets in process of launching swarm
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
@@ -849,7 +849,7 @@ struct ship_registry_entry
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
-extern SCP_unordered_map<SCP_string, int> Ship_registry_map;
+extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
@@ -1126,6 +1126,10 @@ public:
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
 	gamesnd_id		debris_explosion_sound;
+	char			generic_debris_pof_file[MAX_FILENAME_LEN]; // smaller debris bits thrown around willy-nilly on death
+	int				generic_debris_model_num;
+	int				generic_debris_num_submodels;
+	int			    generic_debris_spew_num;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1760,11 +1764,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
 // the actual gun normal given using the current turret heading.  But it _is_ rotated into the model's orientation
 //	in global space.
-void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos, vec3d *gvec);
+void ship_get_global_turret_info(const object *objp, const model_subsystem *tp, vec3d *gpos, vec3d *gvec);
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
+bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
 
 // functions for testing fov.. returns true if fov test is passed.
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
@@ -1803,6 +1807,9 @@ void ship_page_in_textures(int ship_index = -1);
 
 // fixer for above - taylor
 void ship_page_out_textures(int ship_index, bool release = false);
+
+// replaces a texture on a ship with a different texture
+void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name);
 
 // update artillery lock info
 void ship_update_artillery_lock();

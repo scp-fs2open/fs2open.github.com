@@ -275,7 +275,7 @@ int hash_filename(const char *filename) {
 	
 	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
-		hash_val = (hash_val << 4) + toupper(*ptr++);
+		hash_val = (hash_val << 4) + SCP_toupper(*ptr++);
 	}
 
 	return int(hash_val % CAMPAIGN_MISSION_HASH_SIZE);

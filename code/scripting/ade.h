@@ -131,7 +131,7 @@ class ade_table_entry {
 	//Metadata
 	ade_overload_list Arguments;
 	const char* Description = nullptr;
-	ade_type_info ReturnType;
+	const char* ReturnType;
 	const char* ReturnDescription = nullptr;
 	gameversion::version DeprecationVersion;
 	const char* DeprecationMessage = nullptr;
@@ -160,7 +160,9 @@ class ade_table_entry {
 		const scripting::DocumentationErrorReporter& errorReporter);
 
 	//*****Get
-	const char* GetName() { if (Name != NULL) { return Name; } else { return ShortName; }}
+	const char* GetName() const;
+
+	SCP_string GetFullPath() const;
 };
 
 /**

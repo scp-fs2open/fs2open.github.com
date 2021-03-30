@@ -52,6 +52,8 @@ extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
+extern vec3d vm_vec_new(float x, float y, float z);
+
 //Global constants
 
 extern vec3d vmd_zero_vector;
@@ -484,11 +486,13 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center = false);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
@@ -655,6 +659,8 @@ inline matrix operator*(const matrix& left, const matrix& right) {
 	vm_matrix_x_matrix(&out, &left, &right);
 	return out;
 }
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 
 #endif
 

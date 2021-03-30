@@ -94,7 +94,8 @@ int collide_weapon_weapon( obj_pair * pair )
 		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
 		Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 
-		if(!a_override && !b_override)
+		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
+		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
 		{
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)

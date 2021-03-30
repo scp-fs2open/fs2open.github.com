@@ -40,6 +40,9 @@ END_MESSAGE_MAP()
 
 event_editor *Event_editor_dlg = NULL; // global reference needed by event tree class
 
+// this is just useful for comparing modified EAs to unmodified ones
+static event_annotation default_ea;
+
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
@@ -205,7 +208,6 @@ BOOL event_editor::OnInitDialog()
 	}
 
 	// determine all the handles for event annotations
-	event_annotation default_ea;
 	for (auto &ea : Event_annotations)
 	{
 		auto h = traverse_path(ea);
@@ -1666,10 +1668,8 @@ void event_editor::OnDblclkMessageList()
 
 void event_annotation_prune()
 {
-	event_annotation default_ea;
-
 	Event_annotations.erase(
-		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [default_ea](const event_annotation &ea)
+		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [](const event_annotation &ea)
 		{
 			return ea.comment == default_ea.comment
 				&& ea.r == default_ea.r
@@ -1777,13 +1777,14 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	if (h)
 	{
 		int ea_idx = event_annotation_lookup(h);
-
 		if (ea_idx >= 0)
 		{
-			strTipText = Event_annotations[ea_idx].comment.c_str();
+			auto ea = &Event_annotations[ea_idx];
 
-			if (!strTipText.IsEmpty())
+			if (ea->comment != default_ea.comment && !ea->comment.empty())
 			{
+				strTipText = ea->comment.c_str();
+
 #ifndef _UNICODE
 				if (pNMHDR->code == TTN_NEEDTEXTA)
 					lstrcpyn(pTTTA->szText, strTipText, 80);
@@ -1827,14 +1828,17 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					auto ea = &Event_annotations[ea_idx];
 
-					// contrast color calculation taken from here:
-					// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
-					if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
-						pcd->clrText = RGB(0, 0, 0);
-					else
-						pcd->clrText = RGB(255, 255, 255);
+					if (ea->r != default_ea.r || ea->g != default_ea.g || ea->b != default_ea.b)
+					{
+						// contrast color calculation taken from here:
+						// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
+						if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
+							pcd->clrText = RGB(0, 0, 0);
+						else
+							pcd->clrText = RGB(255, 255, 255);
 
-					pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+						pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+					}
 				}
 			}
 

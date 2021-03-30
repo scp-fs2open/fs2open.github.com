@@ -187,7 +187,9 @@ typedef struct beam {
 	float		beam_collide_width;
 	float		beam_light_width;
 
-	bool rotates;					// type 5s only determines whether it rotates
+	float u_offset_local;
+
+	bool rotates;					// type 5s only, determines whether it rotates
 	float type5_rot_speed;          // how fast it rotates if it does
 } beam;
 

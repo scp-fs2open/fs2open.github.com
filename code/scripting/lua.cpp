@@ -193,15 +193,8 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string leftStr(leftCmp);
-	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	SCP_string rightStr(rightCmp);
-	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	return leftStr < rightStr;
+	SCP_string_lcase_less_than lt;
+	return lt(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {

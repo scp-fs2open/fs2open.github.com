@@ -13,7 +13,7 @@ cfile_h::cfile_h(CFILE* cfp) : _cfp(cfp) {}
 cfile_h::~cfile_h()
 {
 	if (_cfp && cf_is_valid(_cfp.get())) {
-		Error(LOCATION, "Lua file handle has been left open!\n\nSorry, I can't say anything more than that...");
+		Warning(LOCATION, "Lua cfile handle of file %s has been left open!\nYou should close the file with the object's close() method explicitly.\n", cf_get_filename(_cfp.get()));
 	}
 }
 bool cfile_h::isValid() const { return _cfp != nullptr; }
@@ -108,7 +108,7 @@ ADE_FUNC(read,
 	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
 	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
 	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-	ade_type_varargs(ade_type_alternative({"number", "string"})),
+	"number|string...",
 	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;

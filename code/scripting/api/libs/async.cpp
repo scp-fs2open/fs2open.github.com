@@ -218,7 +218,7 @@ ADE_FUNC(await,
 	l_Async,
 	"promise",
 	"Suspends an asynchronous coroutine until the passed promise resolves.",
-	"unknown",
+	"any",
 	"The resolve value of the promise")
 {
 	// await cannot be used on the main thread since there is nothing that will wait for the promise

@@ -298,7 +298,7 @@ void brief_camera_move(float frametime, int stage_num);
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
-void brief_parse_icon_tbl();
+void brief_icons_init();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();

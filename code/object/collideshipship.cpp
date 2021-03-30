@@ -19,6 +19,7 @@
 #include "hud/hudshield.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
+#include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
@@ -1318,7 +1319,52 @@ int collide_ship_ship( obj_pair * pair )
 				if (!ship_ship_hit_info.is_landing) {
 					//	Scale damage based on skill level for player.
 					if ((LightOne->flags[Object::Object_Flags::Player_ship]) || (HeavyOne->flags[Object::Object_Flags::Player_ship])) {
-						damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
+
+						// Cyborg17 - Pretty hackish, but it's our best option, limit the amount of times a collision can
+						// happen to multiplayer clients, because otherwise the server can kill clients far too quickly.
+						// So here it goes, first only do this on the master (has an intrinsic multiplayer check) 
+						if (MULTIPLAYER_MASTER) {
+							// check to see if both colliding ships are player ships
+							bool second_player_check = false;
+							if ((LightOne->flags[Object::Object_Flags::Player_ship]) && (HeavyOne->flags[Object::Object_Flags::Player_ship]))
+								second_player_check = true;
+
+							// iterate through each player
+							for (net_player & current_player : Net_players) {
+								// check that this player's ship is valid, and that it's not the server ship.
+								if ((current_player.m_player != nullptr) && !(current_player.flags & NETINFO_FLAG_AM_MASTER) && (current_player.m_player->objnum > 0) && current_player.m_player->objnum < MAX_OBJECTS) {
+									// check that one of the colliding ships is this player's ship
+									if ((LightOne == &Objects[current_player.m_player->objnum]) || (HeavyOne == &Objects[current_player.m_player->objnum])) {
+										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
+										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
+											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
+											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
+
+											// check to see if it has been long enough since the last collision, if not negate the damage
+											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
+												damage = 0.0f;
+											} else {
+												// make the usual adjustments
+												damage *= (float)(Game_skill_level * Game_skill_level + 1) / (NUM_SKILL_LEVELS + 1);
+												// if everything is good to go, set the timestamp for the next collision
+												current_player.s_info.player_collision_timestamp = timestamp(PLAYER_COLLISION_TIMESTAMP);
+											}
+										}
+
+										// did we find the player we were looking for?
+										if (!second_player_check) {
+											break;
+										// if we found one of the players we were looking for, set this to false so that the next one breaks the loop
+										} else {
+											second_player_check = false;
+										}
+									}
+								}
+							}
+						// if not in multiplayer, just do the damage adjustment.
+						} else {
+							damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
+						}
 					} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
 						//	Decrease damage if non-player ships and not large.
 						//	Looks dumb when fighters are taking damage from bumping into each other.

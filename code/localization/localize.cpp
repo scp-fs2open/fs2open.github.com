@@ -955,8 +955,18 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 			// return translation of string
 			if (Xstr_table[index].str)
 				return Xstr_table[index].str;
+#ifndef NDEBUG
 			else
-				mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+			{
+				// make sure missing strings are only logged once
+				static SCP_unordered_set<int> Warned_xstr_indexes;
+				if (Warned_xstr_indexes.count(index) == 0)
+				{
+					Warned_xstr_indexes.insert(index);
+					mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+				}
+			}
+#endif
 		}
 	}
 

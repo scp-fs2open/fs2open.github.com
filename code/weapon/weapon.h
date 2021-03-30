@@ -14,15 +14,18 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+
+#include "actions/Program.h"
+#include "decals/decals.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
-#include "gamesnd/gamesnd.h"
 #include "model/model.h"
-#include "weapon/shockwave.h"
-#include "weapon/trails.h"
 #include "particle/ParticleManager.h"
+#include "weapon/shockwave.h"
+#include "weapon/swarm.h"
+#include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
-#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -101,7 +104,7 @@ typedef struct weapon {
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
-	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
+	std::unique_ptr<swarm_info>		swarm_info_ptr;	// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
@@ -380,6 +383,9 @@ struct weapon_info
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
+	bool pierce_objects;
+	bool spawn_children_on_pierce;
+
     // spawn weapons
     int num_spawn_weapons_defined;
     int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi
@@ -496,6 +502,7 @@ struct weapon_info
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
 	float lssm_lock_range;
+	int lssm_warpeffect;		//Which fireballtype is used for the warp effect
 
 	// Beam weapon effect	
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
@@ -557,6 +564,8 @@ struct weapon_info
 	int			score; //Optional score for destroying the weapon
 
 	decals::creation_info impact_decal;
+
+	actions::ProgramSet on_create_program;
 
 public:
 	weapon_info();

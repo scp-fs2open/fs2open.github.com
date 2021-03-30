@@ -1815,7 +1815,7 @@ void game_init()
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	hud_init_comm_orders();	// Goober5000
 
@@ -2030,8 +2030,21 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height,
-					  tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+			// Split frame profile into two columns if necessary to avoid losing trace data
+			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
+			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
+			size_t fp_column_break = 0;
+			auto fp_trace_str = tracing::get_frame_profile_output();
+
+			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
+				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
+			}
+
+			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
+
+			if (fp_column_break < fp_trace_str.length()) {
+				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
+			}
 		}
 
 		if (Show_framerate) {
@@ -3329,7 +3342,7 @@ void game_render_frame( camid cid )
 	nebl_render_all();
 
 	// render local player nebula
-	neb2_render_player();
+	neb2_render_poofs();
 
 	batching_render_all(false);
 
@@ -5323,10 +5336,15 @@ void game_leave_state( int old_state, int new_state )
 
 				// set the game mode
 				Game_mode |= GM_IN_MISSION;
+
+				main_hall_stop_music(true);
+				main_hall_stop_ambient();		
+
+				// any other state needs to close out the mission, because we're not going in to gameplay.
+			} else if (new_state == GS_STATE_PXO || new_state == GS_STATE_MULTI_JOIN_GAME) {
+				freespace_stop_mission();
 			}
 
-			main_hall_stop_music(true);
-			main_hall_stop_ambient();		
 			break;		
    
 		case GS_STATE_VIEW_CUTSCENES:
@@ -7540,13 +7558,24 @@ int main(int argc, char *argv[])
 
 	SCP_mspdbcs_Initialise();
 
-	// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
-	// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
-	// seems to close or otherwise grab the streams for somthing else.
-	if (AttachConsole(ATTACH_PARENT_PROCESS)) {
-		freopen("CONIN$", "r", stdin);
-		freopen("CONOUT$", "w", stdout);
-		freopen("CONOUT$", "w", stderr);
+	bool keep_stdout = false;
+	char envbuf[2];
+	// GetEnvironmentVariable returns the amount of stored characters on success, we're looking for the value "1"
+	// so we only care about the case where it successfully read exactly one character (not including the null byte).
+	if (GetEnvironmentVariable("FSO_KEEP_STDOUT", envbuf, 2) == 1) {
+		keep_stdout = envbuf[0] == '1';
+	}
+
+	// Only try redirecting stdout if FSO_KEEP_STDOUT is not set to "1".
+	if (!keep_stdout) {
+		// If we're being evoked from a console, attach the STDIO streams to it and reopen the streams
+		// This is needed because Windows assumes SUBSYSTEM:WINDOWS programs won't need console IO.  Additionally, SDL
+		// seems to close or otherwise grab the streams for somthing else.
+		if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+			freopen("CONIN$", "r", stdin);
+			freopen("CONOUT$", "w", stdout);
+			freopen("CONOUT$", "w", stderr);
+		}
 	}
 #else
 #ifdef APPLE_APP
