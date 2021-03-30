@@ -10001,7 +10001,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_counter(int arg_handler_node, int condition_node)
+int eval_for_counter(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
@@ -10051,6 +10051,9 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 		// situation, resulting in a crash at best. -MageKing17
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
@@ -10064,7 +10067,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_num)
+int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -10078,7 +10081,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		auto constraint = CTEXT(n);
 		int constraint_index = -1;
 
-		switch (op_num)
+		switch (op_const)
 		{
 			case OP_FOR_SHIP_CLASS:
 				constraint_index = ship_info_lookup(constraint);
@@ -10105,7 +10108,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 				auto shipp = &Ships[objp->instance];
 				int ship_index = -1;
 
-				switch (op_num)
+				switch (op_const)
 				{
 					case OP_FOR_SHIP_CLASS:
 						ship_index = shipp->ship_info_index;
@@ -10127,6 +10130,9 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		}
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
@@ -10140,7 +10146,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 }
 
 // Goober5000
-int eval_for_players(int arg_handler_node, int condition_node)
+int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -10162,6 +10168,9 @@ int eval_for_players(int arg_handler_node, int condition_node)
 		if (Player_ship)
 			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
 	}
+
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10213,7 +10222,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
 		return;
 
@@ -10249,6 +10258,27 @@ int sexp_num_valid_arguments( int n )
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	if (arg_handler < 0)
+		return 0;
+
+	// the for-* sexps require special handling: they don't list their arguments explicitly but rather generate them on-the-fly
+	auto op_const = get_operator_const(arg_handler);
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+			return eval_for_counter(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_PLAYERS:
+			return eval_for_players(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
+	}
+
 	// loop through arguments
 	arg_n = CDR(arg_handler);
 	while (arg_n != -1) {
@@ -10256,7 +10286,6 @@ int sexp_num_valid_arguments( int n )
 			matches++;
 		}
 
-		
 		// iterate
 		arg_n = CDR(arg_n);
 	}
@@ -10272,7 +10301,8 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	// (thanks to woutersmits for finding this bug)
 	if (arg_handler < 0)
 		return;
 
