@@ -1448,7 +1448,7 @@ void ai_big_strafe_attack()
 		if (ai_new_maybe_reposition_attack_subsys())
 			return;
 	} else if (ai_big_maybe_follow_subsys_path(0))
-		return
+		return;
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
 	if ( ai_big_strafe_maybe_retreat(&target_pos) )
