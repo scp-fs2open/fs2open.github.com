@@ -65,6 +65,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_persona = -1;
 	m_wave_filename = _T("");
 	m_cur_msg = -1;
+	m_cur_msg_old = -1;
 	m_team = -1;
 	m_message_team = -1;
 	m_last_message_node = -1;
@@ -87,6 +88,9 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
 {
+	if (m_cur_msg >= 0)
+		m_cur_msg_old = m_cur_msg;
+
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(event_editor)
 	DDX_Control(pDX, IDC_EVENT_TREE, m_event_tree);
@@ -113,7 +117,6 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_MISSION_LOG_1ST_TRIGGER, m_log_1st_trigger);
 	DDX_Check(pDX, IDC_MISSION_LOG_LAST_TRIGGER, m_log_last_trigger);
 	DDX_Check(pDX, IDC_MISSION_LOG_STATE_CHANGE, m_log_state_change);
-
 
 	// m_team == -1 maps to 2
 	if(m_team == -1){
@@ -910,7 +913,7 @@ void event_editor::insert_handler(int old, int node)
 
 void event_editor::save()
 {
-	int m = m_cur_msg;
+	int m = (m_cur_msg >= 0) ? m_cur_msg : m_cur_msg_old;
 
 	save_event(cur_event);
 	save_message(m);
