@@ -5207,6 +5207,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 		create_if_not_found = false;
 	}
 
+	bool first_time;
 	int idx = ship_type_name_lookup(name_buf);
 	if (idx >= 0)
 	{
@@ -5219,6 +5220,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 			return;
 		}
 		stp = &Ship_types[idx];
+		first_time = false;
 	}
 	else
 	{
@@ -5232,6 +5234,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 		Ship_types.push_back(ship_type_info());
 		stp = &Ship_types.back();
 		strcpy_s(stp->name, name_buf);
+		first_time = true;
 	}
 
 	const char *ship_type = NULL;
@@ -5250,6 +5253,15 @@ static void parse_ship_type(const char *filename, const bool replace)
 	if (ship_type != NULL) {
 		Warning(LOCATION, "Bad ship type name in %s\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin %s to fix this.\n", filename, stp->name, ship_type, filename);
 	}
+
+	bool big_ship = false;
+	bool huge_ship = false;
+	if (stricmp(stp->name, "cruiser") == 0 || stricmp(stp->name, "freighter") == 0 || stricmp(stp->name, "transport") == 0 ||
+		stricmp(stp->name, "corvette") == 0 || stricmp(stp->name, "gas miner") == 0 || stricmp(stp->name, "awacs") == 0)
+		big_ship = true;
+
+	if (stricmp(stp->name, "capital") == 0 || stricmp(stp->name, "supercap") == 0 || stricmp(stp->name, "knossos device") == 0 || stricmp(stp->name, "drydock") == 0)
+		huge_ship = true;
 
 	//Okay, now we should have the values to parse
 	//But they aren't here!! :O
@@ -5415,6 +5427,8 @@ static void parse_ship_type(const char *filename, const bool replace)
 
 		if (optional_string("+Targeted by 'Huge' weapons and Ignored by 'small only' weapons:")) {
 			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only);
+		} else if (first_time && (big_ship || huge_ship)) {
+			stp->flags.set(Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only);
 		}
 	}
 
