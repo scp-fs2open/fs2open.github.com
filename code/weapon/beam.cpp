@@ -2335,8 +2335,10 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vector_2_matrix(&orient, &turret_norm);
 		} 
 
-		vec3d rand1_on, rand2_on;      vm_vec_zero(&rand1_on);  vm_vec_zero(&rand2_on);
-		vec3d rand1_off, rand2_off;    vm_vec_zero(&rand1_off); vm_vec_zero(&rand2_off);
+		vec3d rand1_on = vm_vec_new(0.f, 0.f, 0.f); 
+		vec3d rand2_on = vm_vec_new(0.f, 0.f, 0.f);
+		vec3d rand1_off = vm_vec_new(0.f, 0.f, 0.f);
+		vec3d rand2_off = vm_vec_new(0.f, 0.f, 0.f);
 
 		// Get our two starting points
 		if (usable_target) {
@@ -2395,21 +2397,23 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				burst_rot_axis = b->target->pos;
 			
 		} else { 
-			vec3d center; vm_vec_zero(&center);
+			vec3d center = vm_vec_new(0.f, 0.f, 0.f);
 			// if we have no target let's act as though we're shooting at something with a 300m radius 300m away
+
+			// randomize the start and end points if not center aiming
+			// aim on the edge for random outside 
 			if (bwi->t5info.start_pos != Type5BeamPos::CENTER)
-				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
+				vm_vec_random_in_circle(&pos1, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.end_pos != Type5BeamPos::CENTER)
-				static_rand_cone(rand32(), &pos1, &center, 0.f, 180.f);
+				vm_vec_random_in_circle(&pos2, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.no_translate || bwi->t5info.end_pos == Type5BeamPos::SAME_RANDOM)
 				pos2 = pos1;
 
 			pos1 *= 300.f;
 			pos2 *= 300.f;
-			vec3d move_forward;
-			vm_vec_make(&move_forward, 0.f, 0.f, 300.f);
+			vec3d move_forward = vm_vec_new(0.f, 0.f, 300.f);
 			center += move_forward;
 			pos1 += move_forward;
 			pos2 += move_forward;
@@ -2451,9 +2455,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 		// maybe add some random
 		vec3d random_offset;
-		// the "cone" its producing here is actually a sphere with these values fyi
-		static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
-		random_offset *= static_randf_range(rand32(), 0.f, 1.f); // to get the inside of the sphere too
+		vm_vec_random_in_sphere(&random_offset, &vmd_zero_vector, 1.f, false, true);
 		random_offset *= scale_factor;
 		random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
 		random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
@@ -2473,8 +2475,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			offset *= scale_factor;
 
 			// randomness
-			static_rand_cone(rand32(), &random_offset, &orient.vec.fvec, 0.f, 180.f);
-			random_offset *= static_randf_range(rand32(), 0.f, 1.f);
+			vm_vec_random_in_sphere(&random_offset, &vmd_zero_vector, 1.f, false, true);
 			random_offset *= scale_factor;
 			random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
 			random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
@@ -2519,7 +2520,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (bwi->t5info.per_burst_rot_axis != Type5BeamRotAxis::UNSPECIFIED) {
 			// negative means random
 			float per_burst_rot = per_burst_shot_rotation;
-			if (per_burst_rot < 0)
+			if (per_burst_rot < 0.0f)
 				per_burst_rot = static_randf_range(seed, 0.f, PI2);
 
 			vm_rot_point_around_line(&b->binfo.dir_a,    &b->binfo.dir_a,    per_burst_rot, &zero_vec, &per_burst_rot_axis_direction);
