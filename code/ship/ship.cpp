@@ -5260,7 +5260,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 		stricmp(stp->name, "corvette") == 0 || stricmp(stp->name, "gas miner") == 0 || stricmp(stp->name, "awacs") == 0)
 		big_ship = true;
 
-	if (stricmp(stp->name, "capital") == 0 || stricmp(stp->name, "supercap") == 0 || stricmp(stp->name, "knossos device") == 0 || stricmp(stp->name, "drydock") == 0)
+	if (stricmp(stp->name, "capital") == 0 || stricmp(stp->name, "super cap") == 0 || stricmp(stp->name, "knossos device") == 0 || stricmp(stp->name, "drydock") == 0)
 		huge_ship = true;
 
 	//Okay, now we should have the values to parse
