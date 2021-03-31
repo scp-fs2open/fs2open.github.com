@@ -2654,6 +2654,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
 	{
 		stuff_string(sip->display_name, F_NAME, NAME_LENGTH);
+		end_string_at_first_hash_symbol(sip->display_name, true);
+		consolidate_double_characters(sip->display_name, '#');
 		sip->flags.set(Ship::Info_Flags::Has_display_name);
 	}
 
