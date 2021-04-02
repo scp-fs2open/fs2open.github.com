@@ -239,7 +239,10 @@ bool GameState_Stack_Valid()
 
 // returns one of the GS_STATE_ macros
 int gameseq_get_state(int depth)
-{	
+{
+	if (!GameState_Stack_Valid())
+		return GS_STATE_INVALID;
+
 	Assert(depth <= gs_current_stack);
 			
 	return gs[gs_current_stack - depth].current_state;
