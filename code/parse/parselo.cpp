@@ -3861,6 +3861,24 @@ int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 }
 
 // Goober5000
+// Used for escape sequences: ## to #, !! to !, etc.
+void consolidate_double_characters(char *src, char ch)
+{
+	auto dest = src;
+	while (*src)
+	{
+		if (*src == ch && *(src + 1) == ch)
+			dest--;
+
+		++src;
+		++dest;
+
+		if (src != dest)
+			*dest = *src;
+	}
+}
+
+// Goober5000
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
 	Assert(str && oldstr && newstr);
