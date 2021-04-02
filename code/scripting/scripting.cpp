@@ -19,6 +19,7 @@
 #include "scripting/doc_json.h"
 #include "scripting/scripting_doc.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
@@ -672,6 +673,7 @@ void script_state::UnloadImages()
 
 int script_state::RunCondition(int action, object* objp, int more_data)
 {
+	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
 
 	if (LuaState == nullptr) {
