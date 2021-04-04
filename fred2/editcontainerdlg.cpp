@@ -308,15 +308,9 @@ bool CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_renam
 		return false;
 	}
 
-	// handle spaces
-	if (strchr(new_name, ' ') != nullptr) {
-		if (is_rename) {
-			MessageBox("Container names cannot contain spaces.");
-			return false;
-		} else {
-			MessageBox("Container names cannot contain spaces. Replacing with hyphens.");
-			new_name.Replace((TCHAR)' ', (TCHAR)'-');
-		}
+	if (new_name[0] == ' ' || new_name[new_name.GetLength()-1] == ' ') {
+		MessageBox("Container names cannot begin or end with spaces.");
+		return false;
 	}
 
 	// handle & chars
