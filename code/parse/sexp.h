@@ -996,8 +996,8 @@ const char *CTEXT(int n, bool do_not_edit = false);
 #define NUM_CONTAINER_MODIFIERS					7
 
 struct container_modifier {
-	char *name;
-	int def;
+	const char *name;
+	const int def;
 };
 
 #define BLOCK_EXP_SIZE					6

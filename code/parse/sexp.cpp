@@ -24000,21 +24000,29 @@ int get_sexp_container_index_special(const SCP_string &text, size_t start_pos)
 **/
 bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t &lookHere, SCP_string &replacement_text, SCP_string &replace_this)
 {
+	Assert(con_index >= 0);
+	Assert(con_index < (int)Sexp_containers.size());
+
+	auto &container = Sexp_containers[con_index];
+
 	// for map containers, check if this matches a map key
-	if (Sexp_containers[con_index].type & SEXP_CONTAINER_MAP) {
+	if (container.is_map()) {
 		// ignore if the container is empty
-		if (Sexp_containers[con_index].map_data.empty()) {
+		if (container.map_data.empty()) {
 			return false;
 		}
 
 		const size_t key_ends_here = text.find('&', lookHere);
-		// FIXME TODO: what if '&' is not found? Is that possible?
+		if (key_ends_here == SCP_string::npos) {
+			// TODO: warning about malformed key
+			return false;
+		}
 
 		const SCP_string key = text.substr(lookHere, key_ends_here - lookHere);
-		auto iter = Sexp_containers[con_index].map_data.find(key);
+		auto iter = container.map_data.find(key);
 
-		if (iter == Sexp_containers[con_index].map_data.end()) {
-			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
+		if (iter == container.map_data.end()) {
+			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", container.container_name.c_str());
 			return false;
 		}
 
@@ -24022,35 +24030,33 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 		replace_this.append(iter->first); 
 		replace_this.append("&");				
 		lookHere = key_ends_here + 1; 
-	}
-	// for list containers, check if this matches a list modifier
-	else {
-		int modifier_index; 
-		SCP_string modifier_name;
+	} else { // for list containers, check if this matches a list modifier
+		Assert(container.is_list());
 
 		// ignore if the container is empty
-		if (Sexp_containers[con_index].list_data.empty()) {
+		if (container.list_data.empty()) {
 			return false;
 		}
 
-		for (modifier_index = 0; modifier_index < MAX_CONTAINER_MODIFIERS; modifier_index++) {
-			modifier_name = Container_modifiers[modifier_index].name;
-			// TODO: make comparison case-insensitive
-			if (!text.compare(lookHere, modifier_name.length(), modifier_name)) {
+		int modifier_index = 0;
+		for (; modifier_index < MAX_CONTAINER_MODIFIERS; modifier_index++) {
+			if (str_prefix(Container_modifiers[modifier_index].name, text.c_str() + lookHere)) {
 				break;
 			}
 		}
 
-		// FIXME TODO: handle case of modifier not found
+		if (modifier_index == MAX_CONTAINER_MODIFIERS) {
+			// TODO: warning "unknown list modifier %s"
+			return false;
+		}
 
 		int data_index;
 		int number_length = 0;
 		SCP_string number_string;
-		auto &list_data = Sexp_containers[con_index].list_data;
+		auto &list_data = container.list_data;
 		auto list_it = list_data.begin();
 
 		switch (modifier_index) {
-
 			case SNF_CONTAINER_GET_FIRST:
 				replacement_text = list_data.front();
 				break;
@@ -24120,9 +24126,6 @@ bool get_replace_text_for_modifier(const SCP_string &text, int con_index, size_t
 bool sexp_replace_container_refs_with_values(SCP_string &text)
 {
 	// DISCUSSME: should we Assert(!text.empty())?
-	if (text.empty()) {
-		return false;
-	}
 
 	bool replaced_anything = false;
 
@@ -24137,9 +24140,9 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 		if (foundHere != SCP_string::npos) {
 			// see if a container starts at the next char
 			int con_index = get_sexp_container_index_special(text, foundHere+1);
-			if (con_index >= 0)	{				
+			if (con_index >= 0) {
 				// we have to replace &container&modifier/key& with the value but since we don't know the length of the modifier yet, this is going to get complicated. 
-				SCP_string replace_this = "&"; 
+				SCP_string replace_this = "&";
 				replace_this += Sexp_containers[con_index].container_name;
 				replace_this += "&";
 
@@ -24163,7 +24166,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 						Assert(!replacement_text.empty());
 						// in the case of multidimentional containers the inner containers name will be in this format &Container_Name&
 						if (replacement_text[0] == '&' && replacement_text.length() > 2) {
-							if (get_sexp_container_index(replacement_text.substr(1, replacement_text.length() - 2).c_str()) != -1) {
+							if (get_sexp_container_index_special(replacement_text.c_str(), 1) != -1) {
 								// TODO: split the string into two new strings
 								// the first string is everything before this replacement, aka everything already processed
 								// the second string is the part you've replaced that's resulted in the replacement_text being another container name, plus the rest of the string (not yet processed)
@@ -24178,14 +24181,15 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 						} else { // this isn't a container - so it's data
 							result_found = true;
 						}
-					} else { // modifier wasn't found
+					} else { // modifier/key wasn't found
 						error_found = true;
 					}
 				} while (!result_found && !error_found);
 
-				if (error_found) {					
-					lookHere = foundHere + replacement_text.length();
-					continue; 
+				if (error_found) {
+					// skip past the text we were unable to replace
+					lookHere = foundHere + replace_this.length();
+					continue;
 				}
 
 				// perform the replacement
@@ -30936,15 +30940,13 @@ bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result
 		const char *modifier = CTEXT(node); 
 
 		int modifier_index = 0;
-		bool found = false; 
-		for (; modifier_index < NUM_CONTAINER_MODIFIERS; ++modifier_index) {
+		for (; modifier_index < NUM_CONTAINER_MODIFIERS; modifier_index++) {
 			if (!stricmp(modifier, Container_modifiers[modifier_index].name)) {
-				found = true;
 				break;
 			}
 		}
 
-		if (!found) {
+		if (modifier_index == NUM_CONTAINER_MODIFIERS) {
 			const SCP_string &container_name = container.container_name;
 			Warning(LOCATION,
 				"Illegal operation attempted on %s container. There is no modifier called %s.",
