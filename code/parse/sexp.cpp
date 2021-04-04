@@ -321,9 +321,10 @@ SCP_vector<sexp_oper> Operators = {
 	//Containers Sub-Category
 	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "get-container-size",				OP_GET_CONTAINER_SIZE,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
-	{ "container-has-data",				OP_CONTAINER_HAS_DATA,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
-	{ "container-data-index",			OP_CONTAINER_DATA_INDEX,				2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
-	{ "container-has-key",				OP_CONTAINER_HAS_KEY,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "list-has-data",					OP_LIST_HAS_DATA,						2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "list-data-index",				OP_LIST_DATA_INDEX,						2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "map-has-key",					OP_MAP_HAS_KEY,							2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "map-has-data-item",				OP_MAP_HAS_DATA_ITEM,					2,	3,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 
 	//Other Sub-Category
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -25976,18 +25977,23 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Karajomra
-			case OP_CONTAINER_HAS_DATA:
+			case OP_LIST_HAS_DATA:
 				sexp_val = sexp_container_has_data(node);
 				break;
 
 			// Karajomra
-			case OP_CONTAINER_DATA_INDEX:
+			case OP_LIST_DATA_INDEX:
 				sexp_val = sexp_container_data_index(node);
 				break;
 
 			// Karajorma
-			case OP_CONTAINER_HAS_KEY:
+			case OP_MAP_HAS_KEY:
 				sexp_val = sexp_container_has_key(node);
+				break;
+
+			// Karajorma
+			case OP_MAP_HAS_DATA_ITEM:
+				// TODO
 				break;
 
 			case OP_DEBUG:
@@ -27417,8 +27423,9 @@ int query_operator_return_type(int op)
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_CONTAINER_EMPTY:
-		case OP_CONTAINER_HAS_DATA:
-		case OP_CONTAINER_HAS_KEY:
+		case OP_LIST_HAS_DATA:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27451,7 +27458,7 @@ int query_operator_return_type(int op)
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
-		case OP_CONTAINER_DATA_INDEX:
+		case OP_LIST_DATA_INDEX:
 		case OP_GET_CONTAINER_SIZE:
 			return OPR_NUMBER;
 
@@ -29211,21 +29218,28 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_CONTAINER_SIZE:
 			return OPF_CONTAINER_NAME;
 
-		case OP_CONTAINER_HAS_DATA:
-		case OP_CONTAINER_DATA_INDEX:
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
 			if (argnum == 0) {
-				return OPF_CONTAINER_NAME;
-			}
-			else {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
 				return OPF_STRING;
 			}
 
-		case OP_CONTAINER_HAS_KEY:
+		case OP_MAP_HAS_KEY:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
-			}
-			else {
+			} else {
 				return OPF_STRING;
+			}
+
+		case OP_MAP_HAS_DATA_ITEM:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_STRING;
+			} else {
+				return OPF_VARIABLE_NAME;
 			}
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
@@ -32382,9 +32396,10 @@ int get_subcategory(int sexp_id)
 
 		case OP_IS_CONTAINER_EMPTY:
 		case OP_GET_CONTAINER_SIZE:
-		case OP_CONTAINER_HAS_DATA:
-		case OP_CONTAINER_DATA_INDEX:
-		case OP_CONTAINER_HAS_KEY:
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
 			return STATUS_SUBCATEGORY_CONTAINERS;
 
 
@@ -34243,27 +34258,38 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the container." },
 
 	// Karajorma
-	{ OP_CONTAINER_HAS_DATA, "Container-has-data (Boolean operator)\r\n"
-		"\tReturns true if the specified container has elements which match the supplied strings.\r\n\r\n"
+	{ OP_LIST_HAS_DATA, "List-has-data (Boolean operator)\r\n"
+		"\tReturns true if the specified list container has elements which match the supplied strings.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the container." 
-		"\tRest:\tString that might be in the container" },
+		"\t1:\tName of the list container." 
+		"\tRest:\tString that might be in the list container" },
 
 	// Karajorma
-	{ OP_CONTAINER_DATA_INDEX, "Container-data-index (Boolean operator)\r\n"
-		"\tWhen used on a list container returns the index for the supplied string.\r\n"
-		"\tWhen used on a map container returns the index the first key with matching data would have in an array.\r\n"
+	{ OP_LIST_DATA_INDEX, "List-data-index\r\n"
+		"\tReturns the index (starting at 0) for the supplied string in the list container.\r\n"
 		"\tIf the supplied string is not present in the container, returns -1\r\n"
-		"Takes arguments...\r\n"
-		"\t1:\tName of the container."
-		"\t2:\tString that might be in the container" },
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the list container."
+		"\t2:\tString that might be in the list container" },
 
 	// Karajorma
-	{ OP_CONTAINER_HAS_KEY, "Container-has-key (Boolean operator)\r\n"
-		"\tReturns true if the specified container has keys which match the supplied strings.\r\n\r\n"
+	{ OP_MAP_HAS_KEY, "Map-has-key (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has keys that match the supplied strings.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of the container."
-		"\tRest:\tKeys that might be in the container" },
+		"\tRest:\tString that might be a key in the map container" },
+
+	// Karajorma
+	{ OP_MAP_HAS_DATA_ITEM, "Map-has-data-item (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has a key whose data matches the supplied string.\r\n\r\n"
+		"\tIf a variable is also supplied, three cases are possible:\r\n\r\n"
+		"\t\t(1) If a single key has the supplied string as its data, the key is stored in the variable.\r\n\r\n"
+		"\t\t(2) If multiple keys have the supplied string as their data, one of those keys is stored in the variable. The key may not be the same every time.\r\n\r\n"
+		"\t\t(3) If there is no key that has the supplied string as its data, the variable is left unchanged.\r\n\r\n"
+		"Takes either 2 or 3 arguments...\r\n"
+		"\t1:\tName of the container."
+		"\t2:\tString that might be data associated with a key in the map container."
+		"\t3:\tString variable to hold a map key associated with the data, if one exists (optional)." },
 
 	// Goober5000
 	{ OP_INT_TO_STRING, "int-to-string\r\n"
