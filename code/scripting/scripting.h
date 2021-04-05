@@ -134,6 +134,7 @@ struct script_condition
 {
 	ConditionalType condition_type = CHC_NONE;
 	SCP_string condition_string;
+	int condition_reference_index;
 };
 
 struct script_action
@@ -146,7 +147,7 @@ class ConditionedHook
 {
 private:
 	SCP_vector<script_action> Actions;
-	script_condition Conditions[MAX_HOOK_CONDITIONS];
+	SCP_vector<script_condition> Conditions;
 public:
 	bool AddCondition(script_condition *sc);
 	bool AddAction(script_action *sa);
