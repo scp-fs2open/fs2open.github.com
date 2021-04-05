@@ -23529,148 +23529,160 @@ void sexp_set_motion_debris(int node)
 }
 
 /**
-* Check if a SEXP container contains a specific element or elements.
-* Returns the index for the data from a list (or the index from a list of keys for a map).
-* Returns -1 if the element is not in the container
+* Check if a SEXP list container contains specific elements
 */
-int container_has_data(const char *container_name, const char *possible_data)
+int sexp_list_has_data(int node)
 {
+	const char *container_name = CTEXT(node);
 	const int index = get_sexp_container_index(container_name);
-	int data_index = 0;
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	if (!Sexp_containers[index].is_list()) {
+		Warning(LOCATION, "List-has-data called on non-list container %s.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &list_data = Sexp_containers[index].list_data;
+
+	node = CDR(node);
+	// there should be at least one string to search for
+	Assert(node != -1);
+
+	SCP_string possible_data;
+	while (node != -1) {
+		// TODO: revisit if traversing the list for every item proves unacceptably slow
+		possible_data = CTEXT(node);
+
+		if (std::find(list_data.begin(), list_data.end(), possible_data) == list_data.end()) {
+			return SEXP_FALSE;
+		}
+
+		node = CDR(node);
+	}
+
+	return SEXP_TRUE;
+}
+
+/**
+*	SEXP which returns the index in a SEXP list container for a specific element.
+*	Returns -1 if the element is not found.
+*/
+int sexp_list_data_index(int node)
+{
+	const char *container_name = CTEXT(node);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name);
 		return -1;
 	}
 
-	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		// Caution: the value of data_index in an unorered_map is implementation-defined
-		// since the order of entries is undefined and thus implementation-specific
-		// is this an issue?
-		// if so, one solution is to return an iterator instead of an index
-		// or alternatively, use an ord ered map (std::map) instead of an unordered map
-		// the difference between expected constant time (unordered) and guaranteed log time (ordered) for operations may well be insignificant, even for large missions
-		// and with ordered map, the value of data_index will always be guaranteed consistent across all C++ implementations
-		for (auto iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
-			if (!strcmp(iter->second.c_str(), possible_data)) {
-				return data_index;
-			}
-			data_index++;
-		}
-
+	if (!Sexp_containers[index].is_list()) {
+		Warning(LOCATION, "List-data-index called on non-list container %s.", container_name);
 		return -1;
 	}
-	if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		for (auto iter = Sexp_containers[index].list_data.begin(); iter != Sexp_containers[index].list_data.end(); iter++) {
-			if (!strcmp(iter->c_str(), possible_data)) {
-				return data_index;
-			}
-			data_index++;
-		}
 
-		return -1;
-	}
-	else {
-		Error(LOCATION, "Unknown container type. Container %s is not a valid type", container_name);
+	node = CDR(node);
+	Assert(node != -1);
+
+	const SCP_string possible_data = CTEXT(node);
+
+	int data_index = 0;
+	for (const SCP_string &data : Sexp_containers[index].list_data) {
+		if (possible_data == data) {
+			return data_index;
+		}
+		++data_index;
 	}
 
 	return -1;
 }
 
 /**
-*	SEXP which returns the index in a SEXP container for a specific element.
-*	For maps this index will be the index of the key if all the keys were outputted into an array
-*	Returns -1 if the element is not in that container. 
+* Check if a SEXP map container contains specific keys.
 */
-int sexp_container_data_index(int node)
+int sexp_map_has_key(int node)
 {
-	const char *possible_data;
 	const char *container_name = CTEXT(node);
-
-	node = CDR(node);
-
-	possible_data = CTEXT(node);
-
-	return container_has_data(container_name, possible_data);
-}
-
-/**
-*	Check if a SEXP container contains a specific element or elements
-*/
-int sexp_container_has_data(int node)
-{
-	const char *possible_data;
-	const char *container_name = CTEXT(node);
-
-	node = CDR(node);
-
-	while (node != -1) {
-		possible_data = CTEXT(node);
-		// Review Note: unnecessarily confusing IMO
-		// container_has_data() should return bool (or alternatively, 0 on failure)
-		// and container_data_index() can return an index
-		// the returned index is thrown away anyway
-		if (container_has_data(container_name, possible_data) == -1) {
-			return SEXP_FALSE;
-		}
-
-		node = CDR(node);
-	}
-
-	return SEXP_TRUE; 
-}
-
-/**
-* Check if a SEXP container contains a specific key.
-*/
-int sexp_container_has_key(int node)
-{
-	bool found = false;
-	const char *possible_key;
-	const char *container_name = CTEXT(node);
-	SCP_vector<SCP_string> keys;
 	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name);
-		return -1;
-	}
-
-	node = CDR(node);
-
-	if (!(Sexp_containers[index].type & SEXP_CONTAINER_MAP)) {
 		return SEXP_FALSE;
 	}
 
-	// TODO: replace this search with std::find_if
-	// and use a lambda to define the search predicate
-	// avoids the overhead of copying keys
-	// and much cleaner/more concise to boot
-
-	// get a list of the keys
-	for (auto iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
-		keys.push_back(iter->first);
+	if (!Sexp_containers[index].is_map()) {
+		Warning(LOCATION, "Map-has-key called on non-map container %s.", container_name);
+		return SEXP_FALSE;
 	}
 
-	// now loop through the list of keys and see if there are matches
+	const auto &map_data = Sexp_containers[index].map_data;
+
+	node = CDR(node);
+	// there should be at least one key to search for
+	Assert(node != -1);
+
+	SCP_string possible_key;
 	while (node != -1) {
 		possible_key = CTEXT(node);
-		for (SCP_vector<SCP_string>::iterator iter = keys.begin(); iter != keys.end(); iter++) {
-			if (!strcmp(iter->c_str(), possible_key)) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
+		if (map_data.find(possible_key) == map_data.end()) {
 			return SEXP_FALSE;
 		}
 
-		found = false;
 		node = CDR(node);
 	}
 
 	return SEXP_TRUE;
+}
+
+/**
+* Check if a SEXP map container has a key whose data matches a specific string.
+* If a third argument (string variable) is provided, store the data's associated key, if a match is found.
+* Returns -1 if the element is not in the container
+*/
+int sexp_map_has_data_item(int node)
+{
+	const char *container_name = CTEXT(node);
+	const int index = get_sexp_container_index(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	if (!Sexp_containers[index].is_map()) {
+		Warning(LOCATION, "map-has-data-teim called on non-map container %s.", container_name);
+		return SEXP_FALSE;
+	}
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	const SCP_string possible_data = CTEXT(node);
+
+	for (const auto &kv_pair : Sexp_containers[index].map_data) {
+		if (possible_data == kv_pair.second) {
+			// check for optional variable to store the key
+			node = CDR(node);
+			if (node != -1) {
+				const int var_index = sexp_get_variable_index(node);
+				// DISCUSSME: should we do an explicit if-check instead?
+				Assert(var_index >= 0);
+				// TODO: type checking of string key/var vs. number key/var?
+				
+				// assign key to variable
+				sexp_modify_variable(kv_pair.first.c_str(), var_index);
+			}
+
+			return SEXP_TRUE;
+		}
+	}
+
+	return SEXP_FALSE;
 }
 
 /**
@@ -23715,16 +23727,19 @@ void sexp_remove_from_list(int node)
 	}
 
 	node = CDR(node);
+	// there should be at least one string to remove
+	Assert(node != -1);
 
 	auto &list_data = Sexp_containers[index].list_data;
 
+	SCP_string data_to_remove;
 	while (node != -1) {
-		const char *entry_to_remove = CTEXT(node);
-		int index_to_remove_from = container_has_data(container_name, entry_to_remove);
-		if (index_to_remove_from >= 0) {
-			Sexp_containers[index].list_data.erase(std::next(Sexp_containers[index].list_data.begin(), index_to_remove_from));
+		data_to_remove = CTEXT(node);
+		auto list_it = std::find(list_data.begin(), list_data.end(), data_to_remove);
+		if (list_it != list_data.end()) {
+			list_data.erase(list_it);
 		} else {
-			Warning(LOCATION, "Container %s does not contain an entry called %s. Can not use the remove-from-list SEXP to remove it", container_name, entry_to_remove);
+			Warning(LOCATION, "Container %s does not contain an entry called %s. Can not use the remove-from-list SEXP to remove it", container_name, data_to_remove.c_str());
 			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with an entry which is not in the list");
 		}
 
@@ -25978,22 +25993,22 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Karajomra
 			case OP_LIST_HAS_DATA:
-				sexp_val = sexp_container_has_data(node);
+				sexp_val = sexp_list_has_data(node);
 				break;
 
 			// Karajomra
 			case OP_LIST_DATA_INDEX:
-				sexp_val = sexp_container_data_index(node);
+				sexp_val = sexp_list_data_index(node);
 				break;
 
 			// Karajorma
 			case OP_MAP_HAS_KEY:
-				sexp_val = sexp_container_has_key(node);
+				sexp_val = sexp_map_has_key(node);
 				break;
 
 			// Karajorma
 			case OP_MAP_HAS_DATA_ITEM:
-				// TODO
+				sexp_val = sexp_map_has_data_item(node);
 				break;
 
 			case OP_DEBUG:
