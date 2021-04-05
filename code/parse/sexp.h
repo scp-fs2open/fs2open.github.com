@@ -791,7 +791,7 @@ class waypoint_list;
 #define OP_CONTAINER_REMOVE_FROM_LIST		(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_CONTAINER_REMOVE_FROM_MAP		(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_CLEAR_CONTAINER					(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_GET_MAP_KEYS			(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1401,7 +1401,7 @@ bool has_special_explosion_block_index(ship *shipp, int *index);
 // sexp_containers
 // TODO: consider returning sexp_container*, nullptr on failure
 int get_sexp_container_index(const char* name);
-bool sexp_replace_container_refs_with_values(char *text, int max_len); 
+bool sexp_replace_container_refs_with_values(char *text, size_t max_len);
 bool sexp_replace_container_refs_with_values(SCP_string &text);
 
 // Karajorma
