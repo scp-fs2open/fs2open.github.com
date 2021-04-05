@@ -23948,11 +23948,8 @@ void sexp_get_map_keys(int node)
 		Sexp_containers[list_index].list_data.clear(); 
 	}
 
-	// TODO: switch to "foreach"-style loop
-	auto iter = Sexp_containers[map_index].map_data.begin();
-
-	for (; iter != Sexp_containers[map_index].map_data.end(); ++iter) {
-		Sexp_containers[list_index].list_data.push_back(iter->first);
+	for (const auto &kv_pair : Sexp_containers[map_index].map_data) {
+		Sexp_containers[list_index].list_data.emplace_back(kv_pair.first);
 	}
 }
 
