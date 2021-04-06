@@ -472,8 +472,12 @@ void CEditContainerDlg::OnContainerRemove()
 	Assert(!get_current_container().empty());
 
 	auto &container = get_current_container();
+
 	const int index = m_container_data_lister.GetCurSel(); 
-	// TODO: check for LB_ERR, see OnContainerUpdate()
+	if (index == LB_ERR) {
+		MessageBox("Select an item from the list before pressing Remove.");
+		return;
+	}
 	Assert(index >= 0 && index < container.size());
 
 	if (container.is_list()) {
