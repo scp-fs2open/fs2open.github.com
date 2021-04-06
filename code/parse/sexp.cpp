@@ -24144,6 +24144,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 {
 	bool replaced_anything = false;
 	size_t lookHere = 0;
+	int num_replacements = 0;
 
 	while (lookHere < text.length()) {
 		// look for the meta-character
@@ -24182,6 +24183,13 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 				// perform the replacement
 				text.replace(foundHere, num_chars_to_replace, replacement_text);
 				replaced_anything = true;
+
+				++num_replacements;
+				// avoid potential infinite loops
+				if (num_replacements >= 50) {
+					// TODO: issue warning "re-entrance limit hit"?
+					break;
+				}
 
 				// don't go past the replacement point, because if container multidimensionality
 				// is being used, then the resulting text will contain another container ref
