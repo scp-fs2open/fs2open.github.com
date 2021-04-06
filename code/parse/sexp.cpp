@@ -24151,7 +24151,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 		size_t foundHere = text.find('&', lookHere);
 
 		// found?
-		if (foundHere != SCP_string::npos) {
+		if (foundHere != SCP_string::npos && foundHere != text.length() - 1) {
 			// see if a container starts at the next char
 			int con_index = get_sexp_container_index_special(text, foundHere + 1);
 			if (con_index >= 0) {
@@ -24198,7 +24198,7 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 				lookHere = foundHere + 1;
 			}
 		} else {
-			// no meta-character found, so we're done replacing
+			// no potential metacharacter found, so we're done replacing
 			break;
 		}
 	}
