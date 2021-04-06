@@ -8174,20 +8174,8 @@ void mission_process_alt_types()
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
 
-		// consolidate double hashes
-		auto src = Mission_alt_types[i];
-		auto dest = src;
-		while (*src)
-		{
-			if (*src == '#' && *(src + 1) == '#')
-				dest--;
-
-			++src;
-			++dest;
-
-			if (src != dest)
-				*dest = *src;
-		}
+		// ## -> #
+		consolidate_double_characters(Mission_alt_types[i], '#');
 	}
 }
 

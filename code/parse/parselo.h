@@ -74,6 +74,8 @@ extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_has
 extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
 extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 
+extern void consolidate_double_characters(char *str, char ch);
+
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
