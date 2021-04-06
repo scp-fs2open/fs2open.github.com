@@ -3727,10 +3727,9 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
 {
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {

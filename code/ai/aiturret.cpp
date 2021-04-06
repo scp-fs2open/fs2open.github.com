@@ -1382,12 +1382,12 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 		in_fov = turret_fov_test(ss, gvec, &v2e);
 
 		if (in_fov) {
-			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos);
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos);
 		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
-			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos, true);
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
 		}
 	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
-		ret_val = model_rotate_gun(objp, pm, pmi, ss->system_info, predicted_enemy_pos, true);
+		ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
 	}
 
 	// by default "ret_val" should be set to 1 for multi-part turrets, and 0 for single-part turrets
