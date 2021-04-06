@@ -27,6 +27,7 @@
 #include "options/Option.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
@@ -41,19 +42,16 @@
 
 typedef struct {
 	vec3d pos;
-	vec3d last_pos;
-	int active;
 	int vclip;
 	float size;
-} old_debris;
+} motion_debris;
 
-const int MAX_DEBRIS = 200;
+const int MAX_DEBRIS = 300;
 const int MAX_STARS = 2000;
-const float MAX_DIST = 50.0f;
-const float MAX_DIST_RANGE = 60.0f;
+const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
-const float BASE_SIZE = 0.12f;
-float BASE_SIZE_NEB = 0.5f;
+const float BASE_SIZE = 0.04f;
+const float BASE_SIZE_NEB = 0.15f;
 
 static int Subspace_model_inner = -1;
 static int Subspace_model_outer = -1;
@@ -147,7 +145,7 @@ typedef struct vDist {
 
 star Stars[MAX_STARS];
 
-old_debris odebris[MAX_DEBRIS];
+motion_debris Motion_debris[MAX_DEBRIS];
 
 
 typedef struct debris_vclip {
@@ -888,7 +886,7 @@ void stars_post_level_init()
 
 	}
 
-	memset( &odebris, 0, sizeof(old_debris) * MAX_DEBRIS );
+	memset( &Motion_debris, 0, sizeof(motion_debris) * MAX_DEBRIS );
 
 	
 	for (i=0; i<8; i++ ) {
@@ -1111,14 +1109,11 @@ DCF(stars,"Set parameters for starfield")
 }
 //XSTR:ON
 
-int reload_old_debris = 1;		// If set to one, then reload all the last_pos of the debris
-
 // Call this if camera "cuts" or moves long distances
 // so blur effect doesn't draw lines all over the screen.
 void stars_camera_cut()
 {
 	last_stars_filled = 0;
-	reload_old_debris = 1;
 }
 
 //#define TIME_STAR_CODE		// enable to time star code
@@ -1727,15 +1722,10 @@ void stars_draw_stars()
 	path->restoreState();
 }
 
-void stars_draw_debris()
+void stars_draw_motion_debris()
 {
 	GR_DEBUG_SCOPE("Draw motion debris");
 	TRACE_SCOPE(tracing::DrawMotionDebris);
-
-	int i;
-	float vdist;
-	vec3d tmp;
-	vertex p;
 
 	if (Motion_debris_override)
 		return;
@@ -1744,42 +1734,29 @@ void stars_draw_debris()
 		return;
 	}
 
-	gr_set_color( 0, 0, 0 );
+	for (motion_debris &mdebris : Motion_debris) {
+		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-	old_debris * d = odebris; 
+		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {
+			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, true);
+			vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
-		if (!d->active)	{
-			d->pos.xyz.x = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.y = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.z = f2fl(myrand() - RAND_MAX_2);
-
-			vm_vec_normalize(&d->pos);
-
-			vm_vec_scale(&d->pos, MAX_DIST);
-			vm_vec_add2(&d->pos, &Eye_position );
-			d->active = 1;
-			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
+			mdebris.vclip = rand32() % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
 			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
+				mdebris.size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
 			} else {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE;
+				mdebris.size = i2fl(myrand() % 4)*BASE_SIZE;
 			}
-
-			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
 		}
 
-		if ( reload_old_debris ) {
-			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
-		}
-			
-		g3_rotate_vertex(&p, &d->pos);
+		vertex pnt;
+		g3_rotate_vertex(&pnt, &mdebris.pos);
 
-		if (p.codes == 0) {
-			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
-			frame %= Debris_vclips[d->vclip].nframes;
+		if (pnt.codes == 0) {
+			int frame = Missiontime / (DEBRIS_ROT_MIN + (1 % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
+			frame %= Debris_vclips[mdebris.vclip].nframes;
 
 			float alpha;
 
@@ -1788,23 +1765,15 @@ void stars_draw_debris()
 			} else {
 				alpha = 1.0f;
 			}
-			
-			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
-			//g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );
-			material mat_params;
-			material_set_unlit(&mat_params, Debris_vclips[d->vclip].bm + frame, alpha, true, true);
-			g3_render_laser_2d(&mat_params, &d->pos, d->size, &tmp, d->size, 25.0f);
+
+			// scale alpha from 0 at max range to full at 60% range
+			alpha *= (vdist - MAX_DIST_RANGE) / -(MAX_DIST_RANGE * 0.6f);
+
+			g3_transfer_vertex(&pnt, &mdebris.pos);
+
+			batching_add_bitmap(Debris_vclips[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
 		}
-
-		vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
-
-		vdist = vm_vec_mag_quick(&d->last_pos);
-
-		if ( (vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE) )
-			d->active = 0;
 	}
-
-	reload_old_debris = 0;
 }
 
 void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
