@@ -5065,6 +5065,9 @@ void parse_event(mission * /*pm*/)
 		}
 	}
 
+	// Need to set this to zero so that we don't accidentally reuse old data.
+	event->flags = 0;
+
 	if (optional_string("+Event Flags:")) {
 		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
 	}
