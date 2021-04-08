@@ -255,41 +255,61 @@ DCF(script, "Evaluates a line of scripting")
 extern char Game_current_mission_filename[];
 bool ConditionedHook::AddCondition(script_condition *sc)
 {
+	//Since string comparisons are expensive and these hooks have to be checked very frequently
+	//where possible whatever string comparison is done here and the outcome stored for later
+	//nature of value stored depends on condition type.
 	switch (sc->condition_type)
 	{
-	case CHC_STATE:
-		sc->condition_reference_index = gameseq_get_state_idx(sc->condition_string.c_str());
+	case CHC_SHIPCLASS:
+		sc->condition_cached_value = ship_info_lookup(sc->condition_string.c_str());
 		break;
-	case CHC_VERSION:
-		char buf[32];
-		sc->condition_reference_index = 0;
-		sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-		if (stricmp(buf, sc->condition_string.c_str()) == 0)
-		{
-			sc->condition_reference_index = 1;
-		} 
-		else if(FS_VERSION_BUILD == 0) //In case some people are lazy and say "3.7" instead of "3.7.0" or something
-		{
-			sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-			if (stricmp(buf, sc->condition_string.c_str()) == 0) {
-				sc->condition_reference_index = 1;
+	case CHC_STATE:
+		sc->condition_cached_value = gameseq_get_state_idx(sc->condition_string.c_str());
+		break;
+	case CHC_WEAPONCLASS:
+		sc->condition_cached_value = weapon_info_lookup(sc->condition_string.c_str());
+		break;
+	case CHC_OBJECTTYPE:
+		for (int i = 0; i < MAX_OBJECT_TYPES; i++) {
+			if (stricmp(Object_type_names[i], sc->condition_string.c_str()) == 0) {
+				sc->condition_cached_value = i;
+				break;
 			}
 		}
 		break;
-		
+	case CHC_VERSION:
+	{
+		char buf[32];
+		sc->condition_cached_value = 0;
+		sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+		if (stricmp(buf, sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else if (FS_VERSION_BUILD == 0) //In case some people are lazy and say "3.7" instead of "3.7.0" or something
+		{
+			sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+			if (stricmp(buf, sc->condition_string.c_str()) == 0) {
+				sc->condition_cached_value = 1;
+			}
+		}
+		break;
+	}
 	case CHC_APPLICATION:
-		sc->condition_reference_index = 1;
+	{
+		sc->condition_cached_value = 1;
 		if (Fred_running)
 		{
 			if (stricmp("FRED2_Open", sc->condition_string.c_str()) != 0 && stricmp("FRED2Open", sc->condition_string.c_str()) != 0 && stricmp("FRED 2", sc->condition_string.c_str()) != 0 && stricmp("FRED", sc->condition_string.c_str()) != 0)
-				sc->condition_reference_index = 0;
+				sc->condition_cached_value = 0;
 		}
 		else
 		{
 			if (stricmp("FS2_Open", sc->condition_string.c_str()) != 0 && stricmp("FS2Open", sc->condition_string.c_str()) != 0 && stricmp("Freespace 2", sc->condition_string.c_str()) != 0 && stricmp("Freespace", sc->condition_string.c_str()) != 0)
-				sc->condition_reference_index = 0;
+				sc->condition_cached_value = 0;
 		}
 		break;
+	}
 	default:
 		break;
 	}
@@ -312,7 +332,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 {
 
 	//Return false if any conditions are not met
-	//script_condition *scp;
+	//Never return true inside the loop, or you will be potentially skipping other conditions on the hook.
 	ship_info *sip;
 	for(auto & scp : Conditions)
 	{
@@ -322,7 +342,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 			case CHC_STATE:
 				if(gameseq_get_depth() < 0)
 					return false;
-				if(gameseq_get_state() != scp.condition_reference_index)
+				if(gameseq_get_state() != scp.condition_cached_value)
 					return false;
 				break;
 			case CHC_SHIPTYPE:
@@ -335,9 +355,10 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					return false;
 				break;
 			case CHC_SHIPCLASS:
+				//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;
-				if(stricmp(Ship_info[Ships[objp->instance].ship_info_index].name, scp.condition_string.c_str()) != 0)
+				if(!(Ships[objp->instance].ship_info_index == scp.condition_cached_value))
 					return false;
 				break;
 			case CHC_SHIP:
@@ -373,152 +394,158 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				}
 			case CHC_WEAPONCLASS:
 				{
+					//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 					if (action == CHA_COLLIDEWEAPON) {
-						if (stricmp(Weapon_info[more_data].name, scp.condition_string.c_str()) != 0)
-							return false;
+						return(more_data == scp.condition_cached_value);
 					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+						if (objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
 							return false;
-						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp.condition_string.c_str()) != 0 ))
+						else if (objp->type == OBJ_WEAPON && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
 							return false;
-						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp.condition_string.c_str()) != 0 ))
+						else if (objp->type == OBJ_BEAM && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
 							return false;
-					} else if(objp == NULL || objp->type != OBJ_SHIP) {
+					}
+					else if (objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
-					} else if (action == CHA_ONWEAPONCREATED) {
+					}
+					else if (action == CHA_ONWEAPONCREATED) {
 						if (objp == nullptr || objp->type != OBJ_WEAPON)
 							return false;
-					} else {
+					}
+					else {
 
 						// Okay, if we're still here, then objp is both valid and a ship
 						ship* shipp = &Ships[objp->instance];
 						bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 						switch (action) {
-							case CHA_ONWPSELECTED:
-								if (shipp->weapons.current_primary_bank >= 0) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.current_secondary_bank >= 0) {
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-
-								if (!(primary || secondary)) {
-									return false;
-								}
-
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
-									return false;
-								}
-
-								break;
-							case CHA_ONWPDESELECTED:
-								if (shipp->weapons.current_primary_bank >= 0) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.previous_primary_bank >= 0) {
-									prev_primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.current_secondary_bank >= 0) {
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.previous_secondary_bank >= 0) {
-									prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp.condition_string.c_str()) == 0;
-								}
-
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
-									return true;
-
-								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
-									return false;
-
-								if ( (!prev_secondary && !secondary) && (prev_primary && primary) )
-									return false;
-
-								if ( (!prev_secondary && !secondary) && (!prev_primary && primary) )
-									return false;
-
-								if ( (!prev_primary && !primary) && (prev_secondary && secondary) )
-									return false;
-
-								if ( (!prev_primary && !primary) && (!prev_secondary && secondary) )
-									return false;
-
-								break;
-							case CHA_ONWPEQUIPPED: {
-								bool equipped = false;
-								for(int j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-									if (!equipped && (shipp->weapons.primary_bank_weapons[j] >= 0) && (shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) ) {
-										if (!stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name,
-													 scp.condition_string.c_str())) {
-											equipped = true;
-											break;
-										}
-									}
-								}
-							
-								if (!equipped) {
-									for(int j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-										if (!equipped && (shipp->weapons.secondary_bank_weapons[j] >= 0) && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()) ) {
-											if (!stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name,
-														 scp.condition_string.c_str())) {
-												equipped = true;
-												break;
-											}
-										}
-									}
-								}
-
-								if (!equipped)
-									return false;
-							
-								break;
+						case CHA_ONWPSELECTED: {
+							if (shipp->weapons.current_primary_bank >= 0) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
 							}
-							case CHA_ONWPFIRED: {
-								if (more_data == 1) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp.condition_string.c_str()) == 0;
-									secondary = false;
-								} else {
-									primary = false;
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp.condition_string.c_str()) == 0;
+							if (shipp->weapons.current_secondary_bank >= 0) {
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (!(primary || secondary)) {
+								return false;
+							}
+
+							if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
+								return false;
+							}
+
+							break; }
+						case CHA_ONWPDESELECTED: {
+							if (shipp->weapons.current_primary_bank >= 0) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.previous_primary_bank >= 0) {
+								prev_primary = shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.current_secondary_bank >= 0) {
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.previous_secondary_bank >= 0) {
+								prev_secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (!(
+									(shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && 
+									(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])
+								)) {
+								return false;
+							}
+							if (!prev_secondary && !secondary && !prev_primary && !primary)
+								return false;
+
+							if ((!prev_secondary && !secondary) && (prev_primary && primary))
+								return false;
+
+							if ((!prev_secondary && !secondary) && (!prev_primary && primary))
+								return false;
+
+							if ((!prev_primary && !primary) && (prev_secondary && secondary))
+								return false;
+
+							if ((!prev_primary && !primary) && (!prev_secondary && secondary))
+								return false;
+
+							break; }
+						case CHA_ONWPEQUIPPED: {
+							bool equipped = false;
+							for (int j = 0; j < MAX_SHIP_PRIMARY_BANKS && !equipped; j++) {
+								if (shipp->weapons.primary_bank_weapons[j] > 0 && shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) {
+									equipped = shipp->weapons.primary_bank_weapons[j] == scp.condition_cached_value;
+								}
+							}
+							for (int j = 0; j < MAX_SHIP_SECONDARY_BANKS && !equipped; j++) {
+								if (shipp->weapons.secondary_bank_weapons[j] >= 0 && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()))
+								{
+									equipped = shipp->weapons.secondary_bank_weapons[j] == scp.condition_cached_value;
 								}
 
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
-								 	return false;
+							}
 
-								return more_data == 1 ? primary : secondary;
+							if (!equipped) {
+								return false;
+							}
 
-								break;
-							}
-							case CHA_ONTURRETFIRED: {
-								if (! (stricmp(Weapon_info[shipp->last_fired_turret->last_fired_weapon_info_index].name, scp.condition_string.c_str()) == 0))
-									return false;
-								break;
-							}
-							case CHA_PRIMARYFIRE: {
-								if (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp.condition_string.c_str()) != 0)
-									return false;
-								break;
-							}
-							case CHA_SECONDARYFIRE: {
-								if (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp.condition_string.c_str()) != 0)
-									return false;
-								break;
-							}
-							case CHA_BEAMFIRE: {
-								if (!(stricmp(Weapon_info[more_data].name, scp.condition_string.c_str()) == 0))
-									return false;
-								break;
-							}
-							default:
-								break;
+							break;
 						}
-					} // case CHC_WEAPONCLASS
-					break;
+						case CHA_ONWPFIRED: {
+							if (more_data == 1) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+								secondary = false;
+							} else {
+								primary = false;
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (
+								(shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && 
+								(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
+							{
+								return false;
+							}
+
+							if (more_data == 1 && !primary) {
+								return false;
+							}
+							else if (more_data != 1 && !secondary) {
+								return false;
+							}
+							break;
+						}
+						case CHA_ONTURRETFIRED: {
+							if(shipp->last_fired_turret->last_fired_weapon_info_index != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_PRIMARYFIRE: {
+							if (shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_SECONDARYFIRE: {
+							if(shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_BEAMFIRE: {
+							if(more_data != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						default:
+							break;
+					}
+				} // case CHC_WEAPONCLASS
+				break;
 				}
 			case CHC_OBJECTTYPE:
 				if(objp == NULL)
 					return false;
-				if(stricmp(Object_type_names[objp->type], scp.condition_string.c_str()) != 0)
+				if(objp->type != scp.condition_cached_value)
 					return false;
 				break;
 			case CHC_KEYPRESS:
@@ -546,13 +573,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				}
 			case CHC_VERSION:
 				{
-					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
-					
-					//if(stricmp(Script_engine_version.c_str(), scp.condition_string.c_str()) != 0)
-					//This is pre-checked and the result cached on script load, since version string 
-					//doesn't change during play and building the version string over and over to compare to
-					//was more expensive than you might think
-					if(scp.condition_reference_index == 0)
+					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+					if(scp.condition_cached_value == 0)
 					{
 						return false;
 					}
@@ -560,7 +582,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				}
 			case CHC_APPLICATION:
 				{
-					if(scp.condition_reference_index == 0)
+					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+					if(scp.condition_cached_value == 0)
 					{
 						return false;
 					}
