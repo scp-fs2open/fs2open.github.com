@@ -2790,6 +2790,9 @@ size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char
 	return i;
 }
 
+// If this data is going to be parsed multiple times (like for mission load), then the dest variable 
+// needs to be set to zero in between parses, otherwise we keep bad data.
+// For tbm files, it must not be reset.
 void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size)
 {
 	Assert(dest!=NULL);	//wtf?
