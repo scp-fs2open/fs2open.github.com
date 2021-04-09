@@ -211,7 +211,7 @@ void CEditContainerDlg::OnTypeNumber()
 	Assert(container.empty());
 	container.type &= ~SEXP_CONTAINER_STRING_DATA;
 	container.type |= SEXP_CONTAINER_NUMBER_DATA;
-	// TODO: update container.opf_type?
+	container.opf_type = OPF_NUMBER;
 }
 
 void CEditContainerDlg::OnTypeString() 
@@ -220,6 +220,7 @@ void CEditContainerDlg::OnTypeString()
 	Assert(container.empty());
 	container.type &= ~SEXP_CONTAINER_NUMBER_DATA;
 	container.type |= SEXP_CONTAINER_STRING_DATA;
+	container.opf_type = OPF_ANYTHING;
 }
 
 void CEditContainerDlg::set_data_type()
