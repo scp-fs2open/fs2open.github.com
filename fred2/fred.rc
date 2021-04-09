@@ -485,7 +485,7 @@ BEGIN
             MENUITEM "Placeholder",                 ID_PLACEHOLDER, GRAYED
         END
         MENUITEM SEPARATOR
-        MENUITEM "Edit Containers",             ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
+        MENUITEM "Add/Modify Container",             ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
         POPUP "Replace Container"
         BEGIN
             MENUITEM "Placeholder",                 ID_PLACEHOLDER
@@ -2215,7 +2215,7 @@ END
 
 IDD_EDIT_CONTAINER DIALOGEX 0, 0, 441, 267
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Edit Containers"
+CAPTION "Add/Modify Container"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,384,7,50,14

@@ -14,7 +14,7 @@
 //
 
 /////////////////////////////////////////////////////////////////////////////
-// Add Container dialog
+// Add/Modify Container dialog
 
 class CEditContainerAddNewDlg : public CDialog
 {

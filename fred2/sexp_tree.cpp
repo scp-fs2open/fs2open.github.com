@@ -1753,7 +1753,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	id = LOWORD(wParam);
 
-	// Add Container
+	// Add/Modify Container
 	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
 		CEditContainerDlg dlg(this);
 
