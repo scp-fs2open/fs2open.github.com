@@ -1403,6 +1403,7 @@ bool has_special_explosion_block_index(ship *shipp, int *index);
 int get_sexp_container_index(const char* name);
 bool sexp_replace_container_refs_with_values(char *text, size_t max_len);
 bool sexp_replace_container_refs_with_values(SCP_string &text);
+void update_sexp_containers(SCP_vector<sexp_container> &containers);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);

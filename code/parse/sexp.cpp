@@ -3877,10 +3877,14 @@ int get_sexp()
 	return start;
 }
 
-void register_new_container_index(const SCP_string& container_name)
+void register_new_container_index(const SCP_string &container_name, int container_index = -1)
 {
-	const char initial_lower = SCP_tolower(container_name[0]);
-	Container_indices_by_initial[initial_lower].emplace_back((int)Sexp_containers.size() - 1);
+	if (container_index == -1) {
+		container_index = (int)Sexp_containers.size() - 1;
+	}
+	Assert(container_index >= 0);
+	Assert(container_index < (int)Sexp_containers.size());
+	Container_indices_by_initial[SCP_tolower(container_name[0])].emplace_back(container_index);
 }
 
 bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type, SCP_vector<SCP_string>& data)
@@ -31238,7 +31242,16 @@ void init_sexp_containers()
 	Container_indices_by_initial.clear();
 }
 
+void update_sexp_containers(SCP_vector<sexp_container>& containers)
+{
+	Sexp_containers = std::move(containers);
 
+	// reset index
+	Container_indices_by_initial.clear();
+	for (int i = 0; i < (int)Sexp_containers.size(); ++i) {
+		register_new_container_index(Sexp_containers[i].container_name, i);
+	}
+}
 
 /**
  * Add a variable to the block variable array rather than the Sexp_variables array

@@ -139,8 +139,9 @@ void CEditContainerDlg::OnOK()
 	//	}
 	//}
 
-	Sexp_containers = std::move(m_containers);
-	m_containers.clear();
+	update_sexp_containers(m_containers);
+	// TODO: reset dialog's vars? Is there a chance the dialog will get re-used?
+
 	CDialog::OnOK();
 }
 
