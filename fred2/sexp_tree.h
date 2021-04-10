@@ -230,7 +230,6 @@ public:
 	sexp_list_item *get_listing_opf_medal_name();
 	sexp_list_item *get_listing_opf_weapon_name();
 	sexp_list_item *get_listing_opf_ship_class_name();
-	sexp_list_item *get_listing_opf_hud_gauge_name();
 	sexp_list_item *get_listing_opf_huge_weapon();
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
