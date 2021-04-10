@@ -53,9 +53,9 @@ int Hud_font = -1;
 
 bool Chase_view_only_ex = false;
 
-//WARNING: If you add gauges to this array, make sure to bump Num_default_gauges!
-const int Num_retail_gauges = 42;
-static int Retail_gauges[Num_retail_gauges] = {
+//WARNING: If you add gauges to this array, make sure to bump Num_builtin_gauges!
+const int Num_builtin_gauges = 42;
+static int Builtin_gauges[Num_builtin_gauges] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
 	HUD_OBJECT_SUPPORT,
@@ -574,11 +574,11 @@ void load_missing_retail_gauges()
 	if(Hud_retail) {
 		int num_loaded_gauges = (int)default_hud_gauges.size();
 
-		for(int i = 0; i < Num_retail_gauges; i++) {
+		for(int i = 0; i < Num_builtin_gauges; i++) {
 			retail_gauge_loaded = false;
 
 			for(int j = 0; j < num_loaded_gauges; j++) {
-				if(Retail_gauges[i] == default_hud_gauges[j]->getObjectType()) {
+				if(Builtin_gauges[i] == default_hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
 					break;
 				}
@@ -586,7 +586,7 @@ void load_missing_retail_gauges()
 
 			if(!retail_gauge_loaded) {
 				gauge_settings settings;
-				load_gauge(Retail_gauges[i], &settings);
+				load_gauge(Builtin_gauges[i], &settings);
 			}
 		}
 
@@ -630,9 +630,9 @@ void load_missing_retail_gauges()
 		if(it->hud_enabled && it->hud_retail) {
 			int num_loaded_gauges = (int)it->hud_gauges.size();
 
-			for(int i = 0; i < Num_retail_gauges; i++) {
+			for(int i = 0; i < Num_builtin_gauges; i++) {
 				for(int j = 0; j < num_loaded_gauges; j++) {
-					if(Retail_gauges[i] == it->hud_gauges[j]->getObjectType()) {
+					if(Builtin_gauges[i] == it->hud_gauges[j]->getObjectType()) {
 						retail_gauge_loaded = true;
 					}
 				}
@@ -640,7 +640,7 @@ void load_missing_retail_gauges()
 				if(!retail_gauge_loaded) {
 					gauge_settings settings;
 					settings.ship_idx = &sindex;
-					load_gauge(Retail_gauges[i], &settings);
+					load_gauge(Builtin_gauges[i], &settings);
 				}
 			}
 

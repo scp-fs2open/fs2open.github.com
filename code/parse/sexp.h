@@ -103,7 +103,7 @@ class waypoint_list;
 #define OPF_AUDIO_VOLUME_OPTION 76		// The E
 #define OPF_WEAPON_BANK_NUMBER	77		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	78		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
-#define OPF_RETAIL_HUD_GAUGE	79		// The E
+#define OPF_BUILTIN_HUD_GAUGE	79		// The E
 #define OPF_DAMAGE_TYPE			80		// FUBAR - Damage type or <none>
 #define OPF_SHIP_EFFECT			81		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		82		// Goober5000 - as defined in modelanim.h
@@ -745,7 +745,7 @@ class waypoint_list;
 #define OP_CALL_SSM_STRIKE					(0x0024 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // X3N0-Life-Form
 #define OP_SET_MOTION_DEBRIS				(0x0025 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // The E
 #define OP_HUD_SET_CUSTOM_GAUGE_ACTIVE		(0x0026 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
-#define OP_HUD_SET_RETAIL_GAUGE_ACTIVE		(0x0027 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
+#define OP_HUD_SET_BUILTIN_GAUGE_ACTIVE		(0x0027 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
 #define OP_SCRIPT_EVAL_MULTI				(0x0028 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_PAUSE_SOUND_FROM_FILE			(0x0029 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SCRIPT_EVAL_BLOCK				(0x002a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // niffiwan
@@ -1051,7 +1051,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_DAMAGE_TYPE			-150
 #define SEXP_CHECK_INVALID_TARGET_PRIORITIES	-151
 #define SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION	-152
-#define SEXP_CHECK_INVALID_RETAIL_HUD_GAUGE		-153
+#define SEXP_CHECK_INVALID_BUILTIN_HUD_GAUGE	-153
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 #define SEXP_CHECK_INVALID_MISSION_MOOD			-155
 #define SEXP_CHECK_INVALID_SHIP_FLAG			-156

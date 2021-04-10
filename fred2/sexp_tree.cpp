@@ -2822,7 +2822,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_AUDIO_VOLUME_OPTION:
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
-		case OPF_RETAIL_HUD_GAUGE:
+		case OPF_BUILTIN_HUD_GAUGE:
 		case OPF_CUSTOM_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
@@ -4611,8 +4611,8 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_message();
 			break;
 
-		case OPF_RETAIL_HUD_GAUGE:
-			list = get_listing_opf_retail_hud_gauge();
+		case OPF_BUILTIN_HUD_GAUGE:
+			list = get_listing_opf_builtin_hud_gauge();
 			break;
 
 		case OPF_CUSTOM_HUD_GAUGE:
@@ -5589,7 +5589,7 @@ sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_retail_hud_gauge() 
+sexp_list_item *sexp_tree::get_listing_opf_builtin_hud_gauge() 
 {
 	sexp_list_item head;
 

@@ -319,7 +319,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_explosion_option();
 	sexp_list_item* get_listing_opf_adjust_audio_volume();
 	sexp_list_item* get_listing_opf_weapon_banks();
-	sexp_list_item* get_listing_opf_retail_hud_gauge();
+	sexp_list_item* get_listing_opf_builtin_hud_gauge();
 	sexp_list_item* get_listing_opf_custom_hud_gauge();
 	sexp_list_item* get_listing_opf_ship_effect();
 	sexp_list_item* get_listing_opf_animation_type();
