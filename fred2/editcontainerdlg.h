@@ -47,14 +47,12 @@ protected:
 	void OnOK() override;
 	BOOL OnInitDialog() override;
 
-	// TODO OnContainerType* 
 	afx_msg void OnTypeMap();
 	afx_msg void OnTypeList();
 
 	afx_msg void OnTypeNumber();
 	afx_msg void OnTypeString();
 
-	// TODO: change set_ to update_
 	void set_container_type();
 	void set_data_type();
 	void set_key_type();
@@ -77,7 +75,6 @@ protected:
 	void update_data_lister();
 	void update_text_edit_boxes(const SCP_string &key, const SCP_string &data);
 
-	//todo validate_*_boxws
 	bool edit_boxes_have_valid_data(bool dup_key_ok);
 	bool data_edit_box_has_valid_data();
 	bool key_edit_box_has_valid_data(bool dup_ok);
@@ -86,10 +83,7 @@ protected:
 
 	bool is_container_name_in_use(const char *text, bool ignore_current) const;
 	bool is_container_name_valid(CString &new_name, bool is_rename);
-	//BOOL is_data_valid();
 	bool is_valid_number(const char *test_str) const;
-
-	//BOOL save_current_container();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
@@ -106,10 +100,13 @@ private:
 
 	const sexp_tree * const m_p_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
+	// used when m_containers is empty
 	sexp_container m_dummy_container; // used as placeholder when there are no containers
 	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
 	int			m_current_container = -1;
 	// FIXME TODO: maybe get rid of these
+	// 	   or change to CString and update via DoDataExchange
+	// 	   TODO: m_lister_index
 	//SCP_string m_key;
 	//SCP_string m_data;
 };

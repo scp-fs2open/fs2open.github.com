@@ -28,28 +28,15 @@ static char THIS_FILE[] = __FILE__;
 CEditContainerDlg::CEditContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent /*=nullptr*/)
 	: CDialog(CEditContainerDlg::IDD, pParent), m_p_sexp_tree(p_sexp_tree)
 {
-	//{{AFX_DATA_INIT(CEditContainerDlg)
-	/*
-	m_default_value = _T("");
-	*/
-	// m_container_name = _T("");
-	
-	//}}AFX_DATA_INIT
 }
-
 
 void CEditContainerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CEditContainerDlg)
 	DDX_Control(pDX, IDC_CONTAINER_DATA_LISTER, m_container_data_lister);
-	//}}AFX_DATA_MAP
 }
 
-
 BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
-	//{{AFX_MSG_MAP(CEditVariableDlg))
-	
 	ON_BN_CLICKED(IDC_CONTAINER_ADD, OnContainerAdd)
 	ON_BN_CLICKED(IDC_CONTAINER_INSERT, OnContainerInsert)
 	ON_BN_CLICKED(IDC_CONTAINER_REMOVE, OnContainerRemove)
@@ -67,7 +54,6 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 
 	ON_BN_CLICKED(IDC_ADD_NEW_CONTAINER, &CEditContainerDlg::OnBnClickedAddNewContainer)
 
-	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_STRING_KEYS, &CEditContainerDlg::OnBnClickedStringKeys)
 	ON_BN_CLICKED(IDC_NUMBER_KEYS, &CEditContainerDlg::OnBnClickedNumberKeys)
 	ON_BN_CLICKED(IDC_DELETE_CONTAINER, &CEditContainerDlg::OnBnClickedDeleteContainer)
@@ -128,17 +114,6 @@ void CEditContainerDlg::set_selected_container()
 
 void CEditContainerDlg::OnOK() 
 {
-	//if (m_current_container >=0) {
-	//	// if we can't save changed data, don't quit
-	//	//if (m_data_changed) {
-	//	// FIXME TEMP: ignore m_data_changed
-	//	if (m_current_container >= 0) {
-	//		if (!save_current_container()) {
-	//			return;
-	//		}
-	//	}
-	//}
-
 	update_sexp_containers(m_containers);
 	// TODO: reset dialog's vars? Is there a chance the dialog will get re-used?
 
@@ -268,7 +243,6 @@ void CEditContainerDlg::OnEditchangeContainerName()
 {
 	CString new_name;
 
-
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	Assert(cbox->IsWindowEnabled());
 	Assert(cbox->GetCount() > 0);
@@ -345,44 +319,6 @@ bool CEditContainerDlg::is_valid_number(const char *test_str) const
 	buf[ret] = '\0';
 	return !strcmp(buf, test_str);
 }
-
-
-//BOOL CEditContainerDlg::is_data_valid()
-//{
-//	int i; 
-//
-//	// type check data
-//	// ToDo - type check strings if using strict type checking
-//	int YouHaveMoreToDo; 
-//
-//	// if not strict typing all strings are fine regardless of whether we're dealing with maps or lists.
-//	if (!m_type_number && (m_type_list || (m_type_map && !m_key_type_number))) {
-//		return true; 
-//	}
-//
-//	else if (m_type_map ) {
-//		// start at the first data entry
-//		for (i = 1; i < (int)raw_data.size(); i = i+2) {
-//			if (!is_valid_number(raw_data[i])) {
-//				return false; 
-//			}
-//		}
-//	}
-//	else if (m_type_list) {
-//		for (i = 0; i < (int)raw_data.size(); i++) {
-//			if (!is_valid_number(raw_data[i])) {
-//				return false; 
-//			}
-//		}
-//	}
-//	// unknown container type
-//	else {
-//		return false; 
-//	}
-//
-//	// if we made it this far, the data should be fine
-//	return true;
-//}
 
 void CEditContainerDlg::OnListerSelectionChange()
 {
@@ -586,6 +522,8 @@ bool CEditContainerDlg::key_edit_box_has_valid_data(bool dup_ok)
 		return false;
 	}
 
+	// TODO: validate strictly typed keys
+
 	return true; 
 }
 
@@ -604,6 +542,8 @@ bool CEditContainerDlg::data_edit_box_has_valid_data()
 		MessageBox("This data is not a valid number and this container uses numeric data!");
 		return false;
 	}
+
+	// TODO: validate strictly typed data
 
 	return true;
 }
@@ -732,52 +672,6 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	set_selected_container();
 }
 
-//BOOL CEditContainerDlg::save_current_container()
-//{
-//	if (!is_data_valid()) {
-//		MessageBox("Since data is not valid, it can not be saved. Please correct the data before continuing.");
-//		return false;
-//	}
-//
-//	Assert(m_current_container >= 0);
-//
-//	m_containers[m_current_container].type = 0;
-//
-//	if (m_type_map) {
-//		m_containers[m_current_container].type |= SEXP_CONTAINER_MAP;
-//
-//		if (m_key_type_number) {
-//			m_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_KEYS;
-//		} else {
-//			m_containers[m_current_container].type |= SEXP_CONTAINER_STRING_KEYS;
-//		}
-//
-//		// write the raw data into m_containers
-//		Assertion(raw_data.size() % 2 == 0, "Invalid size for map type");
-//		m_containers[m_current_container].map_data.clear();
-//
-//		for (int i = 0; i < (int)raw_data.size(); i = i + 2) {
-//			m_containers[m_current_container].map_data.insert(
-//				std::pair<SCP_string, SCP_string>(raw_data[i], raw_data[i + 1]));
-//		}
-//	} else {
-//		m_containers[m_current_container].type |= SEXP_CONTAINER_LIST;
-//		m_containers[m_current_container].list_data.clear();
-//
-//		// write the raw data into m_containers
-//		for (int i = 0; i < (int)raw_data.size(); i++) {
-//			m_containers[m_current_container].list_data.push_back(raw_data[i]);
-//		}
-//	}
-//
-//	if (m_type_number) {
-//		m_containers[m_current_container].type |= SEXP_CONTAINER_NUMBER_DATA;
-//	} else {
-//		m_containers[m_current_container].type |= SEXP_CONTAINER_STRING_DATA;
-//	}
-//
-//	return true;
-//}
 void CEditContainerDlg::OnBnClickedDeleteContainer()
 {
 	Assert(has_containers()); 
@@ -836,7 +730,5 @@ void CEditContainerDlg::update_text_edit_boxes(const SCP_string &key, const SCP_
 sexp_container &CEditContainerDlg::get_current_container()
 {
 	Assert(m_current_container >= -1 && m_current_container < num_containers());
-
 	return m_current_container < 0 ? m_dummy_container : m_containers[m_current_container];
 }
-
