@@ -58,7 +58,7 @@ class waypoint_list;
 #define	OPF_MEDAL_NAME			31		// name of medals
 #define	OPF_WEAPON_NAME			32		// name of a weapon
 #define	OPF_SHIP_CLASS_NAME		33		// name of a ship class
-#define	OPF_HUD_GAUGE_NAME		34		// name of HUD gauge
+#define	OPF_CUSTOM_HUD_GAUGE	34		// name of custom HUD gauge
 #define	OPF_HUGE_WEAPON			35		// name of a secondary bomb type weapon
 #define	OPF_SHIP_NOT_PLAYER		36		// a ship, but not a player ship
 #define	OPF_JUMP_NODE_NAME		37		// name of a jump node
@@ -103,7 +103,7 @@ class waypoint_list;
 #define OPF_AUDIO_VOLUME_OPTION 76		// The E
 #define OPF_WEAPON_BANK_NUMBER	77		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	78		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
-#define OPF_HUD_GAUGE			79		// The E
+#define OPF_RETAIL_HUD_GAUGE	79		// The E
 #define OPF_DAMAGE_TYPE			80		// FUBAR - Damage type or <none>
 #define OPF_SHIP_EFFECT			81		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		82		// Goober5000 - as defined in modelanim.h
@@ -1024,7 +1024,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_MEDAL_NAME			-123
 #define SEXP_CHECK_INVALID_WEAPON_NAME			-124
 #define SEXP_CHECK_INVALID_SHIP_CLASS_NAME	-125
-#define SEXP_CHECK_INVALID_GAUGE_NAME			-126
+#define SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE		-126
 #define SEXP_CHECK_INVALID_JUMP_NODE			-127
 #define SEXP_CHECK_INVALID_VARIABLE				-128
 #define SEXP_CHECK_INVALID_AI_CLASS				-129
@@ -1051,7 +1051,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_DAMAGE_TYPE			-150
 #define SEXP_CHECK_INVALID_TARGET_PRIORITIES	-151
 #define SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION	-152
-#define SEXP_CHECK_INVALID_HUD_GAUGE			-153
+#define SEXP_CHECK_INVALID_RETAIL_HUD_GAUGE		-153
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 #define SEXP_CHECK_INVALID_MISSION_MOOD			-155
 #define SEXP_CHECK_INVALID_SHIP_FLAG			-156

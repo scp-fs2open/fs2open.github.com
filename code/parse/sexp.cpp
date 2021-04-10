@@ -813,50 +813,6 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
 
-const char *HUD_gauge_text[NUM_HUD_GAUGES] =
-{
-	"LEAD_INDICATOR",
-	"ORIENTATION_TEE",
-	"HOSTILE_TRIANGLE",
-	"TARGET_TRIANGLE",
-	"MISSION_TIME",
-	"RETICLE_CIRCLE",
-	"THROTTLE_GAUGE",
-	"RADAR",
-	"TARGET_MONITOR",
-	"CENTER_RETICLE",
-	"TARGET_MONITOR_EXTRA_DATA",
-	"TARGET_SHIELD_ICON",
-	"PLAYER_SHIELD_ICON",
-	"ETS_GAUGE",
-	"AUTO_TARGET",
-	"AUTO_SPEED",
-	"WEAPONS_GAUGE",
-	"ESCORT_VIEW",
-	"DIRECTIVES_VIEW",
-	"THREAT_GAUGE",
-	"AFTERBURNER_ENERGY",
-	"WEAPONS_ENERGY",
-	"WEAPON_LINKING_GAUGE",
-	"TARGER_MINI_ICON",
-	"OFFSCREEN_INDICATOR",
-	"TALKING_HEAD",
-	"DAMAGE_GAUGE",
-	"MESSAGE_LINES",
-	"MISSILE_WARNING_ARROW",
-	"CMEASURE_GAUGE",
-	"OBJECTIVES_NOTIFY_GAUGE",
-	"WINGMEN_STATUS",
-	"OFFSCREEN RANGE",
-	"KILLS GAUGE",
-	"ATTACKING TARGET COUNT",
-	"TEXT FLASH",
-	"MESSAGE BOX",
-	"SUPPORT GUAGE",
-	"LAG GUAGE"
-};
-
-
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
 const char *Skybox_flags[] = {
@@ -2982,14 +2938,32 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION;
 				break;
 
-			case OPF_HUD_GAUGE:
+			case OPF_RETAIL_HUD_GAUGE:
+			{
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+				auto gauge_name = CTEXT(node);
 
-				if (hud_gauge_type_lookup(CTEXT(node)) == -1)
-					return SEXP_CHECK_INVALID_HUD_GAUGE;
+				// for compatibility, since this operator now uses a different set of parameters
+				if (get_operator_const(op_node) == OP_FLASH_HUD_GAUGE) {
+					bool found = false;
+					for (int legacy_idx = 0; legacy_idx < NUM_HUD_GAUGES; legacy_idx++) {
+						if (stricmp(gauge_name, Legacy_HUD_gauges[legacy_idx].hud_gauge_text) == 0) {
+							found = true;
+							break;
+						}
+					}
+					if (found) {
+						break;
+					}
+				}
+
+				if (hud_gauge_type_lookup(gauge_name) == -1)
+					return SEXP_CHECK_INVALID_RETAIL_HUD_GAUGE;
+
 				break;
+			}
 
 			case OPF_SOUND_ENVIRONMENT_OPTION:
 				if (type2 != SEXP_ATOM_STRING) {
@@ -3160,21 +3134,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (ship_info_lookup(CTEXT(node)) < 0)
 					return SEXP_CHECK_INVALID_SHIP_CLASS_NAME;
 
-				break;
-
-			case OPF_HUD_GAUGE_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
-					return SEXP_CHECK_TYPE_MISMATCH;
-
-				for ( i = 0; i < NUM_HUD_GAUGES; i++ ) {
-					if ( !stricmp(CTEXT(node), HUD_gauge_text[i]) )
-						break;
-				}
-
-				// if we reached the end of the list, then the name is invalid
-				if ( i == NUM_HUD_GAUGES )
-					return SEXP_CHECK_INVALID_GAUGE_NAME;
-				
 				break;
 
 			case OPF_SKYBOX_MODEL_NAME:
@@ -21366,12 +21325,26 @@ int sexp_special_training_check(int node)
 	return rtn;
 }
 
-// sexpression to flash a hud gauge.  gauge name is text valud of node
+// sexpression to flash a hud gauge.  gauge name is text value of node
 void sexp_flash_hud_gauge( int node )
 {
 	auto name = CTEXT(node);
+	bool match = false;
+
+	// see if this is specified the new way, according to the HUD type #define
+	int type = hud_gauge_type_lookup(name);
+
+	// now go through and find out which gauge (index i in the legacy list) to flash
 	for (int i = 0; i < NUM_HUD_GAUGES; ++i) {
-		if ( !stricmp(HUD_gauge_text[i], name) ) {
+		if (type < 0) {
+			if (stricmp(name, Legacy_HUD_gauges[i].hud_gauge_text) == 0) {
+				match = true;
+			}
+		} else if (type == Legacy_HUD_gauges[i].hud_gauge_type) {
+			match = true;
+		}
+
+		if (match) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
 
 			Current_sexp_network_packet.start_callback();
@@ -21380,6 +21353,10 @@ void sexp_flash_hud_gauge( int node )
 
 			break;
 		}
+	}
+
+	if (!match && type >= 0) {
+		Warning(LOCATION, "HUD gauge '%s' is not a legacy gauge; flashing is not supported", name);
 	}
 }
 
@@ -28216,7 +28193,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_FLASH_HUD_GAUGE:
-			return OPF_HUD_GAUGE_NAME;
+			return OPF_RETAIL_HUD_GAUGE;
 
 		case OP_GOOD_SECONDARY_TIME:
 			if ( argnum == 0 )
@@ -29199,7 +29176,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 			if (argnum == 0)
-				return OPF_HUD_GAUGE;
+				return OPF_RETAIL_HUD_GAUGE;
 			else
 				return OPF_BOOL;
 
@@ -29213,7 +29190,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
-				return OPF_HUD_GAUGE;
+				return OPF_RETAIL_HUD_GAUGE;
 
 		case OP_GET_COLGROUP_ID:
 			return OPF_SHIP;
@@ -29647,9 +29624,6 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
 
-		case SEXP_CHECK_INVALID_GAUGE_NAME:
-			return "Invalid builtin HUD gauge";
-
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";
 
@@ -29719,8 +29693,11 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_DAMAGE_TYPE:
 			return "Invalid damage type";
 
-		case SEXP_CHECK_INVALID_HUD_GAUGE:
-			return "Invalid HUD gauge";
+		case SEXP_CHECK_INVALID_RETAIL_HUD_GAUGE:
+			return "Invalid retail HUD gauge";
+
+		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
+			return "Invalid custom HUD gauge";
 
 		case SEXP_CHECK_INVALID_TARGET_PRIORITIES:
 			return "Invalid target priorities";
