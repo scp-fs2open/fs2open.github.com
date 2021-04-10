@@ -2965,6 +2965,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 			}
 
+			case OPF_CUSTOM_HUD_GAUGE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (hud_get_gauge(CTEXT(node)) == nullptr)
+					return SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE;
+
+				break;
+
 			case OPF_SOUND_ENVIRONMENT_OPTION:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -27835,11 +27845,14 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_HUD_SET_TEXT:
-			return OPF_STRING;
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			else
+				return OPF_STRING;
 
 		case OP_HUD_SET_MESSAGE:
 			if(argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_MESSAGE;
 
@@ -27848,7 +27861,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
 			if(argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_POSITIVE;
 
@@ -29166,11 +29179,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_HUD_SET_DIRECTIVE:
-			return OPF_STRING;
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			else
+				return OPF_STRING;
 
 		case OP_HUD_GAUGE_SET_ACTIVE:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_BOOL;
 
@@ -29184,7 +29200,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 
 		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
 			if (argnum == 0)

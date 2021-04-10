@@ -2730,8 +2730,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<Effect Name>";
 			break;
 
-		case OPF_RETAIL_HUD_GAUGE:
-			str = "Messages";
+		case OPF_CUSTOM_HUD_GAUGE:
+			str = "<Custom hud gauge>";
 			break;
 
 		default:
@@ -2823,6 +2823,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
 		case OPF_RETAIL_HUD_GAUGE:
+		case OPF_CUSTOM_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
@@ -4614,6 +4615,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_retail_hud_gauge();
 			break;
 
+		case OPF_CUSTOM_HUD_GAUGE:
+			list = get_listing_opf_custom_hud_gauge();
+			break;
+
 		case OPF_SHIP_EFFECT:
 			list = get_listing_opf_ship_effect();
 			break;
@@ -5594,7 +5599,34 @@ sexp_list_item *sexp_tree::get_listing_opf_retail_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_ship_effect() 
+sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
+{
+	sexp_list_item head;
+	SCP_unordered_set<SCP_string> all_gauges;
+
+	for (auto &gauge : default_hud_gauges)
+	{
+		all_gauges.insert(gauge->getCustomGaugeName());
+		head.add_data(gauge->getCustomGaugeName());
+	}
+
+	for (auto &si : Ship_info)
+	{
+		for (auto &gauge : si.hud_gauges)
+		{
+			// avoid duplicating any HUD gauges
+			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			{
+				all_gauges.insert(gauge->getCustomGaugeName());
+				head.add_data(gauge->getCustomGaugeName());
+			}
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 	

@@ -417,6 +417,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
 	asteroid_init();
 
 	// get fireball IDs for sexpression usage

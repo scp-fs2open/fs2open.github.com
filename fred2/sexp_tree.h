@@ -270,6 +270,7 @@ public:
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
 	sexp_list_item *get_listing_opf_retail_hud_gauge();
+	sexp_list_item *get_listing_opf_custom_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();

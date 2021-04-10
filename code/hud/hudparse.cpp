@@ -564,7 +564,6 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
-	
 }
 
 void load_missing_retail_gauges()
