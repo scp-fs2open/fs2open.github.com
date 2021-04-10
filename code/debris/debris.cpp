@@ -424,13 +424,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	sip = &Ship_info[shipp->ship_info_index];
 	vaporize = (shipp->flags[Ship::Ship_Flags::Vaporize]);
 
-	if ( !hull_flag )	{
+	// cull the builtin generic debris if its too far away
+	if ( model_num == -1 )	{
 		// Make vaporize debris seen from farther away
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
 		if (vaporize) {
 			dist /= 2.0f;
 		}
-		if ( dist > source_obj->radius * 20.0f ) {
+		if ( dist > 200.0f ) {
 			return NULL;
 		}
 	}
@@ -479,6 +480,15 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->model_instance_num = model_create_instance(false, db->model_num);
 
 	float radius = submodel_get_radius(db->model_num, db->submodel_num);
+
+	// if its generic, maybe cull it if its too small and far
+	if (!hull_flag) {
+		// Make vaporize debris seen from farther away
+		float dist = vm_vec_dist_quick(pos, &Eye_position);
+		if (dist > radius * 200.0f) {
+			return NULL;
+		}
+	}
 
 	//WMC - We must survive until now, at least.
 	db->must_survive_until = timestamp();
