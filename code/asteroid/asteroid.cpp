@@ -324,7 +324,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
     asteroid_default_flagset += Object::Object_Flags::Physics;
     asteroid_default_flagset += Object::Object_Flags::Collides;
     
-    objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset);
+    objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset, false);
 	
 	if ( (objnum == -1) || (objnum >= MAX_OBJECTS) ) {
 		mprintf(("Couldn't create asteroid -- out of object slots\n"));

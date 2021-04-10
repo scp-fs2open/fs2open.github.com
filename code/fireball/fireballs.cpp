@@ -838,7 +838,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
-	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, default_flags);
+	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, default_flags, false);
 
 	obj = &Objects[objnum];
 
