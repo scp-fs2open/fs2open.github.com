@@ -1208,33 +1208,9 @@ struct sexp_container
 		return type & SEXP_CONTAINER_LIST;
 	}
 
-	void set_to_list(bool clear_key_type)
-	{
-		if (is_list()) {
-			return;
-		}
-
-		type &= ~SEXP_CONTAINER_MAP;
-		if (clear_key_type) {
-			type &= ~(SEXP_CONTAINER_STRING_KEYS | SEXP_CONTAINER_NUMBER_KEYS);
-		}
-		type |= SEXP_CONTAINER_LIST;
-	}
-
 	inline bool is_map() const
 	{
 		return type & SEXP_CONTAINER_MAP;
-	}
-
-	void set_to_map()
-	{
-		if (is_map()) {
-			return;
-		}
-
-		type &= ~SEXP_CONTAINER_LIST;
-		type |= SEXP_CONTAINER_MAP;
-		// setting key type is up to the caller
 	}
 
 	bool empty() const
@@ -1252,20 +1228,6 @@ struct sexp_container
 			Assert(false);
 			return 0;
 		}
-	}
-
-	bool operator==(const sexp_container& rhs) const
-	{
-		if (this == &rhs) {
-			return true;
-		}
-		return container_name == rhs.container_name && type == rhs.type && opf_type == rhs.opf_type &&
-			   list_data == rhs.list_data && map_data == rhs.map_data;
-	}
-
-	bool operator!=(const sexp_container& rhs) const
-	{
-		return !(*this == rhs);
 	}
 };
 

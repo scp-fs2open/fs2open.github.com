@@ -147,7 +147,8 @@ void CEditContainerDlg::OnTypeList()
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_list()) {
-		container.set_to_list(false);
+		container.type &= ~SEXP_CONTAINER_MAP;
+		container.type |= SEXP_CONTAINER_LIST;
 		update_controls();
 	}
 }
@@ -157,7 +158,8 @@ void CEditContainerDlg::OnTypeMap()
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_map()) {
-		container.set_to_map();
+		container.type &= ~SEXP_CONTAINER_LIST;
+		container.type |= SEXP_CONTAINER_MAP;
 		if (!(container.type & SEXP_CONTAINER_NUMBER_KEYS)) {
 			container.type |= SEXP_CONTAINER_STRING_KEYS;
 		}
