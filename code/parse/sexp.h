@@ -898,7 +898,7 @@ class waypoint_list;
 #define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
 #define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
-const char *CTEXT(int n, bool do_not_edit = false);
+const char *CTEXT(int n);
 
 // added by Goober5000
 #define CDDR(n)		CDR(CDR(n))

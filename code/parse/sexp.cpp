@@ -911,7 +911,6 @@ sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
 SCP_vector<sexp_container> Sexp_containers;
-bool Container_edits_off; // TODO: maybe "Container_editing_disabled"?
 // non-extern vars
 // we can't use full name (SCP_string) as the key, because get_sexp_container_index() takes const char*
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
@@ -30918,24 +30917,15 @@ int check_text_for_variable_name(const char *text)
 // Remember to update MAX_CONTAINER_MODIFIERS if adding to the above array
 
  // Containers should not be modified if the game is simply checking the syntax. 
- bool allow_container_modifications()
+ bool are_containers_modifiable()
  {
-	 int cur_state;
-
-	 cur_state = gameseq_get_state();
-
-	 // if container edits are specifically not allowed, then obviously we can't modify this container
-	 if (Container_edits_off) {
-		 return false;
-	 }
-
 	 // can always modify containers during the mission itself
 	 if (Game_mode & GM_IN_MISSION) {
 		 return true;
 	 }
 
 	 // can also modify if we are calling the sexp from a script or if we are briefing / debriefing, etc.
-	 switch (cur_state) {
+	 switch (gameseq_get_state()) {
 		case GS_STATE_BRIEFING:
 		case GS_STATE_DEBRIEF:
 		case GS_STATE_CMD_BRIEF:
@@ -31010,14 +31000,14 @@ bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result
 
 			case SNF_CONTAINER_REMOVE_FIRST:
 				result = list_data.front();
-				if (allow_container_modifications()) {
+				if (are_containers_modifiable()) {
 					list_data.pop_front();
 				}
 				return true;
 
 			case SNF_CONTAINER_REMOVE_LAST:
 				result = list_data.back();
-				if (allow_container_modifications()) {
+				if (are_containers_modifiable()) {
 					list_data.pop_back();
 				}
 				return true;
@@ -31031,7 +31021,7 @@ bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result
 				data_index = rand_internal(0, (int)list_data.size() -1);
 				std::advance(list_it, data_index);
 				result = *list_it;
-				if (allow_container_modifications()) {
+				if (are_containers_modifiable()) {
 					list_data.erase(list_it);
 				}
 				return true;
@@ -31102,7 +31092,6 @@ const char *ctext_for_containers(int node, int container_index)
 			// FIXME: ugh. Instead of this hackishness, store the resulting string as cached data on the Sexp node in question
 			// if the node already has cached data attached, reuse the cached_data object
 			int result_index = container_push_return_string(result);
-			// TODO: should Container_edits_off be re-enabled? It was turned off in CTEXT()
 			return Ctext_strings[result_index];
 		} else {
 			// we're dealing with a multidimentional container
@@ -31128,13 +31117,9 @@ const char *ctext_for_containers(int node, int container_index)
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
-const char *CTEXT(int n, bool do_not_edit)
+const char *CTEXT(int n)
 {
 	int sexp_variable_index = -1;
-
-
-	// If this call came from somewhere that is just checking the syntax of a SEXP, we don't want the code to actually change any containers
-	Container_edits_off = do_not_edit;
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 || n >= Num_sexp_nodes ) {
@@ -31227,9 +31212,6 @@ const char *CTEXT(int n, bool do_not_edit)
 		}
 
 		n = CAR(n);
-
-		// set containers back to editable.
-		Container_edits_off = false;
 
 		return ctext_for_containers(n, container_index);
 	}
