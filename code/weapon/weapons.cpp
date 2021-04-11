@@ -2698,14 +2698,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if ( optional_string("+Index:") ) {
 				stuff_int(&bsw_index_override);
+				if (first_time) {
+					Warning(LOCATION, "+Index should not be used on weapon '%s' in its initial definition. +Index is only for modification of an existing weapon.", wip->name);
+					bsw_index_override = -1;
+				} else {
 
-				if ( optional_string("+remove") ) {
-					nocreate = true;
-					remove = true;
+					if (optional_string("+remove")) {
+						nocreate = true;
+						remove = true;
+					}
+
+					if ((bsw_index_override < 0) || (!remove && (bsw_index_override >= wip->b_info.beam_num_sections)))
+						Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections - 1);
 				}
-					
-				if ( (bsw_index_override < 0) || (!remove && (bsw_index_override >= wip->b_info.beam_num_sections)) )
-					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections -1);
 			}
 
 			if ( optional_string("+nocreate") )
