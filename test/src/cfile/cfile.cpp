@@ -23,21 +23,13 @@ class CFileInitTest : public test::FSTestFixture {
 };
 
 TEST_F(CFileInitTest, wrong_data_case) {
-	SCP_string cfile_dir(TEST_DATA_PATH);
-	cfile_dir += DIR_SEPARATOR_CHAR;
-	cfile_dir += "test"; // Cfile expects something after the path
-
-	ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
+	ASSERT_FALSE(cfile_init(Cmdline_mod));
 
 	ASSERT_TRUE(cf_exists("ships.tbl", CF_TYPE_TABLES));
 }
 
 TEST_F(CFileInitTest, right_data_case) {
-	SCP_string cfile_dir(TEST_DATA_PATH);
-	cfile_dir += DIR_SEPARATOR_CHAR;
-	cfile_dir += "test"; // Cfile expects something after the path
-
-	ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
+	ASSERT_FALSE(cfile_init(Cmdline_mod));
 
 	ASSERT_TRUE(cf_exists("ships.tbl", CF_TYPE_TABLES));
 }
@@ -129,10 +121,8 @@ TEST(CFileStandalone, test_check_location_flags) {
 TEST_F(CFileTest, test_get_path_type)
 {
 	SCP_string cfile_dir(TEST_DATA_PATH);
-	cfile_dir += DIR_SEPARATOR_CHAR;
-	cfile_dir += "test"; // Cfile expects something after the path
 
-	ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
+	ASSERT_FALSE(cfile_init(Cmdline_mod));
 
 	// Test simple case
 	ASSERT_EQ(CF_TYPE_DATA, cfile_get_path_type("data"));

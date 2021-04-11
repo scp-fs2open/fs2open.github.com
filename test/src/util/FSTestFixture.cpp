@@ -4,6 +4,7 @@
 #include "FSTestFixture.h"
 
 #include <cmdline/cmdline.h>
+#include <cfile/cfilemod.h>
 #include <graphics/2d.h>
 #include <io/timer.h>
 #include <localization/localize.h>
@@ -33,10 +34,8 @@ void test::FSTestFixture::SetUp() {
 
 	if (_initFlags & INIT_CFILE) {
 		SCP_string cfile_dir(TEST_DATA_PATH);
-		cfile_dir += DIR_SEPARATOR_CHAR;
-		cfile_dir += "test"; // Cfile expects something after the path
 
-		if (cfile_init(cfile_dir.c_str())) {
+		if (cfile_init(Cmdline_mod)) {
 			FAIL() << "Cfile init failed!";
 		}
 
@@ -101,13 +100,6 @@ void test::FSTestFixture::TearDown() {
 	if (LoggingEnabled) {
 		outwnd_close();
 	}
-
-	// although the comment in cmdline.cpp said this isn't needed,
-	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner
-	if (Cmdline_mod != NULL) {
-		delete[] Cmdline_mod;
-		Cmdline_mod = NULL;
-	}
 }
 void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);
@@ -119,7 +111,7 @@ void test::FSTestFixture::init_cmdline() {
 		parts[i] = const_cast<char*>(_cmdlineArgs[i].c_str());
 	}
 
-	parse_cmdline((int) _cmdlineArgs.size(), parts.get());
+	parse_cmdline(TEST_DATA_PATH, (int) _cmdlineArgs.size(), parts.get());
 }
 void test::FSTestFixture::pushModDir(const SCP_string& mod) {
 	if (!_currentModDir.empty()) {

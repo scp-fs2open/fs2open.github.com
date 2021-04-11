@@ -38,9 +38,6 @@
 
 #include <limits>
 
-char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
-char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
-
 // During cfile_init, verify that Pathtypes[n].index == n for each item
 // Each path must have a valid parent that can be tracable all the way back to the root
 // so that we can create directories when we need to.
@@ -103,8 +100,6 @@ static char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 
 std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
-static const char *Cfile_cdrom_dir = NULL;
-
 //
 // Function prototypes for internally-called functions
 //
@@ -148,46 +143,14 @@ void cfile_close()
 #endif
 
 /**
- * @brief Determine if the given path is in the root directory
- *
- * @param exe_path Path to executable
- *
- * @return true if root directory, false if not
- */
-static bool cfile_in_root_dir(const char *exe_path)
-{
-	int new_token;
-	int token_count = 0;
-	const char *p = exe_path;
-
-	Assert(exe_path != NULL);
-
-	do {
-		new_token = 0;
-		while (*p == DIR_SEPARATOR_CHAR) {
-			p++;
-		}
-
-		while ((*p != '\0') && (*p != DIR_SEPARATOR_CHAR)) {
-			new_token = 1;
-			p++;
-		}
-		token_count += new_token;
-	} while (*p != '\0');
-
-	return (token_count < MIN_NUM_PATH_COMPONENTS);
-}
-
-/**
  * @brief Initialize the cfile system. Called once at application start.
  *
  * @param exe_dir Path to a file (not a directory)
- * @param cdrom_dir Path to a CD drive mount point (may be NULL)
  *
  * @return 0 On success
  * @return 1 On error
  */
-int cfile_init(const char *exe_dir, const char *cdrom_dir)
+int cfile_init(const SCP_vector<cfile::ModRoot>& modRoots)
 {
 	// initialize encryption
 	encrypt_init();	
@@ -196,36 +159,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 		return 0;
 	}
 
-	char buf[CFILE_ROOT_DIRECTORY_LEN];
-
-	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
-	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
-
-	// are we in a root directory?		
-	if(cfile_in_root_dir(buf)){
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
-		return 1;
-	}		
-
 	// This needs to be set here because cf_build_secondary_filelist assumes it to be true
 	cfile_inited = 1;
-	
-	/*
-	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
-	 * is guaranteed to be found in the string else cfile_in_root_dir()
-	 * would have failed.
-	 */
-
-	char *p;
-
-	p = strrchr(buf, DIR_SEPARATOR_CHAR);
-	*p = '\0';
-
-	cfile_chdir(buf);
-
-	// set root directory
-	strcpy_s(Cfile_root_dir, buf);
-	strcpy_s(Cfile_user_dir, os_get_config_path().c_str());
 
 	// Initialize the block list with proper data
 	Cfile_block_list.fill({});
@@ -233,8 +168,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	// 32 bit CRC table init
 	cf_chksum_long_init();
 
-	Cfile_cdrom_dir = cdrom_dir;
-	cf_build_secondary_filelist(Cfile_cdrom_dir);
+	cf_build_secondary_filelist(modRoots);
 
 	return 0;
 }

@@ -56,8 +56,8 @@ void multi_port_forward_init()
 		return;
 	}
 
-	if (Cmdline_gateway_ip) {
-		if ( psnet_get_addr(Cmdline_gateway_ip, PCP_SERVER_PORT, &gateway_addr) ) {
+	if (!Cmdline_gateway_ip.empty()) {
+		if ( psnet_get_addr(Cmdline_gateway_ip.c_str(), PCP_SERVER_PORT, &gateway_addr) ) {
 			auto_discover = false;
 		}
 	}
