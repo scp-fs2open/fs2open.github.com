@@ -1904,7 +1904,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		if (bad_node)
 			*bad_node = node;
 
-		// for now we'll completely ignore SEXP containters
+		// for now we'll completely ignore SEXP containers
 		if (Sexp_nodes[node].subtype & SEXP_ATOM_CONTAINER)  {
 			node = Sexp_nodes[node].rest;
 			argnum++;
@@ -28469,49 +28469,50 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CONTAINER_ADD_TO_LIST:
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;			
-			}
-			else if ( argnum == 1) {
+			} else if (argnum == 1) {
 				return OPF_BOOL;
-			}
-			else {
+			} else {
 				return OPF_STRING;
 			}
 
 		case OP_CONTAINER_ADD_TO_MAP:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;			
-			}
-			else {
+			} else {
 				return OPF_STRING;
 			}
 
 		case OP_CLEAR_CONTAINER:
-			return OPF_CONTAINER_NAME;
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		case OP_CONTAINER_GET_MAP_KEYS:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
-			}
-			else if (argnum == 1) {
+			} else if (argnum == 1) {
 				return OPF_LIST_CONTAINER_NAME;
-			}
-			else {
+			} else if (argnum == 2) {
 				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_CONTAINER_REMOVE_FROM_LIST:
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;
-			}
-			else {
+			} else {
 				return OPF_STRING;
 			}
 
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
-			}
-			else {
+			} else {
 				return OPF_STRING;
 			}
 
@@ -29220,14 +29221,28 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_IS_CONTAINER_EMPTY:
 		case OP_GET_CONTAINER_SIZE:
-			return OPF_CONTAINER_NAME;
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		case OP_LIST_HAS_DATA:
-		case OP_LIST_DATA_INDEX:
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;
 			} else {
 				return OPF_STRING;
+			}
+
+		case OP_LIST_DATA_INDEX:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_STRING;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_MAP_HAS_KEY:
@@ -29242,8 +29257,11 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MAP_CONTAINER_NAME;
 			} else if (argnum == 1) {
 				return OPF_STRING;
-			} else {
+			} else if (argnum == 2) {
 				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
@@ -33530,7 +33548,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAdds a new entry to a SEXP container.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of the list.\r\n"
-		"\t2:\tThe position to add the data at. True means at the end, false means at the start.\r\n" 
+		"\t2:\tIndicates whether to add the data to the start or the end of the list. True means at the end, false means at the start.\r\n" 
 		"\tRest:\tThe data to be added. In strongly typed containers, this type must match the type of data of the container.\r\n" },
 
 	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
