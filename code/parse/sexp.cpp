@@ -21580,8 +21580,9 @@ void sexp_debug(int node)
 		}
 	}
 
-	// replace variables if necessary
+	// replace variables and containers if necessary
 	sexp_replace_variable_names_with_values(warning_message);
+	sexp_replace_container_refs_with_values(warning_message);
 
 	//send the message
 	#ifndef NDEBUG
