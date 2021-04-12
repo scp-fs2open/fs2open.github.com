@@ -797,7 +797,9 @@ void brief_compact_stages()
 	while ( num < Briefing->num_stages ) {
 		if ( eval_sexp(Briefing->stages[num].formula) ) {
 			// Goober5000 - replace any variables (probably persistent variables) with their values
+			// Karajorma/jg18 - replace containers as well
 			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+			sexp_replace_container_refs_with_values(Briefing->stages[num].text);
 		} else {
 			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
@@ -819,6 +821,7 @@ void brief_compact_stages()
 			Briefing->num_stages--;
 			continue;
 		}
+
 		num++;
 	}
 

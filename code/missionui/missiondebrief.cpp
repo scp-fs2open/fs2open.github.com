@@ -2559,8 +2559,11 @@ void debrief_disable_accept()
 }
 
 // Goober5000 - replace any variables with their values
+// Karajorma/jg18 - replace containers as well
 void debrief_replace_stage_text(debrief_stage &stage)
 {
 	sexp_replace_variable_names_with_values(stage.text);
 	sexp_replace_variable_names_with_values(stage.recommendation_text);
+	sexp_replace_container_refs_with_values(stage.text);
+	sexp_replace_container_refs_with_values(stage.recommendation_text);
 }
