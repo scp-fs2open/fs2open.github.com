@@ -23787,7 +23787,6 @@ void sexp_add_to_list(int node)
 void sexp_remove_from_map(int node)
 {
 	const char *container_name = CTEXT(node);
-	const char *entry_to_remove;
 	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
@@ -23803,9 +23802,10 @@ void sexp_remove_from_map(int node)
 
 	node = CDR(node);
 
+	SCP_string entry_to_remove;
 	while (node != -1) {
 		entry_to_remove = CTEXT(node);
-		if (!(Sexp_containers[index].map_data.erase(entry_to_remove))) {
+		if (Sexp_containers[index].map_data.erase(entry_to_remove) == 0) {
 			Warning(LOCATION, "Container %s does not contain a key called %s. Can not use the remove-from-map SEXP to remove it", container_name, entry_to_remove);
 			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with a key which is not in the map");
 		}
