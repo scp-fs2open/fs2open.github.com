@@ -1323,6 +1323,11 @@ int multi_fs_tracker_validate_game_data()
 			else if (rval == TVALID_STATUS_INVALID) {
 				game_data_status = TVALID_STATUS_INVALID;
 			}
+			// if the popup was canceled then force a recheck on next attempt
+			else if (rval == -2) {
+				game_data_status = TVALID_STATUS_UNKNOWN;
+				break;
+			}
 		}
 
 		if ( !Is_standalone) {

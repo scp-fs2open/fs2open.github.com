@@ -1293,7 +1293,7 @@ int popup_conditional_do(int (*condition)(), const char *text)
 
 	switch (choice) {
 		case POPUP_ABORT:
-			return -1;
+			return 0;
 
 		default:
 			return choice;
