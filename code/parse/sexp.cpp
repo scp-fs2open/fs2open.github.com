@@ -17824,6 +17824,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	target_objp->hull_strength = source_objp->hull_strength;
 
 	// ...and shields
+	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
