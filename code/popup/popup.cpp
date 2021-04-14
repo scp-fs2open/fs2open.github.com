@@ -1183,7 +1183,7 @@ bool popup_conditional_create(int flags, ...)
 	va_list args;
 
 	if (Popup_is_active) {
-		Int3();
+		UNREACHABLE("Can't create a conditional popup while another popup is open!");
 		return false;
 	}
 
@@ -1225,7 +1225,8 @@ bool popup_conditional_create(int flags, ...)
 
 int popup_conditional_do(int (*condition)(), const char *text)
 {
-	int choice = -1, done = 0;
+	int choice = -1;
+	bool done = false;
 	int k, test;
 	bool self_popup = false;
 
@@ -1264,21 +1265,21 @@ int popup_conditional_do(int (*condition)(), const char *text)
 
 		// test the condition function or process for the window
 		if ((test = condition()) > 0) {
-			done = 1;
+			done = true;
 			choice = test;
 		} else {
 			k = Popup_window.process();						// poll for input, handle mouse
 			choice = popup_process_keys(&Popup_info, k, Popup_flags);
 
 			if (choice != POPUP_NOCHANGE) {
-				done = 1;
+				done = true;
 			}
 
 			if ( !done ) {
 				choice = popup_check_buttons(&Popup_info);
 
 				if (choice != POPUP_NOCHANGE) {
-					done = 1;
+					done = true;
 				}
 			}
 		}
