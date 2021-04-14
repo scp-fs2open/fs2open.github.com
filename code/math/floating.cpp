@@ -84,3 +84,13 @@ float golden_ratio_rand() {
 		accum_golden_ratio_rand_seed -= 1.0f;
 	return accum_golden_ratio_rand_seed;
 }
+
+float acosf_safe(float x) {
+	CLAMP(x, -1.f, 1.f);
+	return acosf(x);
+}
+
+float asinf_safe(float x) {
+	CLAMP(x, -1.f, 1.f);
+	return asinf(x);
+}
