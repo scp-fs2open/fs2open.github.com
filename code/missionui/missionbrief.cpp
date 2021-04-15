@@ -789,14 +789,17 @@ void brief_set_default_closeup()
  */
 void brief_compact_stages()
 {
-	int num, before, result, i;
+	int num, before, i;
 
 	before = Briefing->num_stages;
 
 	num = 0;
 	while ( num < Briefing->num_stages ) {
-		result = eval_sexp( Briefing->stages[num].formula );
-		if ( !result ) {
+		if ( eval_sexp(Briefing->stages[num].formula) ) {
+			// Goober5000 - replace any variables (probably persistent variables) with their values
+			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+		} else {
+			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
@@ -856,10 +859,6 @@ void brief_init()
 	} else {
 		Briefing = &Briefings[0];			
 	}
-
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Briefing->num_stages; i++)
-		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 
