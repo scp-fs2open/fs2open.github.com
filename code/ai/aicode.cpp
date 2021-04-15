@@ -1077,7 +1077,8 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	float		old_dot, new_dot;
 	object	*old_weapon_objp = NULL;
 
-	if ((attacked_objnum == -1) || (weapon_objnum == -1)) {
+	// any object number less than 0 is invalid
+	if ((attacked_objnum < 0) || (weapon_objnum < 0)) {
 		return;
 	}
 
