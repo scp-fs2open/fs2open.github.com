@@ -3391,7 +3391,9 @@ void get_sexp_text_for_variable(char *text, const char *token)
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
 		sexp_var_index = get_index_sexp_variable_name(text);
-		Assert(sexp_var_index != -1);
+		if (sexp_var_index == -1) {
+			Error(LOCATION, "Invalid variable name [%s]!", text);
+		}
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
