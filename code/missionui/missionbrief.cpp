@@ -838,8 +838,6 @@ void brief_compact_stages()
 //
 void brief_init()
 {
-	int i;
-
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){

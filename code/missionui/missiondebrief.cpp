@@ -1890,8 +1890,6 @@ static void debrief_init_music()
 
 void debrief_init()
 {
-	int i;
-
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
