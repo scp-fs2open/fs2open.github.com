@@ -3074,7 +3074,7 @@ void multi_update_valid_missions()
 	// now poll for all unknown missions
 	was_cancelled = false;
 
-	if ( !Is_standalone ) {
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating missions ...", -1));
 	}
 
@@ -3093,7 +3093,7 @@ void multi_update_valid_missions()
 		Multi_create_mission_list[idx].valid_status = (char)rval;
 	}
 
-	if ( !Is_standalone) {
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		popup_conditional_close();
 	}
 

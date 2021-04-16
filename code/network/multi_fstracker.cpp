@@ -1308,7 +1308,7 @@ int multi_fs_tracker_validate_game_data()
 
 		// now check with tracker
 
-		if ( !Is_standalone ) {
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 			popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating tables ...", -1));
 		}
 
@@ -1330,7 +1330,7 @@ int multi_fs_tracker_validate_game_data()
 			}
 		}
 
-		if ( !Is_standalone) {
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 			popup_conditional_close();
 		}
 
