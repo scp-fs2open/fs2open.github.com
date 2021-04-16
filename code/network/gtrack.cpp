@@ -241,6 +241,19 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 			break;
 		}
 
+		case GNT_GAME_PROBE_STATUS: {
+			int flags = 0;
+			int next_try = 0;
+
+			PXO_GET_INT(flags);
+			PXO_GET_INT(next_try);
+
+			memcpy(gph->data, &flags, sizeof(int));
+			memcpy(gph->data+sizeof(int), &next_try, sizeof(int));
+
+			break;
+		}
+
 		default:
 			break;
 	}
@@ -445,6 +458,17 @@ void IdleGameTracker()
 
 				// send it to the PXO screen				
 				multi_pxo_channel_count_update(channel,num_servers);
+				break;
+
+			case GNT_GAME_PROBE_STATUS:
+				int flags;
+				int next_try;
+
+				memcpy(&flags, inpacket.data, sizeof(int));
+				memcpy(&next_try, inpacket.data+sizeof(int), sizeof(int));
+
+				// tell user about it
+				multi_fs_tracker_report_probe_status(flags, next_try);
 				break;
 			}
 			AckPacket(inpacket.sig);			
