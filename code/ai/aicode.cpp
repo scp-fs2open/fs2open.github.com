@@ -6608,6 +6608,7 @@ float ai_get_weapon_dist(ship_weapon *swp)
 		return 1000.0f;
 	}
 
+	Assertion(weapon_num >= 0, "A ship's weapon has a nonesense index of %d, but the ship's name is not accessible from this function.  Please report!", weapon_num);
 
 	return MIN((Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 }
