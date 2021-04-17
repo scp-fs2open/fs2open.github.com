@@ -699,6 +699,9 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	// set the pointers to the debriefings for this client
 	for (i = 0; i < stage_count; i++) {
 		Debrief_stages[Num_debrief_stages++] = &Debriefing->stages[active_stages[i]];
+		// in multi, debriefing text replacement must occur client-side
+		// update most recently added stage only, in case replacement has side effects
+		debrief_replace_stage_text(*Debrief_stages[Num_debrief_stages - 1]);
 	}
 
 	Debrief_multi_stages_loaded = 1;
