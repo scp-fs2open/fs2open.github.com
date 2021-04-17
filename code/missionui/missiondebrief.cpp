@@ -721,8 +721,6 @@ void debrief_multi_server_stuff()
 		stages[i] = stage_active[i];
 		for (j=0; j<debriefp->num_stages; j++) {
 			if ( eval_sexp(debriefp->stages[j].formula) ) {
-				// DISCUSSME: how to handle repeatedly evaluating SEXPs that have side effects?
-				// DISCUSSME: at what point should we replace text?
 				stage_active[i][num_stages] = j;
 				num_stages++;
 			}
@@ -783,8 +781,8 @@ int debrief_set_stages_and_multi_stuff()
 	}
 
 	for (i=0; i<debriefp->num_stages; i++) {
-		// DISCUSSME: is SEXP_TRUE the only acceptable value? What about SEXP_KNOWN_TRUE?
-		if (eval_sexp(debriefp->stages[i].formula) == 1) {
+		if (eval_sexp(debriefp->stages[i].formula) == SEXP_TRUE) {
+			// replacement in single-player and for host/server in multi
 			debrief_replace_stage_text(debriefp->stages[i]);
 			Debrief_stages[Num_debrief_stages++] = &debriefp->stages[i];
 		}
