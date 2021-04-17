@@ -914,7 +914,6 @@ SCP_vector<sexp_container> Sexp_containers;
 // non-extern vars
 // we can't use full name (SCP_string) as the key, because get_sexp_container_index() takes const char*
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
-// TODO: altnertiave key: std::pair<char,char> being the first and last char of the name
 static SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
 static constexpr char SEXP_CONTAINER_CHAR = '&';
 static constexpr char *Empty_str = "";
@@ -3932,14 +3931,13 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 	}
 
 	// TODO: change to Strictly Typed
-	if (optional_string("+Strongly Typed Keys")) {
-		Assertion ((type & SEXP_CONTAINER_MAP), "+Strongly Typed Keys found for container which doesn't use keys!");  
-		type |= SEXP_CONTAINER_STRONGLY_TYPED_KEYS;
+	if (optional_string("+Strictly Typed Keys")) {
+		Assertion ((type & SEXP_CONTAINER_MAP), "+Strictly Typed Keys found for container which doesn't use keys!");  
+		type |= SEXP_CONTAINER_STRICTLY_TYPED_KEYS;
 	}
 
-	// TODO: change to Strictly Typed
-	if (optional_string("+Strongly Typed Data")) {
-		type |= SEXP_CONTAINER_STRONGLY_TYPED_DATA;
+	if (optional_string("+Strictly Typed Data")) {
+		type |= SEXP_CONTAINER_STRICTLY_TYPED_DATA;
 	}
 
 	required_string("$Data:");
@@ -33532,14 +33530,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of the list.\r\n"
 		"\t2:\tIndicates whether to add the data to the start or the end of the list. True means at the end, false means at the start.\r\n" 
-		"\tRest:\tThe data to be added. In strongly typed containers, this type must match the type of data of the container.\r\n" },
+		"\tRest:\tThe data to be added. In strictly typed containers, this type must match the type of data of the container.\r\n" },
 
 	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
 		"\tAdds a new entry to a SEXP container.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of the map.\r\n"
-		"\t2:\tThe key that will be used to retrieve the data stored in the map. In strongly typed containers, this type of key must match the type of data of the container.\r\n" 
-		"\tRest:\tThe value to be added. In strongly typed containers, this type must match the type of data of the class.\r\n" },
+		"\t2:\tThe key that will be used to retrieve the data stored in the map. In strictly typed containers, this type of key must match the type of data of the container.\r\n" 
+		"\tRest:\tThe value to be added. In strictly typed containers, this type must match the type of data of the class.\r\n" },
 
 	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
 		"\tDeletes the current contents of a SEXP container.\r\n\r\n"

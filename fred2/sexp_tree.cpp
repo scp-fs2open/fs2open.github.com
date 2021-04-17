@@ -1425,7 +1425,7 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
-				bool TODO; // check for strongly typed containers
+				bool TODO; // check for strictly typed containers
 				// int container_idx = get_sexp_container_index(CTEXT(Sexp_clipboard)); 
 				// z = Sexp_containers[container_idx].opf_type; 
 				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
@@ -3697,8 +3697,8 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
 			const int container_index = get_sexp_container_index(tree_nodes[item_index].text); 
 			Assert (container_index != -1);
-			if (!(Sexp_containers[container_index].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA)) {
-				// if we don't have strongly typed data, we don't care if the data matches
+			if (!(Sexp_containers[container_index].type & SEXP_CONTAINER_STRICTLY_TYPED_DATA)) {
+				// if we don't have strictly typed data, we don't care if the data matches
 				item_index = tree_nodes[item_index].next;
 				arg_num++;
 				continue; 
@@ -3872,7 +3872,7 @@ void sexp_tree::replace_container_data(int container_idx, int type, bool test_ch
 			Assert (old_con_index != -1); 
 			
 			if (Sexp_containers[old_con_index].type & SEXP_CONTAINER_LIST) {
-				// check for strongly typed data here
+				// check for strictly typed data here
 				int TODO;
 				//int old_opf = Sexp_containers[old_con_index].opf_type; 
 

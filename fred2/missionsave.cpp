@@ -1794,8 +1794,8 @@ int CFred_mission_save::save_containers()
 					fout("\n$Data Type: Number");
 				}
 
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
-					fout("\n+Strongly Typed Data");
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRICTLY_TYPED_DATA) {
+					fout("\n+Strictly Typed Data");
 				}
 
 				fout("\n$Data: ( ");
@@ -1835,12 +1835,12 @@ int CFred_mission_save::save_containers()
 					fout("\n$Key Type: String");
 				}
 
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_KEYS) {
-					fout("\n+Strongly Typed Keys");
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRICTLY_TYPED_KEYS) {
+					fout("\n+Strictly Typed Keys");
 				}
 
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
-					fout("\n+Strongly Typed Data");
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRICTLY_TYPED_DATA) {
+					fout("\n+Strictly Typed Data");
 				}
 
 				fout("\n$Data: ( ");
