@@ -895,7 +895,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// if this name has a hash, create a default display name
 		if (get_pointer_to_first_hash_symbol(wip->name)) {
 			strcpy_s(wip->display_name, wip->name);
-			end_string_at_first_hash_symbol(wip->display_name);
+			end_string_at_first_hash_symbol(wip->display_name, true);
+			consolidate_double_characters(wip->display_name, '#');
 			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
 			preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 		}
