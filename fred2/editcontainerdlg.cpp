@@ -362,10 +362,9 @@ void CEditContainerDlg::OnContainerInsert()
 {
 	Assert(get_current_container().is_list());
 
-	// TODO: create/use m_lister_index instead
 	const int index = m_container_data_lister.GetCurSel();
 
-	// TODO: enable Insert button only when a lister entry is selected
+	// Potential TODO: enable Insert button only when a lister entry is selected
 	if (index == LB_ERR) {
 		MessageBox("Nothing selected! Use Add to append new data");
 		return;
@@ -440,8 +439,6 @@ void CEditContainerDlg::OnContainerRemove()
 	update_data_lister();
 }
 
-// TODO: if the current container is a map, enable the Update button only when the value in the key edit box is one of the map keys
-
 void CEditContainerDlg::OnContainerUpdate()
 {
 	Assert(has_containers());
@@ -451,10 +448,6 @@ void CEditContainerDlg::OnContainerUpdate()
 	if (!edit_boxes_have_valid_data(true)) {
 		return;
 	}
-
-	// TODO: for lists, enable Update button only when an item in the list is selected
-	// TODO: for maps, enable Update (and disable Add) when the value in the key edit box is already a map key.
-	// Or maybe all this is more work than it's worth
 
 	const int index = m_container_data_lister.GetCurSel(); 
 
@@ -590,10 +583,8 @@ void CEditContainerDlg::update_data_entry_controls()
 
 	// data manipulation buttons
 	GetDlgItem(IDC_CONTAINER_ADD)->EnableWindow(has_container);
-	// TODO: also check that m_lister_index is valid
 	GetDlgItem(IDC_CONTAINER_INSERT)->EnableWindow(has_container && !map_selected);
 	GetDlgItem(IDC_CONTAINER_REMOVE)->EnableWindow(has_container && !container_empty);
-	// TODO: also check that m_lister_index is valid
 	GetDlgItem(IDC_CONTAINER_UPDATE)->EnableWindow(has_container && !container_empty);
 
 	// text edit boxes

@@ -4,9 +4,6 @@
  * create based on the source.
  */
 
-// EditContainerAddNewDlg.cpp : implementation file
-//
-
 #include "stdafx.h"
 #include "FRED.h"
 #include "EditContainerAddNewDlg.h"
@@ -20,35 +17,20 @@ static char THIS_FILE[] = __FILE__;
 #define NO_RESET_FOCUS	0
 #define RESET_FOCUS		1
 
-/////////////////////////////////////////////////////////////////////////////
-// EditContainerAddNewDlg dialog
-
-
 CEditContainerAddNewDlg::CEditContainerAddNewDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CEditContainerAddNewDlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CEditContainerAddNewDlg)
-	 //m_container_name = _T("");	
-	//}}AFX_DATA_INIT
 }
-
 
 void CEditContainerAddNewDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CEditContainerAddNewDlg)
 	DDX_Text(pDX, IDC_NEW_CONTAINER_NAME, m_new_container_name);
-	//}}AFX_DATA_MAP
 }
 
-
 BEGIN_MESSAGE_MAP(CEditContainerAddNewDlg, CDialog)
-	//{{AFX_MSG_MAP(CEditVariableDlg))
-	//}}AFX_MSG_MAP
+// nothing needed
 END_MESSAGE_MAP()
-
-/////////////////////////////////////////////////////////////////////////////
-// CEditContainerAddNewDlg message handlers
 
 BOOL CEditContainerAddNewDlg::OnInitDialog() 
 {

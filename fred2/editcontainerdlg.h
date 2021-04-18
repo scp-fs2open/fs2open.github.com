@@ -4,46 +4,25 @@
  * create based on the source.
  */
 
-#if !defined(AFX_EditContainerDlg_H)
-#define AFX_EditContainerDlg_H
-
-#if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
-// EditContainerDlg.h : header file
-//
 
 #include "parse/sexp.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// Edit Container dialog
+// Edit (Add/Modify) Container dialog
 
 class CEditContainerDlg : public CDialog
 {
-// Construction
 public:
 	CEditContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent = nullptr);
-	
-// Dialog Data
-	//{{AFX_DATA(CEditContainerDlg)
+
 	enum { IDD = IDD_EDIT_CONTAINER };
 
 	CListBox	m_container_data_lister;
-	//}}AFX_DATA
 
-	
-// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CEditContainerDlg)
-  protected:
-	void DoDataExchange(CDataExchange* pDX) override; // DDX/DDV support
-	//}}AFX_VIRTUAL
-
-// Implementation
 protected:
+	void DoDataExchange(CDataExchange* pDX) override; // DDX/DDV support
 
-	// Generated message map functions
-	//{{AFX_MSG(CEditContainerDlg)
 	void OnOK() override;
 	BOOL OnInitDialog() override;
 
@@ -85,8 +64,8 @@ protected:
 	bool is_container_name_valid(CString &new_name, bool is_rename);
 	bool is_valid_number(const char *test_str) const;
 
-	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
 public:
 	afx_msg void OnBnClickedAddNewContainer();
 	afx_msg void OnBnClickedStringKeys();
@@ -104,14 +83,4 @@ private:
 	sexp_container m_dummy_container; // used as placeholder when there are no containers
 	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
 	int			m_current_container = -1;
-	// FIXME TODO: maybe get rid of these
-	// 	   or change to CString and update via DoDataExchange
-	// 	   TODO: m_lister_index
-	//SCP_string m_key;
-	//SCP_string m_data;
 };
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_EditContainerDlg_H)
