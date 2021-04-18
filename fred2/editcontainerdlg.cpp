@@ -71,6 +71,12 @@ BOOL CEditContainerDlg::OnInitDialog()
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
+	cbox->LimitText(sexp_container::NAME_MAX_LENGTH);
+
+	CEdit *key_edit = (CEdit *)GetDlgItem(IDC_CONTAINER_KEY);
+	key_edit->SetLimitText(sexp_container::VALUE_MAX_LENGTH);
+	CEdit *data_edit = (CEdit *)GetDlgItem(IDC_CONTAINER_DATA);
+	data_edit->SetLimitText(sexp_container::VALUE_MAX_LENGTH);
 
 	// do we already have any containers defined? 
 	if (has_containers()) {

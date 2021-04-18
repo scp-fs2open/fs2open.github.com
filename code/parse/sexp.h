@@ -973,7 +973,6 @@ const char *CTEXT(int n);
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 
 // sexp container definitions
-// TODO: maybe SEXP_CONTAINER_LIST_TYPE and similar for MAP						(1<<0)
 #define SEXP_CONTAINER_LIST							(1<<0)
 #define SEXP_CONTAINER_MAP							(1<<1)
 #define SEXP_CONTAINER_STRICTLY_TYPED_KEYS			(1<<2)
@@ -1197,6 +1196,11 @@ typedef struct sexp_variable {
 
 struct sexp_container
 {
+	// applies to list data, map keys, and map data
+	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
+	// leave space for leading/trailing '&' for container multidimensionality
+	static constexpr int NAME_MAX_LENGTH = VALUE_MAX_LENGTH - 2;
+
 	SCP_string container_name;
 	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
 	int opf_type = OPF_ANYTHING;

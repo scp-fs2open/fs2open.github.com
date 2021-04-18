@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "EditContainerAddNewDlg.h"
+#include "parse/sexp.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -26,7 +27,6 @@ static char THIS_FILE[] = __FILE__;
 CEditContainerAddNewDlg::CEditContainerAddNewDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CEditContainerAddNewDlg::IDD, pParent)
 {
-
 	//{{AFX_DATA_INIT(CEditContainerAddNewDlg)
 	 //m_container_name = _T("");	
 	//}}AFX_DATA_INIT
@@ -56,6 +56,9 @@ BOOL CEditContainerAddNewDlg::OnInitDialog()
 	
 	cancelled = true; 
 	m_new_container_name = "<New Container Name>";
+
+	CEdit *new_name_edit = (CEdit *)GetDlgItem(IDC_NEW_CONTAINER_NAME);
+	new_name_edit->SetLimitText(sexp_container::NAME_MAX_LENGTH);
 
 	// Send default name and values into dialog box
 	UpdateData(FALSE);

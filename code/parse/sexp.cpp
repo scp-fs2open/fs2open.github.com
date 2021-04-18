@@ -3887,6 +3887,7 @@ void register_new_container_index(const SCP_string &container_name, int containe
 
 bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type, SCP_vector<SCP_string>& data)
 {
+	bool valid = true; // try to skip past bad containers by not returning until end of function
 	SCP_string temp_type_string;
 
 	data.clear();
@@ -3894,11 +3895,19 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 	required_string("$Name:");
 	stuff_string(name, F_NAME);
 
-	// TODO: do other container name validation
 	if (name.empty()) {
 		Warning(LOCATION, "SEXP Container with empty name found");
 		log_printf(LOGFILE_EVENT_LOG, "SEXP Container with empty name found");
-		return false;
+		valid = false;
+	} else if (name.length() > sexp_container::NAME_MAX_LENGTH) {
+		Warning(LOCATION,
+			"SEXP Container name %s is longer than limit %u",
+			name.c_str(),
+			sexp_container::NAME_MAX_LENGTH);
+		log_printf(LOGFILE_EVENT_LOG, "SEXP Container name %s is longer than limit %u",
+			name.c_str(),
+			sexp_container::NAME_MAX_LENGTH);
+		valid = false;
 	}
 
 	required_string("$Data Type:");
@@ -3912,7 +3921,7 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 	} else {
 		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
 		log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
-		return false;
+		valid = false;
 	}
 
 	if (optional_string("$Key Type:")) {
@@ -3926,7 +3935,7 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 		} else {
 			Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
 			log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
-			return false;
+			valid = false;
 		}
 	}
 
@@ -3943,7 +3952,7 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 	required_string("$Data:");
 	stuff_string_list(data); 
 
-	return true;
+	return valid;
 }
 
 /**
