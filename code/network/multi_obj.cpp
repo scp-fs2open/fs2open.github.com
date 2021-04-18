@@ -639,7 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
-		if (objp == nullptr) {
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
 
