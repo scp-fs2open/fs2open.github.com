@@ -3939,7 +3939,6 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 		}
 	}
 
-	// TODO: change to Strictly Typed
 	if (optional_string("+Strictly Typed Keys")) {
 		Assertion ((type & SEXP_CONTAINER_MAP), "+Strictly Typed Keys found for container which doesn't use keys!");  
 		type |= SEXP_CONTAINER_STRICTLY_TYPED_KEYS;
@@ -9745,7 +9744,6 @@ int eval_when(int n, int when_op_num)
 
 		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
 		// each argument	
-		// TODO: check if this change from the PR's original version is correct; perhaps a correction? Or merely a correction reverted?
 		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(actions)) {	
 			if (exp != -1) {
 				eval_when_do_all_exp(actions, when_op_num);
@@ -24026,8 +24024,8 @@ bool get_replace_text_for_modifier(const SCP_string &text, sexp_container &conta
 {
 	// for map containers, check if this matches a map key
 	if (container.is_map()) {
-		// ignore if the container is empty
 		if (container.map_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty map container %s", container.container_name.c_str());
 			return false;
 		}
 
@@ -24054,11 +24052,12 @@ bool get_replace_text_for_modifier(const SCP_string &text, sexp_container &conta
 		replacement_text = iter->second; 
 
 		num_chars_to_replace += key.length();
-	} else { // for list containers, check if this matches a list modifier
+	} else {
+		// for list containers, check if this matches a list modifier
 		Assert(container.is_list());
 
-		// ignore if the container is empty
 		if (container.list_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty list container %s", container.container_name.c_str());
 			return false;
 		}
 
@@ -30950,6 +30949,11 @@ bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result
 {
 	auto &container = Sexp_containers[container_index];
 	if (container.is_map()) {
+		if (container.map_data.empty()) {
+			Warning(LOCATION, "Attempt to retrieve data from empty map container %s", container.container_name.c_str());
+			return false;
+		}
+
 		const char *key = CTEXT(node);
 		const auto value_it = container.map_data.find(SCP_string(key));
 
@@ -30966,8 +30970,8 @@ bool ctext_for_containers_sub(int &node, int container_index, SCP_string &result
 			return false;
  		}
 	} else if (container.is_list()) {
-		// no point in continuing if the list is empty
 		if (container.list_data.empty()) {
+			Warning(LOCATION, "Attempt to retrieve data from empty list container %s", container.container_name.c_str());
 			return false;
 		}
 
