@@ -1,0 +1,142 @@
+#include "CampaignEditorDialog.h"
+#include "ui_CampaignEditorDialog.h"
+
+#include <QMessageBox>
+
+namespace fso {
+namespace fred {
+namespace dialogs {
+
+CampaignEditorDialog::CampaignEditorDialog(QWidget *parent) :
+	QDialog(parent),
+	ui(new Ui::CampaignEditorDialog),
+	menubar(new QMenuBar)
+{
+	ui->setupUi(this);
+
+	connect(ui->listMissions, &QListWidget::itemActivated, this, &CampaignEditorDialog::listedMissionActivated);
+	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
+	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
+	connect(ui->btnBranchLoop, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchLoopClicked);
+	connect(ui->btnBrLoopAnim, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopAnimClicked);
+	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
+	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
+	connect(ui->btnLoadMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnLoadMissionClicked);
+	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
+
+	QMenu *menFile = menubar->addMenu("&File");
+	QAction *actFileNew = menFile->addAction("&New");
+	actFileNew->setShortcut(tr("Ctrl+N"));
+	connect(actFileNew, &QAction::triggered, this, &CampaignEditorDialog::fileNew);
+	QAction *actFileOpen = menFile->addAction("&Open...");
+	actFileOpen->setShortcut(tr("Ctrl+O"));
+	connect(actFileOpen, &QAction::triggered, this, &CampaignEditorDialog::fileOpen);
+	QAction *actFileSave = menFile->addAction("&Save");
+	actFileSave->setShortcut(tr("Ctrl+S"));
+	connect(actFileSave, &QAction::triggered, this, &CampaignEditorDialog::fileSave);
+	QAction *actFileSaveas = menFile->addAction("Save &As...");
+	connect(actFileSaveas, &QAction::triggered, this, &CampaignEditorDialog::fileSaveAs);
+	menFile->addSeparator();
+	QAction *actFileExit = menFile->addAction("E&xit");
+	connect(actFileExit, &QAction::triggered, this, &QDialog::reject);
+
+	QMenu *menOther = menubar->addMenu("Other");
+	QAction *actOtherErrorChecker = menOther->addAction("Error Checker");
+	actOtherErrorChecker->setShortcut(tr("Alt+H"));
+	connect(actOtherErrorChecker, &QAction::triggered, this, &CampaignEditorDialog::otherErrorChecker);
+
+	QMenu *menInitialStaus = menubar->addMenu("&Initial Status");
+	QAction *actInitialStatusShips = menInitialStaus->addAction("Ships");
+	connect(actInitialStatusShips, &QAction::triggered, this, &CampaignEditorDialog::initialShips);
+	QAction *actInitialStatusWeapons = menInitialStaus->addAction("Weapons");
+	connect(actInitialStatusWeapons, &QAction::triggered, this, &CampaignEditorDialog::initialWeapons);
+
+	ui->mainLayout->insertWidget(0, menubar);
+}
+
+CampaignEditorDialog::~CampaignEditorDialog()
+{
+	delete menubar;
+	delete ui;
+}
+
+void CampaignEditorDialog::reject() {  //merely means onClose
+	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+	if (changes) {
+		resBtn = QMessageBox::question( this, "",
+										"This campaign has been modified.  Save changes first?",
+										QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+										QMessageBox::Yes);
+	}
+	if (resBtn == QMessageBox::Yes) {
+		for (auto men : menubar->children())
+			dynamic_cast<QWidget*>(men)->setVisible(false);
+		QDialog::reject();
+	}
+}
+
+void CampaignEditorDialog::fileNew(){
+
+}
+
+void CampaignEditorDialog::fileOpen(){
+
+}
+
+void CampaignEditorDialog::fileSave(){
+
+}
+
+void CampaignEditorDialog::fileSaveAs(){
+
+}
+
+void CampaignEditorDialog::otherErrorChecker(){
+
+}
+
+void CampaignEditorDialog::initialShips(){
+
+}
+
+void CampaignEditorDialog::initialWeapons(){
+
+}
+
+void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
+	QMessageBox::information(this, "", item->text());
+	changes = true;
+}
+
+void CampaignEditorDialog::btnBranchUpClicked(){
+
+}
+
+void CampaignEditorDialog::btnBranchDownClicked(){
+
+}
+
+void CampaignEditorDialog::btnBranchLoopClicked(){
+
+}
+
+void CampaignEditorDialog::btnBrLoopAnimClicked(){
+
+}
+
+void CampaignEditorDialog::btnBrLoopVoiceClicked(){
+
+}
+
+void CampaignEditorDialog::btnRealignClicked(){
+
+}
+
+void CampaignEditorDialog::btnLoadMissionClicked(){
+
+}
+
+
+}
+}
+}

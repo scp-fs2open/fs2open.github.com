@@ -16,6 +16,7 @@
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/CampaignEditorDialog.h>
 #include <ui/dialogs/MissionGoalsDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
@@ -694,6 +695,11 @@ void FredView::on_actionShips_triggered(bool)
 	auto editorDialog = new dialogs::ShipEditorDialog(this, _viewport);
 	editorDialog->show();
 
+}
+void FredView::on_actionCampaign_triggered(bool) {
+	//TODO: Save if Changes
+	auto editorCampaign = new dialogs::CampaignEditorDialog(this);
+	editorCampaign->show();
 }
 void FredView::on_actionObjects_triggered(bool) {
 	orientEditorTriggered();
