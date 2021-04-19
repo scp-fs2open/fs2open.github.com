@@ -1250,7 +1250,7 @@ extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern SCP_vector<sexp_oper> Operators;
 extern SCP_vector<sexp_container> Sexp_containers;
-// TODO: convert to SCP_vector?
+
 #define MAX_CONTAINER_MODIFIERS		7
 extern const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
@@ -1365,7 +1365,6 @@ int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // sexp_containers
-// TODO: consider returning sexp_container*, nullptr on failure
 int get_sexp_container_index(const char* name);
 bool sexp_replace_container_refs_with_values(char *text, size_t max_len);
 bool sexp_replace_container_refs_with_values(SCP_string &text);

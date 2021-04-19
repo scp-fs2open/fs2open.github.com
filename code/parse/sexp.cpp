@@ -24197,7 +24197,11 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 				++num_replacements;
 				// avoid potential infinite loops
 				if (num_replacements >= 50) {
-					// TODO: issue warning "re-entrance limit hit"?
+					Warning(LOCATION,
+						"sexp_replace_container_refs_with_values() found potential multidimensionality infinite loop "
+						"in '%s' at position %u.",
+						text.c_str(),
+						lookHere);
 					break;
 				}
 
@@ -31095,7 +31099,6 @@ const char *ctext_for_containers(int node, int container_index)
 			Current_event_log_container_buffer->emplace_back(log_string);
 		}
 
-		// TODO: call Warning() is result is empty?
 		if (!success || result.empty()) {
 			return Empty_str;
 		}
@@ -31143,8 +31146,6 @@ const char *CTEXT(int n)
 	//
 	// Karajorma - Due to the addition of the container code, coders shouldn't call CTEXT twice from the same function for the same sexp node.
 	// If you need Sexp_node[xx].text twice in the same function, store it because CTEXT may have changed the data the first time it was called. 
-	// TODO: determine if some part of the following line from merge conflict is needed
-	//if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
 	if (Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)
 	{
 		if (Fred_running)
