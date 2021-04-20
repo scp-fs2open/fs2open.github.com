@@ -6841,7 +6841,21 @@ int sexp_is_ship_visible(int node)
 	{
 		// if the second argument is not supplied, default to the player, per retail
 		if (Game_mode & GM_MULTIPLAYER)
-			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		{
+			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0)
+				{
+					viewer_shipp = &Ships[shipnum];
+					break;
+				}
+			}
+		}
 		else
 			viewer_shipp = Player_ship;
 	}
@@ -34050,7 +34064,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will default to the first player.\r\n"
 		"\tTakes 1 or 2 arguments...\r\n"
 		"\t1: Name of ship to check\r\n"
 		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
