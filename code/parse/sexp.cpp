@@ -9404,9 +9404,6 @@ int eval_perform_actions(int n)
 	cond = CAR(n);
 	actions = CDR(n);
 
-	// evaluate the conditional to see what value we eventually return
-	val = eval_sexp(cond);
-
 	// perform all the actions in the rest of the sexp
 	// (Since we are technically inside a condition already, no special argument handling is needed.  The special argument, if any,
 	// will have been provided by a higher level of nesting.)
@@ -9420,6 +9417,9 @@ int eval_perform_actions(int n)
 		// iterate
 		actions = CDR(actions);
 	}
+
+	// evaluate the conditional to see what value we now return
+	val = eval_sexp(cond);
 
 	// return whatever val was, but don't return known-*
 	// note: SEXP_KNOWN_TRUE/SEXP_KNOWN_FALSE are never returned from eval_sexp
@@ -31405,7 +31405,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
 		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
-		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: Even though this value is not returned until the actions are performed, it is evaluated BEFORE any of the actions.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: This parameter is evaluated AFTER all of the actions have been performed.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
 
 	// Goober5000
