@@ -23695,28 +23695,6 @@ int sexp_map_has_data_item(int node)
 }
 
 /**
- * Helper function to get the index of a container from a function.
- */
-int get_container_index_from_node (int node, int type)
-{
-	const char *container_name = CTEXT(node); 
-	const int index = get_sexp_container_index(container_name);
-
-	if (index < 0) {
-		Warning(LOCATION, "Container %s does not exist.", container_name); 
-		return -1;
-	}
-
-	if (!(Sexp_containers[index].type & type)) {
-		Warning(LOCATION, "Container %s is not a list container. Can not use the add-to-list SEXP with it", container_name);
-		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the add-to-list SEXP with it");
-		return -1;
-	}
-
-	return index;
-}
-
-/**
  * Removes entries from a SEXP list container.
  */
 void sexp_remove_from_list(int node)
@@ -23729,7 +23707,7 @@ void sexp_remove_from_list(int node)
 		return;
 	}
 
-	if (!(Sexp_containers[index].type & SEXP_CONTAINER_LIST)) {
+	if (!Sexp_containers[index].is_list()) {
 		Warning(LOCATION, "Container %s is not a list container. Can not use the remove-from-list SEXP with it", container_name);
 		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the remove-from-list SEXP with it");
 		return;
@@ -23761,9 +23739,11 @@ void sexp_remove_from_list(int node)
  */
 void sexp_add_to_list(int node)
 {
-	const int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
+	const char *container_name = CTEXT(node);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
 		return;
 	}
 
@@ -23772,8 +23752,11 @@ void sexp_add_to_list(int node)
 
 	node = CDR(node);
 
-	int type = Sexp_containers[index].type; 
-	// TO DO - ADD TYPE CHECKING CODE HERE!
+	if (!Sexp_containers[index].is_list()) {
+		Warning(LOCATION, "Container %s is not a list container. Cannot use the add-to-list SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Cannot use the add-to-list SEXP with it");
+		return;
+	}
 
 	while (node != -1) {
 		if (add_to_back) {
@@ -23799,7 +23782,7 @@ void sexp_remove_from_map(int node)
 		return;
 	}
 
-	if (!(Sexp_containers[index].type & SEXP_CONTAINER_MAP)) {
+	if (!Sexp_containers[index].is_map()) {
 		Warning(LOCATION, "Container %s is not a map container. Can not use the remove-from-map SEXP with it", container_name);
 		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Can not use the remove-from-map SEXP with it");
 		return;
@@ -23822,17 +23805,23 @@ void sexp_remove_from_map(int node)
 /**
  * Add an entry to a SEXP map container.
  */
-void sexp_add_to_map (int node)
-{	
-	int index = get_container_index_from_node(node, SEXP_CONTAINER_MAP);
+void sexp_add_to_map(int node)
+{
+	const char *container_name = CTEXT(node);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	if (!Sexp_containers[index].is_map()) {
+		Warning(LOCATION, "Container %s is not a map container. Can not use the add-to-map SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Can not use the add-to-map SEXP with it");
 		return;
 	}
 
 	node = CDR(node);
-
-	// TO DO - ADD TYPE CHECKING CODE HERE!
 
 	while (node != -1) {
 		// key but no value
@@ -23843,29 +23832,35 @@ void sexp_add_to_map (int node)
 			return;
 		}
 
-		// TODO: log a debug message if we're replacing an existing entry in the map container
-		Sexp_containers[index].map_data.emplace(CTEXT(node), CTEXT(CDR(node))); 
+		const char *key = CTEXT(node);
+#ifndef NDEBUG
+		if (Sexp_containers[index].map_data.find(key) != Sexp_containers[index].map_data.end()) {
+			mprintf(
+				("Warning: Key '%s' already exists in map container '%s'. Replacing its data.\n", key, container_name));
+		}
+#endif
+		Sexp_containers[index].map_data.emplace(key, CTEXT(CDR(node))); 
 
 		// skip the value and move onto the next key
 		node = CDDR(node);
 	} 
 }
 
-int sexp_is_container_empty (int node)
+int sexp_is_container_empty(int node)
 {
 	const char *container_name = CTEXT(node);
-	int index = get_sexp_container_index(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name); 
-		return -1;
+		return SEXP_FALSE;
 	}
 
-	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+	if (Sexp_containers[index].is_map()) {
 		if (Sexp_containers[index].map_data.empty()) {
 			return SEXP_TRUE;
 		}
-	} else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
+	} else if (Sexp_containers[index].is_list()) {
 		if (Sexp_containers[index].list_data.empty()) {
 			return SEXP_TRUE;
 		}
@@ -23879,29 +23874,31 @@ int sexp_is_container_empty (int node)
 
 int sexp_get_container_size(int node)
 {
-	int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
+	const char *container_name = CTEXT(node);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
 		return 0;
 	}
 
 	Assert(index < Sexp_containers.size());
 
-	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		return (int)Sexp_containers[index].map_data.size();
-	} else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		return (int)Sexp_containers[index].list_data.size();
+	const auto &container = Sexp_containers[index];
+	if (container.is_map()) {
+		return (int)container.map_data.size();
+	} else if (container.is_list()) {
+		return (int)container.list_data.size();
 	}
-	
-	int type = Sexp_containers[index].type;
-	Error(LOCATION, "Unknown container type. Container is not a valid type", type);
+
+	Error(LOCATION, "Unknown container type. Container is not a valid type", container.type);
 	return 0;
 }
 
 void sexp_clear_container (int node)
 {
 	const char *container_name = CTEXT(node);
-	int index = get_sexp_container_index(container_name);
+	const int index = get_sexp_container_index(container_name);
 
 	if (index < 0) {
 		Warning(LOCATION, "Container %s does not exist.", container_name); 
@@ -23910,13 +23907,13 @@ void sexp_clear_container (int node)
 
 	Assert(index < Sexp_containers.size());
 
-	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		Sexp_containers[index].map_data.clear();
-	} else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
-		Sexp_containers[index].list_data.clear();
+	auto &container = Sexp_containers[index];
+	if (container.is_map()) {
+		container.map_data.clear();
+	} else if (container.is_list()) {
+		container.list_data.clear();
 	} else {
-		int type = Sexp_containers[index].type; 
-		Error(LOCATION, "Unknown container type. Container %s is of type %d and this is not a valid type", container_name, type);
+		Error(LOCATION, "Unknown container type. Container %s is of type %d and this is not a valid type", container_name, container.type);
 	}
 }
 
@@ -23943,7 +23940,7 @@ void sexp_get_map_keys(int node)
 	}
 
 	// both containers must be of the correct type. 
-	if (!(Sexp_containers[map_index].type & SEXP_CONTAINER_MAP) || !(Sexp_containers[list_index].type & SEXP_CONTAINER_LIST)) {
+	if (!Sexp_containers[map_index].is_map() || !Sexp_containers[list_index].is_list()) {
 		Warning(LOCATION, "Containers must be of the correct types to be used in get-map-keys SEXP."); 
 		return;
 	}
