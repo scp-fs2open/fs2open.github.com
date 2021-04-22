@@ -228,15 +228,12 @@
 #define IDC_SEP_DASHES                  1036
 #define IDC_EXPORT_BRIEFINGS            1036
 #define IDC_CONTAINER_STRING            1036
-#define IDC_SPIN_POSITIONX6             1037
 #define IDC_RADIO4                      1037
 #define IDC_WAYPOINTS                   1037
 #define IDC_TEAMVTEAM                   1037
 #define IDC_PASSIVE_FIELD               1037
 #define IDC_EXPORT_DEBRIEFINGS          1037
 #define IDC_CONTAINER_NUMBER            1037
-#define IDC_SPIN_POSITIONX10            1038
-#define IDC_OBJECT_POSITIONY2           1038
 #define IDC_SCLASS_SCORE                1038
 #define IDC_SHIP_RESET_TO_DEFAULTS      1038
 #define IDC_RADIO7                      1038
@@ -247,7 +244,6 @@
 #define IDC_RADIO5                      1039
 #define IDC_FURBALL                     1039
 #define IDC_STRING_KEYS                 1039
-#define IDC_OBJECT_POSITIONZ2           1040
 #define IDC_GOALS                       1040
 #define IDC_GOAL1_OBJECT1               1040
 #define IDC_RADIO6                      1040
@@ -255,7 +251,6 @@
 #define IDC_DEPARTURE_CUE1              1040
 #define IDC_PRIORITY2                   1040
 #define IDC_NUMBER_KEYS                 1040
-#define IDC_SPIN_POSITIONZ2             1041
 #define IDC_SCLASS_POWER_PLANT          1041
 #define IDC_GOAL1_ACTIVE                1041
 #define IDC_RADIO9                      1041
@@ -314,7 +309,6 @@
 #define IDC_AUTOGENERATE                1062
 #define IDC_GENERATE_FILE_NAMES         1062
 #define IDC_CONTAINER_ADD               1062
-#define IDC_OBJECT_POSITIONY6           1063
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
 #define IDC_GENERATE_SCRIPT             1063
@@ -1437,9 +1431,6 @@
 #define ID_MISC_MOVESHIPSWHENUNDOCKING  33098
 #define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
-#define ID_EDITSEXPTREE_MODIFYVARIABLE  33101
-#define ID_EDITSEXPTREE_REPLACEVARIABLE 33102
-#define ID_EDIT_SEXP_TREE_MODIFYVARIABLE 33103
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
