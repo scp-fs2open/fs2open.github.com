@@ -1425,9 +1425,10 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
-				bool TODO; // check for strictly typed containers
-				// int container_idx = get_sexp_container_index(CTEXT(Sexp_clipboard)); 
-				// z = Sexp_containers[container_idx].opf_type; 
+				// TODO: check for strictly typed containers
+				//const int container_idx = get_sexp_container_index(CTEXT(Sexp_clipboard)); 
+				//Assert(container_idx != -1);
+				//z = Sexp_containers[container_idx].opf_type; 
 				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
 				menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
@@ -3859,21 +3860,19 @@ void sexp_tree::replace_data(const char *data, int type)
 
 void sexp_tree::replace_container_data(int container_idx, int type, bool test_child_nodes, bool delete_child_nodes, bool set_default_modifier )
 {
-	int node;
-	HTREEITEM h;
-	
-	h = tree_nodes[item_index].handle;
+	HTREEITEM h = tree_nodes[item_index].handle;
 
 	// if this is already a container of the right type, don't alter the child nodes
 	if (test_child_nodes && (tree_nodes[item_index].type & SEXPT_CONTAINER)) {
-		if (Sexp_containers[container_idx].type & SEXP_CONTAINER_LIST) {
+		if (Sexp_containers[container_idx].is_list()) {
 			const int old_con_index = get_sexp_container_index(tree_nodes[item_index].text);
 
-			Assert (old_con_index != -1); 
-			
-			if (Sexp_containers[old_con_index].type & SEXP_CONTAINER_LIST) {
-				// check for strictly typed data here
-				int TODO;
+			Assert(old_con_index != -1);
+
+			if (Sexp_containers[old_con_index].is_list()) {
+				// TODO: check for strictly typed data here
+
+				// FIXME TODO: what should be done here?
 				//int old_opf = Sexp_containers[old_con_index].opf_type; 
 
 				delete_child_nodes = false; 
@@ -3883,7 +3882,7 @@ void sexp_tree::replace_container_data(int container_idx, int type, bool test_ch
 	}
 
 	if (delete_child_nodes) {
-		node = tree_nodes[item_index].child;
+		int node = tree_nodes[item_index].child;
 		if (node != -1)
 			free_node2(node);
 
