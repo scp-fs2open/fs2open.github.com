@@ -561,6 +561,12 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// if being used to fill a space, offset may be needed to properly 'glue together' generated
+// volumes in a well distrubtedness-preserving way
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset = nullptr);
+
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
 inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }

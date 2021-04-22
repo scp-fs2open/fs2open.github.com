@@ -67,7 +67,7 @@ typedef struct poof_info {
 	char bitmap_filename[MAX_FILENAME_LEN];
 	int bitmap;
 	::util::UniformFloatRange scale;
-	float density;   // IN CUBIC KILOMETERS!!!
+	float density;						 // meters; the side length of a cube which contains 1 poof on average
 	::util::UniformFloatRange rotation;
 	float view_dist;
 	::util::UniformFloatRange alpha;
@@ -76,7 +76,7 @@ typedef struct poof_info {
 		bitmap_filename[0] = '\0';
 		bitmap = -1;
 		scale = ::util::UniformFloatRange(150.0f, 150.0f);
-		density = 150.f;
+		density = 1 / (150.f * 150.f * 150.f);
 		rotation = ::util::UniformFloatRange(-0.065f, 0.065f);
 		view_dist = 360.f;
 		alpha = ::util::UniformFloatRange(0.5f, 0.5f);
@@ -88,9 +88,10 @@ extern SCP_vector<poof_info> Poof_info;
 // nebula poofs
 typedef struct poof {
 	vec3d	pt;				// point in space
-	int		poof_info_index;
+	size_t		poof_info_index;
 	float		radius;
-	float		rot;				// rotation angle
+	vec3d		up_vec;			// to keep track of the poofs rotation
+								// must be the full vector instead of an angle to prevent parallel transport when looking around
 	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
 	float		alpha;			// base amount of alpha to start with

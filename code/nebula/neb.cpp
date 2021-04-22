@@ -22,6 +22,7 @@
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "tgautils/tgautils.h"
@@ -63,7 +64,7 @@ SCP_vector<poof_info> Poof_info;
 float Poof_dist_threshold;
 vec3d Poof_last_gen_pos;
 float Poof_accum[MAX_NEB2_POOFS];
-float Poof_density;
+float Poof_density_multiplier;
 
 const float UPKEEP_DIST_MULT = 1.2f;
 
@@ -265,6 +266,7 @@ void neb2_init()
 						Warning(LOCATION, "Poof %s must have a positive density.", new_poof.bitmap_filename);
 						new_poof.density = 150.0f;
 					}
+					new_poof.density = 1 / (new_poof.density * new_poof.density * new_poof.density);
 				}
 
 				if(optional_string("-Rotation:"))
@@ -296,7 +298,7 @@ void neb2_init()
 	}
 }
 
-bool poof_is_used(int idx) {
+bool poof_is_used(size_t idx) {
 	return (Neb2_poof_flags & (1 << idx)) != 0;
 }
 
@@ -434,17 +436,15 @@ void neb2_post_level_init()
 
 	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
 
-	Poof_density = 0.0f;
-	int num_used_poofs = 0;
-	for (int i = 0; i < (int)Poof_info.size(); i++) {
+	float Poof_density_sum_square = 0.0f;
+	float Poof_density_sum = 0.0f;
+	for (size_t i = 0; i < Poof_info.size(); i++) {
 		if (poof_is_used(i)) {
-			Poof_density += Poof_info[i].density;
-			num_used_poofs++;
+			Poof_density_sum_square += Poof_info[i].density * Poof_info[i].density;
+			Poof_density_sum += Poof_info[i].density;
 		}
 	}
-	Poof_density /= num_used_poofs;
-
-	//new_poof(0, &vm_vec_new(0, 0, 200));
+	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
 }
 
 // shutdown nebula stuff
@@ -648,7 +648,6 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 
 	// get the eye position
 	neb2_get_eye_pos(&eye_pos);
-	eye_pos = Player_obj->pos;
 
 	// determine what alpha to draw this bitmap with
 	// higher alpha the closer the bitmap gets to the eye
@@ -682,8 +681,8 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 {
 	float alpha = 0.0f;
-	float per_pixel_x = incoming_alpha / (float)Nd->break_x;
-	float per_pixel_y = incoming_alpha / (float)Nd->break_y;
+	float per_pixel_x = incoming_alpha / ((float)Nd->break_x); //Nd->break_x;
+	float per_pixel_y = incoming_alpha / ((float)Nd->break_y);// Nd->break_y;
 	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));
 	int off_y = ((sy < 0.0f) || (sy > (float)gr_screen.max_h));
 	float off_x_amount = 0.0f;
@@ -730,7 +729,7 @@ float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
 
-void new_poof(int poof_info_idx, vec3d* pos) {
+void new_poof(size_t poof_info_idx, vec3d* pos) {
 	poof new_poof;
 	poof_info* pinfo = &Poof_info[poof_info_idx];
 
@@ -738,107 +737,70 @@ void new_poof(int poof_info_idx, vec3d* pos) {
 	new_poof.flash = 0;
 	new_poof.radius = pinfo->scale.next();
 	new_poof.pt = *pos;
-	new_poof.rot = frand_range(0.0f, PI2);
 	new_poof.rot_speed = pinfo->rotation.next();
 	new_poof.alpha = pinfo->alpha.next();
+	vm_vec_rand_vec(&new_poof.up_vec);
 
 	Neb2_poofs.push_back(new_poof);
 }
 
 static uint neb_rand_seed = 0;
 const float phi3 = 1.220744084f;
-float neb_rand1() { 
-	float ret = 0.5f + ((1 / phi3) * neb_rand_seed);
-	if (ret >= 1.0f) ret -= 1.0f;
-	return ret;
-}
-float neb_rand2() {
-	float ret = 0.5f + ((1 / (phi3 * phi3)) * neb_rand_seed);
-	if (ret >= 1.0f) ret -= 1.0f;
-	return ret;
-}
-float neb_rand3() {
-	float ret = 0.5f + ((1 / (phi3 * phi3 * phi3)) * neb_rand_seed);
-	if (ret >= 1.0f) ret -= 1.0f;
-	return ret;
-}
-
-void gen_poofs(vec3d* center, matrix* orient, float radius, float length, int num_poofs) {
-	/*for (int i = 0; i < num_poofs; i++) {
-		vec3d pos;
-		vm_vec_scale_add(&pos, &orient->vec.rvec, );
-		vm_vec_random_in_circle(&pos, &center, &orient, gen_cyl_radius, false);
-		vec3d nudge = gen_vec;
-		vm_vec_negate(&nudge);
-		nudge *= gen_dist * golden_ratio_rand(&neb_rand_accum);
-		pos += nudge;
-
-
-		new_poof(i, &pos);
-	}*/
-}
+float neb_rand1(float offset) { return fmod(-fmod(offset, 1.f) + ((1.f / phi3) * neb_rand_seed), 1.f) * 2 - 1; }
+float neb_rand2(float offset) {	return fmod(-fmod(offset, 1.f) + ((1.f/ (phi3 * phi3)) * neb_rand_seed), 1.f) * 2 - 1; }
+float neb_rand3(float offset) {	return fmod(-fmod(offset, 1.f) + ((1 / (phi3 * phi3 * phi3)) * neb_rand_seed), 1.f) * 2 - 1; }
 
 void upkeep_poofs()
 {
+	vec3d eye_pos;
+	neb2_get_eye_pos(&eye_pos);
+
+	neb_rand_seed = 0;
+	// make new poofs
+	for (size_t i = 0; i < Poof_info.size(); i++) {
+		if (!poof_is_used(i))
+			continue;
+		poof_info* pinfo = &Poof_info[i];
+		
+		float gen_side_length = (pinfo->view_dist * UPKEEP_DIST_MULT) * 2;
+		float gen_density = pinfo->density * Poof_density_multiplier;
+
+
+		float poofs_to_gen = gen_side_length * gen_side_length * gen_side_length * gen_density;
+
+		// store the fractional part, take the integer part
+		Poof_accum[i] = modf(Poof_accum[i] + (poofs_to_gen), &poofs_to_gen);
+		for (int j = 0; j < poofs_to_gen; j++) {
+			vec3d pos = eye_pos;
+			vec3d offset = eye_pos / gen_side_length;
+			vec3d rand_pos = vm_well_distributed_rand_vec(neb_rand_seed, &offset);
+			rand_pos.xyz.x *= gen_side_length / 2;
+			rand_pos.xyz.y *= gen_side_length / 2;
+			rand_pos.xyz.z *= gen_side_length / 2;
+
+			pos += rand_pos;
+
+			neb_rand_seed++;
+			if (vm_vec_dist(&eye_pos, &pos) <= (gen_side_length / 2) &&
+				vm_vec_dist(&Poof_last_gen_pos, &pos) > (gen_side_length / 2))
+				new_poof(i, &pos);
+		}
+	}
+
+	// cull distant poofs
 	if (!Neb2_poofs.empty()) {
 		SCP_vector<int> cull_poofs;
 		for (size_t i = 0; i < Neb2_poofs.size();) {
-			if (vm_vec_dist(&Neb2_poofs[i].pt, &Eye_position) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT * 1.5f) {
+			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
 				Neb2_poofs[i] = Neb2_poofs.back();
 				Neb2_poofs.pop_back();
 			}
 			else // if we needed to cull we should not advance because we just moved a new poof into this spot
 				i++;
 		}
-		//Neb2_poofs.erase(std::remove_if(Neb2_poofs.begin(), Neb2_poofs.end() - 1,
-			//[](poof pf) {return vm_vec_dist(&pf.pt, &Eye_position) > Poof_info[pf.poof_info_index].view_dist * UPKEEP_DIST_MULT * 1500.f; }));
-	}
-
-	for (int i = 0; i < (int)Poof_info.size(); i++) {
-		if (!poof_is_used(i))
-			continue;
-		poof_info* pinfo = &Poof_info[i];
-
-		vec3d gen_vec = Eye_position - Poof_last_gen_pos; // direction we're generating in
-		float gen_dist = vm_vec_normalize(&gen_vec); // length of the cylinder to generate
-		if (gen_dist > pinfo->view_dist * UPKEEP_DIST_MULT * 2)
-			gen_dist = pinfo->view_dist * UPKEEP_DIST_MULT * 2;
-
-		float gen_cyl_radius = (pinfo->view_dist * UPKEEP_DIST_MULT);
-		float gen_density = (pinfo->density / Poof_density) * Poof_density;
-
-		// numerical precision is important here, measuring in cubic meters is going to get very big very fast
-		// so make sure to divide each dimension by the density (which is also measured in meters) first for 
-		// each one so we don't to try and multiply an absurdly huge cubic meter volume by an absurdly tiny
-		// poofs per cubic meter
-		float poofs_to_gen = (gen_dist / gen_density) * PI * (gen_cyl_radius / gen_density) * (gen_cyl_radius / gen_density);
-
-		// store the fractional part, take the integer part
-		Poof_accum[i] = modf(Poof_accum[i] + (poofs_to_gen), &poofs_to_gen);
-
-		vec3d center = gen_vec * (pinfo->view_dist * UPKEEP_DIST_MULT);
-		center += Eye_position;
-		matrix orient;
-		vm_vector_2_matrix(&orient, &gen_vec);
-
-		//gen_poofs(&center, &orient, gen_cyl_radius, gen_dist, (int)poofs_to_gen);
-
-		for (int j = 0; j < poofs_to_gen; j++) {
-			vec3d pos;
-			vm_vec_random_in_circle(&pos, &center, &orient, gen_cyl_radius, false);
-			vec3d nudge = gen_vec;
-			vm_vec_negate(&nudge);
-			nudge *= gen_dist * golden_ratio_rand();
-			pos += nudge;
-
-			new_poof(i, &pos);
-		}
 	}
 }
 
-int frames_total = 0;
-int frame_count = 0;
-float frame_avg;
 void neb2_render_poofs()
 {
 	GR_DEBUG_SCOPE("Nebula render player");
@@ -866,9 +828,9 @@ void neb2_render_poofs()
 	neb2_get_eye_orient(&eye_orient);
 
 	// maybe swap stuff around if the player crossed a "border"
-	if (vm_vec_dist(&Eye_position, &Poof_last_gen_pos) > Poof_dist_threshold) {
+	if (vm_vec_dist(&eye_pos, &Poof_last_gen_pos) > Poof_dist_threshold) {
 		upkeep_poofs();
-		Poof_last_gen_pos = Player_obj->pos /*Eye_position*/;
+		Poof_last_gen_pos = eye_pos;
 	}
 
 	// if we've switched nebula rendering off
@@ -880,26 +842,42 @@ void neb2_render_poofs()
 	for (poof &pf : Neb2_poofs) {
 		poof_info* pinfo = &Poof_info[pf.poof_info_index];
 
+
 		// Miss this one out if the id is -1
 		if (pinfo->bitmap == -1) {
 			continue;
 		}
 
-		// rotate the poof
-		pf.rot += pf.rot_speed * flFrametime;
-		if (pf.rot >= PI2)
-			pf.rot -= PI2;
-		if (pf.rot < PI2)
-			pf.rot += PI2;
+		// generate the bitmap orient
+		// If the bitmap is large and distant and points in the view fvec direction (like retail poofs do) this looks good when moving,
+		// but bad when you rotate (since the bitmaps rotate in place with you, which looks weird).
+		// Conversely, if the bitmap is close and small (like retail size-ish) and points at the view position, it looks good
+		// when rotating (since the bitmaps remain static) but bad when moving (as they rotate in place to continue pointing at you)
+		// 
+		// So blend between the two styles based on promixity and size, since distant (relative to their size) bitmaps 
+		// are more affected by rotating than moving and close bitmaps are vice versa
+		// We will scale the bitmap direction from the view position to "off to infinity" in the negative view fvec direction - Asteroth
+		matrix orient;
+		vec3d view_pos;
+		{
+			float scalar = -1 / powf((vm_vec_dist(&eye_pos, &pf.pt) / (10 * pf.radius)), 3.f);
 
-		g3_transfer_vertex(&p, &pf.pt);
+			vm_vec_scale_add(&view_pos, &eye_pos, &eye_orient.vec.fvec, scalar);
 
-		// rotate and project the vertex into viewspace
-		g3_rotate_vertex(&ptemp, &pf.pt);
-		g3_project_vertex(&ptemp);
+			view_pos -= pf.pt;
+			vm_vec_normalize(&view_pos);
+
+			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);
+		}
+
+		// update the poof's up vector to be perpindicular to the camera and also rotated by however much its rotating
+		vec3d poof_direction;
+		vm_vec_normalized_dir(&poof_direction, &pf.pt, &eye_pos);
+		vm_project_point_onto_plane(&pf.up_vec, &pf.up_vec, &view_pos, &vmd_zero_vector);
+		vm_vec_normalize(&pf.up_vec);
+		vm_rot_point_around_line(&pf.up_vec, &pf.up_vec, pf.rot_speed * flFrametime, &vmd_zero_vector, &view_pos);
 
 		// optimization 1 - don't draw backfacing poly's
-		// useless
 		if (vm_vec_dot_to_point(&eye_orient.vec.fvec, &eye_pos, &pf.pt) <= 0.0f)
 			continue;
 
@@ -908,8 +886,12 @@ void neb2_render_poofs()
 
 		// optimization 2 - don't draw 0.0f or less poly's
 		// this amounts to big savings
-		if (alpha <= Nd->break_alpha)
+		if (alpha <= 0.0f)
 			continue;
+
+		// rotate and project the vertex into viewspace
+		g3_rotate_vertex(&ptemp, &pf.pt);
+		g3_project_vertex(&ptemp);
 
 		// drop poly's which are offscreen at all
 		// if the poly's are offscreen
@@ -926,55 +908,12 @@ void neb2_render_poofs()
 
 		// optimization 2 - don't draw 0.0f or less poly's
 		// this amounts to big savings
-		if (alpha <= Nd->break_alpha) {
+		if (alpha <= 0.0f) {
 			continue;
 		}
 
-		// generate the bitmap orient
-		// If the bitmap is large and points in the view fvec direction (retail poofs) this looks good when moving,
-		// but bad when you rotate (since the bitmaps rotate in place with you, which looks weird).
-		// Conversely, if the bitmap is small (like retail size-ish) and points at the view position, it looks good
-		// when rotating (since the bitmaps remain static) but bad when moving (as they rotate in place to continue pointing at you)
-		// 
-		// So blend between the two styles based on promixity and size, since distant (relative to their size) bitmaps 
-		// are more affected by rotating than moving and close bitmaps are vice versa
-		// We will scale the bitmap direction from the view position to "off to infinity" in the negative view fvec direction - Asteroth
-		matrix orient;
-		{
-			float scalar = -1 / powf((vm_vec_dist(&eye_pos, &pf.pt) / (10 * pf.radius)), 3.f);
-
-			vec3d view_pos;
-			vm_vec_scale_add(&view_pos, &eye_pos, &eye_orient.vec.fvec, scalar);
-
-			view_pos -= pf.pt;
-			vm_vec_normalize(&view_pos);
-
-			vec3d uvec;
-			float angle = pf.rot;
-			angle += Physics_viewer_bank;
-			if (angle < 0.0f)
-				angle += PI2;
-			else if (angle > PI2)
-				angle -= PI2;
-
-			vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &view_pos);
-			vm_vec_normalize(&uvec);
-
-			vm_vector_2_matrix(&orient, &view_pos, &uvec, nullptr);
-		}
-
-
-		// set the bitmap and render
-		//gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
-
-		gr_set_lighting(false, false);
-		//g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-		material mat_params;
-		material_set_unlit(&mat_params, pinfo->bitmap, alpha + pf.flash, true, true);
-		mat_params.set_color_scale(3.f);
-		//g3_render_rect_screen_aligned_rotated(&mat_params, &p, pf.rot, pf.radius);
-
-		g3_render_rect_oriented(&mat_params, &pf.pt, &orient, pf.radius, pf.radius);
+		// render!
+		batching_add_polygon(pinfo->bitmap, &pf.pt, &orient, pf.radius, pf.radius, alpha);
 	}
 
 	// gr_set_color_fast(&Color_bright_red);
