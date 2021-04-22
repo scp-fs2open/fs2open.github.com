@@ -1646,31 +1646,27 @@ int CFred_mission_save::save_containers()
 		return 0;
 	}
 
-	// sexp_container_sort();
 	required_string_fred("#Sexp_containers");
 	parse_comments(2);
 
-	int i = 0;
 	bool list_found = false;
 	bool map_found = false;
 
 	// What types of container do we have?
-	while (!(list_found && map_found) && i < (int)Sexp_containers.size()) {
-		if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
+	for (int i = 0; i < (int)Sexp_containers.size() && !(list_found && map_found); i++) {
+		if (Sexp_containers[i].is_list()) {
 			list_found = true;
-		} else if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
+		} else if (Sexp_containers[i].is_map()) {
 			map_found = true;
 		}
-
-		i++;
 	}
 
 	if (list_found) {
 		required_string_fred("$Lists");
 		parse_comments(2);
 
-		for (i = 0; i < (int)Sexp_containers.size(); i++) {
-			if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
+		for (int i = 0; i < (int)Sexp_containers.size(); i++) {
+			if (Sexp_containers[i].is_list()) {
 				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
 				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
 					fout("\n$Data Type: String");
@@ -1699,11 +1695,8 @@ int CFred_mission_save::save_containers()
 		required_string_fred("$Maps");
 		parse_comments(2);
 
-		for (i = 0; i < (int)Sexp_containers.size(); i++) {
-			if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
-
-				Assertion((Sexp_containers[i].list_data.size() % 2 == 0), "Sexp Map Container %s has a key with no corresponding data entry. Can not save. Skipping this container", Sexp_containers[i].container_name.c_str());
-
+		for (int i = 0; i < (int)Sexp_containers.size(); i++) {
+			if (Sexp_containers[i].is_map()) {
 				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
 				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
 					fout("\n$Data Type: String");
