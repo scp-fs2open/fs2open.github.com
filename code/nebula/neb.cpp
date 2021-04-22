@@ -36,9 +36,7 @@
 
 bool Nebula_sexp_used = false;
 
-static ubyte Neb2_fog_color_r = 0;
-static ubyte Neb2_fog_color_g = 0;
-static ubyte Neb2_fog_color_b = 0;
+ubyte Neb2_fog_color[3] = { 0,0,0 };
 
 static ubyte *Neb2_htl_fog_data = NULL;
 
@@ -129,8 +127,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.13f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		150.0f, 150.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.013f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		510.0f,							// total dimension of player poof cube
 		50.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -140,8 +137,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd lowest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.0125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		550.0f,							// total dimension of player poof cube
 		100.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -151,8 +147,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // 2nd highest detail level
 		0.575f,							// max alpha for this detail level in Glide
 		0.71f,							// max alpha for this detail level in D3d
-		0.1f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.01f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		550.0f,							// total dimension of player poof cube
 		150.0f,							// inner radius of the player poof cube
 		250.0f,							// outer radius of the player pood cube
@@ -162,8 +157,7 @@ neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // higest detail level
 		0.475f,							// max alpha for this detail level in Glide
 		0.575f,							// max alpha for this detail level in D3d
-		0.05f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		200.0f, 200.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		0.005f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
 		750.0f,							// total dimension of player poof cube
 		200.0f,							// inner radius of the player poof cube
 		360.0f,							// outer radius of the player pood cube
@@ -320,9 +314,9 @@ void neb2_set_detail_level(int level)
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 {
-	if (r) *r = Neb2_fog_color_r;
-	if (g) *g = Neb2_fog_color_g;
-	if (b) *b = Neb2_fog_color_b;
+	if (r) *r = Neb2_fog_color[0];
+	if (g) *g = Neb2_fog_color[1];
+	if (b) *b = Neb2_fog_color[2];
 }
 
 void neb2_level_init()
@@ -354,13 +348,13 @@ void neb2_post_level_init()
 		return;
 	}
 
-	// Set a default colour just in case something goes wrong
-	Neb2_fog_color_r =  30;
-	Neb2_fog_color_g =  52;
-	Neb2_fog_color_b = 157;
-
 	// OK, lets try something a bit more interesting
 	if (strlen(Neb2_texture_name)) {
+		// Set a default colour just in case something goes wrong
+		Neb2_fog_color[0] = 30;
+		Neb2_fog_color[1] = 52;
+		Neb2_fog_color[2] = 157;
+
 		Neb2_htl_fog_data = new ubyte[768];
 
 		if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
@@ -376,12 +370,12 @@ void neb2_post_level_init()
 			}
 
 			if (pcount > 0) {
-				Neb2_fog_color_r = (ubyte)(r / pcount);
-				Neb2_fog_color_g = (ubyte)(g / pcount);
-				Neb2_fog_color_b = (ubyte)(b / pcount);
+				Neb2_fog_color[0] = (ubyte)(r / pcount);
+				Neb2_fog_color[1] = (ubyte)(g / pcount);
+				Neb2_fog_color[2] = (ubyte)(b / pcount);
 			} else {
 				// it's just black
-				Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
+				Neb2_fog_color[0] = Neb2_fog_color[1] = Neb2_fog_color[2] = 0;
 			}
 
 			// done, now free up the palette data
@@ -681,8 +675,8 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 {
 	float alpha = 0.0f;
-	float per_pixel_x = incoming_alpha / ((float)Nd->break_x); //Nd->break_x;
-	float per_pixel_y = incoming_alpha / ((float)Nd->break_y);// Nd->break_y;
+	float per_pixel_x = incoming_alpha / (float)gr_screen.max_w;
+	float per_pixel_y = incoming_alpha / (float)gr_screen.max_h;
 	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));
 	int off_y = ((sy < 0.0f) || (sy > (float)gr_screen.max_h));
 	float off_x_amount = 0.0f;
@@ -1097,9 +1091,6 @@ void neb2_pre_render(camid cid)
 	}
 }
 
-// wacky scheme for smoothing colors
-int wacky_scheme = 3;
-
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye_vector)
 {
@@ -1210,25 +1201,6 @@ DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not 
 	dc_stuff_float(&Nd->break_alpha);
 }
 
-DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent.")
-{
-	int value;
-	dc_stuff_int(&value);
-	Nd->break_y = (float)value;
-	Nd->break_x = Nd->break_y * gr_screen.aspect;
-}
-
-DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
-{
-	int index;
-	dc_stuff_int(&index);
-	if ( (index >= 0) && (index <= 3) ) {
-		wacky_scheme = index;
-	} else {
-		dc_printf("Invalid smooth mode %i", index);
-	}
-}
-
 DCF(neb2_select, "Enables/disables a poof bitmap")
 {
 	int bmap;
@@ -1301,7 +1273,7 @@ DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
 	dc_stuff_ubyte(&g);
 	dc_stuff_ubyte(&b);
 
-	Neb2_fog_color_r = r;
-	Neb2_fog_color_g = g;
-	Neb2_fog_color_b = b;
+	Neb2_fog_color[0] = r;
+	Neb2_fog_color[1] = g;
+	Neb2_fog_color[2] = b;
 }

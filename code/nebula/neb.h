@@ -85,6 +85,9 @@ typedef struct poof_info {
 
 extern SCP_vector<poof_info> Poof_info;
 
+// the color of the fog/background
+extern ubyte Neb2_fog_color[3];
+
 // nebula poofs
 typedef struct poof {
 	vec3d	pt;				// point in space
@@ -104,7 +107,6 @@ typedef struct neb2_detail {
 	float max_alpha_glide;		// max alpha for this detail level in Glide
 	float max_alpha_d3d;		// max alpha for this detail level in D3d
 	float break_alpha;			// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-	float break_x, break_y;		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen
 	float cube_dim;				// total dimension of player poof cube
 	float cube_inner;			// inner radius of the player poof cube
 	float cube_outer;			// outer radius of the player pood cube

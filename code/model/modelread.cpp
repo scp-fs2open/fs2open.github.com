@@ -3727,10 +3727,9 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
 {
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
@@ -3813,7 +3812,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
+	if (turret->flags[Model::Subsystem_Flags::Turret_restricted_fov])
 		limited_base_rotation = true;
 
 	//------------
@@ -4237,11 +4236,11 @@ void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *
 }
 
 // the same as model_find_world_dir - just taking model instance data into account
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
+void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, submodel_num, objorient);
+	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
 void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
@@ -5370,7 +5369,7 @@ void model_subsystem::reset()
     
     turret_fov = 0;
     turret_max_fov = 0;
-    turret_y_fov = 0;
+    turret_base_fov = 0;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;

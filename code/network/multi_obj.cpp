@@ -639,7 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
-		if (objp == nullptr) {
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
 
@@ -3387,7 +3387,7 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 	float delta = multi_oo_calc_pos_time_difference(player_id, net_sig_idx);
 	// if an error or invalid value, use the local timestamps instead of those received. Should be rare.
 	if (delta <= 0.0f) {
-		delta = (float)(timestamp() - Oo_info.received_frametimes[player_id].at(Oo_info.interp[net_sig_idx].pos_timestamp)) / TIMESTAMP_FREQUENCY;
+		delta = (float)(timestamp() - Oo_info.interp[net_sig_idx].pos_timestamp) / TIMESTAMP_FREQUENCY;
 	}
 
 	Oo_info.interp[net_sig_idx].pos_time_delta = delta;

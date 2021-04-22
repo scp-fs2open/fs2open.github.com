@@ -4369,7 +4369,7 @@ void CFREDView::OnUpdateDisableUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnUpdateCmdBrief(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(!(The_mission.game_type & MISSION_TYPE_MULTI));
+	pCmdUI->Enable(true);
 }
 
 int get_visible_sub_system_count(ship *shipp)

@@ -13,6 +13,7 @@ bool Category::usesGPUCounter() const {
 }
 
 Category LuaOnFrame("LUA On Frame", true);
+Category LuaHooks("LUA hooks", true);
 
 Category DrawSceneTexture("Draw scene texture", true);
 Category UpdateDistortion("Update distortion", true);

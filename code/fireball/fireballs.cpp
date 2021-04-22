@@ -287,11 +287,13 @@ static void parse_fireball_tbl(const char *table_filename)
 				}
 			}
 
+			bool first_time;
 			// now select our entry accordingly...
 			// are we using a previous entry?
 			if (existing_idx >= 0)
 			{
 				fi = &Fireball_info[existing_idx];
+				first_time = false;
 			}
 			// we are creating a new entry, so set some defaults
 			else
@@ -315,6 +317,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				fireball_set_default_warp_attributes(Num_fireball_types);
 
 				Num_fireball_types++;
+				first_time = true;
 			}
 
 			// copy over what we already parsed
@@ -322,6 +325,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				strcpy_s(fi->unique_id, unique_id);
 			strcpy_s(fi->lod[0].filename, fireball_filename);
 
+			
 			// Do we have a LOD num?
 			if (optional_string("$LOD:"))
 			{
@@ -329,6 +333,9 @@ static void parse_fireball_tbl(const char *table_filename)
 
 				if (fi->lod_count > MAX_FIREBALL_LOD)
 					fi->lod_count = MAX_FIREBALL_LOD;
+			} else if (first_time) {
+				//assume a LOD of at least 1
+				fi->lod_count = 1;
 			}
 
 			// check for particular lighting color
