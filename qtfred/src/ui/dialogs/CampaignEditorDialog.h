@@ -5,6 +5,10 @@
 #include <QtWidgets/QMenuBar>
 #include <QListWidgetItem>
 
+#include <memory>
+
+#include <mission/dialogs/CampaignEditorDialogModel.h>
+
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -18,16 +22,16 @@ class CampaignEditorDialog : public QDialog
 	Q_OBJECT
 
 public:
-	explicit CampaignEditorDialog(QWidget *parent = nullptr);
+	explicit CampaignEditorDialog(QWidget *parent, EditorViewport *viewport);
 	~CampaignEditorDialog();
 
 private:
-	Ui::CampaignEditorDialog *ui;
-	QMenuBar *menubar;
-	bool changes = false;
+	std::unique_ptr<Ui::CampaignEditorDialog> ui;
+	std::unique_ptr<CampaignEditorDialogModel> model;
+	std::unique_ptr<QMenuBar> menubar;
 
 public slots:
-	void reject();
+	void reject() override; //onClose for dialogs
 
 private slots:
 	void fileNew();

@@ -698,7 +698,7 @@ void FredView::on_actionShips_triggered(bool)
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
-	auto editorCampaign = new dialogs::CampaignEditorDialog(this);
+	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
 	editorCampaign->show();
 }
 void FredView::on_actionObjects_triggered(bool) {

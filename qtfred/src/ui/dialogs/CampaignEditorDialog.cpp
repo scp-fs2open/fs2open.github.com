@@ -7,9 +7,10 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-CampaignEditorDialog::CampaignEditorDialog(QWidget *parent) :
+CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *viewport) :
 	QDialog(parent),
 	ui(new Ui::CampaignEditorDialog),
+	model(new CampaignEditorDialogModel(this, viewport)),
 	menubar(new QMenuBar)
 {
 	ui->setupUi(this);
@@ -61,24 +62,30 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent) :
 	QAction *actInitialStatusWeapons = menInitialStaus->addAction("Weapons");
 	connect(actInitialStatusWeapons, &QAction::triggered, this, &CampaignEditorDialog::initialWeapons);
 
-	ui->mainLayout->insertWidget(0, menubar);
+	ui->mainLayout->insertWidget(0, menubar.get());
 }
 
 CampaignEditorDialog::~CampaignEditorDialog()
 {
-	delete menubar;
-	delete ui;
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
-	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
-	if (changes) {
+	QMessageBox::StandardButton resBtn = QMessageBox::No;
+	if (model->query_modified()) {
 		resBtn = QMessageBox::question( this, "",
-										"This campaign has been modified.  Save changes first?",
+										"This campaign has been modified. Save changes?",
 										QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
 										QMessageBox::Yes);
 	}
+	if (resBtn == QMessageBox::No)
+		model->reject();
 	if (resBtn == QMessageBox::Yes) {
+		bool success = model->apply();
+		QMessageBox::information(nullptr, "", success ? "Successfully saved" : "Error saving");
+		if (!success)
+			return;
+	}
+	if (resBtn == QMessageBox::Yes || resBtn == QMessageBox::No) {
 		for (auto men : menubar->children())
 			dynamic_cast<QWidget*>(men)->setVisible(false);
 		QDialog::reject();
@@ -115,7 +122,7 @@ void CampaignEditorDialog::initialWeapons(){
 
 void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 	QMessageBox::information(this, "", item->text());
-	changes = true;
+	model->modelChanged();
 }
 
 void CampaignEditorDialog::txtNameChanged(const QString changed){
