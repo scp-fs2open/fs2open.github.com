@@ -15,10 +15,20 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent) :
 	ui->setupUi(this);
 
 	connect(ui->listMissions, &QListWidget::itemActivated, this, &CampaignEditorDialog::listedMissionActivated);
+	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
+	connect(ui->cmbType, &QComboBox::currentTextChanged, this, &CampaignEditorDialog::cmbTypeChanged);
+	connect(ui->chkTechReset, &QCheckBox::stateChanged, this, &CampaignEditorDialog::chkTechResetChanged);
+	connect(ui->txaDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaDescrTextChanged);
+	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtBriefingCutsceneChanged);
+	connect(ui->txtMainhall, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtMainhallChanged);
+	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtDebriefingPersonaChanged);
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
 	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
 	connect(ui->btnBranchLoop, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchLoopClicked);
+	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaLoopDescrChanged);
+	connect(ui->txtLoopAnim, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopAnimChanged);
 	connect(ui->btnBrLoopAnim, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopAnimClicked);
+	connect(ui->txtLoopVoice, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopVoiceChanged);
 	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnLoadMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnLoadMissionClicked);
@@ -108,6 +118,34 @@ void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 	changes = true;
 }
 
+void CampaignEditorDialog::txtNameChanged(const QString changed){
+
+}
+
+void CampaignEditorDialog::cmbTypeChanged(const QString changed){
+
+}
+
+void CampaignEditorDialog::chkTechResetChanged(const int changed){
+
+}
+
+void CampaignEditorDialog::txaDescrTextChanged(){
+
+}
+
+void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed){
+
+}
+
+void CampaignEditorDialog::txtMainhallChanged(const QString changed){
+
+}
+
+void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed){
+
+}
+
 void CampaignEditorDialog::btnBranchUpClicked(){
 
 }
@@ -120,7 +158,19 @@ void CampaignEditorDialog::btnBranchLoopClicked(){
 
 }
 
+void CampaignEditorDialog::txaLoopDescrChanged(){
+
+}
+
+void CampaignEditorDialog::txtLoopAnimChanged(const QString changed){
+
+}
+
 void CampaignEditorDialog::btnBrLoopAnimClicked(){
+
+}
+
+void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed){
 
 }
 

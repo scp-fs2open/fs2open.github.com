@@ -42,11 +42,24 @@ private slots:
 
 	void listedMissionActivated(const QListWidgetItem *item);
 
+	void txtNameChanged(const QString changed);
+	void cmbTypeChanged(const QString changed);
+	void chkTechResetChanged(const int changed);
+
+	void txaDescrTextChanged();
+
+	void txtBriefingCutsceneChanged(const QString changed);
+	void txtMainhallChanged(const QString changed);
+	void txtDebriefingPersonaChanged(const QString changed);
+
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();
 	void btnBranchLoopClicked();
 
+	void txaLoopDescrChanged();
+	void txtLoopAnimChanged(const QString changed);
 	void btnBrLoopAnimClicked();
+	void txtLoopVoiceChanged(const QString changed);
 	void btnBrLoopVoiceClicked();
 
 	void btnRealignClicked();

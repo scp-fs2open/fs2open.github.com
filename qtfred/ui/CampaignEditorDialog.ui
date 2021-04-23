@@ -247,8 +247,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>417</width>
-               <height>143</height>
+               <width>452</width>
+               <height>162</height>
               </rect>
              </property>
             </widget>
@@ -435,8 +435,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>451</width>
-          <height>999</height>
+          <width>405</width>
+          <height>997</height>
          </rect>
         </property>
        </widget>
@@ -446,6 +446,30 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>listMissions</tabstop>
+  <tabstop>txtName</tabstop>
+  <tabstop>cmbType</tabstop>
+  <tabstop>chkTechReset</tabstop>
+  <tabstop>txaDescr</tabstop>
+  <tabstop>txtBriefingCutscene</tabstop>
+  <tabstop>txtMainhall</tabstop>
+  <tabstop>txtDebriefingPersona</tabstop>
+  <tabstop>scrBranches</tabstop>
+  <tabstop>btnBranchUp</tabstop>
+  <tabstop>btnBranchDown</tabstop>
+  <tabstop>btnBranchLoop</tabstop>
+  <tabstop>txbMissionDescr</tabstop>
+  <tabstop>txaLoopDescr</tabstop>
+  <tabstop>txtLoopAnim</tabstop>
+  <tabstop>btnBrLoopAnim</tabstop>
+  <tabstop>txtLoopVoice</tabstop>
+  <tabstop>btnBrLoopVoice</tabstop>
+  <tabstop>btnLoadMission</tabstop>
+  <tabstop>btnRealign</tabstop>
+  <tabstop>btnExit</tabstop>
+  <tabstop>scrFlowCampaign</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
