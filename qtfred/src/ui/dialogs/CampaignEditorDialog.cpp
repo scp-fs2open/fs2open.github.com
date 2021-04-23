@@ -126,15 +126,15 @@ void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 }
 
 void CampaignEditorDialog::txtNameChanged(const QString changed){
-
+	model->setCampaignName(changed.toStdString());
 }
 
 void CampaignEditorDialog::cmbTypeChanged(const QString changed){
-
+	model->setCampaignType(changed.toStdString());
 }
 
 void CampaignEditorDialog::chkTechResetChanged(const int changed){
-
+	model->setCampaignTechReset(changed == Qt::Checked);
 }
 
 void CampaignEditorDialog::txaDescrTextChanged(){
@@ -142,15 +142,15 @@ void CampaignEditorDialog::txaDescrTextChanged(){
 }
 
 void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed){
-
+	model->setCurMissionBriefingCutscene(changed.toStdString());
 }
 
 void CampaignEditorDialog::txtMainhallChanged(const QString changed){
-
+	model->setCurMissionMainhall(changed.toStdString());
 }
 
 void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed){
-
+	model->setCurMissionDebriefingPersona(changed.toStdString());
 }
 
 void CampaignEditorDialog::btnBranchUpClicked(){
@@ -170,7 +170,7 @@ void CampaignEditorDialog::txaLoopDescrChanged(){
 }
 
 void CampaignEditorDialog::txtLoopAnimChanged(const QString changed){
-
+	model->setCurLoopAnim(changed.toStdString());
 }
 
 void CampaignEditorDialog::btnBrLoopAnimClicked(){
@@ -178,7 +178,7 @@ void CampaignEditorDialog::btnBrLoopAnimClicked(){
 }
 
 void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed){
-
+	model->setCurLoopVoice(changed.toStdString());
 }
 
 void CampaignEditorDialog::btnBrLoopVoiceClicked(){

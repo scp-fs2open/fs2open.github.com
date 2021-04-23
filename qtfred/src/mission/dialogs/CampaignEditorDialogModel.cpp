@@ -21,6 +21,14 @@ void CampaignEditorDialogModel::reject() {
 }
 
 void CampaignEditorDialogModel::initializeData() {
+	_campaignName = "";
+	_campaignType = "";
+	_campaignTechReset = false;
+
+	_missionData.emplace_back();
+	_it_missionData = _missionData.begin();
+	_loopData.emplace_back();
+	_it_loopData = _loopData.begin();
 
 }
 
