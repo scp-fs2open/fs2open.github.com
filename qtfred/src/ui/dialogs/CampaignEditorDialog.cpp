@@ -32,6 +32,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->txtLoopVoice, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopVoiceChanged);
 	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
+	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
 	connect(ui->btnLoadMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnLoadMissionClicked);
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
@@ -51,18 +52,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	QAction *actFileExit = menFile->addAction("E&xit");
 	connect(actFileExit, &QAction::triggered, this, &QDialog::reject);
 
-	QMenu *menOther = menubar->addMenu("Other");
-	QAction *actOtherErrorChecker = menOther->addAction("Error Checker");
-	actOtherErrorChecker->setShortcut(tr("Alt+H"));
-	connect(actOtherErrorChecker, &QAction::triggered, this, &CampaignEditorDialog::otherErrorChecker);
-
-	QMenu *menInitialStaus = menubar->addMenu("&Initial Status");
-	QAction *actInitialStatusShips = menInitialStaus->addAction("Ships");
-	connect(actInitialStatusShips, &QAction::triggered, this, &CampaignEditorDialog::initialShips);
-	QAction *actInitialStatusWeapons = menInitialStaus->addAction("Weapons");
-	connect(actInitialStatusWeapons, &QAction::triggered, this, &CampaignEditorDialog::initialWeapons);
-
-	ui->mainLayout->insertWidget(0, menubar.get());
+	ui->windowLayout->insertWidget(0, menubar.get());
 }
 
 CampaignEditorDialog::~CampaignEditorDialog()
@@ -105,18 +95,6 @@ void CampaignEditorDialog::fileSave(){
 }
 
 void CampaignEditorDialog::fileSaveAs(){
-
-}
-
-void CampaignEditorDialog::otherErrorChecker(){
-
-}
-
-void CampaignEditorDialog::initialShips(){
-
-}
-
-void CampaignEditorDialog::initialWeapons(){
 
 }
 
@@ -182,6 +160,10 @@ void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed){
 }
 
 void CampaignEditorDialog::btnBrLoopVoiceClicked(){
+
+}
+
+void CampaignEditorDialog::btnErrorCheckerClicked(){
 
 }
 

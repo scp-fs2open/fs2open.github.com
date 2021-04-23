@@ -39,11 +39,6 @@ private slots:
 	void fileSave();
 	void fileSaveAs();
 
-	void otherErrorChecker();
-
-	void initialShips();
-	void initialWeapons();
-
 	void listedMissionActivated(const QListWidgetItem *item);
 
 	void txtNameChanged(const QString changed);
@@ -66,6 +61,7 @@ private slots:
 	void txtLoopVoiceChanged(const QString changed);
 	void btnBrLoopVoiceClicked();
 
+	void btnErrorCheckerClicked();
 	void btnRealignClicked();
 	void btnLoadMissionClicked();
 };
