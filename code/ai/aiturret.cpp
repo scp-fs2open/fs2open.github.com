@@ -146,13 +146,15 @@ bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpo
 			if (in_fov)
 				return true;
 		}
+	} 
+	// if the bbox points method didn't work (or fov_edge_checks isn't on)
+	// try the normal method
 
-	} else {
-		vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
-		size_mod = objp->radius / (dist + objp->radius);
+	vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
+	size_mod = objp->radius / (dist + objp->radius);
 
-		in_fov = turret_fov_test(ss, tvec, &v2e, size_mod);
-	}
+	in_fov = turret_fov_test(ss, tvec, &v2e, size_mod);
+
 
 	return in_fov;
 }
