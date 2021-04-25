@@ -3635,6 +3635,7 @@ int get_sexp()
 
 			if (container_index == -1) {
 				Error(LOCATION, "Attempt to use unknown container '%s'", container);
+				return -1;
 			}
 
 			// advance to the control options, since we'll read them when calling get_sexp() below
@@ -3649,6 +3650,7 @@ int get_sexp()
 				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
 			} else {
 				Error(LOCATION, "Unknown container type %d detected in mission", Sexp_containers[container_index].type);
+				return -1;
 			}
 
 			ignore_white_space();
