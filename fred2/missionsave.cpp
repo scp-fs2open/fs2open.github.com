@@ -1684,6 +1684,8 @@ int CFred_mission_save::save_containers()
 				}
 
 				fout(")\n");
+
+				save_container_options(Sexp_containers[i]);
 			}
 		}
 
@@ -1724,6 +1726,8 @@ int CFred_mission_save::save_containers()
 				}
 
 				fout(")\n");
+
+				save_container_options(Sexp_containers[i]);
 			}
 		}
 
@@ -1732,6 +1736,23 @@ int CFred_mission_save::save_containers()
 	}
 
 	return err;
+}
+
+void CFred_mission_save::save_container_options(const sexp_container &container)
+{
+	if (container.type & SEXP_CONTAINER_NETWORK) {
+		fout("\n+Network Container");
+	}
+
+	if (container.type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE) {
+		fout("\n+Eternal");
+	}
+
+	if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE) {
+		fout("\n+Save On Mission Close");
+	} else if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) {
+		fout("\n+Save On Mission Progress");
+	}
 }
 
 void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines)

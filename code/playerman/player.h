@@ -200,6 +200,9 @@ public:
 	// player-persistent variables - Goober5000
 	SCP_vector<sexp_variable>	variables;
 
+	// player-persistent containers - jg18
+	SCP_vector<sexp_container>	containers;
+
 	SCP_string		death_message;								// Goober5000
 
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).

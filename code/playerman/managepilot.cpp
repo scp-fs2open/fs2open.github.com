@@ -685,6 +685,9 @@ void player::assign(const player *other)
 		variables.push_back(temp);
 	}
 
+	// DISCUSSME: is there a reaosn why this wouldn't work?
+	containers = other->containers;
+
 	death_message = other->death_message;
 
 	memcpy(&lua_ci, &other->lua_ci, sizeof(control_info));

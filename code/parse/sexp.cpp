@@ -3942,15 +3942,40 @@ bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type
 
 	if (optional_string("+Strictly Typed Keys")) {
 		Assertion ((type & SEXP_CONTAINER_MAP), "+Strictly Typed Keys found for container which doesn't use keys!");  
+		Warning(LOCATION, "Container %s is marked for strictly typed keys, which are not yet supported.", name.c_str());
 		type |= SEXP_CONTAINER_STRICTLY_TYPED_KEYS;
 	}
 
 	if (optional_string("+Strictly Typed Data")) {
+		Warning(LOCATION, "Container %s is marked for strictly typed data, which are not yet supported.", name.c_str());
 		type |= SEXP_CONTAINER_STRICTLY_TYPED_DATA;
 	}
 
 	required_string("$Data:");
-	stuff_string_list(data); 
+	stuff_string_list(data);
+
+	if (optional_string("+Network Container")) {
+		Warning(LOCATION, "Container %s is marked as a network container, which is not yet supported.", name.c_str());
+		type |= SEXP_CONTAINER_NETWORK;
+	}
+
+	if (optional_string("+Eternal")) {
+		type |= SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	}
+
+	// campaign-persistent
+	if (optional_string("+Save On Mission Progress")) {
+		type |= SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS;
+	}
+
+	// player-persistent
+	if (optional_string("+Save On Mission Close")) {
+		Assert(!(type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS));
+		type |= SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE;
+	}
+
+	Assert(!(type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE) ||
+		   ((type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) ^ (type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE)));
 
 	return valid;
 }
@@ -31271,6 +31296,18 @@ void update_sexp_containers(SCP_vector<sexp_container>& containers)
 	for (int i = 0; i < (int)Sexp_containers.size(); ++i) {
 		register_new_container_index(Sexp_containers[i].container_name, i);
 	}
+}
+
+// inspired by sexp_campaign_file_variable_count()
+bool sexp_has_persistent_non_eternal_containers()
+{
+	for (const auto &container : Sexp_containers) {
+		if (container.is_persistent() && !container.is_eternal()) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**

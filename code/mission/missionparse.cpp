@@ -5800,6 +5800,67 @@ void parse_sexp_containers()
 		stuff_sexp_map_containers();
 		required_string("$End Maps");
 	}
+
+	// jg18 - persistence-related checking
+	// adapted from parse_variables()
+
+	// do this stuff only when playing through a campaign
+	if (Fred_running || !(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	// first update this mission's containers from campaign-persistent containers
+	for (const auto &current_pc : Campaign.persistent_containers) {
+		int index = get_sexp_container_index(current_pc.container_name.c_str());
+		if (index != -1) {
+			Assert(index >= 0 && index < (int)Sexp_containers.size());
+			auto &container = Sexp_containers[index];
+			// FIXME TODO: whatto do if theres a type mismatch between the two containers?
+
+			// if this is an eternal container that shares the same name as a non-eternal, warn but do nothing
+			if (container.is_eternal()) {
+				error_display(0,
+					"SEXP container %s is marked eternal but has the same name as another persistent container. One of "
+					"these should be renamed to avoid confusion",
+					container.container_name.c_str());
+			} else if (container.is_persistent()) {
+				// FIXME TODO: err what if container is player-persistent and not campaign-persistent?
+				// replace!
+				container = current_pc;
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as another persistent container. One of these should be "
+					"renamed to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
+	}
+
+	// then update this mission's containers from player-persistent containers
+	for (const auto &player_container : Player->containers) {
+		int index = get_sexp_container_index(player_container.container_name.c_str());
+		if (index != -1) {
+			Assert(index >= 0 && index < (int)Sexp_containers.size());
+			auto &container = Sexp_containers[index];
+			// FIXME TODO: whatto do if theres a type mismatch between the two containers?
+
+			if (container.is_persistent()) {
+				// FIXME TODO: err what if container is campaign-persistent and not player-persistent?
+				if (player_container.is_eternal() && !container.is_eternal()) {
+					// use the mission's non-eternal container over the player-persistent eternal container
+					continue;
+				} else {
+					// replace!
+					container = player_container;
+				}
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as an eternal container. One of these should be renamed "
+					"to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
+	}
 }
 
 bool parse_mission(mission *pm, int flags)

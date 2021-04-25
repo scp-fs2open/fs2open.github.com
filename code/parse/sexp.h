@@ -983,6 +983,16 @@ const char *CTEXT(int n);
 #define SEXP_CONTAINER_STRING_KEYS					(1<<7)
 
 #define SEXP_CONTAINER_ALL			(SEXP_CONTAINER_LIST | SEXP_CONTAINER_MAP)
+
+// jg18 - container persistence, applied to sexp_container.type field
+// adapting values from their variable counterparts
+#define SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE		(1<<30)	//	(0x40000000)
+#define SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS		(1<<29)	//	(0x20000000)
+#define SEXP_CONTAINER_NETWORK						(1<<28)	//	(0x10000000)
+#define SEXP_CONTAINER_SAVE_TO_PLAYER_FILE			(1<<27)	//	(0x08000000)
+#define SEXP_CONTAINER_IS_PERSISTENT				(SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS|SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE)
+
+
 // container modifiers - these are the "functions" you can carry out on a SEXP container
 #define SNF_CONTAINER_GET_FIRST				0
 #define SNF_CONTAINER_GET_LAST				1
@@ -1217,6 +1227,16 @@ struct sexp_container
 		return type & SEXP_CONTAINER_MAP;
 	}
 
+	inline bool is_eternal() const
+	{
+		return type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	}
+
+	inline bool is_persistent() const
+	{
+		return type & SEXP_CONTAINER_IS_PERSISTENT;
+	}
+
 	bool empty() const
 	{
 		return (is_list() && list_data.empty()) || (is_map() && map_data.empty());
@@ -1365,10 +1385,13 @@ int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // sexp_containers
+// DISCUSSME: rename to sexp_get_container_index()?
 int get_sexp_container_index(const char* name);
 bool sexp_replace_container_refs_with_values(char *text, size_t max_len);
 bool sexp_replace_container_refs_with_values(SCP_string &text);
+// DISCUSSME: rename to sexp_update_containers()?
 void update_sexp_containers(SCP_vector<sexp_container> &containers);
+bool sexp_has_persistent_non_eternal_containers();
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
