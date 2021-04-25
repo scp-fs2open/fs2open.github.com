@@ -44,8 +44,8 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 	
 	ON_BN_CLICKED(IDC_CONTAINER_LIST, OnTypeList)
 	ON_BN_CLICKED(IDC_CONTAINER_MAP, OnTypeMap)
-	ON_BN_CLICKED(IDC_CONTAINER_NUMBER, OnTypeNumber)
-	ON_BN_CLICKED(IDC_CONTAINER_STRING, OnTypeString)
+	ON_BN_CLICKED(IDC_CONTAINER_NUMBER_DATA, OnTypeNumber)
+	ON_BN_CLICKED(IDC_CONTAINER_STRING_DATA, OnTypeString)
 	
 	ON_LBN_SELCHANGE(IDC_CONTAINER_DATA_LISTER, OnListerSelectionChange)
 
@@ -54,8 +54,8 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 
 	ON_BN_CLICKED(IDC_ADD_NEW_CONTAINER, &CEditContainerDlg::OnBnClickedAddNewContainer)
 
-	ON_BN_CLICKED(IDC_STRING_KEYS, &CEditContainerDlg::OnBnClickedStringKeys)
-	ON_BN_CLICKED(IDC_NUMBER_KEYS, &CEditContainerDlg::OnBnClickedNumberKeys)
+	ON_BN_CLICKED(IDC_CONTAINER_STRING_KEYS, &CEditContainerDlg::OnBnClickedStringKeys)
+	ON_BN_CLICKED(IDC_CONTAINER_NUMBER_KEYS, &CEditContainerDlg::OnBnClickedNumberKeys)
 	ON_BN_CLICKED(IDC_DELETE_CONTAINER, &CEditContainerDlg::OnBnClickedDeleteContainer)
 END_MESSAGE_MAP()
 
@@ -209,8 +209,8 @@ void CEditContainerDlg::OnTypeString()
 
 void CEditContainerDlg::set_data_type()
 {
-	CButton *button_string = (CButton *) GetDlgItem(IDC_CONTAINER_STRING);
-	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER);
+	CButton *button_string = (CButton *) GetDlgItem(IDC_CONTAINER_STRING_DATA);
+	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER_DATA);
 
 	const auto &container = get_current_container();
 	const bool number_selected = container.type & SEXP_CONTAINER_NUMBER_DATA;
@@ -222,8 +222,8 @@ void CEditContainerDlg::set_data_type()
 
 void CEditContainerDlg::set_key_type()
 {
-	CButton *button_string = (CButton *) GetDlgItem(IDC_STRING_KEYS);
-	CButton *button_number = (CButton *) GetDlgItem(IDC_NUMBER_KEYS);
+	CButton *button_string = (CButton *) GetDlgItem(IDC_CONTAINER_STRING_KEYS);
+	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER_KEYS);
 
 	const auto &container = get_current_container();
 	Assert(container.is_map());
@@ -566,12 +566,12 @@ void CEditContainerDlg::update_type_controls()
 	GetDlgItem(IDC_CONTAINER_MAP)->EnableWindow(container_empty);
 
 	// data type
-	GetDlgItem(IDC_CONTAINER_STRING)->EnableWindow(container_empty);
-	GetDlgItem(IDC_CONTAINER_NUMBER)->EnableWindow(container_empty);
+	GetDlgItem(IDC_CONTAINER_STRING_DATA)->EnableWindow(container_empty);
+	GetDlgItem(IDC_CONTAINER_NUMBER_DATA)->EnableWindow(container_empty);
 
 	// key type
-	GetDlgItem(IDC_STRING_KEYS)->EnableWindow(container_empty && map_selected);
-	GetDlgItem(IDC_NUMBER_KEYS)->EnableWindow(container_empty && map_selected);
+	GetDlgItem(IDC_CONTAINER_STRING_KEYS)->EnableWindow(container_empty && map_selected);
+	GetDlgItem(IDC_CONTAINER_NUMBER_KEYS)->EnableWindow(container_empty && map_selected);
 }
 
 void CEditContainerDlg::update_data_entry_controls()
