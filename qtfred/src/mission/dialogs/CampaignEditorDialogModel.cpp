@@ -4,6 +4,11 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
+	branches.emplace_back();
+	it_branches = branches.begin();
+}
+
 CampaignEditorDialogModel::CampaignEditorDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
 	connect(this, &AbstractDialogModel::modelChanged, this, &CampaignEditorDialogModel::flagModified);
@@ -27,9 +32,6 @@ void CampaignEditorDialogModel::initializeData() {
 
 	_missionData.emplace_back();
 	_it_missionData = _missionData.begin();
-	_loopData.emplace_back();
-	_it_loopData = _loopData.begin();
-
 }
 
 

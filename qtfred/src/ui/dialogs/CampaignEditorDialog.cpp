@@ -11,7 +11,9 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	QDialog(parent),
 	ui(new Ui::CampaignEditorDialog),
 	model(new CampaignEditorDialogModel(this, viewport)),
-	menubar(new QMenuBar)
+	menubar(new QMenuBar),
+	_parent(parent),
+	_viewport(viewport)
 {
 	ui->setupUi(this);
 
@@ -25,7 +27,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtDebriefingPersonaChanged);
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
 	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
-	connect(ui->btnBranchLoop, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchLoopClicked);
+	connect(ui->btnBranchLoop, &QPushButton::toggled, this, &CampaignEditorDialog::btnBranchLoopToggled);
 	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaLoopDescrChanged);
 	connect(ui->txtLoopAnim, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopAnimChanged);
 	connect(ui->btnBrLoopAnim, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopAnimClicked);
@@ -60,6 +62,10 @@ CampaignEditorDialog::~CampaignEditorDialog()
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
+	attemptClose();
+}
+
+bool CampaignEditorDialog::attemptClose() {
 	QMessageBox::StandardButton resBtn = QMessageBox::No;
 	if (model->query_modified()) {
 		resBtn = QMessageBox::question( this, "",
@@ -73,17 +79,22 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 		bool success = model->apply();
 		QMessageBox::information(nullptr, "", success ? "Successfully saved" : "Error saving");
 		if (!success)
-			return;
+			return false;
 	}
 	if (resBtn == QMessageBox::Yes || resBtn == QMessageBox::No) {
 		for (auto men : menubar->children())
 			dynamic_cast<QWidget*>(men)->setVisible(false);
 		QDialog::reject();
+		deleteLater();
+		return true;
 	}
+	return false;
 }
 
 void CampaignEditorDialog::fileNew(){
-
+	if (! attemptClose()) return;
+	auto editorCampaign = new CampaignEditorDialog(_parent, _viewport);
+	editorCampaign->show();
 }
 
 void CampaignEditorDialog::fileOpen(){
@@ -116,7 +127,7 @@ void CampaignEditorDialog::chkTechResetChanged(const int changed){
 }
 
 void CampaignEditorDialog::txaDescrTextChanged(){
-
+	model->setCampaignDescr(ui->txaDescr->toPlainText().toStdString());
 }
 
 void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed){
@@ -139,12 +150,12 @@ void CampaignEditorDialog::btnBranchDownClicked(){
 
 }
 
-void CampaignEditorDialog::btnBranchLoopClicked(){
-
+void CampaignEditorDialog::btnBranchLoopToggled(bool checked){
+	model->setCurBrIsLoop(checked);
 }
 
 void CampaignEditorDialog::txaLoopDescrChanged(){
-
+	model->setCurLoopDescr(ui->txaLoopDescr->toPlainText().toStdString());
 }
 
 void CampaignEditorDialog::txtLoopAnimChanged(const QString changed){

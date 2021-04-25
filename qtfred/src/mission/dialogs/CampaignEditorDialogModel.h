@@ -11,18 +11,6 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 {
 	Q_OBJECT
 public:
-	struct CampaignMissionData {
-
-		SCP_string briefingCutscene = "";
-		SCP_string mainhall = "";
-		SCP_string debriefingPersona = "";
-	};
-
-	struct CampaignLoopData	{
-
-		SCP_string anim = "";
-		SCP_string voice = "";
-	};
 
 	explicit CampaignEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	~CampaignEditorDialogModel() override = default;
@@ -33,6 +21,7 @@ public:
 	const SCP_string& getCampaignName() const { return _campaignName; }
 	const SCP_string& getCampaignType() const { return _campaignType; }
 	bool getCampaignTechReset() const { return _campaignTechReset; }
+	const SCP_string& getCampaignDescr() const { return _campaignDescr; }
 
 	const SCP_string& getCurMissionBriefingCutscene() const {
 		return _it_missionData->briefingCutscene; }
@@ -41,8 +30,15 @@ public:
 	const SCP_string& getCurMissionDebriefingPersona() const {
 		return _it_missionData->debriefingPersona; }
 
-	const SCP_string& getCurLoopAnim() const { return _it_loopData->anim; }
-	const SCP_string& getCurLoopVoice() const { return _it_loopData->voice; }
+	bool getCurBrIsLoop() const {
+		return _it_missionData->it_branches->isLoop; }
+
+	const SCP_string& getCurLoopDescr() const {
+		return _it_missionData->it_branches->loopData.descr; }
+	const SCP_string& getCurLoopAnim() const {
+		return _it_missionData->it_branches->loopData.anim; }
+	const SCP_string& getCurLoopVoice() const {
+		return _it_missionData->it_branches->loopData.voice; }
 
 	void setCampaignName(const SCP_string& campaignName) {
 		modify<SCP_string>(_campaignName, campaignName); }
@@ -50,6 +46,8 @@ public:
 		modify<SCP_string>(_campaignType, campaignType); }
 	void setCampaignTechReset(bool campaignTechReset) {
 		modify<bool>(_campaignTechReset, campaignTechReset); }
+	void setCampaignDescr(const SCP_string& campaignDescr) {
+		modify<SCP_string>(_campaignDescr, campaignDescr); }
 
 	void setCurMissionBriefingCutscene(const SCP_string& briefingCutscene) {
 		modify<SCP_string>(_it_missionData->mainhall, briefingCutscene); }
@@ -58,10 +56,15 @@ public:
 	void setCurMissionDebriefingPersona(const SCP_string& debriefingPersona) {
 		modify<SCP_string>(_it_missionData->debriefingPersona, debriefingPersona); }
 
+	void setCurBrIsLoop(bool isLoop) {
+		modify<bool>(_it_missionData->it_branches->isLoop, isLoop);}
+
+	void setCurLoopDescr(const SCP_string& descr) {
+		modify<SCP_string>(_it_missionData->it_branches->loopData.descr, descr); }
 	void setCurLoopAnim(const SCP_string& anim) {
-		modify<SCP_string>(_it_loopData->anim, anim); }
+		modify<SCP_string>(_it_missionData->it_branches->loopData.anim, anim); }
 	void setCurLoopVoice(const SCP_string& voice) {
-		modify<SCP_string>(_it_loopData->voice, voice); }
+		modify<SCP_string>(_it_missionData->it_branches->loopData.voice, voice); }
 
 	bool query_modified() const { return modified; }
 private slots:
@@ -75,15 +78,36 @@ private:
 
 	bool modified = false;
 
+	struct CampaignLoopData	{
+
+		SCP_string descr = "";
+		SCP_string anim = "";
+		SCP_string voice = "";
+	};
+
+	struct CampaignBranchData {
+
+		bool isLoop = false;
+		CampaignLoopData loopData{};
+	};
+
+	struct CampaignMissionData {
+		explicit CampaignMissionData();
+
+		SCP_string briefingCutscene = "";
+		SCP_string mainhall = "";
+		SCP_string debriefingPersona = "";
+		SCP_vector<CampaignBranchData>::iterator it_branches;
+		SCP_vector<CampaignBranchData> branches;
+	};
+
+	SCP_string _campaignDescr;
 	SCP_string _campaignName;
 	SCP_string _campaignType;
 	bool _campaignTechReset;
 
-	SCP_vector<CampaignMissionData> _missionData;
 	SCP_vector<CampaignMissionData>::iterator _it_missionData;
-	SCP_vector<CampaignLoopData> _loopData;
-	SCP_vector<CampaignLoopData>::iterator _it_loopData;
-
+	SCP_vector<CampaignMissionData> _missionData;
 };
 
 

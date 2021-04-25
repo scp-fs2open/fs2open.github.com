@@ -30,6 +30,11 @@ private:
 	std::unique_ptr<CampaignEditorDialogModel> model;
 	std::unique_ptr<QMenuBar> menubar;
 
+	QWidget *const _parent;
+	EditorViewport *const _viewport;
+
+	bool attemptClose();
+
 public slots:
 	void reject() override; //onClose for dialogs
 
@@ -53,7 +58,7 @@ private slots:
 
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();
-	void btnBranchLoopClicked();
+	void btnBranchLoopToggled(bool checked);
 
 	void txaLoopDescrChanged();
 	void txtLoopAnimChanged(const QString changed);

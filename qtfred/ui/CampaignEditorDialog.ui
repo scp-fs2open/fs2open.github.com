@@ -26,7 +26,7 @@
    <item>
     <widget class="QTabWidget" name="mainTabs">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="campaignSpecs">
       <attribute name="title">
@@ -344,6 +344,9 @@
                   <widget class="QPushButton" name="btnBranchLoop">
                    <property name="text">
                     <string>Toggle Loop</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
