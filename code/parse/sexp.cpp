@@ -24235,8 +24235,8 @@ bool sexp_replace_container_refs_with_values(char *text, size_t max_len)
 
 	if (replaced_anything) {
 		Assert(max_len > 0);
-		// copying up to `max_len - 1` chars will auto-truncate if needed
 		strncpy(text, text_str.c_str(), max_len - 1);
+		text[max_len - 1] = 0;
 	}
 
 	return replaced_anything;
