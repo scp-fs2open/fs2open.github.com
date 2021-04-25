@@ -675,15 +675,6 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		// note: generic anims are not currently ever non-streaming in FSO
 		// I'm not even sure that the existing ani/eff code would allow non-streaming generic anims
 		generic_render_png_stream(ga);
-
-		//generic_render_png_stream can, in some cases, like displaying the first image of the start
-		//of an ANPG that plays backwards, decide to advance the stream in a different direction than
-		//the current_frame counter in/decrementation of this method. Said change of the frame counter
-		//is still necessary for correct handling of not rendering the same frame twice, hence why
-		//the current_frame counter needs to be synchronized to the actual apng frame counter
-		//after the the apng stream rendering is complete
-		ga->current_frame = ga->png.anim->current_frame;
-
 		gr_set_bitmap(ga->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
 	}
 }
