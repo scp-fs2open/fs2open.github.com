@@ -916,7 +916,7 @@ SCP_vector<sexp_container> Sexp_containers;
 // so every call to get_sexp_container_index() would construct a string before lookup (ugh)
 static SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
 static constexpr char SEXP_CONTAINER_CHAR = '&';
-static constexpr char *Empty_str = "";
+static const char *Empty_str = "";
 
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
 char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
@@ -3400,7 +3400,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_LIST_MODIFIER:
 			case OPF_MAP_KEY:
 				// TODO : Add error code here!
-				{int todo = 0;}
 				break;
 
 			default:
@@ -3990,8 +3989,12 @@ void stuff_sexp_map_containers()
 		new_map.type = SEXP_CONTAINER_MAP;
 		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)){
 			if (parsed_data.size() % 2 != 0) {
-				Warning(LOCATION, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size() );
-				log_printf(LOGFILE_EVENT_LOG, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size());
+				Warning(LOCATION,
+					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
+					(int)parsed_data.size());
+				log_printf(LOGFILE_EVENT_LOG,
+					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
+					(int)parsed_data.size());
 				Sexp_containers.pop_back();
 			} else {
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
@@ -23794,7 +23797,10 @@ void sexp_remove_from_map(int node)
 	while (node != -1) {
 		entry_to_remove = CTEXT(node);
 		if (Sexp_containers[index].map_data.erase(entry_to_remove) == 0) {
-			Warning(LOCATION, "Container %s does not contain a key called %s. Can not use the remove-from-map SEXP to remove it", container_name, entry_to_remove);
+			Warning(LOCATION,
+				"Container %s does not contain a key called %s. Can not use the remove-from-map SEXP to remove it",
+				container_name,
+				entry_to_remove.c_str());
 			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with a key which is not in the map");
 		}
 
@@ -23882,7 +23888,7 @@ int sexp_get_container_size(int node)
 		return 0;
 	}
 
-	Assert(index < Sexp_containers.size());
+	Assert(index < (int)Sexp_containers.size());
 
 	const auto &container = Sexp_containers[index];
 	if (container.is_map()) {
@@ -23891,7 +23897,7 @@ int sexp_get_container_size(int node)
 		return (int)container.list_data.size();
 	}
 
-	Error(LOCATION, "Unknown container type. Container is not a valid type", container.type);
+	Error(LOCATION, "Invalid container type: %d", container.type);
 	return 0;
 }
 
@@ -23905,7 +23911,7 @@ void sexp_clear_container (int node)
 		return;
 	}
 
-	Assert(index < Sexp_containers.size());
+	Assert(index < (int)Sexp_containers.size());
 
 	auto &container = Sexp_containers[index];
 	if (container.is_map()) {
@@ -24196,9 +24202,9 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 				if (num_replacements >= 50) {
 					Warning(LOCATION,
 						"sexp_replace_container_refs_with_values() found potential multidimensionality infinite loop "
-						"in '%s' at position %u.",
+						"in '%s' at position %d.",
 						text.c_str(),
-						lookHere);
+						(int)lookHere);
 					break;
 				}
 
@@ -24220,7 +24226,6 @@ bool sexp_replace_container_refs_with_values(SCP_string &text)
 bool sexp_replace_container_refs_with_values(char *text, size_t max_len)
 {
 	Assert(text != nullptr);
-	Assert(max_len >= 0);
 
 	SCP_string text_str = text;
 
@@ -24229,7 +24234,7 @@ bool sexp_replace_container_refs_with_values(char *text, size_t max_len)
 	if (replaced_anything) {
 		Assert(max_len > 0);
 		// copying up to `max_len - 1` chars will auto-truncate if needed
-		strncpy_s(text, max_len, text_str.c_str(), max_len - 1);
+		strncpy(text, text_str.c_str(), max_len - 1);
 	}
 
 	return replaced_anything;
@@ -31078,7 +31083,10 @@ int container_push_return_string(const SCP_string &result)
 
 const char *ctext_for_containers(int node, int container_index)
 {
-	Assertion(((container_index > -1) && (container_index < (int)Sexp_containers.size())), "ctext_for_containers() called for index %d when there are only %d containers", container_index, Sexp_containers.size());
+	Assertion(((container_index > -1) && (container_index < (int)Sexp_containers.size())),
+		"ctext_for_containers() called for index %d when there are only %d containers",
+		container_index,
+		(int)Sexp_containers.size());
 
 	SCP_string result;
 
