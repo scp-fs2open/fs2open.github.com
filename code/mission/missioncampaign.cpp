@@ -1039,10 +1039,6 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 			for (auto& current_rav : Campaign.red_alert_variables) {
 				Campaign.persistent_variables.push_back(current_rav);
 			}
-			// DISCUSSME: will a simple persistent_containers = red_alert_containers not work?
-			for (const auto &current_rac : Campaign.red_alert_containers) {
-				Campaign.persistent_containers.emplace_back(current_rac);
-			}
 		}
 
 		for (i = 0; i < sexp_variable_count(); i++) {
@@ -1088,41 +1084,52 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	}
 }
 
-// adapted from mission_campaign_store_variables()
-void mission_campaign_store_containers(int persistence_type)
+// jg18 - adapted from mission_campaign_store_variables()
+void mission_campaign_store_containers(int persistence_type, bool store_red_alert)
 {
-	if (sexp_has_persistent_non_eternal_containers()) {
-		for (const auto &container : Sexp_containers) {
-			if (!container.is_eternal()) {
-				if (container.type & persistence_type) {
-					// see if we already have a container with this name
-					auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
-						Campaign.persistent_containers.end(),
-						[container](const sexp_container& cpc) {
-							return !stricmp(container.container_name.c_str(), cpc.container_name.c_str());
-						});
+	if (!sexp_has_persistent_non_eternal_containers()) {
+		// nothing to do
+		return;
+	}
 
-					if (cpc_it != Campaign.persistent_containers.end()) {
-						*cpc_it = container;
-					} else {
-						// new container
-						Campaign.persistent_containers.emplace_back(container);
-					}
-				}
-			} else if ((persistence_type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) && (container.type & persistence_type) && container.is_eternal()) {
-				// we might need to save some eternal player-persistent containers
-				auto ppc_it = std::find_if(Player->containers.begin(),
-					Player->containers.end(),
-					[container](const sexp_container &ppc) {
-						return !stricmp(container.container_name.c_str(), ppc.container_name.c_str());
+	if (store_red_alert) {
+		// DISCUSSME: will a simple persistent_containers = red_alert_containers not work?
+		for (const auto &current_rac : Campaign.red_alert_containers) {
+			Campaign.persistent_containers.emplace_back(current_rac);
+		}
+	}
+
+	for (const auto &container : Sexp_containers) {
+		if (!container.is_eternal()) {
+			if (container.type & persistence_type) {
+				// see if we already have a container with this name
+				auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+					Campaign.persistent_containers.end(),
+					[container](const sexp_container& cpc) {
+						return !stricmp(container.container_name.c_str(), cpc.container_name.c_str());
 					});
 
-				if (ppc_it != Player->containers.end()) {
-					*ppc_it = container;
+				if (cpc_it != Campaign.persistent_containers.end()) {
+					*cpc_it = container;
 				} else {
-					// new player-persistent container
-					Player->containers.emplace_back(container);
+					// new container
+					Campaign.persistent_containers.emplace_back(container);
 				}
+			}
+		} else if ((persistence_type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) &&
+				   (container.type & persistence_type) && container.is_eternal()) {
+			// we might need to save some eternal player-persistent containers
+			auto ppc_it = std::find_if(Player->containers.begin(),
+				Player->containers.end(),
+				[container](const sexp_container& ppc) {
+					return !stricmp(container.container_name.c_str(), ppc.container_name.c_str());
+				});
+
+			if (ppc_it != Player->containers.end()) {
+				*ppc_it = container;
+			} else {
+				// new player-persistent container
+				Player->containers.emplace_back(container);
 			}
 		}
 	}
@@ -1915,7 +1922,7 @@ void mission_campaign_save_on_close_variables()
 	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);
 }
 
-// jg18 - adapted from 
+// jg18 - adapted from mission_campaign_save_on_close_variables()
 void mission_campaign_save_on_close_containers()
 {
 	// make sure we are actually playing a single-player campaign
@@ -1948,7 +1955,7 @@ void mission_campaign_save_on_close_containers()
 	}
 
 	// store any non-eternal on mission close containers
-	mission_campaign_store_containers(SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE);
+	mission_campaign_store_containers(SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE, false);
 }
 
 void mission_campaign_load_failure_popup()

@@ -223,7 +223,7 @@ void mission_campaign_store_goals_and_events();
 void mission_campaign_store_variables(int persistence_type, bool store_red_alert = true);
 
 // stores containers which will be saved only on mission progression
-void mission_campaign_store_containers(int persistence_type);
+void mission_campaign_store_containers(int persistence_type, bool store_red_alert = true);
 
 // does both of the above
 void mission_campaign_store_goals_and_events_and_variables();
