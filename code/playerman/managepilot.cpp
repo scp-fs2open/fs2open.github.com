@@ -116,6 +116,7 @@ void init_new_pilot(player *p, int reset)
 		snd_set_voice_volume(Default_voice_volume);
 
 		p->variables.clear();
+		p->containers.clear();
 	}
 
 	// unassigned squadron
@@ -529,6 +530,7 @@ void player::reset()
 	show_skip_popup = 0;
 
 	variables.clear();
+	containers.clear();
 
 	death_message = "";
 

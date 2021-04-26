@@ -139,6 +139,7 @@ class pilotfile {
 		void plr_read_stats_multi();
 		void plr_read_multiplayer();
 		void plr_read_variables();
+		void plr_read_containers();
 		void plr_read_hud();
 		void plr_read_controls();
 
@@ -149,6 +150,7 @@ class pilotfile {
 		void plr_write_stats_multi();
 		void plr_write_multiplayer();
 		void plr_write_variables();
+		void plr_write_containers();
 		void plr_write_hud();
 		void plr_write_controls();
 
