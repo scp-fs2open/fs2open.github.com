@@ -883,6 +883,11 @@ int mission_campaign_previous_mission()
 	for (auto& ra_variable : Campaign.red_alert_variables) {
 		Campaign.persistent_variables.push_back(ra_variable);
 	}
+
+	// copy backed up containers over  
+	for (const auto &ra_container : Campaign.red_alert_containers) {
+		Campaign.persistent_containers.emplace_back(ra_container);
+	}
 	
 	Pilot.save_savefile();
 
@@ -1033,6 +1038,10 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 		if (store_red_alert) {
 			for (auto& current_rav : Campaign.red_alert_variables) {
 				Campaign.persistent_variables.push_back(current_rav);
+			}
+			// DISCUSSME: will a simple persistent_containers = red_alert_containers not work?
+			for (const auto &current_rac : Campaign.red_alert_containers) {
+				Campaign.persistent_containers.emplace_back(current_rac);
 			}
 		}
 
@@ -1315,6 +1324,8 @@ void mission_campaign_clear()
 	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
 	Campaign.persistent_variables.clear(); 
 	Campaign.red_alert_variables.clear();
+	Campaign.persistent_containers.clear();
+	Campaign.red_alert_containers.clear();
 }
 
 /**
