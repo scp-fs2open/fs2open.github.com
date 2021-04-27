@@ -4,36 +4,53 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
+
+
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
 	branches.emplace_back();
 	it_branches = branches.begin();
 }
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(QObject* parent, EditorViewport* viewport) :
-	AbstractDialogModel(parent, viewport) {
+CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport) :
+	AbstractDialogModel(parent, viewport),
+	_parent(parent),
+	_campaignTechReset(false)
+{
 	connect(this, &AbstractDialogModel::modelChanged, this, &CampaignEditorDialogModel::flagModified);
 
-	initializeData();
+	_missionData.emplace_back();
+	_it_missionData = _missionData.begin();
 }
 
 bool CampaignEditorDialogModel::apply() {
-
-	return false;
+	return saveTo(_currentFile);
 }
 
 void CampaignEditorDialogModel::reject() {
 	// nothing to do if the dialog is created each time it's opened
 }
 
-void CampaignEditorDialogModel::initializeData() {
-	_campaignName = "";
-	_campaignType = "";
-	_campaignTechReset = false;
+bool CampaignEditorDialogModel::loadCurrentFile() {
+	if (_currentFile.isEmpty())
+		return false;
+	//QFile f(_currentFile);
 
-	_missionData.emplace_back();
-	_it_missionData = _missionData.begin();
+	return true;
 }
 
+bool CampaignEditorDialogModel::saveTo(const QString &file) {
+	bool success = _saveTo(file);
+	QMessageBox::information(_parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	return success;
+}
+
+bool CampaignEditorDialogModel::_saveTo(const QString &file) {
+	if (file.isEmpty())
+		return false;
+	//QFile f(file);
+
+	return false;
+}
 
 }
 }

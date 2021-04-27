@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QtWidgets/QMenuBar>
 #include <QListWidgetItem>
+#include <QMessageBox>
 
 #include <memory>
 
@@ -16,6 +17,8 @@ namespace dialogs {
 namespace Ui {
 	class CampaignEditorDialog;
 }
+
+class CampaignEditorDialogModel;
 
 class CampaignEditorDialog : public QDialog
 {
@@ -33,16 +36,19 @@ private:
 	QWidget *const _parent;
 	EditorViewport *const _viewport;
 
-	bool attemptClose();
+	bool questionSaveChanges();
 
 public slots:
 	void reject() override; //onClose for dialogs
 
 private slots:
+	void updateUI();
+
 	void fileNew();
 	void fileOpen();
-	void fileSave();
-	void fileSaveAs();
+	bool fileSave();
+	bool fileSaveAs();
+	void fileSaveCopyAs();
 
 	void listedMissionActivated(const QListWidgetItem *item);
 

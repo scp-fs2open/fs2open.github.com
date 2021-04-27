@@ -1,7 +1,8 @@
 #include "CampaignEditorDialog.h"
 #include "ui_CampaignEditorDialog.h"
 
-#include <QMessageBox>
+#include "ui/util/SignalBlockers.h"
+#include <QFileDialog>
 
 namespace fso {
 namespace fred {
@@ -38,20 +39,24 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->btnLoadMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnLoadMissionClicked);
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
-	QMenu *menFile = menubar->addMenu("&File");
-	QAction *actFileNew = menFile->addAction("&New");
+	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
+
+	QMenu *menFile = menubar->addMenu(tr("&File"));
+	QAction *actFileNew = menFile->addAction(tr("&New"));
 	actFileNew->setShortcut(tr("Ctrl+N"));
 	connect(actFileNew, &QAction::triggered, this, &CampaignEditorDialog::fileNew);
-	QAction *actFileOpen = menFile->addAction("&Open...");
+	QAction *actFileOpen = menFile->addAction(tr("&Open..."));
 	actFileOpen->setShortcut(tr("Ctrl+O"));
 	connect(actFileOpen, &QAction::triggered, this, &CampaignEditorDialog::fileOpen);
-	QAction *actFileSave = menFile->addAction("&Save");
+	QAction *actFileSave = menFile->addAction(tr("&Save"));
 	actFileSave->setShortcut(tr("Ctrl+S"));
 	connect(actFileSave, &QAction::triggered, this, &CampaignEditorDialog::fileSave);
-	QAction *actFileSaveas = menFile->addAction("Save &As...");
-	connect(actFileSaveas, &QAction::triggered, this, &CampaignEditorDialog::fileSaveAs);
+	QAction *actFileSaveAs = menFile->addAction(tr("Save &as..."));
+	connect(actFileSaveAs, &QAction::triggered, this, &CampaignEditorDialog::fileSaveAs);
+	QAction *actFileSaveCopyAs = menFile->addAction(tr("Save &Copy as..."));
+	connect(actFileSaveCopyAs, &QAction::triggered, this, &CampaignEditorDialog::fileSaveCopyAs);
 	menFile->addSeparator();
-	QAction *actFileExit = menFile->addAction("E&xit");
+	QAction *actFileExit = menFile->addAction(tr("E&xit"));
 	connect(actFileExit, &QAction::triggered, this, &QDialog::reject);
 
 	ui->windowLayout->insertWidget(0, menubar.get());
@@ -62,51 +67,90 @@ CampaignEditorDialog::~CampaignEditorDialog()
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
-	attemptClose();
+	if (! questionSaveChanges())
+		return;
+
+	for (auto men : menubar->children())
+		dynamic_cast<QWidget*>(men)->setVisible(false);
+	QDialog::reject();
+	deleteLater();
 }
 
-bool CampaignEditorDialog::attemptClose() {
-	QMessageBox::StandardButton resBtn = QMessageBox::No;
+void CampaignEditorDialog::updateUI() {
+	util::SignalBlockers blockers(this);
+
+
+}
+
+bool CampaignEditorDialog::questionSaveChanges() {
+	QMessageBox::StandardButton resBtn = QMessageBox::Discard;
 	if (model->query_modified()) {
-		resBtn = QMessageBox::question( this, "",
-										"This campaign has been modified. Save changes?",
-										QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
-										QMessageBox::Yes);
+		resBtn = QMessageBox::question( this, tr("Unsaved changes"),
+										tr("This campaign has been modified. Save changes?"),
+										QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save,
+										QMessageBox::Save);
 	}
-	if (resBtn == QMessageBox::No)
+	if (resBtn == QMessageBox::Discard)
 		model->reject();
-	if (resBtn == QMessageBox::Yes) {
-		bool success = model->apply();
-		QMessageBox::information(nullptr, "", success ? "Successfully saved" : "Error saving");
-		if (!success)
-			return false;
-	}
-	if (resBtn == QMessageBox::Yes || resBtn == QMessageBox::No) {
-		for (auto men : menubar->children())
-			dynamic_cast<QWidget*>(men)->setVisible(false);
-		QDialog::reject();
-		deleteLater();
-		return true;
-	}
-	return false;
+	if (resBtn == QMessageBox::Save && ! fileSave())
+		return false;
+	return resBtn != QMessageBox::Cancel;
 }
 
-void CampaignEditorDialog::fileNew(){
-	if (! attemptClose()) return;
-	auto editorCampaign = new CampaignEditorDialog(_parent, _viewport);
-	editorCampaign->show();
+void CampaignEditorDialog::fileNew() {
+	if (! questionSaveChanges())
+		return;
+
+	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport));
+	updateUI();
 }
 
-void CampaignEditorDialog::fileOpen(){
+void CampaignEditorDialog::fileOpen() {
+	if (! questionSaveChanges())
+		return;
+	QString oldFile = model->getCurrentFile();
 
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), oldFile, tr("FS2 campaigns (*.fc2)"));
+	if (pathName.isEmpty())
+		return;
+
+	model->setCurrentFile(pathName);
+	if (! model->loadCurrentFile())
+		model->setCurrentFile(oldFile);
+	updateUI();
 }
 
-void CampaignEditorDialog::fileSave(){
+bool CampaignEditorDialog::fileSave() {
+	if (model->getCurrentFile().isEmpty())
+		return fileSaveAs();
 
+	bool res = model->apply();
+	updateUI();
+	return res;
 }
 
-void CampaignEditorDialog::fileSaveAs(){
+bool CampaignEditorDialog::fileSaveAs() {
+	QString oldFile = model->getCurrentFile();
 
+	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), oldFile, tr("FS2 campaigns (*.fc2)"));
+	if (pathName.isEmpty())
+		return false;
+
+
+	model->setCurrentFile(pathName);
+	bool res = model->apply();
+	if (! res)
+		model->setCurrentFile(oldFile);
+	updateUI();
+	return res;
+}
+
+void CampaignEditorDialog::fileSaveCopyAs() {
+	QString pathName = QFileDialog::getSaveFileName(this, tr("Save copy as"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
+	if (pathName.isEmpty())
+		return;
+
+	model->saveTo(pathName);
 }
 
 void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
@@ -114,75 +158,75 @@ void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 	model->modelChanged();
 }
 
-void CampaignEditorDialog::txtNameChanged(const QString changed){
+void CampaignEditorDialog::txtNameChanged(const QString changed) {
 	model->setCampaignName(changed.toStdString());
 }
 
-void CampaignEditorDialog::cmbTypeChanged(const QString changed){
+void CampaignEditorDialog::cmbTypeChanged(const QString changed) {
 	model->setCampaignType(changed.toStdString());
 }
 
-void CampaignEditorDialog::chkTechResetChanged(const int changed){
+void CampaignEditorDialog::chkTechResetChanged(const int changed) {
 	model->setCampaignTechReset(changed == Qt::Checked);
 }
 
-void CampaignEditorDialog::txaDescrTextChanged(){
+void CampaignEditorDialog::txaDescrTextChanged() {
 	model->setCampaignDescr(ui->txaDescr->toPlainText().toStdString());
 }
 
-void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed){
+void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed) {
 	model->setCurMissionBriefingCutscene(changed.toStdString());
 }
 
-void CampaignEditorDialog::txtMainhallChanged(const QString changed){
+void CampaignEditorDialog::txtMainhallChanged(const QString changed) {
 	model->setCurMissionMainhall(changed.toStdString());
 }
 
-void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed){
+void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed) {
 	model->setCurMissionDebriefingPersona(changed.toStdString());
 }
 
-void CampaignEditorDialog::btnBranchUpClicked(){
+void CampaignEditorDialog::btnBranchUpClicked() {
 
 }
 
-void CampaignEditorDialog::btnBranchDownClicked(){
+void CampaignEditorDialog::btnBranchDownClicked() {
 
 }
 
-void CampaignEditorDialog::btnBranchLoopToggled(bool checked){
+void CampaignEditorDialog::btnBranchLoopToggled(bool checked) {
 	model->setCurBrIsLoop(checked);
 }
 
-void CampaignEditorDialog::txaLoopDescrChanged(){
+void CampaignEditorDialog::txaLoopDescrChanged() {
 	model->setCurLoopDescr(ui->txaLoopDescr->toPlainText().toStdString());
 }
 
-void CampaignEditorDialog::txtLoopAnimChanged(const QString changed){
+void CampaignEditorDialog::txtLoopAnimChanged(const QString changed) {
 	model->setCurLoopAnim(changed.toStdString());
 }
 
-void CampaignEditorDialog::btnBrLoopAnimClicked(){
+void CampaignEditorDialog::btnBrLoopAnimClicked() {
 
 }
 
-void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed){
+void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed) {
 	model->setCurLoopVoice(changed.toStdString());
 }
 
-void CampaignEditorDialog::btnBrLoopVoiceClicked(){
+void CampaignEditorDialog::btnBrLoopVoiceClicked() {
 
 }
 
-void CampaignEditorDialog::btnErrorCheckerClicked(){
+void CampaignEditorDialog::btnErrorCheckerClicked() {
 
 }
 
-void CampaignEditorDialog::btnRealignClicked(){
+void CampaignEditorDialog::btnRealignClicked() {
 
 }
 
-void CampaignEditorDialog::btnLoadMissionClicked(){
+void CampaignEditorDialog::btnLoadMissionClicked() {
 
 }
 
