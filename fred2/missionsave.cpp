@@ -1741,18 +1741,20 @@ int CFred_mission_save::save_containers()
 void CFred_mission_save::save_container_options(const sexp_container &container)
 {
 	if (container.type & SEXP_CONTAINER_NETWORK) {
-		fout("\n+Network Container");
+		fout("+Network Container\n");
 	}
 
-	if (container.type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE) {
-		fout("\n+Eternal");
+	if (container.is_eternal()) {
+		fout("+Eternal\n");
 	}
 
 	if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE) {
 		fout("\n+Save On Mission Close");
 	} else if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) {
-		fout("\n+Save On Mission Progress");
+		fout("+Save On Mission Progress\n");
 	}
+
+	fout("\n");
 }
 
 void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines)
