@@ -18,6 +18,8 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 {
 	ui->setupUi(this);
 
+	//TODO populate with constants
+
 	connect(ui->listMissions, &QListWidget::itemActivated, this, &CampaignEditorDialog::listedMissionActivated);
 	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
 	connect(ui->cmbType, &QComboBox::currentTextChanged, this, &CampaignEditorDialog::cmbTypeChanged);
@@ -60,6 +62,8 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(actFileExit, &QAction::triggered, this, &QDialog::reject);
 
 	ui->windowLayout->insertWidget(0, menubar.get());
+
+	updateUI();
 }
 
 CampaignEditorDialog::~CampaignEditorDialog()
@@ -78,6 +82,33 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 
 void CampaignEditorDialog::updateUI() {
 	util::SignalBlockers blockers(this);
+
+	QString file = model->getCurrentFile();
+	this->setWindowTitle(file.isEmpty() ? "Untitled" : file);
+
+	ui->txtName->setText(QString::fromStdString(model->getCampaignName()));
+	ui->cmbType->setCurrentText(QString::fromStdString(model->getCampaignType()));
+	ui->chkTechReset->setChecked(model->getCampaignTechReset());
+
+	ui->txaDescr->setPlainText(QString::fromStdString(model->getCampaignDescr()));
+
+	ui->txtBriefingCutscene->setText(QString::fromStdString(model->getCurMissionBriefingCutscene()));
+	ui->txtMainhall->setText(QString::fromStdString(model->getCurMissionMainhall()));
+	ui->txtDebriefingPersona->setText(QString::fromStdString(model->getCurMissionDebriefingPersona()));
+
+	//ui->btnBranchUp->setEnabled()
+	//ui->btnBranchDown->setEnabled()
+	//ui->btnBranchLoop->setEnabled()
+
+	ui->txaLoopDescr->setPlainText(QString::fromStdString(model->getCurLoopDescr()));
+	ui->txtLoopAnim->setText(QString::fromStdString(model->getCurLoopAnim()));
+	//ui->btnBrLoopAnim->setEnabled()
+	ui->txtLoopVoice->setText(QString::fromStdString(model->getCurLoopVoice()));
+	//ui->btnBrLoopVoice->setEnabled()
+
+	//ui->btnErrorChecker->setEnabled()
+	//ui->btnRealign->setEnabled()
+	//ui->btnLoadMission->setEnabled()
 
 
 }
@@ -155,7 +186,7 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 
 void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 	QMessageBox::information(this, "", item->text());
-	model->modelChanged();
+	//TODO select current mission
 }
 
 void CampaignEditorDialog::txtNameChanged(const QString changed) {

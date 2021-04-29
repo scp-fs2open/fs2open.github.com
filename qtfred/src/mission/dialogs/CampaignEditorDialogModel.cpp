@@ -16,7 +16,8 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	_parent(parent),
 	_campaignTechReset(false)
 {
-	connect(this, &AbstractDialogModel::modelChanged, this, &CampaignEditorDialogModel::flagModified);
+
+	//TODO retrieve constants
 
 	_missionData.emplace_back();
 	_it_missionData = _missionData.begin();

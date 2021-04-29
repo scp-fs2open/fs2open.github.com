@@ -23,7 +23,8 @@ public:
 	void reject() override;
 
 	inline const QString& getCurrentFile() const { return _currentFile; }
-	inline void setCurrentFile(const QString &file) { _currentFile = file; }
+	inline void setCurrentFile(const QString &file) {
+		modify<QString>(_currentFile, file, false); }
 
 	inline const SCP_string& getCampaignName() const { return _campaignName; }
 	inline const SCP_string& getCampaignType() const { return _campaignType; }
@@ -77,17 +78,17 @@ public:
 	bool saveTo(const QString &file);
 
 	inline bool query_modified() const { return modified; }
-private slots:
-	inline void flagModified() { modified = true;}
 
 private:
 	bool _saveTo(const QString &file);
 
 	template<typename T>
-	void modify(T &a, const T &b) {
+	inline void modify(T &a, const T &b, const bool dataModification = true) {
 		if (a != b) {
 			a = b;
 			modelChanged();
+			if (dataModification)
+				modified = true;
 		}
 	}
 	bool modified = false;
@@ -117,6 +118,8 @@ private:
 
 	CampaignEditorDialog *const _parent;
 	QString _currentFile;
+
+	//TODO constants
 
 	SCP_string _campaignDescr;
 	SCP_string _campaignName;
