@@ -1905,7 +1905,7 @@ int sexp_tree::node_error(int node, const char* msg, int* bypass) {
 	}
 
 	ensure_visible(node);
-	setItemSelected(item_handle, true);
+	item_handle->setSelected(true);
 
 	auto text = QString("%1\n\nContinue checking for more errors?").arg(msg);
 
