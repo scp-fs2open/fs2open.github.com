@@ -48,6 +48,12 @@ protected:
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
 
+	afx_msg void OnPersistNone();
+	afx_msg void OnSaveOnMissionComplete();
+	afx_msg void OnSaveOnMissionClose();
+	afx_msg void OnPersistEternal();
+	void set_persistence_options();
+
 	void update_controls();
 	void update_type_controls();
 	void update_data_entry_controls();

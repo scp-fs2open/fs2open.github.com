@@ -52,6 +52,11 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_CURRENT_CONTAINER_NAME, OnSelchangeContainerName)
 	ON_CBN_EDITCHANGE(IDC_CURRENT_CONTAINER_NAME, OnEditchangeContainerName)
 
+	ON_BN_CLICKED(IDC_CONTAINER_NO_PERSIST, OnPersistNone)
+	ON_BN_CLICKED(IDC_CONTAINER_CAMPAIGN_PERSIST, OnSaveOnMissionComplete)
+	ON_BN_CLICKED(IDC_CONTAINER_PLAYER_PERSIST, OnSaveOnMissionClose)
+	ON_BN_CLICKED(IDC_CONTAINER_ETERNAL_PERSIST, OnPersistEternal)
+
 	ON_BN_CLICKED(IDC_ADD_NEW_CONTAINER, &CEditContainerDlg::OnBnClickedAddNewContainer)
 
 	ON_BN_CLICKED(IDC_CONTAINER_STRING_KEYS, &CEditContainerDlg::OnBnClickedStringKeys)
@@ -115,6 +120,7 @@ void CEditContainerDlg::set_selected_container()
 	if (get_current_container().is_map()) {
 		set_key_type();
 	}
+	set_persistence_options();
 	update_data_lister();
 }
 
@@ -353,6 +359,86 @@ void CEditContainerDlg::OnListerSelectionChange()
 	}
 }
 
+void CEditContainerDlg::OnPersistNone()
+{
+	auto &container = get_current_container();
+	container.type &= ~(SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS | SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE);
+	container.type &= ~SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+
+	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
+	button_eternal->SetCheck(FALSE);
+	button_eternal->EnableWindow(FALSE);
+}
+
+void CEditContainerDlg::OnSaveOnMissionComplete()
+{
+	auto &container = get_current_container();
+	container.type &= ~SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE;
+	container.type |= SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS;
+
+	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
+	if (!button_eternal->IsWindowEnabled()) {
+		button_eternal->EnableWindow(TRUE);
+	}
+}
+
+void CEditContainerDlg::OnSaveOnMissionClose()
+{
+	auto &container = get_current_container();
+	container.type &= ~SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS;
+	container.type |= SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE;
+
+	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
+	if (!button_eternal->IsWindowEnabled()) {
+		button_eternal->EnableWindow(TRUE);
+	}
+}
+
+void CEditContainerDlg::OnPersistEternal()
+{
+	auto &container = get_current_container();
+	Assert(container.is_persistent());
+
+	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
+	if (button_eternal->GetCheck()) {
+		container.type |= SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	} else {
+		container.type &= ~SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	}
+}
+
+void CEditContainerDlg::set_persistence_options()
+{
+	CButton *button_no_persist = (CButton *)GetDlgItem(IDC_CONTAINER_NO_PERSIST);
+	CButton *button_campaign_persist = (CButton *)GetDlgItem(IDC_CONTAINER_CAMPAIGN_PERSIST);
+	CButton *button_player_persist = (CButton *)GetDlgItem(IDC_CONTAINER_PLAYER_PERSIST);
+	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
+	const auto &container = get_current_container();
+
+	if (container.is_persistent()) {
+		button_no_persist->SetCheck(FALSE);
+
+		if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) {
+			Assert(!(container.type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE));
+			button_campaign_persist->SetCheck(TRUE);
+			button_player_persist->SetCheck(FALSE);
+		} else {
+			Assert(container.type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE);
+			button_campaign_persist->SetCheck(FALSE);
+			button_player_persist->SetCheck(TRUE);
+		}
+
+		button_eternal->SetCheck(container.is_eternal());
+	} else {
+		Assert(!container.is_eternal());
+		button_no_persist->SetCheck(TRUE);
+		button_player_persist->SetCheck(FALSE);
+		button_campaign_persist->SetCheck(FALSE);
+		button_eternal->SetCheck(FALSE);
+	}
+}
+
+
 void CEditContainerDlg::OnContainerAdd()
 {
 	add_container_entry((int)get_current_container().size());
@@ -572,6 +658,10 @@ void CEditContainerDlg::update_type_controls()
 	// key type
 	GetDlgItem(IDC_CONTAINER_STRING_KEYS)->EnableWindow(container_empty && map_selected);
 	GetDlgItem(IDC_CONTAINER_NUMBER_KEYS)->EnableWindow(container_empty && map_selected);
+
+	// persistence
+	GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST)->EnableWindow(container.is_persistent());
+
 }
 
 void CEditContainerDlg::update_data_entry_controls()
