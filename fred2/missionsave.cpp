@@ -1749,7 +1749,7 @@ void CFred_mission_save::save_container_options(const sexp_container &container)
 	}
 
 	if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE) {
-		fout("\n+Save On Mission Close");
+		fout("+Save On Mission Close\n");
 	} else if (container.type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) {
 		fout("+Save On Mission Progress\n");
 	}
