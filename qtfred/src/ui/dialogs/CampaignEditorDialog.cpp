@@ -11,7 +11,7 @@ namespace dialogs {
 CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *viewport) :
 	QDialog(parent),
 	ui(new Ui::CampaignEditorDialog),
-	model(new CampaignEditorDialogModel(this, viewport)),
+	model(new CampaignEditorDialogModel("", this, viewport)),
 	menubar(new QMenuBar),
 	_parent(parent),
 	_viewport(viewport)
@@ -86,24 +86,24 @@ void CampaignEditorDialog::updateUI() {
 	QString file = model->getCurrentFile();
 	this->setWindowTitle(file.isEmpty() ? "Untitled" : file);
 
-	ui->txtName->setText(QString::fromStdString(model->getCampaignName()));
-	ui->cmbType->setCurrentText(QString::fromStdString(model->getCampaignType()));
+	ui->txtName->setText(model->getCampaignName());
+	ui->cmbType->setCurrentText(model->getCampaignType());
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 
-	ui->txaDescr->setPlainText(QString::fromStdString(model->getCampaignDescr()));
+	ui->txaDescr->setPlainText(model->getCampaignDescr());
 
-	ui->txtBriefingCutscene->setText(QString::fromStdString(model->getCurMissionBriefingCutscene()));
-	ui->txtMainhall->setText(QString::fromStdString(model->getCurMissionMainhall()));
-	ui->txtDebriefingPersona->setText(QString::fromStdString(model->getCurMissionDebriefingPersona()));
+	ui->txtBriefingCutscene->setText(model->getCurMissionBriefingCutscene());
+	ui->txtMainhall->setText(model->getCurMissionMainhall());
+	ui->txtDebriefingPersona->setText(model->getCurMissionDebriefingPersona());
 
 	//ui->btnBranchUp->setEnabled()
 	//ui->btnBranchDown->setEnabled()
 	//ui->btnBranchLoop->setEnabled()
 
-	ui->txaLoopDescr->setPlainText(QString::fromStdString(model->getCurLoopDescr()));
-	ui->txtLoopAnim->setText(QString::fromStdString(model->getCurLoopAnim()));
+	ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
+	ui->txtLoopAnim->setText(model->getCurLoopAnim());
 	//ui->btnBrLoopAnim->setEnabled()
-	ui->txtLoopVoice->setText(QString::fromStdString(model->getCurLoopVoice()));
+	ui->txtLoopVoice->setText(model->getCurLoopVoice());
 	//ui->btnBrLoopVoice->setEnabled()
 
 	//ui->btnErrorChecker->setEnabled()
@@ -132,22 +132,20 @@ void CampaignEditorDialog::fileNew() {
 	if (! questionSaveChanges())
 		return;
 
-	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport));
+	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel("", this, _viewport));
 	updateUI();
 }
 
 void CampaignEditorDialog::fileOpen() {
 	if (! questionSaveChanges())
 		return;
-	QString oldFile = model->getCurrentFile();
 
-	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), oldFile, tr("FS2 campaigns (*.fc2)"));
-	if (pathName.isEmpty())
-		return;
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
 
-	model->setCurrentFile(pathName);
-	if (! model->loadCurrentFile())
-		model->setCurrentFile(oldFile);
+	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
+	if (newModel->isFileLoaded())
+		model = std::move(newModel);
+
 	updateUI();
 }
 
@@ -156,22 +154,20 @@ bool CampaignEditorDialog::fileSave() {
 		return fileSaveAs();
 
 	bool res = model->apply();
+
 	updateUI();
 	return res;
 }
 
 bool CampaignEditorDialog::fileSaveAs() {
-	QString oldFile = model->getCurrentFile();
-
-	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), oldFile, tr("FS2 campaigns (*.fc2)"));
+	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
 	if (pathName.isEmpty())
 		return false;
 
+	bool res = model->saveTo(pathName);
+	if (res)
+		model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
 
-	model->setCurrentFile(pathName);
-	bool res = model->apply();
-	if (! res)
-		model->setCurrentFile(oldFile);
 	updateUI();
 	return res;
 }
@@ -190,11 +186,11 @@ void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
 }
 
 void CampaignEditorDialog::txtNameChanged(const QString changed) {
-	model->setCampaignName(changed.toStdString());
+	model->setCampaignName(changed);
 }
 
 void CampaignEditorDialog::cmbTypeChanged(const QString changed) {
-	model->setCampaignType(changed.toStdString());
+	model->setCampaignType(changed);
 }
 
 void CampaignEditorDialog::chkTechResetChanged(const int changed) {
@@ -202,19 +198,19 @@ void CampaignEditorDialog::chkTechResetChanged(const int changed) {
 }
 
 void CampaignEditorDialog::txaDescrTextChanged() {
-	model->setCampaignDescr(ui->txaDescr->toPlainText().toStdString());
+	model->setCampaignDescr(ui->txaDescr->toPlainText());
 }
 
 void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed) {
-	model->setCurMissionBriefingCutscene(changed.toStdString());
+	model->setCurMissionBriefingCutscene(changed);
 }
 
 void CampaignEditorDialog::txtMainhallChanged(const QString changed) {
-	model->setCurMissionMainhall(changed.toStdString());
+	model->setCurMissionMainhall(changed);
 }
 
 void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed) {
-	model->setCurMissionDebriefingPersona(changed.toStdString());
+	model->setCurMissionDebriefingPersona(changed);
 }
 
 void CampaignEditorDialog::btnBranchUpClicked() {
@@ -230,11 +226,11 @@ void CampaignEditorDialog::btnBranchLoopToggled(bool checked) {
 }
 
 void CampaignEditorDialog::txaLoopDescrChanged() {
-	model->setCurLoopDescr(ui->txaLoopDescr->toPlainText().toStdString());
+	model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
 }
 
 void CampaignEditorDialog::txtLoopAnimChanged(const QString changed) {
-	model->setCurLoopAnim(changed.toStdString());
+	model->setCurLoopAnim(changed);
 }
 
 void CampaignEditorDialog::btnBrLoopAnimClicked() {
@@ -242,7 +238,7 @@ void CampaignEditorDialog::btnBrLoopAnimClicked() {
 }
 
 void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed) {
-	model->setCurLoopVoice(changed.toStdString());
+	model->setCurLoopVoice(changed);
 }
 
 void CampaignEditorDialog::btnBrLoopVoiceClicked() {

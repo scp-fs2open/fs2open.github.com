@@ -11,11 +11,12 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
 	it_branches = branches.begin();
 }
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport) :
+CampaignEditorDialogModel::CampaignEditorDialogModel(QString file, CampaignEditorDialog* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
-	_campaignTechReset(false)
+	_currentFile(file)
 {
+	_fileLoaded = loadCurrentFile();
 
 	//TODO retrieve constants
 
@@ -31,18 +32,18 @@ void CampaignEditorDialogModel::reject() {
 	// nothing to do if the dialog is created each time it's opened
 }
 
+bool CampaignEditorDialogModel::saveTo(const QString &file) {
+	bool success = _saveTo(file);
+	QMessageBox::information(_parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	return success;
+}
+
 bool CampaignEditorDialogModel::loadCurrentFile() {
 	if (_currentFile.isEmpty())
 		return false;
 	//QFile f(_currentFile);
 
 	return true;
-}
-
-bool CampaignEditorDialogModel::saveTo(const QString &file) {
-	bool success = _saveTo(file);
-	QMessageBox::information(_parent, file, success ? tr("Successfully saved") : tr("Error saving"));
-	return success;
 }
 
 bool CampaignEditorDialogModel::_saveTo(const QString &file) {
