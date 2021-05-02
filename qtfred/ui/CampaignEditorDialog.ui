@@ -26,7 +26,7 @@
    <item>
     <widget class="QTabWidget" name="mainTabs">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="campaignSpecs">
       <attribute name="title">
@@ -53,23 +53,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="cmbType">
-           <item>
-            <property name="text">
-             <string>single</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>multi coop</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>multi teams</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="cmbType"/>
          </item>
         </layout>
        </item>

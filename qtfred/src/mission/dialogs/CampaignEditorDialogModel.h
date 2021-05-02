@@ -77,6 +77,8 @@ public:
 
 	inline bool query_modified() const { return modified; }
 
+	static const QStringList campaignTypes;
+
 private:
 	bool loadCurrentFile();
 	bool _saveTo(const QString &file);
@@ -90,43 +92,42 @@ private:
 				modified = true;
 		}
 	}
-	bool modified = false;
+	bool modified{false};
 
 	struct CampaignLoopData	{
 
-		QString descr = "";
-		QString anim = "";
-		QString voice = "";
+		QString descr;
+		QString anim;
+		QString voice;
 	};
 
-	struct CampaignBranchData {
+	struct CampaignBranchData {  //noUIu
 
-		bool isLoop = false;
-		CampaignLoopData loopData{};
+		bool isLoop{false};
+		CampaignLoopData loopData;
 	};
 
 	struct CampaignMissionData {
 		explicit CampaignMissionData();
 
-		QString briefingCutscene = "";
-		QString mainhall = "";
-		QString debriefingPersona = "";
-		SCP_vector<CampaignBranchData>::iterator it_branches;
+		QString briefingCutscene;
+		QString mainhall;
+		QString debriefingPersona;
+		SCP_vector<CampaignBranchData>::iterator it_branches;  //noUIu
 		SCP_vector<CampaignBranchData> branches;
 	};
 
 	CampaignEditorDialog *const _parent;
 	const QString _currentFile;
-	bool _fileLoaded = false;
-
-	//TODO constants
+	bool _fileLoaded{false};
 
 	QString _campaignDescr;
 	QString _campaignName;
-	QString _campaignType;
-	bool _campaignTechReset;
+	QString _campaignType{ campaignTypes[0] };
+	int _numPlayers{-1}; //noUI
+	bool _campaignTechReset{false};
 
-	SCP_vector<CampaignMissionData>::iterator _it_missionData;
+	SCP_vector<CampaignMissionData>::iterator _it_missionData;  //noUIu
 	SCP_vector<CampaignMissionData> _missionData;
 };
 
