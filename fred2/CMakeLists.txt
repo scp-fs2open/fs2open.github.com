@@ -43,8 +43,8 @@ set(FRED2_SOURCES
 	dialog1.h
 	dumpstats.cpp
 	dumpstats.h
-	editcontaineraddnewdlg.cpp
-	editcontaineraddnewdlg.h
+	editcontainernamedlg.cpp
+	editcontainernamedlg.h
 	editcontainerdlg.cpp
 	editcontainerdlg.h
 	editor.h

@@ -11,7 +11,7 @@
 #include "FRED.h"
 #include "EditContainerDlg.h"
 #include "parse/sexp.h"
-#include "EditContainerAddNewDlg.h"
+#include "EditContainerNameDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -24,6 +24,9 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // EditContainerDlg dialog
 
+namespace {
+const SCP_string NEW_CONTAINER_NAME = "<New Container Name>";
+} // namespace
 
 CEditContainerDlg::CEditContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent /*=nullptr*/)
 	: CDialog(CEditContainerDlg::IDD, pParent), m_p_sexp_tree(p_sexp_tree)
@@ -50,7 +53,7 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 	ON_LBN_SELCHANGE(IDC_CONTAINER_DATA_LISTER, OnListerSelectionChange)
 
 	ON_CBN_SELCHANGE(IDC_CURRENT_CONTAINER_NAME, OnSelchangeContainerName)
-	ON_CBN_EDITCHANGE(IDC_CURRENT_CONTAINER_NAME, OnEditchangeContainerName)
+	//ON_CBN_EDITCHANGE(IDC_CURRENT_CONTAINER_NAME, OnEditchangeContainerName)
 
 	ON_BN_CLICKED(IDC_CONTAINER_NO_PERSIST, OnPersistNone)
 	ON_BN_CLICKED(IDC_CONTAINER_CAMPAIGN_PERSIST, OnSaveOnMissionComplete)
@@ -76,7 +79,6 @@ BOOL CEditContainerDlg::OnInitDialog()
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
-	cbox->LimitText(sexp_container::NAME_MAX_LENGTH);
 
 	CEdit *key_edit = (CEdit *)GetDlgItem(IDC_CONTAINER_KEY);
 	key_edit->SetLimitText(sexp_container::VALUE_MAX_LENGTH);
@@ -293,7 +295,7 @@ bool CEditContainerDlg::is_container_name_valid(CString &new_name, bool is_renam
 		return false;
 	}
 
-	if (!stricmp(new_name, "<New Container Name>")) {
+	if (!stricmp(new_name, NEW_CONTAINER_NAME.c_str())) {
 		MessageBox("Invalid container name.");
 		return false;
 	}
@@ -727,15 +729,15 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
-	CEditContainerAddNewDlg dlg; 
+	CEditContainerNameDlg dlg("Add New Container", NEW_CONTAINER_NAME);
 	dlg.DoModal(); 
 
 	// if we didn't enter a name
-	if (dlg.cancelled) {
+	if (dlg.cancelled()) {
 		return;
 	}
 
-	CString temp_name = dlg.m_new_container_name; 
+	CString temp_name = dlg.new_container_name();
 	if (!is_container_name_valid(temp_name, false)) {
 		return; 
 	}

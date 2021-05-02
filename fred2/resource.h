@@ -125,7 +125,7 @@
 #define IDD_WARP_PARAMS                 320
 #define IDB_COMMENT                     322
 #define IDD_EDIT_CONTAINER              323
-#define IDD_ADD_NEW_CONTAINER           324
+#define IDD_EDIT_CONTAINER_NAME         324
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
