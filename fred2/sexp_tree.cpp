@@ -6894,13 +6894,11 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 int sexp_tree::get_container_count(const char *container_name) const
 {
-	uint idx;
 	int count = 0;
 
-	// look for compare name
-	for (idx=0; idx<tree_nodes.size(); idx++) {
+	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_CONTAINER) {
-			if ( strstr(tree_nodes[idx].text, container_name) ) {
+			if (strstr(tree_nodes[idx].text, container_name)) {
 				count++;
 			}
 		}

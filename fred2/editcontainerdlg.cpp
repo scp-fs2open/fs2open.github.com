@@ -766,6 +766,8 @@ void CEditContainerDlg::OnBnClickedRenameContainer()
 
 	CString new_name = dlg.new_container_name();
 	if (is_container_name_valid(new_name, true)) {
+		// FIXME TODO: replace uses of old container name in SEXP tree, but only when user clicks OK?
+		// How does var renaming handle this issue?
 		container.container_name = new_name;
 		cbox->DeleteString((UINT)m_current_container);
 		cbox->InsertString(m_current_container, container.container_name.c_str());
@@ -782,12 +784,15 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 
 	const int times_used = m_p_sexp_tree->get_container_count(m_containers[m_current_container].container_name.c_str()); 
 	if (times_used > 0) {
-		sprintf(buffer, "Container %s is used in %d events. Please edit those uses out first, then delete the container.", m_containers[m_current_container].container_name.c_str(), times_used); 
+		sprintf(buffer,
+			"Container %s is used in %d events. Please remove those uses before deleting the container.",
+			m_containers[m_current_container].container_name.c_str(),
+			times_used);
 		MessageBox(buffer);
 		return;
 	}
 
-	sprintf(buffer, "This will delete the %s container. Are you sure?", m_containers[m_current_container].container_name.c_str()); 
+	sprintf(buffer, "Delete SEXP container '%s'?", m_containers[m_current_container].container_name.c_str());
 
 	const int ret = MessageBox(buffer, "Delete?", MB_OKCANCEL | MB_ICONEXCLAMATION);
 
@@ -808,7 +813,6 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->DeleteString((int)cbox->GetCurSel()); 
 
-	//maybe de-activate the delete container button
 	if (m_containers.empty()) {
 		m_current_container = -1; 
 		GetDlgItem(IDC_RENAME_CONTAINER)->EnableWindow(false);
