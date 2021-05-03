@@ -220,7 +220,17 @@ ADE_FUNC(isAutoselect, l_UserInterface_PilotSelect, nullptr,
          "Determines if the pilot selection screen should automatically select the default user.", "boolean",
          "true if autoselect is enabled, false otherwise")
 {
-	return ade_set_args(L, "b", Cmdline_benchmark_mode);
+	return ade_set_args(L, "b", Cmdline_benchmark_mode || Cmdline_pilot);
+}
+
+ADE_VIRTVAR(CmdlinePilot, l_UserInterface_PilotSelect, nullptr,
+			"The pilot chosen from commandline, if any.", "string",
+			"The name if specified, nil otherwise")
+{
+	if (Cmdline_pilot)
+		return ade_set_args(L, "s", Cmdline_pilot);
+	else
+		return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/MainHall

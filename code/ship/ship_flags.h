@@ -198,6 +198,7 @@ namespace Ship {
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
 		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
+		No_impact_debris,				// wookieejedi - Don't spawn the small debris on impact
 
 		NUM_VALUES
 	};
@@ -232,6 +233,7 @@ namespace Ship {
         AI_turrets_attack,
         AI_can_form_wing,
         AI_protected_on_cripple,
+		Targeted_by_huge_Ignored_by_small_only,
 
         NUM_VALUES
     };

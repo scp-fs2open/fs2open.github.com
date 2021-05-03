@@ -23,7 +23,7 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_alt_math,	// tells the game to use additional calculations should turret have a defined y fov
+		Turret_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
 		Dum_rotates,		// Bobboau
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on

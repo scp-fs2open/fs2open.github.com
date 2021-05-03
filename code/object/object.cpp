@@ -1201,7 +1201,6 @@ void obj_clear_weapon_group_id_list()
 
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
-extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
@@ -1313,6 +1312,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if (Detail.lighting > 2) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
+				// Make sure the new system works fine.
+				Assert(objp->instance > -1);
+				Assert(static_cast<int>(Fireballs.size()) > objp->instance);
 
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
 
@@ -1332,6 +1334,9 @@ void obj_move_all_post(object *objp, float frametime)
 					float intensity = 1.0f;
 					if (fireball_is_warp(objp))
 					{
+						// Make sure the new system works fine.
+						Assert(static_cast<int>(Fireballs.size()) > objp->instance);
+						Assert(objp->instance > -1);
 						intensity = fireball_wormhole_intensity(&Fireballs[objp->instance]); // Valathil: Get wormhole radius for lighting
 						rad = objp->radius;
 					}

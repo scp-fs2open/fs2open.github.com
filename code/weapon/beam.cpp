@@ -26,6 +26,7 @@
 #include "lighting/lighting.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
+#include "nebula/neb.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -1351,8 +1352,21 @@ void beam_render(beam *b, float u_offset)
 			framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
 		}
 
+		float fade = 0.9999f;
+
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
+			vec3d nearest;
+			int result = vm_vec_dist_to_line(&Eye_position, &b->last_start, &b->last_shot, &nearest, nullptr);
+			if (result == 1)
+				nearest = b->last_shot;
+			if (result == -1)
+				nearest = b->last_start;
+
+			fade *= neb2_get_fog_visibility(&nearest, NEB_FOG_VISIBILITY_MULT_BEAM(b->beam_light_width));
+		}
+
 		material material_params;
-		material_set_unlit_emissive(&material_params, bwsi->texture.first_frame + framenum, 0.9999f, 2.0f);
+		material_set_unlit_emissive(&material_params, bwsi->texture.first_frame + framenum, fade, 2.0f);
 		g3_render_primitives_colored_textured(&material_params, h1, 4, PRIM_TYPE_TRIFAN, false);
 	}
 
@@ -1437,30 +1451,35 @@ void beam_generate_muzzle_particles(beam *b)
 	}
 }
 
-static float get_current_alpha(vec3d *pos)
+static float get_muzzle_glow_alpha(beam* b)
 {
 	float dist;
-	float alpha;
+	float alpha = 0.8f;
 
 	const float inner_radius = 15.0f;
 	const float magic_num = 2.75f;
 
 	// determine what alpha to draw this bitmap with
 	// higher alpha the closer the bitmap gets to the eye
-	dist = vm_vec_dist_quick(&Eye_position, pos);	
+	dist = vm_vec_dist_quick(&Eye_position, &b->last_start);
 
 	// if the point is inside the inner radius, alpha is based on distance to the player's eye,
 	// becoming more transparent as it gets close
 	if (dist <= inner_radius) {
 		// alpha per meter between the magic # and the inner radius
-		alpha = 0.8f / (inner_radius - magic_num);
+		alpha /= (inner_radius - magic_num);
 
 		// above value times the # of meters away we are
 		alpha *= (dist - magic_num);
-		return (alpha < 0.005f) ? 0.0f : alpha;
+		if (alpha < 0.005f)
+			return 0.0f;
 	}
 
-	return 0.8f;
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
+		alpha *= neb2_get_fog_visibility(&b->last_start, NEB_FOG_VISIBILITY_MULT_B_MUZZLE(b->beam_light_width));
+	}
+
+	return alpha;
 }
 
 // render the muzzle glow for a beam weapon
@@ -1507,7 +1526,7 @@ void beam_render_muzzle_glow(beam *b)
 	if (rad <= 0.0f)
 		return;
 
-	float alpha = get_current_alpha(&b->last_start);
+	float alpha = get_muzzle_glow_alpha(b);
 
 	if (alpha <= 0.0f)
 		return;
@@ -2436,8 +2455,8 @@ void beam_jitter_aim(beam *b, float aim)
 	// vector
 	vm_vector_2_matrix(&m, &forward, NULL, NULL);
 
-	// get a vector on the circle - this should appear to be pretty random
-	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false);
+	// get a random vector on the circle, but somewhat biased towards the center
+	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false, true);
 	
 	// get the vector pointing to the circle point
 	vm_vec_sub(&forward, &circle, &b->last_start);	
@@ -3567,9 +3586,9 @@ int beam_ok_to_fire(beam *b)
 
 			if (b->flags & BF_IS_FIGHTER_BEAM) {
 				turret_normal = b->objp->orient.vec.fvec;
-                b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_alt_math);
+                b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_restricted_fov);
 			} else {
-				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient);
+				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 			}
 
 			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {

@@ -351,6 +351,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
 	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
 	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
 	{ "large ship deathroll",		Info_Flags::Large_ship_deathroll,	true, false },
+	{ "no impact debris",			Info_Flags::No_impact_debris,		true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -777,7 +778,8 @@ static void parse_wing_formation(bool replace)
 	required_string("$Name:");
 	stuff_string(name, F_NAME, NAME_LENGTH);
 
-	if (stuff_vec3d_list(position_list) != MAX_SHIPS_PER_WING - 1)
+	stuff_vec3d_list(position_list);
+	if (position_list.size() != MAX_SHIPS_PER_WING - 1)
 	{
 		error_display(0, "Wing formation %s did not have " SIZE_T_ARG " positions.  Ignoring.", name, (size_t)(MAX_SHIPS_PER_WING - 1));
 		return;
@@ -1079,6 +1081,7 @@ void ship_info::clone(const ship_info& other)
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
+	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1388,6 +1391,7 @@ void ship_info::move(ship_info&& other)
 	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
 	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
 	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
+	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
 	afterburner_trail_life = other.afterburner_trail_life;
 	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
 	afterburner_trail_spread = other.afterburner_trail_spread;
@@ -1804,6 +1808,7 @@ ship_info::ship_info()
 	afterburner_trail_width_factor = 1.0f;
 	afterburner_trail_alpha_factor = 1.0f;
 	afterburner_trail_alpha_end_factor = 0.0f;
+	afterburner_trail_alpha_decay_exponent = 1.0f;
 	afterburner_trail_life = 5.0f;
 	afterburner_trail_spread = 0.0f;
 	afterburner_trail_faded_out_sections = 0;
@@ -2381,7 +2386,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 				break;
 			}
 
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_allowed = (int)stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2424,7 +2429,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	{
 		// get weapon list
 		if (num_banks != NULL)
-			*num_banks = stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			*num_banks = (int)stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
 		else
 			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
 	}
@@ -2432,7 +2437,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	if (optional_string(bank_capacities_str))
 	{
 		// get capacity list
-		num_bank_capacities = stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+		num_bank_capacities = (int)stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
 	}
 
 	// num_banks can be null if we're parsing weapons for a turret
@@ -2649,6 +2654,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
 	{
 		stuff_string(sip->display_name, F_NAME, NAME_LENGTH);
+		end_string_at_first_hash_symbol(sip->display_name, true);
+		consolidate_double_characters(sip->display_name, '#');
 		sip->flags.set(Ship::Info_Flags::Has_display_name);
 	}
 
@@ -2917,7 +2924,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if(optional_string("$Detail distance:")) {
-		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		sip->num_detail_levels = (int)stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
 	if(optional_string("$Collision LOD:")) {
@@ -3480,7 +3487,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
-		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		sip->explosion_bitmap_anims.clear();
 		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
@@ -3544,7 +3551,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if(optional_string("$Model Point Shield Controls:")) {
 		SCP_vector<SCP_string> ctrl_strings;
-		int num_strings = stuff_string_list(ctrl_strings);
+		stuff_string_list(ctrl_strings);
 
 		// Init all to -1 in case some aren't supplied...
 		sip->shield_point_augment_ctrls[FRONT_QUAD] = -1;
@@ -3552,7 +3559,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
 		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
 
-		for (auto i = 0; i < num_strings; i++) {
+		for (int i = 0; i < (int)ctrl_strings.size(); i++) {
 			const char *str = ctrl_strings[i].c_str();
 
 			if (!stricmp(str, "front"))
@@ -3727,7 +3734,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		// we'll assume the list will contain no more than 20 distinct tokens
 		char ship_strings[20][NAME_LENGTH];
-		int num_strings = stuff_string_list(ship_strings, 20);
+		int num_strings = (int)stuff_string_list(ship_strings, 20);
 
 		int ship_type_index = -1;
 
@@ -4348,6 +4355,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->a_decay_exponent = 1.0f;
 			}
 		}
+		else if (first_time)
+			ci->a_decay_exponent = 1.0f;
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
@@ -4543,7 +4552,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector<SCP_string> target_group_strings;
-		int num_strings = stuff_string_list(target_group_strings);
+		stuff_string_list(target_group_strings);
 		size_t num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
@@ -4551,7 +4560,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			override_strings = true;
 		}
 
-		for(auto j = 0; j < num_strings; j++) {
+		for(size_t j = 0; j < target_group_strings.size(); j++) {
 			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
@@ -4809,7 +4818,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_int(&value);
 				CAP(value, 0, 359);
 				float angle = fl_radians(value)/2.0f;
-				sp->turret_y_fov = cosf(angle);
+				sp->turret_base_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
@@ -4832,19 +4841,19 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			if (optional_string("$Target Priority:")) {
 				SCP_vector <SCP_string> tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities);
+				stuff_string_list(tgt_priorities);
 				sp->num_target_priorities = 0;
 
-				if (num_strings > 32)
-					num_strings = 32;
+				if (tgt_priorities.size() > 32)
+					tgt_priorities.resize(32);
 
-				int num_groups = (int)Ai_tp_list.size();
+				size_t num_groups = Ai_tp_list.size();
 
-				for(auto i = 0; i < num_strings; i++) {
-					int j;
+				for (size_t i = 0; i < tgt_priorities.size(); ++i) {
+					size_t j;
 					for(j = 0; j < num_groups; j++) {
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							sp->target_priority[i] = j;
+							sp->target_priority[i] = (int)j;
 							sp->num_target_priorities++;
 							break;
 						}
@@ -4908,7 +4917,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 
             if (turret_has_base_fov)
-                sp->flags.set(Model::Subsystem_Flags::Turret_alt_math);
+                sp->flags.set(Model::Subsystem_Flags::Turret_restricted_fov);
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
@@ -5200,6 +5209,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 		create_if_not_found = false;
 	}
 
+	bool first_time;
 	int idx = ship_type_name_lookup(name_buf);
 	if (idx >= 0)
 	{
@@ -5212,6 +5222,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 			return;
 		}
 		stp = &Ship_types[idx];
+		first_time = false;
 	}
 	else
 	{
@@ -5225,6 +5236,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 		Ship_types.push_back(ship_type_info());
 		stp = &Ship_types.back();
 		strcpy_s(stp->name, name_buf);
+		first_time = true;
 	}
 
 	const char *ship_type = NULL;
@@ -5244,6 +5256,15 @@ static void parse_ship_type(const char *filename, const bool replace)
 		Warning(LOCATION, "Bad ship type name in %s\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin %s to fix this.\n", filename, stp->name, ship_type, filename);
 	}
 
+	bool big_ship = false;
+	bool huge_ship = false;
+	if (stricmp(stp->name, "cruiser") == 0 || stricmp(stp->name, "freighter") == 0 || stricmp(stp->name, "transport") == 0 ||
+		stricmp(stp->name, "corvette") == 0 || stricmp(stp->name, "gas miner") == 0 || stricmp(stp->name, "awacs") == 0)
+		big_ship = true;
+
+	if (stricmp(stp->name, "capital") == 0 || stricmp(stp->name, "super cap") == 0 || stricmp(stp->name, "knossos device") == 0 || stricmp(stp->name, "drydock") == 0)
+		huge_ship = true;
+
 	//Okay, now we should have the values to parse
 	//But they aren't here!! :O
 	//Now they are!! Whee fogging!!
@@ -5251,7 +5272,8 @@ static void parse_ship_type(const char *filename, const bool replace)
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector <SCP_string> target_group_strings;
-		int num_strings = stuff_string_list(target_group_strings);
+		stuff_string_list(target_group_strings);
+		auto num_strings = target_group_strings.size();
 		auto num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
@@ -5259,7 +5281,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 			override_strings = true;
 		}
 
-		for(auto j = 0; j < num_strings; j++) {
+		for(size_t j = 0; j < num_strings; j++) {
 			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
@@ -5404,12 +5426,18 @@ static void parse_ship_type(const char *filename, const bool replace)
 		if(optional_string("+Ignored on cripple by:")) {
 			stuff_string_list(stp->ai_cripple_ignores_temp); 
 		}
+
+		if (optional_string("+Targeted by 'Huge' weapons and Ignored by 'small only' weapons:")) {
+			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only);
+		} else if (first_time && (big_ship || huge_ship)) {
+			stp->flags.set(Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only);
+		}
 	}
 
 	if(optional_string("$Explosion Animations:"))
 	{
 		int temp[MAX_FIREBALL_TYPES];
-		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		stp->explosion_bitmap_anims.clear();
 		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
@@ -5849,7 +5877,7 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 	if (page_in)
 		Num_ship_subsystems = num_subsystems_save;
 
-	mprintf((" a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
+	mprintf(("a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
 	return 1;
 }
 
@@ -9830,6 +9858,7 @@ static void ship_init_afterburners(ship *shipp)
 
 			ci->a_start = sip->afterburner_trail_alpha_factor; // start alpha  * table loaded alpha factor
 			ci->a_end = sip->afterburner_trail_alpha_end_factor; //end alpha
+			ci->a_decay_exponent = sip->afterburner_trail_alpha_decay_exponent;
 
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 			ci->stamp = 60;	//spew time???	
@@ -11883,11 +11912,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 								else
 								{
 									flak_set_range(&Objects[weapon_objnum], flak_range - winfo_p->untargeted_flak_range_penalty);
-								}
-
-								if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
-								{
-									flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, &obj->phys_info, swp->primary_bank_weapons[bank_to_fire]);
 								}
 							}
 							// create the muzzle flash effect
@@ -18884,7 +18908,7 @@ void armor_init()
 //**************************************************************
 void parse_ai_target_priorities()
 {
-	int i, j, num_strings;
+	int i, j;
 	int n_entries = (int)Ai_tp_list.size();
 	SCP_vector <SCP_string> temp_strings;
 
@@ -18919,9 +18943,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for(i = 0; i < num_strings; i++) {
+		for(i = 0; i < (int)temp_strings.size(); i++) {
 			for(j = 0; j < weapon_info_size(); ++j) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
@@ -18936,9 +18960,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Object Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
 				if ( !stricmp(ai_tgt_obj_flags[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.obj_flags |= ai_tgt_obj_flags[j].def;
@@ -18953,9 +18977,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Ship Class Flags:")) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
 				if (!stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str())) {
 					temp_priority.sif_flags.set(ai_tgt_ship_flags[j].def);
@@ -18970,9 +18994,9 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings);
+		stuff_string_list(temp_strings);
 
-		for (i = 0; i < num_strings; i++) {
+		for (i = 0; i < (int)temp_strings.size(); i++) {
 			for (j = 0; j < num_ai_tgt_weapon_info_flags; j++) {
 				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
@@ -19015,14 +19039,11 @@ ai_target_priority init_ai_target_priorities()
 void parse_weapon_targeting_priorities()
 {
 	char tempname[NAME_LENGTH];
-	int i = 0;
-	int j = 0;
-	int k = 0;
 
 	if (optional_string("$Name:")) {
 		stuff_string(tempname, F_NAME, NAME_LENGTH);
 		
-		k = weapon_info_lookup(tempname);
+		int k = weapon_info_lookup(tempname);
 		if (k < 0) {
 			error_display(0, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 			if (optional_string("+Target Priority:")) {		// consume the data to avoid parsing errors
@@ -19038,17 +19059,18 @@ void parse_weapon_targeting_priorities()
 
 			if (optional_string("+Target Priority:")) {
 				SCP_vector <SCP_string> tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities);
+				stuff_string_list(tgt_priorities);
 
-				if (num_strings > 32)
-					num_strings = 32;
+				if (tgt_priorities.size() > 32)
+					tgt_priorities.resize(32);
 
-				auto num_groups = static_cast<int>(Ai_tp_list.size());
+				auto num_groups = Ai_tp_list.size();
 
-				for(i = 0; i < num_strings; i++) {
+				for(size_t i = 0; i < tgt_priorities.size(); i++) {
+					size_t j;
 					for(j = 0; j < num_groups; j++) {
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							wip->targeting_priorities[i] = j;
+							wip->targeting_priorities[i] = (int)j;
 							wip->num_targeting_priorities++;
 							break;
 						}
@@ -19682,8 +19704,8 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {
 		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->is_small_ship() ) ) {			
 			// force detail levels
-			float fog_val = neb2_get_fog_intensity(obj);
-			if ( fog_val >= 0.6f ) {
+			float fog_val = neb2_get_fog_visibility(obj);
+			if ( fog_val <= 0.15f ) {
 				render_info.set_detail_level_lock(2);
 			}
 		}

@@ -25,6 +25,7 @@
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "nebula/neb.h"
 
 int	Show_shield_mesh = 0;
 
@@ -490,18 +491,23 @@ void render_shield(int shield_num)
 
 		float alpha = 0.9999f;
 		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= 0.85f;
+			alpha *= neb2_get_fog_visibility(centerp, NEB_FOG_VISIBILITY_MULT_SHIELD);
 		}
+
+		ubyte r, g, b;
+		r = (ubyte)(Shield_hits[shield_num].rgb[0] * alpha);
+		g = (ubyte)(Shield_hits[shield_num].rgb[1] * alpha);
+		b = (ubyte)(Shield_hits[shield_num].rgb[2] * alpha);
 
 		if ( bitmap_id <= -1 ) {
 			return;
 		}
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
-			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, r, g, b);
 		} else if ( Detail.shield_effects < 4 ) {
 			for ( int i = 0; i < Shield_hits[shield_num].num_tris; i++ ) {
-				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, r, g, b);
 			}
 		} else {
 			float hit_radius = pm->core_radius;
@@ -510,7 +516,7 @@ void render_shield(int shield_num)
 			}
 
 			color clr;
-			gr_init_alphacolor(&clr, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2], fl2i(alpha * 255.0f));
+			gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
 			shield_render_decal(pm, orient, centerp, &Shield_hits[shield_num].hit_orient, &Shield_hits[shield_num].hit_pos, hit_radius, bitmap_id, &clr);
 		}
 	}

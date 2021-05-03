@@ -424,17 +424,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	sip = &Ship_info[shipp->ship_info_index];
 	vaporize = (shipp->flags[Ship::Ship_Flags::Vaporize]);
 
-	if ( !hull_flag )	{
-		// Make vaporize debris seen from farther away
-		float dist = vm_vec_dist_quick( pos, &Eye_position );
-		if (vaporize) {
-			dist /= 2.0f;
-		}
-		if ( dist > source_obj->radius * 20.0f ) {
-			return NULL;
-		}
-	}
-
 	// try to maintain our soft limit
 	if (hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES)) {
 		// cause oldest hull debris chunk to blow up
@@ -479,6 +468,18 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->model_instance_num = model_create_instance(false, db->model_num);
 
 	float radius = submodel_get_radius(db->model_num, db->submodel_num);
+
+	// if its generic, maybe cull it if its too small and far
+	if (!hull_flag) {
+		float dist = vm_vec_dist_quick(pos, &Eye_position);
+		// Make vaporize debris seen from farther away
+		if (vaporize) {
+			dist /= 2.0f;
+		}
+		if (dist > radius * 200.0f) {
+			return nullptr;
+		}
+	}
 
 	//WMC - We must survive until now, at least.
 	db->must_survive_until = timestamp();
@@ -560,7 +561,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	db->next_fireball = timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
-	if ( pos == NULL )
+	if ( pos == nullptr )
 		pos = &source_obj->pos;
 
     flagset<Object::Object_Flags> default_flags;
@@ -579,7 +580,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
     objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &orient, pos, radius, default_flags);
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
-		return NULL;
+		return nullptr;
 	}
 
 	db->objnum = objnum;

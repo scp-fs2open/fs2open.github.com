@@ -66,9 +66,10 @@ class player;
 // version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
 // version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
 // version 53 - 12/2/2020 big set of packet fixes/upgrades
+// version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							53
+#define MULTI_FS_SERVER_VERSION							54
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -252,6 +253,7 @@ class player;
 #define REINFORCEMENT_AVAIL		0xDB		// a reinforcement is available
 #define LIGHTNING_PACKET			0xDC		// lightning bolt packet for multiplayer nebula
 #define BYTES_SENT					0xDD		// how much data we've sent/received
+#define MISSILE_KILL					0xDE		// get rid of this weapon on the client.
 
 #define GAME_ACTIVE					0xE1		// info on an active game server
 #define GAME_QUERY					0xE2		// request for a list of active game servers
@@ -366,6 +368,9 @@ class player;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
+// minor hack
+constexpr int PLAYER_COLLISION_TIMESTAMP = 200; // how often the server should allow a client to go through ship-ship collisions
+
 // ----------------------------------------------------------------------------------------
 
 
@@ -418,6 +423,9 @@ typedef struct net_player_server_info {
 
 	// common targeting information
 	int				target_objnum;
+
+	// for collision hack -- to fix, enough bandwidth would be needed for full physics info to be transmitted uncompressed
+	int				player_collision_timestamp;		// gets around limitations on oo update packets by having collisions only occur so often								
 
 	// rate limiting information
 	int				rate_stamp;							// rate limiting timestamp

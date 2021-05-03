@@ -1137,7 +1137,7 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 	}
 
 	if ( start_frame < 0 ) {
-		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.", ani->filename));
+		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.\n", ani->filename));
 		start_frame=0;
 	}
 

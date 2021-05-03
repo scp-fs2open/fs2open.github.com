@@ -517,7 +517,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	if (!global_damage) {
 		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
 
-		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) {
+		if ( !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_debris]) && 
+			( subsys == nullptr || !(subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) ) ) {
 			create_generic_debris(ship_objp, hitpos, 1.0f, 5.0f, 1.0f, false);
 		}
 	}
@@ -802,30 +803,36 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 	case OBJ_WEAPON:
 		p->killer_objtype=OBJ_WEAPON;
 		p->killer_weapon_index=Weapons[killer_objp->instance].weapon_info_index;
-		p->killer_species = Ship_info[Ships[Objects[killer_objp->parent].instance].ship_info_index].species;
+		if (killer_objp->parent >= 0 && killer_objp->parent < MAX_OBJECTS) {
+			p->killer_species = Ship_info[Ships[Objects[killer_objp->parent].instance].ship_info_index].species;
 
-		if ( &Objects[killer_objp->parent] == Player_obj ) {
-			// killed by a missile?
-			if(Weapon_info[p->killer_weapon_index].subtype == WP_MISSILE){
-				p->flags |= PLAYER_FLAGS_KILLED_SELF_MISSILES;
-			} else {
-				p->flags |= PLAYER_FLAGS_KILLED_SELF_UNKNOWN;
+			if ( &Objects[killer_objp->parent] == Player_obj ) {
+				// killed by a missile?
+				if(Weapon_info[p->killer_weapon_index].subtype == WP_MISSILE){
+					p->flags |= PLAYER_FLAGS_KILLED_SELF_MISSILES;
+				} else {
+					p->flags |= PLAYER_FLAGS_KILLED_SELF_UNKNOWN;
+				}
 			}
-		}
 
-		// in multiplayer, record callsign of killer if killed by another player
-		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
-			int pnum;
+			// in multiplayer, record callsign of killer if killed by another player
+			if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
+				int pnum;
 
-			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
-			if ( pnum != -1 ) {
-				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
+				if ( pnum != -1 ) {
+					strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				} else {
+					nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
+				}
 			} else {
-				nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
+				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+			p->killer_species = -1;
+			strcpy_s(p->killer_parent_name, "");
 		}
+
 		break;
 
 	case OBJ_SHOCKWAVE:

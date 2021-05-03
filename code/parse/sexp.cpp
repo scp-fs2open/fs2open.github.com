@@ -679,6 +679,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
+	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -3390,7 +3391,9 @@ void get_sexp_text_for_variable(char *text, const char *token)
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
 		sexp_var_index = get_index_sexp_variable_name(text);
-		Assert(sexp_var_index != -1);
+		if (sexp_var_index == -1) {
+			Error(LOCATION, "Invalid variable name [%s]!", text);
+		}
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
@@ -6838,7 +6841,21 @@ int sexp_is_ship_visible(int node)
 	{
 		// if the second argument is not supplied, default to the player, per retail
 		if (Game_mode & GM_MULTIPLAYER)
-			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		{
+			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0)
+				{
+					viewer_shipp = &Ships[shipnum];
+					break;
+				}
+			}
+		}
 		else
 			viewer_shipp = Player_ship;
 	}
@@ -10000,7 +10017,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_counter(int arg_handler_node, int condition_node)
+int eval_for_counter(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
@@ -10050,6 +10067,9 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 		// situation, resulting in a crash at best. -MageKing17
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
@@ -10063,7 +10083,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_num)
+int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -10077,7 +10097,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		auto constraint = CTEXT(n);
 		int constraint_index = -1;
 
-		switch (op_num)
+		switch (op_const)
 		{
 			case OP_FOR_SHIP_CLASS:
 				constraint_index = ship_info_lookup(constraint);
@@ -10104,7 +10124,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 				auto shipp = &Ships[objp->instance];
 				int ship_index = -1;
 
-				switch (op_num)
+				switch (op_const)
 				{
 					case OP_FOR_SHIP_CLASS:
 						ship_index = shipp->ship_info_index;
@@ -10126,6 +10146,9 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		}
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
@@ -10139,7 +10162,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 }
 
 // Goober5000
-int eval_for_players(int arg_handler_node, int condition_node)
+int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -10161,6 +10184,9 @@ int eval_for_players(int arg_handler_node, int condition_node)
 		if (Player_ship)
 			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
 	}
+
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10212,7 +10238,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
 		return;
 
@@ -10248,6 +10274,27 @@ int sexp_num_valid_arguments( int n )
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	if (arg_handler < 0)
+		return 0;
+
+	// the for-* sexps require special handling: they don't list their arguments explicitly but rather generate them on-the-fly
+	auto op_const = get_operator_const(arg_handler);
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+			return eval_for_counter(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_PLAYERS:
+			return eval_for_players(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
+	}
+
 	// loop through arguments
 	arg_n = CDR(arg_handler);
 	while (arg_n != -1) {
@@ -10255,7 +10302,6 @@ int sexp_num_valid_arguments( int n )
 			matches++;
 		}
 
-		
 		// iterate
 		arg_n = CDR(arg_n);
 	}
@@ -10271,7 +10317,8 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	// (thanks to woutersmits for finding this bug)
 	if (arg_handler < 0)
 		return;
 
@@ -13978,6 +14025,28 @@ void sexp_nebula_change_pattern(int n)
 	neb2_post_level_init();
 }
 
+void sexp_nebula_change_fog_color(int node)
+{
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+
+	int red, green, blue = 0;
+	bool is_nan, is_nan_forever;
+
+	Assert(node >= 0);
+
+	eval_nums(node, is_nan, is_nan_forever, red, green, blue);
+	if (is_nan || is_nan_forever)
+		return;
+
+	CLAMP(red, 0, 255);
+	CLAMP(green, 0, 255);
+	CLAMP(blue, 0, 255);
+
+	Neb2_fog_color[0] = (ubyte)red;
+	Neb2_fog_color[1] = (ubyte)green;
+	Neb2_fog_color[2] = (ubyte)blue;
+}
+
 /**
  * End the mission.
  *
@@ -17320,15 +17389,24 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 		// Set the number of weapons
 		ammo[requested_bank] = requested_ammo;
 	}
+	else if (ammo[requested_bank] > maximum_allowed)
+	{
+		// Make sure the current ammo doesn't exceed the maximum (this can otherwise happen with the set-*-weapon SEXPs)
+		ammo[requested_bank] = maximum_allowed;
+	}
 
 	// Check rearm validity
 	if (rearm_limit >= 0)
 	{
-		// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+		// Don't allow more weapons than the bank can actually hold.
 		if (rearm_limit > maximum_allowed)
 			rearm_limit = maximum_allowed;
 
 		start_ammo[requested_bank] = rearm_limit;
+	}
+	else	// Even if no rearm limit is explicitly set, don't allow more weapons than the bank can actually hold (this can otherwise happen with the set-*-weapon SEXPs).
+	{
+		start_ammo[requested_bank] = maximum_allowed;
 	}
 }
 
@@ -17762,6 +17840,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	target_objp->hull_strength = source_objp->hull_strength;
 
 	// ...and shields
+	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
@@ -24583,6 +24662,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_NEBULA_CHANGE_FOG_COLOR:
+				sexp_nebula_change_fog_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
@@ -26141,15 +26225,26 @@ int get_sexp_main()
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
-	int n, i, sexp_val = UNINITIALIZED;
+	int n, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
 	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
-	for (i = 0; i < (int)strlen(buf); i++)
-		if (buf[i] == '!')
-			buf[i]='\"';
+	for (auto ch = buf; *ch; ++ch)
+	{
+		// convert single ! to ", but don't convert !!
+		if (*ch == '!')
+		{
+			if (*(ch + 1) == '!')
+				++ch;
+			else
+				*ch = '\"';
+		}
+	}
+
+	// !! -> !
+	consolidate_double_characters(buf, '!');
 
 	Mp = buf;
 
@@ -26775,6 +26870,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29052,6 +29148,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_CHANGE_FOG_COLOR:
+			return OPF_POSITIVE;
+
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL:
@@ -30797,6 +30896,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
@@ -33964,7 +34064,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will default to the first player.\r\n"
 		"\tTakes 1 or 2 arguments...\r\n"
 		"\t1: Name of ship to check\r\n"
 		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
@@ -34807,6 +34907,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	"\tChanges the current nebula background pattern (as defined in nebula.tbl)\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tNebula background pattern to change to\r\n"
+	},
+
+	{ OP_NEBULA_CHANGE_FOG_COLOR, "nebula-change-fog-color\r\n"
+	"\tChanges the current nebula fog color\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tRed (0 - 255)\r\n"
+		"\t2:\tGreen (0 - 255)\r\n"
+		"\t3:\tBlue (0 - 255)\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"

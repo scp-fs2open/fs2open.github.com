@@ -438,7 +438,7 @@ BEGIN
     POPUP "Edit sexp tree"
     BEGIN
         MENUITEM "&Delete Item\tDelete",        ID_DELETE
-        MENUITEM "&Edit Data",                  ID_EDIT_TEXT
+        MENUITEM "&Edit Data\tSpace Bar",       ID_EDIT_TEXT
         MENUITEM "Expand All",                  ID_EXPAND_ALL
         MENUITEM SEPARATOR
         MENUITEM "Edit Comment",                ID_EDIT_COMMENT, GRAYED
@@ -902,7 +902,9 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,151,123,10
     CONTROL         "Player Starts under AI Control (NO MULTI)",IDC_PLAYER_START_AI,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,161,146,10
-    CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,123,10
+    CONTROL         "Player Starts in Chase View",IDC_PLAYER_START_CHASE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,146,10
+    CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,123,10
     LTEXT           "AI Profile",IDC_STATIC,320,229,32,8
     COMBOBOX        IDC_AI_PROFILE,378,226,93,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Mission Description",IDC_STATIC,4,260,62,8
@@ -916,8 +918,8 @@ BEGIN
     CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
     PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,158,244,140,15
     CONTROL         "Always Show Mission Goals In Briefing",IDC_ALWAYS_SHOW_GOALS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,180,142,10
-    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,190,142,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
+    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
     CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
 END

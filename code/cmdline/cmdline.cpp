@@ -247,7 +247,7 @@ Flag exe_params[] =
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
-	{ "-profile_frame_time","Profile frame time",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
+	{ "-profile_frame_time","Profile frame time",						true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 	{ "-debug_window",		"Enable the debug window",					true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
@@ -481,6 +481,7 @@ cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
 cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
@@ -512,6 +513,7 @@ int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
+const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_profiling = false;
 bool Cmdline_frame_profile = false;
@@ -1698,7 +1700,7 @@ bool SetCmdlineParams()
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".", Cmdline_res));
+			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
 		}
 	}
 	if(center_res_arg.found()){
@@ -2106,6 +2108,11 @@ bool SetCmdlineParams()
 	if (benchmark_mode_arg.found())
 	{
 		Cmdline_benchmark_mode = true;
+	}
+
+	if (pilot_arg.found())
+	{
+		Cmdline_pilot = pilot_arg.str();
 	}
 
 	if (noninteractive_arg.found())
