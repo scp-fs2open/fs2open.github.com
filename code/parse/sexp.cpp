@@ -10151,12 +10151,14 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
-		return SEXP_KNOWN_FALSE;
+// Don't short-circuit because ships can arrive later on, and this sexp's ship collection is intrinsically unknowable.
+//	else if (num_known_false == num_valid_arguments)
+//		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
 }
@@ -10194,7 +10196,7 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
+	else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
