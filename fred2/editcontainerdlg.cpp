@@ -814,9 +814,11 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 	cbox->DeleteString((int)cbox->GetCurSel()); 
 
 	if (m_containers.empty()) {
-		m_current_container = -1; 
+		m_current_container = -1;
+		Assert(cbox->GetCount() == 0);
+		cbox->EnableWindow(false);
 		GetDlgItem(IDC_RENAME_CONTAINER)->EnableWindow(false);
-		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);	
+		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);
 	} else {
 		m_current_container = 0; 
 		cbox->SetCurSel(m_current_container);
