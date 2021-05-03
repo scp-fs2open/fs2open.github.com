@@ -243,14 +243,14 @@
 #define IDC_SOUNDS                      1039
 #define IDC_RADIO5                      1039
 #define IDC_FURBALL                     1039
-#define IDC_CONTAINER_STRING_KEYS                 1039
+#define IDC_CONTAINER_STRING_KEYS       1039
 #define IDC_GOALS                       1040
 #define IDC_GOAL1_OBJECT1               1040
 #define IDC_RADIO6                      1040
 #define IDC_RADIO8                      1040
 #define IDC_DEPARTURE_CUE1              1040
 #define IDC_PRIORITY2                   1040
-#define IDC_CONTAINER_NUMBER_KEYS                 1040
+#define IDC_CONTAINER_NUMBER_KEYS       1040
 #define IDC_SCLASS_POWER_PLANT          1041
 #define IDC_GOAL1_ACTIVE                1041
 #define IDC_RADIO9                      1041
@@ -1156,6 +1156,7 @@
 #define IDC_CONTAINER_PLAYER_PERSIST    1667
 #define IDC_CONTAINER_CAMPAIGN_PERSIST  1668
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
+#define IDC_RENAME_CONTAINER            1670
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1445,7 +1446,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        325
+#define _APS_NEXT_RESOURCE_VALUE        326
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105

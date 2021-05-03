@@ -53,7 +53,6 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 	ON_LBN_SELCHANGE(IDC_CONTAINER_DATA_LISTER, OnListerSelectionChange)
 
 	ON_CBN_SELCHANGE(IDC_CURRENT_CONTAINER_NAME, OnSelchangeContainerName)
-	//ON_CBN_EDITCHANGE(IDC_CURRENT_CONTAINER_NAME, OnEditchangeContainerName)
 
 	ON_BN_CLICKED(IDC_CONTAINER_NO_PERSIST, OnPersistNone)
 	ON_BN_CLICKED(IDC_CONTAINER_CAMPAIGN_PERSIST, OnSaveOnMissionComplete)
@@ -61,6 +60,7 @@ BEGIN_MESSAGE_MAP(CEditContainerDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTAINER_ETERNAL_PERSIST, OnPersistEternal)
 
 	ON_BN_CLICKED(IDC_ADD_NEW_CONTAINER, &CEditContainerDlg::OnBnClickedAddNewContainer)
+	ON_BN_CLICKED(IDC_RENAME_CONTAINER, &CEditContainerDlg::OnBnClickedRenameContainer)
 
 	ON_BN_CLICKED(IDC_CONTAINER_STRING_KEYS, &CEditContainerDlg::OnBnClickedStringKeys)
 	ON_BN_CLICKED(IDC_CONTAINER_NUMBER_KEYS, &CEditContainerDlg::OnBnClickedNumberKeys)
@@ -93,6 +93,7 @@ BOOL CEditContainerDlg::OnInitDialog()
 		}
 		m_current_container = 0;
 		cbox->SetCurSel(m_current_container); 
+		GetDlgItem(IDC_RENAME_CONTAINER)->EnableWindow(true);
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
 	} else {
 		m_current_container = -1;
@@ -252,26 +253,6 @@ void CEditContainerDlg::OnSelchangeContainerName()
 		m_current_container = selected_container;
 
 		set_selected_container();
-	}
-}
-
-void CEditContainerDlg::OnEditchangeContainerName()
-{
-	CString new_name;
-
-	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
-	Assert(cbox->IsWindowEnabled());
-	Assert(cbox->GetCount() > 0);
-	Assert(has_containers());
-	Assert(m_current_container >= 0);
-	cbox->GetWindowText(new_name);
-
-	auto &container = get_current_container();
-	if (is_container_name_valid(new_name, true)) {
-		container.container_name = new_name;
-	} else {
-		// restore unmodified name
-		cbox->SetWindowText(container.container_name.c_str());
 	}
 }
 
@@ -730,7 +711,7 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 
 	CEditContainerNameDlg dlg("Add New Container", NEW_CONTAINER_NAME);
-	dlg.DoModal(); 
+	dlg.DoModal();
 
 	// if we didn't enter a name
 	if (dlg.cancelled()) {
@@ -757,10 +738,39 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 	// in case this is the first container
 	if (num_containers() == 1) {
 		cbox->EnableWindow(true);
-		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);	
+		GetDlgItem(IDC_RENAME_CONTAINER)->EnableWindow(true);
+		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(true);
 	}
 
 	set_selected_container();
+}
+
+void CEditContainerDlg::OnBnClickedRenameContainer()
+{
+	Assert(has_containers());
+	Assert(m_current_container >= 0);
+	Assert(m_current_container < num_containers());
+
+	CComboBox *cbox = (CComboBox *)GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
+	Assert(cbox->IsWindowEnabled());
+	Assert(cbox->GetCount() > 0);
+
+	auto &container = get_current_container();
+
+	CEditContainerNameDlg dlg("Rename Container", container.container_name);
+	dlg.DoModal();
+
+	if (dlg.cancelled()) {
+		return;
+	}
+
+	CString new_name = dlg.new_container_name();
+	if (is_container_name_valid(new_name, true)) {
+		container.container_name = new_name;
+		cbox->DeleteString((UINT)m_current_container);
+		cbox->InsertString(m_current_container, container.container_name.c_str());
+		cbox->SetCurSel(m_current_container);
+	}
 }
 
 void CEditContainerDlg::OnBnClickedDeleteContainer()
@@ -801,6 +811,7 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 	//maybe de-activate the delete container button
 	if (m_containers.empty()) {
 		m_current_container = -1; 
+		GetDlgItem(IDC_RENAME_CONTAINER)->EnableWindow(false);
 		GetDlgItem(IDC_DELETE_CONTAINER)->EnableWindow(false);	
 	} else {
 		m_current_container = 0; 

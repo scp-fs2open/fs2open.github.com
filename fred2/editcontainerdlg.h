@@ -36,7 +36,6 @@ protected:
 	void set_data_type();
 	void set_key_type();
 
-	afx_msg void OnEditchangeContainerName();
 	afx_msg void OnSelchangeContainerName(); 
 	void set_selected_container(); 
 
@@ -74,6 +73,7 @@ protected:
 
 public:
 	afx_msg void OnBnClickedAddNewContainer();
+	afx_msg void OnBnClickedRenameContainer();
 	afx_msg void OnBnClickedStringKeys();
 	afx_msg void OnBnClickedNumberKeys();
 	afx_msg void OnBnClickedDeleteContainer();
