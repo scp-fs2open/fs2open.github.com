@@ -1987,7 +1987,7 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 	item.type = type;
 
 	if (tab == NO_TAB) {
-		mprintf(("Control item defined without a valid tab. Disabling: %s", item.text.c_str()));
+		mprintf(("Control item defined without a valid tab. Disabling: %s\n", item.text.c_str()));
 	}
 
 	// Assign disabled state

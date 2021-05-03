@@ -526,7 +526,7 @@ void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& desti
 		//if we're using the old format, double check the size)
 		if(!scp_list && (destination.size() != (unsigned)check))
 		{
-			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
+			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.\n", tag, object_name, destination.size(), check));
 		}
 	}
 }
