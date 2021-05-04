@@ -95,10 +95,10 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setOrganizationDomain("hard-light.net");
 	QCoreApplication::setApplicationName("qtFRED");
 
-	// Expect that the platform library is in the same directory
-	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
-
 	QApplication app(argc, argv);
+
+	// Expect that the platform library is in the same directory
+	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
 
 	QGuiApplication::setApplicationDisplayName(app.tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
