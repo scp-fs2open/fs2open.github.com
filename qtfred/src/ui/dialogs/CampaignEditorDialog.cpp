@@ -95,6 +95,9 @@ void CampaignEditorDialog::updateUI() {
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());
 
+	ui->lstShips->setModel(&model->initialShips);
+	ui->lstWeapons->setModel(&model->initialWeapons);
+
 	ui->txtBriefingCutscene->setText(model->getCurMissionBriefingCutscene());
 	ui->txtMainhall->setText(model->getCurMissionMainhall());
 	ui->txtDebriefingPersona->setText(model->getCurMissionDebriefingPersona());

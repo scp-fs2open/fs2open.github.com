@@ -1,30 +1,51 @@
 #include "CampaignEditorDialogModel.h"
 #include <mission/missioncampaign.h>
+#include "weapon/weapon.h"
 
 namespace fso {
 namespace fred {
 namespace dialogs {
-
-
 
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
 	branches.emplace_back();
 	it_branches = branches.begin();
 }
 
+static CheckedDataListModel<int>::RowData initShips(SCP_vector<ship_info>::const_iterator &s_it){
+	auto shpIdx = std::distance(Ship_info.cbegin(), s_it);
+	return s_it->flags[Ship::Info_Flags::Player_ship] ?
+			CheckedDataListModel<int>::RowData(s_it->name,
+				shpIdx,
+				Campaign.ships_allowed[shpIdx])
+			: CheckedDataListModel<int>::RowData();
+
+}
+
+static CheckedDataListModel<int>::RowData initWeps(SCP_vector<weapon_info>::const_iterator &w_it){
+	auto wepIdx = std::distance(Weapon_info.cbegin(), w_it);
+	for (auto s_it = Ship_info.cbegin(); s_it != Ship_info.cend(); ++s_it)
+		if (s_it->flags[Ship::Info_Flags::Player_ship]
+				&& s_it->allowed_weapons[static_cast<size_t>(wepIdx)])
+			return CheckedDataListModel<int>::RowData(w_it->name,
+													  wepIdx,
+													  Campaign.weapons_allowed[wepIdx]);
+	return CheckedDataListModel<int>::RowData();
+}
+
 CampaignEditorDialogModel::CampaignEditorDialogModel(QString file, CampaignEditorDialog* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
-	_currentFile(file)
-
+	_currentFile(loadFile(file)),
+	initialShips(Ship_info.cbegin(), Ship_info.cend(), &initShips, this),
+	initialWeapons(Weapon_info.cbegin(), Weapon_info.cend(), &initWeps, this)
 {
-	_fileLoaded = loadCurrentFile();
 
 	_missionData.emplace_back();
 	_it_missionData = _missionData.begin();
 }
 
 bool CampaignEditorDialogModel::apply() {
+
 	return saveTo(_currentFile);
 }
 
@@ -43,11 +64,11 @@ const QStringList CampaignEditorDialogModel::campaignTypes {
 	campaign_types, &campaign_types[MAX_CAMPAIGN_TYPES]		//missioncampaign.h global
 };
 
-bool CampaignEditorDialogModel::loadCurrentFile() {
-	if (_currentFile.isEmpty())
-		return false;
-	if (mission_campaign_load(qPrintable(_currentFile), nullptr, 0))
-		return false;
+const QString CampaignEditorDialogModel::loadFile(const QString &file) {
+	if (file.isEmpty())
+		return QString();
+	if (mission_campaign_load(qPrintable(file), nullptr, 0))
+		return QString();
 
 	//missioncampaign.h globals
 	_campaignName = Campaign.name;
@@ -56,7 +77,7 @@ bool CampaignEditorDialogModel::loadCurrentFile() {
 	_campaignDescr = Campaign.desc;
 	_numPlayers = Campaign.num_players;
 
-	return true;
+	return file;
 }
 
 bool CampaignEditorDialogModel::_saveTo(const QString &file) {

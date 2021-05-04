@@ -3,6 +3,7 @@
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/dialogs/CampaignEditorDialog.h"
+#include "CheckedDataListModel.h"
 
 namespace fso {
 namespace fred {
@@ -23,7 +24,7 @@ public:
 	void reject() override;
 
 	inline const QString& getCurrentFile() const { return _currentFile; }
-	inline bool isFileLoaded() const { return _fileLoaded; }
+	inline bool isFileLoaded() const { return ! _currentFile.isEmpty(); }
 
 	inline const QString& getCampaignName() const { return _campaignName; }
 	inline const QString& getCampaignType() const { return _campaignType; }
@@ -77,10 +78,8 @@ public:
 
 	inline bool query_modified() const { return modified; }
 
-	static const QStringList campaignTypes;
-
 private:
-	bool loadCurrentFile();
+	const QString loadFile(const QString &file);
 	bool _saveTo(const QString &file);
 
 	template<typename T>
@@ -117,10 +116,6 @@ private:
 		SCP_vector<CampaignBranchData> branches;
 	};
 
-	CampaignEditorDialog *const _parent;
-	const QString _currentFile;
-	bool _fileLoaded{false};
-
 	QString _campaignDescr;
 	QString _campaignName;
 	QString _campaignType{ campaignTypes[0] };
@@ -129,6 +124,14 @@ private:
 
 	SCP_vector<CampaignMissionData>::iterator _it_missionData;  //noUIu
 	SCP_vector<CampaignMissionData> _missionData;
+
+	CampaignEditorDialog *const _parent;
+	const QString _currentFile;
+public:
+
+	static const QStringList campaignTypes;
+	CheckedDataListModel<int> initialShips;
+	CheckedDataListModel<int> initialWeapons;
 };
 
 
