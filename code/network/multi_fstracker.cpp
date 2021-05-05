@@ -1126,7 +1126,7 @@ int multi_fs_tracker_validate_mission(char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating mission %s", 1074), filename);
 
 		// run a popup
-		switch(popup_till_condition(multi_fs_tracker_validate_mission_normal, XSTR("&Cancel", 667), popup_string)){
+		switch ( popup_conditional_do(multi_fs_tracker_validate_mission_normal, popup_string) ) {
 		// cancel 
 		case 0: 
 			// bash some API values here so that next time we try and verify, everything works
@@ -1242,7 +1242,7 @@ int multi_fs_tracker_validate_table(const char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating table %s", -1), filename);
 
 		// run a popup
-		switch ( popup_till_condition(multi_fs_tracker_validate_table_normal, XSTR("&Cancel", 667), popup_string) ) {
+		switch ( popup_conditional_do(multi_fs_tracker_validate_table_normal, popup_string) ) {
 			// cancel
 			case 0:
 				TableValidState = VALID_STATE_IDLE;
@@ -1308,7 +1308,11 @@ int multi_fs_tracker_validate_game_data()
 
 		// now check with tracker
 
-		for (auto tbl : table_list) {
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating tables ...", -1));
+		}
+
+		for (auto &tbl : table_list) {
 			rval = multi_fs_tracker_validate_table( tbl.c_str() );
 
 			// if anything is valid then update our default
@@ -1319,6 +1323,15 @@ int multi_fs_tracker_validate_game_data()
 			else if (rval == TVALID_STATUS_INVALID) {
 				game_data_status = TVALID_STATUS_INVALID;
 			}
+			// if the popup was canceled then force a recheck on next attempt
+			else if (rval == -2) {
+				game_data_status = TVALID_STATUS_UNKNOWN;
+				break;
+			}
+		}
+
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_close();
 		}
 
 		// we should hopefully have a mod id now, so log it
