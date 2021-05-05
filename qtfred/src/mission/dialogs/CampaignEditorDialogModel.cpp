@@ -39,6 +39,9 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(QString file, CampaignEdito
 	initialShips(Ship_info.cbegin(), Ship_info.cend(), &initShips, this),
 	initialWeapons(Weapon_info.cbegin(), Weapon_info.cend(), &initWeps, this)
 {
+	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+
 
 	_missionData.emplace_back();
 	_it_missionData = _missionData.begin();

@@ -78,20 +78,24 @@ public:
 
 	inline bool query_modified() const { return modified; }
 
+private slots:
+	inline void flagModified() { modified = true; }
+
 private:
 	const QString loadFile(const QString &file);
 	bool _saveTo(const QString &file);
 
+	bool modified{false};
 	template<typename T>
 	inline void modify(T &a, const T &b, const bool dataModification = true) {
 		if (a != b) {
 			a = b;
 			modelChanged();
 			if (dataModification)
-				modified = true;
+				flagModified();
 		}
 	}
-	bool modified{false};
+
 
 	struct CampaignLoopData	{
 
@@ -127,6 +131,7 @@ private:
 
 	CampaignEditorDialog *const _parent;
 	const QString _currentFile;
+
 public:
 
 	static const QStringList campaignTypes;
