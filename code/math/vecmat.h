@@ -237,7 +237,6 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes the delta angle between two normalized vectors.
 float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *uvec);
-float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
 matrix *vm_angles_2_matrix(matrix *m, const angles *a);

@@ -336,7 +336,7 @@ int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
     vm_vec_normalize(&new_pt);
 
     float dot = vm_vec_dot(&fvec, &new_pt);
-    float angle = fabs(acosf(dot));
+    float angle = fabs(acosf_safe(dot));
     int alpha = int(angle*192.0f/PI);
     
     return alpha;
