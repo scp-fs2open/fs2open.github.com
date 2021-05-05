@@ -577,7 +577,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		vm_vector_2_matrix(&orient, &rand);
 	}
 
-    objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &orient, pos, radius, default_flags);
+	objnum = obj_create(OBJ_DEBRIS, parent_objnum, n, &orient, pos, radius, default_flags, false);
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
 		return nullptr;

@@ -5691,13 +5691,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	num_deleted = 0;
 	if (Num_weapons >= MAX_WEAPONS-5) {
 
-		//No, do remove for AI ships -- MK, 3/12/98  // don't need to try and delete weapons for ai ships
-		//if ( !(Objects[parent_objnum].flags[Object::Object_Flags::Player_ship]) )
-		//	return -1;
-
 		num_deleted = collide_remove_weapons();
 
-		nprintf(("WARNING", "Deleted %d weapons because of lack of slots\n", num_deleted));
+		mprintf(("Deleted %d weapons because of lack of slots.\n", num_deleted));
 		if (num_deleted == 0){
 			return -1;
 		}
@@ -5767,8 +5763,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
 		default_flags.set(Object::Object_Flags::Collides_with_parent);
 
-	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags);
-	Assert(objnum >= 0);
+	// mark this object creation as essential, if it is created by a player.  
+	// You don't want players mysteriously wondering why they aren't firing.
+		objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags, parent_objp->flags[Object::Object_Flags::Player_ship]);
+
+	if (objnum < 0) {
+		mprintf(("A weapon failed to be created because FSO is running out of object slots!\n"));
+		return -1;
+	}
+
 	objp = &Objects[objnum];
 
 	// Create laser n!
