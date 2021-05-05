@@ -707,7 +707,7 @@ DialogButton FredView::showButtonDialog(DialogType type,
 	dialog.setWindowTitle(QString::fromStdString(title));
 	dialog.setText(QString::fromStdString(message));
 
-	QMessageBox::StandardButtons qtButtons = 0;
+	QMessageBox::StandardButtons qtButtons{};
 	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
 	if (buttons[DialogButton::Yes]) {
 		qtButtons |= QMessageBox::Yes;
