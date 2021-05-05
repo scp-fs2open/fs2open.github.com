@@ -60,13 +60,21 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 }
 
 //TODO retrieve constants
-const QStringList CampaignEditorDialogModel::campaignTypes {
-	campaign_types, &campaign_types[MAX_CAMPAIGN_TYPES]		//missioncampaign.h global
-};
+static QStringList initCampaignTypes(){
+	QStringList ret;
+	for (auto& tp: campaign_types) {  //missioncampaign.h global
+		ret << tp;
+	}
+	return ret;
+}
+const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
+
 
 const QString CampaignEditorDialogModel::loadFile(const QString &file) {
-	if (file.isEmpty())
+	if (file.isEmpty()) {
+		mission_campaign_clear();
 		return QString();
+	}
 	if (mission_campaign_load(qPrintable(file), nullptr, 0))
 		return QString();
 
