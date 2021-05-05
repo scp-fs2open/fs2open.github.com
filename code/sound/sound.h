@@ -74,8 +74,8 @@ struct game_snd_entry {
 };
 
 enum class GameSoundCycleType {
-	Random,
-	Sequential
+	RandomCycle,
+	SequentialCycle
 };
 
 /**
@@ -91,7 +91,7 @@ struct game_snd
 	int max = 0;					//!<distance at which sound is inaudible
 	int	flags = 0;
 
-	GameSoundCycleType cycle_type = GameSoundCycleType::Sequential;
+	GameSoundCycleType cycle_type = GameSoundCycleType::SequentialCycle;
 	size_t last_entry_index; //!< The last sound entry used by this sound.
 
 	util::UniformFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound

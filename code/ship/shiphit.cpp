@@ -1054,7 +1054,7 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 
 	int n = ship_p->num_hits;
 	if (n >= MAX_SHIP_HITS)	{
-		n = rand() % MAX_SHIP_HITS;
+		n = Random::next(MAX_SHIP_HITS);
 	} else {
 		ship_p->num_hits++;
 	}
@@ -1158,7 +1158,7 @@ static int choose_next_spark(object *ship_objp, vec3d *hitpos)
 
 	// not same location, so maybe do random recyling
 	if (frand() > 0.5f) {
-		return (rand() % num_sparks);
+		return Random::next(num_sparks);
 	}
 
 	// initialize spark pairs
@@ -1233,7 +1233,7 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 			n = choose_next_spark(ship_objp, hitpos);
 		} else {
 			// otherwise, normal choice
-			n = rand() % max_sparks;
+			n = Random::next(max_sparks);
 		}
 	} else {
 		shipp->num_hits++;

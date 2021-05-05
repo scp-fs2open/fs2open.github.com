@@ -850,7 +850,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
-			if ( (rand()>>4) & 1 )	{
+			if ( Random::flip_coin() )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
 			} else {
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
@@ -861,7 +861,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
-			if ( (rand()>>4) & 1 )	{
+			if ( Random::flip_coin() )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
 			} else {
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));

@@ -12,6 +12,7 @@
 #include "io/timer.h"
 #include "math/floating.h"
 #include "math/staticrand.h"
+#include "utils/Random.h"
 
 
 /**
@@ -37,9 +38,9 @@ float frand()
 {
 	int i_rval;
 	do {
-		i_rval = myrand();
-	} while (i_rval == RAND_MAX);
-	float rval = i2fl(i_rval) * RAND_MAX_1f;
+		i_rval = Random::next();
+	} while (i_rval == Random::MAX_VALUE);
+	float rval = i2fl(i_rval) * Random::INV_F_MAX_VALUE;
 	return rval;
 }
 

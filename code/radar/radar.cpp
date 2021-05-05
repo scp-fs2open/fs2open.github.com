@@ -57,8 +57,8 @@ void HudGaugeRadarStd::blipDrawDistorted(blip *b, int x, int y)
 {
 	int xdiff, ydiff;
 	float scale;
-	xdiff = -10 + rand()%20;
-	ydiff = -10 + rand()%20;
+	xdiff =  Random::next(-10, 9);
+	ydiff =  Random::next(-10, 9);
 
 	// maybe scale the effect if EMP is active
 	if(emp_active_local()){
@@ -89,9 +89,9 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 		return;
 	}
 
-	if ( rand() & 1 ) {
-		xdiff = -2 + rand()%4;
-		ydiff = -2 + rand()%4;
+	if (Random::flip_coin()) {
+		xdiff = Random::next(-2, 1);
+		ydiff = Random::next(-2, 1);
 	}
 
 	drawContactCircle(x + xdiff, y + ydiff, b->rad);

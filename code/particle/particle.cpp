@@ -19,6 +19,7 @@
 #include "render/batching.h"
 #include "tracing/tracing.h"
 #include "tracing/Monitor.h"
+#include "utils/Random.h"
 #include "nebula/neb.h"
 #include "mission/missionparse.h"
 #include "mod_table/mod_table.h"
@@ -551,7 +552,7 @@ namespace particle
 		n2 = (pe->num_high * percent) / 100;
 
 		// How many to emit?
-		n = (rand() % (n2 - n1 + 1)) + n1;
+		n = Random::next(n1, n2);
 
 		if (n < 1) return;
 

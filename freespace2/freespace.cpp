@@ -180,6 +180,7 @@
 #include "stats/stats.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -903,7 +904,7 @@ void game_level_init()
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// seed the generator from the netgame security flags -- ensures that all players in
 		// multiplayer will have the same random number sequence (with static rand functions)
-		srand( Netgame.security );
+		Random::seed( Netgame.security );
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
@@ -1594,11 +1595,8 @@ void game_init()
 
 	Game_current_mission_filename[0] = 0;
 
-	// Moved from rand32, if we're gonna break, break immediately.
-	Assert(RAND_MAX == 0x7fff || RAND_MAX >= 0x7ffffffd);
 	// seed the random number generator
-	int game_init_seed = (int) time(nullptr);
-	srand( game_init_seed );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	Framerate_delay = 0;
 
@@ -2854,9 +2852,9 @@ void game_shudder_apply(int time, float intensity)
 
 float get_shake(float intensity, int decay_time, int max_decay_time)
 {
-	int r = myrand();
+	int r = Random::next();
 
-	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
+	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);
