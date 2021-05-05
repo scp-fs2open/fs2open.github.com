@@ -81,7 +81,7 @@ public:
 		if (parent.isValid())
 			return 0;
 
-		return items.size();
+		return static_cast<int>(items.size());
 	}
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
