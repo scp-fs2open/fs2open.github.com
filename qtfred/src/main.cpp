@@ -14,6 +14,8 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include "ui/widgets/renderwidget.h"
+#include "globalincs/pstypes.h"
 
 #include "ui/FredView.h"
 #include "FredApplication.h"
@@ -180,12 +182,14 @@ int main(int argc, char* argv[]) {
 	// Use this to keep the app responsive
 	game_busy_callback(game_busy_callback);
 
+	// Show all top level windows that are our window
+	FredView* fredview;
 	for (auto& window : qApp->topLevelWidgets()) {
-		// Show all top level windows that are our window
-		if (qobject_cast<FredView*>(window) != nullptr) {
-			window->showMaximized();
-		}
+		fredview = qobject_cast<FredView*>(window);
+		if (fredview != nullptr) break;
 	}
+	Assert(fredview != nullptr);
+	fredview->showMaximized();
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
@@ -196,6 +200,12 @@ int main(int argc, char* argv[]) {
 			fred->loadMission(Cmdline_start_mission);
 		});
 	}
+
+	// Render first correct frame
+	QTimer::singleShot(50, [=]{
+		Assert(fredview != nullptr);
+		fredview->getRenderWidget()->renderFrame();
+	});
 
 	return QGuiApplication::exec();
 }
