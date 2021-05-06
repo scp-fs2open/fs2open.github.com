@@ -866,7 +866,7 @@ void parse_player_info2(mission *pm)
 				if ( !Campaign.ships_allowed[sc.index] )
 					continue;
 			}
-			if (sc.index < 0 || sc.index >= weapon_info_size())
+			if (sc.index < 0 || sc.index >= ship_info_size())
 				continue;
 
 			ptr->ship_list[num_choices] = sc.index;
