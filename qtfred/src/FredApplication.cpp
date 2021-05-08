@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QtGui/QtEvents>
+#include <QApplication>
 
 #include <mission/Editor.h>
 #include <mission/management.h>
@@ -25,8 +26,8 @@ FredApplication::FredApplication() {
 
 	connect(this, &FredApplication::initializeComplete, [this]() { _initializeEmitted = true; });
 
-	// Put our shutdown code into a slot connected to the quit signal. That's the recommended way of doing cleanup
-	connect(qGuiApp, &QCoreApplication::aboutToQuit, this, &FredApplication::shutdown);
+	// Run our shutdown code after closing last window, but before application quits.
+	connect(qApp, &QApplication::lastWindowClosed, this, &FredApplication::shutdown);
 
 	// This will call our function in regular increments which allows us to do mission simulation stuff
 	auto idleTimer = new QTimer(this);
