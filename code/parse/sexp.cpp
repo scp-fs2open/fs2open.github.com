@@ -17995,7 +17995,6 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 		// copy
 		if (source_ss->max_hits == 0.0f)
 		{
-			Warning(LOCATION, "Why does %s's subsystem %s have a maximum strength of 0?", source_shipp->ship_name, source_ss->system_info->subobj_name);
 			target_sssp->percent = 100.0f;
 		}
 		else
