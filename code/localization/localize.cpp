@@ -75,7 +75,7 @@ int Xstr_inited = 0;
 
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
-#define PARSE_ID_BUF_SIZE			5
+#define PARSE_ID_BUF_SIZE			8	// 7 digits and a \0
 
 SCP_unordered_map<int, char*> Lcl_ext_str;
 
