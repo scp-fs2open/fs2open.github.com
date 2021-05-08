@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
 	// Use this to keep the app responsive
 	game_busy_callback(game_busy_callback);
 
-	// Show all top level windows that are our window
+	// Find and show our window from the top level windows
 	FredView* fredview(nullptr);
 	for (auto& window : qApp->topLevelWidgets()) {
 		fredview = qobject_cast<FredView*>(window);
