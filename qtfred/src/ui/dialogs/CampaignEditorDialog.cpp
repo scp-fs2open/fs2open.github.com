@@ -146,13 +146,9 @@ void CampaignEditorDialog::fileOpen() {
 	if (! questionSaveChanges())
 		return;
 
-	QMessageBox::warning(this, "Warning",
-"A file other than the one you select may be opened!\n\
-As in FRED, this currently opens the campaign file\n\
-with the selected file name IN THE CURRENT CFile SYSTEM!");
-	QUrl pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
 
-	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName.fileName(), this, _viewport));
+	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
 	if (newModel->isFileLoaded())
 		model = std::move(newModel);
 
