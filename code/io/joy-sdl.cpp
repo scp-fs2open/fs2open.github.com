@@ -128,25 +128,11 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int id)
  *
  * @details
  *   Should cid be CID_JOY0, it also checks for legacy .ini keys.
- *   Should the fs2_open.ini contain legacy keys "CurrentJoystickGUID" and/or "CurrentJoystick," it is assumed that
- * all cids other than CID_JOY0 won't have an associated joystick
+ *   Should Joy0ID key be null, legacy keys will be tried
  */
 bool isPlayerJoystick(Joystick* testStick, short cid) {
 	SCP_string GUID;
 	int Id;
-
-	GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
-	Id = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));
-
-	if (!GUID.empty() || (Id != 0)) {
-		// Legacy options found
-		if (cid == CID_JOY0) {
-			return joystickMatchesGuid(testStick, GUID, Id);
-		} else {
-			// Anything other than Joy0 won't have a key, bail.
-			return false;
-		}
-	} // Else, using new options
 
 	SCP_string key_guid;
 	SCP_string key_id;
@@ -180,6 +166,12 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 
 	GUID = os_config_read_string(nullptr, key_guid.c_str(), "");
 	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), 0));
+
+	if ((cid == CID_JOY0) && (GUID == "")) {
+		// Check legacy keys
+		GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
+		Id = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));
+	}
 
 	return joystickMatchesGuid(testStick, GUID, Id);
 }
