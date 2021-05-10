@@ -68,7 +68,7 @@ void load_preset_files() {
 
 		// Version
 		int version = handler->readInt("version");
-		mprintf(("PST => Loading `%s` with version %i", file.c_str(), version));
+		mprintf(("PST => Loading `%s` with version %i\n", file.c_str(), version));
 
 
 		// Start reading in data
@@ -146,7 +146,7 @@ void load_preset_files() {
 bool save_preset_file(CC_preset preset, bool overwrite) {
 	// Must have a name
 	if (preset.name.empty()) {
-		mprintf(("PST => Unable to save preset, missing name!"));
+		mprintf(("PST => Unable to save preset, missing name!\n"));
 		return false;
 	}
 	
