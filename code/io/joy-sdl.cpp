@@ -160,7 +160,7 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 		case CID_MOUSE:
 			return false;
 		default:
-			mprintf(("Unknown CID %i", cid));
+			mprintf(("Unknown CID %i\n", cid));
 			return false;
 	}
 
@@ -481,7 +481,7 @@ bool device_event_handler(const SDL_Event &evt)
 			{
 				if (value[i] == addedStick)
 				{
-					mprintf(("Joystick %i connected", i));
+					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
 					break;
 				}
@@ -494,7 +494,7 @@ bool device_event_handler(const SDL_Event &evt)
 			{
 				if (isPlayerJoystick(addedStick, i))
 				{
-					mprintf(("Joystick %i connected", i));
+					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
 					break;
 				}
@@ -517,7 +517,7 @@ bool device_event_handler(const SDL_Event &evt)
 			if (joyDeviceEvent.which == pJoystick[i]->getID())
 			{
 				// We just lost our joystick, reset the data
-				mprintf(("Joystick %i disconnected", i));
+				mprintf(("Joystick %i disconnected\n", i));
 				setPlayerJoystick(nullptr, i);
 				break;
 			}
