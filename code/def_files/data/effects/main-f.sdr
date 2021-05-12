@@ -94,6 +94,8 @@ layout (std140) uniform modelData {
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
 	int sMiscmapIndex;
+
+	float alphaMult;
 };
 
 in VertexOutput {
@@ -424,6 +426,9 @@ void main()
 #ifndef FLAG_DEFERRED
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here
 	baseColor.rgb += emissiveColor.rgb;
+#endif
+#ifdef FLAG_ALPHA_MULT
+	baseColor.a *= alphaMult;
 #endif
 
 	fragOut0 = baseColor;

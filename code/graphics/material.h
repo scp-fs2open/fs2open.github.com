@@ -204,6 +204,9 @@ class model_material : public material
 
 	float Outline_thickness = -1.0f;
 
+	bool Use_alpha_mult = false;
+	float Alpha_mult = 1.0f;
+
 public:
 	model_material();
 
@@ -259,6 +262,12 @@ public:
 	void set_fog();
 	bool is_fogged() const;
 	const fog& get_fog() const;
+
+	float get_alpha_mult() const;
+	bool is_alpha_mult_active() const;
+	void set_alpha_mult(float alpha);
+	void reset_alpha_mult();
+
 };
 
 class particle_material : public material
