@@ -2295,7 +2295,9 @@ void control_config_do_frame(float frametime)
 		int sw, sh;
 		gr_get_string_size(&sw, &sh, conflict_str);
 
-		gr_printf_menu(Conflict_warning_coords[gr_screen.res][CONTROL_X_COORD] - (sw / 2), Conflict_warning_coords[gr_screen.res][CONTROL_Y_COORD], conflict_str);
+		x = Conflict_warning_coords[gr_screen.res][CONTROL_X_COORD] - (sw / 2);
+		y = Conflict_warning_coords[gr_screen.res][CONTROL_Y_COORD];
+		gr_printf_menu(x, y, "%s", conflict_str);
 
 		font::set_font(font::FONT1);
 	} else {
