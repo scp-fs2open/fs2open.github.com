@@ -146,11 +146,14 @@ void CampaignEditorDialog::fileOpen() {
 	if (! questionSaveChanges())
 		return;
 
+
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
 
 	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
 	if (newModel->isFileLoaded())
 		model = std::move(newModel);
+	else
+		QMessageBox::information(this, tr("Error opening file"), pathName);
 
 	updateUI();
 }

@@ -11,6 +11,18 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
 	it_branches = branches.begin();
 }
 
+
+static const QString loadFile(QString file) {
+	if (file.isEmpty()) {
+		mission_campaign_clear();
+		return QString();
+	}
+	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
+		return QString();
+
+	return Campaign.filename;
+}
+
 static CheckedDataListModel<int>::RowData initShips(SCP_vector<ship_info>::const_iterator &s_it){
 	auto shpIdx = std::distance(Ship_info.cbegin(), s_it);
 	return s_it->flags[Ship::Info_Flags::Player_ship] ?
@@ -32,7 +44,8 @@ static CheckedDataListModel<int>::RowData initWeps(SCP_vector<weapon_info>::cons
 	return CheckedDataListModel<int>::RowData();
 }
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(QString file, CampaignEditorDialog* parent, EditorViewport* viewport) :
+
+CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, CampaignEditorDialog* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
 	_currentFile(loadFile(file)),
@@ -42,6 +55,12 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(QString file, CampaignEdito
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 
+	//missioncampaign.h globals
+	_campaignName = Campaign.name;
+	_campaignType = campaignTypes[Campaign.type];
+	_campaignTechReset = Campaign.flags & CF_CUSTOM_TECH_DATABASE;
+	_campaignDescr = Campaign.desc;
+	_numPlayers = Campaign.num_players;
 
 	_missionData.emplace_back();
 	_it_missionData = _missionData.begin();
@@ -72,26 +91,7 @@ static QStringList initCampaignTypes(){
 }
 const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
 
-
-const QString CampaignEditorDialogModel::loadFile(const QString &file) {
-	if (file.isEmpty()) {
-		mission_campaign_clear();
-		return QString();
-	}
-	if (mission_campaign_load(qPrintable(file), nullptr, 0))
-		return QString();
-
-	//missioncampaign.h globals
-	_campaignName = Campaign.name;
-	_campaignType = campaignTypes[Campaign.type];
-	_campaignTechReset = Campaign.flags & CF_CUSTOM_TECH_DATABASE;
-	_campaignDescr = Campaign.desc;
-	_numPlayers = Campaign.num_players;
-
-	return file;
-}
-
-bool CampaignEditorDialogModel::_saveTo(const QString &file) {
+bool CampaignEditorDialogModel::_saveTo(QString file) {
 	if (file.isEmpty())
 		return false;
 	//QFile f(file);

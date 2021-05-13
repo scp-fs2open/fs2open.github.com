@@ -17,7 +17,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 	Q_OBJECT
 public:
 
-	CampaignEditorDialogModel(QString file, CampaignEditorDialog *parent, EditorViewport *viewport);
+	CampaignEditorDialogModel(const QString &file, CampaignEditorDialog *parent, EditorViewport *viewport);
 	~CampaignEditorDialogModel() override = default;
 	bool apply() override;
 
@@ -82,8 +82,7 @@ private slots:
 	inline void flagModified() { modified = true; }
 
 private:
-	const QString loadFile(const QString &file);
-	bool _saveTo(const QString &file);
+	bool _saveTo(QString file);
 
 	bool modified{false};
 	template<typename T>
