@@ -36,6 +36,7 @@ extern float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far);
 bool shadows_obj_in_frustum(object *objp, vec3d *min, vec3d *max, matrix *light_orient);
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos);
+void shadows_render_cockpit(float fov, matrix* eye_orient, object* objp);
 
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist);
 void shadows_end_render();

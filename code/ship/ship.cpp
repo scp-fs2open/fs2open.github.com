@@ -7346,6 +7346,8 @@ extern bool Rendering_to_shadow_map;
 
 void ship_render_cockpit(object *objp)
 {
+	GR_DEBUG_SCOPE("Render Cockpit");
+	
 	if(objp->type != OBJ_SHIP || objp->instance < 0)
 		return;
 

@@ -3383,11 +3383,14 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != nullptr && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
-		GR_DEBUG_SCOPE("Render Cockpit");
-
+		Shadow_override = false;
+		gr_post_process_save_zbuffer();
+		shadows_render_cockpit(Proj_fov, &Eye_matrix, Viewer_obj);
+		gr_post_process_restore_zbuffer();
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
 		gr_post_process_restore_zbuffer();
+		Shadow_override = true;
 	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);

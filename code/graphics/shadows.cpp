@@ -18,6 +18,7 @@
 #include "model/modelrender.h"
 #include "options/Option.h"
 #include "render/3d.h"
+#include "ship/ship.h"
 #include "tracing/tracing.h"
 
 extern vec3d check_offsets[8];
@@ -509,5 +510,78 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	gr_clear_states();
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+}
+
+void shadows_render_cockpit(float fov, matrix* eye_orient, object* objp)
+{
+	GR_DEBUG_SCOPE("Render shadows cockpit");
+	TRACE_SCOPE(tracing::BuildShadowMap);
+
+	// validity checks 
+	if (objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+
+	if ( Static_light.empty() ) {
+		return;
+	}
+
+	if (Shadow_quality == ShadowQuality::Disabled) {
+		return;
+	}
+
+	// get proper eyepoints and orientations
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	if (sip->cockpit_model_num < 0)
+		return;
+
+	polymodel* pm = model_get(sip->cockpit_model_num);
+	Assert(pm != nullptr);
+
+	vec3d cockpit_eye_pos;
+	matrix dummy;
+	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); // Get cockpit eye position
+
+	matrix eye_ori = vmd_identity_matrix;
+	vec3d eye_pos = vmd_zero_vector;
+	ship_get_eye(&eye_pos, &eye_ori, objp, false, true);
+
+	vec3d pos = vmd_zero_vector;
+
+	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+
+	// start shadow render
+	// these cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding.
+	matrix light_matrix = shadows_start_render(&eye_ori, &eye_pos, fov, gr_screen.clip_aspect, 0.02f, 0.1f, 0.2f, 0.5f);
+
+	model_draw_list scene;
+
+	//render cockpit
+	model_render_params render_info;
+	model_clear_instance(sip->cockpit_model_num);
+
+	render_info.set_object_number(sip->cockpit_model_num);
+	render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+
+	model_render_queue(&render_info, &scene, sip->cockpit_model_num, &eye_ori, &pos);
+
+	scene.init_render();
+	scene.render_all(ZBUFFER_TYPE_FULL);
+
+	// cleanup and end
+	shadows_end_render();
+
+	gr_zbias(0);
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_set_cull(0);
+
+	gr_clear_states();
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
