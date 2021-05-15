@@ -388,6 +388,7 @@ void script_init();
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
 extern bool Output_scripting_json;
+extern SCP_string Custom_lua_error_message;
 
 //*************************Conditional scripting*************************
 

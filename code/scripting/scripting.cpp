@@ -30,6 +30,8 @@ script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
 
+SCP_string Custom_lua_error_message = "";
+
 flag_def_list Script_conditions[] = 
 {
 	{"State",		CHC_STATE,			0},

@@ -5,6 +5,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 #include "scripting/ade.h"
+#include "scripting/scripting.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_clipboard.h>
@@ -152,6 +153,10 @@ namespace os
 		{
 			SCP_stringstream msgStream;
 			
+			if (!Custom_lua_error_message.empty()) {
+				msgStream << Custom_lua_error_message << '\n';
+			}
+
 			//WMC - if format is set to NULL, assume this is acting as an
 			//error handler for Lua.
 			if (format == NULL)

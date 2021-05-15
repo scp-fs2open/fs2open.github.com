@@ -21,6 +21,7 @@
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
+#include "scripting/scripting.h"
 #include "utils/Random.h"
 
 namespace scripting {
@@ -47,6 +48,19 @@ ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug
 ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", NULL, NULL)
 {
 	Error(LOCATION, "%s", lua_tostring(L, -1));
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setOnErrorString, l_Base, "string Message", "Sets a string that will be displayed on the next lua error", nullptr, nullptr)
+{
+	const char* message;
+	if (!ade_get_args(L, "s", &message)) {
+		Custom_lua_error_message = "";
+	}
+	else {
+		Custom_lua_error_message = message;
+	}
 
 	return ADE_RETURN_NIL;
 }
