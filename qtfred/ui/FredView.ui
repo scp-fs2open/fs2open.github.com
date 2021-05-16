@@ -1123,6 +1123,9 @@
    <property name="text">
     <string>&amp;Command Briefing</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
+   </property>
   </action>
   <action name="actionFiction_Viewer">
    <property name="text">

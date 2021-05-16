@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::CommandBriefingDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::CommandBriefingDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>547</width>
+    <height>533</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_3">
+   <item row="2" column="2">
+    <layout class="QVBoxLayout" name="topLevelVerticalLayout">
+     <item>
+      <widget class="QLabel" name="stageControlLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Stage Controls</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="stageManagementAndOKLayout">
+       <item>
+        <layout class="QGridLayout" name="stageManagementLayout">
+         <item row="1" column="2" alignment="Qt::AlignLeft">
+          <widget class="QPushButton" name="actionNextStage">
+           <property name="text">
+            <string>Next</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="6">
+          <spacer name="rightTeamSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="4">
+          <widget class="QLabel" name="teamLabel">
+           <property name="text">
+            <string>Team</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QSpinBox" name="actionChangeTeams">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="actionDeleteStage">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1" alignment="Qt::AlignRight">
+          <widget class="QPushButton" name="actionPrevStage">
+           <property name="text">
+            <string>Prev</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QPushButton" name="actionAddStage">
+           <property name="text">
+            <string>Add</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <spacer name="leftTeamSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="1">
+          <widget class="QPushButton" name="actionInsertStage">
+           <property name="text">
+            <string>Insert</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4" colspan="2">
+          <widget class="QPushButton" name="actionCopyToOtherTeams">
+           <property name="text">
+            <string>Copy to Other Teams</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="currentStageLabel">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>No Stages</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QDialogButtonBox" name="okAndCancelButtons">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="secondaryVerticalLayout">
+       <item>
+        <widget class="QLabel" name="briefingTextLabel">
+         <property name="text">
+          <string>Briefing Text</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="actionBriefingTextEditor">
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOn</enum>
+         </property>
+         <property name="plainText">
+          <string>&lt;Text here&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="fileLabels">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Stage Files:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="fileSelectionGridLayout">
+         <item row="2" column="2">
+          <widget class="QLineEdit" name="speechFileName">
+           <property name="text">
+            <string>none</string>
+           </property>
+           <property name="maxLength">
+            <number>31</number>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="2">
+          <widget class="QLineEdit" name="actionHighResolutionFilenameEdit">
+           <property name="text">
+            <string>&lt;default&gt;</string>
+           </property>
+           <property name="maxLength">
+            <number>31</number>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="highResLabel">
+           <property name="text">
+            <string>1024 x 768</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="lowResolutionLabel">
+           <property name="text">
+            <string>  640 x 480</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QLineEdit" name="actionLowResolutionFilenameEdit">
+           <property name="text">
+            <string>&lt;default&gt;</string>
+           </property>
+           <property name="maxLength">
+            <number>31</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3" colspan="2">
+          <widget class="QPushButton" name="actionBrowseAnimation">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="QPushButton" name="actionBrowseSpeechFile">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="3" colspan="2">
+          <widget class="QPushButton" name="actionHighResolutionBrowse">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="3" colspan="2">
+          <widget class="QPushButton" name="actionLowResolutionBrowse">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="3">
+          <widget class="QLabel" name="commandBriefingBackgroundHeader">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;These are command-briefing-wide and are shared among teams.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Custom Command Briefing Background Images:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="animationFileName">
+           <property name="text">
+            <string>&lt;default&gt;</string>
+           </property>
+           <property name="maxLength">
+            <number>31</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="QPushButton" name="actionTestSpeechFileButton">
+           <property name="text">
+            <string>Test Speech</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="animationFileLabel">
+           <property name="text">
+            <string>Animation File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="speechFileLabel">
+           <property name="text">
+            <string>Speech File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <spacer name="SpacerforBackgroundImages">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>actionAddStage</tabstop>
+  <tabstop>actionPrevStage</tabstop>
+  <tabstop>actionNextStage</tabstop>
+  <tabstop>actionInsertStage</tabstop>
+  <tabstop>actionDeleteStage</tabstop>
+  <tabstop>actionChangeTeams</tabstop>
+  <tabstop>actionCopyToOtherTeams</tabstop>
+  <tabstop>actionBriefingTextEditor</tabstop>
+  <tabstop>animationFileName</tabstop>
+  <tabstop>actionBrowseAnimation</tabstop>
+  <tabstop>speechFileName</tabstop>
+  <tabstop>actionBrowseSpeechFile</tabstop>
+  <tabstop>actionTestSpeechFileButton</tabstop>
+  <tabstop>actionLowResolutionFilenameEdit</tabstop>
+  <tabstop>actionLowResolutionBrowse</tabstop>
+  <tabstop>actionHighResolutionFilenameEdit</tabstop>
+  <tabstop>actionHighResolutionBrowse</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>okAndCancelButtons</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::CommandBriefingDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>okAndCancelButtons</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::CommandBriefingDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
