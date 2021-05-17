@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "math/floating.h"
+#include <limits>
 
 
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
