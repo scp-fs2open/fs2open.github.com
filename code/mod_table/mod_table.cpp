@@ -70,6 +70,7 @@ bool Neb_affects_beams;
 bool Neb_affects_weapons;
 bool Neb_affects_particles;
 bool Neb_affects_fireballs;
+std::tuple<ubyte, ubyte, ubyte, ubyte> Shadow_distances;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -397,6 +398,16 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Neb_affects_fireballs);
 		}
 
+		if (optional_string("$Shadow Cascade Distances:")) {
+			float dis[4];
+			stuff_float_list(dis, 4);
+			if ((dis[0] >= 0) && (dis[1] >= 0) && (dis[2] >= 0) && (dis[3] >= 0)) {
+				Shadow_distances = std::make_tuple(static_cast<ubyte>(dis[0]), static_cast<ubyte>(dis[1]), static_cast<ubyte>(dis[2]), static_cast<ubyte>(dis[3]));
+			} else {
+				error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+			}
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -688,4 +699,5 @@ void mod_table_reset()
 	Neb_affects_weapons = false;
 	Neb_affects_particles = false;
 	Neb_affects_fireballs = false;
+	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 }
