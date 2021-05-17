@@ -70,7 +70,7 @@ bool Neb_affects_beams;
 bool Neb_affects_weapons;
 bool Neb_affects_particles;
 bool Neb_affects_fireballs;
-std::tuple<ubyte, ubyte, ubyte, ubyte> Shadow_distances;
+std::tuple<float, float, float, float> Shadow_distances;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -402,7 +402,7 @@ void parse_mod_table(const char *filename)
 			float dis[4];
 			stuff_float_list(dis, 4);
 			if ((dis[0] >= 0) && (dis[1] >= 0) && (dis[2] >= 0) && (dis[3] >= 0)) {
-				Shadow_distances = std::make_tuple(static_cast<ubyte>(dis[0]), static_cast<ubyte>(dis[1]), static_cast<ubyte>(dis[2]), static_cast<ubyte>(dis[3]));
+				Shadow_distances = std::make_tuple(static_cast<float>(dis[0]), static_cast<float>(dis[1]), static_cast<float>(dis[2]), static_cast<float>(dis[3]));
 			} else {
 				error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
 			}

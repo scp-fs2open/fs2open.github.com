@@ -62,7 +62,7 @@ extern bool Neb_affects_beams;
 extern bool Neb_affects_weapons;
 extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
-extern std::tuple<ubyte, ubyte, ubyte, ubyte> Shadow_distances;
+extern std::tuple<float, float, float, float> Shadow_distances;
 
 void mod_table_init();
 
