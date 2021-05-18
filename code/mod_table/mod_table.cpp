@@ -401,10 +401,10 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Shadow Cascade Distances:")) {
 			float dis[4];
 			stuff_float_list(dis, 4);
-			if ((dis[0] >= 0) && (dis[1] >= 0) && (dis[2] >= 0) && (dis[3] >= 0)) {
-				Shadow_distances = std::make_tuple(static_cast<float>(dis[0]), static_cast<float>(dis[1]), static_cast<float>(dis[2]), static_cast<float>(dis[3]));
+			if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
+				Shadow_distances = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
 			} else {
-				error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+				error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
 			}
 		}
 
