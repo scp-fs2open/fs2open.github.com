@@ -7371,13 +7371,15 @@ void ship_render_cockpit(object *objp)
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 
+	bool Shadow_override_backup = Shadow_override;
+
+	//Deal with the model
+	model_clear_instance(sip->cockpit_model_num);
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, 0.25f, 0.75f, 1.5f, 3.0f);
-
-		model_clear_instance(sip->cockpit_model_num);
+		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
 
 		model_render_params shadow_render_info;
 		shadow_render_info.set_detail_level_lock(0);
@@ -7390,9 +7392,6 @@ void ship_render_cockpit(object *objp)
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
 	gr_set_view_matrix(&leaning_position, &Eye_matrix);
-
-	//Deal with the model
-	model_clear_instance(sip->cockpit_model_num);
 
 	uint render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
@@ -7415,7 +7414,7 @@ void ship_render_cockpit(object *objp)
 
 	//Restore the Shadow_override
 	if (Shadow_quality != ShadowQuality::Disabled)
-		Shadow_override = true;
+		Shadow_override = Shadow_override_backup;
 }
 
 void ship_render_show_ship_cockpit(object *objp)
