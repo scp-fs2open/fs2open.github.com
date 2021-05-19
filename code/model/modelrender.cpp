@@ -2676,11 +2676,8 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		rendering_material.set_fog();
 	}
 
-	if (interp->is_alpha_mult_set()/*Is depthfade Mission || renderparam has mult*/) {
+	if (interp->is_alpha_mult_set()) {
 		float alphamult = 1.0f;
-		/*if (is depthfade) {
-			alphamult *= dodepth
-		}*/
 
 		if (interp->is_alpha_mult_set()) {
 			alphamult *= interp->get_alpha_mult();
