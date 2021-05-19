@@ -1212,6 +1212,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		gr_alpha_blend blend_mode = model_render_determine_blend_mode(texture_maps[TM_BASE_TYPE], use_blending);
 		gr_zbuffer_type depth_mode = material_determine_depth_mode(use_depth_test, use_blending);
 
+		if (rendering_material->is_alpha_mult_active()) {
+			blend_mode = ALPHA_BLEND_PREMULTIPLIED;
+		}
+
 		rendering_material->set_depth_mode(depth_mode);
 		rendering_material->set_blend_mode(blend_mode);
 		
