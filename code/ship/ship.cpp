@@ -7375,7 +7375,7 @@ void ship_render_cockpit(object *objp)
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, 0.25f, 0.75f, 1.5f, 3.0f, true);
+		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, 0.25f, 0.75f, 1.5f, 3.0f);
 
 		model_clear_instance(sip->cockpit_model_num);
 
