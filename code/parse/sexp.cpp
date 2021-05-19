@@ -35218,7 +35218,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_ALPHA_MULT, "set-alpha-multiplier\r\n"
 		"\tSets the opacity of a ship.\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1: Opacity (0 = opaque, 100 = transparent)\r\n"
+		"\t1: Opacity (0 = transparent, 100 = opaque)\r\n"
 		"\tRest: Name of the ship or wing.\r\n"
 	}
 };
