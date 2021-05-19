@@ -378,7 +378,7 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadows_construct_light_proj(shadow_data);
 }
 
-matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
+matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist, bool relative)
 {	
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
@@ -406,7 +406,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix);
+	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix, relative);
 
 	return light_matrix;
 }
