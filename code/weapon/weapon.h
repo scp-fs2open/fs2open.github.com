@@ -288,6 +288,7 @@ struct weapon_info
 	generic_anim laser_bitmap;				// bitmap for a laser
 	generic_anim laser_glow_bitmap;			// optional laser glow bitmap
 	generic_anim laser_headon_bitmap;
+	float laser_headon_switch_ang;
 
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors

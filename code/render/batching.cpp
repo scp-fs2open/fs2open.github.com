@@ -712,13 +712,13 @@ void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float
 	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.0f);
 }
 
-void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b, int texture2)
+void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b, int texture2, float switchover_ang)
 {
 	if (texture < 0) {
 		Int3();
 	}
 
-	if (texture2 > 0) {
+	if (texture2 >= 0) {
 		int r2 = r; int g2 = g; int b2 = b;
 		
 		vec3d fvec, center, reye;
@@ -729,15 +729,25 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 		vm_vec_sub(&reye, &Eye_position, &center);
 		vm_vec_normalize(&reye);
 		float ang = vm_vec_delta_ang_norm(&reye, &fvec, nullptr);
-
-		float head = (width1 + width2) * cosf(ang);
-		float side = length * sinf(ang);
+		float head;
+		float side;
+		if (switchover_ang < 0.0f) {
+			head = ((width1 + width2) / 2) * fabs(cosf(ang));
+			side = length * fabs(sinf(ang));
+		} else {
+			head = tanf(switchover_ang);
+			side = 1 / head;
+			side = side * fabs(sinf(ang));
+			head = head * fabs(cosf(ang));
+		}
+		head *= head;
+		side *= side;
 		float head_side_total = head + side;
 		head /= head_side_total;
 		side /= head_side_total;
 
-		r2 = (int)(r2 * head);   g2 = (int)(g2 * head);  b2 = ((int)b2 * head);
-		r  = (int)(r  * side);   g  = (int)(g * side);   b  = ((int)b  * side);
+		r2 = (int)(r2 * head);   g2 = (int)(g2 * head);  b2 = (int)(b2 * head);
+		r  = (int)(r  * side);   g  = (int)(g * side);   b  = (int)(b  * side);
 
 		primitive_batch* batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
@@ -745,9 +755,7 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 
 		batch = batching_find_batch(texture2, batch_info::FLAT_EMISSIVE);
 
-		batching_add_laser_internal(batch, texture, p0, (width1 + width2) / 2, p1, (width1 + width2) / 2, r2, g2, b2);
-
-		//batching_add_laser_headon_internal(batch, texture2, p0, p1, (width1 + width2) / 2, r2, g2, b2, tex2_offset);
+		batching_add_laser_internal(batch, texture2, p0, (width1 + width2) / 2, p1, (width1 + width2) / 2, r2, g2, b2);
 	} else {
 		primitive_batch* batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
