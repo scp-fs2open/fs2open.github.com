@@ -7371,7 +7371,7 @@ void ship_render_cockpit(object *objp)
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 
-	bool Shadow_override_backup = Shadow_override;
+	bool shadow_override_backup = Shadow_override;
 
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
@@ -7414,7 +7414,7 @@ void ship_render_cockpit(object *objp)
 
 	//Restore the Shadow_override
 	if (Shadow_quality != ShadowQuality::Disabled)
-		Shadow_override = Shadow_override_backup;
+		Shadow_override = shadow_override_backup;
 }
 
 void ship_render_show_ship_cockpit(object *objp)
