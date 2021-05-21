@@ -3248,7 +3248,7 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
 	}
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3);
+	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3, 512);
 	Assert((n_lines != -1) && (n_lines <= 20));
 	if((n_lines < 0) || (n_lines > 20)) {
 		return;

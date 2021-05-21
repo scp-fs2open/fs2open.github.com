@@ -656,7 +656,7 @@ void options_multi_notify_process()
 
 	// otherwise display the string
 	line_height = gr_get_font_height() + 1;
-	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
+	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3, 255);
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
 	for(idx=0;idx<line_count;idx++){

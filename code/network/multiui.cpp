@@ -234,13 +234,11 @@ void multi_common_split_text()
 	int	n_chars[MAX_BRIEF_LINES];
 	const char	*p_str[MAX_BRIEF_LINES];
 
-	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_META_CHAR);
+	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_MAX_LINE_LENGTH, MULTI_COMMON_TEXT_META_CHAR);
 	Assert(n_lines != -1);
 
 	for ( i = 0; i < n_lines; i++ ) {
-		//The E -- This check is unnecessary, and will break when fonts that aren't bank gothic are used
-		//split_str already ensured that everything will fit in the text window for us already.
-		//Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
+		Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
 		strncpy(Multi_common_text[i], p_str[i], n_chars[i]);
 		Multi_common_text[i][n_chars[i]] = 0;
 		drop_leading_white_space(Multi_common_text[i]);		

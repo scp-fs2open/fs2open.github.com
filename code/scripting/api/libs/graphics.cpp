@@ -1159,7 +1159,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, (unicode::codepoint_t)-1, false);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();

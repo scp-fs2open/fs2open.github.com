@@ -2604,7 +2604,7 @@ void multi_ts_select_ship()
 	
 		if(Multi_ts_ship_info_text[0] != '\0'){
 			// split the string into multiple lines
-			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
+			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, MULTI_TS_SHIP_INFO_MAX_LINE_LEN,0);
 
 			// copy the split up lines into the text lines array
 			for (int idx = 0;idx<n_lines;idx++ ) {
