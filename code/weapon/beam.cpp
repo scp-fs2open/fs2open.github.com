@@ -865,7 +865,6 @@ void beam_type_b_move(beam *b)
 void beam_type_c_move(beam *b)
 {	
 	vec3d temp;
-	ship *shipp;
 
 	// ugh
 	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
