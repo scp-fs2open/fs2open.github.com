@@ -3649,7 +3649,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
 	vm_vec_sub(&dir, &planar_dst, &world_pos);
 	vm_vec_normalize(&dir);
-	smi->cur_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
 	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
@@ -3727,10 +3727,9 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
 {
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
@@ -3771,7 +3770,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_base_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 		//------------
 		// Pretend the base is pointing directly at the target
@@ -3791,7 +3790,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_gun_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 		// for ventral turrets without custom matrixes
 		if (vm_vec_dot(&gun_sm->frame_of_reference.vec.uvec, &turret->turret_norm) < 0.0f) {
 			desired_gun_angle = PI + desired_gun_angle;

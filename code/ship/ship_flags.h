@@ -119,6 +119,7 @@ namespace Ship {
 		Render_without_heightmap,
 		Render_without_ambientmap,
 		Render_without_miscmap,
+		Render_without_reflectmap,
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering

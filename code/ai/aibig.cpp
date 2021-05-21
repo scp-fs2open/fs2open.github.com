@@ -17,12 +17,12 @@
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "object/objcollide.h"
 #include "object/object.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
 #include "weapon/weapon.h"
-#include "object/objcollide.h"
-
 
 #ifdef _MSC_VER
 #pragma optimize("", off)
@@ -944,11 +944,11 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 													} else {
 														t = swip->fire_wait;
 														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+															swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
-														swp->burst_seed[current_bank_adjusted] = rand32();
+														swp->burst_seed[current_bank_adjusted] = Random::next();
 													}
 												} else {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
@@ -957,11 +957,11 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 													} else {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
 														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+															swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
-														swp->burst_seed[current_bank_adjusted] = rand32();
+														swp->burst_seed[current_bank_adjusted] = Random::next();
 													}
 												}
 												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
@@ -1471,7 +1471,7 @@ void ai_big_strafe_attack()
 		if ( t > 0.0f && t < 1.5f ) {
 			// set up goal_point for avoid path to turn towards
 			aip->goal_point = Pl_objp->pos;
-			switch(rand()%4) {
+			switch(Random::next(4)) {
 			case 0:
 				vm_vec_scale_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec, 2.0f);
 				break;
@@ -1703,7 +1703,7 @@ void ai_big_strafe_retreat1()
 	if (Missiontime - aip->submode_start_time > fl2f(1.50f)) {
 		// set up goal_point for avoid path to turn towards
 		aip->prev_goal_point = Pl_objp->pos;
-		switch(rand()%4) {
+		switch(Random::next(4)) {
 		case 0:
 			vm_vec_add(&rand_vec, &Pl_objp->orient.vec.fvec, &Pl_objp->orient.vec.uvec);
 			break;

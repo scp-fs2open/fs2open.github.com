@@ -866,7 +866,7 @@ void parse_player_info2(mission *pm)
 				if ( !Campaign.ships_allowed[sc.index] )
 					continue;
 			}
-			if (sc.index < 0 || sc.index >= weapon_info_size())
+			if (sc.index < 0 || sc.index >= ship_info_size())
 				continue;
 
 			ptr->ship_list[num_choices] = sc.index;
@@ -1209,7 +1209,7 @@ void parse_music(mission *pm, int flags)
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
 		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
-		strcpy_s(pm->event_music_name, Soundtracks[rand() % num].name);
+		strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
 
 
 done_event_music:
@@ -1236,7 +1236,7 @@ done_event_music:
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
 		num = (Num_music_files < 7) ? Num_music_files : 7;
-		strcpy_s(pm->briefing_music_name, Spooled_music[rand() % num].name);
+		strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
 
 
 done_briefing_music:
@@ -5065,6 +5065,9 @@ void parse_event(mission * /*pm*/)
 		}
 	}
 
+	// Need to set this to zero so that we don't accidentally reuse old data.
+	event->flags = 0;
+
 	if (optional_string("+Event Flags:")) {
 		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
 	}
@@ -6874,8 +6877,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			// If these are not available, this would be an expensive method.
 			x = cosf(fl_radians(45.0f));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = rand() < RAND_MAX_2 ? -1 : 1;
-				r2 = rand() < RAND_MAX_2 ? -1 : 1;
+				r1 = Random::flip_coin() ? -1 : 1;
+				r2 = Random::flip_coin() ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
@@ -8174,20 +8177,8 @@ void mission_process_alt_types()
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
 
-		// consolidate double hashes
-		auto src = Mission_alt_types[i];
-		auto dest = src;
-		while (*src)
-		{
-			if (*src == '#' && *(src + 1) == '#')
-				dest--;
-
-			++src;
-			++dest;
-
-			if (src != dest)
-				*dest = *src;
-		}
+		// ## -> #
+		consolidate_double_characters(Mission_alt_types[i], '#');
 	}
 }
 

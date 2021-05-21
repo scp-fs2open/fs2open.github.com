@@ -488,8 +488,7 @@ int beam_fire(beam_fire_info *fire_info)
 	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 	if(objnum < 0){
 		beam_delete(new_item);
-		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
-		Int3();
+		mprintf(("obj_create() failed for a beam weapon because you are running out of object slots!\n"));
 		return -1;
 	}
 	new_item->objnum = objnum;
@@ -2169,7 +2168,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed)
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
 
-	int seed = bwi->flags[Weapon::Beam_Info_Flags::Burst_share_random] ? burst_seed : rand32();
+	int seed = bwi->flags[Weapon::Beam_Info_Flags::Burst_share_random] ? burst_seed : Random::next();
 
 	// generate the proper amount of directional vectors
 	switch(b->type){

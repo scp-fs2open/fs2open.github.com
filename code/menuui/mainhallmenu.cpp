@@ -38,6 +38,7 @@
 #include "popup/popup.h"
 #include "scripting/scripting.h"
 #include "sound/audiostr.h"
+#include "utils/Random.h"
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
@@ -1233,7 +1234,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 							// if the entire group is paused and off, pick a random one to regenerate
 							if (all_neg1) {
 								Assert(group_indexes.size() < INT_MAX);
-								regen_idx = group_indexes[rand() % (int)group_indexes.size()];
+								regen_idx = group_indexes[Random::next((int)group_indexes.size())];
 							}
 						}
 					} else { // not part of a group, so just handle this index
@@ -1555,7 +1556,7 @@ void main_hall_handle_random_intercom_sounds()
 
 	// if we have no timestamp for the next random sound, then set one
 	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
-		int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+		int delta_ms = Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
 		Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 	}
 
@@ -1593,7 +1594,7 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			int delta_ms = rand32(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
+			int delta_ms = Random::next(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0), Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1));
 			Main_hall_next_intercom_sound_stamp = timestamp(delta_ms);
 
 			// release the sound handle

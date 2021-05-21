@@ -868,6 +868,7 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_NO_HEIGHT			(1<<10)
 #define MR_DEBUG_NO_AMBIENT			(1<<11)
 #define MR_DEBUG_NO_MISC			(1<<12)
+#define MR_DEBUG_NO_REFLECT			(1<<13)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -914,7 +915,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset = false);
+extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

@@ -803,30 +803,36 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 	case OBJ_WEAPON:
 		p->killer_objtype=OBJ_WEAPON;
 		p->killer_weapon_index=Weapons[killer_objp->instance].weapon_info_index;
-		p->killer_species = Ship_info[Ships[Objects[killer_objp->parent].instance].ship_info_index].species;
+		if (killer_objp->parent >= 0 && killer_objp->parent < MAX_OBJECTS) {
+			p->killer_species = Ship_info[Ships[Objects[killer_objp->parent].instance].ship_info_index].species;
 
-		if ( &Objects[killer_objp->parent] == Player_obj ) {
-			// killed by a missile?
-			if(Weapon_info[p->killer_weapon_index].subtype == WP_MISSILE){
-				p->flags |= PLAYER_FLAGS_KILLED_SELF_MISSILES;
-			} else {
-				p->flags |= PLAYER_FLAGS_KILLED_SELF_UNKNOWN;
+			if ( &Objects[killer_objp->parent] == Player_obj ) {
+				// killed by a missile?
+				if(Weapon_info[p->killer_weapon_index].subtype == WP_MISSILE){
+					p->flags |= PLAYER_FLAGS_KILLED_SELF_MISSILES;
+				} else {
+					p->flags |= PLAYER_FLAGS_KILLED_SELF_UNKNOWN;
+				}
 			}
-		}
 
-		// in multiplayer, record callsign of killer if killed by another player
-		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
-			int pnum;
+			// in multiplayer, record callsign of killer if killed by another player
+			if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
+				int pnum;
 
-			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
-			if ( pnum != -1 ) {
-				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
+				if ( pnum != -1 ) {
+					strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				} else {
+					nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
+				}
 			} else {
-				nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
+				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+			p->killer_species = -1;
+			strcpy_s(p->killer_parent_name, "");
 		}
+
 		break;
 
 	case OBJ_SHOCKWAVE:
@@ -1048,7 +1054,7 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 
 	int n = ship_p->num_hits;
 	if (n >= MAX_SHIP_HITS)	{
-		n = rand() % MAX_SHIP_HITS;
+		n = Random::next(MAX_SHIP_HITS);
 	} else {
 		ship_p->num_hits++;
 	}
@@ -1152,7 +1158,7 @@ static int choose_next_spark(object *ship_objp, vec3d *hitpos)
 
 	// not same location, so maybe do random recyling
 	if (frand() > 0.5f) {
-		return (rand() % num_sparks);
+		return Random::next(num_sparks);
 	}
 
 	// initialize spark pairs
@@ -1227,7 +1233,7 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 			n = choose_next_spark(ship_objp, hitpos);
 		} else {
 			// otherwise, normal choice
-			n = rand() % max_sparks;
+			n = Random::next(max_sparks);
 		}
 	} else {
 		shipp->num_hits++;

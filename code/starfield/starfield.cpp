@@ -32,6 +32,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -867,19 +868,19 @@ void stars_post_level_init()
 	for (i=0; i<MAX_STARS; i++) {
 		dist = dist_max;
 		while (dist >= dist_max) {
-			v.xyz.x = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.y = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.z = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.x = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.y = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.z = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
 
 			dist = v.xyz.x * v.xyz.x + v.xyz.y * v.xyz.y + v.xyz.z * v.xyz.z;
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
 		{
-			red= (ubyte)(myrand() % 63 +192);		//192-255
-			green= (ubyte)(myrand() % 63 +192);		//192-255
-			blue= (ubyte)(myrand() % 63 +192);		//192-255
-			alpha = (ubyte)(myrand () % 192 + 24);	//24-216
+			red = (ubyte)Random::next(192, 255);
+			green = (ubyte)Random::next(192, 255);
+			blue = (ubyte)Random::next(192, 255);
+			alpha = (ubyte)Random::next(24, 216);
 
 			gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
 		}
@@ -1109,11 +1110,13 @@ DCF(stars,"Set parameters for starfield")
 }
 //XSTR:ON
 
+bool refresh_motion_debris = true; // If set to true, then regenerate the positions of motion debris
 // Call this if camera "cuts" or moves long distances
 // so blur effect doesn't draw lines all over the screen.
 void stars_camera_cut()
 {
 	last_stars_filled = 0;
+	refresh_motion_debris = true;
 }
 
 //#define TIME_STAR_CODE		// enable to time star code
@@ -1738,16 +1741,18 @@ void stars_draw_motion_debris()
 		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
 		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {
-			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, true);
+			// if we just had a camera "cut" and should refresh the debris then generate in the sphere, else just on its surface
+			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, !refresh_motion_debris);
 			vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-			mdebris.vclip = rand32() % MAX_DEBRIS_VCLIPS;	//rand()
+			mdebris.vclip = Random::next(MAX_DEBRIS_VCLIPS);	//rand()
 
 			// if we're in full neb mode
+			const float size_multiplier = i2fl(Random::next(4));
 			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
-				mdebris.size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
+				mdebris.size = size_multiplier * BASE_SIZE_NEB;
 			} else {
-				mdebris.size = i2fl(myrand() % 4)*BASE_SIZE;
+				mdebris.size = size_multiplier * BASE_SIZE;
 			}
 		}
 
@@ -1774,6 +1779,9 @@ void stars_draw_motion_debris()
 			batching_add_bitmap(Debris_vclips[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
 		}
 	}
+
+	if (refresh_motion_debris)
+		refresh_motion_debris = false;
 }
 
 void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
@@ -1822,7 +1830,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 #endif
 
 	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && in_mission)	{
-		stars_draw_debris();
+		stars_draw_motion_debris();
 	}
 
 	//if we're not drawing them, quit here

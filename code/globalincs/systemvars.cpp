@@ -57,7 +57,6 @@ vci		Viewer_chase_info;			// View chase camera information
 vec3d leaning_position;
 
 int Is_standalone;
-int Rand_count;
 
 int Interface_last_tick = -1;			// last timer tick on flip
 
@@ -108,47 +107,6 @@ float Noise[NOISE_NUM_FRAMES] = {
 	0.294215f,
 	0.000000f
 };
-
-
-int myrand()
-{
-	int rval;
-	rval = rand();
-	Rand_count++;
-//	nprintf(("Alan","RAND: %d\n", rval));
-	return rval;
-}
-
-// returns a random number between 0 and 0x7fffffff, or something close to it.
-int rand32()
-{
-	if (RAND_MAX == 0x7fff) {
-		int random32;
-		// this gets two random 16 bit numbers and stuffs them into a 32 bit number
-		random32 = (rand() << 16) | rand();
-		//since rand() returns between 0 and 0x7fff, there needs to be a thing to randomly generate the 16th bit
-		random32 |= ((rand() & 1) << 15);
-		
-		return random32;
-	}
-	else {
-		return rand();
-	}
-}
-
-int rand32(int low, int high)
-{
-	int diff;
-
-	// get diff - don't allow negative or zero
-	diff = high - low;
-	if (diff < 0)
-		diff = 0;
-
-	// To get a range of values between min and max, inclusive:
-	// random value = min + random number % (max - min + 1)
-	return (low + rand32() % (diff + 1));
-}
 
 // Variables for the loading callback hooks
 static int cf_timestamp = -1;

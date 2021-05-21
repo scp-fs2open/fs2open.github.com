@@ -1516,9 +1516,9 @@ void control_config_common_read_section(int s, bool first_override) {
 
 		// Assign the various attributes to this control
 		int iTemp;
-		short key = 0;
 		auto  item = &Control_config[item_id];
 		auto& new_binding = new_preset.bindings[item_id];
+		short key = new_binding.get_btn(CID_KEYBOARD);
 
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {
@@ -1987,7 +1987,7 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short key_default, sh
 	item.type = type;
 
 	if (tab == NO_TAB) {
-		mprintf(("Control item defined without a valid tab. Disabling: %s", item.text.c_str()));
+		mprintf(("Control item defined without a valid tab. Disabling: %s\n", item.text.c_str()));
 	}
 
 	// Assign disabled state

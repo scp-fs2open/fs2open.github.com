@@ -2790,6 +2790,9 @@ size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char
 	return i;
 }
 
+// If this data is going to be parsed multiple times (like for mission load), then the dest variable 
+// needs to be set to zero in between parses, otherwise we keep bad data.
+// For tbm files, it must not be reset.
 void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size)
 {
 	Assert(dest!=NULL);	//wtf?
@@ -2989,16 +2992,18 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[buf->index].name);
 		}
 
-		// similarly, complain if this is a valid ship or weapon class that the player can't use
-		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[buf->index].flags[Ship::Info_Flags::Player_ship])) ) {
-			error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str.c_str());
-			skip_this_entry = true;
-		}
-		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[buf->index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
-			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str.c_str()));
-			if ( !Is_standalone )
-				error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str.c_str());
-			skip_this_entry = true;
+		if (!skip_this_entry) {
+			// similarly, complain if this is a valid ship or weapon class that the player can't use
+			if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[buf->index].flags[Ship::Info_Flags::Player_ship])) ) {
+				error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str.c_str());
+				skip_this_entry = true;
+			}
+			else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[buf->index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
+				nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str.c_str()));
+				if ( !Is_standalone )
+					error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str.c_str());
+				skip_this_entry = true;
+			}
 		}
 
 		// Loadout counts are only needed for missions
@@ -3857,6 +3862,24 @@ int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 	{
 		size_t pos = src.find('#');
 		return (pos == SCP_string::npos) ? -1 : (int)pos;
+	}
+}
+
+// Goober5000
+// Used for escape sequences: ## to #, !! to !, etc.
+void consolidate_double_characters(char *src, char ch)
+{
+	auto dest = src;
+	while (*src)
+	{
+		if (*src == ch && *(src + 1) == ch)
+			dest--;
+
+		++src;
+		++dest;
+
+		if (src != dest)
+			*dest = *src;
 	}
 }
 

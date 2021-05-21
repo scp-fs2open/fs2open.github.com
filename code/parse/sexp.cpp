@@ -97,6 +97,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
@@ -3391,7 +3392,9 @@ void get_sexp_text_for_variable(char *text, const char *token)
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
 		sexp_var_index = get_index_sexp_variable_name(text);
-		Assert(sexp_var_index != -1);
+		if (sexp_var_index == -1) {
+			Error(LOCATION, "Invalid variable name [%s]!", text);
+		}
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
@@ -4762,9 +4765,9 @@ int rand_internal(int low, int high, int seed = 0)
 {
 	// maybe seed it
 	if (seed > 0)
-		srand(seed);
+		Random::seed(seed);
 
-	return rand32(low, high);
+	return Random::next(low, high);
 }
 
 // Goober5000
@@ -6839,7 +6842,21 @@ int sexp_is_ship_visible(int node)
 	{
 		// if the second argument is not supplied, default to the player, per retail
 		if (Game_mode & GM_MULTIPLAYER)
-			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		{
+			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0)
+				{
+					viewer_shipp = &Ships[shipnum];
+					break;
+				}
+			}
+		}
 		else
 			viewer_shipp = Player_ship;
 	}
@@ -10135,12 +10152,14 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
-		return SEXP_KNOWN_FALSE;
+// Don't short-circuit because ships can arrive later on, and this sexp's ship collection is intrinsically unknowable.
+//	else if (num_known_false == num_valid_arguments)
+//		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
 }
@@ -10178,7 +10197,7 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
+	else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
@@ -12750,7 +12769,7 @@ void sexp_send_random_message(int n)
 	Assert ( num_messages >= 1 );
 	
 	// get a random message, and pass the parameters to send_one_message
-	message_num = myrand() % num_messages;
+	message_num = Random::next(num_messages);
 	n = temp;
 	while ( n != -1 ) {
 		if ( message_num == 0 )
@@ -17824,6 +17843,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	target_objp->hull_strength = source_objp->hull_strength;
 
 	// ...and shields
+	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
@@ -17975,7 +17995,6 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 		// copy
 		if (source_ss->max_hits == 0.0f)
 		{
-			Warning(LOCATION, "Why does %s's subsystem %s have a maximum strength of 0?", source_shipp->ship_name, source_ss->system_info->subobj_name);
 			target_sssp->percent = 100.0f;
 		}
 		else
@@ -26208,15 +26227,26 @@ int get_sexp_main()
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
-	int n, i, sexp_val = UNINITIALIZED;
+	int n, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
 	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
-	for (i = 0; i < (int)strlen(buf); i++)
-		if (buf[i] == '!')
-			buf[i]='\"';
+	for (auto ch = buf; *ch; ++ch)
+	{
+		// convert single ! to ", but don't convert !!
+		if (*ch == '!')
+		{
+			if (*(ch + 1) == '!')
+				++ch;
+			else
+				*ch = '\"';
+		}
+	}
+
+	// !! -> !
+	consolidate_double_characters(buf, '!');
 
 	Mp = buf;
 
@@ -34036,7 +34066,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will default to the first player.\r\n"
 		"\tTakes 1 or 2 arguments...\r\n"
 		"\t1: Name of ship to check\r\n"
 		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },

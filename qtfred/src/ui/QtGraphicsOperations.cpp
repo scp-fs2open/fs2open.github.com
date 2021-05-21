@@ -129,8 +129,9 @@ std::pair<uint32_t, uint32_t> QtViewport::getSize() {
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->getRenderWidget()->isVisible()) {
-		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderSurface());
+	auto qSurf = dynamic_cast<QWindow*>(_viewportWindow->getRenderSurface());
+	if (qSurf && qSurf->isExposed()) {
+		QOpenGLContext::currentContext()->swapBuffers(qSurf);
 	}
 }
 void QtViewport::setState(os::ViewportState  /*state*/) {

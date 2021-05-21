@@ -895,7 +895,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// if this name has a hash, create a default display name
 		if (get_pointer_to_first_hash_symbol(wip->name)) {
 			strcpy_s(wip->display_name, wip->name);
-			end_string_at_first_hash_symbol(wip->display_name);
+			end_string_at_first_hash_symbol(wip->display_name, true);
+			consolidate_double_characters(wip->display_name, '#');
 			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
 			preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 		}
@@ -2698,14 +2699,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if ( optional_string("+Index:") ) {
 				stuff_int(&bsw_index_override);
+				if (first_time) {
+					Warning(LOCATION, "+Index should not be used on weapon '%s' in its initial definition. +Index is only for modification of an existing weapon.", wip->name);
+					bsw_index_override = -1;
+				} else {
 
-				if ( optional_string("+remove") ) {
-					nocreate = true;
-					remove = true;
+					if (optional_string("+remove")) {
+						nocreate = true;
+						remove = true;
+					}
+
+					if ((bsw_index_override < 0) || (!remove && (bsw_index_override >= wip->b_info.beam_num_sections)))
+						Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections - 1);
 				}
-					
-				if ( (bsw_index_override < 0) || (!remove && (bsw_index_override >= wip->b_info.beam_num_sections)) )
-					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections -1);
 			}
 
 			if ( optional_string("+nocreate") )
@@ -5690,13 +5696,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	num_deleted = 0;
 	if (Num_weapons >= MAX_WEAPONS-5) {
 
-		//No, do remove for AI ships -- MK, 3/12/98  // don't need to try and delete weapons for ai ships
-		//if ( !(Objects[parent_objnum].flags[Object::Object_Flags::Player_ship]) )
-		//	return -1;
-
 		num_deleted = collide_remove_weapons();
 
-		nprintf(("WARNING", "Deleted %d weapons because of lack of slots\n", num_deleted));
+		mprintf(("Deleted %d weapons because of lack of slots.\n", num_deleted));
 		if (num_deleted == 0){
 			return -1;
 		}
@@ -5766,8 +5768,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
 		default_flags.set(Object::Object_Flags::Collides_with_parent);
 
-	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags);
-	Assert(objnum >= 0);
+	// mark this object creation as essential, if it is created by a player.  
+	// You don't want players mysteriously wondering why they aren't firing.
+	objnum = obj_create( OBJ_WEAPON, parent_objnum, n, orient, pos, 2.0f, default_flags, (parent_objp != nullptr && parent_objp->flags[Object::Object_Flags::Player_ship]));
+
+	if (objnum < 0) {
+		mprintf(("A weapon failed to be created because FSO is running out of object slots!\n"));
+		return -1;
+	}
+
 	objp = &Objects[objnum];
 
 	// Create laser n!
@@ -8191,7 +8200,7 @@ int weapon_get_random_player_usable_weapon()
 	if (weapon_list.empty())
 		return -1;
 
-	auto rand_wep = (rand() % weapon_list.size());
+	auto rand_wep = Random::next((int)weapon_list.size());
 
 	return weapon_list[rand_wep];
 }
