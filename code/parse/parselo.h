@@ -19,6 +19,7 @@
 
 #include <cinttypes>
 #include <exception>
+#include <limits.h>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	PARSE_TEXT_SIZE	1000000
