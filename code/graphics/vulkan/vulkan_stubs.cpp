@@ -90,7 +90,7 @@ void stub_deferred_lighting_begin() {}
 
 void stub_deferred_lighting_end() {}
 
-void stub_deferred_lighting_finish() {}
+void stub_deferred_lighting_finish(vec3d* /*relativeTo*/) {}
 
 void stub_set_line_width(float /*width*/) {}
 
