@@ -262,7 +262,9 @@ void gr_opengl_deferred_lighting_finish(vec3d* relativeTo)
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
 					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
-				vec3d pos = l.vec;
+				vec3d pos;
+
+				pos = l.vec;
 				if (relativeTo != nullptr)
 					vm_vec_sub2(&pos, relativeTo);
 
