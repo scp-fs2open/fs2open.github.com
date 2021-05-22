@@ -53,7 +53,7 @@ void opengl_clear_deferred_buffers()
 	GL_state.CullFace(cull);
 }
 
-void gr_opengl_deferred_lighting_begin()
+void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
 	if ( Cmdline_no_deferred_lighting)
 		return;
@@ -73,7 +73,13 @@ void gr_opengl_deferred_lighting_begin()
 	glDrawBuffers(5, buffers);
 
 	static const float black[] = { 0, 0, 0, 1.0f };
+
 	glClearBufferfv(GL_COLOR, 0, black);
+	if (clearNonColorBufs) {
+		glClearBufferfv(GL_COLOR, 1, black);
+		glClearBufferfv(GL_COLOR, 2, black);
+		glClearBufferfv(GL_COLOR, 3, black);
+	}
 }
 
 void gr_opengl_deferred_lighting_end()

@@ -7395,7 +7395,7 @@ void ship_render_cockpit(object *objp)
 	gr_set_view_matrix(&leaning_position, &Eye_matrix);
 
 	if(Cmdline_deferred_lighting_cockpit)
-		gr_deferred_lighting_begin();
+		gr_deferred_lighting_begin(true);
 
 	uint render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;

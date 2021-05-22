@@ -784,7 +784,7 @@ typedef struct screen {
 	std::function<void()> gf_post_process_save_zbuffer;
 	std::function<void()> gf_post_process_restore_zbuffer;
 
-	std::function<void()> gf_deferred_lighting_begin;
+	std::function<void(bool clearNonColorBufs)> gf_deferred_lighting_begin;
 	std::function<void()> gf_deferred_lighting_end;
 	std::function<void(vec3d* relativeTo)> gf_deferred_lighting_finish;
 
