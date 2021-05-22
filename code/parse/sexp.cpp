@@ -97,6 +97,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
@@ -242,7 +243,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Ship Status Sub-Category
 	{ "is-in-mission",					OP_IS_IN_MISSION,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "is-docked",						OP_IS_DOCKED,							1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
-	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-friendly-stealth-visible",	OP_IS_FRIENDLY_STEALTH_VISIBLE,			1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-iff",							OP_IS_IFF,								2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -338,11 +339,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "every-time-argument",			OP_EVERY_TIME_ARGUMENT,					3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "if-then-else",					OP_IF_THEN_ELSE,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "functional-if-then-else",		OP_FUNCTIONAL_IF_THEN_ELSE,				3,	3,			SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
+	{ "switch",							OP_SWITCH,								2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
+	{ "functional-switch",				OP_FUNCTIONAL_SWITCH,					2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "any-of",							OP_ANY_OF,								1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "every-of",						OP_EVERY_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "random-of",						OP_RANDOM_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "random-multiple-of",				OP_RANDOM_MULTIPLE_OF,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Karajorma
 	{ "number-of",						OP_NUMBER_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
+	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "in-sequence",					OP_IN_SEQUENCE,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Karajorma
 	{ "for-counter",					OP_FOR_COUNTER,							2,	3,			SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "for-ship-class",					OP_FOR_SHIP_CLASS,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
@@ -350,7 +354,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
-	{ "first-of",						OP_FIRST_OF,							2,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// MageKing17
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -362,6 +365,7 @@ SCP_vector<sexp_oper> Operators = {
 	//Messaging Sub-Category
 	{ "send-message",					OP_SEND_MESSAGE,						3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "send-message-list",				OP_SEND_MESSAGE_LIST,					4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "send-message-chain",				OP_SEND_MESSAGE_CHAIN,					5,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "send-random-message",			OP_SEND_RANDOM_MESSAGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "scramble-messages",				OP_SCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "unscramble-messages",			OP_UNSCRAMBLE_MESSAGES,					0,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -515,10 +519,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-set-rate-of-fire",		OP_TURRET_SET_RATE_OF_FIRE,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
 	{ "turret-set-optimum-range",		OP_TURRET_SET_OPTIMUM_RANGE,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
 	{ "turret-set-target-priorities",	OP_TURRET_SET_TARGET_PRIORITIES,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//FUBAR
+	{ "turret-set-inaccuracy",	        OP_TURRET_SET_INACCURACY,		        2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "turret-set-target-order",		OP_TURRET_SET_TARGET_ORDER,				2,	2+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "ship-turret-target-order",		OP_SHIP_TURRET_TARGET_ORDER,			1,	1+ NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "turret-set-forced-target",	    OP_TURRET_SET_FORCED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
+	{ "turret-set-forced-subsys-target",OP_TURRET_SET_FORCED_SUBSYS_TARGET,		4,	INT_MAX,	SEXP_ACTION_OPERATOR, },  // Asteroth
+	{ "turret-clear-forced-target",	    OP_TURRET_CLEAR_FORCED_TARGET,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
 	{ "turret-set-primary-ammo",		OP_TURRET_SET_PRIMARY_AMMO,				4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
@@ -542,6 +550,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
+	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -671,6 +680,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
+	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -1768,8 +1778,13 @@ int check_operator_argument_count(int count, int op)
 	if (count < Operators[op].min || count > Operators[op].max)
 		return 0;
 
-	//send-message-list has arguments as blocks of 4
-	if (op == OP_SEND_MESSAGE_LIST)
+	// send-message-list has arguments as blocks of 4
+	// same with send-message-chain, but there's an extra argument
+
+	if (op == OP_SEND_MESSAGE_CHAIN)
+		count--;
+
+	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 		if (count % 4 != 0)
 			return 0;
 
@@ -2173,10 +2188,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 					case OP_IS_IN_TURRET_FOV:
+					case OP_TURRET_SET_FORCED_TARGET:
 						ship_index = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
+					case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 						if(argnum == 1){
 							ship_index = CDR(op_node);
 						} else {
@@ -3375,7 +3392,9 @@ void get_sexp_text_for_variable(char *text, const char *token)
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
 		sexp_var_index = get_index_sexp_variable_name(text);
-		Assert(sexp_var_index != -1);
+		if (sexp_var_index == -1) {
+			Error(LOCATION, "Invalid variable name [%s]!", text);
+		}
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
@@ -3436,6 +3455,18 @@ void preload_turret_change_weapon(const char *text)
 		return;
 
 	weapon_mark_as_used(idx);
+}
+
+void preload_texture(const char* text)
+{
+	int texture = bm_load(text);
+
+	if (texture < 0) {
+		Warning(LOCATION, "Could not preload texture %s", text);
+		return;
+	}
+
+	bm_page_in_texture(texture);
 }
 
 // Goober5000
@@ -3743,6 +3774,12 @@ int get_sexp()
 			case OP_MODIFY_VARIABLE_XSTR:
 				n = CDDR(start); // First parameter is the variable name so we need to get the second parameter
 				localize_sexp(n, CDR(n));
+				break;
+
+			case OP_REPLACE_TEXTURE:
+				//Texture name is argument 2
+				n = CDDR(start);
+				do_preload_for_arguments(preload_texture, n, arg_handler);
 				break;
 		}
 	}
@@ -4347,6 +4384,8 @@ player *get_player_from_ship_node(int node, bool test_respawns = false, int *net
  */
 const ship_registry_entry *eval_ship(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4386,6 +4425,8 @@ const ship_registry_entry *eval_ship(int node)
  */
 wing *eval_wing(int node)
 {
+	Assert(node >= 0);
+
 	// check cache
 	if (Sexp_nodes[node].cache)
 	{
@@ -4429,6 +4470,7 @@ wing *eval_wing(int node)
 int sexp_atoi(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	// check cache
 	if (Sexp_nodes[node].cache)
@@ -4465,6 +4507,7 @@ int sexp_atoi(int node)
 bool sexp_can_construe_as_integer(int node)
 {
 	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
+	Assert(node >= 0);
 
 	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
 		return true;
@@ -4489,6 +4532,8 @@ bool sexp_can_construe_as_integer(int node)
  */
 int sexp_get_variable_index(int node)
 {
+	Assert(node >= 0);
+
 	if (Sexp_nodes[node].cached_variable_index >= 0)
 		return Sexp_nodes[node].cached_variable_index;
 
@@ -4720,9 +4765,9 @@ int rand_internal(int low, int high, int seed = 0)
 {
 	// maybe seed it
 	if (seed > 0)
-		srand(seed);
+		Random::seed(seed);
 
-	return rand32(low, high);
+	return Random::next(low, high);
 }
 
 // Goober5000
@@ -6775,32 +6820,59 @@ int sexp_hits_left(int node, bool sim_hull)
  */
 int sexp_is_ship_visible(int node)
 {
-	int ship_is_visible = 0;
-
-	// if multiplayer, bail
-	if (Game_mode & GM_MULTIPLAYER) {
-		return SEXP_NAN_FOREVER;
-	}
+	ship *viewer_shipp = nullptr;
+	int n = node, ship_is_visible = 0;
 
 	// get the ship
-	auto ship_entry = eval_ship(node);
+	auto ship_entry = eval_ship(n);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
+	n = CDR(n);
+
+	// the second argument is the viewer
+	if (n >= 0)
+	{
+		auto viewer_entry = eval_ship(n);
+		if (viewer_entry)
+			viewer_shipp = viewer_entry->shipp;
+	}
+	else
+	{
+		// if the second argument is not supplied, default to the player, per retail
+		if (Game_mode & GM_MULTIPLAYER)
+		{
+			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0)
+				{
+					viewer_shipp = &Ships[shipnum];
+					break;
+				}
+			}
+		}
+		else
+			viewer_shipp = Player_ship;
+	}
 
 	// get ship's *radar* visiblity
-	if (Player_ship)
+	if (viewer_shipp)
 	{
-		if (ship_is_visible_by_team(ship_entry->objp, Player_ship))
+		if (ship_is_visible_by_team(ship_entry->objp, viewer_shipp))
 		{
 			ship_is_visible = 2;
 		}
 	}
 
 	// only check awacs level if ship is not visible by team
-	if (Player_ship && !ship_is_visible) {
-		float awacs_level = awacs_get_level(ship_entry->objp, Player_ship);
+	if (viewer_shipp && !ship_is_visible) {
+		float awacs_level = awacs_get_level(ship_entry->objp, viewer_shipp);
 		if (awacs_level >= 1.0f) {
 			ship_is_visible = 2;
 		} else if (awacs_level > 0) {
@@ -9305,7 +9377,7 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 					// if the op is a conditional we have to make sure that it can access arguments
 					case OP_WHEN:
 					case OP_EVERY_TIME:
-					case OP_IF_THEN_ELSE:				
+					case OP_IF_THEN_ELSE:
 						Sexp_current_argument_nesting_level++;
 						Sexp_applicable_argument_list.add_data(ptr->text, ptr->node);
 						eval_sexp(exp);
@@ -9368,6 +9440,32 @@ int eval_perform_actions(int n)
 	// note: SEXP_KNOWN_TRUE/SEXP_KNOWN_FALSE are never returned from eval_sexp
 	return val;
 }
+
+void eval_switch(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	int choice = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || choice < 0)
+		return;
+	n = CDR(n);
+
+	// iterate until we land on the action we want to perform
+	while (choice > 0 && n >= 0)
+	{
+		--choice;
+		n = CDR(n);
+	}
+
+	// out of range?
+	if (n < 0)
+		return;
+
+	// do it
+	int exp = CAR(n);
+	if (exp >= 0)
+		eval_sexp(exp);
+}
 	
 /**
  * Evaluates the when conditional
@@ -9411,7 +9509,7 @@ int eval_when(int n, int when_op_num)
 
 		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
 		// each argument	
-		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(exp)) {	
+		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(actions)) {	
 			if (exp != -1) {
 				eval_when_do_all_exp(actions, when_op_num);
 			}
@@ -9920,7 +10018,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_counter(int arg_handler_node, int condition_node)
+int eval_for_counter(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
@@ -9970,6 +10068,9 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 		// situation, resulting in a crash at best. -MageKing17
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
@@ -9983,7 +10084,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_num)
+int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -9997,7 +10098,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		auto constraint = CTEXT(n);
 		int constraint_index = -1;
 
-		switch (op_num)
+		switch (op_const)
 		{
 			case OP_FOR_SHIP_CLASS:
 				constraint_index = ship_info_lookup(constraint);
@@ -10024,7 +10125,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 				auto shipp = &Ships[objp->instance];
 				int ship_index = -1;
 
-				switch (op_num)
+				switch (op_const)
 				{
 					case OP_FOR_SHIP_CLASS:
 						ship_index = shipp->ship_info_index;
@@ -10046,20 +10147,25 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_nu
 		}
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
-		return SEXP_KNOWN_FALSE;
+// Don't short-circuit because ships can arrive later on, and this sexp's ship collection is intrinsically unknowable.
+//	else if (num_known_false == num_valid_arguments)
+//		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
 }
 
 // Goober5000
-int eval_for_players(int arg_handler_node, int condition_node)
+int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	SCP_vector<std::pair<char*, int>> argument_vector;
@@ -10082,13 +10188,16 @@ int eval_for_players(int arg_handler_node, int condition_node)
 			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
 	}
 
+	if (just_count)
+		return static_cast<int>(argument_vector.size());
+
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
+	else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
@@ -10132,7 +10241,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
 		return;
 
@@ -10168,6 +10277,27 @@ int sexp_num_valid_arguments( int n )
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	if (arg_handler < 0)
+		return 0;
+
+	// the for-* sexps require special handling: they don't list their arguments explicitly but rather generate them on-the-fly
+	auto op_const = get_operator_const(arg_handler);
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+			return eval_for_counter(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_PLAYERS:
+			return eval_for_players(arg_handler, Locked_sexp_true, true);
+
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
+	}
+
 	// loop through arguments
 	arg_n = CDR(arg_handler);
 	while (arg_n != -1) {
@@ -10175,7 +10305,6 @@ int sexp_num_valid_arguments( int n )
 			matches++;
 		}
 
-		
 		// iterate
 		arg_n = CDR(arg_n);
 	}
@@ -10191,7 +10320,8 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
-	// thanks to woutersmits for finding this loophole
+	// prevent a crash if the SEXP is used somewhere it's not supposed to be
+	// (thanks to woutersmits for finding this bug)
 	if (arg_handler < 0)
 		return;
 
@@ -10351,6 +10481,39 @@ int sexp_functional_if_then_else(int node)
 		return num1;
 	else
 		return num2;
+}
+
+// Goober5000
+int sexp_functional_switch(int node)
+{
+	bool is_nan, is_nan_forever;
+	int n = node, result = 0;
+
+	int choice = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || choice < 0)
+		return 0;
+	n = CDR(n);
+
+	// evaluate all the numbers, but only keep the one we want
+	while (n >= 0)
+	{
+		int temp = eval_num(n, is_nan, is_nan_forever);
+
+		if (choice == 0)
+		{
+			if (is_nan)
+				result = SEXP_NAN;
+			else if (is_nan_forever)
+				result = SEXP_NAN_FOREVER;
+			else
+				result = temp;
+		}
+
+		--choice;
+		n = CDR(n);
+	}
+
+	return result;
 }
 
 // Goober5000 - added wing capability
@@ -12411,7 +12574,7 @@ void sexp_warp_effect(int n)
 
 // this function get called by send-message or send-message random with the name of the message, sender,
 // and priority.
-void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay )
+void sexp_send_one_message( const char *name, const char *who_from, const char *priority, int group, int delay, int event_num = -1 )
 {
 	int ipriority, source;
 	int ship_index = -1;
@@ -12447,7 +12610,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	shipp = nullptr;
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
-		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay );
+		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -12486,7 +12649,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 		source = MESSAGE_SOURCE_SHIP;
 	}
 
-	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
+	message_send_unique_to_player( name, shipp, source, ipriority, group, delay, event_num );
 }
 
 void sexp_send_message(int n)
@@ -12515,17 +12678,32 @@ void sexp_send_message(int n)
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_send_message_list(int n)
+void sexp_send_message_list(int n, bool send_message_chain)
 {
-	int delay;
+	int delay = 0, event_num = -1;
 	bool is_nan, is_nan_forever;
 
 	if(physics_paused){
 		return;
 	}
 
+	// find the event that will cancel the message chain
+	if (send_message_chain) {
+		auto name = CTEXT(n);
+		n = CDR(n);
+
+		for (int i = 0; i < Num_mission_events; ++i) {
+			if (!stricmp(Mission_events[i].name, name)) {
+				event_num = i;
+				break;
+			}
+		}
+		if (event_num < 0) {
+			return;
+		}
+	}
+
 	// send a bunch of messages
-	delay = 0;
 	while(n != -1){
 		auto who_from = CTEXT(n);
 		n = CDR(n);
@@ -12564,7 +12742,7 @@ void sexp_send_message_list(int n)
 			who_from = The_mission.command_sender;
 
 		// send the message
-		sexp_send_one_message(name, who_from, priority, 1, delay);
+		sexp_send_one_message(name, who_from, priority, 1, delay, event_num);
 	}
 }
 
@@ -12591,7 +12769,7 @@ void sexp_send_random_message(int n)
 	Assert ( num_messages >= 1 );
 	
 	// get a random message, and pass the parameters to send_one_message
-	message_num = myrand() % num_messages;
+	message_num = Random::next(num_messages);
 	n = temp;
 	while ( n != -1 ) {
 		if ( message_num == 0 )
@@ -13848,6 +14026,28 @@ void sexp_nebula_change_pattern(int n)
 	strcpy_s(Neb2_texture_name,(CTEXT(n)));
 
 	neb2_post_level_init();
+}
+
+void sexp_nebula_change_fog_color(int node)
+{
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+
+	int red, green, blue = 0;
+	bool is_nan, is_nan_forever;
+
+	Assert(node >= 0);
+
+	eval_nums(node, is_nan, is_nan_forever, red, green, blue);
+	if (is_nan || is_nan_forever)
+		return;
+
+	CLAMP(red, 0, 255);
+	CLAMP(green, 0, 255);
+	CLAMP(blue, 0, 255);
+
+	Neb2_fog_color[0] = (ubyte)red;
+	Neb2_fog_color[1] = (ubyte)green;
+	Neb2_fog_color[2] = (ubyte)blue;
 }
 
 /**
@@ -15882,6 +16082,14 @@ void sexp_ship_create(int n)
 
 	ship_set_warp_effects(&Objects[objnum]);
 
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(shipp->ship_name))
+	{
+		shipp->display_name = shipp->ship_name;
+		end_string_at_first_hash_symbol(shipp->display_name);
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
@@ -15890,6 +16098,14 @@ void sexp_ship_create(int n)
 	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
 	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 	Script_system.RemHookVars({"Ship", "Parent"});
+
+	if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
+		float mission_time = f2fl(Missiontime);
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+	}
 }
 
 // Goober5000
@@ -15972,10 +16188,6 @@ void sexp_weapon_create(int n)
 // make ship vanish without a trace (and what it's docked to)
 void sexp_ship_vanish(int n)
 {
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER)
-		return;
-
 	for ( ; n != -1; n = CDR(n) )
 	{
 		auto ship_entry = eval_ship(n);
@@ -17180,15 +17392,24 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 		// Set the number of weapons
 		ammo[requested_bank] = requested_ammo;
 	}
+	else if (ammo[requested_bank] > maximum_allowed)
+	{
+		// Make sure the current ammo doesn't exceed the maximum (this can otherwise happen with the set-*-weapon SEXPs)
+		ammo[requested_bank] = maximum_allowed;
+	}
 
 	// Check rearm validity
 	if (rearm_limit >= 0)
 	{
-		// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+		// Don't allow more weapons than the bank can actually hold.
 		if (rearm_limit > maximum_allowed)
 			rearm_limit = maximum_allowed;
 
 		start_ammo[requested_bank] = rearm_limit;
+	}
+	else	// Even if no rearm limit is explicitly set, don't allow more weapons than the bank can actually hold (this can otherwise happen with the set-*-weapon SEXPs).
+	{
+		start_ammo[requested_bank] = maximum_allowed;
 	}
 }
 
@@ -17622,6 +17843,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	target_objp->hull_strength = source_objp->hull_strength;
 
 	// ...and shields
+	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
@@ -17642,6 +17864,90 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
 		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
 			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
+	}
+}
+
+void sexp_replace_texture(int n)
+{
+	auto old_name = CTEXT(n);
+	n = CDR(n);
+
+	auto new_name = CTEXT(n);
+	n = CDR(n);
+
+	for (; n != -1; n = CDR(n))
+	{
+
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
+
+		// we only handle ships and wings that are present
+		switch (oswpt.type)
+		{
+		case OSWPT_TYPE_PARSE_OBJECT:
+		case OSWPT_TYPE_SHIP:
+		{
+			auto ship_entry = oswpt.ship_entry;
+
+			if (ship_entry->status == ShipStatus::EXITED)
+				continue;
+
+			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			{
+				p_object* pobjp = ship_entry->p_objp;
+
+				texture_replace replace;
+
+				strcpy(replace.ship_name, ship_entry->name);
+				strcpy(replace.old_texture, old_name);
+				strcpy(replace.new_texture, new_name);
+				replace.new_texture_id = bm_load(new_name);
+
+				pobjp->replacement_textures.push_back(replace);
+			}
+			// If the ship is already in the mission
+			else
+			{
+				ship_replace_active_texture(ship_entry->objp->instance, old_name, new_name);
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_WING:
+		{
+			auto wp = oswpt.wingp;
+			for (int i = 0; i < wp->current_count; ++i)
+			{
+				if (wp->ship_index[i] >= 0)
+				{
+					ship_replace_active_texture(wp->ship_index[i], old_name, new_name);
+				}
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			for (p_object* p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+				{
+					texture_replace replace;
+
+					strcpy(replace.ship_name, p_objp->name);
+					strcpy(replace.old_texture, old_name);
+					strcpy(replace.new_texture, new_name);
+					replace.new_texture_id = bm_load(new_name);
+
+					p_objp->replacement_textures.push_back(replace);
+				}
+			}
+			break;
+		}
+
+		default:
+			mprintf(("Invalid Shipname in SEXP ship-effect\n"));
+		}
 	}
 }
 
@@ -17689,7 +17995,6 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 		// copy
 		if (source_ss->max_hits == 0.0f)
 		{
-			Warning(LOCATION, "Why does %s's subsystem %s have a maximum strength of 0?", source_shipp->ship_name, source_ss->system_info->subobj_name);
 			target_sssp->percent = 100.0f;
 		}
 		else
@@ -18809,6 +19114,122 @@ void sexp_turret_set_target_priorities(int node)
 			}
 		// next
 		node = CDR(node);
+		}
+	}
+}
+
+void sexp_turret_set_forced_target(int node, bool targeting_subsys)
+{
+	// get target
+	auto target = eval_ship(node);
+	if (!target || !target->shipp)
+		return;
+	node = CDR(node);
+
+	// maybe get target subsys
+	ship_subsys* target_subsys = nullptr;
+	if (targeting_subsys) {
+		target_subsys = ship_get_subsys(target->shipp, CTEXT(node));
+		if (target_subsys == nullptr)
+			return;
+		node = CDR(node);
+	}
+
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+	node = CDR(node);
+
+	while (node >= 0)
+	{
+		// get the turret
+		auto turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = OBJ_INDEX(target->objp);
+			turret->turret_enemy_sig = target->objp->signature;
+			turret->flags.set(Ship::Subsystem_Flags::Forced_target);
+			turret->targeted_subsys = nullptr;
+
+			if (targeting_subsys) {
+				turret->targeted_subsys = target_subsys;
+				turret->flags.set(Ship::Subsystem_Flags::Forced_subsys_target);
+			}
+		}
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_clear_forced_target(int node)
+{
+	// get ship
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp) {
+		return;
+	}
+
+	//Set range
+	while (node >= 0)
+	{
+		// get the subsystem
+		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (turret != nullptr)
+		{
+			turret->turret_enemy_objnum = -1;
+			turret->targeted_subsys = nullptr;
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_target);
+			turret->flags.remove(Ship::Subsystem_Flags::Forced_subsys_target);
+		}
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_set_inaccuracy(int node)
+{
+	bool is_nan, is_nan_forever;
+	// get ship
+	auto shooter = eval_ship(node);
+	if (!shooter || !shooter->shipp) {
+		return;
+	}
+
+	// get inaccuracy
+	node = CDR(node);
+	auto inaccuracy = (float)eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	if (inaccuracy < 0.0f)
+		inaccuracy = 0.0f;
+
+	// input is in tenths so divide by 10
+	inaccuracy /= 10.0f;
+
+	node = CDR(node);
+	if (node < 0) { // affect all turrets
+		for (auto turret = GET_FIRST(&shooter->shipp->subsys_list); turret != END_OF_LIST(&shooter->shipp->subsys_list); turret = GET_NEXT(turret))
+		{
+			if (turret->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			turret->turret_inaccuracy = inaccuracy;
+		}
+	} else { // affect just some particular turret(s)
+		while (node >= 0)
+		{
+			// get the subsystem
+			ship_subsys* turret = ship_get_subsys(shooter->shipp, CTEXT(node));
+			if (turret != nullptr)
+				turret->turret_inaccuracy = inaccuracy;
+
+			// next
+			node = CDR(node);
 		}
 	}
 }
@@ -23654,6 +24075,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_perform_actions( node );
 				break;
 
+			case OP_SWITCH:
+				eval_switch(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_COND:
 				sexp_val = eval_cond(node);
 				break;
@@ -23742,6 +24168,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			// this is a "conditional", but it's not really treated the same way as when, etc.
 			case OP_FUNCTIONAL_IF_THEN_ELSE:
 				sexp_val = sexp_functional_if_then_else(node);
+				break;
+
+			// this too
+			case OP_FUNCTIONAL_SWITCH:
+				sexp_val = sexp_functional_switch(node);
 				break;
 
 			// sexpressions with side effects
@@ -24096,7 +24527,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SEND_MESSAGE_LIST:
-				sexp_send_message_list(node);
+			case OP_SEND_MESSAGE_CHAIN:
+				sexp_send_message_list(node, op_num == OP_SEND_MESSAGE_CHAIN);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24229,6 +24661,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NEBULA_CHANGE_PATTERN:
 				sexp_nebula_change_pattern(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_NEBULA_CHANGE_FOG_COLOR:
+				sexp_nebula_change_fog_color(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24676,6 +25113,22 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_TURRET_SET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_turret_set_target_order(node);
+				break;
+
+			case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			case OP_TURRET_SET_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_forced_target(node, op_num == OP_TURRET_SET_FORCED_SUBSYS_TARGET);
+				break;
+
+			case OP_TURRET_CLEAR_FORCED_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_clear_forced_target(node);
+				break;
+
+			case OP_TURRET_SET_INACCURACY:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_inaccuracy(node);
 				break;
 
 			case OP_SET_ARMOR_TYPE:
@@ -25306,6 +25759,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
 
+			case OP_REPLACE_TEXTURE:
+				sexp_val = SEXP_TRUE;
+				sexp_replace_texture(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -25769,15 +26227,26 @@ int get_sexp_main()
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
-	int n, i, sexp_val = UNINITIALIZED;
+	int n, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
 	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
-	for (i = 0; i < (int)strlen(buf); i++)
-		if (buf[i] == '!')
-			buf[i]='\"';
+	for (auto ch = buf; *ch; ++ch)
+	{
+		// convert single ! to ", but don't convert !!
+		if (*ch == '!')
+		{
+			if (*(ch + 1) == '!')
+				++ch;
+			else
+				*ch = '\"';
+		}
+	}
+
+	// !! -> !
+	consolidate_double_characters(buf, '!');
 
 	Mp = buf;
 
@@ -25786,6 +26255,10 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	{
 		if (run_eval_num)
 		{
+			// if this sexp node is an operator, put it in another node so that CAR(node) will find it
+			if (get_operator_index(n) >= 0)
+				n = alloc_sexp("", 1, -1, n, -1);
+
 			bool is_nan, is_nan_forever;
 			sexp_val = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan_or_nan_forever != nullptr)
@@ -25989,6 +26462,7 @@ int query_operator_return_type(int op)
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
+		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
 			return OPR_NUMBER;
 
@@ -26062,6 +26536,7 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_IF_THEN_ELSE:
+		case OP_SWITCH:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
@@ -26196,6 +26671,7 @@ int query_operator_return_type(int op)
 		case OP_AWACS_SET_RADIUS:
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_TURRET_TAGGED_ONLY_ALL:
 		case OP_TURRET_TAGGED_CLEAR_ALL:
@@ -26391,6 +26867,12 @@ int query_operator_return_type(int op)
 		case OP_SET_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
+		case OP_TURRET_SET_INACCURACY:
+		case OP_REPLACE_TEXTURE:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27129,6 +27611,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NULL;
 
+		case OP_SWITCH:
+			if (!argnum)
+				return OPF_NUMBER;
+			else
+				return OPF_NULL;
+
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME_ARGUMENT:
 			if (argnum == 0)
@@ -27179,6 +27667,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_NUMBER;
+
+		case OP_FUNCTIONAL_SWITCH:
+			return OPF_NUMBER;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
@@ -27437,7 +27928,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		{
+			// chain has one extra argument but is otherwise the same
+			if (op == OP_SEND_MESSAGE_CHAIN)
+			{
+				if (argnum == 0)
+					return OPF_EVENT_NAME;
+				argnum--;
+			}
+
 			// every four, the value repeats
 			int a_mod = argnum % 4;
 
@@ -27953,6 +28453,50 @@ int query_operator_argument_type(int op, int argnum)
 			} else if(argnum == 1) {
 				return OPF_NUMBER;
 			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_SUBSYSTEM;
+			}
+			else if (argnum == 2) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_CLEAR_FORCED_TARGET:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_INACCURACY:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_NUMBER;
+			}
+			else {
 				return OPF_SUBSYSTEM;
 			}
 
@@ -28606,6 +29150,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_CHANGE_FOG_COLOR:
+			return OPF_POSITIVE;
+
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL:
@@ -28720,6 +29267,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_BOOL;
+
+		case OP_REPLACE_TEXTURE:
+			if (argnum == 0 || argnum == 1)
+				return OPF_STRING;
+			else
+				return OPF_SHIP_WING;
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -30037,6 +30590,7 @@ int get_subcategory(int sexp_id)
 	switch(sexp_id)
 	{
 		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE_CHAIN:
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
@@ -30184,8 +30738,12 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
 		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
+		case OP_TURRET_SET_FORCED_TARGET:
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		case OP_TURRET_CLEAR_FORCED_TARGET:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
+		case OP_TURRET_SET_INACCURACY:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -30211,6 +30769,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_FROM_COLGROUP2:
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
+		case OP_REPLACE_TEXTURE:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -30339,6 +30898,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
+		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
@@ -30861,7 +31421,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
 		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
-		"\t1:\tA boolean value to return after all successive actions have been performed.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: Even though this value is not returned until the actions are performed, it is evaluated BEFORE any of the actions.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
 
 	// Goober5000
@@ -31374,6 +31934,34 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tActions to take if that expression becomes true.\r\n"
 		"\tRest:\tActions to take if that expression becomes false.\r\n" },
 
+	// Goober5000
+	{ OP_SWITCH, "Switch (Conditional operator)\r\n"
+		"\tPerforms one action according to the value of the first argument.  If the argument evaluates to 0, the first action is performed; if the argument is 1, the next action is performed, etc.  "
+		"If the value is out of range, no action is performed at all.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tNumeric expression to evaluate.\r\n"
+		"\tRest:\tList of actions, one of which (at most) will be taken according to the value of the expression.\r\n" },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_IF_THEN_ELSE, "Functional If-then-else (Conditional operator)\r\n"
+		"\tReturns the first number if the condition is true, and the second number otherwise.\r\n\r\n"
+		"This sexp is very similar to the ?: ternary operator in C and other programming languages.  Unfortunately, "
+		"due to limitations of the sexp system, it is not possible to create an equivalent sexp for string values.\r\n\r\n"
+		"Note that all arguments will be evaluated, even though only one will be returned.\r\n\r\n"
+		"Takes exactly 3 arguments...\r\n"
+		"\t1:\tBoolean expression to evaluate.\r\n"
+		"\t2:\tNumber to return if the expression is currently true.\r\n"
+		"\t3:\tNumber to return if the expression is not currently true..\r\n" },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_SWITCH, "Functional Switch (Conditional operator)\r\n"
+		"\tReturns a number according to the value of the first argument.  If the argument evaluates to 0, the first of the following numbers is returned; if the argument is 1, the next number is performed, etc.  "
+		"If the value is out of range, zero is returned.\r\n\r\n"
+		"Note that all arguments will be evaluated, even though only one will be returned.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tNumeric expression to evaluate.\r\n"
+		"\tRest:\tList of numeric expressions, one of which will be returned according to the current value of the first argument.\r\n" },
+
 	// Karajorma
 	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"
 		"\tPerforms specified actions once for each valid " SEXP_ARGUMENT_STRING " in the parent conditional. For example, a FREDder may use (do-for-valid-arguments (modify-variable @var (+ @var 1))) to count the number of valid arguments.\r\n\r\n"
@@ -31510,16 +32098,6 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
 		"Takes no arguments." },
 
-	// Goober5000
-	{ OP_FUNCTIONAL_IF_THEN_ELSE, "Functional If-then-else (Conditional operator)\r\n"
-		"\tReturns the first number if the condition is true, and the second number otherwise.\r\n\r\n"
-		"This sexp is very similar to the ?: ternary operator in C and other programming languages.  Unfortunately, "
-		"due to limitations of the sexp system, it is not possible to create an equivalent sexp for string values.\r\n\r\n"
-		"Takes exactly 3 arguments...\r\n"
-		"\t1:\tBoolean expression to evaluate.\r\n"
-		"\t2:\tNumber to return if the expression is currently true.\r\n"
-		"\t3:\tNumber to return if the expression is not currently true..\r\n" },
-
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
 		"\tSets the specified ship(s) or wing(s) to the specified team.\r\n"
@@ -31630,6 +32208,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "
 		"source.  To send it from a special source, make the first character of the first "
 		"argument a \"#\".\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
@@ -33138,12 +33719,40 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Priority to set, 0 to disable, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
+	{ OP_TURRET_SET_FORCED_TARGET, "turret-set-forced-target\r\n"
+		"\tForces one or more turrets to target a specific ship. Will hang on to this target until dead or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+	
+	{ OP_TURRET_SET_FORCED_SUBSYS_TARGET, "turret-set-forced-subsys-target\r\n"
+		"\tForces one or more turrets to target a specific subsystem on a particular ship. Will hang on to this subsystem target until destroyed or cleared by turret-clear-forced-target\r\n"
+		"\tWill still not fire if the target is protected or otherwise an unsuitable target for the turret weapons\r\n"
+		"\t1: Ship to target\r\n"
+		"\t2: Subsystem to target\r\n"
+		"\t3: Ship turrets are on\r\n"
+		"\trest: Turrets to set\r\n" },
+
+	{ OP_TURRET_CLEAR_FORCED_TARGET, "turret-clear-forced-target\r\n"
+		"\tClears any targets set by turret-set-forced-target\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\trest: Turrets to have their targets cleared\r\n" },
+
 	{ OP_TURRET_SET_TARGET_PRIORITIES, "turret-set-target-priorities\r\n"
 		"\tSets target priorities for the specified ship turret\r\n"
 		"\t1: Ship turret is on\r\n"
 		"\t2: Turret to set\r\n"
 		"\t3: True = Set new list, False = Reset to turret default\r\n"
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
+
+	{ OP_TURRET_SET_INACCURACY, "turret-set-inaccuracy\r\n"
+		"\tMakes the specified turrets more inaccurate by firing their shots in a cone, like field of fire."
+		"This will only decrease their accuracy, it cannot make the weapons more accurate than normal.\r\n"
+		"\tDoes not work on beams.\r\n"
+		"\t1: Ship turret(s) are on\r\n"
+		"\t2: TENTHS of a degree. (i.e. 100 = 10 degrees)\r\n"
+		"\trest: (optional) Turrets to set. If omitted affects all turrets on the ship.\r\n" },
 
 	{ OP_TURRET_GET_PRIMARY_AMMO, "turret-get-primary-ammo\r\n"
 		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"
@@ -33252,7 +33861,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
-		"\tSends a series of delayed messages. All times are accumulated.\r\n"
+		"\tSends a series of delayed messages. All times are accumulated. Takes arguments in multiples of 4.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor).\r\n"
@@ -33260,7 +33869,27 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data for multiple messages.\r\n\r\n"
 		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
 		"any message without the four proper fields will be ignored, as will any "
-		"successive messages."},
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
+
+	{ OP_SEND_MESSAGE_CHAIN, "send-message-chain\r\n"
+		"\tThis works just like send-message-list, but if the event specified in the first argument becomes true, all un-played messages are cancelled.\r\n"
+		"\t1:\tThe event that will cancel the message chain.\r\n"
+		"\t2:\tName of who the message is from.\r\n"
+		"\t3:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
+		"\t4:\tName of message (from message editor).\r\n"
+		"\t5:\tDelay from previous message in list (if any) in ms\r\n"
+		"Use Add-Data for multiple messages.\r\n\r\n"
+		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
+		"any message without the four proper fields will be ignored, as will any "
+		"successive messages.\r\n\r\n"
+		"\tHigh priority are not interrupted by anything, and will be sent by Command if the sender is destroyed.\r\n"
+		"\tNormal priority takes precedence over builtin messages, but will not be sent if the sender is destroyed.\r\n"
+		"\tLow priority are not sent if the sender's communication subsystem is destroyed, and may be interrupted.\r\n"
+	},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
@@ -33436,9 +34065,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
-		"\tCheck whether ship is visible on Player's radar\r\n"
-		"\tSingle Player Only!  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\t1: Name of ship to check\r\n"},
+		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will default to the first player.\r\n"
+		"\tTakes 1 or 2 arguments...\r\n"
+		"\t1: Name of ship to check\r\n"
+		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
 
 	// Goober5000
 	{ OP_IS_SHIP_STEALTHY, "is-ship-stealthy\r\n"
@@ -34280,6 +34911,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tNebula background pattern to change to\r\n"
 	},
 
+	{ OP_NEBULA_CHANGE_FOG_COLOR, "nebula-change-fog-color\r\n"
+	"\tChanges the current nebula fog color\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tRed (0 - 255)\r\n"
+		"\t2:\tGreen (0 - 255)\r\n"
+		"\t3:\tBlue (0 - 255)\r\n"
+	},
+
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"
 		"\tEvaluates script to return a number"
 		"Takes 1 argument...\r\n"
@@ -34476,6 +35115,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of Variable.\r\n"
 		"\t2:\tThe default text if no localized version is available.\r\n"
 		"\t3:\tThe XSTR index. If set to -1 then the default value will be used\r\n"
+	},
+
+	{ OP_REPLACE_TEXTURE, "replace-texture\r\n"
+		"\tChanges a texture of a ship to a different texture, similar to the FRED texture replace.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1: Name of the texture to be replaced.\r\n"
+		"\t2: Name of the texture to be changed to.\r\n"
+		"\tRest: Name of the ship or wing.\r\n"
 	},
 };
 // clang-format on

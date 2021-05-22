@@ -1853,6 +1853,22 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 	return ade_set_args(L, "s", shipp->get_display_name());
 }
 
+ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in Singleplayer only and will cause the ship exit to not be logged.", "boolean", "True if the deletion was successful, false otherwise.")
+{
+
+	object_h* objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "b", false);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
+
+	return ade_set_args(L, "b", true);
+}
+
 
 }
 }

@@ -88,6 +88,7 @@ struct oo_packet_and_interp_tracking {
 	int prev_pack_pos_frame;			// the prev position packet arrival frame
 
 	bool client_simulation_mode;		// if the packets come in too late, a toggle to sim things like normal
+										// now also triggered after a ship-ship collision
 
 	bool prev_packet_positionless;		// a flag that marks if the last packet as having no new position or orientation info.
 
@@ -638,7 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
-		if (objp == nullptr) {
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
 
@@ -1314,10 +1315,14 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
-				if (subsystem->submodel_instance_1)
-					angs_1 = &subsystem->submodel_instance_1->angs;
-				if (subsystem->submodel_instance_2)
-					angs_2 = &subsystem->submodel_instance_2->angs;
+				if (subsystem->submodel_instance_1) {
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(angs_1, &subsystem->submodel_instance_1->canonical_orient);
+				}
+				if (subsystem->submodel_instance_2) {
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(angs_2, &subsystem->submodel_instance_2->canonical_orient);
+				}
 
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
@@ -1349,6 +1354,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
 					subsys_data.push_back(angs_2->p / PI2);
 				}
+
+				// clang says deleting null pointer has no effect
+				delete angs_1;
+				delete angs_2;
 			}
 			i++;
 		}
@@ -1924,12 +1933,16 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
 				if (subsysp->submodel_instance_1) {
-					prev_angs_1 = &subsysp->submodel_instance_1->prev_angs;
-					angs_1 = &subsysp->submodel_instance_1->angs;
+					prev_angs_1 = new angles;
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
 				}
 				if (subsysp->submodel_instance_2) {
-					prev_angs_2 = &subsysp->submodel_instance_2->prev_angs;
-					angs_2 = &subsysp->submodel_instance_2->angs;
+					prev_angs_2 = new angles;
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
@@ -1967,6 +1980,21 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					angs_2->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
+
+				// fix up the matrixes
+				if (flags[i] & OO_SUBSYS_ROTATION_1) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
+					delete prev_angs_1;
+					delete angs_1;
+				}
+				if (flags[i] & OO_SUBSYS_ROTATION_2) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
+					delete prev_angs_2;
+					delete angs_2;
+				}
+
 				subsysp = GET_NEXT(subsysp);
 
 			}
@@ -2364,7 +2392,7 @@ void multi_oo_process_all(net_player *pl)
 		// this should only happen when the game is just starting, because the previous timestamp is nonsense.
 		if (Oo_info.number_of_frames > 1) {
 			// Send to the log if we're getting negative times. 
-			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		}
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR; // average amount of time per frame on a 60fps machine
 	}
@@ -2686,7 +2714,7 @@ void multi_oo_send_control_info()
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;
@@ -2759,7 +2787,7 @@ void multi_oo_send_changed_object(object *changedobj)
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;
@@ -3212,7 +3240,7 @@ void multi_oo_interp(object* objp)
 			objp->orient = interp_data->new_orientation;
 			objp->phys_info.vel = vmd_zero_vector;
 		} // Overshoting in this frame or some edge case bug. Just sim the ship from the known values.
-		else if (time_factor > 4.0f || time_factor < 1.0f) {
+		else if (time_factor > 4.0f || time_factor < 1.0f || interp_data->client_simulation_mode) {
 			// if transitioning to uninterpolated movement, we need to jump to the end of the simulated points 
 			// and then simulate forward some if there's extra time. 
 			float regular_sim_delta;
@@ -3227,6 +3255,7 @@ void multi_oo_interp(object* objp)
 				regular_sim_delta = flFrametime;
 			}
 			// Continue simulating if we have time that we need to simulate and exclude fake values.
+			// Note, whenever client_simulation_mode is on the following will be true.
 			if (regular_sim_delta > 0.001f && regular_sim_delta < 0.500f) {
 				// make sure to bash desired velocity and rotational velocity in this case.
 				objp->phys_info.desired_vel = interp_data->cur_pack_des_vel;
@@ -3358,7 +3387,7 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 	float delta = multi_oo_calc_pos_time_difference(player_id, net_sig_idx);
 	// if an error or invalid value, use the local timestamps instead of those received. Should be rare.
 	if (delta <= 0.0f) {
-		delta = (float)(timestamp() - Oo_info.received_frametimes[player_id].at(Oo_info.interp[net_sig_idx].pos_timestamp)) / TIMESTAMP_FREQUENCY;
+		delta = (float)(timestamp() - Oo_info.interp[net_sig_idx].pos_timestamp) / TIMESTAMP_FREQUENCY;
 	}
 
 	Oo_info.interp[net_sig_idx].pos_time_delta = delta;
@@ -3420,6 +3449,9 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 
 	// Set the points to the bezier
 	Oo_info.interp[net_sig_idx].pos_spline.bez_set_points(3, pts);
+
+	// unset client mode, now that we have brand new data!
+	Oo_info.interp[net_sig_idx].client_simulation_mode = false;
 }
 
 // Calculates how much time has gone by between the two most recent frames 
@@ -3457,6 +3489,16 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx)
 	temp_sum /= TIMESTAMP_FREQUENCY; // convert from timestamp to float frame time
 
 	return temp_sum;
+}
+
+// temporarily sets this as a client interpolated ship 
+void multi_oo_set_client_simulation_mode(ushort netsig) 
+{
+	if (netsig == 0 || netsig >= Oo_info.interp.size()) {
+		return;
+	}
+
+	Oo_info.interp[netsig].client_simulation_mode = true;
 }
 
 bool display_oo_bez = false;

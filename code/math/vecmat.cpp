@@ -100,7 +100,7 @@ float atan2_safe(float y, float x)
 float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_vec), "unit_vec must be normalized!");
 
 	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
@@ -115,7 +115,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_normal), "unit_normal must be normalized!");
 
 	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
@@ -132,7 +132,7 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
-	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(plane_normal), "plane_normal must be normalized!");
 
 	D = -vm_vec_dot(plane_point, plane_normal);
 	dist = vm_vec_dot(point, plane_normal) + D;
@@ -155,6 +155,17 @@ void vm_set_identity(matrix *m)
 	m->vec.rvec.xyz.x = 1.0f;	m->vec.rvec.xyz.y = 0.0f;	m->vec.rvec.xyz.z = 0.0f;
 	m->vec.uvec.xyz.x = 0.0f;	m->vec.uvec.xyz.y = 1.0f;	m->vec.uvec.xyz.z = 0.0f;
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
+}
+
+vec3d vm_vec_new(float x, float y, float z)
+{
+	vec3d vec;
+
+	vec.xyz.x = x;
+	vec.xyz.y = y;
+	vec.xyz.z = z;
+
+	return vec;
 }
 
 //adds two vectors, fills in dest, returns ptr to dest
@@ -388,6 +399,12 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
+bool vm_vec_is_normalized(const vec3d *v)
+{
+	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
+	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+}
+
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -569,33 +586,11 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 	float a;
 	vec3d t;
 
-	a = acosf(vm_vec_dot(v0,v1));
+	a = acosf_safe(vm_vec_dot(v0,v1));
 
 	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
 		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
-			a = -a;
-		}
-	}
-
-	return a;
-}
-
-float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
-{
-	float a, dot;
-	vec3d t;
-
-	// to avoid round-off errors...
-	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
-	dot = vm_vec_dot(v0, v1);
-	CLAMP(dot, -1.0f, 1.0f);
-
-	a = acosf(dot);
-
-	if (uvec) {
-		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,uvec) < 0.0 ) {
 			a = -a;
 		}
 	}
@@ -960,21 +955,11 @@ angles *vm_extract_angles_matrix_alternate(angles *a, const matrix *m)
 	Assert(a != NULL);
 	Assert(m != NULL);
 
-	// Extract pitch from m32, being careful for domain errors with
-	// asin().  We could have values slightly out of range due to
-	// floating point arithmetic.
-	float sp = -m->vec.fvec.xyz.y;
-	if (sp <= -1.0f) {
-		a->p = -PI_2;	// -pi/2
-	} else if (sp >= 1.0f) {
-		a->p = PI_2;	// pi/2
-	} else {
-		a->p = asinf(sp);
-	}
+	a->p = asinf_safe(-m->vec.fvec.xyz.y);
 
 	// Check for the Gimbal lock case, giving a slight tolerance
 	// for numerical imprecision
-	if (fabs(sp) > 0.9999f) {
+	if (fabs(m->vec.fvec.xyz.y) > 0.9999f) {
 		// We are looking straight up or down.
 		// Slam bank to zero and just set heading
 		a->b = 0.0f;
@@ -997,7 +982,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->b = 0.0f;		//always zero bank
 
-	a->p = asinf(-v->xyz.y);
+	a->p = asinf_safe(-v->xyz.y);
 
 	a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
@@ -1550,7 +1535,7 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 
 		vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
 	} else if (cos_theta > -0.999999875f) { // angle is within limits between 0 and PI
-		*theta = acosf(cos_theta);
+		*theta = acosf_safe(cos_theta);
 		Assert( !fl_is_nan(*theta) );
 
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
@@ -1971,7 +1956,7 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 		vm_vec_rotate(&local_rot_axis, &rot_axis, orient);
 
 		// derive theta from sin(theta) for better accuracy
-		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf(sin_theta) : PI - asinf(sin_theta)) / sin_theta);
+		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf_safe(sin_theta) : PI - asinf_safe(sin_theta)) / sin_theta);
 		
 		// reset z to delta_bank, because it just got cleared
 		theta_goal.xyz.z = delta_bank;
@@ -2179,7 +2164,7 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float 
 	vm_vec_normalize(&cross);
 
 	// get the total angle between the 2 vectors
-	total_ang = -(acosf(vm_vec_dot(v0, v1)));
+	total_ang = -(acosf_safe(vm_vec_dot(v0, v1)));
 
 	// rotate around the cross product vector by the appropriate angle
 	vm_rot_point_around_line(out, v0, t * total_ang, &vmd_zero_vector, &cross);
@@ -2239,30 +2224,39 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge)
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center)
 {
 	vec3d temp;
+	float scalar = frand();
 
-	// point somewhere in the plane
-	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
+	// sqrt because scaling inward increases the probability density by the square of its proximity towards the center
+	if (!bias_towards_center)
+		scalar = sqrtf(scalar);
+
+	// point somewhere in the plane, maybe scaled inward
+	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : scalar * radius);
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface)
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
-	// Uniformly distributing each coordinate of a vector then normalizing results in a uniform sphere distribution
-	util::UniformFloatRange coords(-1.0f,1.0f);
-	vm_vec_make( &temp, coords.next(), coords.next(), coords.next() );
-	vm_vec_normalize(&temp);
+	float z = util::UniformFloatRange(-1, 1).next(); // Take a 2-sphere slice
+	float phi = util::UniformFloatRange(0.0f, PI2).next();
+	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
 
-	// We then add the scaled result to the initial position to get the final position
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : util::UniformFloatRange(0.0f, radius).next());
+	float scalar = util::UniformFloatRange(0.0f, 1.0f).next();
+
+	// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+	if (!bias_towards_center)
+		scalar = powf(scalar, 0.333f);
+
+	vm_vec_scale_add(out, in, &temp, on_surface ? radius : scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
@@ -2830,4 +2824,10 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec)
+{
+	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
+	return os;
 }

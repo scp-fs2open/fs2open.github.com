@@ -12,14 +12,16 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "globalincs/globals.h"	// for NAME_LENGTH
+#include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
-#include "graphics/2d.h"
+
+#include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/2d.h"
 #include "io/timer.h"
+#include "model/model_flags.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
-#include "model/model_flags.h"
 
 class object;
 class ship_info;
@@ -40,14 +42,14 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
 #define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
-#define MOVEMENT_TYPE_LOOK_AT			5	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
-#define MOVEMENT_AXIS_NONE	-1
-#define MOVEMENT_AXIS_X		0
-#define MOVEMENT_AXIS_Y		2
-#define MOVEMENT_AXIS_Z		1
+#define MOVEMENT_AXIS_NONE		-1
+#define MOVEMENT_AXIS_X			0
+#define MOVEMENT_AXIS_Y			2
+#define MOVEMENT_AXIS_Z			1
+#define MOVEMENT_AXIS_OTHER		3
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -78,8 +80,8 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 // Data specific to a particular instance of a submodel.
 struct submodel_instance
 {
-	angles	angs = vmd_zero_angles;					// The current angle this thing is turned to.
-	angles	prev_angs = vmd_zero_angles;
+	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
+	float	prev_angle = 0.0f;
 
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
@@ -90,9 +92,12 @@ struct submodel_instance
 	bool	axis_set = false;
 	bool	blown_off = false;						// If set, this subobject is blown off
 
-	vec3d mc_base;
-	matrix mc_orient;
 	bool collision_checked = false;
+
+	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
+	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
+	matrix	canonical_orient = vmd_identity_matrix;
+	matrix	canonical_prev_orient = vmd_identity_matrix;
 
 	// --- these fields used to be in bsp_info ---
 
@@ -151,11 +156,10 @@ public:
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
     char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	vec3d	turret_norm;						//	direction this turret faces
-	matrix	turret_matrix;						// turret_norm converted to a matrix.
+	vec3d	turret_norm;						//	direction this turret faces (i.e. the normal to the turret base, or the center of the field of view)
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
-	float	turret_y_fov;						//  turret's base's fov
+	float	turret_base_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -205,13 +209,13 @@ public:
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
-	int turret_max_target_ownage; 
+	int turret_max_target_ownage;
+
+	actions::ProgramSet beam_warmdown_program;
 
     void reset();
 
-    model_subsystem() {
-        reset();
-    }
+    model_subsystem();
 };
 
 typedef struct model_special {
@@ -273,32 +277,32 @@ class bsp_info
 {
 public:
 	bsp_info()
-		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
+		: can_move(false), bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
 		rad(0.0f), my_replacement(-1), i_replace(-1), is_live_debris(false), num_live_debris(0),
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
-		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
-		look_at_num(-1)
+		nocollide_this_only(false), collide_invisible(false), attach_thrusters(false)
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
 
 		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
-		orientation = vmd_identity_matrix;
+		frame_of_reference = vmd_identity_matrix;
 
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
 		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
 	}
 
-	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
-	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
-	int		movement_axis;			// which axis this subobject moves or rotates on.
+	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
+	int		movement_type = -1;						// -1 if no movement, otherwise rotational or positional movement -- subobjects only
+	vec3d	movement_axis = vmd_zero_vector;		// which axis this subobject moves or rotates on.
+	int		movement_axis_id = -1;					// for optimization
 	bool	can_move;				// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
 
 	vec3d	offset;					// 3d offset from parent object
-	matrix	orientation;			// 3d orientation relative to parent object
+	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
 	ubyte		*bsp_data;
@@ -353,11 +357,12 @@ public:
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible;		//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
-	bool	force_turret_normal;	//Wanderer: Sets the turret uvec to override any input of for turret normal.
 	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
-	float	dumb_turn_rate;			//Bobboau
-	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
+
+	float	dumb_turn_rate = 0.0f;		//Bobboau
+	int		look_at_submodel = -1;		//VA - number of the submodel to be looked at by this submodel (-1 if none)
+	float	look_at_offset = -1.0f;		//angle in radians that the submodel should be turned from its initial orientation to be considered "looking at" something (-1 if set on first eval)
 };
 
 #define MP_TYPE_UNUSED 0
@@ -863,6 +868,7 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_NO_HEIGHT			(1<<10)
 #define MR_DEBUG_NO_AMBIENT			(1<<11)
 #define MR_DEBUG_NO_MISC			(1<<12)
+#define MR_DEBUG_NO_REFLECT			(1<<13)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -909,13 +915,11 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset = false);
-
-// Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret);
+extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
+extern void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp);
 extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
 extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
@@ -959,7 +963,7 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 // return the point in 3-space in outpnt.
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient);
-extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient);
+extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent = false);
 extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 // Clears all the submodel instances stored in a model to their defaults.
@@ -980,7 +984,14 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
-extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2);
+
+extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d * v1, vec3d * v2, int seed = -1);
+
+// gets the average position of the mesh at a particular z slice, approximately
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+// generates a random position more or less inside-ish a mesh at a particular z slice
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+  
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
@@ -1003,11 +1014,6 @@ int model_find_bay_path(int modelnum, char *bay_path_name);
 
 // Returns number of polygons in a submodel;
 int submodel_get_num_polys(int model_num, int submodel_num);
-
-// Given a vector that is in sub_model_num's frame of
-// reference, and given the object's orient and position,
-// return the vector in the model's frame of reference.
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these
@@ -1143,8 +1149,6 @@ bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
 
-void model_collide_preprocess(matrix *orient, polymodel *pm, polymodel_instance *pmi, int detail = 0);
-
 //=========================== MODEL OCTANT STUFF ================================
 
 //  Models are now divided into 8 octants.    Shields too.
@@ -1239,8 +1243,6 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
-
-void model_do_look_at(int model_num); //Bobboau
 
 void model_do_intrinsic_rotations(int model_instance_num = -1);
 

@@ -413,6 +413,12 @@ void player_select_do()
 	gr_set_bitmap(Player_select_background_bitmap);
 	gr_bitmap(0,0,GR_RESIZE_MENU);
 
+	//skip this if pilot is given through cmdline, assuming single-player
+	if (Cmdline_pilot) {
+		player_finish_select(Cmdline_pilot, false);
+		return;
+	}
+
 	// press the accept button
 	if (Player_select_autoaccept) {
 		Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button.press_button();
@@ -1444,7 +1450,7 @@ void player_finish_select(const char* callsign, bool is_multi) {
 
 	// now read in a the pilot data
 	if ( !Pilot.load_player(callsign, Player) ) {
-		Error(LOCATION,"Couldn't load pilot file, bailing");
+		Error(LOCATION,"Couldn't load pilot file for pilot \"%s\", bailing", callsign);
 		Player = nullptr;
 	} else {
 		// NOTE: this may fail if there is no current campaign, it's not fatal

@@ -57,6 +57,7 @@
 #include "missionui/missiondebrief.h"
 #include "network/multi_log.h"
 #include "weapon/emp.h"
+#include "weapon/muzzleflash.h"
 #include "network/multi_kick.h"
 #include "cmdline/cmdline.h"
 #include "weapon/flak.h"
@@ -74,6 +75,7 @@
 #include "network/multi_sw.h"
 #include "network/multi_sexp.h"
 #include "network/multi_mdns.h"
+#include "mission/missiongoals.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -2698,6 +2700,71 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	}
 }
 
+constexpr int WK_FLAGS_WEAPON_WEAPON = (1<<0);
+
+// simply removes a missile from existence on the client.
+void send_missile_kill_packet(object* objp)
+{
+	Assert(objp != nullptr);
+	Assert(objp->type == OBJ_WEAPON);
+	Assert(MULTIPLAYER_MASTER);
+
+	if (objp == nullptr || objp->type != OBJ_WEAPON || MULTIPLAYER_CLIENT || !(Weapon_info[Weapons[objp->instance].weapon_info_index].subtype & WP_MISSILE)) {
+		return;
+	}
+
+	ubyte data[MAX_PACKET_SIZE], flags = 0;
+	int packet_size;
+	
+	BUILD_HEADER(MISSILE_KILL);
+
+	ADD_USHORT(objp->net_signature);
+	if (objp->instance > -1) {
+		if (Weapons[objp->instance].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+			flags |= WK_FLAGS_WEAPON_WEAPON;
+	}
+
+	ADD_DATA(flags);
+
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_weapon_kill_packet(ubyte *data, header *hinfo )
+{
+	// only masters should receive this packet.
+	Assert(MULTIPLAYER_CLIENT);
+
+	int offset = HEADER_LENGTH;
+	ushort missile_net_signature;
+	ubyte flags;
+
+	GET_USHORT(missile_net_signature);
+	GET_DATA(flags);
+	PACKET_SET_SIZE();
+
+	// get the object pointer for the missile
+	object* missile = multi_get_network_object(missile_net_signature);
+
+	// make sure it's valid before implementing.
+	if (missile == nullptr || missile->type != OBJ_WEAPON || missile->instance < 0 || !(Weapon_info[Weapons[missile->instance].weapon_info_index].subtype & WP_MISSILE)) {
+		return;
+	}
+	
+	// set any optional packets.
+	if (flags & WK_FLAGS_WEAPON_WEAPON) {
+		Weapons[missile->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+	}
+	
+	// kill the missile! 
+	if (Weapon_info[Weapons[missile->instance].weapon_info_index].weapon_hitpoints > 0.0f) {
+		missile->hull_strength = -1.0f;
+	}
+
+	weapon_detonate(missile);
+	missile->flags.set(Object::Object_Flags::Should_be_dead);
+	Weapons[missile->instance].lifeleft = -1.0f;
+}
+
 // send a packet indicating a ship should be created
 void send_ship_create_packet( object *objp, bool is_support )
 {
@@ -3306,14 +3373,14 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	constexpr float ZERO_VALUE = 0.0f;
 
 	if (ssp->submodel_instance_1 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+		ADD_FLOAT( ssp->submodel_instance_1->cur_angle );
 	}
 	else {
 		ADD_FLOAT( ZERO_VALUE );
 	}
 
 	if (ssp->submodel_instance_2 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+		ADD_FLOAT( ssp->submodel_instance_2->cur_angle );
 	}
 	else {
 		ADD_FLOAT(ZERO_VALUE);
@@ -3337,7 +3404,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	ship_subsys *ssp;
 	ubyte has_sig = 0;
 	ship *shipp;
-	float pitch, heading;
+	float angle1, angle2;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3351,8 +3418,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_FLOAT( heading );
-	GET_FLOAT( pitch );
+	GET_FLOAT( angle1 );
+	GET_FLOAT( angle2 );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3386,11 +3453,11 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// bash the position and orientation of the turret
 	// but only if the submodels are not null
 	if (ssp->submodel_instance_1 != nullptr) {
-		ssp->submodel_instance_1->angs.h = heading;
+		ssp->submodel_instance_1->cur_angle = angle1;
 	}
 	
 	if (ssp->submodel_instance_2 != nullptr) {
-		ssp->submodel_instance_2->angs.p = pitch;
+		ssp->submodel_instance_2->cur_angle = angle2;
 	}
 
 	// get the world position of the weapon
@@ -3461,7 +3528,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission message packet
-void send_mission_message_packet( int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
+void send_mission_message_packet( int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay, int event_num_to_cancel)
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], up, us, utime;
@@ -3483,6 +3550,7 @@ void send_mission_message_packet( int id, const char *who_from, int priority, in
 	ADD_INT(builtin_type);
 	ADD_INT(multi_team_filter);
 	ADD_INT(delay);
+	ADD_INT(event_num_to_cancel);
 
 	if (multi_target == -1){		
 		multi_io_send_to_all_reliable(data, packet_size);
@@ -3494,10 +3562,10 @@ void send_mission_message_packet( int id, const char *who_from, int priority, in
 // process a mission message packet
 void process_mission_message_packet( ubyte *data, header *hinfo )
 {
-	int offset, id, builtin_type, delay;
+	int offset, id, builtin_type, delay = 0;
 	ubyte priority, source, utiming;
 	char who_from[NAME_LENGTH];
-	int multi_team_filter;
+	int multi_team_filter, event_num_to_cancel = -1;
 
 	Assert( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 
@@ -3510,6 +3578,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	GET_INT(builtin_type);
 	GET_INT(multi_team_filter);
 	GET_INT(delay);
+	GET_INT(event_num_to_cancel);
 
 	PACKET_SET_SIZE();
 
@@ -3522,7 +3591,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	// maybe filter this out
 	if(!message_filter_multi(id)){
 		// send the message as if it came from an sexpression
-		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type );
+		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type, event_num_to_cancel );
 	}
 }
 
@@ -7424,11 +7493,12 @@ void process_debrief_info( ubyte *data, header *hinfo )
 	debrief_set_multi_clients( stage_counts[Net_player->p_info.team], stages[Net_player->p_info.team] );
 }
 
+constexpr ubyte HWIF_BIG_UPDATE = (1 << 0);
 // sends homing information to all clients.  We only need signature and num_missiles (because of hornets).
 // sends homing_object and homing_subsystem to all clients.
 void send_homing_weapon_info( int weapon_num )
 {
-	ubyte data[MAX_PACKET_SIZE];
+	ubyte data[MAX_PACKET_SIZE], flags = 0;
 	int s_index;
 	int packet_size;
 	object *homing_object;
@@ -7448,6 +7518,7 @@ void send_homing_weapon_info( int weapon_num )
 	// homing signature.
 	homing_signature = 0;
 	homing_object = wp->homing_object;
+
 	if ( homing_object != &obj_used_list ) {
 		homing_signature = homing_object->net_signature;
 
@@ -7457,11 +7528,26 @@ void send_homing_weapon_info( int weapon_num )
 		}
 	}
 
+	if (!wp->weapon_flags[Weapon::Weapon_Flags::Multi_Update_Sent] || IS_MAT_NULL(&Objects[wp->objnum].phys_info.ai_desired_orient)) {
+		flags |= HWIF_BIG_UPDATE;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_Update_Sent);
+	}
+
 	BUILD_HEADER(HOMING_WEAPON_UPDATE);
+	ADD_DATA(flags);
 	ADD_USHORT( Objects[wp->objnum].net_signature );
 	ADD_USHORT( homing_signature );
 	ADD_SHORT( static_cast<short>(s_index) );
-	
+	ADD_VECTOR( wp->homing_pos);
+
+	if (flags & HWIF_BIG_UPDATE) {
+		fix current_lifetime = Missiontime - wp->creation_time;
+		ADD_INT(current_lifetime);
+		ADD_VECTOR(Objects[wp->objnum].pos);
+		ADD_FLOAT(wp->launch_speed);
+		ADD_ORIENT(Objects[wp->objnum].orient);
+	}
+
 	multi_io_send_to_all(data, packet_size);
 }
 
@@ -7469,54 +7555,84 @@ void send_homing_weapon_info( int weapon_num )
 // packet contains information for multiple weapons (like hornets).
 void process_homing_weapon_info( ubyte *data, header *hinfo )
 {
+	ubyte flags;
 	int offset;
+	fix missile_lifetime = 0;
 	ushort weapon_signature, homing_signature;
 	short h_subsys;
+	float launch_speed = 0.0f;
+	vec3d missile_pos = vmd_zero_vector, homing_goal = vmd_zero_vector;
 	object *homing_object, *weapon_objp;
 	weapon *wp;
+	matrix orient_in = vmd_identity_matrix;
 
 	offset = HEADER_LENGTH;
 
 	// get the data for the packet
+	GET_DATA(flags);
 	GET_USHORT( weapon_signature );
 	GET_USHORT( homing_signature );
 	GET_SHORT( h_subsys );
+	GET_VECTOR( homing_goal );
+
+	if (flags & HWIF_BIG_UPDATE) {
+		GET_INT(missile_lifetime);
+		GET_VECTOR(missile_pos);
+		GET_FLOAT(launch_speed);
+		GET_ORIENT(orient_in);
+	}
 	PACKET_SET_SIZE();
 
 	// deal with changing this weapons homing information
 	weapon_objp = multi_get_network_object( weapon_signature );
-	if ( weapon_objp == NULL ) {
+
+	if ( weapon_objp == nullptr ) {
 		nprintf(("Network", "Couldn't find weapon object for homing update -- skipping update\n"));
 		return;
 	}
+
 	Assert( weapon_objp->type == OBJ_WEAPON );
 	wp = &Weapons[weapon_objp->instance];
 
 	// be sure that we can find these weapons and 
 	homing_object = multi_get_network_object( homing_signature );
-	if ( homing_object == NULL ) {
+
+	if ( homing_object == nullptr ) {
+		wp->homing_object = &obj_used_list;
+		wp->homing_subsys = nullptr;
+		wp->target_num = -1;
+		wp->target_sig = -1;
+
 		nprintf(("Network", "Couldn't find homing object for homing update\n"));
+
 		return;
-	}
-
+	} 
+	
 	if ( homing_object->type == OBJ_WEAPON ) {
-		auto flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+		auto flags_check = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
-	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
-
-		if ( !((flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
+		if ( !((flags_check[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}
 	}
 
 	wp->homing_object = homing_object;
-	wp->homing_subsys = NULL;
+	wp->homing_subsys = nullptr;
 	wp->target_num = OBJ_INDEX(homing_object);
 	wp->target_sig = homing_object->signature;
+	wp->homing_pos = homing_goal;
+
 	if ( h_subsys != -1 ) {
 		Assert( homing_object->type == OBJ_SHIP );
 		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
+	}
+
+	if (flags & HWIF_BIG_UPDATE) {
+		wp->creation_time = Missiontime + missile_lifetime;
+		weapon_objp->pos = missile_pos;
+		weapon_objp->orient = orient_in;
+		wp->launch_speed = launch_speed;
 	}
 
 	if ( homing_object->type == OBJ_SHIP ) {
@@ -8328,6 +8444,14 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	else if((store_flags & MEF_DIRECTIVE_SPECIAL) && !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
 	}	
+
+	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time) {
+		Mission_events[u_event].satisfied_time = Missiontime;
+		if ( Mission_events[u_event].objective_text ) {
+			mission_event_set_completion_sound_timestamp();
+		}
+	}
+
 }
 
 // Karajorma - Sends a packet to all clients telling them that a SEXP variable has changed its value
@@ -8457,14 +8581,14 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 	// ensure a nullptr is not dereferenced for the next two values.
 	if (ssp->submodel_instance_1 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_1->angs.h );
+		ADD_FLOAT( ssp->submodel_instance_1->cur_angle );
 	}
 	else {
 		ADD_FLOAT( ZERO_VALUE );
 	}
 	
 	if (ssp->submodel_instance_2 != nullptr) {
-		ADD_FLOAT( ssp->submodel_instance_2->angs.p );
+		ADD_FLOAT( ssp->submodel_instance_2->cur_angle );
 	}
 	else {
 		ADD_FLOAT(ZERO_VALUE);
@@ -8487,7 +8611,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	object *objp;
 	ship_subsys *ssp;	
 	ship *shipp;
-	float pitch, heading;
+	float angle1, angle2;
 	float flak_range;
 
 	// get the data for the turret fired packet
@@ -8496,8 +8620,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_USHORT( pnet_signature );
 	GET_SHORT( wid );
 	GET_SHORT( turret_index );
-	GET_FLOAT( heading );
-	GET_FLOAT( pitch );
+	GET_FLOAT( angle1 );
+	GET_FLOAT( angle2 );
 	GET_FLOAT( flak_range );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
@@ -8531,11 +8655,11 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 
 	// bash the position and orientation of the turret, if it's not a nulltpr
 	if (ssp->submodel_instance_1 != nullptr) {
-		ssp->submodel_instance_1->angs.h = heading;
+		ssp->submodel_instance_1->cur_angle = angle1;
 	}
 
 	if (ssp->submodel_instance_2 != nullptr) {
-		ssp->submodel_instance_2->angs.p = pitch;
+		ssp->submodel_instance_2->cur_angle = angle2;
 	}
 
 	// get the world position of the weapon
@@ -8549,7 +8673,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		}
 
 		// create a muzzle flash from a flak gun based upon firing position and weapon type
-		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
+		mflash_create(&pos, &dir, &objp->phys_info, Weapon_info[wid].muzzle_flash);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
 		flak_set_range(&Objects[weapon_objnum], (float)flak_range);

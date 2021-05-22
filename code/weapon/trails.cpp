@@ -13,6 +13,8 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "render/3d.h" 
 #include "ship/ship.h"
 #include "tracing/tracing.h"
@@ -212,11 +214,20 @@ void trail_render( trail * trailp )
 		}
 
 		w = trailp->val[n] * w_size + ti->w_start;
+
+		float fade = trailp->val[n];
+		
+		if (trailp->info.a_decay_exponent != 1.0f)
+			fade = powf(trailp->val[n], trailp->info.a_decay_exponent);
+
 		if (init_fade_out != 1.0f) {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
 		} else {
-			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
+
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
 
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{
@@ -243,7 +254,7 @@ void trail_render( trail * trailp )
 		top.a = bot.a = l;	
 
 		if (i > 0) {
-			float U = i2fl(i);
+			float U = i2fl(n) / trailp->info.texture_stretch;
 
 			if (i == num_sections-1) {
 				// Last one...
@@ -326,7 +337,7 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 	trailp->val[next] = 0.0f;
 
 	if (orient != nullptr && trailp->info.spread > 0.0f) {
-		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false);
+		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false, true);
 	} else 
 		vm_vec_zero(&trailp->vel[next]);
 }		

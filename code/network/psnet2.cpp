@@ -697,7 +697,7 @@ bool psnet_string_to_addr(const char *text, net_addr *address)
 				address->port = static_cast<uint16_t>(port_num);
 			}
 		} catch (...) {
-			mprintf(("Invalid port number in psnet_string_to_addr()"));
+			mprintf(("Invalid port number in psnet_string_to_addr()\n"));
 		}
 	}
 

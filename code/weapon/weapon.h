@@ -14,15 +14,18 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+
+#include "actions/Program.h"
+#include "decals/decals.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
-#include "gamesnd/gamesnd.h"
 #include "model/model.h"
-#include "weapon/shockwave.h"
-#include "weapon/trails.h"
 #include "particle/ParticleManager.h"
+#include "weapon/shockwave.h"
+#include "weapon/swarm.h"
+#include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
-#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -101,7 +104,7 @@ typedef struct weapon {
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
-	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
+	std::unique_ptr<swarm_info>		swarm_info_ptr;	// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
@@ -202,6 +205,7 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	flagset<Weapon::Beam_Info_Flags> flags;
 } beam_weapon_info;
 
 typedef struct particle_spew_info {	//this will be used for multi spews
@@ -309,6 +313,8 @@ struct weapon_info
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
+	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
+	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -340,6 +346,9 @@ struct weapon_info
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
+
+	bool pierce_objects;
+	bool spawn_children_on_pierce;
 
     // spawn weapons
     int num_spawn_weapons_defined;
@@ -457,6 +466,7 @@ struct weapon_info
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
 	float lssm_lock_range;
+	int lssm_warpeffect;		//Which fireballtype is used for the warp effect
 
 	// Beam weapon effect	
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
@@ -471,6 +481,10 @@ struct weapon_info
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
+	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
+	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
+	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
@@ -514,6 +528,8 @@ struct weapon_info
 	int			score; //Optional score for destroying the weapon
 
 	decals::creation_info impact_decal;
+
+	actions::ProgramSet on_create_program;
 
 public:
 	weapon_info();

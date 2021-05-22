@@ -31,4 +31,21 @@ class argument_list_parser {
 	SCP_string _errorMessage;
 };
 
+class type_parser {
+  public:
+	explicit type_parser(const SCP_vector<SCP_string>& validTypeNames);
+
+	bool parse(const SCP_string& type);
+
+	const ade_type_info& getType() const;
+
+	const SCP_string& getErrorMessage() const;
+
+  private:
+	SCP_unordered_set<SCP_string> _validTypeNames;
+	ade_type_info _parsedType;
+
+	SCP_string _errorMessage;
+};
+
 } // namespace scripting

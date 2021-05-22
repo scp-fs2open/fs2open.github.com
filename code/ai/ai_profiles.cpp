@@ -481,7 +481,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (path_radii >= Minimum_subsystem_path_pt_dist) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used.\n", Minimum_subsystem_path_pt_dist, path_radii));
 					}
 				}
 
@@ -520,14 +520,29 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->second_order_lead_predict_factor = 0;
 					}
 				}
+				if (optional_string("$ships with no shields can manage ETS:"))
+				{
+					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
+					bool temp;
+					stuff_boolean(&temp);
+                    profile->flags.set(AI::Profile_Flags::all_nonshielded_ships_can_manage_ets, temp);
+				}
 
                 set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
-				set_flag(profile, "$ships with no shields can manage ETS:", AI::Profile_Flags::nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
 
 				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+
+				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
+
+				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
+
+				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -676,7 +691,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
-		flags.set(AI::Profile_Flags::nonshielded_ships_can_manage_ets);
+		flags.set(AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {

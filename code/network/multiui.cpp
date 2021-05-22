@@ -2734,7 +2734,7 @@ void multi_sg_init_gamenet()
 	
 	Net_player->tracker_player_id = Multi_tracker_id;
 
-	Multi_sg_netgame->security = (rand() % 32766) + 1;			// get some random security number	
+	Multi_sg_netgame->security = Random::next(1, 32766);			// get some random security number	
 	Multi_sg_netgame->mode = NG_MODE_OPEN;
 	Multi_sg_netgame->rank_base = RANK_ENSIGN;
 	if(Multi_sg_netgame->security < 16){
@@ -2799,6 +2799,7 @@ void multi_sg_init_gamenet()
 	// assign my player struct and other data	
 	Net_player->flags |= (NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING);
 	Net_player->s_info.voice_token_timestamp = -1;	
+	Net_player->s_info.player_collision_timestamp = timestamp(0);
 
 	// if we're supposed to flush our cache directory, do so now
 	if(Net_player->p_info.options.flags & MLO_FLAG_FLUSH_CACHE){

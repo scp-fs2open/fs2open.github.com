@@ -26,6 +26,7 @@
 #include <nebula/neblightning.h>
 #include <libs/ffmpeg/FFmpeg.h>
 #include <parse/sexp/sexp_lookup.h>
+#include <utils/Random.h>
 
 #include <clocale>
 
@@ -56,7 +57,7 @@ bool
 initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor, const InitializerCallback& listener) {
 	std::setlocale(LC_ALL, "C");
 
-	srand((unsigned) time(NULL));
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	listener(SubSystem::OS);
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -150,7 +151,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	species_init();        // Kazan
 
 	listener(SubSystem::BriefingIcons);
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();

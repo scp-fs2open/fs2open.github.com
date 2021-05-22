@@ -705,26 +705,27 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 
-	//Remember, Lua indices start at 0.
+	//Remember, Lua indices start at 1.
 	int count = 1;
 
-	for (int i = 0; i < MAX_FIREBALLS; i++)
-	{
-		if (Fireballs[i].fireball_info_index < 0 || Fireballs[i].objnum < 0 || Objects[Fireballs[i].objnum].type != OBJ_FIREBALL)
+	for (auto& current_fireball : Fireballs) {
+		if (current_fireball.fireball_info_index < 0 || current_fireball.objnum < 0 || Objects[current_fireball.objnum].type != OBJ_FIREBALL)
 			continue;
 
 		if (count == idx) {
-			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[Fireballs[i].objnum])));
+			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[current_fireball.objnum])));
 		}
 
 		count++;
+
 	}
 
 	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	return ade_set_args(L, "i", Num_fireballs);
+	int count = fireball_get_count();
+	return ade_set_args(L, "i", count);
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
@@ -907,23 +908,42 @@ ADE_FUNC(createShip,
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx >= 0) {
+		auto shipp = &Ships[Objects[obj_idx].instance];
+
 		if (team >= 0) {
-			Ships[Objects[obj_idx].instance].team = team;
+			shipp->team = team;
 		}
 
-		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+		ship_info* sip = &Ship_info[sclass];
+
+		model_page_in_textures(sip->model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
 
-		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(shipp->ship_name)) {
+			shipp->display_name = shipp->ship_name;
+			end_string_at_first_hash_symbol(shipp->display_name);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
+
+		if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
 		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
 		Script_system.RemHookVars({"Ship", "Parent"});
+
+		if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
+			float mission_time = f2fl(Missiontime);
+			int minutes = (int)(mission_time / 60);
+			int seconds = (int)mission_time % 60;
+
+			mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
@@ -1489,7 +1509,7 @@ ADE_FUNC(getArrivalList,
 	l_Mission,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
-	ade_type_iterator("parse_object"),
+	"iterator<parse_object>",
 	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),

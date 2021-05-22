@@ -26,6 +26,7 @@ class Category {
 };
 
 extern Category LuaOnFrame;
+extern Category LuaHooks;
 
 extern Category DrawSceneTexture;
 extern Category UpdateDistortion;
@@ -158,6 +159,8 @@ extern Category RenderSingleDecal;
 
 extern Category GpuHeapAllocate;
 extern Category GpuHeapDeallocate;
+
+extern Category ProgramStepOne;
 
 }
 

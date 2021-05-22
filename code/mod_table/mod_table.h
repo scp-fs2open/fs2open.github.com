@@ -56,7 +56,14 @@ extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
 extern bool Framerate_independent_turning;
 extern bool Ai_respect_tabled_turntime_rotdamp;
+extern bool Chase_view_default;
 extern bool Render_player_mflash;
+extern bool Neb_affects_beams;
+extern bool Neb_affects_weapons;
+extern bool Neb_affects_particles;
+extern bool Neb_affects_fireballs;
+extern std::tuple<float, float, float, float> Shadow_distances;
+extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
 
 void mod_table_init();
 

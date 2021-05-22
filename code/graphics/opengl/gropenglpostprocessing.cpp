@@ -442,9 +442,9 @@ void opengl_post_lightshafts()
 			float dot;
 			if ( (dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec)) > 0.7f ) {
 
-				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f +
+				x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f +
 					0.5f; // cant get the coordinates right but this works for the limited glare fov
-				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+				y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
 
 				opengl_set_generic_uniform_data<graphics::generic_data::lightshaft_data>(
 					[&](graphics::generic_data::lightshaft_data* data) {

@@ -295,6 +295,11 @@ void send_object_update_packet(int force_all = 0);
 // send a packet indicating a ship has been killed
 void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_killed, int self_destruct );
 
+// send a packet indicating that a missile died.
+void send_missile_kill_packet(object* objp);
+
+void process_weapon_kill_packet(ubyte* data, header* hinfo);
+
 // send a packet indicating a wing of ships should be created
 void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count );
 
@@ -308,7 +313,7 @@ void send_ship_depart_packet( object *objp, int method = -1 );
 void send_mission_log_packet( log_entry* entry );
 
 // send a mission message packet
-void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);
+void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0, int event_num_to_cancel = -1);
 
 // broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query();

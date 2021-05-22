@@ -24,6 +24,7 @@
 
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
+#include "cfile/cfilecompression.h"
 #include "luaconf.h"
 
 #include <sstream>
@@ -33,7 +34,6 @@
 #define CHECK_POSITION
 
 // Called once to setup the low-level reading code.
-
 void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, size_t pos )
 {
 	Assert(cfile != nullptr);
@@ -54,6 +54,33 @@ void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, 
 	}
 }
 
+//This function checks the file header to see if the file is compressed, if so it fills the correct compression info.
+void cf_check_compression(CFILE* cfile)
+{
+	if (cfile->size <= 16)
+		return;
+	int header=cfread_int(cfile);
+	cfseek(cfile, 0, SEEK_SET);
+	if (comp_check_header(header) == COMP_HEADER_MATCH)
+		comp_create_ci(cfile, header);
+}
+
+//This function is called to cleanup compression info when the cfile handle is reused.
+void cf_clear_compression_info(CFILE* cfile)
+{
+	if (cfile->compression_info.header != 0)
+	{
+		free(cfile->compression_info.offsets);
+		free(cfile->compression_info.decoder_buffer);
+		cfile->compression_info.offsets = nullptr;
+		cfile->compression_info.decoder_buffer = nullptr;
+		cfile->compression_info.header = 0;
+		cfile->compression_info.block_size = 0;
+		cfile->compression_info.last_decoded_block_pos = 0;
+		cfile->compression_info.last_decoded_block_bytes = 0;
+		cfile->compression_info.num_offsets = 0;
+	}
+}
 
 
 // cfeof() Tests for end-of-file on a stream
@@ -61,11 +88,11 @@ void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, 
 // returns a nonzero value after the first read operation that attempts to read
 // past the end of the file. It returns 0 if the current position is not end of file.
 // There is no error return.
-
 int cfeof(CFILE *cfile)
 {
 	Assert(cfile != NULL);
-
+	if (cfile->compression_info.header != 0)
+		return comp_feof(cfile);
 	int result = 0;
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
@@ -92,6 +119,8 @@ int cfeof(CFILE *cfile)
 int cftell( CFILE * cfile )
 {
 	Assert(cfile != NULL);
+	if (cfile->compression_info.header != 0)
+		return (int)comp_ftell(cfile);
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
     if (cfile->fp) {
@@ -116,6 +145,9 @@ int cfseek( CFILE *cfile, int offset, int where )
 {
 
 	Assert(cfile != NULL);
+
+	if (cfile->compression_info.header != 0)
+		return comp_fseek(cfile, offset, where);
 
 	// TODO: seek to offset in memory mapped file
 	Assert( !cfile->mem_mapped );
@@ -202,23 +234,31 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		// This is a file from memory
 		bytes_read = size;
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
+	} else if (cfile->compression_info.header != 0) {
+		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
+		if (bytes_read != size)
+		{
+			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), (int)bytes_read, (int)size));
+			Assertion(bytes_read == size, "File decompression error!");
+		}
 	} else {
-		bytes_read = fread( buf, 1, size, cfile->fp );
+		bytes_read = fread(buf, 1, size, cfile->fp);
 	}
+
 	if ( bytes_read > 0 )	{
 		cfile->raw_position += bytes_read;
 		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
 	}		
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-    if (cfile->fp) {
+	//Raw position is not the fp position with compressed files
+    if (cfile->fp && cfile->compression_info.header == 0) {
 		auto tmp_offset = ftell(cfile->fp) - cfile->lib_offset;
-		Assert(tmp_offset==cfile->raw_position);
+		Assert(tmp_offset == cfile->raw_position);
 	}
 	#endif
 
 	return (int)(bytes_read / elsize);
-
 }
 
 int cfread_lua_number(double *buf, CFILE *cfile)
@@ -266,4 +306,3 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 	return items_read;
 
 }
-
