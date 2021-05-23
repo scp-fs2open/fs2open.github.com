@@ -284,23 +284,21 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
  */
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
-//rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal either source
-vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
+// rotates a vector through a matrix (equivalent to left multiplying the vector by the matrix). 
+// returns ptr to dest vector. dest CANNOT equal either source
+#define vm_vec_rotate(dest, vec, mat) vm_matrix_x_vector(dest, mat, vec)
 
-//rotates a vector through the transpose of the given matrix. 
-//returns ptr to dest vector
-//dest CANNOT equal source
-// This is a faster replacement for this common code sequence:
-//    vm_copy_transpose(&tempm,src_matrix);
-//    vm_vec_rotate(dst_vec,src_vect,&tempm);
-// Replace with:
-//    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
-//
-// THIS DOES NOT ACTUALLY TRANSPOSE THE SOURCE MATRIX!!! So if
-// you need it transposed later on, you should use the 
-// vm_vec_transpose() / vm_vec_rotate() technique.
-vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m);
+// rotates a vector through the transpose of the given matrix (equivalent to right multiplying the vector by the matrix). 
+// returns ptr to dest vector. dest CANNOT equal either source
+#define vm_vec_unrotate(dest, vec, mat) vm_vector_x_matrix(dest, vec, mat)
+
+// left multiplies a vector by a matrix
+// dest CANNOT equal either source
+vec3d* vm_matrix_x_vector(vec3d* dest, const matrix* m, const vec3d* src);
+
+// right multiplies a vector by a matrix
+// dest CANNOT equal either source
+vec3d* vm_vector_x_matrix(vec3d* dest, const vec3d* src, const matrix* m);
 
 //transpose a matrix in place. returns ptr to matrix
 matrix *vm_transpose(matrix *m);
@@ -639,18 +637,15 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 	return left;
 }
 
-/**
- * @brief Rotates a vector into the orientation specified by the matrix
- * @param left The matrix
- * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
- */
 inline vec3d operator*(const matrix& left, const vec3d& right) {
 	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
+	vm_matrix_x_vector(&out, &left, &right);
+	return out;
+}
+
+inline vec3d operator*(const vec3d& left, const matrix& right) {
+	vec3d out;
+	vm_vector_x_matrix(&out, &left, &right);
 	return out;
 }
 
