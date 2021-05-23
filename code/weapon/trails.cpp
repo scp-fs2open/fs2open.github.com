@@ -153,9 +153,9 @@ void trail_render( trail * trailp )
 	int num_faded_sections = ti->n_fade_out_sections;
 
 
-	vec3d current_top, current_bot, prev_top, prev_bot;
-	float current_U, prev_U;
-	ubyte current_alpha, prev_alpha;
+	vec3d prev_top, prev_bot; vm_vec_zero(&prev_top); vm_vec_zero(&prev_bot);
+	float prev_U = 0;
+	ubyte prev_alpha = 0;
 	for (int i = 0; i < num_sections; i++) {
 		n = sections[i];
 
@@ -173,6 +173,7 @@ void trail_render( trail * trailp )
 		if (trailp->info.a_decay_exponent != 1.0f)
 			fade = powf(trailp->val[n], trailp->info.a_decay_exponent);
 
+		ubyte current_alpha = 0;
 		if (init_fade_out != 1.0f) {
 			current_alpha = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
 		} else {
@@ -208,7 +209,8 @@ void trail_render( trail * trailp )
 		vm_vec_normalize_safe(&trail_direction);
 
 		
-		current_U = i2fl(n) / trailp->info.texture_stretch;
+		float current_U = i2fl(n) / trailp->info.texture_stretch;
+		vec3d current_top, current_bot;
 		trail_calc_facing_pts(&current_top, &current_bot, &trail_direction, &trailp->pos[n], w);
 
 		if (i > 0) {
