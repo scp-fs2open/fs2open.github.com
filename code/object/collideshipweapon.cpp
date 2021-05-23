@@ -532,7 +532,7 @@ int collide_ship_weapon( obj_pair * pair )
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
 
-	if ( (sip->is_big_or_huge()) && (Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].subtype == WP_LASER) ) {
+	if ( (sip->is_big_or_huge()) && (weapon_obj->phys_info.flags & PF_CONST_VEL) ) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships
