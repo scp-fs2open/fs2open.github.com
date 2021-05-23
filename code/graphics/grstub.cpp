@@ -225,7 +225,7 @@ void gr_stub_deferred_lighting_end()
 {
 }
 
-void gr_stub_deferred_lighting_finish(vec3d* /*relativeTo*/)
+void gr_stub_deferred_lighting_finish()
 {
 }
 

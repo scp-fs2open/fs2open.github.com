@@ -7,7 +7,7 @@ void gr_opengl_deferred_init();
 void opengl_clear_deferred_buffers();
 void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs = false);
 void gr_opengl_deferred_lighting_end();
-void gr_opengl_deferred_lighting_finish(vec3d* relativeTo = nullptr);
+void gr_opengl_deferred_lighting_finish();
 
 void gr_opengl_deferred_light_sphere_init(int rings, int segments);
 void gr_opengl_deferred_light_cylinder_init(int segments);

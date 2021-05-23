@@ -357,7 +357,7 @@ void obj_render_queue_all()
 	decals::renderAll();
 
  	gr_deferred_lighting_end();
-	gr_deferred_lighting_finish(nullptr);
+	gr_deferred_lighting_finish();
 
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 

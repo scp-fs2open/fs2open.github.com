@@ -101,7 +101,7 @@ extern float static_point_factor;
 extern float static_light_factor;
 extern float static_tube_factor;
 
-void gr_opengl_deferred_lighting_finish(vec3d* relativeTo)
+void gr_opengl_deferred_lighting_finish()
 {
 	GR_DEBUG_SCOPE("Deferred lighting finish");
 	TRACE_SCOPE(tracing::ApplyLights);
@@ -148,7 +148,7 @@ void gr_opengl_deferred_lighting_finish(vec3d* relativeTo)
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix;
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
 			}
@@ -157,7 +157,7 @@ void gr_opengl_deferred_lighting_finish(vec3d* relativeTo)
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -268,38 +268,24 @@ void gr_opengl_deferred_lighting_finish(vec3d* relativeTo)
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
 					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
-				vec3d pos;
-
-				pos = l.vec;
-				if (relativeTo != nullptr)
-					vm_vec_sub2(&pos, relativeTo);
-
-				gr_opengl_draw_deferred_light_sphere(&pos);
+				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index; 
 				break;
 			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
 					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
-				vec3d dir, newPos, pos1, pos2;
+				vec3d dir, newPos;
 				matrix orient;
 
-				pos1 = l.vec;
-				pos2 = l.vec2;
-
-				if (relativeTo != nullptr) {
-					vm_vec_sub2(&pos1, relativeTo);
-					vm_vec_sub2(&pos2, relativeTo);
-				}
-
-				vm_vec_sub(&dir, &pos1, &pos2);
+				vm_vec_sub(&dir, &l.vec, &l.vec2);
 				vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
 				//Tube light volumes must be extended past the length of their requested light vector
 				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
 				//origin we must extend it, which has been done above, and then move it backwards one radius.
 				vm_vec_normalize(&dir);
 				//1.5 multiplier matches scaling used earlier to scale light radius for all tubes
-				vm_vec_scale_sub(&newPos, &pos2, &dir, l.radb * 1.5f);
+				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
 				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
 				

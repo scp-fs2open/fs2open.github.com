@@ -7394,6 +7394,8 @@ void ship_render_cockpit(object *objp)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
 	gr_set_view_matrix(&leaning_position, &Eye_matrix);
 
+	Shadow_view_matrix_render = gr_view_matrix;
+
 	if(Cmdline_deferred_lighting_cockpit)
 		gr_deferred_lighting_begin(true);
 
@@ -7412,8 +7414,14 @@ void ship_render_cockpit(object *objp)
 	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
 
 	if (Cmdline_deferred_lighting_cockpit) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		gr_deferred_lighting_end();
-		gr_deferred_lighting_finish(&Eye_position);
+		gr_deferred_lighting_finish();
 
 		gr_reset_lighting();
 		gr_set_lighting(false, false);
