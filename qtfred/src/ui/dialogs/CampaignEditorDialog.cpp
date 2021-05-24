@@ -23,7 +23,14 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	ui->cmbType->clear();
 	ui->cmbType->addItems(model->campaignTypes);
 
-	connect(ui->listMissions, &QListWidget::itemActivated, this, &CampaignEditorDialog::listedMissionActivated);
+	QPalette p = ui->lblMissionDescr1->palette();
+	p.setColor(QPalette::WindowText, Qt::darkYellow);
+	ui->lblMissionDescr1->setPalette(p);
+	p = ui->lblMissionDescr2->palette();
+	p.setColor(QPalette::WindowText, Qt::red);
+	ui->lblMissionDescr2->setPalette(p);
+
+
 	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
 	connect(ui->cmbType, &QComboBox::currentTextChanged, this, &CampaignEditorDialog::cmbTypeChanged);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, this, &CampaignEditorDialog::chkTechResetChanged);
@@ -97,6 +104,8 @@ void CampaignEditorDialog::updateUI() {
 
 	ui->lstShips->setModel(&model->initialShips);
 	ui->lstWeapons->setModel(&model->initialWeapons);
+
+	ui->lstMissions->setModel(&model->missionData);
 
 	ui->txtBriefingCutscene->setText(model->getCurMissionBriefingCutscene());
 	ui->txtMainhall->setText(model->getCurMissionMainhall());
@@ -187,11 +196,6 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 		return;
 
 	model->saveTo(pathName);
-}
-
-void CampaignEditorDialog::listedMissionActivated(const QListWidgetItem *item){
-	QMessageBox::information(this, "", item->text());
-	//TODO select current mission
 }
 
 void CampaignEditorDialog::txtNameChanged(const QString changed) {

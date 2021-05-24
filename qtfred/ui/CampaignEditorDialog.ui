@@ -164,7 +164,7 @@
         <number>11</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0,1">
+        <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0,0,1">
          <item>
           <widget class="QLabel" name="lblMissions">
            <property name="text">
@@ -173,7 +173,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QListWidget" name="listMissions">
+          <widget class="QListView" name="lstMissions">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -186,17 +186,25 @@
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
            </property>
-           <item>
-            <property name="text">
-             <string>A</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>B</string>
-            </property>
-           </item>
           </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="lstMissionDescr">
+           <item>
+            <widget class="QLabel" name="lblMissionDescr1">
+             <property name="text">
+              <string>yellow=uneditable/packaged</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblMissionDescr2">
+             <property name="text">
+              <string>red=not found/loadable, please resolve!</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <layout class="QHBoxLayout" name="layoutLoadMission">
@@ -517,7 +525,7 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>listMissions</tabstop>
+  <tabstop>lstMissions</tabstop>
   <tabstop>txtBriefingCutscene</tabstop>
   <tabstop>txtMainhall</tabstop>
   <tabstop>txtDebriefingPersona</tabstop>

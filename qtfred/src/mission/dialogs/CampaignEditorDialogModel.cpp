@@ -2,11 +2,15 @@
 #include <mission/missioncampaign.h>
 #include "weapon/weapon.h"
 
+extern int Skip_packfile_search;
+
 namespace fso {
 namespace fred {
 namespace dialogs {
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData() {
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
+	filename(file)
+{
 	branches.emplace_back();
 	it_branches = branches.begin();
 }
@@ -43,16 +47,67 @@ static CheckedDataListModel<std::ptrdiff_t>::RowData initWeps(SCP_vector<weapon_
 	return CheckedDataListModel<std::ptrdiff_t>::RowData();
 }
 
+static SCP_vector<SCP_string> getMissions(){
+	Skip_packfile_search = 1;
+	SCP_vector<SCP_string> missions;
+	cf_get_file_list(missions, CF_TYPE_MISSIONS, "*fs2", CF_SORT_NAME);
+	Skip_packfile_search = 0;
+	return missions;
+}
+
+static inline bool isCampaignCompatible(const mission &fsoMission){
+	return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
+			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
+			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
+}
+
+static inline bool isMissionUsed(const QString &filename) {
+	for (int i=0; i<Campaign.num_missions; i++)
+		if (filename == Campaign.missions[i].name)
+			return true;
+	return false;
+}
+
+CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it){
+	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
+	std::unique_ptr<CMdata> ret_data{new CMdata{QString::fromStdString(*m_it).append(".fs2")}};
+
+	ret_data->editable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
+	if (! ret_data->editable)
+		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
+
+	return CheckedDataListModel<std::unique_ptr<CMdata>>::RowData{
+		isCampaignCompatible(ret_data->fsoMission) ? ret_data->filename : "",
+		ret_data,
+		isMissionUsed(ret_data->filename),
+		ret_data->editable ? Qt::color0 : Qt::red};
+}
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, CampaignEditorDialog* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
 	_currentFile(loadFile(file)),
 	initialShips(Ship_info, &initShips, this),
-	initialWeapons(Weapon_info, &initWeps, this)
+	initialWeapons(Weapon_info, &initWeps, this),
+	missionData(getMissions(), &initMissions, this)
 {
+	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
+	for (int i=0; i<Campaign.num_missions; i++)
+		if (! missionData.contains(Campaign.missions[i].name)) {
+			std::unique_ptr<CMdata> ptr{
+				new CMdata{Campaign.missions[i].name}
+			};
+
+			bool loaded = !get_mission_info(Campaign.missions[i].name, &ptr->fsoMission);
+			ptr->editable = false;
+
+			missionData.addRow(Campaign.missions[i].name, ptr, true,
+							   loaded ? Qt::darkYellow : Qt::red);
+		}
+
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 
 	//missioncampaign.h globals
 	_campaignName = Campaign.name;
@@ -61,8 +116,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, Campai
 	_campaignDescr = Campaign.desc;
 	_numPlayers = Campaign.num_players;
 
-	_missionData.emplace_back();
-	_it_missionData = _missionData.begin();
 }
 
 bool CampaignEditorDialogModel::apply() {
@@ -74,14 +127,14 @@ void CampaignEditorDialogModel::reject() {
 	// nothing to do if the dialog is created each time it's opened
 }
 
+
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
 	QMessageBox::information(_parent, file, success ? tr("Successfully saved") : tr("Error saving"));
 	return success;
 }
 
-//TODO retrieve constants
-static QStringList initCampaignTypes(){
+static QStringList initCampaignTypes() {
 	QStringList ret;
 	for (auto& tp: campaign_types) {  //missioncampaign.h global
 		ret << tp;
@@ -93,7 +146,7 @@ const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes()
 bool CampaignEditorDialogModel::_saveTo(QString file) {
 	if (file.isEmpty())
 		return false;
-	//QFile f(file);
+	//auto path = qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
 
 	return false;
 }

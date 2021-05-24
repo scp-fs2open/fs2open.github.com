@@ -50,8 +50,6 @@ private slots:
 	bool fileSaveAs();
 	void fileSaveCopyAs();
 
-	void listedMissionActivated(const QListWidgetItem *item);
-
 	void txtNameChanged(const QString changed);
 	void cmbTypeChanged(const QString changed);
 	void chkTechResetChanged(const int changed);

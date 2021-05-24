@@ -31,22 +31,24 @@ public:
 	inline bool getCampaignTechReset() const { return _campaignTechReset; }
 	inline const QString& getCampaignDescr() const { return _campaignDescr; }
 
+	inline const QString& getCurMissionFilename() const {
+		return (_it_missionData ? _it_missionData : &mdEmpty)->filename; }
 	inline const QString& getCurMissionBriefingCutscene() const {
-		return _it_missionData->briefingCutscene; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->briefingCutscene; }
 	inline const QString& getCurMissionMainhall() const {
-		return _it_missionData->mainhall; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->mainhall; }
 	inline const QString& getCurMissionDebriefingPersona() const {
-		return _it_missionData->debriefingPersona; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->debriefingPersona; }
 
 	inline bool getCurBrIsLoop() const {
-		return _it_missionData->it_branches->isLoop; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->isLoop; }
 
 	inline const QString& getCurLoopDescr() const {
-		return _it_missionData->it_branches->loopData.descr; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.descr; }
 	inline const QString& getCurLoopAnim() const {
-		return _it_missionData->it_branches->loopData.anim; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.anim; }
 	inline const QString& getCurLoopVoice() const {
-		return _it_missionData->it_branches->loopData.voice; }
+		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.voice; }
 
 	inline void setCampaignName(const QString &campaignName) {
 		modify<QString>(_campaignName, campaignName); }
@@ -58,20 +60,27 @@ public:
 		modify<QString>(_campaignDescr, campaignDescr); }
 
 	inline void setCurMissionBriefingCutscene(const QString &briefingCutscene) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->mainhall, briefingCutscene); }
 	inline void setCurMissionMainhall(const QString &mainhall) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->mainhall, mainhall); }
 	inline void setCurMissionDebriefingPersona(const QString &debriefingPersona) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->debriefingPersona, debriefingPersona); }
 
 	inline void setCurBrIsLoop(bool isLoop) {
+		if (! _it_missionData) return;
 		modify<bool>(_it_missionData->it_branches->isLoop, isLoop);}
 
 	inline void setCurLoopDescr(const QString &descr) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->it_branches->loopData.descr, descr); }
 	inline void setCurLoopAnim(const QString &anim) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->it_branches->loopData.anim, anim); }
 	inline void setCurLoopVoice(const QString &voice) {
+		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->it_branches->loopData.voice, voice); }
 
 	bool saveTo(const QString &file);
@@ -110,7 +119,13 @@ private:
 	};
 
 	struct CampaignMissionData {
-		explicit CampaignMissionData();
+		CampaignMissionData() = delete;
+		CampaignMissionData(const QString &file);
+
+		const QString filename;
+
+		mission fsoMission{};
+		bool editable{false};
 
 		QString briefingCutscene;
 		QString mainhall;
@@ -119,14 +134,16 @@ private:
 		SCP_vector<CampaignBranchData> branches;
 	};
 
+	friend CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it);
+
 	QString _campaignDescr;
 	QString _campaignName;
 	QString _campaignType{ campaignTypes[0] };
 	int _numPlayers{-1}; //noUI
 	bool _campaignTechReset{false};
 
-	SCP_vector<CampaignMissionData>::iterator _it_missionData;  //noUIu
-	SCP_vector<CampaignMissionData> _missionData;
+	const CampaignMissionData mdEmpty{""};
+	CampaignMissionData* _it_missionData{nullptr};
 
 	CampaignEditorDialog *const _parent;
 	const QString _currentFile;
@@ -136,7 +153,7 @@ public:
 	static const QStringList campaignTypes;
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
-
+	CheckedDataListModel<std::unique_ptr<CampaignMissionData>> missionData;
 };
 
 
