@@ -13161,15 +13161,15 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	int	i;
 	ship	*shipp;
 	weapon_info *wepp;
-	bool flag = true;
 	Assert(objp->type == OBJ_SHIP);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 	shipp = &Ships[objp->instance];
 	ai_info* aip = &Ai_info[shipp->ai_index];
 	
-	float target_range,	weapon_range_max,weapon_range_min;
+	float target_range, weapon_range_max, weapon_range_min;
+	target_range = 0.0f;
 
-	if (flag) {
+	if (The_mission.ai_profile->ai_range_secondary_select_mode!= AI_RANGE_SEC_SEL_MODE_RETAIL) {
 		vec3d our_position = objp->pos;
 		vec3d target_position;
 		object *target = &Objects[Ai_info[shipp->ai_index].target_objnum];
@@ -13191,7 +13191,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
 		if (shipp->weapons.secondary_bank_ammo[i]) {
-			if (flag) {
+			if (The_mission.ai_profile->ai_range_secondary_select_mode != AI_RANGE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
 				weapon_range_min = wepp->WeaponMinRange;
 				weapon_range_max = wepp->weapon_range;
