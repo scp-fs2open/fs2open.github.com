@@ -643,23 +643,12 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_NIL;
 
 	//Get default turret info
-	vec3d gpos, gvec;
-	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
-
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &objp->orient);
-
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &objp->pos);
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
-
-	int ret_val = model_rotate_gun(objp, pm, pmi, tp, &pos, reset);
+	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, &pos, reset);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
@@ -705,7 +694,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", "number,
 
 	fov = tp->turret_fov;
 	fov_e = tp->turret_max_fov;
-	fov_y = tp->turret_y_fov;
+	fov_y = tp->turret_base_fov;
 
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
@@ -741,7 +730,8 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turr
 
 	model_subsystem *tp = sso->ss->system_info;
 
-	m = tp->turret_matrix;
+	// we have to fake a turret matrix because that field is no longer part of model_subsystem
+	vm_vector_2_matrix(&m, &tp->turret_norm, nullptr, nullptr);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }

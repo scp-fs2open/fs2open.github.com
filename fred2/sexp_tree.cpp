@@ -985,11 +985,19 @@ void sexp_tree::right_clicked(int mode)
 						menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
 
 					} else {
+						UINT flags = MF_STRING | MF_ENABLED;
+
+						if (!((data_idx + 3) % 30)) {
+							flags |= MF_MENUBARBREAK;
+						}
+
 						// add data
-						if ( (data_idx + 3) % 30) {
-							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+						if (type == OPF_VARIABLE_NAME) {
+							char buf[128];
+							sprintf(buf, "%s (%s)", Sexp_variables[data_idx].variable_name, Sexp_variables[data_idx].text);
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, buf);
 						} else {
-							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, ptr->text.c_str());
 						}
 					}
 
@@ -1767,6 +1775,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
+		auto saved_id = id;
 		Assert(item_index >= 0);
 		op = get_operator_index(tree_nodes[item_index].text);
 		Assert(op >= 0);
@@ -1785,8 +1794,29 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 		expand_operator(item_index);
-		add_data(ptr->text.c_str(), ptr->type);
+		node = add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
+
+		// bolted-on ugly hack
+		if (type == OPF_VARIABLE_NAME) {
+			auto var_idx = saved_id - ID_ADD_MENU;
+			auto saved_item_index = item_index;
+
+			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
+				type = SEXPT_NUMBER;
+			}
+			else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
+				type = SEXPT_STRING;
+			}
+			else {
+				UNREACHABLE("Unknown sexp variable type");
+			}
+
+			item_index = node;
+			replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+			item_index = saved_item_index;
+		}
+
 		return 1;
 	}
 
@@ -5776,12 +5806,14 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_type()
 
 sexp_list_item *sexp_tree::get_listing_opf_keypress()
 {
-	int i;
 	sexp_list_item head;
+	const auto& Default_config = Control_config_presets[0].bindings;
 
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_default > 0 && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(Control_config[i].key_default));
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
+
+		if ((btn >= 0) && !Control_config[i].disabled) {
+			head.add_data_dup(textify_scancode(btn));
 		}
 	}
 

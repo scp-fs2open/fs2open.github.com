@@ -607,7 +607,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 					dest->turret_fov = source->turret_fov;
 					dest->turret_num_firing_points = source->turret_num_firing_points;
 					dest->turret_norm = source->turret_norm;
-					dest->turret_matrix = source->turret_matrix;
 
 					for (nfp = 0; nfp < dest->turret_num_firing_points; nfp++ )
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
@@ -2185,7 +2184,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								cfread_vector( &temp_vec, fp );
 								vm_vec_normalize_safe(&temp_vec);
 								subsystemp->turret_norm = temp_vec;
-								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
 
 								n_slots = cfread_int( fp );
 								subsystemp->turret_gun_sobj = physical_parent;
@@ -3651,7 +3649,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
 	vm_vec_sub(&dir, &planar_dst, &world_pos);
 	vm_vec_normalize(&dir);
-	smi->cur_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
 	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
@@ -3726,85 +3724,12 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 	submodel_canonicalize(sm, smi, true);
 }
 
-
-//=========================================================================
-// Make a turret's correct orientation matrix.   This should be done when 
-// the model is read, but I wasn't sure at what point all the data that I
-// needed was read, so I just check a flag and call this routine when
-// I determine I need the correct matrix.   In this code, you can't use
-// vm_vec_2_matrix or anything, since these turrets could be either 
-// right handed or left handed.
-// Addendum: Since we no longer stuff angles into the model, we need a
-// model instance to do angle calculation.  We can just piggy back on
-// the active ship's model instance because all invocations of this
-// function are done from somewhere with a valid ship.
-void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret)
-{
-	vec3d fvec, uvec, rvec;
-	Assert(pm->id == pmi->model_num);
-
-	auto base = &pmi->submodel[turret->subobj_num];
-	auto gun = &pmi->submodel[turret->turret_gun_sobj];
-
-	auto pm_base = &pm->submodel[turret->subobj_num];
-	auto pm_gun = &pm->submodel[turret->turret_gun_sobj];
-
-	auto save_base_angle = base->cur_angle;
-	auto save_gun_angle = gun->cur_angle;
-	auto save_base_orient = base->canonical_orient;
-	auto save_gun_orient = gun->canonical_orient;
-
-	base->cur_angle = 0.0f;
-	submodel_canonicalize(pm_base, base, false);
-	gun->cur_angle = 0.0f;
-	submodel_canonicalize(pm_gun, gun, false);
-	model_instance_find_world_dir(&fvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
-
-	base->cur_angle = -PI_2;
-	submodel_canonicalize(pm_base, base, false);
-	gun->cur_angle = -PI_2;
-	submodel_canonicalize(pm_gun, gun, false);
-	model_instance_find_world_dir(&rvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
-
-	base->cur_angle = 0.0f;
-	submodel_canonicalize(pm_base, base, false);
-	model_instance_find_world_dir(&uvec, &turret->turret_norm, pm, pmi, turret->turret_gun_sobj, &vmd_identity_matrix);
-									
-	vm_vec_normalize(&fvec);
-	vm_vec_normalize(&rvec);
-	vm_vec_normalize(&uvec);
-
-	turret->turret_matrix.vec.fvec = fvec;
-	turret->turret_matrix.vec.rvec = rvec;
-	turret->turret_matrix.vec.uvec = uvec;
-
-//	vm_vector_2_matrix(&turret->turret_matrix,&turret->turret_norm,NULL,NULL);
-
-	// HACK!! WARNING!!!
-	// I'm doing nothing to verify that this matrix is orthogonal!!
-	// In other words, there's no guarantee that the vectors are 90 degrees
-	// from each other.
-	// I'm not doing this because I don't know how to do it without ruining
-	// the handedness of the matrix... however, I'm not too worried about	
-	// this because I am creating these 3 vectors by making them 90 degrees
-	// apart, so this should be close enough.  I think this will start 
-	// causing weird errors when we view from turrets. -John
-    turret->flags.set(Model::Subsystem_Flags::Turret_matrix);
-
-	// restore the position of the turret before we entered this function
-	base->cur_angle = save_base_angle;
-	gun->cur_angle = save_gun_angle;
-	base->canonical_orient = save_base_orient;
-	gun->canonical_orient = save_gun_orient;
-}
-
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
 {
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
@@ -3823,12 +3748,6 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 	Assert( turret->turret_num_firing_points > 0 );
 	// Check for a valid subsystem
 	Assert( ss != NULL );
-
-	// Build the correct turret matrix if there isn't already one
-	if ( !(turret->flags[Model::Subsystem_Flags::Turret_matrix]) ) {
-		model_make_turret_matrix(pm, pmi, turret);
-	}
-	Assert( turret->flags[Model::Subsystem_Flags::Turret_matrix]);
 
 	// Find the heading and pitch that the gun needs to turn to
 	float desired_base_angle, desired_gun_angle;
@@ -3851,7 +3770,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_base_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 		//------------
 		// Pretend the base is pointing directly at the target
@@ -3871,7 +3790,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_gun_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 		// for ventral turrets without custom matrixes
 		if (vm_vec_dot(&gun_sm->frame_of_reference.vec.uvec, &turret->turret_norm) < 0.0f) {
 			desired_gun_angle = PI + desired_gun_angle;
@@ -3893,7 +3812,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
+	if (turret->flags[Model::Subsystem_Flags::Turret_restricted_fov])
 		limited_base_rotation = true;
 
 	//------------
@@ -4317,11 +4236,11 @@ void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *
 }
 
 // the same as model_find_world_dir - just taking model instance data into account
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
+void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, submodel_num, objorient);
+	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
 void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
@@ -5448,12 +5367,9 @@ void model_subsystem::reset()
     memset(crewspot, 0, sizeof(crewspot));
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
-    for (auto it = std::begin(turret_matrix.a1d); it != std::end(turret_matrix.a1d); ++it)
-        *it = 0.0f;
-
     turret_fov = 0;
     turret_max_fov = 0;
-    turret_y_fov = 0;
+    turret_base_fov = 0;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;

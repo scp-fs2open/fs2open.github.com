@@ -1134,10 +1134,6 @@ int CFred_mission_save::save_cmd_brief()
 	required_string_fred("#Command Briefing");
 	parse_comments(2);
 
-	if (The_mission.game_type & MISSION_TYPE_MULTI) {
-		return err;
-	}  // no command briefings allowed in multiplayer missions.
-
 	save_custom_bitmap("$Background 640:",
 					   "$Background 1024:",
 					   Cur_cmd_brief->background[GR_640],

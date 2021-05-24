@@ -168,7 +168,7 @@ void FredView::openLoadMissionDIalog() {
 		return;
 	}
 
-	loadMissionFile(pathName);
+	loadMissionFile(pathName.replace('/',DIR_SEPARATOR_CHAR));
 }
 
 void FredView::on_actionExit_triggered(bool) {
@@ -183,7 +183,7 @@ void FredView::on_actionSave_As_triggered(bool) {
 		return;
 	}
 
-	save.save_mission_file(saveName.toUtf8().constData());
+	save.save_mission_file(saveName.replace('/',DIR_SEPARATOR_CHAR).toUtf8().constData());
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
@@ -707,7 +707,7 @@ DialogButton FredView::showButtonDialog(DialogType type,
 	dialog.setWindowTitle(QString::fromStdString(title));
 	dialog.setText(QString::fromStdString(message));
 
-	QMessageBox::StandardButtons qtButtons = 0;
+	QMessageBox::StandardButtons qtButtons{};
 	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
 	if (buttons[DialogButton::Yes]) {
 		qtButtons |= QMessageBox::Yes;

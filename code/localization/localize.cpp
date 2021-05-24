@@ -75,7 +75,7 @@ int Xstr_inited = 0;
 
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
-#define PARSE_ID_BUF_SIZE			5
+#define PARSE_ID_BUF_SIZE			8	// 7 digits and a \0
 
 SCP_unordered_map<int, char*> Lcl_ext_str;
 
@@ -955,8 +955,18 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 			// return translation of string
 			if (Xstr_table[index].str)
 				return Xstr_table[index].str;
+#ifndef NDEBUG
 			else
-				mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+			{
+				// make sure missing strings are only logged once
+				static SCP_unordered_set<int> Warned_xstr_indexes;
+				if (Warned_xstr_indexes.count(index) == 0)
+				{
+					Warned_xstr_indexes.insert(index);
+					mprintf(("No XSTR entry in strings.tbl for index %d\n", index));
+				}
+			}
+#endif
 		}
 	}
 

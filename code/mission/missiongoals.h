@@ -181,6 +181,13 @@ void mission_goal_validation_change( int goal_num, bool valid );
 void mission_event_set_directive_special(int event);
 void mission_event_unset_directive_special(int event);
 
+// Cyborg - set the directive completion sound timestamp
+void mission_event_set_completion_sound_timestamp();
+
+// Maybe play a directive success sound... need to poll since the sound is delayed from when
+// the directive is actually satisfied.
+void mission_maybe_play_directive_success_sound();
+
 void mission_goal_exit();
 
 int ML_objectives_init(int x, int y, int w, int h);

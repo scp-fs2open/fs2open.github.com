@@ -850,7 +850,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
-			if ( (rand()>>4) & 1 )	{
+			if ( Random::flip_coin() )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
 			} else {
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
@@ -861,7 +861,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
-			if ( (rand()>>4) & 1 )	{
+			if ( Random::flip_coin() )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
 			} else {
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
@@ -1134,6 +1134,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_REFLECT)	  texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
 				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
 				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
@@ -1572,7 +1573,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		if (objnum >= 0)
 			obj = &Objects[objnum];
 
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, obj);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
@@ -1685,7 +1686,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
-					d *= (1.0f - neb2_get_fog_intensity(&world_pnt));
+					d *= neb2_get_fog_visibility(&world_pnt, NEB_FOG_VISIBILITY_MULT_GLOWPOINT);
 					w *= 1.5;	//make it bigger in a nebula
 				}
 				
@@ -2145,7 +2146,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
-				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
+				fog_int = neb2_get_fog_visibility(&npnt, NEB_FOG_VISIBILITY_MULT_THRUSTER);
 
 				if (fog_int > 1.0f)
 					fog_int = 1.0f;
@@ -2645,7 +2646,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
 	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING) ) {
 		float fog_near = 10.0f, fog_far = 1000.0f;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, objp);
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, objp);
 
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);

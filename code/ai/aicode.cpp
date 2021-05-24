@@ -68,6 +68,7 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "ship/subsysdamage.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/flak.h"
 #include "weapon/swarm.h"
@@ -1343,8 +1344,10 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	}
 	
 	if (Framerate_independent_turning) {
-		pip->ai_desired_orient = out_orient;
-		pip->desired_rotvel = vel_out;
+		if (IS_MAT_NULL(&pip->ai_desired_orient)) {
+			pip->ai_desired_orient = out_orient;
+			pip->desired_rotvel = vel_out;
+		} // if ai_desired_orient is NOT null, that means a SEXP is trying to move the ship right now, and the AI should defer to it
 	}
 	else {
 		objp->orient = out_orient;
@@ -2285,7 +2288,7 @@ int num_turrets_attacking(object *turret_parent, int target_objnum)
  */
 int get_enemy_timestamp()
 {
-	return (NUM_SKILL_LEVELS - Game_skill_level) * ( (myrand() % 500) + 500);
+	return (NUM_SKILL_LEVELS - Game_skill_level) * Random::next(500, 999);
 }
 
 /**
@@ -5283,7 +5286,7 @@ void evade_ship()
 		}
 	} else {
 evade_ship_l1: ;
-		if (aip->ai_evasion > myrand()*100.0f/32767.0f) {
+		if (aip->ai_evasion > Random::next()*Random::INV_F_MAX_VALUE*100.0f) {
 			int	temp;
 			float	scale;
 			float	psrandval;	//	some value close to zero to choose whether to turn right or left.
@@ -5467,26 +5470,30 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 	}
 
-	auto other_is_ship = (other_objp->type == OBJ_SHIP);
+	bool other_is_ship = (other_objp->type == OBJ_SHIP);
 	float enemy_remaining_shield = get_shield_pct(other_objp);
 
-	if ( other_is_ship && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) )
+	if ( other_is_ship )
 	{
-		//Check if we have a capital+ weapon on board
-		for (int i = 0; i < swp->num_primary_banks; i++)
-		{
-			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
+		ship_info* other_sip = &Ship_info[Ships[other_objp->instance].ship_info_index];
+
+		if (other_sip->class_type >= 0 && Ship_types[other_sip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only]) {
+			//Check if we have a capital+ weapon on board
+			for (int i = 0; i < swp->num_primary_banks; i++)
 			{
-				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-				if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
+				if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 				{
-					// handle shielded big/huge ships (non FS-verse)
-					// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
-					if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+					auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+					if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
 					{
-						swp->current_primary_bank = i;
-						nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
-						return i;
+						// handle shielded big/huge ships (non FS-verse)
+						// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
+						if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+						{
+							swp->current_primary_bank = i;
+							nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
+							return i;
+						}
 					}
 				}
 			}
@@ -7965,7 +7972,7 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 {
 	float			subsystem_strength = 0.0f;
-	int			is_big_ship;
+	bool			is_big_ship;
     flagset<Weapon::Info_Flags> wif_priority1, wif_priority2;
 	ship_weapon	*swp;
 	ship_info	*esip;
@@ -8000,9 +8007,9 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		}
 
 		if ( esip ) {
-            is_big_ship = esip->is_big_or_huge();
+            is_big_ship = esip->class_type >= 0 && Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only];
 		} else {
-			is_big_ship=0;
+			is_big_ship = false;
 		}
 
 		if (is_big_ship)
@@ -8770,7 +8777,7 @@ void ai_chase()
 				if (frand() > 0.5f) {
 					aip->submode = SM_CONTINUOUS_TURN;
 					aip->submode_start_time = Missiontime;
-					aip->submode_parm0 = myrand() & 0x0f;
+					aip->submode_parm0 = Random::next() & 0x0f;
 				} else {
 					aip->submode = SM_EVADE;
 					aip->submode_start_time = Missiontime;
@@ -8853,7 +8860,7 @@ void ai_chase()
 				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
 
-			switch (myrand() % 5) {
+			switch (Random::next(5)) {
 			case 0:
 				aip->submode = SM_CONTINUOUS_TURN;
 				aip->submode_start_time = Missiontime;
@@ -9142,11 +9149,11 @@ void ai_chase()
 												} else {
 													t = swip->fire_wait;
 													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 													} else {
 														swp->burst_counter[current_bank_adjusted] = 0;
 													}
-													swp->burst_seed[current_bank_adjusted] = rand32();
+													swp->burst_seed[current_bank_adjusted] = Random::next();
 												}
 											} else {
 												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
@@ -9155,11 +9162,11 @@ void ai_chase()
 												} else {
 													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
 													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														swp->burst_counter[current_bank_adjusted] = Random::next(swip->burst_shots);
 													} else {
 														swp->burst_counter[current_bank_adjusted] = 0;
 													}
-													swp->burst_seed[current_bank_adjusted] = rand32();
+													swp->burst_seed[current_bank_adjusted] = Random::next();
 												}
 											}
 											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
@@ -9750,7 +9757,7 @@ void remove_farthest_attacker(int objnum)
 				aip->ignore_objnum = aip->target_objnum;
 				aip->ignore_signature = Objects[aip->target_objnum].signature;
 				aip->ai_flags.set(AI::AI_Flags::Temporary_ignore);
-				aip->ignore_expire_timestamp = timestamp(((myrand() % 10) + 20) * 1000);	//	OK to attack again in 20 to 24 seconds.
+				aip->ignore_expire_timestamp = timestamp(Random::next(20, 29) * 1000);	//	OK to attack again in 20 to 29 seconds.
 			}
 			aip->target_objnum = -1;
 			ai_do_default_behavior(farthest_objp);
@@ -13603,7 +13610,7 @@ void ai_maybe_depart(object *objp)
 		if (sip->is_fighter_bomber()) {
 			if (aip->warp_out_timestamp == 0) {
 				//if (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) == 0.0f) {
-				//	aip->warp_out_timestamp = timestamp(((myrand() % 10) + 10) * 1000);
+				//	aip->warp_out_timestamp = timestamp(Random::next(10, 19) * 1000);
 				//}
 			} else if (timestamp_elapsed(aip->warp_out_timestamp)) {
 				mission_do_departure(objp);

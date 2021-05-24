@@ -808,7 +808,7 @@ typedef struct screen {
 	std::function<void(int bitmap_handle, int bpp, const ubyte* data, int width, int height)> gf_update_texture;
 	std::function<void(void* data_out, int bitmap_num)> gf_get_bitmap_from_texture;
 
-	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix)> gf_shadow_map_start;
+	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)> gf_shadow_map_start;
 	std::function<void()> gf_shadow_map_end;
 
 	std::function<void()> gf_start_decal_pass;

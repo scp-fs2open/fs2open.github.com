@@ -156,11 +156,10 @@ public:
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
     char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	vec3d	turret_norm;						//	direction this turret faces
-	matrix	turret_matrix;						// turret_norm converted to a matrix.  This is now only used for Turret_alt_math
+	vec3d	turret_norm;						//	direction this turret faces (i.e. the normal to the turret base, or the center of the field of view)
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
-	float	turret_y_fov;						//  turret's base's fov
+	float	turret_base_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -869,6 +868,7 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_NO_HEIGHT			(1<<10)
 #define MR_DEBUG_NO_AMBIENT			(1<<11)
 #define MR_DEBUG_NO_MISC			(1<<12)
+#define MR_DEBUG_NO_REFLECT			(1<<13)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -915,10 +915,7 @@ extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
-extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset = false);
-
-// Gets and sets turret rotation matrix
-extern void model_make_turret_matrix(polymodel *pm, polymodel_instance *pmi, model_subsystem *turret);
+extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
@@ -966,7 +963,7 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 // return the point in 3-space in outpnt.
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient);
 extern void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient);
-extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient);
+extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent = false);
 extern void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 // Clears all the submodel instances stored in a model to their defaults.
@@ -987,7 +984,14 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
-extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed = -1);
+
+extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d * v1, vec3d * v2, int seed = -1);
+
+// gets the average position of the mesh at a particular z slice, approximately
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+// generates a random position more or less inside-ish a mesh at a particular z slice
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
+  
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name

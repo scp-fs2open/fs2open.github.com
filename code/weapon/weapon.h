@@ -344,6 +344,9 @@ struct weapon_info
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
+	bool pierce_objects;
+	bool spawn_children_on_pierce;
+
     // spawn weapons
     int num_spawn_weapons_defined;
     int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi
@@ -460,6 +463,7 @@ struct weapon_info
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
 	float lssm_lock_range;
+	int lssm_warpeffect;		//Which fireballtype is used for the warp effect
 
 	// Beam weapon effect	
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL

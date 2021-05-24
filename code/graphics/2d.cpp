@@ -41,6 +41,7 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+#include "gamesequence/gamesequence.h"
 
 #ifdef WITH_OPENGL
 #include "graphics/opengl/gropengl.h"
@@ -2547,7 +2548,8 @@ void gr_flip(bool execute_scripting)
 	executor::OnFrameExecutor->process();
 
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (execute_scripting && !popup_active()) {
+	// Cyborg - A similar bug will occur when a mission is restarted so check for that, too.
+	if (execute_scripting && !popup_active() && GameState_Stack_Valid() && !((gameseq_get_state() == GS_STATE_GAME_PLAY) && !(Game_mode & GM_IN_MISSION))) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!
