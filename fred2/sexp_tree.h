@@ -230,7 +230,6 @@ public:
 	sexp_list_item *get_listing_opf_medal_name();
 	sexp_list_item *get_listing_opf_weapon_name();
 	sexp_list_item *get_listing_opf_ship_class_name();
-	sexp_list_item *get_listing_opf_hud_gauge_name();
 	sexp_list_item *get_listing_opf_huge_weapon();
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
@@ -269,7 +268,8 @@ public:
 	sexp_list_item *get_listing_opf_explosion_option();
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
-	sexp_list_item *get_listing_opf_hud_gauge();
+	sexp_list_item *get_listing_opf_builtin_hud_gauge();
+	sexp_list_item *get_listing_opf_custom_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
