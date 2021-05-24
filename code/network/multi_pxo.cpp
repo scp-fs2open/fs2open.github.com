@@ -511,6 +511,8 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 // the "has left" message from the server
 #define MULTI_PXO_HAS_LEFT				"has left"
 
+#define MULTI_PXO_CHAT_LINE_LEN 512
+
 // chat flags
 #define CHAT_MODE_NORMAL				0			// normal chat from someone
 #define CHAT_MODE_SERVER				1			// is from the server, display appropriately
@@ -3203,7 +3205,7 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
  */
 void multi_pxo_chat_process_incoming(const char *txt,int mode)
 {
-	char msg_total[512],line[512];
+	char msg_total[MULTI_PXO_CHAT_LINE_LEN],line[MULTI_PXO_CHAT_LINE_LEN];
 	int	n_lines,idx;
 	int	n_chars[20];
 	const char	*p_str[20];			//  the initial line (unindented)	
@@ -3248,7 +3250,7 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
 	}
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3);
+	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3, MULTI_PXO_CHAT_LINE_LEN);
 	Assert((n_lines != -1) && (n_lines <= 20));
 	if((n_lines < 0) || (n_lines > 20)) {
 		return;

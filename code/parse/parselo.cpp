@@ -3323,7 +3323,7 @@ char *split_str_once(char *src, int max_pixel_w)
 //	returns:			number of lines src is broken into
 //						-1 is returned when an error occurs
 //
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3419,7 +3419,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
@@ -3454,7 +3454,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3542,7 +3542,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
