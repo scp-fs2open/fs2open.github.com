@@ -347,6 +347,7 @@ void neb2_level_init()
 	Nebula_sexp_used = false;
 }
 
+float nNf_near, nNf_density;
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init()
 {
@@ -449,6 +450,10 @@ void neb2_post_level_init()
 
 		Neb2_poof_flags = Neb2_poof_flags & available_poofs_mask;
 	}
+
+	// set the mission fog near dist and density
+	float fog_far;
+	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, nullptr);
 
 }
 
@@ -1180,25 +1185,8 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, ob
 		*fdensity = powf(NEB_FOG_FAR_PCT, 1 / (*ffar - *fnear));
 }
 
-float nNf_near, nNf_density;
-// given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_visibility(object *obj)
-{
-	float fog_far;
-
-	// get near and far fog values based upon object type and rendering mode
-	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, obj);
-
-	// get the fog pct
-	float pct = pow(nNf_density, vm_vec_dist(&Eye_position, &obj->pos) - nNf_near);
-
-	CLAMP(pct, 0.0f, 1.0f);
-
-	return pct;
-}
-
-//this only gets called after the one above has been called as it assumes you have set the near and far planes properly
-//don't use this outside of ship rendering
+// given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
 float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
 {
 	float pct;
