@@ -2863,3 +2863,14 @@ std::ostream& operator<<(std::ostream& os, const vec3d& vec)
 	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
 	return os;
 }
+
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch) {
+	matrix outer_prod;
+	vm_vec_outer_product(&outer_prod, stretch_dir);
+
+	for (float& i : outer_prod.a1d)
+		i *= stretch - 1.f;
+
+
+	return vmd_identity_matrix + outer_prod;
+}
