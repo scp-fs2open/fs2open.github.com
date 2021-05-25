@@ -23,25 +23,24 @@ static const QString loadFile(QString file) {
 	return Campaign.filename;
 }
 
-static CheckedDataListModel<int>::RowData initShips(SCP_vector<ship_info>::const_iterator &s_it){
-	auto shpIdx = std::distance(Ship_info.cbegin(), s_it);
-	return s_it->flags[Ship::Info_Flags::Player_ship] ?
-			CheckedDataListModel<int>::RowData(s_it->name,
-				shpIdx,
-				Campaign.ships_allowed[shpIdx])
-			: CheckedDataListModel<int>::RowData();
-
+static CheckedDataListModel<std::ptrdiff_t>::RowData initShips(SCP_vector<ship_info>::const_iterator &s_it){
+	std::ptrdiff_t shpIdx{ std::distance(Ship_info.cbegin(), s_it) };
+	return CheckedDataListModel<std::ptrdiff_t>::RowData{
+			s_it->flags[Ship::Info_Flags::Player_ship] ? s_it->name : "",
+			shpIdx,
+			static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)])};
 }
 
-static CheckedDataListModel<int>::RowData initWeps(SCP_vector<weapon_info>::const_iterator &w_it){
-	auto wepIdx = std::distance(Weapon_info.cbegin(), w_it);
+static CheckedDataListModel<std::ptrdiff_t>::RowData initWeps(SCP_vector<weapon_info>::const_iterator &w_it){
+	std::ptrdiff_t wepIdx{ std::distance(Weapon_info.cbegin(), w_it) };
 	for (auto s_it = Ship_info.cbegin(); s_it != Ship_info.cend(); ++s_it)
 		if (s_it->flags[Ship::Info_Flags::Player_ship]
-				&& s_it->allowed_weapons[static_cast<size_t>(wepIdx)])
-			return CheckedDataListModel<int>::RowData(w_it->name,
-													  wepIdx,
-													  Campaign.weapons_allowed[wepIdx]);
-	return CheckedDataListModel<int>::RowData();
+			&& s_it->allowed_weapons[static_cast<size_t>(wepIdx)])
+			return CheckedDataListModel<std::ptrdiff_t>::RowData{
+					w_it->name,
+					wepIdx,
+					static_cast<bool>(Campaign.weapons_allowed[static_cast<size_t>(wepIdx)])};
+	return CheckedDataListModel<std::ptrdiff_t>::RowData();
 }
 
 
@@ -49,8 +48,8 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, Campai
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
 	_currentFile(loadFile(file)),
-	initialShips(Ship_info.cbegin(), Ship_info.cend(), &initShips, this),
-	initialWeapons(Weapon_info.cbegin(), Weapon_info.cend(), &initWeps, this)
+	initialShips(Ship_info, &initShips, this),
+	initialWeapons(Weapon_info, &initWeps, this)
 {
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);

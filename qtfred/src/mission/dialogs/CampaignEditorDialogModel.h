@@ -134,8 +134,9 @@ private:
 public:
 
 	static const QStringList campaignTypes;
-	CheckedDataListModel<int> initialShips;
-	CheckedDataListModel<int> initialWeapons;
+	CheckedDataListModel<std::ptrdiff_t> initialShips;
+	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
+
 };
 
 
