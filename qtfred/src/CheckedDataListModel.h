@@ -123,7 +123,7 @@ public:
 
 	template<class... Args>
 	inline void addRow(Args&&... args) {
-		beginInsertRows(QModelIndex(), items.size(), items.size() + 1);
+		beginInsertRows(QModelIndex(), static_cast<int>(items.size()), static_cast<int>(items.size() + 1));
 		items.emplace_back(std::forward<Args>(args)...);
 		endInsertRows();
 	}
