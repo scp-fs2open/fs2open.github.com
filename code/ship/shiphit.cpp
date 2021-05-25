@@ -2199,11 +2199,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	int other_obj_is_ship;
 	float difficulty_scale_factor = 1.0f;
 
-	Assert(ship_objp);	// Goober5000
-	Assert(hitpos);		// Goober5000
+	Assertion(ship_objp, "No ship_objp in ship_do_damage!");
+	Assertion(hitpos, "No hitpos in ship_do_damage!");
 
-	Assert(ship_objp->instance >= 0);
-	Assert(ship_objp->type == OBJ_SHIP);
+	Assertion(ship_objp->instance >= 0 && ship_objp->type == OBJ_SHIP, "invalid ship target in ship_do_damage");
 	shipp = &Ships[ship_objp->instance];
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
@@ -2600,12 +2599,11 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 	ship* shipp;
 	bool other_obj_is_weapon, other_obj_is_beam, other_obj_is_shockwave;
 
-	Assert(ship_objp);	// Goober5000
-	Assert(other_obj);
-	Assert(hitpos);		// Goober5000
+	Assertion(ship_objp, "No ship_objp in ship_do_healing!");	
+	Assertion(other_obj, "No other_obj in ship_do_healing!");
+	Assertion(hitpos, "No hitpos in ship_do_healing!");
 
-	Assert(ship_objp->instance >= 0);
-	Assert(ship_objp->type == OBJ_SHIP);
+	Assertion(ship_objp->instance >= 0 && ship_objp->type == OBJ_SHIP, "invalid ship target in ship_do_healing");
 	shipp = &Ships[ship_objp->instance];
 
 	Assert(other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM || other_obj->type == OBJ_SHOCKWAVE);
@@ -2620,10 +2618,8 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 	MONITOR_INC(ShipHits, 1);
 
 	//	Don't heal player ship in the process of warping out.
-	if (Player->control_mode >= PCM_WARPOUT_STAGE2) {
-		if (ship_objp == Player_obj) {
-			return;
-		}
+	if ((Player->control_mode >= PCM_WARPOUT_STAGE2) && (ship_objp == Player_obj)) {
+		return;
 	}
 
 	int wip_index = -1;
@@ -2687,7 +2683,7 @@ static void ship_do_healing(object* ship_objp, object* other_obj, vec3d* hitpos,
 	// fix up the ship's sparks :)
 	// turn off a random spark, if its a beam, do this on average twice a second
 	if(!other_obj_is_beam || frand() > flFrametime * 2.0f )
-		shipp->sparks[rand32() % MAX_SHIP_HITS].end_time = timestamp(0);
+		shipp->sparks[Random::next(MAX_SHIP_HITS)].end_time = timestamp(0);
 
 	// if we brought it to full health, fix ALL sparks
 	if (ship_objp->hull_strength == shipp->ship_max_hull_strength) {

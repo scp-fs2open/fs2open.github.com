@@ -156,9 +156,9 @@ void shield_apply_healing(object* objp, float healing) {
 		return;
 
 	// find the current strongest and weakest shield quads
-	float min_shield = 999999999.0f;
+	float min_shield = objp->shield_quadrant[0];
 	int min_shield_index = 0;
-	float max_shield = 0.0f;
+	float max_shield = objp->shield_quadrant[0];
 	for (int i = 0; i < objp->n_quadrants; i++) {
 		if (objp->shield_quadrant[i] < min_shield) {
 			min_shield = objp->shield_quadrant[i];
@@ -172,8 +172,7 @@ void shield_apply_healing(object* objp, float healing) {
 	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
 		for (int i = 0; i < objp->n_quadrants; i++)
 			shield_add_quad(objp, i, healing / objp->n_quadrants);
-	}
-	else { // else give to weakest
+	} else { // else give to weakest
 		shield_add_quad(objp, min_shield_index, healing);
 	}
 }
