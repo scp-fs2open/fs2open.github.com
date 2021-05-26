@@ -185,6 +185,12 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	vm_vec_scale_add( &weapon_end_pos, &weapon_objp->pos, &weapon_objp->phys_info.vel, time_limit );
 
 
+	vec3d weapon_start_pos = weapon_objp->last_pos;
+	// Maybe take into account the ship's velocity, so it won't later overstep the weapon's
+	// current position (what will be its last_pos next frame)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
+		weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
+
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
 	mc_info_init(&mc);
 
@@ -194,7 +200,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
 	mc.pos = &ship_objp->pos;
-	mc.p0 = &weapon_objp->last_pos;
+	mc.p0 = &weapon_start_pos;
 	mc.p1 = &weapon_end_pos;
 	mc.lod = sip->collision_lod;
 	memcpy(&mc_shield, &mc, sizeof(mc_info));
