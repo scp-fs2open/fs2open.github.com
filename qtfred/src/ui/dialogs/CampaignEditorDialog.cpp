@@ -11,17 +11,11 @@ namespace dialogs {
 CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *viewport) :
 	QDialog(parent),
 	ui(new Ui::CampaignEditorDialog),
-	model(new CampaignEditorDialogModel("", this, viewport)),
-	menubar(new QMenuBar),
+	model(new CampaignEditorDialogModel(this, viewport)),
 	_parent(parent),
 	_viewport(viewport)
 {
 	ui->setupUi(this);
-
-	//TODO populate with constants
-
-	ui->cmbType->clear();
-	ui->cmbType->addItems(model->campaignTypes);
 
 	QPalette p = ui->lblMissionDescr1->palette();
 	p.setColor(QPalette::WindowText, Qt::darkYellow);
@@ -30,9 +24,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	p.setColor(QPalette::WindowText, Qt::red);
 	ui->lblMissionDescr2->setPalette(p);
 
-
 	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
-	connect(ui->cmbType, &QComboBox::currentTextChanged, this, &CampaignEditorDialog::cmbTypeChanged);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, this, &CampaignEditorDialog::chkTechResetChanged);
 	connect(ui->txaDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaDescrTextChanged);
 	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtBriefingCutsceneChanged);
@@ -53,25 +45,19 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 
 	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 
-	QMenu *menFile = menubar->addMenu(tr("&File"));
-	QAction *actFileNew = menFile->addAction(tr("&New"));
-	actFileNew->setShortcut(tr("Ctrl+N"));
-	connect(actFileNew, &QAction::triggered, this, &CampaignEditorDialog::fileNew);
-	QAction *actFileOpen = menFile->addAction(tr("&Open..."));
-	actFileOpen->setShortcut(tr("Ctrl+O"));
-	connect(actFileOpen, &QAction::triggered, this, &CampaignEditorDialog::fileOpen);
-	QAction *actFileSave = menFile->addAction(tr("&Save"));
-	actFileSave->setShortcut(tr("Ctrl+S"));
-	connect(actFileSave, &QAction::triggered, this, &CampaignEditorDialog::fileSave);
-	QAction *actFileSaveAs = menFile->addAction(tr("Save &as..."));
-	connect(actFileSaveAs, &QAction::triggered, this, &CampaignEditorDialog::fileSaveAs);
-	QAction *actFileSaveCopyAs = menFile->addAction(tr("Save &Copy as..."));
-	connect(actFileSaveCopyAs, &QAction::triggered, this, &CampaignEditorDialog::fileSaveCopyAs);
+	QMenu *menFile { new QMenu(this) };
+	ui->btnMenu->setMenu(menFile);
+	QMenu *menFileNew { menFile->addMenu(tr("&New")) };
+	for (auto& t: model->campaignTypes)
+		menFileNew->addAction(t, this, &CampaignEditorDialog::fileNew);
 	menFile->addSeparator();
-	QAction *actFileExit = menFile->addAction(tr("E&xit"));
-	connect(actFileExit, &QAction::triggered, this, &QDialog::reject);
 
-	ui->windowLayout->insertWidget(0, menubar.get());
+	menFile->addAction(tr("&Open..."), this, &CampaignEditorDialog::fileOpen, tr("Ctrl+O"));
+	menFile->addAction(tr("&Save"), this, &CampaignEditorDialog::fileSave, tr("Ctrl+S"));
+	menFile->addAction(tr("Save &as..."), this, &CampaignEditorDialog::fileSaveAs);
+	menFile->addAction(tr("Save &Copy as..."), this, &CampaignEditorDialog::fileSaveCopyAs);
+	menFile->addSeparator();
+	menFile->addAction(tr("E&xit"), this, &QDialog::reject);
 
 	updateUI();
 }
@@ -84,8 +70,6 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 	if (! questionSaveChanges())
 		return;
 
-	for (auto men : menubar->children())
-		dynamic_cast<QWidget*>(men)->setVisible(false);
 	QDialog::reject();
 	deleteLater();
 }
@@ -93,11 +77,11 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 void CampaignEditorDialog::updateUI() {
 	util::SignalBlockers blockers(this);
 
-	QString file = model->getCurrentFile();
-	this->setWindowTitle(file.isEmpty() ? "Untitled" : file);
+	QString file = model->campaignFile;
+	this->setWindowTitle(file.isEmpty() ? "Untitled" : file + ".fc2");
 
 	ui->txtName->setText(model->getCampaignName());
-	ui->cmbType->setCurrentText(model->getCampaignType());
+	ui->txtType->setText(model->campaignType);
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());
@@ -147,7 +131,9 @@ void CampaignEditorDialog::fileNew() {
 	if (! questionSaveChanges())
 		return;
 
-	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel("", this, _viewport));
+	QAction *act = qobject_cast<QAction*>(sender());
+
+	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
 	updateUI();
 }
 
@@ -156,9 +142,9 @@ void CampaignEditorDialog::fileOpen() {
 		return;
 
 
-	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
-	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
+	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, pathName));
 	if (newModel->isFileLoaded())
 		model = std::move(newModel);
 	else
@@ -168,7 +154,7 @@ void CampaignEditorDialog::fileOpen() {
 }
 
 bool CampaignEditorDialog::fileSave() {
-	if (model->getCurrentFile().isEmpty())
+	if (model->campaignFile.isEmpty())
 		return fileSaveAs();
 
 	bool res = model->apply();
@@ -178,20 +164,20 @@ bool CampaignEditorDialog::fileSave() {
 }
 
 bool CampaignEditorDialog::fileSaveAs() {
-	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
+	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 	if (pathName.isEmpty())
 		return false;
 
 	bool res = model->saveTo(pathName);
 	if (res)
-		model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(pathName, this, _viewport));
+		model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, pathName));
 
 	updateUI();
 	return res;
 }
 
 void CampaignEditorDialog::fileSaveCopyAs() {
-	QString pathName = QFileDialog::getSaveFileName(this, tr("Save copy as"), model->getCurrentFile(), tr("FS2 campaigns (*.fc2)"));
+	QString pathName = QFileDialog::getSaveFileName(this, tr("Save copy as"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 	if (pathName.isEmpty())
 		return;
 
@@ -200,10 +186,6 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 
 void CampaignEditorDialog::txtNameChanged(const QString changed) {
 	model->setCampaignName(changed);
-}
-
-void CampaignEditorDialog::cmbTypeChanged(const QString changed) {
-	model->setCampaignType(changed);
 }
 
 void CampaignEditorDialog::chkTechResetChanged(const int changed) {

@@ -16,11 +16,14 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QStrin
 }
 
 
-static const QString loadFile(QString file) {
+static const QString loadFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
 		mission_campaign_clear();
+		Campaign.type = campaignType.isEmpty() ? CAMPAIGN_TYPE_SINGLE :
+												 CampaignEditorDialogModel::campaignTypes.indexOf(campaignType);
 		return QString();
 	}
+	Assert(campaignType.isEmpty());
 	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
 		return QString();
 
@@ -83,10 +86,11 @@ CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionD
 		ret_data->editable ? Qt::color0 : Qt::red};
 }
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, CampaignEditorDialog* parent, EditorViewport* viewport) :
+CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
-	_currentFile(loadFile(file)),
+	campaignFile(loadFile(file, newCampaignType)),
+	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
 	missionData(getMissions(), &initMissions, this)
@@ -111,7 +115,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, Campai
 
 	//missioncampaign.h globals
 	_campaignName = Campaign.name;
-	_campaignType = campaignTypes[Campaign.type];
 	_campaignTechReset = Campaign.flags & CF_CUSTOM_TECH_DATABASE;
 	_campaignDescr = Campaign.desc;
 	_numPlayers = Campaign.num_players;
@@ -120,7 +123,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(const QString &file, Campai
 
 bool CampaignEditorDialogModel::apply() {
 
-	return saveTo(_currentFile);
+	return saveTo(campaignFile);
 }
 
 void CampaignEditorDialogModel::reject() {

@@ -24,6 +24,19 @@
   </property>
   <layout class="QVBoxLayout" name="windowLayout">
    <item>
+    <widget class="QPushButton" name="btnMenu">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>File...</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QTabWidget" name="mainTabs">
      <property name="currentIndex">
       <number>0</number>
@@ -53,7 +66,17 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="cmbType"/>
+          <widget class="QLineEdit" name="txtType">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -481,7 +504,7 @@
             <x>0</x>
             <y>0</y>
             <width>429</width>
-            <height>913</height>
+            <height>880</height>
            </rect>
           </property>
          </widget>

@@ -31,7 +31,6 @@ public:
 private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
 	std::unique_ptr<CampaignEditorDialogModel> model;
-	std::unique_ptr<QMenuBar> menubar;
 
 	QWidget *const _parent;
 	EditorViewport *const _viewport;
@@ -51,7 +50,6 @@ private slots:
 	void fileSaveCopyAs();
 
 	void txtNameChanged(const QString changed);
-	void cmbTypeChanged(const QString changed);
 	void chkTechResetChanged(const int changed);
 
 	void txaDescrTextChanged();

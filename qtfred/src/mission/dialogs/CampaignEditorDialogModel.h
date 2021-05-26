@@ -17,17 +17,15 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 	Q_OBJECT
 public:
 
-	CampaignEditorDialogModel(const QString &file, CampaignEditorDialog *parent, EditorViewport *viewport);
+	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
 	~CampaignEditorDialogModel() override = default;
 	bool apply() override;
 
 	void reject() override;
 
-	inline const QString& getCurrentFile() const { return _currentFile; }
-	inline bool isFileLoaded() const { return ! _currentFile.isEmpty(); }
+	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }
 
 	inline const QString& getCampaignName() const { return _campaignName; }
-	inline const QString& getCampaignType() const { return _campaignType; }
 	inline bool getCampaignTechReset() const { return _campaignTechReset; }
 	inline const QString& getCampaignDescr() const { return _campaignDescr; }
 
@@ -52,8 +50,6 @@ public:
 
 	inline void setCampaignName(const QString &campaignName) {
 		modify<QString>(_campaignName, campaignName); }
-	inline void setCampaignType(const QString &campaignType) {
-		modify<QString>(_campaignType, campaignType); }
 	inline void setCampaignTechReset(bool campaignTechReset) {
 		modify<bool>(_campaignTechReset, campaignTechReset); }
 	inline void setCampaignDescr(const QString &campaignDescr) {
@@ -138,19 +134,18 @@ private:
 
 	QString _campaignDescr;
 	QString _campaignName;
-	QString _campaignType{ campaignTypes[0] };
 	int _numPlayers{-1}; //noUI
 	bool _campaignTechReset{false};
 
 	const CampaignMissionData mdEmpty{""};
 	CampaignMissionData* _it_missionData{nullptr};
-
 	CampaignEditorDialog *const _parent;
-	const QString _currentFile;
+
 
 public:
-
+	const QString campaignFile;
 	static const QStringList campaignTypes;
+	const QString campaignType;
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
 	CheckedDataListModel<std::unique_ptr<CampaignMissionData>> missionData;
