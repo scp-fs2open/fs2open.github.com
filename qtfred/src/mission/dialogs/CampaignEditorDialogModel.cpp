@@ -112,6 +112,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
 
 	//missioncampaign.h globals
 	_campaignName = Campaign.name;
@@ -145,6 +146,18 @@ static QStringList initCampaignTypes() {
 	return ret;
 }
 const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
+
+void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
+	Assert(idx == bottomRight);
+
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->editable) {
+		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
+			droppedMissions.removeAll(missionData.data(idx).toString());
+		} else {
+			droppedMissions.append(missionData.data(idx).toString());
+		}
+	}
+}
 
 bool CampaignEditorDialogModel::_saveTo(QString file) {
 	if (file.isEmpty())

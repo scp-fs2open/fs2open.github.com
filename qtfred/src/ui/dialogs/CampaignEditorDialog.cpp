@@ -116,7 +116,10 @@ bool CampaignEditorDialog::questionSaveChanges() {
 	QMessageBox::StandardButton resBtn = QMessageBox::Discard;
 	if (model->query_modified()) {
 		resBtn = QMessageBox::question( this, tr("Unsaved changes"),
-										tr("This campaign has been modified. Save changes?"),
+										tr("This campaign has been modified.\n")
+										+ (model->missionDropped() ?
+											   tr("Additionally, packaged/missing\nmission(s) have been removed,\nwhich cannot be added again.\n") : "")
+										+ tr("\nSave changes?"),
 										QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save,
 										QMessageBox::Save);
 	}

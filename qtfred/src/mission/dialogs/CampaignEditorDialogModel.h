@@ -82,9 +82,11 @@ public:
 	bool saveTo(const QString &file);
 
 	inline bool query_modified() const { return modified; }
+	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
 
 private slots:
 	inline void flagModified() { modified = true; }
+	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
 private:
 	bool _saveTo(QString file);
@@ -100,6 +102,7 @@ private:
 		}
 	}
 
+	QStringList droppedMissions{};
 
 	struct CampaignLoopData	{
 
