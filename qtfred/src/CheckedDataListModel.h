@@ -12,52 +12,66 @@ template<typename T>
 class CheckedDataListModel : public QAbstractListModel
 {
 // no Q_OBJECT
-public:
-	struct RowData {
-		explicit RowData() :
-			_text(""),
-			_internalData(),
-			_checked(),
-			_color()
-		{}
+	struct BaseRowData {
+		const QString _text;
+		bool _checked;
+		Qt::GlobalColor _color;
 
-		RowData(const QString &text, T &internalData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
+		BaseRowData(const QString &text, bool checked, Qt::GlobalColor bgColor) :
 			_text(text),
-			_internalData(std::move(internalData)),
 			_checked(checked),
 			_color(bgColor)
 		{}
+	};
+	template<class U = T, class Enabler = void>
+	class RowData : public BaseRowData{
+		U _internalData;
+	public:
+		RowData(const QString &text, const U &internalData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
+			BaseRowData(text, checked, bgColor),
+			_internalData(internalData)
+		{}
 
-		RowData(RowData&& move) = default;
-		RowData& operator=(RowData&& move) = default;
+		explicit RowData(RowData&& move) = default;
+		RowData& operator=(RowData&& move) = delete;
 
-		const QString _text;
-		T _internalData;
-		bool _checked;
-		Qt::GlobalColor _color;
+		inline U& internalData() {return _internalData;}
 	};
 
-	CheckedDataListModel(QObject *parent = nullptr) = delete;
+	template<class U>
+	class RowData<U, typename std::enable_if<std::is_class<U>::value>::type> : public BaseRowData{
+		std::unique_ptr<U> _internalData;
+	public:
+		RowData(const QString &text, U* internalData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
+			BaseRowData(text, checked, bgColor),
+			_internalData(std::move(internalData))
+		{}
 
-	template<typename Container, typename InputIterator>
+		explicit RowData(RowData&& move) = default;
+		RowData& operator=(RowData&& move) = delete;
+
+		inline U& internalData() {return *_internalData;}
+	};
+
+	CheckedDataListModel(QObject *parent) = delete;
+
+public:
+	template<typename Container>
 	CheckedDataListModel(const Container &c,
-						 RowData (*translatorFn)(InputIterator &it),
+						 void (*emplacerFn)(const typename Container::const_iterator &it, CheckedDataListModel<T> &model),
 						 QObject *parent = nullptr, size_t reserve = 0) :
-		CheckedDataListModel(c.cbegin(), c.cend(), translatorFn, parent, reserve ? reserve : c.size())
+		CheckedDataListModel(c.cbegin(), c.cend(), emplacerFn, parent, reserve ? reserve : c.size())
 	{}
 
 	template<typename InputIterator>
 	CheckedDataListModel(InputIterator first, InputIterator last,
-						 RowData (*translatorFn)(InputIterator &it),
+						 void (*emplacerFn)(const InputIterator &it, CheckedDataListModel<T> &model),
 						 QObject *parent = nullptr, size_t reserve = 30) :
 		QAbstractListModel(parent)
 	{
 		items.reserve(reserve);
-		for ( auto it = first; it != last; ++it ) {
-			items.emplace_back(translatorFn(it));
-			if (items.back()._text.isEmpty())
-				items.pop_back();
-		}
+		for ( auto it = first; it != last; ++it )
+			emplacerFn(it, *this);
 		items.shrink_to_fit();
 	}
 
@@ -88,6 +102,14 @@ public:
 			return QVariant();
 	}
 
+	inline T& internalData(const QModelIndex &index) {
+		return items[static_cast<size_t>(index.row())].internalData();
+	}
+
+	inline const T& internalDataConst(const QModelIndex &index) const {
+		return items[static_cast<size_t>(index.row())].internalData();
+	}
+
 	bool setData(const QModelIndex &index, const QVariant &value,
 				 int role = Qt::EditRole) override {
 		if(!index.isValid() || role != Qt::CheckStateRole)
@@ -98,6 +120,13 @@ public:
 
 		if (data(index, role) != value) {
 			items[srow]._checked = value == Qt::Checked;
+			if (items[srow]._checked) {
+				checkeds.insert(&items[srow].internalData());
+				checkedsConst.insert(&items[srow].internalData());
+			} else {
+				checkeds.erase(&items[srow].internalData());
+				checkedsConst.erase(&items[srow].internalData());
+			}
 			dataChanged(index, index, QVector<int>() << role);
 			return true;
 		} else
@@ -112,30 +141,40 @@ public:
 			return defaultFlags;
 	}
 
-	SCP_vector<const T*> getCheckedData() const {
-		SCP_vector<const T*> ret;
-		ret.reserve(items.size());
-		for ( auto& itm: items )
-			if (itm._checked)
-				ret.push_back(&itm._internalData);
-		return ret;
+	inline const SCP_unordered_set<T*>& getCheckedData() {
+		return checkeds;
+	}
+
+	inline const SCP_unordered_set<const T*> getCheckedDataConst() const {
+		return checkedsConst;
+	}
+
+	template<class... Args>
+	inline void initRow(Args&&... args) {
+		items.emplace_back(std::forward<Args>(args)...);
+		if (items.back()._checked) {
+			checkeds.insert(&items.back().internalData());
+			checkedsConst.insert(&items.back().internalData());
+		}
 	}
 
 	template<class... Args>
 	inline void addRow(Args&&... args) {
 		beginInsertRows(QModelIndex(), static_cast<int>(items.size()), static_cast<int>(items.size() + 1));
-		items.emplace_back(std::forward<Args>(args)...);
+		initRow(std::forward<Args>(args)...);
 		endInsertRows();
 	}
 
 	inline bool contains(const QString &text) const {
 		return std::find_if(items.cbegin(), items.cend(),
-							[&](const RowData &row){return row._text == text;})
+							[&](const RowData<> &row){return row._text == text;})
 				!= items.cend();
 	}
 
 private:
-	SCP_vector<RowData> items;
+	SCP_vector<RowData<T>> items;
+	SCP_unordered_set<T*> checkeds;
+	SCP_unordered_set<const T*> checkedsConst;
 };
 }
 }
