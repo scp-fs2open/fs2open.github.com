@@ -925,8 +925,6 @@ const char *CTEXT(int n);
 // flags for sexpressions -- masked onto the end of the type field
 #define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
 #define SEXP_FLAG_VARIABLE					(1<<30)
-// bit flags 27-29 are used by SEXP variable persistence flags below
-#define SEXP_FLAG_CONTAINER_MODIFIER		(1<<26)
 
 // sexp variable definitions
 #define SEXP_VARIABLE_CHAR					('@')
