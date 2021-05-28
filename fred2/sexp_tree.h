@@ -187,7 +187,7 @@ public:
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
 	int get_loadout_variable_count(int var_index);
-	int get_container_count(const char *container_name) const;
+	int get_container_usage_count(const char *container_name) const;
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);

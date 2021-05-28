@@ -6888,12 +6888,13 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	return count; 
 }
 
-int sexp_tree::get_container_count(const char *container_name) const
+int sexp_tree::get_container_usage_count(const char *container_name) const
 {
 	int count = 0;
 
 	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_CONTAINER) {
+			// DISCUSSME: shouldn't this check be case-insensitive?
 			if (strstr(tree_nodes[idx].text, container_name)) {
 				count++;
 			}

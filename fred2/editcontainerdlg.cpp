@@ -782,7 +782,7 @@ void CEditContainerDlg::OnBnClickedDeleteContainer()
 
 	char buffer[256]; 
 
-	const int times_used = m_p_sexp_tree->get_container_count(m_containers[m_current_container].container_name.c_str()); 
+	const int times_used = m_p_sexp_tree->get_container_usage_count(m_containers[m_current_container].container_name.c_str());
 	if (times_used > 0) {
 		sprintf(buffer,
 			"Container %s is used in %d events. Please remove those uses before deleting the container.",
