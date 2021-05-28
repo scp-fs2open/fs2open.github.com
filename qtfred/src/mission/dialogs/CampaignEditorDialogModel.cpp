@@ -75,15 +75,15 @@ CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionD
 	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
 	std::unique_ptr<CMdata> ret_data{new CMdata{QString::fromStdString(*m_it).append(".fs2")}};
 
-	ret_data->editable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
-	if (! ret_data->editable)
+	ret_data->fredable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
+	if (! ret_data->fredable)
 		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
 
 	return CheckedDataListModel<std::unique_ptr<CMdata>>::RowData{
 		isCampaignCompatible(ret_data->fsoMission) ? ret_data->filename : "",
 		ret_data,
 		isMissionUsed(ret_data->filename),
-		ret_data->editable ? Qt::color0 : Qt::red};
+		ret_data->fredable ? Qt::color0 : Qt::red};
 }
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
@@ -103,7 +103,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 			};
 
 			bool loaded = !get_mission_info(Campaign.missions[i].name, &ptr->fsoMission);
-			ptr->editable = false;
+			ptr->fredable = false;
 
 			missionData.addRow(Campaign.missions[i].name, ptr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
@@ -150,13 +150,18 @@ const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes()
 void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
 
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->editable) {
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->fredable) {
 		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
 			droppedMissions.removeAll(missionData.data(idx).toString());
 		} else {
 			droppedMissions.append(missionData.data(idx).toString());
 		}
 	}
+}
+
+void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
+	_it_missionData = missionData.internalData(changed).get();
+	_parent->updateUI();
 }
 
 bool CampaignEditorDialogModel::_saveTo(QString file) {

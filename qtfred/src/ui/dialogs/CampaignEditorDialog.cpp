@@ -24,6 +24,8 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	p.setColor(QPalette::WindowText, Qt::red);
 	ui->lblMissionDescr2->setPalette(p);
 
+	setModel();
+
 	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, this, &CampaignEditorDialog::chkTechResetChanged);
 	connect(ui->txaDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaDescrTextChanged);
@@ -40,7 +42,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
-	connect(ui->btnLoadMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnLoadMissionClicked);
+	connect(ui->btnFredMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnFredMissionClicked);
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
 	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
@@ -66,6 +68,18 @@ CampaignEditorDialog::~CampaignEditorDialog()
 {
 }
 
+void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
+	if (new_model)
+		model = std::unique_ptr<CampaignEditorDialogModel>(new_model);
+
+	ui->lstShips->setModel(&model->initialShips);
+	ui->lstWeapons->setModel(&model->initialWeapons);
+
+	ui->lstMissions->setModel(&model->missionData);
+
+	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::currentRowChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
+}
+
 void CampaignEditorDialog::reject() {  //merely means onClose
 	if (! questionSaveChanges())
 		return;
@@ -86,10 +100,8 @@ void CampaignEditorDialog::updateUI() {
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());
 
-	ui->lstShips->setModel(&model->initialShips);
-	ui->lstWeapons->setModel(&model->initialWeapons);
-
-	ui->lstMissions->setModel(&model->missionData);
+	ui->btnFredMission->setEnabled(model->getCurMissionFredable());
+	ui->txbMissionDescr->setText(model->getCurMissionDescr());
 
 	ui->txtBriefingCutscene->setText(model->getCurMissionBriefingCutscene());
 	ui->txtMainhall->setText(model->getCurMissionMainhall());
@@ -107,8 +119,6 @@ void CampaignEditorDialog::updateUI() {
 
 	//ui->btnErrorChecker->setEnabled()
 	//ui->btnRealign->setEnabled()
-	//ui->btnLoadMission->setEnabled()
-
 
 }
 
@@ -136,7 +146,7 @@ void CampaignEditorDialog::fileNew() {
 
 	QAction *act = qobject_cast<QAction*>(sender());
 
-	model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
+	setModel(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
 	updateUI();
 }
 
@@ -147,11 +157,13 @@ void CampaignEditorDialog::fileOpen() {
 
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
-	auto newModel = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, pathName));
+	auto newModel = new CampaignEditorDialogModel(this, _viewport, pathName);
 	if (newModel->isFileLoaded())
-		model = std::move(newModel);
-	else
+		setModel(newModel);
+	else {
+		delete newModel;
 		QMessageBox::information(this, tr("Error opening file"), pathName);
+	}
 
 	updateUI();
 }
@@ -173,7 +185,7 @@ bool CampaignEditorDialog::fileSaveAs() {
 
 	bool res = model->saveTo(pathName);
 	if (res)
-		model = std::unique_ptr<CampaignEditorDialogModel>(new CampaignEditorDialogModel(this, _viewport, pathName));
+		setModel(new CampaignEditorDialogModel(this, _viewport, pathName));
 
 	updateUI();
 	return res;
@@ -251,7 +263,7 @@ void CampaignEditorDialog::btnRealignClicked() {
 
 }
 
-void CampaignEditorDialog::btnLoadMissionClicked() {
+void CampaignEditorDialog::btnFredMissionClicked() {
 
 }
 

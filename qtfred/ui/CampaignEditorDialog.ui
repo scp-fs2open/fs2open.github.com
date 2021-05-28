@@ -187,7 +187,7 @@
         <number>11</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0,0,1">
+        <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0,1">
          <item>
           <widget class="QLabel" name="lblMissions">
            <property name="text">
@@ -198,7 +198,7 @@
          <item>
           <widget class="QListView" name="lstMissions">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -232,22 +232,25 @@
          <item>
           <layout class="QHBoxLayout" name="layoutLoadMission">
            <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QTextBrowser" name="txbMissionDescr">
+             <property name="enabled">
+              <bool>true</bool>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-            </spacer>
+            </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="btnLoadMission">
+            <widget class="QPushButton" name="btnFredMission">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
-              <string>Load Mission</string>
+              <string>FRED Mission</string>
              </property>
             </widget>
            </item>
@@ -275,6 +278,9 @@
             </item>
             <item row="0" column="3">
              <widget class="QLineEdit" name="txtDebriefingPersona">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -391,19 +397,6 @@
              </layout>
             </item>
            </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTextBrowser" name="txbMissionDescr">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
           </widget>
          </item>
          <item>
@@ -556,7 +549,6 @@
   <tabstop>btnBranchUp</tabstop>
   <tabstop>btnBranchDown</tabstop>
   <tabstop>btnBranchLoop</tabstop>
-  <tabstop>txbMissionDescr</tabstop>
   <tabstop>txaLoopDescr</tabstop>
   <tabstop>txtLoopAnim</tabstop>
   <tabstop>btnBrLoopAnim</tabstop>

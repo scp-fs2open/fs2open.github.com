@@ -31,6 +31,10 @@ public:
 
 	inline const QString& getCurMissionFilename() const {
 		return (_it_missionData ? _it_missionData : &mdEmpty)->filename; }
+	inline bool getCurMissionFredable() const {
+		return (_it_missionData ? _it_missionData : &mdEmpty)->fredable; }
+	inline const char* getCurMissionDescr() const {
+		return (_it_missionData ? _it_missionData : &mdEmpty)->fsoMission.notes; }
 	inline const QString& getCurMissionBriefingCutscene() const {
 		return (_it_missionData ? _it_missionData : &mdEmpty)->briefingCutscene; }
 	inline const QString& getCurMissionMainhall() const {
@@ -87,6 +91,8 @@ public:
 private slots:
 	inline void flagModified() { modified = true; }
 	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+public slots:
+	void missionSelectionChanged(const QModelIndex &changed);
 
 private:
 	bool _saveTo(QString file);
@@ -124,7 +130,7 @@ private:
 		const QString filename;
 
 		mission fsoMission{};
-		bool editable{false};
+		bool fredable{false};
 
 		QString briefingCutscene;
 		QString mainhall;

@@ -32,6 +32,8 @@ private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
 	std::unique_ptr<CampaignEditorDialogModel> model;
 
+	void setModel(CampaignEditorDialogModel *model = nullptr);
+
 	QWidget *const _parent;
 	EditorViewport *const _viewport;
 
@@ -39,10 +41,9 @@ private:
 
 public slots:
 	void reject() override; //onClose for dialogs
-
-private slots:
 	void updateUI();
 
+private slots:
 	void fileNew();
 	void fileOpen();
 	bool fileSave();
@@ -70,7 +71,7 @@ private slots:
 
 	void btnErrorCheckerClicked();
 	void btnRealignClicked();
-	void btnLoadMissionClicked();
+	void btnFredMissionClicked();
 };
 
 }
