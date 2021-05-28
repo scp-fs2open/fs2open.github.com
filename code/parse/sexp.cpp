@@ -1903,7 +1903,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			*bad_node = node;
 
 		// for now we'll completely ignore SEXP containers
-		if (Sexp_nodes[node].subtype & SEXP_ATOM_CONTAINER)  {
+		if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER)  {
 			node = Sexp_nodes[node].rest;
 			argnum++;
 			continue;
@@ -3644,14 +3644,7 @@ int get_sexp()
 			}
 			Mp++ ;
 
-			if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
-				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
-			} else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
-				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
-			} else {
-				Error(LOCATION, "Unknown container type %d detected in mission", Sexp_containers[container_index].type);
-				return -1;
-			}
+			node = alloc_sexp(container, SEXP_ATOM, SEXP_ATOM_CONTAINER, get_sexp(), -1);
 
 			ignore_white_space();
 		}
@@ -4245,7 +4238,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
 		const int container_index = get_sexp_container_index(Sexp_nodes[node].text);
 		Assertion(container_index != -1, "Couldn't find container: %s\n", Sexp_nodes[node].text);
 
@@ -4339,7 +4332,7 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -4382,7 +4375,7 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -31247,7 +31240,7 @@ const char *CTEXT(int n)
 		return Sexp_variables[sexp_variable_index].text;
 	}
 	// Karajorma - check we're not dealing with a container
-	else if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) {
+	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER) {
 		const int container_index = get_sexp_container_index(Sexp_nodes[n].text);
 
 		if (container_index < 0)  {

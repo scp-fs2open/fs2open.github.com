@@ -281,12 +281,8 @@ int sexp_tree::save_branch(int cur, int at_root)
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
 		} else if (tree_nodes[cur].type & SEXPT_CONTAINER) {
-			const int container_index = get_sexp_container_index(tree_nodes[cur].text); 
-			if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
-				node = alloc_sexp(tree_nodes[cur].text, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
-			} else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
-				node = alloc_sexp(tree_nodes[cur].text, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
-			}
+			Assert(get_sexp_container_index(tree_nodes[cur].text) != -1);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
 			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
