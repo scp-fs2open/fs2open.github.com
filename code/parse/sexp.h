@@ -925,6 +925,8 @@ const char *CTEXT(int n);
 // flags for sexpressions -- masked onto the end of the type field
 #define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
 #define SEXP_FLAG_VARIABLE					(1<<30)
+// bit flags 27-29 are used by SEXP variable persistence flags below
+#define SEXP_FLAG_CONTAINER_MODIFIER		(1<<26)
 
 // sexp variable definitions
 #define SEXP_VARIABLE_CHAR					('@')
@@ -948,6 +950,44 @@ const char *CTEXT(int n);
 #define SEXP_VARIABLE_SAVE_TO_PLAYER_FILE	(1<<27)
 
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
+
+// sexp container definitions
+#define SEXP_CONTAINER_LIST							(1<<0)
+#define SEXP_CONTAINER_MAP							(1<<1)
+#define SEXP_CONTAINER_STRICTLY_TYPED_KEYS			(1<<2)
+#define SEXP_CONTAINER_STRICTLY_TYPED_DATA			(1<<3)
+#define SEXP_CONTAINER_NUMBER_DATA					(1<<4)
+#define SEXP_CONTAINER_STRING_DATA					(1<<5)
+#define SEXP_CONTAINER_NUMBER_KEYS					(1<<6)
+#define SEXP_CONTAINER_STRING_KEYS					(1<<7)
+
+#define SEXP_CONTAINER_ALL			(SEXP_CONTAINER_LIST | SEXP_CONTAINER_MAP)
+
+// jg18 - container persistence, applied to sexp_container.type field
+// adapting values from their variable counterparts
+#define SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE		(1<<30)	//	(0x40000000)
+#define SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS		(1<<29)	//	(0x20000000)
+#define SEXP_CONTAINER_NETWORK						(1<<28)	//	(0x10000000)
+#define SEXP_CONTAINER_SAVE_TO_PLAYER_FILE			(1<<27)	//	(0x08000000)
+#define SEXP_CONTAINER_IS_PERSISTENT				(SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS|SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE)
+
+
+// container modifiers - these are the "functions" you can carry out on a SEXP container
+#define SNF_CONTAINER_GET_FIRST				0
+#define SNF_CONTAINER_GET_LAST				1
+#define SNF_CONTAINER_REMOVE_FIRST			2
+#define SNF_CONTAINER_REMOVE_LAST			3
+#define SNF_CONTAINER_GET_RANDOM			4
+#define SNF_CONTAINER_REMOVE_RANDOM			5
+#define SNF_CONTAINER_AT_INDEX				6
+
+// Bump this if you add a container modifier on the line above!
+#define NUM_CONTAINER_MODIFIERS					7
+
+struct container_modifier {
+	const char *name;
+	const int def;
+};
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -973,6 +1013,7 @@ const char *CTEXT(int n);
 #define SEXP_ATOM_OPERATOR		1
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
+#define SEXP_ATOM_CONTAINER		4
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
@@ -1142,6 +1183,59 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
+struct sexp_container
+{
+	// meta-character for containers in text replacement, etc.
+	static constexpr char DELIM = '&';
+	// applies to list data, map keys, and map data
+	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
+	// leave space for leading/trailing '&' for container multidimensionality
+	static constexpr int NAME_MAX_LENGTH = VALUE_MAX_LENGTH - 2;
+
+	SCP_string container_name;
+	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
+	int opf_type = OPF_ANYTHING;
+	SCP_list<SCP_string> list_data;
+	SCP_unordered_map<SCP_string, SCP_string> map_data;
+
+	inline bool is_list() const
+	{
+		return type & SEXP_CONTAINER_LIST;
+	}
+
+	inline bool is_map() const
+	{
+		return type & SEXP_CONTAINER_MAP;
+	}
+
+	inline bool is_eternal() const
+	{
+		return type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	}
+
+	inline bool is_persistent() const
+	{
+		return type & SEXP_CONTAINER_IS_PERSISTENT;
+	}
+
+	bool empty() const
+	{
+		return (is_list() && list_data.empty()) || (is_map() && map_data.empty());
+	}
+
+	int size() const
+	{
+		if (is_list()) {
+			return (int)list_data.size();
+		} else if (is_map()) {
+			return (int)map_data.size();
+		} else {
+			Assert(false);
+			return 0;
+		}
+	}
+};
+
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
@@ -1156,6 +1250,10 @@ extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern SCP_vector<sexp_oper> Operators;
+extern SCP_vector<sexp_container> Sexp_containers;
+
+#define MAX_CONTAINER_MODIFIERS		7
+extern const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
@@ -1183,6 +1281,7 @@ extern SCP_vector<int> Current_sexp_operator;
 extern SCP_vector<SCP_string> *Current_event_log_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 
 extern void init_sexp();
 extern void sexp_shutdown();
@@ -1207,6 +1306,8 @@ extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
+extern void stuff_sexp_list_containers();
+extern void stuff_sexp_map_containers();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
@@ -1263,6 +1364,10 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 bool generate_special_explosion_block_variables();
 int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
+
+// sexp containers
+int get_sexp_container_index(const char* name);
+void update_sexp_containers(SCP_vector<sexp_container> &containers);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);

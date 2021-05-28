@@ -440,6 +440,18 @@ private:
 	int save_variables();
 
 	/**
+	* @brief Saves sexp containers to a file
+	*
+	* @details Returns the value of CFred_mission_save::err, which is:
+	*
+	* @returns 0 for no error, or
+	* @returns A negative value if an error occurred
+	*/
+	int save_containers();
+	// helper function for non-type options, called only by save_containers()
+	void save_container_options(const sexp_container &container);
+
+	/**
 	 * @brief Saves the given vector to file
 	 *
 	 * @param[in] v Vector to save
