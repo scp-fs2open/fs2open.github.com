@@ -2032,8 +2032,8 @@ int parse_get_line(char *lineout, int max_line_len, const char *start, int max_s
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
-    if (!filename)
-        throw parse::ParseException("Invalid filename");
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
 
 	strcpy_s(Current_filename_sub, filename);
 
