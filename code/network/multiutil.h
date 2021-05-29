@@ -42,7 +42,7 @@ extern void multi_set_network_signature( ushort signature, int what_kind );
 extern void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, player *pplayer );
 extern int find_player(net_addr* addr);
 extern int find_player_no_port(net_addr *addr);
-extern int find_player_id(short player_id);
+extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );

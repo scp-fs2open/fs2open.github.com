@@ -2871,7 +2871,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	player_index = -1;
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// fill in the address information of where this came from		
-		player_index = find_player_id(hinfo->id);
+		player_index = find_player_index(hinfo->id);
 		Assert(player_index != -1);		
 	}
 
@@ -2937,7 +2937,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 			if(val){
 				// look the player up
 				GET_SHORT(player_id);
-				player_index = find_player_id(player_id);
+				player_index = find_player_index(player_id);
 			
 				// if we couldn't find him
 				if(player_index == -1){
