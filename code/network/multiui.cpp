@@ -3920,7 +3920,7 @@ void multi_create_game_do()
 	if(Multi_create_should_show_popup){		
 		// get the player index and address of the player item the mouse is currently over
 		if(Multi_create_plist_select_flag){		
-			player_index = find_player_id(Multi_create_plist_select_id);
+			player_index = find_player_index(Multi_create_plist_select_id);
 			if(player_index != -1){			
 				multi_pinfo_popup(&Net_players[player_index]);
 			}
@@ -4088,7 +4088,7 @@ void multi_create_button_pressed(int n)
 	case MC_KICK:
 		// lookup the player at the specified index		
 		if(Multi_create_plist_select_flag){		 
-			idx = find_player_id(Multi_create_plist_select_id);
+			idx = find_player_index(Multi_create_plist_select_id);
 			// kick him - but don't ban him
 			if(idx != -1){			
 				multi_kick_player(idx,0);				
@@ -4228,7 +4228,7 @@ void multi_create_plist_process()
 	
 	// if we had a selected item but that player has left, select myself instead
 	if(Multi_create_plist_select_flag){
-		player_index = find_player_id(Multi_create_plist_select_id);
+		player_index = find_player_index(Multi_create_plist_select_id);
 		if(player_index == -1){
 			Multi_create_plist_select_id = Net_player->player_id;
 		}
@@ -4243,7 +4243,7 @@ void multi_create_plist_process()
 
 		// get the player index and address of the player item the mouse is currently over
 		player_id = multi_create_get_mouse_id();
-		player_index = find_player_id(player_id);
+		player_index = find_player_index(player_id);
 		if(player_index != -1){
 			Multi_create_plist_select_flag = 1;
 			Multi_create_plist_select_id = player_id;			
@@ -5109,7 +5109,7 @@ void multi_create_set_selected_team(int team)
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 	// otherwise attempt to set the team for this guy	
-	player_index = find_player_id(Multi_create_plist_select_id);
+	player_index = find_player_index(Multi_create_plist_select_id);
 	if(player_index != -1){	
 		multi_team_set_team(&Net_players[player_index],team);		
 	}
@@ -6886,7 +6886,7 @@ void multi_game_client_setup_do_frame()
 
 	// if we're supposed to be displaying a pilot info popup
 	if(Multi_jw_should_show_popup){
-		player_index = find_player_id(Multi_jw_plist_select_id);
+		player_index = find_player_index(Multi_jw_plist_select_id);
 		if(player_index != -1){			
 			multi_pinfo_popup(&Net_players[player_index]);
 		}		
@@ -7003,7 +7003,7 @@ void multi_jw_plist_process()
 	
 	// if we had a selected item but that player has left, select myself instead
 	if(Multi_jw_plist_select_flag){
-		player_index = find_player_id(Multi_jw_plist_select_id);
+		player_index = find_player_index(Multi_jw_plist_select_id);
 		if(player_index == -1){
 			Multi_jw_plist_select_id = Net_player->player_id;						
 		}
@@ -7017,7 +7017,7 @@ void multi_jw_plist_process()
 		short player_id;
 	
 		player_id = multi_jw_get_mouse_id();
-		player_index = find_player_id(player_id);
+		player_index = find_player_index(player_id);
 		if(player_index != -1){
 			Multi_jw_plist_select_id = player_id;
 			Multi_jw_plist_select_flag = 1;

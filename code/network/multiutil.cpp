@@ -486,7 +486,8 @@ int find_player_no_port(net_addr *addr)
 	return -1;
 }
 
-int find_player_id(short player_id)
+// return the index to the players array from the player ID assigned by the Server.
+int find_player_index(short player_id)
 {
 	int i;
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
@@ -1304,7 +1305,7 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 	int ok;	
 	int is_builtin;
    
-	player = find_player_id(player_id);
+	player = find_player_index(player_id);
 	Assert(player >= 0);
 	if(player < 0){
 		return;

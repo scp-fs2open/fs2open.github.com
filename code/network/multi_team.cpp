@@ -626,7 +626,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;		
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);	
+	player_index = find_player_index(hinfo->id);	
 
 	// get the packet opcode
 	GET_DATA(code);
@@ -645,7 +645,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 		GET_INT(req_team);
 
 		// if i'm the host of the game, process here		
-		req_index = find_player_id(player_id);
+		req_index = find_player_index(player_id);
 		if( (req_index == -1) || (player_index == -1) ){
 			nprintf(("Network","Could not find player to process team change request !\n"));
 		} else {
@@ -764,7 +764,7 @@ int multi_team_process_team_update(ubyte *data)
 
 		// do a player lookup
 		if(!MULTIPLAYER_MASTER){
-			player_index = find_player_id(player_id);
+			player_index = find_player_index(player_id);
 			if(player_index != -1){
 				// set his team correctly
 				if(flags & (1<<0)){
