@@ -31,7 +31,8 @@ enum class Section {
 	Variables = 0x0012,
 	Missions = 0x0013,
 	Cutscenes = 0x0014,
-	LastMissions = 0x0015
+	LastMissions = 0x0015,
+	Containers = 0x0016
 };
 #if SCP_COMPILER_IS_GNU
 #pragma GCC diagnostic pop

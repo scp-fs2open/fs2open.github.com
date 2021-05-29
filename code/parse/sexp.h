@@ -115,6 +115,11 @@ class waypoint_list;
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
+#define OPF_CONTAINER_NAME		91		// Karajorma - The name of a SEXP container
+#define OPF_LIST_CONTAINER_NAME		92		// Karajorma - The name of a SEXP list container
+#define OPF_MAP_CONTAINER_NAME		93		// Karajorma - The name of a SEXP map container
+#define OPF_LIST_MODIFIER		94		// Karajorma - The possible modifiers for a SEXP list container
+#define OPF_MAP_KEY				95		// Karajorma - The keys in a SEXP map container
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -200,7 +205,8 @@ class waypoint_list;
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x0010 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					(0x0011 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_VARIABLES						(0x0012 | OP_CATEGORY_CHANGE)
-#define CHANGE_SUBCATEGORY_OTHER							(0x0013 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_CONTAINERS						(0x0013 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_OTHER							(0x0014 | OP_CATEGORY_CHANGE)
 
 
 #define STATUS_SUBCATEGORY_MISSION							(0x0000 | OP_CATEGORY_STATUS)
@@ -212,7 +218,8 @@ class waypoint_list;
 #define STATUS_SUBCATEGORY_DAMAGE							(0x0006 | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0007 | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_VARIABLES						(0x0008 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_OTHER							(0x0009 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_CONTAINERS						(0x0009 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_OTHER							(0x000A | OP_CATEGORY_STATUS)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
@@ -397,6 +404,12 @@ class waypoint_list;
 #define OP_DISTANCE_CENTER					(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_IS_CONTAINER_EMPTY				(0x0057 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_CONTAINER_SIZE				(0x0058 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_LIST_HAS_DATA					(0x0059 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_LIST_DATA_INDEX					(0x005a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_MAP_HAS_KEY						(0x005b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_MAP_HAS_DATA_ITEM				(0x005c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -771,9 +784,14 @@ class waypoint_list;
 #define OP_TURRET_CLEAR_FORCED_TARGET		(0x003d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
 #define OP_SEND_MESSAGE_CHAIN				(0x003e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TURRET_SET_INACCURACY		    (0x003f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
-
 #define OP_REPLACE_TEXTURE					(0x0040 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
 #define OP_NEBULA_CHANGE_FOG_COLOR			(0x0041 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_CONTAINER_ADD_TO_LIST			(0x0042 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_ADD_TO_MAP				(0x0043 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CLEAR_CONTAINER					(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_GET_MAP_KEYS			(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -925,6 +943,8 @@ const char *CTEXT(int n);
 // flags for sexpressions -- masked onto the end of the type field
 #define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
 #define SEXP_FLAG_VARIABLE					(1<<30)
+// bit flags 27-29 are used by SEXP variable persistence flags below
+#define SEXP_FLAG_CONTAINER_MODIFIER		(1<<26)
 
 // sexp variable definitions
 #define SEXP_VARIABLE_CHAR					('@')
@@ -948,6 +968,44 @@ const char *CTEXT(int n);
 #define SEXP_VARIABLE_SAVE_TO_PLAYER_FILE	(1<<27)
 
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
+
+// sexp container definitions
+#define SEXP_CONTAINER_LIST							(1<<0)
+#define SEXP_CONTAINER_MAP							(1<<1)
+#define SEXP_CONTAINER_STRICTLY_TYPED_KEYS			(1<<2)
+#define SEXP_CONTAINER_STRICTLY_TYPED_DATA			(1<<3)
+#define SEXP_CONTAINER_NUMBER_DATA					(1<<4)
+#define SEXP_CONTAINER_STRING_DATA					(1<<5)
+#define SEXP_CONTAINER_NUMBER_KEYS					(1<<6)
+#define SEXP_CONTAINER_STRING_KEYS					(1<<7)
+
+#define SEXP_CONTAINER_ALL			(SEXP_CONTAINER_LIST | SEXP_CONTAINER_MAP)
+
+// jg18 - container persistence, applied to sexp_container.type field
+// adapting values from their variable counterparts
+#define SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE		(1<<30)	//	(0x40000000)
+#define SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS		(1<<29)	//	(0x20000000)
+#define SEXP_CONTAINER_NETWORK						(1<<28)	//	(0x10000000)
+#define SEXP_CONTAINER_SAVE_TO_PLAYER_FILE			(1<<27)	//	(0x08000000)
+#define SEXP_CONTAINER_IS_PERSISTENT				(SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS|SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE)
+
+
+// container modifiers - these are the "functions" you can carry out on a SEXP container
+#define SNF_CONTAINER_GET_FIRST				0
+#define SNF_CONTAINER_GET_LAST				1
+#define SNF_CONTAINER_REMOVE_FIRST			2
+#define SNF_CONTAINER_REMOVE_LAST			3
+#define SNF_CONTAINER_GET_RANDOM			4
+#define SNF_CONTAINER_REMOVE_RANDOM			5
+#define SNF_CONTAINER_AT_INDEX				6
+
+// Bump this if you add a container modifier on the line above!
+#define NUM_CONTAINER_MODIFIERS					7
+
+struct container_modifier {
+	const char *name;
+	const int def;
+};
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -973,6 +1031,7 @@ const char *CTEXT(int n);
 #define SEXP_ATOM_OPERATOR		1
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
+#define SEXP_ATOM_CONTAINER		4
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
@@ -1142,6 +1201,57 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
+struct sexp_container
+{
+	// applies to list data, map keys, and map data
+	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
+	// leave space for leading/trailing '&' for container multidimensionality
+	static constexpr int NAME_MAX_LENGTH = VALUE_MAX_LENGTH - 2;
+
+	SCP_string container_name;
+	int type = SEXP_CONTAINER_LIST | SEXP_CONTAINER_STRING_DATA;
+	int opf_type = OPF_ANYTHING;
+	SCP_list<SCP_string> list_data;
+	SCP_unordered_map<SCP_string, SCP_string> map_data;
+
+	inline bool is_list() const
+	{
+		return type & SEXP_CONTAINER_LIST;
+	}
+
+	inline bool is_map() const
+	{
+		return type & SEXP_CONTAINER_MAP;
+	}
+
+	inline bool is_eternal() const
+	{
+		return type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
+	}
+
+	inline bool is_persistent() const
+	{
+		return type & SEXP_CONTAINER_IS_PERSISTENT;
+	}
+
+	bool empty() const
+	{
+		return (is_list() && list_data.empty()) || (is_map() && map_data.empty());
+	}
+
+	int size() const
+	{
+		if (is_list()) {
+			return (int)list_data.size();
+		} else if (is_map()) {
+			return (int)map_data.size();
+		} else {
+			Assert(false);
+			return 0;
+		}
+	}
+};
+
 // next define used to eventually mark a directive as satisfied even though there may be more
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
@@ -1156,6 +1266,10 @@ extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern SCP_vector<sexp_oper> Operators;
+extern SCP_vector<sexp_container> Sexp_containers;
+
+#define MAX_CONTAINER_MODIFIERS		7
+extern const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
@@ -1183,6 +1297,7 @@ extern SCP_vector<int> Current_sexp_operator;
 extern SCP_vector<SCP_string> *Current_event_log_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 
 extern void init_sexp();
 extern void sexp_shutdown();
@@ -1207,6 +1322,8 @@ extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
+extern void stuff_sexp_list_containers();
+extern void stuff_sexp_map_containers();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
@@ -1263,6 +1380,15 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 bool generate_special_explosion_block_variables();
 int num_block_variables();
 bool has_special_explosion_block_index(ship *shipp, int *index);
+
+// sexp_containers
+// DISCUSSME: rename to sexp_get_container_index()?
+int get_sexp_container_index(const char* name);
+bool sexp_replace_container_refs_with_values(char *text, size_t max_len);
+bool sexp_replace_container_refs_with_values(SCP_string &text);
+// DISCUSSME: rename to sexp_update_containers()?
+void update_sexp_containers(SCP_vector<sexp_container> &containers);
+bool sexp_has_persistent_non_eternal_containers();
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);

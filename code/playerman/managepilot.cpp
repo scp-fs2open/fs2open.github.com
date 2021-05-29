@@ -116,6 +116,7 @@ void init_new_pilot(player *p, int reset)
 		snd_set_voice_volume(Default_voice_volume);
 
 		p->variables.clear();
+		p->containers.clear();
 	}
 
 	// unassigned squadron
@@ -529,6 +530,7 @@ void player::reset()
 	show_skip_popup = 0;
 
 	variables.clear();
+	containers.clear();
 
 	death_message = "";
 
@@ -684,6 +686,9 @@ void player::assign(const player *other)
 		memcpy(&temp, &(*ii), sizeof(sexp_variable));
 		variables.push_back(temp);
 	}
+
+	// DISCUSSME: is there a reaosn why this wouldn't work?
+	containers = other->containers;
 
 	death_message = other->death_message;
 

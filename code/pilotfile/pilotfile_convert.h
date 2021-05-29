@@ -163,6 +163,8 @@ struct plr_data {
 
 	// variables
 	SCP_vector<sexp_variable> variables;
+
+	SCP_vector<sexp_container> containers;
 };
 
 struct csg_data {
@@ -196,6 +198,9 @@ struct csg_data {
 	SCP_vector<cmission_conv_t> missions;
 
 	SCP_vector<sexp_variable> variables;
+
+	// DISCUSSME: Does this have to go at the end? Must maintain backward compatibility
+	SCP_vector<sexp_container>	containers;
 
 	loadout_conv_t loadout;
 
