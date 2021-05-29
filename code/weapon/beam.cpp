@@ -2037,12 +2037,11 @@ int beam_start_firing(beam *b)
 	// start the beam firing sound now, if we haven't already
 	if ((!b->beam_sound_loop.isValid()) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())) {
 		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
-
-		// "shot" sound
-		if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
-			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
-		// niffwan - if launch_snd < 0, don't play any sound
 	}	
+
+	// "shot" sound
+	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 
 	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
 	Script_system.RunCondition(CHA_BEAMFIRE, &Objects[b->objnum], b->weapon_info_index);
