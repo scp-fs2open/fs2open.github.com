@@ -24,6 +24,7 @@
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	PARSE_TEXT_SIZE	1000000
 
+extern char Current_filename[MAX_PATH_LEN];
 extern char	*Parse_text;
 extern char	*Parse_text_raw;
 extern char	*Mp;
