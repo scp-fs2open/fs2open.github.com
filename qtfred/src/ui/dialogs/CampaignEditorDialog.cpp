@@ -26,26 +26,14 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 
 	setModel();
 
-	connect(ui->txtName, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtNameChanged);
-	connect(ui->chkTechReset, &QCheckBox::stateChanged, this, &CampaignEditorDialog::chkTechResetChanged);
-	connect(ui->txaDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaDescrTextChanged);
-	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtBriefingCutsceneChanged);
-	connect(ui->txtMainhall, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtMainhallChanged);
-	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtDebriefingPersonaChanged);
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
 	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
-	connect(ui->btnBranchLoop, &QPushButton::toggled, this, &CampaignEditorDialog::btnBranchLoopToggled);
-	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, this, &CampaignEditorDialog::txaLoopDescrChanged);
-	connect(ui->txtLoopAnim, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopAnimChanged);
 	connect(ui->btnBrLoopAnim, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopAnimClicked);
-	connect(ui->txtLoopVoice, &QLineEdit::textChanged, this, &CampaignEditorDialog::txtLoopVoiceChanged);
 	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
 	connect(ui->btnFredMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnFredMissionClicked);
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
-
-	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 
 	QMenu *menFile { new QMenu(this) };
 	ui->btnMenu->setMenu(menFile);
@@ -76,8 +64,33 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	ui->lstWeapons->setModel(&model->initialWeapons);
 
 	ui->lstMissions->setModel(&model->missionData);
-
 	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::currentRowChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
+
+	connect(ui->txtName, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCampaignName);
+	connect(ui->chkTechReset, &QCheckBox::stateChanged, model.get(), [&](int changed) {
+		model->setCampaignTechReset(changed == Qt::Checked);
+	});
+	connect(ui->txaDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
+		util::SignalBlockers blockers(model.get());
+		model->setCampaignDescr(ui->txaDescr->toPlainText());
+	});
+
+	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionBriefingCutscene);
+	connect(ui->txtMainhall, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionMainhall);
+	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionDebriefingPersona);
+
+
+	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
+		model->setCurBrIsLoop(checked);
+	});
+	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
+		util::SignalBlockers blockers(model.get());
+		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
+	});
+	connect(ui->txtLoopAnim, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
+	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
+
+	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
@@ -91,8 +104,7 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 void CampaignEditorDialog::updateUI() {
 	util::SignalBlockers blockers(this);
 
-	QString file = model->campaignFile;
-	this->setWindowTitle(file.isEmpty() ? "Untitled" : file + ".fc2");
+	this->setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
 
 	ui->txtName->setText(model->getCampaignName());
 	ui->txtType->setText(model->campaignType);
@@ -199,30 +211,6 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 	model->saveTo(pathName);
 }
 
-void CampaignEditorDialog::txtNameChanged(const QString changed) {
-	model->setCampaignName(changed);
-}
-
-void CampaignEditorDialog::chkTechResetChanged(const int changed) {
-	model->setCampaignTechReset(changed == Qt::Checked);
-}
-
-void CampaignEditorDialog::txaDescrTextChanged() {
-	model->setCampaignDescr(ui->txaDescr->toPlainText());
-}
-
-void CampaignEditorDialog::txtBriefingCutsceneChanged(const QString changed) {
-	model->setCurMissionBriefingCutscene(changed);
-}
-
-void CampaignEditorDialog::txtMainhallChanged(const QString changed) {
-	model->setCurMissionMainhall(changed);
-}
-
-void CampaignEditorDialog::txtDebriefingPersonaChanged(const QString changed) {
-	model->setCurMissionDebriefingPersona(changed);
-}
-
 void CampaignEditorDialog::btnBranchUpClicked() {
 
 }
@@ -231,24 +219,8 @@ void CampaignEditorDialog::btnBranchDownClicked() {
 
 }
 
-void CampaignEditorDialog::btnBranchLoopToggled(bool checked) {
-	model->setCurBrIsLoop(checked);
-}
-
-void CampaignEditorDialog::txaLoopDescrChanged() {
-	model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
-}
-
-void CampaignEditorDialog::txtLoopAnimChanged(const QString changed) {
-	model->setCurLoopAnim(changed);
-}
-
 void CampaignEditorDialog::btnBrLoopAnimClicked() {
 
-}
-
-void CampaignEditorDialog::txtLoopVoiceChanged(const QString changed) {
-	model->setCurLoopVoice(changed);
 }
 
 void CampaignEditorDialog::btnBrLoopVoiceClicked() {

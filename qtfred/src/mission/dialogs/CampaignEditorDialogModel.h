@@ -52,12 +52,24 @@ public:
 	inline const QString& getCurLoopVoice() const {
 		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.voice; }
 
+	bool saveTo(const QString &file);
+
+	inline bool query_modified() const { return modified; }
+	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
+
+private slots:
+	inline void flagModified() { modified = true; }
+	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+public slots:
+
 	inline void setCampaignName(const QString &campaignName) {
 		modify<QString>(_campaignName, campaignName); }
 	inline void setCampaignTechReset(bool campaignTechReset) {
 		modify<bool>(_campaignTechReset, campaignTechReset); }
 	inline void setCampaignDescr(const QString &campaignDescr) {
 		modify<QString>(_campaignDescr, campaignDescr); }
+
+	void missionSelectionChanged(const QModelIndex &changed);
 
 	inline void setCurMissionBriefingCutscene(const QString &briefingCutscene) {
 		if (! _it_missionData) return;
@@ -82,17 +94,6 @@ public:
 	inline void setCurLoopVoice(const QString &voice) {
 		if (! _it_missionData) return;
 		modify<QString>(_it_missionData->it_branches->loopData.voice, voice); }
-
-	bool saveTo(const QString &file);
-
-	inline bool query_modified() const { return modified; }
-	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
-
-private slots:
-	inline void flagModified() { modified = true; }
-	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-public slots:
-	void missionSelectionChanged(const QModelIndex &changed);
 
 private:
 	bool _saveTo(QString file);

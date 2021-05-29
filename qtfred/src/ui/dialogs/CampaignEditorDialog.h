@@ -50,23 +50,10 @@ private slots:
 	bool fileSaveAs();
 	void fileSaveCopyAs();
 
-	void txtNameChanged(const QString changed);
-	void chkTechResetChanged(const int changed);
-
-	void txaDescrTextChanged();
-
-	void txtBriefingCutsceneChanged(const QString changed);
-	void txtMainhallChanged(const QString changed);
-	void txtDebriefingPersonaChanged(const QString changed);
-
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();
-	void btnBranchLoopToggled(bool checked);
 
-	void txaLoopDescrChanged();
-	void txtLoopAnimChanged(const QString changed);
 	void btnBrLoopAnimClicked();
-	void txtLoopVoiceChanged(const QString changed);
 	void btnBrLoopVoiceClicked();
 
 	void btnErrorCheckerClicked();
