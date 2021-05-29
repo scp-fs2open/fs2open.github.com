@@ -247,6 +247,7 @@ void obj_snd_stop(object *objp, int index)
 					case OBJ_GHOST:
 					case OBJ_DEBRIS:
 					case OBJ_ASTEROID:
+					case OBJ_WEAPON:
 						Num_obj_sounds_playing--;
 						Assert(Num_obj_sounds_playing >= 0);					
 						break;
@@ -272,6 +273,7 @@ void obj_snd_stop(object *objp, int index)
 			case OBJ_GHOST:
 			case OBJ_DEBRIS:
 			case OBJ_ASTEROID:
+			case OBJ_WEAPON:
 				Num_obj_sounds_playing--;
 				Assert(Num_obj_sounds_playing >= 0);					
 				break;
@@ -594,6 +596,7 @@ void obj_snd_do_frame()
 					case OBJ_SHIP:
 					case OBJ_DEBRIS:
 					case OBJ_ASTEROID:
+					case OBJ_WEAPON:
 						if ( Num_obj_sounds_playing >= MAX_OBJ_SOUNDS_PLAYING ) {
 							go_ahead_flag = obj_snd_stop_lowest_vol(new_vol);
 						}
