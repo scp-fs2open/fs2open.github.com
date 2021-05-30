@@ -93,10 +93,11 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		valid = false;
 	} else if (name.length() > sexp_container::NAME_MAX_LENGTH) {
 		Warning(LOCATION,
-			"SEXP Container name %s is longer than limit %u",
+			"SEXP Container name %s is longer than limit %d",
 			name.c_str(),
 			sexp_container::NAME_MAX_LENGTH);
-		log_printf(LOGFILE_EVENT_LOG, "SEXP Container name %s is longer than limit %i",
+		log_printf(LOGFILE_EVENT_LOG,
+			"SEXP Container name %s is longer than limit %d",
 			name.c_str(),
 			sexp_container::NAME_MAX_LENGTH);
 		valid = false;
