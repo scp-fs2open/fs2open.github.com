@@ -5878,6 +5878,7 @@ bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
 			if (remaining_seekers_per_target == 0)
 				break;
 
+			// reset i and go through the whole list again
 			i = multilock_targets.size();
 		}
 	}

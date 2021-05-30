@@ -8838,6 +8838,9 @@ bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3
 }
 
 bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* out_dot) {
+	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_subsys called with a non-ship shooter");
+	if (shooter->type != OBJ_SHIP)
+		return false;
 
 	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
 		return false;
@@ -8862,7 +8865,10 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	vm_vec_unrotate(&gsubpos, &target_subsys->system_info->pnt, &target->orient);
 	vm_vec_add2(&gsubpos, &target->pos);
 
-	return ship_subsystem_in_sight(target, target_subsys, &shooter->pos, &gsubpos) == 1;
+	polymodel* pm = model_get(Ship_info[Ships[shooter->instance].ship_info_index].model_num);
+	vec3d eye_pos = pm->view_positions[0].pnt + shooter->pos;
+
+	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
 }
 
 bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
@@ -8894,9 +8900,6 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 
 	if (out_dot != nullptr)
 		*out_dot = dot;
-
-	if (dot < wip->lock_fov)
-		return false;
 
 	return weapon_target_satisfies_lock_restrictions(wip, target_objp);
 }
