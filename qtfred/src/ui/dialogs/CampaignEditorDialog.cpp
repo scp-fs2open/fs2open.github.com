@@ -75,10 +75,9 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->setCampaignDescr(ui->txaDescr->toPlainText());
 	});
 
-	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionBriefingCutscene);
-	connect(ui->txtMainhall, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionMainhall);
-	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMissionDebriefingPersona);
-
+	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnBriefingCutscene);
+	connect(ui->txtMainhall, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
+	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
 		model->setCurBrIsLoop(checked);
@@ -115,12 +114,17 @@ void CampaignEditorDialog::updateUI() {
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());
 
-	ui->btnFredMission->setEnabled(model->getCurMissionFredable());
-	ui->txbMissionDescr->setText(model->getCurMissionDescr());
+	ui->btnFredMission->setEnabled(model->getCurMnFredable());
+	ui->txbMissionDescr->setText(model->getCurMnDescr());
 
-	ui->txtBriefingCutscene->setText(model->getCurMissionBriefingCutscene());
-	ui->txtMainhall->setText(model->getCurMissionMainhall());
-	ui->txtDebriefingPersona->setText(model->getCurMissionDebriefingPersona());
+	ui->txtBriefingCutscene->setText(model->getCurMnBriefingCutscene());
+	ui->txtMainhall->setText(model->getCurMnMainhall());
+	ui->txtDebriefingPersona->setText(model->getCurMnDebriefingPersona());
+
+	bool included{model->getCurMnIncluded()};
+	ui->txtBriefingCutscene->setEnabled(included);
+	ui->txtMainhall->setEnabled(included);
+	ui->txtDebriefingPersona->setEnabled(included);
 
 	//ui->btnBranchUp->setEnabled()
 	//ui->btnBranchDown->setEnabled()

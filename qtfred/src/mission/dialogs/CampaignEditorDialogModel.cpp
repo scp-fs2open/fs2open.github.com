@@ -1,20 +1,12 @@
 #include "CampaignEditorDialogModel.h"
-#include <mission/missioncampaign.h>
 #include "weapon/weapon.h"
 
 extern int Skip_packfile_search;
+#define CMISSIONS_END &Campaign.missions[Campaign.num_missions]
 
 namespace fso {
 namespace fred {
 namespace dialogs {
-
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
-	filename(file)
-{
-	branches.emplace_back();
-	it_branches = branches.begin();
-}
-
 
 static const QString loadFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
@@ -30,7 +22,7 @@ static const QString loadFile(QString file, const QString& campaignType) {
 	return Campaign.filename;
 }
 
-static CheckedDataListModel<std::ptrdiff_t>::RowData initShips(SCP_vector<ship_info>::const_iterator &s_it){
+static CheckedDataListModel<std::ptrdiff_t>::RowData initShips(const SCP_vector<ship_info>::const_iterator &s_it){
 	std::ptrdiff_t shpIdx{ std::distance(Ship_info.cbegin(), s_it) };
 	return CheckedDataListModel<std::ptrdiff_t>::RowData{
 			s_it->flags[Ship::Info_Flags::Player_ship] ? s_it->name : "",
@@ -38,7 +30,7 @@ static CheckedDataListModel<std::ptrdiff_t>::RowData initShips(SCP_vector<ship_i
 			static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)])};
 }
 
-static CheckedDataListModel<std::ptrdiff_t>::RowData initWeps(SCP_vector<weapon_info>::const_iterator &w_it){
+static CheckedDataListModel<std::ptrdiff_t>::RowData initWeps(const SCP_vector<weapon_info>::const_iterator &w_it){
 	std::ptrdiff_t wepIdx{ std::distance(Weapon_info.cbegin(), w_it) };
 	for (auto s_it = Ship_info.cbegin(); s_it != Ship_info.cend(); ++s_it)
 		if (s_it->flags[Ship::Info_Flags::Player_ship]
@@ -64,25 +56,44 @@ static inline bool isCampaignCompatible(const mission &fsoMission){
 			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
 }
 
-static inline bool isMissionUsed(const QString &filename) {
-	for (int i=0; i<Campaign.num_missions; i++)
-		if (filename == Campaign.missions[i].name)
-			return true;
-	return false;
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file, const cmission &cm) :
+	filename(file),
+	briefingCutscene(cm.briefing_cutscene),
+	mainhall(cm.main_hall.c_str()),
+	debriefingPersona(QString::number(cm.debrief_persona_index))
+{
+	branches.emplace_back();
+	it_branches = branches.begin();
 }
 
-CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it){
-	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
-	std::unique_ptr<CMdata> ret_data{new CMdata{QString::fromStdString(*m_it).append(".fs2")}};
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
+	filename(file)
+{
+	branches.emplace_back();
+	it_branches = branches.begin();
+}
+
+CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionData>>::RowData
+CampaignEditorDialogModel::CampaignMissionData::initMissions(const SCP_vector<SCP_string>::const_iterator &m_it){
+
+	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
+	const cmission *cm_it{
+		std::find_if(Campaign.missions, CMISSIONS_END,
+				[&](const cmission &cm){ return filename == cm.name; })};
+
+	std::unique_ptr<CampaignMissionData> ret_data{
+		cm_it == CMISSIONS_END
+				? new CampaignMissionData{filename}
+				: new CampaignMissionData{filename, *cm_it}};
 
 	ret_data->fredable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
 	if (! ret_data->fredable)
 		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
 
-	return CheckedDataListModel<std::unique_ptr<CMdata>>::RowData{
-		isCampaignCompatible(ret_data->fsoMission) ? ret_data->filename : "",
+	return CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData{
+		isCampaignCompatible(ret_data->fsoMission) ? filename : "",
 		ret_data,
-		isMissionUsed(ret_data->filename),
+		cm_it != CMISSIONS_END,
 		ret_data->fredable ? Qt::color0 : Qt::red};
 }
 
@@ -93,16 +104,15 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
-	missionData(getMissions(), &initMissions, this),
+	missionData(getMissions(), &CampaignMissionData::initMissions, this),
 	_campaignName(Campaign.name),		//missioncampaign.h globals
 	_campaignDescr(Campaign.desc),
 	_campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
-	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
 	for (int i=0; i<Campaign.num_missions; i++)
 		if (! missionData.contains(Campaign.missions[i].name)) {
-			std::unique_ptr<CMdata> ptr{
-				new CMdata{Campaign.missions[i].name}
+			std::unique_ptr<CampaignMissionData> ptr{
+				new CampaignMissionData{Campaign.missions[i].name}
 			};
 
 			bool loaded = !get_mission_info(Campaign.missions[i].name, &ptr->fsoMission);
@@ -158,7 +168,8 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
-	_it_missionData = missionData.internalData(changed).get();
+	mnData_it = missionData.internalData(changed).get();
+	mnData_idx = changed;
 	_parent->updateUI();
 }
 

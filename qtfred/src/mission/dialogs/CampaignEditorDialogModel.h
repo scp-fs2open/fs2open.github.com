@@ -4,6 +4,7 @@
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/dialogs/CampaignEditorDialog.h"
 #include "CheckedDataListModel.h"
+#include <mission/missioncampaign.h>
 
 namespace fso {
 namespace fred {
@@ -37,28 +38,28 @@ public:
 		return checked.front()->get()->fsoMission.num_players;
 	}
 
-	inline const QString& getCurMissionFilename() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->filename; }
-	inline bool getCurMissionFredable() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->fredable; }
-	inline const char* getCurMissionDescr() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->fsoMission.notes; }
-	inline const QString& getCurMissionBriefingCutscene() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->briefingCutscene; }
-	inline const QString& getCurMissionMainhall() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->mainhall; }
-	inline const QString& getCurMissionDebriefingPersona() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->debriefingPersona; }
+private:
+	inline const CampaignMissionData& getCurMn() const { return mnData_it ? *mnData_it : mdEmpty; }
+
+public:
+	inline const QString& getCurMnFilename() const { return getCurMn().filename; }
+	inline bool getCurMnIncluded() const {
+		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
+	inline bool getCurMnFredable() const { return getCurMn().fredable; }
+	inline const char* getCurMnDescr() const { return getCurMn().fsoMission.notes; }
+	inline const QString& getCurMnBriefingCutscene() const { return getCurMn().briefingCutscene; }
+	inline const QString& getCurMnMainhall() const { return getCurMn().mainhall; }
+	inline const QString& getCurMnDebriefingPersona() const { return getCurMn().debriefingPersona; }
 
 	inline bool getCurBrIsLoop() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->isLoop; }
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->isLoop; }
 
 	inline const QString& getCurLoopDescr() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.descr; }
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.descr; }
 	inline const QString& getCurLoopAnim() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.anim; }
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.anim; }
 	inline const QString& getCurLoopVoice() const {
-		return (_it_missionData ? _it_missionData : &mdEmpty)->it_branches->loopData.voice; }
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.voice; }
 
 	bool saveTo(const QString &file);
 
@@ -79,29 +80,29 @@ public slots:
 
 	void missionSelectionChanged(const QModelIndex &changed);
 
-	inline void setCurMissionBriefingCutscene(const QString &briefingCutscene) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->mainhall, briefingCutscene); }
-	inline void setCurMissionMainhall(const QString &mainhall) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->mainhall, mainhall); }
-	inline void setCurMissionDebriefingPersona(const QString &debriefingPersona) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->debriefingPersona, debriefingPersona); }
+	inline void setCurMnBriefingCutscene(const QString &briefingCutscene) {
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->mainhall, briefingCutscene); }
+	inline void setCurMnMainhall(const QString &mainhall) {
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->mainhall, mainhall); }
+	inline void setCurMnDebriefingPersona(const QString &debriefingPersona) {
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
 	inline void setCurBrIsLoop(bool isLoop) {
-		if (! _it_missionData) return;
-		modify<bool>(_it_missionData->it_branches->isLoop, isLoop);}
+		if (! mnData_it) return;
+		modify<bool>(mnData_it->it_branches->isLoop, isLoop);}
 
 	inline void setCurLoopDescr(const QString &descr) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->it_branches->loopData.descr, descr); }
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->it_branches->loopData.descr, descr); }
 	inline void setCurLoopAnim(const QString &anim) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->it_branches->loopData.anim, anim); }
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->it_branches->loopData.anim, anim); }
 	inline void setCurLoopVoice(const QString &voice) {
-		if (! _it_missionData) return;
-		modify<QString>(_it_missionData->it_branches->loopData.voice, voice); }
+		if (! mnData_it) return;
+		modify<QString>(mnData_it->it_branches->loopData.voice, voice); }
 
 private:
 	bool _saveTo(QString file);
@@ -132,7 +133,11 @@ private:
 
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
+		CampaignMissionData(const QString &file, const cmission &cm);
 		CampaignMissionData(const QString &file);
+
+		static CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData
+		initMissions(const SCP_vector<SCP_string>::const_iterator &m_it);
 
 		const QString filename;
 
@@ -142,16 +147,18 @@ private:
 		QString briefingCutscene;
 		QString mainhall;
 		QString debriefingPersona;
+
 		SCP_vector<CampaignBranchData>::iterator it_branches;  //noUIu
 		SCP_vector<CampaignBranchData> branches;
 	};
 
-	friend CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it);
+
 
 	QStringList droppedMissions{};
 
 	static const CampaignMissionData mdEmpty;
-	CampaignMissionData* _it_missionData{nullptr};
+	CampaignMissionData* mnData_it{nullptr};
+	QPersistentModelIndex mnData_idx{};
 	CampaignEditorDialog *const _parent;
 
 
