@@ -107,7 +107,10 @@ void CampaignEditorDialog::updateUI() {
 	this->setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
 
 	ui->txtName->setText(model->getCampaignName());
-	ui->txtType->setText(model->campaignType);
+	if (model->getCampaignNumPlayers())
+		ui->txtType->setText(model->campaignType + ": " + QString::number(model->getCampaignNumPlayers()));
+	else
+		ui->txtType->setText(model->campaignType);
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());

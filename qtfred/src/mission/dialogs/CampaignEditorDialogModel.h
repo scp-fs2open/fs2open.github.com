@@ -28,6 +28,14 @@ public:
 	inline const QString& getCampaignName() const { return _campaignName; }
 	inline bool getCampaignTechReset() const { return _campaignTechReset; }
 	inline const QString& getCampaignDescr() const { return _campaignDescr; }
+	inline int getCampaignNumPlayers() const {
+		if (campaignType == campaignTypes[0])
+			return 0;
+		auto checked = missionData.getCheckedData();
+		if (checked.empty())
+			return 0;
+		return checked.front()->get()->fsoMission.num_players;
+	}
 
 	inline const QString& getCurMissionFilename() const {
 		return (_it_missionData ? _it_missionData : &mdEmpty)->filename; }
@@ -143,7 +151,6 @@ private:
 	friend CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it);
 
 	QString _campaignDescr;
-	QString _campaignName;
 	int _numPlayers{-1}; //noUI
 	bool _campaignTechReset{false};
 

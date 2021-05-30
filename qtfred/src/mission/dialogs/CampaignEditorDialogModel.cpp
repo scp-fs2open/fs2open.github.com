@@ -111,6 +111,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::modelChanged);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
 
@@ -118,7 +119,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	_campaignName = Campaign.name;
 	_campaignTechReset = Campaign.flags & CF_CUSTOM_TECH_DATABASE;
 	_campaignDescr = Campaign.desc;
-	_numPlayers = Campaign.num_players;
 
 }
 
