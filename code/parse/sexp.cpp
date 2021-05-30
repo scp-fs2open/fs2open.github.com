@@ -960,7 +960,6 @@ void multi_sexp_modify_variable();
 SCP_vector<SCP_string> *Current_event_log_buffer;
 SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
-SCP_vector<SCP_string> *Current_event_log_container_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str, int n)
@@ -23492,8 +23491,7 @@ void add_to_event_log_buffer(int op_num, int result)
 {
 	Assertion ((Current_event_log_buffer != nullptr) &&
 				(Current_event_log_variable_buffer != nullptr)&& 
-				(Current_event_log_argument_buffer != nullptr) &&
-				(Current_event_log_container_buffer != nullptr), "Attempting to write to a non-existent log buffer");
+				(Current_event_log_argument_buffer != nullptr), "Attempting to write to a non-existent log buffer");
 
 	if (op_num == -1) {
 		nprintf(("SEXP", "ERROR: add_to_event_log_buffer() function called with op_num of %i; this should not happen. Contact a coder.\n", op_num));
@@ -23536,14 +23534,6 @@ void add_to_event_log_buffer(int op_num, int result)
 			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
-		}
-	}
-
-	if (!Current_event_log_container_buffer->empty()) {
-		tmp.append("\nContainers:\n");
-		while (!Current_event_log_container_buffer->empty()) {
-			tmp.append(Current_event_log_container_buffer->back().c_str()); 
-			Current_event_log_container_buffer->pop_back();
 		}
 	}
 
