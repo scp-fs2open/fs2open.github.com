@@ -2432,10 +2432,6 @@ void multi_start_game_init()
 
 		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
 	}
-
-	if ( multi_fs_tracker_inited() ) {
-		multi_fs_tracker_login_freespace();
-	}
 }
 
 void multi_start_game_do()
@@ -3780,6 +3776,11 @@ void multi_create_game_do()
 
 		// don't bother setting netgame state if ont the server
 		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+			// tell PXO about this game
+			if ( multi_fs_tracker_inited() ) {
+				multi_fs_tracker_login_freespace();
+			}
+
 			Netgame.game_state = NETGAME_STATE_FORMING;
 			send_netgame_update_packet();
 		}	

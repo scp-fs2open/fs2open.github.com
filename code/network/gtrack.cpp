@@ -99,7 +99,11 @@ static int SerializeGamePacket(const game_packet_header *gph, ubyte *data)
 			break;
 		}
 
-		case GNT_GAMEUPDATE: {
+		// these two packets are the same except for the type
+		// the "STATUS" variant is only to tell PXO that we
+		// want to know the connectivity probe status
+		case GNT_GAMEUPDATE:
+		case GNT_GAMEUPDATE_STATUS: {
 			auto game_data = reinterpret_cast<const pxo_net_game_data *>(&gph->data);
 
 			PXO_ADD_DATA(game_data->game_name);
@@ -241,6 +245,19 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 			break;
 		}
 
+		case GNT_GAME_PROBE_STATUS: {
+			int flags = 0;
+			int next_try = 0;
+
+			PXO_GET_INT(flags);
+			PXO_GET_INT(next_try);
+
+			memcpy(gph->data, &flags, sizeof(int));
+			memcpy(gph->data+sizeof(int), &next_try, sizeof(int));
+
+			break;
+		}
+
 		default:
 			break;
 	}
@@ -264,7 +281,7 @@ int InitGameTrackerClient(int gametype)
 		return 0;
 	}
 	TrackerGameData.game_type = static_cast<unsigned char>(gametype);	//1==freespace (GT_FREESPACE), 2==D3, 3==tuberacer, etc.
-	TrackerGameData.type = GNT_GAMEUPDATE;	//Used to specify what to do ie. Add a new net game (GNT_GAMESTARTED), remove a net game (game over), etc.
+	TrackerGameData.type = GNT_GAMEUPDATE_STATUS;	//Used to specify what to do ie. Add a new net game (GNT_GAMESTARTED), remove a net game (game over), etc.
 
 	FreeSpace2TrackerGameData = reinterpret_cast<freespace2_net_game_data *>(&TrackerGameData.data);
 	
@@ -445,6 +462,17 @@ void IdleGameTracker()
 
 				// send it to the PXO screen				
 				multi_pxo_channel_count_update(channel,num_servers);
+				break;
+
+			case GNT_GAME_PROBE_STATUS:
+				int flags;
+				int next_try;
+
+				memcpy(&flags, inpacket.data, sizeof(int));
+				memcpy(&next_try, inpacket.data+sizeof(int), sizeof(int));
+
+				// tell user about it
+				multi_fs_tracker_report_probe_status(flags, next_try);
 				break;
 			}
 			AckPacket(inpacket.sig);			
