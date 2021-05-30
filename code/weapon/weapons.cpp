@@ -1744,16 +1744,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if( optional_string( "+Weapon Min Range:" ) )
 	{
-		float MinRange;
-		stuff_float( &MinRange );
+		float min_range;
+		stuff_float( &min_range);
 
-		if( MinRange > 0.0f && MinRange < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
+		if(min_range > 0.0f && min_range < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
 		{
-			wip->WeaponMinRange = MinRange;
+			wip->weapon_min_range = min_range;
 		}
 		else
 		{
 			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
+		}
+	}
+
+	if (optional_string("+Weapon Optimum Range:")) {
+		stuff_float(&wip->optimum_range);
+		if (wip->optimum_range < wip->weapon_min_range || wip->optimum_range > MIN(wip->max_speed * wip->lifetime, wip->weapon_range)) {
+			Warning(LOCATION, "Optimum range on weapon %s must be within its min range and max range", wip->name);
+			wip->optimum_range = 0.0f;
 		}
 	}
 
@@ -8306,7 +8314,8 @@ void weapon_info::reset()
 	this->reloaded_per_batch = -1;
 	this->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1
-	this->WeaponMinRange = 0.0f;
+	this->weapon_min_range = 0.0f;
+	this->optimum_range = 0.0f;
 
 	this->pierce_objects = false;
 	this->spawn_children_on_pierce = false;
