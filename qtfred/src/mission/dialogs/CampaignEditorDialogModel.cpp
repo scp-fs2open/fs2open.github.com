@@ -1,5 +1,8 @@
 #include "CampaignEditorDialogModel.h"
 #include "weapon/weapon.h"
+#include "cutscene/cutscenes.h"
+#include "menuui/mainhallmenu.h"
+#include "stats/scoring.h"
 
 extern int Skip_packfile_search;
 #define CMISSIONS_END &Campaign.missions[Campaign.num_missions]
@@ -7,6 +10,35 @@ extern int Skip_packfile_search;
 namespace fso {
 namespace fred {
 namespace dialogs {
+
+static QStringList initCutscenes() {
+	QStringList ret{""};
+	for (auto& cs: Cutscenes)
+		ret << cs.filename;
+	return ret;
+}
+
+static QStringList initMainhalls() {
+	QStringList ret;
+	for (auto& vec_mh: Main_hall_defines)
+		for (auto& mh: vec_mh){
+			QString name{ mh.name.c_str() };
+			if (! ret.contains(name))
+				ret << name;
+		}
+	return ret;
+}
+
+static QStringList initDebriefingPersonas() {
+	QStringList ret{""};
+	for (auto& rn: Ranks)
+		for (auto& p: rn.promotion_text){
+			QString persona{ QString::number(p.first) };
+			if (p.first >= 0 && ! ret.contains(persona))
+				ret << persona;
+		}
+	return ret;
+}
 
 static const QString loadFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
@@ -100,6 +132,9 @@ CampaignEditorDialogModel::CampaignMissionData::initMissions(const SCP_vector<SC
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
 	AbstractDialogModel(parent, viewport),
 	_parent(parent),
+	cutscenes(initCutscenes()),
+	mainhalls(initMainhalls()),
+	debriefingPersonas(initDebriefingPersonas()),
 	campaignFile(loadFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
@@ -146,6 +181,7 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 }
 
 const CampaignEditorDialogModel::CampaignMissionData CampaignEditorDialogModel::mdEmpty{""};
+
 static QStringList initCampaignTypes() {
 	QStringList ret;
 	for (auto& tp: campaign_types) {  //missioncampaign.h global

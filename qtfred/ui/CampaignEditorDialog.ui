@@ -261,48 +261,14 @@
            <property name="title">
             <string>Mission Options</string>
            </property>
-           <layout class="QGridLayout" name="gridLayout" columnstretch="0,1,0,0">
-            <item row="2" column="1">
-             <widget class="QLineEdit" name="txtMainhall">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="lblMainhall">
-              <property name="text">
-               <string>Main Hall Name</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QLineEdit" name="txtDebriefingPersona">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maxLength">
-               <number>3</number>
-              </property>
-             </widget>
-            </item>
+           <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0">
             <item row="0" column="0">
              <widget class="QLabel" name="lblBriefingCutscene">
               <property name="text">
                <string>Briefing Cutscene</string>
               </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLineEdit" name="txtBriefingCutscene">
-              <property name="enabled">
-               <bool>false</bool>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
@@ -310,6 +276,40 @@
              <widget class="QLabel" name="lblDebriefingPersona">
               <property name="text">
                <string>Debriefing Persona Index</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="4">
+             <widget class="QLabel" name="lblMainhall">
+              <property name="text">
+               <string>Main Hall Name</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="4">
+             <widget class="QComboBox" name="cmbMainhall">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QComboBox" name="cmbDebriefingPersona">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QComboBox" name="cmbBriefingCutscene">
+              <property name="enabled">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -332,8 +332,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>415</width>
-                 <height>178</height>
+                 <width>309</width>
+                 <height>179</height>
                 </rect>
                </property>
               </widget>
@@ -496,7 +496,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>429</width>
+            <width>535</width>
             <height>880</height>
            </rect>
           </property>
@@ -542,9 +542,6 @@
  </widget>
  <tabstops>
   <tabstop>lstMissions</tabstop>
-  <tabstop>txtBriefingCutscene</tabstop>
-  <tabstop>txtMainhall</tabstop>
-  <tabstop>txtDebriefingPersona</tabstop>
   <tabstop>scrBranches</tabstop>
   <tabstop>btnBranchUp</tabstop>
   <tabstop>btnBranchDown</tabstop>

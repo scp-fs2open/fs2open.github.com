@@ -152,8 +152,6 @@ private:
 		SCP_vector<CampaignBranchData> branches;
 	};
 
-
-
 	QStringList droppedMissions{};
 
 	static const CampaignMissionData mdEmpty;
@@ -163,6 +161,10 @@ private:
 
 
 public:
+	const QStringList cutscenes;
+	const QStringList mainhalls;
+	const QStringList debriefingPersonas;
+
 	const QString campaignFile;
 	static const QStringList campaignTypes;
 	const QString campaignType;

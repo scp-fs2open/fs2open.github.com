@@ -3,6 +3,7 @@
 
 #include "ui/util/SignalBlockers.h"
 #include <QFileDialog>
+#include <QStringListModel>
 
 namespace fso {
 namespace fred {
@@ -60,6 +61,10 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	if (new_model)
 		model = std::unique_ptr<CampaignEditorDialogModel>(new_model);
 
+	ui->cmbBriefingCutscene->setModel(new QStringListModel{model->cutscenes, this});
+	ui->cmbMainhall->setModel(new QStringListModel{model->mainhalls, this});
+	ui->cmbDebriefingPersona->setModel(new QStringListModel{model->debriefingPersonas, this});
+
 	ui->lstShips->setModel(&model->initialShips);
 	ui->lstWeapons->setModel(&model->initialWeapons);
 
@@ -75,9 +80,9 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->setCampaignDescr(ui->txaDescr->toPlainText());
 	});
 
-	connect(ui->txtBriefingCutscene, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnBriefingCutscene);
-	connect(ui->txtMainhall, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
-	connect(ui->txtDebriefingPersona, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
+	connect(ui->cmbBriefingCutscene, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnBriefingCutscene);
+	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
+	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
 		model->setCurBrIsLoop(checked);
@@ -117,14 +122,14 @@ void CampaignEditorDialog::updateUI() {
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
 	ui->txbMissionDescr->setText(model->getCurMnDescr());
 
-	ui->txtBriefingCutscene->setText(model->getCurMnBriefingCutscene());
-	ui->txtMainhall->setText(model->getCurMnMainhall());
-	ui->txtDebriefingPersona->setText(model->getCurMnDebriefingPersona());
+	ui->cmbBriefingCutscene->setCurrentText(model->getCurMnBriefingCutscene());
+	ui->cmbMainhall->setCurrentText(model->getCurMnMainhall());
+	ui->cmbDebriefingPersona->setCurrentText(model->getCurMnDebriefingPersona());
 
 	bool included{model->getCurMnIncluded()};
-	ui->txtBriefingCutscene->setEnabled(included);
-	ui->txtMainhall->setEnabled(included);
-	ui->txtDebriefingPersona->setEnabled(included);
+	ui->cmbBriefingCutscene->setEnabled(included);
+	ui->cmbMainhall->setEnabled(included);
+	ui->cmbDebriefingPersona->setEnabled(included);
 
 	//ui->btnBranchUp->setEnabled()
 	//ui->btnBranchDown->setEnabled()
