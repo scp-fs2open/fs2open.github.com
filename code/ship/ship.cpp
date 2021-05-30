@@ -13164,6 +13164,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	Assert(objp->type == OBJ_SHIP);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 	shipp = &Ships[objp->instance];
+	Assert(shipp->ai_index >= 0 && shipp->ai_index < MAX_AI_INFO);
 	ai_info* aip = &Ai_info[shipp->ai_index];
 	
 	float target_range, weapon_range_max, weapon_range_min;
