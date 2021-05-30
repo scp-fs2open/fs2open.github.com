@@ -14,10 +14,6 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
-#include <algorithm>
-#include <functional>
-#include <iterator>
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -86,6 +82,7 @@
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/afterburner.h"
@@ -851,12 +848,6 @@ sexp_node *Sexp_nodes = nullptr;
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
-SCP_vector<sexp_container> Sexp_containers;
-// non-extern vars
-// we can't use full name (SCP_string) as the key, because get_sexp_container_index() takes const char*
-// so every call to get_sexp_container_index() would construct a string before lookup (ugh)
-static SCP_unordered_map<char, SCP_vector<int>> Container_indices_by_initial;
-
 int Num_special_expl_blocks;
 
 SCP_vector<int> Current_sexp_operator;
@@ -906,7 +897,6 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 void update_sexp_references(const char *old_name, const char *new_name, int format, int node);
 int sexp_determine_team(const char *subj);
 void init_sexp_vars();
-void init_sexp_containers();
 
 // for handling variables
 void add_block_variable(const char *text, const char *var_name, int type, int index);
@@ -3771,164 +3761,6 @@ int get_sexp()
 	return start;
 }
 
-void register_new_container_index(const SCP_string &container_name, int container_index = -1)
-{
-	if (container_index == -1) {
-		container_index = (int)Sexp_containers.size() - 1;
-	}
-	Assert(container_index >= 0);
-	Assert(container_index < (int)Sexp_containers.size());
-	Container_indices_by_initial[SCP_tolower(container_name[0])].emplace_back(container_index);
-}
-
-bool stuff_one_generic_sexp_container(SCP_string& name, int& type, int& opf_type, SCP_vector<SCP_string>& data)
-{
-	bool valid = true; // try to skip past bad containers by not returning until end of function
-	SCP_string temp_type_string;
-
-	data.clear();
-
-	required_string("$Name:");
-	stuff_string(name, F_NAME);
-
-	if (name.empty()) {
-		Warning(LOCATION, "SEXP Container with empty name found");
-		log_printf(LOGFILE_EVENT_LOG, "SEXP Container with empty name found");
-		valid = false;
-	} else if (name.length() > sexp_container::NAME_MAX_LENGTH) {
-		Warning(LOCATION,
-			"SEXP Container name %s is longer than limit %u",
-			name.c_str(),
-			sexp_container::NAME_MAX_LENGTH);
-		log_printf(LOGFILE_EVENT_LOG, "SEXP Container name %s is longer than limit %u",
-			name.c_str(),
-			sexp_container::NAME_MAX_LENGTH);
-		valid = false;
-	}
-
-	required_string("$Data Type:");
-	stuff_string(temp_type_string, F_NAME);
-	if (!strcmp(temp_type_string.c_str(), "Number")) {
-		type |= SEXP_CONTAINER_NUMBER_DATA;
-		opf_type = OPF_NUMBER;
-	} else if (!strcmp(temp_type_string.c_str(), "String")) {
-		type |= SEXP_CONTAINER_STRING_DATA;
-		opf_type = OPF_ANYTHING;
-	} else {
-		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
-		log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
-		valid = false;
-	}
-
-	if (optional_string("$Key Type:")) {
-		Assertion ((type & SEXP_CONTAINER_MAP), "$Key Type: found for container which doesn't use keys!");
-
-		stuff_string(temp_type_string, F_NAME);
-		if (!strcmp(temp_type_string.c_str(), "Number")) {
-			type |= SEXP_CONTAINER_NUMBER_KEYS;
-		} else if (!strcmp(temp_type_string.c_str(), "String")) {
-			type |= SEXP_CONTAINER_STRING_KEYS;
-		} else {
-			Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
-			log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
-			valid = false;
-		}
-	}
-
-	if (optional_string("+Strictly Typed Keys")) {
-		Assertion ((type & SEXP_CONTAINER_MAP), "+Strictly Typed Keys found for container which doesn't use keys!");  
-		Warning(LOCATION, "Container %s is marked for strictly typed keys, which are not yet supported.", name.c_str());
-		type |= SEXP_CONTAINER_STRICTLY_TYPED_KEYS;
-	}
-
-	if (optional_string("+Strictly Typed Data")) {
-		Warning(LOCATION, "Container %s is marked for strictly typed data, which are not yet supported.", name.c_str());
-		type |= SEXP_CONTAINER_STRICTLY_TYPED_DATA;
-	}
-
-	required_string("$Data:");
-	stuff_string_list(data);
-
-	if (optional_string("+Network Container")) {
-		Warning(LOCATION, "Container %s is marked as a network container, which is not yet supported.", name.c_str());
-		type |= SEXP_CONTAINER_NETWORK;
-	}
-
-	if (optional_string("+Eternal")) {
-		type |= SEXP_CONTAINER_SAVE_TO_PLAYER_FILE;
-	}
-
-	// campaign-persistent
-	if (optional_string("+Save On Mission Progress")) {
-		type |= SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS;
-	}
-
-	// player-persistent
-	if (optional_string("+Save On Mission Close")) {
-		Assert(!(type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS));
-		type |= SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE;
-	}
-
-	Assert(!(type & SEXP_CONTAINER_SAVE_TO_PLAYER_FILE) ||
-		   ((type & SEXP_CONTAINER_SAVE_ON_MISSION_PROGRESS) ^ (type & SEXP_CONTAINER_SAVE_ON_MISSION_CLOSE)));
-
-	return valid;
-}
-
-/**
- * Stuffs sexp list type containers
- */
-
-void stuff_sexp_list_containers()
-{
-	SCP_vector<SCP_string>	parsed_data;
-
-	while (required_string_either("$End Lists", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto& new_list = Sexp_containers.back();
-
-		new_list.type = SEXP_CONTAINER_LIST;
-		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
-			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
-			register_new_container_index(new_list.container_name);
-		} else {
-			Sexp_containers.pop_back();
-		}
-	}
-}
-
-/**
- * Stuffs sexp map type containers
- */
-void stuff_sexp_map_containers()
-{
-	SCP_vector<SCP_string>	parsed_data;
-
-	while (required_string_either("$End Maps", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto& new_map = Sexp_containers.back();
-
-		new_map.type = SEXP_CONTAINER_MAP;
-		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)){
-			if (parsed_data.size() % 2 != 0) {
-				Warning(LOCATION,
-					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
-					(int)parsed_data.size());
-				log_printf(LOGFILE_EVENT_LOG,
-					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
-					(int)parsed_data.size());
-				Sexp_containers.pop_back();
-			} else {
-				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
-					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
-				}
-				register_new_container_index(new_map.container_name);
-			}
-		} else {
-			Sexp_containers.pop_back();
-		}
-	}
-}
 
 /**
  * Stuffs a list of sexp variables
@@ -23460,61 +23292,6 @@ void sexp_set_motion_debris(int node)
 	Motion_debris_override = is_sexp_true(node);
 }
 
-int get_sexp_container_index_generic(const char *name,
-	const std::function<bool(const char*, const char*)>& match_func)
-{
-	const char initial_lower = SCP_tolower(name[0]);
-
-	if (Container_indices_by_initial.count(initial_lower) == 0) {
-		return -1;
-	}
-
-	const SCP_vector<int>& indices = Container_indices_by_initial.at(initial_lower);
-	for (const int& i : indices) {
-		if (match_func(Sexp_containers[i].container_name.c_str(), name)) {
-			return i;
-		}
-	}
-
-	// not found
-	return -1;
-}
-
-static bool str_match(const char* str1, const char* str2)
-{
-	return !stricmp(str1, str2);
-}
-
-/**
- * Return index of a sexp_container by its name, or -1 if not found
- */
-int get_sexp_container_index(const char* name) {
-	return get_sexp_container_index_generic(name, str_match);
-}
-
-static bool str_prefix(const char* prefix, const char* str)
-{
-	for (; *prefix; ++prefix, ++str) {
-		if (SCP_tolower(*str) != SCP_tolower(*prefix)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/**
-* Tests whether this position in a character array is the start of a container name
-* return index in Sexp_containers or -1 if not found
-**/
-int get_sexp_container_index_special(const SCP_string &text, size_t start_pos)
-{
-	Assert(!text.empty());
-	Assert(start_pos < text.length());
-
-	return get_sexp_container_index_generic(text.c_str() + start_pos, str_prefix);
-}
-
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
@@ -30035,17 +29812,6 @@ int check_text_for_variable_name(const char *text)
 	return sexp_variable_index;
 }
 
- const container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS] = {
-	{ "Get_First",			SNF_CONTAINER_GET_FIRST,		},
-	{ "Get_Last",			SNF_CONTAINER_GET_LAST,			},
-	{ "Remove_First",		SNF_CONTAINER_REMOVE_FIRST,		},
-	{ "Remove_Last",		SNF_CONTAINER_REMOVE_LAST,		},
-	{ "Get_Random",			SNF_CONTAINER_GET_RANDOM,		},
-	{ "Remove_Random",		SNF_CONTAINER_REMOVE_RANDOM,	},
-	{ "At",					SNF_CONTAINER_AT_INDEX,			},
-};
-// Remember to update MAX_CONTAINER_MODIFIERS if adding to the above array
-
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
@@ -30143,26 +29909,6 @@ void init_sexp_vars()
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
 		Sexp_variables[i].type = SEXP_VARIABLE_NOT_USED;
 		Block_variables[i].type = SEXP_VARIABLE_NOT_USED;
-	}
-}
-
-/**
- * Clear the SEXP Containers and related data
- */
-void init_sexp_containers()
-{
-	Sexp_containers.clear();
-	Container_indices_by_initial.clear();
-}
-
-void update_sexp_containers(SCP_vector<sexp_container>& containers)
-{
-	Sexp_containers = std::move(containers);
-
-	// reset index
-	Container_indices_by_initial.clear();
-	for (int i = 0; i < (int)Sexp_containers.size(); ++i) {
-		register_new_container_index(Sexp_containers[i].container_name, i);
 	}
 }
 

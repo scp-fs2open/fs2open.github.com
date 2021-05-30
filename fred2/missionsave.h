@@ -22,6 +22,8 @@
 #include <string>
 #include <stdio.h>
 
+struct sexp_container;
+
 #define BACKUP_DEPTH	9
 
 /**
