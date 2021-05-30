@@ -109,6 +109,10 @@ void stuff_sexp_list_containers();
 void stuff_sexp_map_containers();
 
 // retrieval functions
-const SCP_vector<sexp_container>& get_all_sexp_containers();
+const SCP_vector<sexp_container> &get_all_sexp_containers();
 const SCP_vector<list_modifier> &get_all_list_modifiers();
-int get_sexp_container_index(const char *name);
+
+/**
+ * Return pointer to a sexp_container by its name, or nullptr if not found
+ */
+sexp_container *get_sexp_container(const char *name);

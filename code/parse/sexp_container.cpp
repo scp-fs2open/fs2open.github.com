@@ -8,6 +8,7 @@
 #include <functional>
 #include <iterator>
 
+#include "globalincs/toolchain.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
@@ -34,7 +35,7 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 	return List_modifiers;
 }
 
-// sexp_container struct functions
+// sexp_container functions
 
 bool sexp_container::empty() const
 {
@@ -48,7 +49,7 @@ int sexp_container::size() const
 	} else if (is_map()) {
 		return (int)map_data.size();
 	} else {
-		Assert(false);
+		UNREACHABLE("Unknown container type %d", (int)type);
 		return 0;
 	}
 }
@@ -215,17 +216,17 @@ void stuff_sexp_map_containers()
 	}
 }
 
-int get_sexp_container_index_generic(const char* name,
+sexp_container *get_sexp_container_generic(const char* name,
 	const std::function<bool(const char*, const char*)>& match_func)
 {
-	for (int i = 0; i < (int)Sexp_containers.size(); ++i) {
-		if (match_func(Sexp_containers[i].container_name.c_str(), name)) {
-			return i;
+	for (auto &container : Sexp_containers) {
+		if (match_func(container.container_name.c_str(), name)) {
+			return &container;
 		}
 	}
 
 	// not found
-	return -1;
+	return nullptr;
 }
 
 static bool str_match(const char* str1, const char* str2)
@@ -233,11 +234,8 @@ static bool str_match(const char* str1, const char* str2)
 	return !stricmp(str1, str2);
 }
 
-/**
- * Return index of a sexp_container by its name, or -1 if not found
- */
-int get_sexp_container_index(const char* name) {
-	return get_sexp_container_index_generic(name, str_match);
+sexp_container *get_sexp_container(const char* name) {
+	return get_sexp_container_generic(name, str_match);
 }
 
 static bool str_prefix(const char* prefix, const char* str)
@@ -253,12 +251,12 @@ static bool str_prefix(const char* prefix, const char* str)
 
 /**
 * Tests whether this position in a character array is the start of a container name
-* return index in Sexp_containers or -1 if not found
+* Returns a pointer to the container or nullptr if not found
 **/
-int get_sexp_container_index_special(const SCP_string& text, size_t start_pos)
+sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_pos)
 {
 	Assert(!text.empty());
 	Assert(start_pos < text.length());
 
-	return get_sexp_container_index_generic(text.c_str() + start_pos, str_prefix);
+	return get_sexp_container_generic(text.c_str() + start_pos, str_prefix);
 }
