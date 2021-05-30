@@ -109,10 +109,10 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 
 	required_string("$Data Type:");
 	stuff_string(temp_type_string, F_NAME);
-	if (!strcmp(temp_type_string.c_str(), "Number")) {
+	if (!stricmp(temp_type_string.c_str(), "Number")) {
 		type |= NUMBER_DATA;
 		opf_type = OPF_NUMBER;
-	} else if (!strcmp(temp_type_string.c_str(), "String")) {
+	} else if (!stricmp(temp_type_string.c_str(), "String")) {
 		type |= STRING_DATA;
 		opf_type = OPF_ANYTHING;
 	} else {
@@ -125,9 +125,9 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		Assertion((type & MAP), "$Key Type: found for container which doesn't use keys!");
 
 		stuff_string(temp_type_string, F_NAME);
-		if (!strcmp(temp_type_string.c_str(), "Number")) {
+		if (!stricmp(temp_type_string.c_str(), "Number")) {
 			type |= NUMBER_KEYS;
-		} else if (!strcmp(temp_type_string.c_str(), "String")) {
+		} else if (!stricmp(temp_type_string.c_str(), "String")) {
 			type |= STRING_KEYS;
 		} else {
 			Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
