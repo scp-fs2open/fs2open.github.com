@@ -93,7 +93,10 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
-	missionData(getMissions(), &initMissions, this)
+	missionData(getMissions(), &initMissions, this),
+	_campaignName(Campaign.name),		//missioncampaign.h globals
+	_campaignDescr(Campaign.desc),
+	_campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
 	using CMdata = CampaignEditorDialogModel::CampaignMissionData;
 	for (int i=0; i<Campaign.num_missions; i++)
@@ -114,12 +117,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::modelChanged);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
-
-	//missioncampaign.h globals
-	_campaignName = Campaign.name;
-	_campaignTechReset = Campaign.flags & CF_CUSTOM_TECH_DATABASE;
-	_campaignDescr = Campaign.desc;
-
 }
 
 bool CampaignEditorDialogModel::apply() {
@@ -138,6 +135,7 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	return success;
 }
 
+const CampaignEditorDialogModel::CampaignMissionData CampaignEditorDialogModel::mdEmpty{""};
 static QStringList initCampaignTypes() {
 	QStringList ret;
 	for (auto& tp: campaign_types) {  //missioncampaign.h global

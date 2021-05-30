@@ -117,8 +117,6 @@ private:
 		}
 	}
 
-	QStringList droppedMissions{};
-
 	struct CampaignLoopData	{
 
 		QString descr;
@@ -150,11 +148,9 @@ private:
 
 	friend CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData initMissions(SCP_vector<SCP_string>::const_iterator &m_it);
 
-	QString _campaignDescr;
-	int _numPlayers{-1}; //noUI
-	bool _campaignTechReset{false};
+	QStringList droppedMissions{};
 
-	const CampaignMissionData mdEmpty{""};
+	static const CampaignMissionData mdEmpty;
 	CampaignMissionData* _it_missionData{nullptr};
 	CampaignEditorDialog *const _parent;
 
@@ -166,6 +162,12 @@ public:
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
 	CheckedDataListModel<std::unique_ptr<CampaignMissionData>> missionData;
+
+private:
+	QString _campaignName;
+	QString _campaignDescr;
+	bool _campaignTechReset{false};
+
 };
 
 
