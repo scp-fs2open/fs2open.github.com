@@ -5,7 +5,6 @@
  */
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
 
 #include "globalincs/toolchain.h"
@@ -14,6 +13,9 @@
 #include "parse/sexp_container.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
+static SCP_unordered_map<SCP_string, sexp_container*, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+	Containers_by_name_map;
+
 
 const SCP_vector<sexp_container> &get_all_sexp_containers()
 {
@@ -62,11 +64,17 @@ int sexp_container::size() const
 void init_sexp_containers()
 {
 	Sexp_containers.clear();
+	Containers_by_name_map.clear();
 }
 
 void update_sexp_containers(SCP_vector<sexp_container> &containers)
 {
 	Sexp_containers = std::move(containers);
+
+	Containers_by_name_map.clear();
+	for (auto &container : Sexp_containers) {
+		Containers_by_name_map.emplace(container.container_name, &container);
+	}
 }
 
 bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int &opf_type, SCP_vector<SCP_string> &data)
@@ -91,6 +99,10 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		log_printf(LOGFILE_EVENT_LOG, "SEXP Container name %s is longer than limit %i",
 			name.c_str(),
 			sexp_container::NAME_MAX_LENGTH);
+		valid = false;
+	} else if (get_sexp_container(name.c_str()) != nullptr) {
+		Warning(LOCATION, "A SEXP Container named %s already exists", name.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "A SEXP Container named %s already exists", name.c_str());
 		valid = false;
 	}
 
@@ -163,10 +175,6 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	return valid;
 }
 
-/**
- * Stuffs sexp list type containers
- */
-
 void stuff_sexp_list_containers()
 {
 	SCP_vector<SCP_string>	parsed_data;
@@ -178,15 +186,13 @@ void stuff_sexp_list_containers()
 		new_list.type = LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
+			Containers_by_name_map.emplace(new_list.container_name, &new_list);
 		} else {
 			Sexp_containers.pop_back();
 		}
 	}
 }
 
-/**
- * Stuffs sexp map type containers
- */
 void stuff_sexp_map_containers()
 {
 	SCP_vector<SCP_string>	parsed_data;
@@ -209,6 +215,7 @@ void stuff_sexp_map_containers()
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
 				}
+				Containers_by_name_map.emplace(new_map.container_name, &new_map);
 			}
 		} else {
 			Sexp_containers.pop_back();
@@ -216,26 +223,13 @@ void stuff_sexp_map_containers()
 	}
 }
 
-sexp_container *get_sexp_container_generic(const char* name,
-	const std::function<bool(const char*, const char*)>& match_func)
-{
-	for (auto &container : Sexp_containers) {
-		if (match_func(container.container_name.c_str(), name)) {
-			return &container;
-		}
-	}
-
-	// not found
-	return nullptr;
-}
-
-static bool str_match(const char* str1, const char* str2)
-{
-	return !stricmp(str1, str2);
-}
-
 sexp_container *get_sexp_container(const char* name) {
-	return get_sexp_container_generic(name, str_match);
+	auto container_it = Containers_by_name_map.find(name);
+	if (container_it != Containers_by_name_map.end()) {
+		return container_it->second;
+	} else {
+		return nullptr;
+	}
 }
 
 static bool str_prefix(const char* prefix, const char* str)
@@ -258,5 +252,12 @@ sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_
 	Assert(!text.empty());
 	Assert(start_pos < text.length());
 
-	return get_sexp_container_generic(text.c_str() + start_pos, str_prefix);
+	for (auto &container : Sexp_containers) {
+		if (str_prefix(container.container_name.c_str(), text.c_str())) {
+			return &container;
+		}
+	}
+
+	// not found
+	return nullptr;
 }
