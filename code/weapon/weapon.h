@@ -387,10 +387,11 @@ struct weapon_info
 	gamesnd_id	impact_snd;
 	gamesnd_id disarmed_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
+	gamesnd_id	ambient_snd;
 	
-	gamesnd_id hud_tracking_snd; // Sound played when this weapon tracks a target
-	gamesnd_id hud_locked_snd; // Sound played when this weapon locked onto a target
-	gamesnd_id hud_in_flight_snd; // Sound played while the weapon is in flight
+	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
+	gamesnd_id hud_locked_snd; // Sound played when the player is locked onto a target with this weapon
+	gamesnd_id hud_in_flight_snd; // Sound played while the player has this weapon in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
 
 	// Specific to weapons with TRAILS:

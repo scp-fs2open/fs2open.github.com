@@ -34,6 +34,7 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/objectdock.h"
+#include "object/objectsnd.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -1655,6 +1656,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
 
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
+
+	parse_game_sound("$AmbientSnd:", &wip->ambient_snd);
 
 	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd);
 	
@@ -6111,6 +6114,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			&vmd_zero_vector,
 			&vmd_identity_matrix,
 			model_get(wip->model_num)->detail[0]);
+	}
+
+	if (wip->ambient_snd.isValid()) {
+		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , 1);
 	}
 
 	Script_system.SetHookObject("Weapon", &Objects[objnum]);
