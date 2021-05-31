@@ -22,6 +22,8 @@
 #include <string>
 #include <cstdio>
 
+struct sexp_container;
+
 namespace fso {
 namespace fred {
 

@@ -4030,7 +4030,7 @@ int CFred_mission_save::save_variables()
 
 int CFred_mission_save::save_containers()
 {
-	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+	if (save_format == MissionFormat::RETAIL) {
 		return 0;
 	}
 
