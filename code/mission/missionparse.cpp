@@ -60,6 +60,7 @@
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
@@ -5785,6 +5786,23 @@ void parse_variables()
 	}
 }
 
+void parse_sexp_containers()
+{
+	if (!optional_string("#Sexp_containers")) {
+		return;
+	}
+
+	if (optional_string("$Lists")) {
+		stuff_sexp_list_containers();
+		required_string("$End Lists");
+	}
+
+	if (optional_string("$Maps")) {
+		stuff_sexp_map_containers();
+		required_string("$End Maps");
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -5830,6 +5848,7 @@ bool parse_mission(mission *pm, int flags)
 
 	parse_plot_info(pm);
 	parse_variables();
+	parse_sexp_containers();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cutscenes(pm);
 	parse_fiction(pm);
