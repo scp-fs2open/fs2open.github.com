@@ -14,6 +14,7 @@
 
 #include "stats/scoring.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 
 struct sexp_variable;
 
@@ -127,6 +128,8 @@ public:
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
 	SCP_vector<sexp_variable> persistent_variables;		// These variables will be saved at the end of a mission
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
+	SCP_vector<sexp_container> persistent_containers;	// These containers will be saved at the end of a mission
+	SCP_vector<sexp_container> red_alert_containers;		// state of the containers in the previous mission of a Red Alert scenario.
 
 	campaign()
 		: desc(nullptr), num_missions(0)
@@ -220,6 +223,9 @@ void mission_campaign_store_goals_and_events();
 // stores variables which will be saved only on mission progression
 void mission_campaign_store_variables(int persistence_type, bool store_red_alert = true);
 
+// stores containers which will be saved only on mission progression
+void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert = true);
+
 // does both of the above
 void mission_campaign_store_goals_and_events_and_variables();
 
@@ -245,6 +251,9 @@ void mission_campaign_end_do();
 
 // save eternal variables
 extern void mission_campaign_save_on_close_variables();
+
+// save eternal containers
+extern void mission_campaign_save_on_close_containers();
 
 extern void mission_campaign_load_failure_popup();
 
