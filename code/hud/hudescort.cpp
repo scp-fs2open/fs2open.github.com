@@ -499,15 +499,13 @@ static bool escort_compare(const escort_info &escort1, const escort_info &escort
 			}
 		}
 
-		if (escort1.priority > escort2.priority) {
-			return true;
-		}
-
-		if ( (escort1.objnum >= 0) && (escort2.objnum >= 0) ) {
+		if (escort1.priority != escort2.priority) {
+			return (escort1.priority > escort2.priority);
+		} else if ( (escort1.objnum >= 0) && (escort2.objnum >= 0) ) {
 			const char *name1 = Ships[Objects[escort1.objnum].instance].ship_name;
 			const char *name2 = Ships[Objects[escort2.objnum].instance].ship_name;
 
-			return (stricmp(name1, name2) < 0);
+			return (stricmp(name1, name2) > 0);
 		}
 	}
 
