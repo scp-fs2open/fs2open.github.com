@@ -45,6 +45,7 @@
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "AddModifyContainerDlg.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -1735,6 +1736,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 
+	// Add/Modify Container
+	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
+		CAddModifyContainerDlg dlg(this);
+
+		dlg.DoModal();
+
+		return 1;
+	}
 
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
@@ -6477,4 +6486,25 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	}
 	
 	return count; 
+}
+
+int sexp_tree::get_container_usage_count(const char* container_name) const
+{
+	SCP_string container_name_lower = container_name;
+	SCP_tolower(container_name_lower);
+
+	int count = 0;
+
+	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
+		// DISCUSSME: should nodes not marked SEXPT_VALID also be counted?
+		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
+			SCP_string tree_node_text_lower = tree_nodes[idx].text;
+			SCP_tolower(tree_node_text_lower);
+			if (strstr(tree_node_text_lower.c_str(), container_name_lower.c_str())) {
+				count++;
+			}
+		}
+	}
+
+	return count;
 }
