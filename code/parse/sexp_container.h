@@ -11,7 +11,7 @@
 #include "parse/sexp.h"
 
 // must inherit from int because of persistence (e.g., csg_write_int())
-enum ContainerType : int {
+enum class ContainerType : int {
 	LIST = 0x01,
 	MAP = 0x02,
 	STRICTLY_TYPED_KEYS = 0x04,
@@ -51,7 +51,7 @@ struct sexp_container
 	static constexpr int NAME_MAX_LENGTH = VALUE_MAX_LENGTH - 2;
 
 	SCP_string container_name;
-	ContainerType type = LIST | STRING_DATA;
+	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
 	int opf_type = OPF_ANYTHING;
 
 	SCP_list<SCP_string> list_data;
@@ -59,22 +59,22 @@ struct sexp_container
 
 	inline bool is_list() const
 	{
-		return type & LIST;
+		return type & ContainerType::LIST;
 	}
 
 	inline bool is_map() const
 	{
-		return type & MAP;
+		return type & ContainerType::MAP;
 	}
 
 	inline bool is_eternal() const
 	{
-		return type & SAVE_TO_PLAYER_FILE;
+		return type & ContainerType::SAVE_TO_PLAYER_FILE;
 	}
 
 	inline bool is_persistent() const
 	{
-		return type & (SAVE_ON_MISSION_PROGRESS | SAVE_ON_MISSION_CLOSE);
+		return type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE);
 	}
 
 	bool empty() const;

@@ -110,10 +110,10 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	required_string("$Data Type:");
 	stuff_string(temp_type_string, F_NAME);
 	if (!stricmp(temp_type_string.c_str(), "Number")) {
-		type |= NUMBER_DATA;
+		type |= ContainerType::NUMBER_DATA;
 		opf_type = OPF_NUMBER;
 	} else if (!stricmp(temp_type_string.c_str(), "String")) {
-		type |= STRING_DATA;
+		type |= ContainerType::STRING_DATA;
 		opf_type = OPF_ANYTHING;
 	} else {
 		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
@@ -122,13 +122,13 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	}
 
 	if (optional_string("$Key Type:")) {
-		Assertion((type & MAP), "$Key Type: found for container which doesn't use keys!");
+		Assertion((type & ContainerType::MAP), "$Key Type: found for container which doesn't use keys!");
 
 		stuff_string(temp_type_string, F_NAME);
 		if (!stricmp(temp_type_string.c_str(), "Number")) {
-			type |= NUMBER_KEYS;
+			type |= ContainerType::NUMBER_KEYS;
 		} else if (!stricmp(temp_type_string.c_str(), "String")) {
-			type |= STRING_KEYS;
+			type |= ContainerType::STRING_KEYS;
 		} else {
 			Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
 			log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
@@ -137,14 +137,14 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	}
 
 	if (optional_string("+Strictly Typed Keys")) {
-		Assertion((type & MAP), "+Strictly Typed Keys found for container which doesn't use keys!");
+		Assertion((type & ContainerType::MAP), "+Strictly Typed Keys found for container which doesn't use keys!");
 		Warning(LOCATION, "Container %s is marked for strictly typed keys, which are not yet supported.", name.c_str());
-		type |= STRICTLY_TYPED_KEYS;
+		type |= ContainerType::STRICTLY_TYPED_KEYS;
 	}
 
 	if (optional_string("+Strictly Typed Data")) {
 		Warning(LOCATION, "Container %s is marked for strictly typed data, which are not yet supported.", name.c_str());
-		type |= STRICTLY_TYPED_DATA;
+		type |= ContainerType::STRICTLY_TYPED_DATA;
 	}
 
 	required_string("$Data:");
@@ -152,26 +152,26 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 
 	if (optional_string("+Network Container")) {
 		Warning(LOCATION, "Container %s is marked as a network container, which is not yet supported.", name.c_str());
-		type |= NETWORK;
+		type |= ContainerType::NETWORK;
 	}
 
 	if (optional_string("+Eternal")) {
-		type |= SAVE_TO_PLAYER_FILE;
+		type |= ContainerType::SAVE_TO_PLAYER_FILE;
 	}
 
 	// campaign-persistent
 	if (optional_string("+Save On Mission Progress")) {
-		type |= SAVE_ON_MISSION_PROGRESS;
+		type |= ContainerType::SAVE_ON_MISSION_PROGRESS;
 	}
 
 	// player-persistent
 	if (optional_string("+Save On Mission Close")) {
-		Assert(!(type & SAVE_ON_MISSION_PROGRESS));
-		type |= SAVE_ON_MISSION_CLOSE;
+		Assert(!(type & ContainerType::SAVE_ON_MISSION_PROGRESS));
+		type |= ContainerType::SAVE_ON_MISSION_CLOSE;
 	}
 
-	Assert(!(type & SAVE_TO_PLAYER_FILE) ||
-		((type & SAVE_ON_MISSION_PROGRESS) ^ (type & SAVE_ON_MISSION_CLOSE)));
+	Assert(!(type & ContainerType::SAVE_TO_PLAYER_FILE) ||
+		   ((type & ContainerType::SAVE_ON_MISSION_PROGRESS) ^ (type & ContainerType::SAVE_ON_MISSION_CLOSE)));
 
 	return valid;
 }
@@ -184,7 +184,7 @@ void stuff_sexp_list_containers()
 		Sexp_containers.emplace_back();
 		auto &new_list = Sexp_containers.back();
 
-		new_list.type = LIST;
+		new_list.type = ContainerType::LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
 			Containers_by_name_map.emplace(new_list.container_name, &new_list);
@@ -202,7 +202,7 @@ void stuff_sexp_map_containers()
 		Sexp_containers.emplace_back();
 		auto& new_map = Sexp_containers.back();
 
-		new_map.type = MAP;
+		new_map.type = ContainerType::MAP;
 		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)) {
 			if (parsed_data.size() % 2 != 0) {
 				Warning(LOCATION,
