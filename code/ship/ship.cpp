@@ -13169,12 +13169,12 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	float target_range, weapon_range_max, weapon_range_min;
 	target_range = 0.0f;
 
-	if (The_mission.ai_profile->ai_range_secondary_select_mode!= AI_RANGE_SEC_SEL_MODE_RETAIL) {
+	if (The_mission.ai_profile->ai_range_aware_secondary_select_mode!= AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 		vec3d our_position = objp->pos;
 		vec3d target_position;
 		object *target = &Objects[Ai_info[shipp->ai_index].target_objnum];
 		if (target->type == OBJ_SHIP) {
-			if (aip->targeted_subsys != NULL) {
+			if (aip->targeted_subsys != nullptr) {
 				get_subsystem_pos(&target_position, target, aip->targeted_subsys);
 			}
 			else if (Ship_info[shipp->ship_info_index].is_big_or_huge() ){
@@ -13191,12 +13191,12 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
 		if (shipp->weapons.secondary_bank_ammo[i]) {
-			if (The_mission.ai_profile->ai_range_secondary_select_mode != AI_RANGE_SEC_SEL_MODE_RETAIL) {
+			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
 				weapon_range_min = wepp->WeaponMinRange;
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
-				if (weapon_range_max >= 999999999.0f) { 
+				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {
 					if (wepp->subtype == WP_BEAM) {
 						weapon_range_max = wepp->b_info.range;
 					}
