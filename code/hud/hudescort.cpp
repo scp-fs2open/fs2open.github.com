@@ -486,9 +486,7 @@ static bool escort_compare(const escort_info &escort1, const escort_info &escort
 			return false;
 		}
 
-		if (Net_players[n1].m_player->stats.m_kill_count_ok > Net_players[n2].m_player->stats.m_kill_count_ok) {
-			return true;
-		}
+		return (Net_players[n1].m_player->stats.m_kill_count_ok >= Net_players[n2].m_player->stats.m_kill_count_ok);
 	} else {
 		// in multi, players go to the top
 		if (Game_mode & GM_MULTIPLAYER) {
