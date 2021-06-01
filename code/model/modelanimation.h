@@ -117,19 +117,19 @@ namespace animation {
 	class ModelAnimationSubsystem {
 		model_subsystem* m_subsysStatic;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
-		ModelAnimationData<> m_initialData;
-		ModelAnimationData<> m_lastFrame;
+		std::map<ship*, ModelAnimationData<>> m_initialData;
+		std::map <ship*, ModelAnimationData<>> m_lastFrame;
 
 		friend class ModelAnimation;
 	public:
 		ModelAnimationSubsystem(model_subsystem* ssp, std::unique_ptr<ModelAnimationSegment> mainSegment);
-		void play(float frametime, ship_subsys* subsys);
-		void reset(ship_subsys* subsys);
-		ship_subsys* findSubsys(ship* ship) const;
+		void play(float frametime, ship* ship);
+		void reset(ship* ship);
 
 	private:
-		void saveCurrentAsBase(ship_subsys* subsys);
-		void copyToSubsystem(const ModelAnimationData<>& data, ship_subsys* subsys);
+		void saveCurrentAsBase(ship* ship);
+		void copyToSubsystem(const ModelAnimationData<>& data, ship* ship);
+		ship_subsys* findSubsys(ship* ship) const;
 	};
 
 

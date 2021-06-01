@@ -34,7 +34,7 @@ namespace animation {
 					}
 				}
 
-				m_submodelAnimation[i]->saveCurrentAsBase(m_submodelAnimation[i]->findSubsys(ship));
+				m_submodelAnimation[i]->saveCurrentAsBase(ship);
 			}
 
 			m_state = ModelAnimationState::RUNNING_FWD;
@@ -47,7 +47,7 @@ namespace animation {
 			}
 
 			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-				m_submodelAnimation[i]->play(m_time, m_submodelAnimation[i]->findSubsys(ship));
+				m_submodelAnimation[i]->play(m_time, ship);
 			}
 			break;
 
@@ -62,7 +62,7 @@ namespace animation {
 			}
 
 			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-				m_submodelAnimation[i]->play(m_time, m_submodelAnimation[i]->findSubsys(ship));
+				m_submodelAnimation[i]->play(m_time, ship);
 			}
 
 			break;
@@ -90,7 +90,7 @@ namespace animation {
 
 	void ModelAnimation::stop(ship* ship) {
 		for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-			m_submodelAnimation[i]->reset(m_submodelAnimation[i]->findSubsys(ship));
+			m_submodelAnimation[i]->reset(ship);
 		}
 
 		m_time = 0;
@@ -125,38 +125,50 @@ namespace animation {
 
 	ModelAnimationSubsystem::ModelAnimationSubsystem(model_subsystem* ssp, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_subsysStatic(ssp), m_mainSegment(std::move(mainSegment)) { }
 
-	void ModelAnimationSubsystem::play(float frametime, ship_subsys* subsys) {
+	void ModelAnimationSubsystem::play(float frametime, ship* ship) {
 		if (frametime > m_mainSegment->getDuration())
 			frametime = m_mainSegment->getDuration();
 
-		ModelAnimationData<> currentFrame = m_initialData;
-		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(m_initialData, m_lastFrame, frametime);
+		auto dataIt = m_initialData.find(ship);
+		Assertion(dataIt != m_initialData.end(), "Tried to play animation of ship that had no data for a running animation");
+		auto lastDataIt = m_lastFrame.find(ship);
+		Assertion(lastDataIt != m_lastFrame.end(), "Tried to play animation of ship that had no data for a running animation");
+
+		ModelAnimationData<> currentFrame = dataIt->second;
+		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(currentFrame, lastDataIt->second, frametime);
 		
 		currentFrame.applyDelta(delta);
 
 		m_mainSegment->executeAnimation(currentFrame, frametime);
 
-		copyToSubsystem(currentFrame, subsys);
-		m_lastFrame = currentFrame;
+		copyToSubsystem(currentFrame, ship);
+		m_lastFrame[ship] = currentFrame;
 	}
 
-	void ModelAnimationSubsystem::reset(ship_subsys* subsys) {
-		copyToSubsystem(m_initialData, subsys);
+	void ModelAnimationSubsystem::reset(ship* ship) {
+		auto dataIt = m_initialData.find(ship);
+		Assertion(dataIt != m_initialData.end(), "Tried to reset animation of ship that had no data for a running animation");
+		copyToSubsystem(dataIt->second, ship);
 	}
 
-	void ModelAnimationSubsystem::copyToSubsystem(const ModelAnimationData<>& data, ship_subsys* subsys) {
+	void ModelAnimationSubsystem::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
+		ship_subsys* subsys = findSubsys(ship);
+
 		subsys->submodel_instance_1->canonical_orient = data.orientation;
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
-	void ModelAnimationSubsystem::saveCurrentAsBase(ship_subsys* subsys) {
-		m_initialData.orientation = subsys->submodel_instance_1->canonical_orient;
-		//TODO: Once translation is a thing
-		//m_initialData.position = m_subsys->submodel_instance_1->offset;
+	void ModelAnimationSubsystem::saveCurrentAsBase(ship* ship) {
+		ship_subsys* subsys = findSubsys(ship);
 
-		m_lastFrame = m_initialData;
-		m_mainSegment->recalculate(subsys, m_initialData);
+		m_lastFrame[ship] = m_initialData[ship];
+		ModelAnimationData<>& data = m_initialData[ship];
+		data.orientation = subsys->submodel_instance_1->canonical_orient;
+		//TODO: Once translation is a thing
+		//data.position = m_subsys->submodel_instance_1->offset;
+		
+		m_mainSegment->recalculate(subsys, data);
 	}
 
 	ship_subsys* ModelAnimationSubsystem::findSubsys(ship* ship) const {
