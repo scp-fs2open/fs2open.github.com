@@ -53,6 +53,8 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
+#include "model/modelanimation_segments.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
@@ -5006,6 +5008,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 						//the only thing initial animation type needs is the angle, 
 						//so to save space lets just make everything optional in this case
 
+						std::shared_ptr<animation::ModelAnimation> anim = std::make_shared<animation::ModelAnimation>();
+
 						if(optional_string("+delay:"))
 							stuff_int(&current_trigger->start); 
 						else
@@ -5053,6 +5057,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 							stuff_int(&current_trigger->end );
 						else
 							current_trigger->end = 0;
+
+						std::unique_ptr<animation::ModelAnimationSegmentRotation> rot = std::make_unique<animation::ModelAnimationSegmentRotation>(((float)current_trigger->end) * 0.001f, current_trigger->angle, optional<vec3d>(), optional<vec3d>(), true);
+						std::unique_ptr<animation::ModelAnimationSubsystem> subsys = std::make_unique<animation::ModelAnimationSubsystem>(sp, std::move(rot));
+						anim->addSubsystemAnimation(std::move(subsys));
 					}else{
 
 						if(optional_string("+delay:"))
