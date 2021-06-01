@@ -5096,7 +5096,8 @@ int rand_sexp(int node, bool multiple)
 
 	if (low > high) {
 		Warning(LOCATION, "rand%s was passed an invalid range (%d ... %d)!", multiple ? "-multiple" : "", low, high);
-		return SEXP_KNOWN_FALSE;
+		// preserve old behavior from before Random class was introduced
+		return low;
 	}
 
 	// get the random number

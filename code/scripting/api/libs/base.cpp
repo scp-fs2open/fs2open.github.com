@@ -67,7 +67,7 @@ ADE_FUNC(rand32,
 			result = Random::next(a, b);
 		} else {
 			Warning(LOCATION, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
-			result = 0;
+			result = a; // match behavior of rand_sexp()
 		}
 	} else if (numargs == 1) {
 		if (a > 0) {
