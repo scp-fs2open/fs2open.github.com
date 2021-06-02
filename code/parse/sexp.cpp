@@ -5094,6 +5094,12 @@ int rand_sexp(int node, bool multiple)
 	if (is_nan_forever)
 		return SEXP_NAN_FOREVER;
 
+	if (low > high) {
+		Warning(LOCATION, "rand%s was passed an invalid range (%d ... %d)!", multiple ? "-multiple" : "", low, high);
+		// preserve old behavior from before Random class was introduced
+		return low;
+	}
+
 	// get the random number
 	rand_num = rand_internal(low, high, seed);
 
@@ -9853,6 +9859,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	Assert(num_valid_args >= 0);
 
 	if (num_valid_args == 0)
 	{
