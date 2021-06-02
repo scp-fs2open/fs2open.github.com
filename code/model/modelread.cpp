@@ -80,13 +80,16 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 22.01 adds support for external weapon model angle offsets
 // 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
-// 21.17 adds support for engine thruster banks linked to specific engine subsystems.
+//
+// 21.18 adds support for external weapon model angle offsets
+// 21.17 adds support for engine thruster banks linked to specific engine subsystems
 // FreeSpace 2 shipped at POF version 21.17
 // Descent: FreeSpace shipped at POF version 20.14
 // See also https://wiki.hard-light.net/index.php/POF_data_structure
-#define PM_LATEST_ALIGNED_VERSION	2200
-#define PM_LATEST_LEGACY_VERSION	2117
+#define PM_LATEST_ALIGNED_VERSION	2201
+#define PM_LATEST_LEGACY_VERSION	2118
 #define PM_FIRST_ALIGNED_VERSION	2200
 
 static int Model_signature = 0;
@@ -223,8 +226,12 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield.tris);
 	}
 
-	if ( pm->missile_banks )	{
-		vm_free(pm->missile_banks);
+	if (pm->gun_banks) {
+		delete[] pm->gun_banks;
+	}
+
+	if (pm->missile_banks) {
+		delete[] pm->missile_banks;
 	}
 
 	if ( pm->docking_bays )	{
@@ -290,10 +297,6 @@ void model_unload(int modelnum, int force)
 
 	if ( pm->lights )	{
 		vm_free(pm->lights);
-	}
-
-	if ( pm->gun_banks )	{
-		vm_free(pm->gun_banks);
 	}
 
 	if ( pm->shield_collision_tree ) {
@@ -1918,49 +1921,56 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				break;
 
+			// guns and missiles use almost exactly the same code
 			case ID_GPNT:
-				pm->n_guns = cfread_int(fp);
-
-				if (pm->n_guns > 0) {
-					pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
-					Assert( pm->gun_banks != NULL );
-
-					for (i = 0; i < pm->n_guns; i++ ) {
-						w_bank *bank = &pm->gun_banks[i];
-
-						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
-						}
-					}
-				}
-				break;
-			
 			case ID_MPNT:
-				pm->n_missiles = cfread_int(fp);
+			{
+				int n_weps = cfread_int(fp);
+				w_bank *wep_banks = nullptr;
 
-				if (pm->n_missiles > 0) {
-					pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
-					Assert( pm->missile_banks != NULL );
-
-					for (i = 0; i < pm->n_missiles; i++ ) {
-						w_bank *bank = &pm->missile_banks[i];
+				if (n_weps > 0)
+				{
+					wep_banks = new w_bank[n_weps];
+					for (i = 0; i < n_weps; ++i)
+					{
+						w_bank *bank = &wep_banks[i];
 
 						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
+						if (bank->num_slots > 0)
+						{
+							bank->pnt = new vec3d[bank->num_slots];
+							bank->norm = new vec3d[bank->num_slots];
+							bank->external_model_angle_offset = new float[bank->num_slots];
+
+							for (j = 0; j < bank->num_slots; ++j)
+							{
+								cfread_vector(&(bank->pnt[j]), fp);
+								cfread_vector(&temp_vec, fp);
+								vm_vec_normalize_safe(&temp_vec);
+								bank->norm[j] = temp_vec;
+
+								// angle offsets are a new POF feature
+								if ((pm->version >= 2118 && pm->version < PM_FIRST_ALIGNED_VERSION) || (pm->version >= 2201))
+									bank->external_model_angle_offset[j] = fl_radians(cfread_float(fp));
+								else
+									bank->external_model_angle_offset[j] = 0.0f;
+							}
 						}
 					}
 				}
+
+				if (id == ID_GPNT)
+				{
+					pm->n_guns = n_weps;
+					pm->gun_banks = wep_banks;
+				}
+				else
+				{
+					pm->n_missiles = n_weps;
+					pm->missile_banks = wep_banks;
+				}
 				break;
+			}
 
 			case ID_DOCK: {
 				char props[MAX_PROP_LEN];

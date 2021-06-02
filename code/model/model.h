@@ -391,14 +391,23 @@ typedef struct model_path {
 // info for gun and missile banks.  Also used for docking points.  There should always
 // only be two slots for each docking bay
 
-#define MAX_SLOTS		25
+struct w_bank
+{
+	int		num_slots = 0;
+	vec3d	*pnt = nullptr;
+	vec3d	*norm = nullptr;
+	float   *external_model_angle_offset = nullptr;
 
-typedef struct w_bank {
-	int		num_slots;
-	vec3d	pnt[MAX_SLOTS];
-	vec3d	norm[MAX_SLOTS];
-	float		radius[MAX_SLOTS];
-} w_bank;
+	~w_bank()
+	{
+		if (pnt)
+			delete[] pnt;
+		if (norm)
+			delete[] norm;
+		if (external_model_angle_offset)
+			delete[] external_model_angle_offset;
+	}
+};
 
 struct glow_point{
 	vec3d	pnt;
