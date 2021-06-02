@@ -66,14 +66,14 @@ ADE_FUNC(rand32,
 		if (a <= b) {
 			result = Random::next(a, b);
 		} else {
-			Warning(LOCATION, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
+			LuaError(L, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
 			result = a; // match behavior of rand_sexp()
 		}
 	} else if (numargs == 1) {
 		if (a > 0) {
 			result = Random::next(a);
 		} else {
-			Warning(LOCATION, "rand32() script function was passed an invalid modulus (%d)!", a);
+			LuaError(L, "rand32() script function was passed an invalid modulus (%d)!", a);
 			result = 0;
 		}
 	} else {
