@@ -7214,7 +7214,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
 
-					if(sp->secondary_point_reload_pct[i][k] <= 0.0)
+					if(sp->secondary_point_reload_pct.get(i, k) <= 0.0)
 						continue;
 
 					model_render_params weapon_render_info;
@@ -7227,7 +7227,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 
 					num_secondaries_rendered++;
 
-					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct.get(i, k)) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);

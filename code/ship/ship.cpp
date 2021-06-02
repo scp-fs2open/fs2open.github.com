@@ -6323,11 +6323,7 @@ void ship::clear()
 		was_firing_last_frame[i] = 0;
 	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
-	{
-		for (j = 0; j < MAX_SLOTS; j++)
-			secondary_point_reload_pct[i][j] = 1.0f;
-	}
+	secondary_point_reload_pct.init(0, 0, 0.0f);
 	// ---------- done with weapons init
 
 	shield_hits = 0;
@@ -6715,6 +6711,16 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		else
 			swp->secondary_bank_ammo[i] = (int)std::lround(sip->secondary_bank_ammo_capacity[i] / weapon_size);
 	}
+
+	// set initial reload percentages... used to be done in ship::clear()
+	int max_points_per_bank = 0;
+	for (i = 0; i < sip->num_secondary_banks; ++i)
+	{
+		int slots = pm->missile_banks[i].num_slots;
+		if (slots > max_points_per_bank)
+			max_points_per_bank = slots;
+	}
+	shipp->secondary_point_reload_pct.init(sip->num_secondary_banks, max_points_per_bank, 1.0f);
 
 	shipp->armor_type_idx = sip->armor_type_idx;
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
@@ -12602,7 +12608,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			if ( pnt_index >= num_slots ){
 				pnt_index = 0;
 			}
-			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
+			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
 			pnt = pm->missile_banks[bank].pnt[pnt_index++];
 
 			polymodel *weapon_model = NULL;
@@ -19537,13 +19543,13 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 					break;
 				}
 
-				if ( shipp->secondary_point_reload_pct[i][k] <= 0.0 ) {
+				if ( shipp->secondary_point_reload_pct.get(i, k) <= 0.0 ) {
 					continue;
 				}
 
 				num_secondaries_rendered++;
 
-				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
 				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
 			}
