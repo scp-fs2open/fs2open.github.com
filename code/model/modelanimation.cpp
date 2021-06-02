@@ -10,6 +10,7 @@ namespace animation {
 
 		switch (m_state) {
 		case ModelAnimationState::UNTRIGGERED:
+			s_runningAnimations.emplace(ship, shared_from_this());
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
 			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
 				for (auto animIter = s_runningAnimations.cbegin(); animIter != s_runningAnimations.cend(); animIter++) {
@@ -82,9 +83,38 @@ namespace animation {
 		}
 	}
 	
-	void ModelAnimation::start(ship* ship) {
-		s_runningAnimations.emplace(ship, shared_from_this());
+	void ModelAnimation::start(ship* ship, bool reverse) {
+		if (reverse) {
+			switch (m_state) {
+			case ModelAnimationState::RUNNING_RWD:
+			case ModelAnimationState::UNTRIGGERED:
+				//Cannot reverse-start if it's already running rwd or fully untriggered
+				return;
+			case ModelAnimationState::RUNNING_FWD:
+				//Just pretend we were going in the right direction
+				m_state = ModelAnimationState::RUNNING_RWD;
+				break;
+			case ModelAnimationState::TRIGGERED:
+				//Nothing special to do. Expected case
+			}
+		}
+		else {
+			switch (m_state) {
+			case ModelAnimationState::RUNNING_FWD:
+			case ModelAnimationState::TRIGGERED:
+				//Cannot start if it's already running fwd or fully triggered
+				return;
+			case ModelAnimationState::RUNNING_RWD:
+				//Just pretend we were going in the right direction
+				m_state = ModelAnimationState::RUNNING_FWD;
+				break;
+			case ModelAnimationState::UNTRIGGERED:
+				//Nothing special to do. Expected case
+			}
+		}
+		
 		play(0, ship);
+		//In case this stopped some other animations, we need to remove them from the playing buffer
 		cleanRunning();
 	}
 
@@ -103,7 +133,19 @@ namespace animation {
 
 	void ModelAnimation::stepAnimations() {
 		for (const auto& anim : s_runningAnimations) {
-			anim.second->play(flFrametime, anim.first);
+			switch (anim.second->m_state) {
+			case ModelAnimationState::RUNNING_FWD:
+			case ModelAnimationState::RUNNING_RWD:
+				anim.second->play(flFrametime, anim.first);
+				break;
+			case ModelAnimationState::TRIGGERED:
+				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
+				break;
+			case ModelAnimationState::UNTRIGGERED:
+				UNREACHABLE("An untriggered animation should not be in the runningAnimations buffer");
+				break;
+			}
+
 		}
 
 		cleanRunning();

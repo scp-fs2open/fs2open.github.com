@@ -146,7 +146,7 @@ namespace animation {
 	public:
 		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubsystem> animation);
 
-		void start(ship* ship);
+		void start(ship* ship, bool reverse);
 		void stop(ship* ship);
 
 		static void stepAnimations();
