@@ -19458,6 +19458,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	int i,k;
 	ship_weapon *swp = &shipp->weapons;
+	auto ship_pm = model_get(sip->model_num);
 
 	scene->push_transform(&obj->pos, &obj->orient);
 
@@ -19493,7 +19494,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			swp->primary_bank_model_instance_check[i] = true;
 		}
 
-		auto bank = &model_get(sip->model_num)->gun_banks[i];
+		auto bank = &ship_pm->gun_banks[i];
 
 		if ( swp->primary_bank_external_model_instance[i] >= 0 )
 		{
@@ -19513,25 +19514,36 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &vmd_identity_matrix, &bank->pnt[k]);
+			// "Bank" the external model by the angle offset
+			angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+			matrix model_orient;
+			vm_angles_2_matrix(&model_orient, &angs);
+
+			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &bank->pnt[k]);
 		}
 	}
 
 	//secondary weapons
 	int num_secondaries_rendered = 0;
 	vec3d secondary_weapon_pos;
-	w_bank* bank;
 
 	for (i = 0; i < swp->num_secondary_banks; i++) {
-		if ( Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i] ) {
+		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+
+		if ( wip->external_model_num == -1 || !sip->draw_secondary_models[i] ) {
 			continue;
 		}
 
-		bank = &(model_get(sip->model_num))->missile_banks[i];
+		auto bank = &ship_pm->missile_banks[i];
 
-		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
+		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
 			for(k = 0; k < bank->num_slots; k++) {
-				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+				// "Bank" the external model by the angle offset
+				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+				matrix model_orient;
+				vm_angles_2_matrix(&model_orient, &angs);
+
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &bank->pnt[k]);
 			}
 		} else {
 			num_secondaries_rendered = 0;
@@ -19549,9 +19561,14 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 				num_secondaries_rendered++;
 
-				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
 
-				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+				// "Bank" the external model by the angle offset
+				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+				matrix model_orient;
+				vm_angles_2_matrix(&model_orient, &angs);
+
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &secondary_weapon_pos);
 			}
 		}
 	}
