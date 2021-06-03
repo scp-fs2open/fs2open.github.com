@@ -34939,14 +34939,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tString variable to hold the result\r\n"
 	},
 
-	{OP_SCRIPT_EVAL, "script-eval\r\n"
-		"\tEvaluates the given script\r\n"
+	{OP_SCRIPT_EVAL, "script-eval (deprecated in favor of script-eval-block)\r\n"
+		"\tEvaluates the given scripts, one script per argument\r\n"
 		"Takes at least 1 argument...\r\n"
-		"\t1:\tScript to evaluate\r\n"
+		"\tAll:\tScript to evaluate\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_BLOCK, "script-eval-block\r\n"
-		"\tEvaluates the concatenation of all arguments as a script\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script\r\n"
 		"Takes at least 1 argument...\r\n"
 		"\tAll:\tScript to evaluate\r\n"
 	},
