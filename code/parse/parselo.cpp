@@ -3337,6 +3337,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
 
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
+
 	memset(buffer, 0, sizeof(buffer));
 	buf_index = 0;
 	ignore_until_whitespace = 0;
@@ -3464,6 +3466,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
+
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
 
 	memset(buffer, 0, sizeof(buffer));
 
