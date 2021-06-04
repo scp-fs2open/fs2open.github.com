@@ -259,6 +259,11 @@ enum class LockRestrictionType
 
 typedef std::pair<LockRestrictionType, int> lock_restriction;
 
+enum class HomingAcquisitionType {
+	CLOSEST,
+	RANDOM,
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -366,6 +371,8 @@ struct weapon_info
 
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
 	bool launch_reset_locks;				// Lock indicators reset after firing
+
+	HomingAcquisitionType auto_target_method;
 
 	//	Specific to ASPECT homing missiles.
 	int acquire_method;

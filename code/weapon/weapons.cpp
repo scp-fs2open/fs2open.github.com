@@ -1576,6 +1576,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Homing Auto-Target Method:"))
+	{
+		char	temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		if (!stricmp(temp, NOX("CLOSEST")))
+			wip->auto_target_method = HomingAcquisitionType::CLOSEST;
+		else if (!stricmp(temp, NOX("RANDOM")))
+			wip->auto_target_method = HomingAcquisitionType::RANDOM;
+		else
+			Warning(LOCATION, "Homing weapon %s has an unrecognized Homing Auto-Target Method %s", wip->name, temp);
+	}
+
 	// swarm missiles
 	int s_count;
 
@@ -4188,32 +4200,25 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
  */
 void find_homing_object(object *weapon_objp, int num)
 {
-	object      *objp, *old_homing_objp;
-	weapon_info *wip;
-	weapon      *wp;
-    ship        *sp;
-    ship_info   *sip;
-	float       best_dist;
-    int         homing_object_team;
-    float       dist;
-    float       dot;
-    vec3d       vec_to_object;
     ship_subsys *target_engines = NULL;
 
-	wp = &Weapons[num];
+	weapon* wp = &Weapons[num];
 
-	wip = &Weapon_info[Weapons[num].weapon_info_index];
+	weapon_info* wip = &Weapon_info[Weapons[num].weapon_info_index];
 
-	best_dist = 99999.9f;
+	float best_dist = 99999.9f;
 
 	// save the old homing object so that multiplayer servers can give the right information
 	// to clients if the object changes
-	old_homing_objp = wp->homing_object;
+	object* old_homing_objp = wp->homing_object;
 
 	wp->homing_object = &obj_used_list;
 
+	// only for random acquisition, accrue targets to later pick from randomly
+	SCP_vector<object*> prospective_targets;
+
 	//	Scan all objects, find a weapon to home on.
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for ( object* objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ((objp->type == OBJ_SHIP) || ((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])))
 		{
 			//WMC - Spawn weapons shouldn't go for protected ships
@@ -4226,14 +4231,14 @@ void find_homing_object(object *weapon_objp, int num)
 			if ((wp->weapon_flags[Weapon::Weapon_Flags::Spawned]) && (objp == &Objects[weapon_objp->parent]))
 				continue; 
 
-			homing_object_team = obj_team(objp);
+			int homing_object_team = obj_team(objp);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
 			if (weapon_target_satisfies_lock_restrictions(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
-                    sp  = &Ships[objp->instance];
-                    sip = &Ship_info[sp->ship_info_index];
+                    ship* sp  = &Ships[objp->instance];
+                    ship_info* sip = &Ship_info[sp->ship_info_index];
 
                     //if the homing weapon is a huge weapon and the ship that is being
                     //looked at is not huge, then don't home
@@ -4283,25 +4288,41 @@ void find_homing_object(object *weapon_objp, int num)
 						continue;
 				}
 
-				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
+				vec3d vec_to_object;
+				float dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
 				if (objp->type == OBJ_WEAPON && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])) {
 					dist *= 0.5f;
 				}
 
-				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
+				float dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
 				if (dot > wip->fov) {
-					if (dist < best_dist) {
+					if (wip->auto_target_method == HomingAcquisitionType::CLOSEST && dist < best_dist) {
 						best_dist = dist;
 						wp->homing_object	= objp;
 						wp->target_sig		= objp->signature;
 						wp->homing_subsys	= target_engines;
 
 						cmeasure_maybe_alert_success(objp);
+					} else { // HomingAcquisitionType::RANDOM
+						prospective_targets.push_back(objp);
 					}
 				}
 			}
+		}
+	}
+
+	if (wip->auto_target_method == HomingAcquisitionType::RANDOM && prospective_targets.size() > 0) {
+		// pick a random target from the valid ones
+		object* target = prospective_targets[Random::next((int)prospective_targets.size())];
+
+		wp->homing_object = target;
+		wp->target_sig = target->signature;
+		wp->homing_subsys = nullptr;
+
+		if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && target->type == OBJ_SHIP) {
+			wp->homing_subsys = ship_get_closest_subsys_in_sight(&Ships[target->instance], SUBSYSTEM_ENGINE, &weapon_objp->pos);
 		}
 	}
 
@@ -8346,6 +8367,7 @@ void weapon_info::reset()
 	this->ship_restrict_strings.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
+	this->auto_target_method = HomingAcquisitionType::CLOSEST;
 
 	this->min_lock_time = 0.0f;
 	this->lock_pixels_per_sec = 50;
