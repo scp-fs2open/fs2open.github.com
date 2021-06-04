@@ -127,7 +127,7 @@ namespace animation {
 		m_state = ModelAnimationState::UNTRIGGERED;
 	}
 
-	void ModelAnimation::addSubsystemAnimation(std::unique_ptr<ModelAnimationSubsystem> animation) {
+	void ModelAnimation::addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation) {
 		m_submodelAnimation.push_back(std::move(animation));
 	}
 
@@ -165,9 +165,9 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubsystem::ModelAnimationSubsystem(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelName(submodelName), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelName(submodelName), m_mainSegment(std::move(mainSegment)) { }
 
-	void ModelAnimationSubsystem::play(float frametime, ship* ship) {
+	void ModelAnimationSubmodel::play(float frametime, ship* ship) {
 		if (frametime > m_mainSegment->getDuration())
 			frametime = m_mainSegment->getDuration();
 
@@ -187,13 +187,13 @@ namespace animation {
 		m_lastFrame[ship] = currentFrame;
 	}
 
-	void ModelAnimationSubsystem::reset(ship* ship) {
+	void ModelAnimationSubmodel::reset(ship* ship) {
 		auto dataIt = m_initialData.find(ship);
 		Assertion(dataIt != m_initialData.end(), "Tried to reset animation of ship that had no data for a running animation");
 		copyToSubsystem(dataIt->second, ship);
 	}
 
-	void ModelAnimationSubsystem::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
+	void ModelAnimationSubmodel::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
 		submodel_instance* submodel = findSubmodel(ship);
 
 		submodel->canonical_orient = data.orientation;
@@ -201,7 +201,7 @@ namespace animation {
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
-	void ModelAnimationSubsystem::saveCurrentAsBase(ship* ship) {
+	void ModelAnimationSubmodel::saveCurrentAsBase(ship* ship) {
 		submodel_instance* submodel = findSubmodel(ship);
 
 		m_lastFrame[ship] = m_initialData[ship];
@@ -213,7 +213,7 @@ namespace animation {
 		m_mainSegment->recalculate(submodel, data);
 	}
 
-	submodel_instance* ModelAnimationSubsystem::findSubmodel(ship* ship) {
+	submodel_instance* ModelAnimationSubmodel::findSubmodel(ship* ship) {
 		int submodelNumber = -1;
 
 		if (m_submodel.has())

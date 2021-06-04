@@ -5059,7 +5059,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 							current_trigger->end = 0;
 
 						std::unique_ptr<animation::ModelAnimationSegmentRotation> rot = std::make_unique<animation::ModelAnimationSegmentRotation>(((float)current_trigger->end) * 0.001f, current_trigger->angle, optional<vec3d>(), optional<vec3d>(), true);
-						std::unique_ptr<animation::ModelAnimationSubsystem> subsys = std::make_unique<animation::ModelAnimationSubsystem>(sp->subobj_name, std::move(rot));
+						std::unique_ptr<animation::ModelAnimationSubmodel> subsys = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, std::move(rot));
 						anim->addSubsystemAnimation(std::move(subsys));
 					}else{
 

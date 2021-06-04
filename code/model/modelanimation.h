@@ -123,7 +123,7 @@ namespace animation {
 	};
 
 
-	class ModelAnimationSubsystem {
+	class ModelAnimationSubmodel {
 		SCP_string m_submodelName;
 		optional<int> m_submodel;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
@@ -132,7 +132,7 @@ namespace animation {
 
 		friend class ModelAnimation;
 	public:
-		ModelAnimationSubsystem(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		void play(float frametime, ship* ship);
 		void reset(ship* ship);
 
@@ -146,7 +146,7 @@ namespace animation {
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
 		static std::multimap<ship*, std::shared_ptr<ModelAnimation>> s_runningAnimations;
 
-		std::vector<std::unique_ptr<ModelAnimationSubsystem>> m_submodelAnimation;
+		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration;
 
 		ModelAnimationState m_state = ModelAnimationState::UNTRIGGERED;
@@ -154,7 +154,7 @@ namespace animation {
 		ModelAnimationState play(float frametime, ship* ship);
 		static void cleanRunning();
 	public:
-		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubsystem> animation);
+		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
 
 		void start(ship* ship, bool reverse);
 		void stop(ship* ship);
