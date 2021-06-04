@@ -28,18 +28,30 @@ enum class ContainerType : int {
 	SAVE_TO_PLAYER_FILE = 0x40000000,
 };
 
-inline constexpr bool operator&(ContainerType lhs, ContainerType rhs) {
+inline constexpr bool operator&(ContainerType lhs, ContainerType rhs)
+{
 	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
 	return static_cast<ContainerTypeInt>(lhs) & static_cast<ContainerTypeInt>(rhs);
 }
 
-inline constexpr ContainerType operator|(ContainerType lhs, ContainerType rhs) {
+// equivalent of ct &= ~ct_to_remove
+inline void remove_container_type(ContainerType &ct, ContainerType ct_to_remove)
+{
+	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
+	ct = static_cast<ContainerType>(static_cast<ContainerTypeInt>(ct) & ~static_cast<ContainerTypeInt>(ct_to_remove));
+}
+
+inline constexpr ContainerType operator|(ContainerType lhs, ContainerType rhs)
+{
 	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
 	return static_cast<ContainerType>(static_cast<ContainerTypeInt>(lhs) |
 		static_cast<ContainerTypeInt>(rhs));
 }
 
-inline void operator|=(ContainerType lhs, ContainerType rhs) { lhs = lhs | rhs; }
+inline void operator|=(ContainerType &lhs, ContainerType rhs)
+{
+	lhs = lhs | rhs;
+}
 
 struct sexp_container
 {
@@ -84,14 +96,14 @@ struct sexp_container
 struct list_modifier {
 	enum class Modifier
 	{
+		INVALID = 0,
 		GET_FIRST,
 		GET_LAST,
 		REMOVE_FIRST,
 		REMOVE_LAST,
 		GET_RANDOM,
 		REMOVE_RANDOM,
-		AT_INDEX,
-		INVALID
+		AT_INDEX
 	};
 
 	const char *name;
