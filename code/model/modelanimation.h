@@ -12,7 +12,6 @@
 #include <type_traits>
 #include <memory>
 #include <map>
-#include <mpark/variant.hpp>
 
 //TODO: Move, make pretty, whatever
 template<typename T>

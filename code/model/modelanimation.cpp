@@ -217,10 +217,10 @@ namespace animation {
 		int submodelNumber = -1;
 
 		if (m_submodel.has())
-			submodelNumber == m_submodel;
+			submodelNumber = m_submodel;
 		else {
 			polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
-			for (int i; i < pm->n_models; i++) {
+			for (int i = 0; i < pm->n_models; i++) {
 				if (!subsystem_stricmp(pm->submodel[i].name, m_submodelName.c_str())) {
 					m_submodel = i;
 					submodelNumber = i;
