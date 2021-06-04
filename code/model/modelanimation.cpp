@@ -21,6 +21,10 @@ namespace animation {
 
 					const auto& otherAnims = animIter->second->m_submodelAnimation;
 					bool needStop = false;
+
+					//We need to make sure that we have the submodel index cached before we check if other animations have the same index
+					animation->findSubmodel(ship);
+
 					for (const auto& otherAnim : otherAnims) {
 						if (otherAnim->m_submodel == animation->m_submodel) {
 							needStop = true;
