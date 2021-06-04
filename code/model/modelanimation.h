@@ -2,6 +2,7 @@
 
 #include "globalincs/linklist.h"
 #include "math/vecmat.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
@@ -11,6 +12,7 @@
 #include <type_traits>
 #include <memory>
 #include <map>
+#include <mpark/variant.hpp>
 
 //TODO: Move, make pretty, whatever
 template<typename T>
@@ -50,11 +52,19 @@ public:
 		else if (orSet != nullptr)
 			data = *orSet;
 	}
+
+	inline bool operator==(const optional<T>& rhs) {
+		if (filled != rhs.filled)
+			return false;
+		else if (!filled)
+			return true;
+		return data.t == rhs.data.t;
+	}
 };
 
 namespace animation {
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, TRIGGERED, RUNNING_RWD };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
 
 
 	template <bool is_optional = false>
@@ -106,7 +116,7 @@ namespace animation {
 		float getDuration() const;
 
 		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation delta up to that point.
-		virtual void recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) = 0;
+		virtual void recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
@@ -115,21 +125,22 @@ namespace animation {
 
 
 	class ModelAnimationSubsystem {
-		model_subsystem* m_subsysStatic;
+		SCP_string m_submodelName;
+		optional<int> m_submodel;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
 		std::map<ship*, ModelAnimationData<>> m_initialData;
 		std::map <ship*, ModelAnimationData<>> m_lastFrame;
 
 		friend class ModelAnimation;
 	public:
-		ModelAnimationSubsystem(model_subsystem* ssp, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubsystem(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		void play(float frametime, ship* ship);
 		void reset(ship* ship);
 
 	private:
 		void saveCurrentAsBase(ship* ship);
 		void copyToSubsystem(const ModelAnimationData<>& data, ship* ship);
-		ship_subsys* findSubsys(ship* ship) const;
+		submodel_instance* findSubmodel(ship* ship);
 	};
 
 

@@ -12,19 +12,17 @@ namespace animation {
 		case ModelAnimationState::UNTRIGGERED:
 			s_runningAnimations.emplace(ship, shared_from_this());
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
-			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-				for (auto animIter = s_runningAnimations.cbegin(); animIter != s_runningAnimations.cend(); animIter++) {
+			for (const auto& animation : m_submodelAnimation) {
+				auto animIterRange = s_runningAnimations.equal_range(ship);
+				for (auto animIter = animIterRange.first; animIter != animIterRange.second; animIter++) {
 					//Don't stop this animation
 					if (animIter->second == shared_from_this())
 						continue;
 
-					if (animIter->first != ship)
-						continue;
-
 					const auto& otherAnims = animIter->second->m_submodelAnimation;
 					bool needStop = false;
-					for (size_t j = 0; j < otherAnims.size(); j++) {
-						if (otherAnims[j]->m_subsysStatic == m_submodelAnimation[i]->m_subsysStatic) {
+					for (const auto& otherAnim : otherAnims) {
+						if (otherAnim->m_submodel == animation->m_submodel) {
 							needStop = true;
 							break;
 						}
@@ -35,7 +33,7 @@ namespace animation {
 					}
 				}
 
-				m_submodelAnimation[i]->saveCurrentAsBase(ship);
+				animation->saveCurrentAsBase(ship);
 			}
 
 			m_state = ModelAnimationState::RUNNING_FWD;
@@ -44,15 +42,15 @@ namespace animation {
 
 			if (m_time > m_duration) {
 				m_time = m_duration;
-				m_state = ModelAnimationState::TRIGGERED;
+				m_state = ModelAnimationState::COMPLETED;
 			}
 
-			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-				m_submodelAnimation[i]->play(m_time, ship);
+			for (const auto& animation : m_submodelAnimation) {
+				animation->play(m_time, ship);
 			}
 			break;
 
-		case ModelAnimationState::TRIGGERED:
+		case ModelAnimationState::COMPLETED:
 			m_state = ModelAnimationState::RUNNING_RWD;
 		case ModelAnimationState::RUNNING_RWD:
 			m_time -= frametime;
@@ -62,8 +60,8 @@ namespace animation {
 				break;
 			}
 
-			for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-				m_submodelAnimation[i]->play(m_time, ship);
+			for (const auto& animation : m_submodelAnimation) {
+				animation->play(m_time, ship);
 			}
 
 			break;
@@ -94,14 +92,15 @@ namespace animation {
 				//Just pretend we were going in the right direction
 				m_state = ModelAnimationState::RUNNING_RWD;
 				break;
-			case ModelAnimationState::TRIGGERED:
+			case ModelAnimationState::COMPLETED:
 				//Nothing special to do. Expected case
+				break;
 			}
 		}
 		else {
 			switch (m_state) {
 			case ModelAnimationState::RUNNING_FWD:
-			case ModelAnimationState::TRIGGERED:
+			case ModelAnimationState::COMPLETED:
 				//Cannot start if it's already running fwd or fully triggered
 				return;
 			case ModelAnimationState::RUNNING_RWD:
@@ -110,6 +109,7 @@ namespace animation {
 				break;
 			case ModelAnimationState::UNTRIGGERED:
 				//Nothing special to do. Expected case
+				break;
 			}
 		}
 		
@@ -119,8 +119,8 @@ namespace animation {
 	}
 
 	void ModelAnimation::stop(ship* ship) {
-		for (size_t i = 0; i < m_submodelAnimation.size(); i++) {
-			m_submodelAnimation[i]->reset(ship);
+		for (const auto& animation : m_submodelAnimation) {
+			animation->reset(ship);
 		}
 
 		m_time = 0;
@@ -138,7 +138,7 @@ namespace animation {
 			case ModelAnimationState::RUNNING_RWD:
 				anim.second->play(flFrametime, anim.first);
 				break;
-			case ModelAnimationState::TRIGGERED:
+			case ModelAnimationState::COMPLETED:
 				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
 				break;
 			case ModelAnimationState::UNTRIGGERED:
@@ -165,7 +165,7 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubsystem::ModelAnimationSubsystem(model_subsystem* ssp, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_subsysStatic(ssp), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubsystem::ModelAnimationSubsystem(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelName(submodelName), m_mainSegment(std::move(mainSegment)) { }
 
 	void ModelAnimationSubsystem::play(float frametime, ship* ship) {
 		if (frametime > m_mainSegment->getDuration())
@@ -194,35 +194,44 @@ namespace animation {
 	}
 
 	void ModelAnimationSubsystem::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
-		ship_subsys* subsys = findSubsys(ship);
+		submodel_instance* submodel = findSubmodel(ship);
 
-		subsys->submodel_instance_1->canonical_orient = data.orientation;
+		submodel->canonical_orient = data.orientation;
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
 	void ModelAnimationSubsystem::saveCurrentAsBase(ship* ship) {
-		ship_subsys* subsys = findSubsys(ship);
+		submodel_instance* submodel = findSubmodel(ship);
 
 		m_lastFrame[ship] = m_initialData[ship];
 		ModelAnimationData<>& data = m_initialData[ship];
-		data.orientation = subsys->submodel_instance_1->canonical_orient;
+		data.orientation = submodel->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
 		
-		m_mainSegment->recalculate(subsys, data);
+		m_mainSegment->recalculate(submodel, data);
 	}
 
-	ship_subsys* ModelAnimationSubsystem::findSubsys(ship* ship) const {
-		ship_subsys* subsys = nullptr;
-		for (ship_subsys* pss = GET_FIRST(&ship->subsys_list); pss != END_OF_LIST(&ship->subsys_list); pss = GET_NEXT(pss)) {
-			if (pss->system_info == m_subsysStatic) {
-				subsys = pss;
-				break;
+	submodel_instance* ModelAnimationSubsystem::findSubmodel(ship* ship) {
+		int submodelNumber = -1;
+
+		if (m_submodel.has())
+			submodelNumber == m_submodel;
+		else {
+			polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
+			for (int i; i < pm->n_models; i++) {
+				if (!subsystem_stricmp(pm->submodel[i].name, m_submodelName.c_str())) {
+					m_submodel = i;
+					submodelNumber = i;
+					break;
+				}
 			}
 		}
-		Assertion(subsys != nullptr, "Subsystem for animation not found in ship!");
-		return subsys;
+
+		Assertion(submodelNumber != -1, "Submodel for animation not found in ship!");
+		polymodel_instance* pmi = model_get_instance(ship->model_instance_num);
+		return &pmi->submodel[submodelNumber];
 	}
 
 

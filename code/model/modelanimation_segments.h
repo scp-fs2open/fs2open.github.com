@@ -7,7 +7,7 @@ namespace animation {
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) override;
+		void recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
 		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
 
@@ -19,7 +19,7 @@ namespace animation {
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
 		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) override;
+		void recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
 		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
 
@@ -29,7 +29,7 @@ namespace animation {
 	};
 
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
-		void recalculate(const ship_subsys* /*ship_info*/, const ModelAnimationData<true>& /*base*/) override { };
+		void recalculate(const submodel_instance* /*ship_info*/, const ModelAnimationData<true>& /*base*/) override { };
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override { return ModelAnimationData<true>(); };
 		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
 
@@ -47,7 +47,7 @@ namespace animation {
 
 		vec3d m_vel;
 
-		void recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) override;
+		void recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float time) const override;
 		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
 

@@ -2,7 +2,7 @@
 
 namespace animation {
 
-	void ModelAnimationSegmentSerial::recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) {
+	void ModelAnimationSegmentSerial::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
 		ModelAnimationData<true> data = base;
 		for (size_t i = 0; i < m_segments.size(); i++) {
 			m_segments[i]->recalculate(ship_info, data);
@@ -47,7 +47,7 @@ namespace animation {
 	}
 
 
-	void ModelAnimationSegmentParallel::recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) {
+	void ModelAnimationSegmentParallel::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
 		for (size_t i = 0; i < m_segments.size(); i++) {
 			m_segments[i]->recalculate(ship_info, base);
 		}
@@ -90,7 +90,7 @@ namespace animation {
 	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(optional<float> time, optional<vec3d> angle, optional<vec3d> velocity, optional<vec3d> acceleration, bool isAngleRelative) :
 		m_time(time), m_angle(angle), m_velocity(velocity), m_acceleration(acceleration), m_isAngleRelative(isAngleRelative) { }
 
-	void ModelAnimationSegmentRotation::recalculate(const ship_subsys* ship_info, const ModelAnimationData<true>& base) {
+	void ModelAnimationSegmentRotation::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
 		m_vel = m_angle;
 		vm_vec_scale2(&m_vel, 1.0f, m_time);
 
