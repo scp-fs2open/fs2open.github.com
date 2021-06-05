@@ -8330,7 +8330,7 @@ void weapon_info::reset()
 	this->cargo_size = 1.0f;
 	this->rearm_rate = 1.0f;
 	this->reloaded_per_batch = -1;
-	this->weapon_range = 999999999.9f;
+	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
 	// *Minimum weapon range, default is 0 -Et1
 	this->WeaponMinRange = 0.0f;
 

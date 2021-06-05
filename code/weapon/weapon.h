@@ -66,6 +66,9 @@ extern int Num_weapon_subtypes;
 // default amount of time to wait after firing before a remote detonated missile can be detonated
 #define DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT  0.5f
 
+// default value weapon max range is set to if there's not a tabled range value.
+#define WEAPON_DEFAULT_TABLED_MAX_RANGE 999999999.9f
+
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
 
 enum class WeaponState : uint32_t
