@@ -483,7 +483,9 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
     flagset<Object::Object_Flags> default_flags;
-    default_flags.set(Object::Object_Flags::Collides);
+	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
+		default_flags.set(Object::Object_Flags::Collides);
+
 	// create the associated object
 	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 	if(objnum < 0){
@@ -613,8 +615,12 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// type c is a very special weapon type - binfo has no meaning
 
+	flagset<Object::Object_Flags> initial_flags;
+	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
+		initial_flags.set(Object::Object_Flags::Collides);
+
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, {Object::Object_Flags::Collides});
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, initial_flags);
 
 	if(objnum < 0){
 		beam_delete(new_item);
@@ -2398,8 +2404,9 @@ void beam_aim(beam *b)
 		UNREACHABLE("Impossible beam type (%d); get a coder!\n", b->type);
 	}
 
-	// recalculate object pairs
-	OBJ_RECALC_PAIRS((&Objects[b->objnum]));
+	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide])
+		// recalculate object pairs
+		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
 }
 
 // given a model #, and an object, stuff 2 good world coord points
