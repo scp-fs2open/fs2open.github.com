@@ -853,6 +853,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -903,6 +904,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
