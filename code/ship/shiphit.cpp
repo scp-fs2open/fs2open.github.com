@@ -352,7 +352,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 	if((subsys->system_info->dead_snd.isValid()) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 	{
-		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
+		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, OS_SUBSYS_DEAD, subsys);
 		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
 	}
 }

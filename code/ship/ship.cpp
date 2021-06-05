@@ -6782,25 +6782,25 @@ void ship_recalc_subsys_strength( ship *shipp )
             }
             if ((ship_system->system_info->alive_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
             {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
+                obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, OS_SUBSYS_ALIVE, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
             }
             if (!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
             {
                 if (ship_system->system_info->turret_base_rotation_snd.isValid())
                 {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
+                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_BASE_ROTATION, ship_system);
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
                 if (ship_system->system_info->turret_gun_rotation_snd.isValid())
                 {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
+                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_GUN_ROTATION, ship_system);
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
             }
             if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
             {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
+                obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, OS_SUBSYS_ROTATION, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
             }
 		}
@@ -6824,7 +6824,7 @@ void ship_recalc_subsys_strength( ship *shipp )
             }
             if ((ship_system->system_info->dead_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
             {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
+                obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, OS_SUBSYS_DEAD, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
             }
 		}
@@ -14624,7 +14624,7 @@ void ship_assign_sound(ship *sp)
 	if ( sip->engine_snd.isValid() ) {
 		vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius/2.0f);		
 		
-		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, 1);
+		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
 	}
 
 	// Do subsystem sounds	
@@ -14632,9 +14632,9 @@ void ship_assign_sound(ship *sp)
 	while(moveup != END_OF_LIST(&sp->subsys_list)){
 		// Check for any engine sounds		
 		if(strstr(moveup->system_info->name, "enginelarge")){
-			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_LARGE, &moveup->system_info->pnt, 0);
+			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_LARGE, &moveup->system_info->pnt);
 		} else if(strstr(moveup->system_info->name, "enginehuge")){
-			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_HUGE, &moveup->system_info->pnt, 0);
+			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_HUGE, &moveup->system_info->pnt);
 		}
 
 		//Do any normal subsystem sounds
@@ -14642,22 +14642,22 @@ void ship_assign_sound(ship *sp)
 		{
 			if(moveup->system_info->alive_snd.isValid())
 			{
-				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ALIVE, moveup);
+				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, OS_SUBSYS_ALIVE, moveup);
                 moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
 			}
 			if(moveup->system_info->turret_base_rotation_snd.isValid())
 			{
-				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, moveup);
+				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, OS_TURRET_BASE_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
 			if(moveup->system_info->turret_gun_rotation_snd.isValid())
 			{
-				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
+				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, OS_TURRET_GUN_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
 			if((moveup->system_info->rotation_snd.isValid()) && (moveup->flags[Ship::Subsystem_Flags::Rotates]))
 			{
-				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
+				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, OS_SUBSYS_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		} 
@@ -14665,7 +14665,7 @@ void ship_assign_sound(ship *sp)
 		{
 			if(moveup->system_info->dead_snd.isValid())
 			{
-				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_DEAD, moveup);
+				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, OS_SUBSYS_DEAD, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
 			}
 		}
@@ -19305,7 +19305,7 @@ void ship_render_batch_thrusters(object *obj)
 					&& (!mtp->start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
 					)
 				{
-					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
+					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, OS_MAIN);
 				}
 			}
 
