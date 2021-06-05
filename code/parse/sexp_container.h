@@ -10,8 +10,8 @@
 #include "globalincs/pstypes.h"
 #include "parse/sexp.h"
 
-// must inherit from int because of persistence (e.g., csg_write_int())
-enum class ContainerType : int {
+// enum class inherits from int by default
+enum class ContainerType {
 	LIST = 0x01,
 	MAP = 0x02,
 	STRICTLY_TYPED_KEYS = 0x04,
@@ -28,29 +28,44 @@ enum class ContainerType : int {
 	SAVE_TO_PLAYER_FILE = 0x40000000,
 };
 
+using ContainerTypeInt = std::underlying_type<ContainerType>::type;
+
 inline constexpr bool operator&(ContainerType lhs, ContainerType rhs)
 {
-	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
-	return static_cast<ContainerTypeInt>(lhs) & static_cast<ContainerTypeInt>(rhs);
+	return (ContainerTypeInt)lhs & (ContainerTypeInt)rhs;
 }
 
-// equivalent of ct &= ~ct_to_remove
-inline void remove_container_type(ContainerType &ct, ContainerType ct_to_remove)
+inline ContainerType &operator&=(ContainerType &lhs, ContainerType rhs)
 {
-	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
-	ct = static_cast<ContainerType>(static_cast<ContainerTypeInt>(ct) & ~static_cast<ContainerTypeInt>(ct_to_remove));
+	lhs = (ContainerType)((ContainerTypeInt)lhs & (ContainerTypeInt)rhs);
+	return lhs;
 }
 
 inline constexpr ContainerType operator|(ContainerType lhs, ContainerType rhs)
 {
-	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
-	return static_cast<ContainerType>(static_cast<ContainerTypeInt>(lhs) |
-		static_cast<ContainerTypeInt>(rhs));
+	return (ContainerType)((ContainerTypeInt)lhs | (ContainerTypeInt)rhs);
 }
 
-inline void operator|=(ContainerType &lhs, ContainerType rhs)
+inline ContainerType &operator|=(ContainerType &lhs, ContainerType rhs)
 {
 	lhs = lhs | rhs;
+	return lhs;
+}
+
+inline constexpr ContainerType operator^(ContainerType lhs, ContainerType rhs)
+{
+	return (ContainerType)((ContainerTypeInt)lhs ^ (ContainerTypeInt)rhs);
+}
+
+inline ContainerType &operator^=(ContainerType &lhs, ContainerType rhs)
+{
+	lhs = lhs ^ rhs;
+	return lhs;
+}
+
+inline constexpr ContainerType operator~(ContainerType ct)
+{
+	return (ContainerType)(~(ContainerTypeInt)ct);
 }
 
 struct sexp_container
