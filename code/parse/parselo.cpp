@@ -3601,13 +3601,11 @@ int subsystem_stricmp(const char *str1, const char *str2)
 		len2--;
 
 	// once we remove the trailing s on both names, they should be the same length
-	if (len1 > len2)
-		return 1;
-	if (len1 < len2)
-		return -1;
+	if (len1 == len2)
+		return strnicmp(str1, str2, len1);
 
-	// now do the comparison
-	return strnicmp(str1, str2, len1);
+	// if not, just do a regular comparison
+	return stricmp(str1, str2);
 }
 
 // Goober5000
