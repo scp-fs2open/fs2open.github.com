@@ -12,6 +12,7 @@
 
 // enum class inherits from int by default
 enum class ContainerType {
+	NONE = 0x00,
 	LIST = 0x01,
 	MAP = 0x02,
 	STRICTLY_TYPED_KEYS = 0x04,
@@ -30,9 +31,9 @@ enum class ContainerType {
 
 using ContainerTypeInt = std::underlying_type<ContainerType>::type;
 
-inline constexpr bool operator&(ContainerType lhs, ContainerType rhs)
+inline constexpr ContainerType operator&(ContainerType lhs, ContainerType rhs)
 {
-	return (ContainerTypeInt)lhs & (ContainerTypeInt)rhs;
+	return (ContainerType)((ContainerTypeInt)lhs & (ContainerTypeInt)rhs);
 }
 
 inline ContainerType &operator&=(ContainerType &lhs, ContainerType rhs)
@@ -86,22 +87,27 @@ struct sexp_container
 
 	inline bool is_list() const
 	{
-		return type & ContainerType::LIST;
+		return type_includes(ContainerType::LIST);
 	}
 
 	inline bool is_map() const
 	{
-		return type & ContainerType::MAP;
+		return type_includes(ContainerType::MAP);
 	}
 
 	inline bool is_eternal() const
 	{
-		return type & ContainerType::SAVE_TO_PLAYER_FILE;
+		return type_includes(ContainerType::SAVE_TO_PLAYER_FILE);
 	}
 
 	inline bool is_persistent() const
 	{
-		return type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE);
+		return type_includes(ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE);
+	}
+
+	inline bool type_includes(ContainerType ct) const
+	{
+		return (type & ct) != ContainerType::NONE;
 	}
 
 	bool empty() const;
