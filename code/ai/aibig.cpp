@@ -781,11 +781,13 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		float optimal_range = 0.0f;
 		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
 		weapon_info* wip = nullptr;
+
 		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
 			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
 		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
 			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
 		}
+
 		if (wip != nullptr && wip->optimum_range > 0)
 			optimal_range = wip->optimum_range;
 
