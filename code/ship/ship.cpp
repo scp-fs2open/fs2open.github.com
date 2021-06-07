@@ -11453,6 +11453,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 				swp->per_burst_rot += winfo_p->b_info.t5info.per_burst_rot;
 				if (swp->per_burst_rot > PI2)
 					swp->per_burst_rot -= PI2;
+				else if (swp->per_burst_rot < -PI2)
+					swp->per_burst_rot += PI2;
 			}
 		}
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing

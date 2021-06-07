@@ -162,7 +162,7 @@ public:
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 
-	// for type5 beams, keeps track of accumulated per burst rotation, added to with each burst (or shot if no burst)
+	// for type5 beams, keeps track of accumulated per burst rotation, added to with each shot (or burst)
 	float per_burst_rot;
 
 	/**

@@ -2396,7 +2396,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = b->target->pos;
 			
-		} else { 
+		} else { // No usable target
 			vec3d center = vm_vec_new(0.f, 0.f, 0.f);
 			// if we have no target let's act as though we're shooting at something with a 300m radius 300m away
 
@@ -2418,12 +2418,13 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			pos1 += move_forward;
 			pos2 += move_forward;
 
+			// unrotate the points to get world positions
 			vec3d temp = pos1; vm_vec_unrotate(&pos1, &temp, &orient);
 			temp = pos2;       vm_vec_unrotate(&pos2, &temp, &orient);
 			temp = center;     vm_vec_unrotate(&center, &temp, &orient);
-			pos1 += b->objp->pos;
-			pos2 += b->objp->pos;
-			center += b->objp->pos;
+			pos1 += b->last_start;
+			pos2 += b->last_start;
+			center += b->last_start;
 
 			// set rot_axis if its center
 			if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::CENTER)

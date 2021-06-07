@@ -2816,7 +2816,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (optional_string("+Per Burst Rotation:")) {
 				stuff_float(&t5info->per_burst_rot);
-				t5info->per_burst_rot *= (PI / 180.f);
+				t5info->per_burst_rot = fl_radians(t5info->per_burst_rot);
+				if (t5info->per_burst_rot < -PI2 || t5info->per_burst_rot > PI2) {
+					Warning(LOCATION, "Per Burst Rotation on beam '%s' must not exceed 360 degrees.", wip->name);
+					t5info->per_burst_rot = 0.0f;
+				}
 			}
 
 			if (optional_string("+Per Burst Rotation Axis:")) {

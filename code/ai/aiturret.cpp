@@ -1793,6 +1793,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			swp->per_burst_rot += wip->b_info.t5info.per_burst_rot;
 			if (swp->per_burst_rot > PI2)
 				swp->per_burst_rot -= PI2;
+			else if (swp->per_burst_rot < -PI2)
+				swp->per_burst_rot += PI2;
 		}
 
 		// set next fire timestamp for the turret
