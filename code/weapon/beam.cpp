@@ -353,9 +353,6 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
-	if (!beam_has_valid_params(fire_info))
-		return -1;
-
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
 		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
@@ -363,6 +360,41 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
+
+	// copied from weapon_create()
+	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr)) {
+		// using substitution
+
+		// get to the instance of the gun
+		Assertion(fire_info->shooter->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", fire_info->shooter->type);
+		Assertion((fire_info->shooter->instance < MAX_SHIPS) && (fire_info->shooter->instance >= 0),
+			"Ship index is %d, which is out of range [%d,%d)", fire_info->shooter->instance, 0, MAX_SHIPS);
+		ship* parent_shipp = &(Ships[fire_info->shooter->instance]);
+		Assert(parent_shipp != nullptr);
+
+		size_t* position = get_pointer_to_weapon_fire_pattern_index(fire_info->beam_info_index, fire_info->shooter->instance, fire_info->turret);
+		Assertion(position != nullptr, "'%s' is trying to fire a weapon that is not selected", Ships[fire_info->shooter->instance].ship_name);
+
+		size_t curr_pos = *position;
+		if ((parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) && curr_pos > 0) {
+			curr_pos--;
+		}
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
+
+		if (wip->weapon_substitution_pattern[curr_pos] == -1) {
+			// weapon doesn't want any sub
+			return -1;
+		}
+		else if (wip->weapon_substitution_pattern[curr_pos] != fire_info->beam_info_index) {
+			fire_info->beam_info_index = wip->weapon_substitution_pattern[curr_pos];
+			// weapon wants to sub with weapon other than me
+			return beam_fire(fire_info);
+		}
+	}
+
+	if (!beam_has_valid_params(fire_info))
+		return -1;
 
 	if (fire_info->shooter != NULL) {
 		firing_ship = &Ships[fire_info->shooter->instance];
