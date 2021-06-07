@@ -82,6 +82,7 @@
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/afterburner.h"
@@ -1158,6 +1159,7 @@ void init_sexp()
 
 	sexp_nodes_init();
 	init_sexp_vars();
+	init_sexp_containers();
 	Locked_sexp_false = Locked_sexp_true = -1;
 
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
@@ -5091,6 +5093,12 @@ int rand_sexp(int node, bool multiple)
 		return SEXP_NAN;
 	if (is_nan_forever)
 		return SEXP_NAN_FOREVER;
+
+	if (low > high) {
+		Warning(LOCATION, "rand%s was passed an invalid range (%d ... %d)!", multiple ? "-multiple" : "", low, high);
+		// preserve old behavior from before Random class was introduced
+		return low;
+	}
 
 	// get the random number
 	rand_num = rand_internal(low, high, seed);
@@ -9851,6 +9859,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	Assert(num_valid_args >= 0);
 
 	if (num_valid_args == 0)
 	{
@@ -34939,14 +34948,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tString variable to hold the result\r\n"
 	},
 
-	{OP_SCRIPT_EVAL, "script-eval\r\n"
-		"\tEvaluates the given script\r\n"
+	{OP_SCRIPT_EVAL, "script-eval (deprecated in favor of script-eval-block)\r\n"
+		"\tEvaluates the given scripts, one script per argument\r\n"
 		"Takes at least 1 argument...\r\n"
-		"\t1:\tScript to evaluate\r\n"
+		"\tAll:\tScript to evaluate\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_BLOCK, "script-eval-block\r\n"
-		"\tEvaluates the concatenation of all arguments as a script\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script\r\n"
 		"Takes at least 1 argument...\r\n"
 		"\tAll:\tScript to evaluate\r\n"
 	},

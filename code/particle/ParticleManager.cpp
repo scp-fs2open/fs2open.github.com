@@ -5,6 +5,7 @@
 
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
+#include "particle/effects/VolumeEffect.h"
 
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
@@ -25,7 +26,8 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Volume"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +61,11 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Volume: {
+			effect.reset(new VolumeEffect(name));
 			effect->parseValues(false);
 			break;
 		}
