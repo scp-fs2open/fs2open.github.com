@@ -10,8 +10,9 @@
 #include "globalincs/pstypes.h"
 #include "parse/sexp.h"
 
-// must inherit from int because of persistence (e.g., csg_write_int())
-enum class ContainerType : int {
+// enum class inherits from int by default
+enum class ContainerType {
+	NONE = 0x00,
 	LIST = 0x01,
 	MAP = 0x02,
 	STRICTLY_TYPED_KEYS = 0x04,
@@ -28,18 +29,55 @@ enum class ContainerType : int {
 	SAVE_TO_PLAYER_FILE = 0x40000000,
 };
 
-inline constexpr bool operator&(ContainerType lhs, ContainerType rhs) {
-	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
-	return static_cast<ContainerTypeInt>(lhs) & static_cast<ContainerTypeInt>(rhs);
+using ContainerTypeInt = std::underlying_type<ContainerType>::type;
+
+inline constexpr ContainerType operator&(ContainerType lhs, ContainerType rhs)
+{
+	return (ContainerType)((ContainerTypeInt)lhs & (ContainerTypeInt)rhs);
 }
 
-inline constexpr ContainerType operator|(ContainerType lhs, ContainerType rhs) {
-	using ContainerTypeInt = std::underlying_type<ContainerType>::type;
-	return static_cast<ContainerType>(static_cast<ContainerTypeInt>(lhs) |
-		static_cast<ContainerTypeInt>(rhs));
+inline ContainerType &operator&=(ContainerType &lhs, ContainerType rhs)
+{
+	lhs = (ContainerType)((ContainerTypeInt)lhs & (ContainerTypeInt)rhs);
+	return lhs;
 }
 
-inline void operator|=(ContainerType lhs, ContainerType rhs) { lhs = lhs | rhs; }
+inline constexpr ContainerType operator|(ContainerType lhs, ContainerType rhs)
+{
+	return (ContainerType)((ContainerTypeInt)lhs | (ContainerTypeInt)rhs);
+}
+
+inline ContainerType &operator|=(ContainerType &lhs, ContainerType rhs)
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
+
+inline constexpr ContainerType operator^(ContainerType lhs, ContainerType rhs)
+{
+	return (ContainerType)((ContainerTypeInt)lhs ^ (ContainerTypeInt)rhs);
+}
+
+inline ContainerType &operator^=(ContainerType &lhs, ContainerType rhs)
+{
+	lhs = lhs ^ rhs;
+	return lhs;
+}
+
+inline constexpr ContainerType operator~(ContainerType ct)
+{
+	return (ContainerType)(~(ContainerTypeInt)ct);
+}
+
+inline constexpr bool any(ContainerType ct)
+{
+	return ct != ContainerType::NONE;
+}
+
+inline constexpr bool none(ContainerType ct)
+{
+	return ct == ContainerType::NONE;
+}
 
 struct sexp_container
 {
@@ -59,22 +97,22 @@ struct sexp_container
 
 	inline bool is_list() const
 	{
-		return type & ContainerType::LIST;
+		return any(type & ContainerType::LIST);
 	}
 
 	inline bool is_map() const
 	{
-		return type & ContainerType::MAP;
+		return any(type & ContainerType::MAP);
 	}
 
 	inline bool is_eternal() const
 	{
-		return type & ContainerType::SAVE_TO_PLAYER_FILE;
+		return any(type & ContainerType::SAVE_TO_PLAYER_FILE);
 	}
 
 	inline bool is_persistent() const
 	{
-		return type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE);
+		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
 	bool empty() const;
@@ -84,14 +122,14 @@ struct sexp_container
 struct list_modifier {
 	enum class Modifier
 	{
+		INVALID = 0,
 		GET_FIRST,
 		GET_LAST,
 		REMOVE_FIRST,
 		REMOVE_LAST,
 		GET_RANDOM,
 		REMOVE_RANDOM,
-		AT_INDEX,
-		INVALID
+		AT_INDEX
 	};
 
 	const char *name;
