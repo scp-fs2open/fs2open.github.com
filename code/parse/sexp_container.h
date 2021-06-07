@@ -69,6 +69,16 @@ inline constexpr ContainerType operator~(ContainerType ct)
 	return (ContainerType)(~(ContainerTypeInt)ct);
 }
 
+inline constexpr bool any(ContainerType ct)
+{
+	return ct != ContainerType::NONE;
+}
+
+inline constexpr bool none(ContainerType ct)
+{
+	return ct == ContainerType::NONE;
+}
+
 struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
@@ -87,27 +97,22 @@ struct sexp_container
 
 	inline bool is_list() const
 	{
-		return type_includes(ContainerType::LIST);
+		return any(type & ContainerType::LIST);
 	}
 
 	inline bool is_map() const
 	{
-		return type_includes(ContainerType::MAP);
+		return any(type & ContainerType::MAP);
 	}
 
 	inline bool is_eternal() const
 	{
-		return type_includes(ContainerType::SAVE_TO_PLAYER_FILE);
+		return any(type & ContainerType::SAVE_TO_PLAYER_FILE);
 	}
 
 	inline bool is_persistent() const
 	{
-		return type_includes(ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE);
-	}
-
-	inline bool type_includes(ContainerType ct) const
-	{
-		return (type & ct) != ContainerType::NONE;
+		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
 	bool empty() const;
