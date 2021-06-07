@@ -739,7 +739,7 @@ void multi_msg_process_squadmsg_packet(unsigned char *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// determine who the order is from
-	source_index = find_player_id(source_id);
+	source_index = find_player_index(source_id);
 	if(source_index == -1){
 		nprintf(("Network","Received squadmsg order packet from unknown player!!\n"));
 		return;

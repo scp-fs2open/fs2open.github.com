@@ -2604,7 +2604,7 @@ void multi_ts_select_ship()
 	
 		if(Multi_ts_ship_info_text[0] != '\0'){
 			// split the string into multiple lines
-			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
+			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, MULTI_TS_SHIP_INFO_MAX_LINE_LEN,0);
 
 			// copy the split up lines into the text lines array
 			for (int idx = 0;idx<n_lines;idx++ ) {
@@ -2871,7 +2871,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	player_index = -1;
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// fill in the address information of where this came from		
-		player_index = find_player_id(hinfo->id);
+		player_index = find_player_index(hinfo->id);
 		Assert(player_index != -1);		
 	}
 
@@ -2937,7 +2937,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 			if(val){
 				// look the player up
 				GET_SHORT(player_id);
-				player_index = find_player_id(player_id);
+				player_index = find_player_index(player_id);
 			
 				// if we couldn't find him
 				if(player_index == -1){

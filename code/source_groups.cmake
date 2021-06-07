@@ -1021,6 +1021,8 @@ add_file_folder("Parse"
 	parse/parselo.h
 	parse/sexp.cpp
 	parse/sexp.h
+	parse/sexp_container.cpp
+	parse/sexp_container.h
 )
 
 add_file_folder("Parse\\\\SEXP"
@@ -1061,6 +1063,8 @@ add_file_folder("Particle\\\\Effects"
 	particle/effects/SingleParticleEffect.cpp
 	particle/effects/SingleParticleEffect.h
 	particle/effects/SphereShape.h
+	particle/effects/VolumeEffect.cpp
+	particle/effects/VolumeEffect.h
 )
 
 add_file_folder("Particle\\\\Util"
@@ -1528,6 +1532,8 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/join_string.h
+	utils/Random.cpp
+	utils/Random.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

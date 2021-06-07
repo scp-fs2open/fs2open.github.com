@@ -33,9 +33,10 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
-#include "weapon/shockwave.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
+#include "weapon/shockwave.h"
 
 #include <climits>
 
@@ -1233,8 +1234,8 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		return;
 	}
 
-	int vn1 = rand32() % nv;
-	int vn2 = rand32() % nv;
+	int vn1 = Random::next(nv);
+	int vn2 = Random::next(nv);
 
 	*v1 = *Interp_verts[vn1];
 	*v2 = *Interp_verts[vn2];
@@ -1279,7 +1280,7 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-		int seed_num = seed == -1 ? rand32() : seed;
+		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
 		int vn2 = static_rand(seed_num) % nv;
 
@@ -1366,7 +1367,7 @@ void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, fl
 		vm_vec_make(&best1, 0, 0, 999999);
 		vm_vec_make(&best2, 0, 0, 999999);
 		for (int i = 0; i < 15; i++) {
-			vec3d rand_point = tree->point_list[rand32() % nv];
+			vec3d rand_point = tree->point_list[Random::next(nv)];
 			if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best1.xyz.z - z_slice_pos))
 				best1 = rand_point;
 			else if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best2.xyz.z - z_slice_pos))

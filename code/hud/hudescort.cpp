@@ -324,7 +324,7 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 	setGaugeColor();
 
 	// netplayer index
-	np_index = find_player_id(Escort_ships[index].np_id);
+	np_index = find_player_index(Escort_ships[index].np_id);
 	if((np_index < 0) || (np_index >= MAX_PLAYERS) || (Net_players[np_index].m_player == NULL)){
 		return;
 	}
@@ -421,8 +421,8 @@ int escort_compare_func(const void *e1, const void *e2)
 	if(MULTI_DOGFIGHT){
 		int n1, n2;
 
-		n1 = find_player_id(escort1->np_id);
-		n2 = find_player_id(escort2->np_id);
+		n1 = find_player_index(escort1->np_id);
+		n2 = find_player_index(escort2->np_id);
 		if((n1 < 0) || (n2 < 0) || (Net_players[n1].m_player == NULL) || (Net_players[n2].m_player == NULL)){
 			ret = 0;
 		} else {
@@ -709,7 +709,7 @@ void hud_escort_cull_list()
 	// multiplayer dogfight
 	if(MULTI_DOGFIGHT){
 		for ( i = 0; i < Num_escort_ships; i++ ) {
-			np_index = find_player_id(Escort_ships[i].np_id);
+			np_index = find_player_index(Escort_ships[i].np_id);
 			
 			// maybe remove him if he left
 			if ( np_index < 0 ) {

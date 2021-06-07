@@ -463,7 +463,7 @@ void get_user_prop_value(char *buf, char *value)
 }
 
 // routine to parse out a vec3d from a user property field of an object
-bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
+bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, char* submodel_name, char* filename)
 {
 	float f1, f2, f3;
 	char closing_bracket = '\0';
@@ -471,6 +471,19 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 
 	pause_parse();
 	Mp = buf;
+	snprintf(Current_filename, sizeof(Current_filename), "submodel %s on %s", submodel_name, filename);
+
+	// Check if there's a missing line break before the next "$".
+	char end_separator = '\0';
+	char* end_pos = buf;
+	while (!iscntrl(*end_pos) && *end_pos != '$')
+		end_pos++;
+
+	// We found a $ before the next line break, remember it and replace it with a line break.
+	if (*end_pos == '$') {
+		end_separator = *end_pos;
+		*end_pos = '\n';
+	}
 
 	// Note that we can't simply return from within this block
 	// because we always need to call unpause_parse before we
@@ -512,6 +525,11 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 		value->xyz = { f1, f2, f3 };
 		success = true;
 	} while (false);
+
+	if (end_separator != '\0') {
+		// Revert the character replacement we did at the start
+		*end_pos = end_separator;
+	}
 
 	unpause_parse();
 	return success;
@@ -1431,7 +1449,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
 					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
-						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
+						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true, pm->submodel[n].name, pm->filename)) {
 							vm_vec_normalize(&pm->submodel[n].movement_axis);
 						} else {
 							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
@@ -1643,11 +1661,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				if ( (p = strstr(props, "$uvec")) != nullptr ) {
 					matrix submodel_orient;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false)) {
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, pm->submodel[n].name, pm->filename)) {
 
 						if ((p = strstr(props, "$fvec")) != nullptr) {
 
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false)) {
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, pm->submodel[n].name, pm->filename)) {
 
 								vm_vec_normalize(&submodel_orient.vec.uvec);
 								vm_vec_normalize(&submodel_orient.vec.fvec);
@@ -3649,7 +3667,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
 	vm_vec_sub(&dir, &planar_dst, &world_pos);
 	vm_vec_normalize(&dir);
-	smi->cur_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
 	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
@@ -3727,10 +3745,9 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model_subsystem *turret, vec3d *dst, bool reset)
+int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_subsys *ss, vec3d *dst, bool reset)
 {
-	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
+	model_subsystem *turret = ss->system_info;
 
 	// This should not happen
 	if ( turret->turret_gun_sobj < 0 || turret->subobj_num == turret->turret_gun_sobj ) {
@@ -3771,7 +3788,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_base_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 
 		//------------
 		// Pretend the base is pointing directly at the target
@@ -3791,7 +3808,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, model
 		model_instance_find_world_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
-		desired_gun_angle = vm_vec_delta_ang_norm_safe(&rotated_vec, &dir, &world_axis);
+		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
 		// for ventral turrets without custom matrixes
 		if (vm_vec_dot(&gun_sm->frame_of_reference.vec.uvec, &turret->turret_norm) < 0.0f) {
 			desired_gun_angle = PI + desired_gun_angle;
