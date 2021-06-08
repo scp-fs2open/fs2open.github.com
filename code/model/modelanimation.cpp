@@ -13,6 +13,9 @@ namespace animation {
 			s_runningAnimations.emplace(ship, shared_from_this());
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
 			for (const auto& animation : m_submodelAnimation) {
+				//We need to make sure that we have the submodel index cached before we check if other animations have the same index
+				animation->findSubmodel(ship);
+
 				auto animIterRange = s_runningAnimations.equal_range(ship);
 				for (auto animIter = animIterRange.first; animIter != animIterRange.second; animIter++) {
 					//Don't stop this animation
@@ -21,9 +24,6 @@ namespace animation {
 
 					const auto& otherAnims = animIter->second->m_submodelAnimation;
 					bool needStop = false;
-
-					//We need to make sure that we have the submodel index cached before we check if other animations have the same index
-					animation->findSubmodel(ship);
 
 					for (const auto& otherAnim : otherAnims) {
 						if (otherAnim->m_submodel == animation->m_submodel) {
@@ -171,14 +171,18 @@ namespace animation {
 
 	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelName(submodelName), m_mainSegment(std::move(mainSegment)) { }
 
+	ModelAnimationSubmodel::ModelAnimationSubmodel(int* submodel, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelPointer(submodel), m_mainSegment(std::move(mainSegment)) { }
+
 	void ModelAnimationSubmodel::play(float frametime, ship* ship) {
+		auto dataIt = m_initialData.find(ship);
+		auto lastDataIt = m_lastFrame.find(ship);
+
+		//Specified submodel not found. Don't play
+		if (dataIt == m_initialData.end() || lastDataIt == m_lastFrame.end())
+			return;
+
 		if (frametime > m_mainSegment->getDuration())
 			frametime = m_mainSegment->getDuration();
-
-		auto dataIt = m_initialData.find(ship);
-		Assertion(dataIt != m_initialData.end(), "Tried to play animation of ship that had no data for a running animation");
-		auto lastDataIt = m_lastFrame.find(ship);
-		Assertion(lastDataIt != m_lastFrame.end(), "Tried to play animation of ship that had no data for a running animation");
 
 		ModelAnimationData<> currentFrame = dataIt->second;
 		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(currentFrame, lastDataIt->second, frametime);
@@ -193,12 +197,16 @@ namespace animation {
 
 	void ModelAnimationSubmodel::reset(ship* ship) {
 		auto dataIt = m_initialData.find(ship);
-		Assertion(dataIt != m_initialData.end(), "Tried to reset animation of ship that had no data for a running animation");
+		if (dataIt == m_initialData.end())
+			return;
+
 		copyToSubsystem(dataIt->second, ship);
 	}
 
 	void ModelAnimationSubmodel::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
-		submodel_instance* submodel = findSubmodel(ship);
+		submodel_instance* submodel = findSubmodel(ship).first;
+		if (!submodel)
+			return;
 
 		submodel->canonical_orient = data.orientation;
 		//TODO: Once translation is a thing
@@ -206,36 +214,44 @@ namespace animation {
 	}
 
 	void ModelAnimationSubmodel::saveCurrentAsBase(ship* ship) {
-		submodel_instance* submodel = findSubmodel(ship);
+		auto submodel = findSubmodel(ship);
+		if (!submodel.first || !submodel.second)
+			return;
 
-		m_lastFrame[ship] = m_initialData[ship];
 		ModelAnimationData<>& data = m_initialData[ship];
-		data.orientation = submodel->canonical_orient;
+		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
 		
-		m_mainSegment->recalculate(submodel, data);
+		m_lastFrame[ship] = data;
+		m_mainSegment->recalculate(submodel.first, submodel.second, data);
 	}
 
-	submodel_instance* ModelAnimationSubmodel::findSubmodel(ship* ship) {
+	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(ship* ship) {
 		int submodelNumber = -1;
 
-		if (m_submodel.has())
+		polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
+
+		if (m_submodelPointer.has())
+			submodelNumber = *m_submodelPointer;
+		else if (m_submodel.has())
 			submodelNumber = m_submodel;
 		else {
-			polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
 			for (int i = 0; i < pm->n_models; i++) {
 				if (!subsystem_stricmp(pm->submodel[i].name, m_submodelName.c_str())) {
-					m_submodel = i;
 					submodelNumber = i;
 					break;
 				}
 			}
+
+			m_submodel = submodelNumber;
 		}
 
-		Assertion(submodelNumber != -1, "Submodel for animation not found in ship!");
+		if (submodelNumber < 0)
+			return { nullptr, nullptr };
+
 		polymodel_instance* pmi = model_get_instance(ship->model_instance_num);
-		return &pmi->submodel[submodelNumber];
+		return { &pmi->submodel[submodelNumber], &pm->submodel[submodelNumber] };
 	}
 
 

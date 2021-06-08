@@ -88,7 +88,7 @@ namespace animation {
 			delta.orientation.if_filled([&data](const matrix& other) -> void {
 				data.orientation.if_filled_or_set([&data, &other](const matrix& current) -> void {
 					matrix tmp;
-					vm_matrix_x_matrix(&tmp, &current, &other);
+					vm_matrix_x_matrix(&tmp, &other, &current);
 					data.orientation = tmp;
 				}, &other);
 			});
@@ -114,8 +114,8 @@ namespace animation {
 
 		float getDuration() const;
 
-		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation delta up to that point.
-		virtual void recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) = 0;
+		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation data up to that point.
+		virtual void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
@@ -126,6 +126,7 @@ namespace animation {
 	class ModelAnimationSubmodel {
 		SCP_string m_submodelName;
 		optional<int> m_submodel;
+		optional<int*> m_submodelPointer;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
 		std::map<ship*, ModelAnimationData<>> m_initialData;
 		std::map <ship*, ModelAnimationData<>> m_lastFrame;
@@ -133,13 +134,14 @@ namespace animation {
 		friend class ModelAnimation;
 	public:
 		ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(int* submodel, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		void play(float frametime, ship* ship);
 		void reset(ship* ship);
 
 	private:
 		void saveCurrentAsBase(ship* ship);
 		void copyToSubsystem(const ModelAnimationData<>& data, ship* ship);
-		submodel_instance* findSubmodel(ship* ship);
+		std::pair<submodel_instance*, bsp_info*> findSubmodel(ship* ship);
 	};
 
 

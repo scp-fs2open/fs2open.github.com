@@ -2,10 +2,10 @@
 
 namespace animation {
 
-	void ModelAnimationSegmentSerial::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
+	void ModelAnimationSegmentSerial::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) {
 		ModelAnimationData<true> data = base;
 		for (size_t i = 0; i < m_segments.size(); i++) {
-			m_segments[i]->recalculate(ship_info, data);
+			m_segments[i]->recalculate(submodel_instance, submodel, data);
 			data.applyDelta(m_segments[i]->calculateAnimation(data, base, m_segments[i]->getDuration()));
 		}
 	}
@@ -47,9 +47,9 @@ namespace animation {
 	}
 
 
-	void ModelAnimationSegmentParallel::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
+	void ModelAnimationSegmentParallel::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) {
 		for (size_t i = 0; i < m_segments.size(); i++) {
-			m_segments[i]->recalculate(ship_info, base);
+			m_segments[i]->recalculate(submodel_instance, submodel, base);
 		}
 	}
 
@@ -87,52 +87,60 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(optional<float> time, optional<vec3d> angle, optional<vec3d> velocity, optional<vec3d> acceleration, bool isAngleRelative) :
-		m_time(time), m_angle(angle), m_velocity(velocity), m_acceleration(acceleration), m_isAngleRelative(isAngleRelative) { }
+	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative) :
+		m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
 
-	void ModelAnimationSegmentRotation::recalculate(const submodel_instance* ship_info, const ModelAnimationData<true>& base) {
-		m_vel = m_angle;
-		vm_vec_scale2(&m_vel, 1.0f, m_time);
-
-		/*optional<vec3d> relativeAngleActual;
-		m_angle.if_filled([&relativeAngleActual, ship_info, &base, this](const vec3d& angle) -> void {
-			if (m_isAngleRelative) {
-				relativeAngleActual = angle;
-			}
-			else {
-				float theta, actualAnimationTheta;
-				vec3d shipAngle, actualAnimationAngle;
-				vec3d target = angle;
-				matrix animationRotation = base.orientation.has() ? base.orientation : matrix(IDENTITY_MATRIX);
-				vm_matrix_to_rot_axis_and_angle(&Objects[ship_info->parent_objnum].orient, &theta, &shipAngle);
-				vm_matrix_to_rot_axis_and_angle(&animationRotation, &actualAnimationTheta, &actualAnimationAngle);
-				vm_vec_scale(&shipAngle, theta);
-				vm_vec_scale_add2(&shipAngle, &actualAnimationAngle, actualAnimationTheta);
-				vm_vec_sub2(&target, &shipAngle);
-
-				relativeAngleActual = target;
-			}
-		});
-
-		if (m_time.has()) {
-			m_duration = m_time;
+	void ModelAnimationSegmentSetPHB::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base) {
+		if (m_isAngleRelative) {
+			vm_angles_2_matrix(&m_rot, &m_targetAngle);
 		}
 		else {
-			if (m_velocity.has() && relativeAngleActual.has()) {
-
-			}
-			else {
-				Error("Rotation Animation Segment without defined time must have an angle and a velocity defined");
-			}
-		}*/
-		//TODO: proper calculation of values with all alternatives
+			matrix unrotate, target;
+			vm_copy_transpose(&unrotate, &base.orientation);
+			vm_angles_2_matrix(&target, &m_targetAngle);
+			vm_matrix_x_matrix(&m_rot, &target, &unrotate);
+		}
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentRotation::calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float time) const {
+	ModelAnimationData<true> ModelAnimationSegmentSetPHB::calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const {
 		ModelAnimationData<true> data;
-		vec3d pos = m_vel;
-		vm_vec_scale(&pos, time);
-		data.position = pos;
+		data.orientation = m_rot;
+		return data;
+	}
+
+
+	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(float angle) :
+		m_angle(angle) { }
+
+	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base) {
+		angles angs = vmd_zero_angles;
+
+		switch (submodel->movement_axis_id)
+		{
+			case MOVEMENT_AXIS_X:
+			angs.p = m_angle;
+			vm_angles_2_matrix(&m_rot, &angs);
+			break;
+
+		case MOVEMENT_AXIS_Y:
+			angs.h = m_angle;
+			vm_angles_2_matrix(&m_rot, &angs);
+			break;
+
+		case MOVEMENT_AXIS_Z:
+			angs.b = m_angle;
+			vm_angles_2_matrix(&m_rot, &angs);
+			break;
+
+		default:
+			vm_quaternion_rotate(&m_rot, m_angle, &submodel->movement_axis);
+			break;
+		}
+	}
+
+	ModelAnimationData<true> ModelAnimationSegmentSetAngle::calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const {
+		ModelAnimationData<true> data;
+		data.orientation = m_rot;
 		return data;
 	}
 }
