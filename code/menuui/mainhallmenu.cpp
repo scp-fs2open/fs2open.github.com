@@ -736,6 +736,7 @@ void main_hall_do(float frametime)
 								Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 						}
 
+						// TODO: generic_anim_skip_to(cur_frame, anim_time);
 						Main_hall_misc_anim.at(idx).current_frame = cur_frame;
 						Main_hall_misc_anim.at(idx).anim_time = anim_time;
 
@@ -764,6 +765,7 @@ void main_hall_do(float frametime)
 								Main_hall_door_anim.at(idx).direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 							}
 
+							// TODO: generic_anim_skip_to(cur_frame, anim_time);
 							Main_hall_door_anim.at(idx).current_frame = cur_frame;
 							Main_hall_door_anim.at(idx).anim_time = anim_time;
 
@@ -1251,8 +1253,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay.at(idx).at(0))) {
 					Main_hall->misc_anim_paused.at(idx) = false;
-					Main_hall_misc_anim.at(idx).current_frame = 0;
-					Main_hall_misc_anim.at(idx).anim_time = 0.0;
+					generic_anim_reset(Main_hall_misc_anim.at(idx));
 
 					// kill the timestamp
 					Main_hall->misc_anim_delay.at(idx).at(0) = -1;
