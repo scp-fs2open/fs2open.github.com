@@ -53,7 +53,6 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
-#include "model/modelanimation.h"
 #include "model/modelanimation_segments.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
@@ -5062,6 +5061,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 							anim->addSubsystemAnimation(std::move(subsys));
 						}
 
+						sip->animations.emplace(anim, "", animation::ModelAnimationTriggerType::Initial);
+
 						applyNewTrigger = false;
 					}else{
 
@@ -7730,6 +7731,12 @@ void ship_delete( object * obj )
 	// on ship back to the free list for other ships to use.
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
+
+	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
+		for (const auto& anim : animationList.second) {
+			anim.second->stop(shipp, true);
+		}
+	}
 
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);

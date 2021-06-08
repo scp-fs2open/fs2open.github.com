@@ -5,13 +5,15 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "ship/ship.h"
 
 #include <tuple>
 #include <functional>
 #include <type_traits>
 #include <memory>
 #include <map>
+
+//Only needed for the trigger type, will eventually disappear
+#include "model/modelanim.h"
 
 //TODO: Move, make pretty, whatever
 template<typename T>
@@ -60,6 +62,10 @@ public:
 		return data.t == rhs.data.t;
 	}
 };
+
+class ship;
+struct submodel_instance;
+class bsp_info;
 
 namespace animation {
 
@@ -154,15 +160,29 @@ namespace animation {
 		ModelAnimationState m_state = ModelAnimationState::UNTRIGGERED;
 		float m_time;
 		ModelAnimationState play(float frametime, ship* ship);
+
 		static void cleanRunning();
 	public:
 		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
 
 		void start(ship* ship, bool reverse);
-		void stop(ship* ship);
+		void stop(ship* ship, bool cleanup = false);
 
-		static void stepAnimations();
+		static void stepAnimations(float frametime);
 		static void clearAnimations();
 		//static std::shared_ptr<ModelAnimation> parseAnimationTable();
+	};
+
+
+	//Use the old modelanim.cpp TriggerType here. Eventually migrate to here.
+	using ModelAnimationTriggerType = ::AnimationTriggerType;
+
+	struct ModelAnimationSet {
+		static int SUBTYPE_DEFAULT;
+
+		std::map <std::pair<ModelAnimationTriggerType, int>, std::multimap <SCP_string, std::shared_ptr<ModelAnimation>>> animationSet;
+
+		//Helper function to shorten animation emplaces
+		void emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
 	};
 }

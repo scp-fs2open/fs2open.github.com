@@ -1,4 +1,5 @@
 #include "model/modelanimation.h"
+#include "ship/ship.h"
 
 extern float flFrametime;
 
@@ -122,25 +123,28 @@ namespace animation {
 		cleanRunning();
 	}
 
-	void ModelAnimation::stop(ship* ship) {
+	void ModelAnimation::stop(ship* ship, bool cleanup) {
 		for (const auto& animation : m_submodelAnimation) {
 			animation->reset(ship);
 		}
 
 		m_time = 0;
 		m_state = ModelAnimationState::UNTRIGGERED;
+
+		if (cleanup)
+			cleanRunning();
 	}
 
 	void ModelAnimation::addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation) {
 		m_submodelAnimation.push_back(std::move(animation));
 	}
 
-	void ModelAnimation::stepAnimations() {
+	void ModelAnimation::stepAnimations(float frametime) {
 		for (const auto& anim : s_runningAnimations) {
 			switch (anim.second->m_state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
-				anim.second->play(flFrametime, anim.first);
+				anim.second->play(frametime, anim.first);
 				break;
 			case ModelAnimationState::COMPLETED:
 				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
@@ -228,6 +232,10 @@ namespace animation {
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(ship* ship) {
+		//Ship was deleted
+		if(ship->objnum < 0)
+			return { nullptr, nullptr };
+
 		int submodelNumber = -1;
 
 		polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
@@ -257,5 +265,12 @@ namespace animation {
 
 	float ModelAnimationSegment::getDuration() const {
 		return m_duration;
+	}
+
+
+	int ModelAnimationSet::SUBTYPE_DEFAULT = ANIMATION_SUBTYPE_ALL;
+
+	void ModelAnimationSet::emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type, int subtype) {
+		animationSet[{type, subtype}].emplace(name, animation);
 	}
 }
