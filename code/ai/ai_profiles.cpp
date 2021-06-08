@@ -580,6 +580,9 @@ void parse_ai_profiles_tbl(const char *filename)
 						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
 					}
 				}
+
+				set_flag(profile, "$all ships take hull damage in collisions:", AI::Profile_Flags::All_ships_take_hull_damage_from_collisions);
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{
