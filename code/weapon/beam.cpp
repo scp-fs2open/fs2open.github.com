@@ -353,9 +353,6 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
-	if (!beam_has_valid_params(fire_info))
-		return -1;
-
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
 		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
@@ -363,6 +360,41 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
+
+	// copied from weapon_create()
+	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr)) {
+		// using substitution
+
+		// get to the instance of the gun
+		Assertion(fire_info->shooter->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", fire_info->shooter->type);
+		Assertion((fire_info->shooter->instance < MAX_SHIPS) && (fire_info->shooter->instance >= 0),
+			"Ship index is %d, which is out of range [%d,%d)", fire_info->shooter->instance, 0, MAX_SHIPS);
+		ship* parent_shipp = &(Ships[fire_info->shooter->instance]);
+		Assert(parent_shipp != nullptr);
+
+		size_t* position = get_pointer_to_weapon_fire_pattern_index(fire_info->beam_info_index, fire_info->shooter->instance, fire_info->turret);
+		Assertion(position != nullptr, "'%s' is trying to fire a weapon that is not selected", Ships[fire_info->shooter->instance].ship_name);
+
+		size_t curr_pos = *position;
+		if ((parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) && curr_pos > 0) {
+			curr_pos--;
+		}
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
+
+		if (wip->weapon_substitution_pattern[curr_pos] == -1) {
+			// weapon doesn't want any sub
+			return -1;
+		}
+		else if (wip->weapon_substitution_pattern[curr_pos] != fire_info->beam_info_index) {
+			fire_info->beam_info_index = wip->weapon_substitution_pattern[curr_pos];
+			// weapon wants to sub with weapon other than me
+			return beam_fire(fire_info);
+		}
+	}
+
+	if (!beam_has_valid_params(fire_info))
+		return -1;
 
 	if (fire_info->shooter != NULL) {
 		firing_ship = &Ships[fire_info->shooter->instance];
@@ -483,7 +515,9 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
     flagset<Object::Object_Flags> default_flags;
-    default_flags.set(Object::Object_Flags::Collides);
+	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
+		default_flags.set(Object::Object_Flags::Collides);
+
 	// create the associated object
 	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 	if(objnum < 0){
@@ -613,8 +647,12 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// type c is a very special weapon type - binfo has no meaning
 
+	flagset<Object::Object_Flags> initial_flags;
+	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
+		initial_flags.set(Object::Object_Flags::Collides);
+
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, {Object::Object_Flags::Collides});
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, initial_flags);
 
 	if(objnum < 0){
 		beam_delete(new_item);
@@ -2037,12 +2075,11 @@ int beam_start_firing(beam *b)
 	// start the beam firing sound now, if we haven't already
 	if ((!b->beam_sound_loop.isValid()) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())) {
 		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
-
-		// "shot" sound
-		if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
-			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
-		// niffwan - if launch_snd < 0, don't play any sound
 	}	
+
+	// "shot" sound
+	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 
 	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
 	Script_system.RunCondition(CHA_BEAMFIRE, &Objects[b->objnum], b->weapon_info_index);
@@ -2399,8 +2436,9 @@ void beam_aim(beam *b)
 		UNREACHABLE("Impossible beam type (%d); get a coder!\n", b->type);
 	}
 
-	// recalculate object pairs
-	OBJ_RECALC_PAIRS((&Objects[b->objnum]));
+	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide])
+		// recalculate object pairs
+		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
 }
 
 // given a model #, and an object, stuff 2 good world coord points

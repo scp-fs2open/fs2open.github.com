@@ -234,13 +234,11 @@ void multi_common_split_text()
 	int	n_chars[MAX_BRIEF_LINES];
 	const char	*p_str[MAX_BRIEF_LINES];
 
-	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_META_CHAR);
+	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_MAX_LINE_LENGTH, MULTI_COMMON_TEXT_META_CHAR);
 	Assert(n_lines != -1);
 
 	for ( i = 0; i < n_lines; i++ ) {
-		//The E -- This check is unnecessary, and will break when fonts that aren't bank gothic are used
-		//split_str already ensured that everything will fit in the text window for us already.
-		//Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
+		Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
 		strncpy(Multi_common_text[i], p_str[i], n_chars[i]);
 		Multi_common_text[i][n_chars[i]] = 0;
 		drop_leading_white_space(Multi_common_text[i]);		
@@ -2434,10 +2432,6 @@ void multi_start_game_init()
 
 		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
 	}
-
-	if ( multi_fs_tracker_inited() ) {
-		multi_fs_tracker_login_freespace();
-	}
 }
 
 void multi_start_game_do()
@@ -3782,6 +3776,11 @@ void multi_create_game_do()
 
 		// don't bother setting netgame state if ont the server
 		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+			// tell PXO about this game
+			if ( multi_fs_tracker_inited() ) {
+				multi_fs_tracker_login_freespace();
+			}
+
 			Netgame.game_state = NETGAME_STATE_FORMING;
 			send_netgame_update_packet();
 		}	
@@ -3922,7 +3921,7 @@ void multi_create_game_do()
 	if(Multi_create_should_show_popup){		
 		// get the player index and address of the player item the mouse is currently over
 		if(Multi_create_plist_select_flag){		
-			player_index = find_player_id(Multi_create_plist_select_id);
+			player_index = find_player_index(Multi_create_plist_select_id);
 			if(player_index != -1){			
 				multi_pinfo_popup(&Net_players[player_index]);
 			}
@@ -4090,7 +4089,7 @@ void multi_create_button_pressed(int n)
 	case MC_KICK:
 		// lookup the player at the specified index		
 		if(Multi_create_plist_select_flag){		 
-			idx = find_player_id(Multi_create_plist_select_id);
+			idx = find_player_index(Multi_create_plist_select_id);
 			// kick him - but don't ban him
 			if(idx != -1){			
 				multi_kick_player(idx,0);				
@@ -4230,7 +4229,7 @@ void multi_create_plist_process()
 	
 	// if we had a selected item but that player has left, select myself instead
 	if(Multi_create_plist_select_flag){
-		player_index = find_player_id(Multi_create_plist_select_id);
+		player_index = find_player_index(Multi_create_plist_select_id);
 		if(player_index == -1){
 			Multi_create_plist_select_id = Net_player->player_id;
 		}
@@ -4245,7 +4244,7 @@ void multi_create_plist_process()
 
 		// get the player index and address of the player item the mouse is currently over
 		player_id = multi_create_get_mouse_id();
-		player_index = find_player_id(player_id);
+		player_index = find_player_index(player_id);
 		if(player_index != -1){
 			Multi_create_plist_select_flag = 1;
 			Multi_create_plist_select_id = player_id;			
@@ -5111,7 +5110,7 @@ void multi_create_set_selected_team(int team)
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 	// otherwise attempt to set the team for this guy	
-	player_index = find_player_id(Multi_create_plist_select_id);
+	player_index = find_player_index(Multi_create_plist_select_id);
 	if(player_index != -1){	
 		multi_team_set_team(&Net_players[player_index],team);		
 	}
@@ -6888,7 +6887,7 @@ void multi_game_client_setup_do_frame()
 
 	// if we're supposed to be displaying a pilot info popup
 	if(Multi_jw_should_show_popup){
-		player_index = find_player_id(Multi_jw_plist_select_id);
+		player_index = find_player_index(Multi_jw_plist_select_id);
 		if(player_index != -1){			
 			multi_pinfo_popup(&Net_players[player_index]);
 		}		
@@ -7005,7 +7004,7 @@ void multi_jw_plist_process()
 	
 	// if we had a selected item but that player has left, select myself instead
 	if(Multi_jw_plist_select_flag){
-		player_index = find_player_id(Multi_jw_plist_select_id);
+		player_index = find_player_index(Multi_jw_plist_select_id);
 		if(player_index == -1){
 			Multi_jw_plist_select_id = Net_player->player_id;						
 		}
@@ -7019,7 +7018,7 @@ void multi_jw_plist_process()
 		short player_id;
 	
 		player_id = multi_jw_get_mouse_id();
-		player_index = find_player_id(player_id);
+		player_index = find_player_index(player_id);
 		if(player_index != -1){
 			Multi_jw_plist_select_id = player_id;
 			Multi_jw_plist_select_flag = 1;

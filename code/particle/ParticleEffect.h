@@ -19,6 +19,7 @@ enum class EffectType: int64_t {
 	Composite,
 	Cone,
 	Sphere,
+	Volume,
 
 	MAX,
 };

@@ -66,6 +66,9 @@ extern int Num_weapon_subtypes;
 // default amount of time to wait after firing before a remote detonated missile can be detonated
 #define DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT  0.5f
 
+// default value weapon max range is set to if there's not a tabled range value.
+#define WEAPON_DEFAULT_TABLED_MAX_RANGE 999999999.9f
+
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
 
 enum class WeaponState : uint32_t
@@ -261,6 +264,11 @@ enum class LockRestrictionType
 
 typedef std::pair<LockRestrictionType, int> lock_restriction;
 
+enum class HomingAcquisitionType {
+	CLOSEST,
+	RANDOM,
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -373,6 +381,8 @@ struct weapon_info
 	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
 	bool launch_reset_locks;				// Lock indicators reset after firing
 
+	HomingAcquisitionType auto_target_method;
+
 	//	Specific to ASPECT homing missiles.
 	int acquire_method;
 	float	min_lock_time;						// minimum time (in seconds) to achieve lock
@@ -393,10 +403,11 @@ struct weapon_info
 	gamesnd_id	impact_snd;
 	gamesnd_id disarmed_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
+	gamesnd_id	ambient_snd;
 	
-	gamesnd_id hud_tracking_snd; // Sound played when this weapon tracks a target
-	gamesnd_id hud_locked_snd; // Sound played when this weapon locked onto a target
-	gamesnd_id hud_in_flight_snd; // Sound played while the weapon is in flight
+	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
+	gamesnd_id hud_locked_snd; // Sound played when the player is locked onto a target with this weapon
+	gamesnd_id hud_in_flight_snd; // Sound played while the player has this weapon in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
 
 	// Specific to weapons with TRAILS:
@@ -644,6 +655,10 @@ int weapon_create_group_id();
 // help on weapon groups.
 int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0, float fof_cooldown = 0.0f, ship_subsys * src_turret = NULL);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
+
+// gets the substitution pattern pointer for a given weapon
+// src_turret may be null
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
 
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);

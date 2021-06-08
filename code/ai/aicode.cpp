@@ -1078,7 +1078,8 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 	float		old_dot, new_dot;
 	object	*old_weapon_objp = NULL;
 
-	if ((attacked_objnum == -1) || (weapon_objnum == -1)) {
+	// any object number less than 0 is invalid
+	if ((attacked_objnum < 0) || (weapon_objnum < 0)) {
 		return;
 	}
 
@@ -2349,8 +2350,9 @@ void ai_set_goal_abort_support_call(object *objp, ai_info *aip)
 		object	*repair_obj;
 
 		if (aip->support_ship_objnum == -1) {
-			repair_obj = NULL;
+			repair_obj = nullptr;
 		} else {
+			Assertion(aip->support_ship_objnum >= 0, "%s has a nonsense support_ship_objnum of %d, please report!", Ships[aip->shipnum].ship_name, aip->support_ship_objnum);
 			repair_obj = &Objects[aip->support_ship_objnum];
 		}
 		ai_do_objects_repairing_stuff( objp, repair_obj, REPAIR_INFO_ABORT );
@@ -2377,7 +2379,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 	ai_info* aip;
 
 	Assert(attacker != nullptr);
-	Assert(attacker->instance != -1);
+	Assert(attacker->instance >= 0);
 	Assert(Ships[attacker->instance].ai_index != -1);
 	//	Bogus!  Who tried to get me to attack myself!
 	if (attacker == attacked) {
@@ -6607,6 +6609,8 @@ float ai_get_weapon_dist(ship_weapon *swp)
 		return 1000.0f;
 	}
 
+	Assertion(weapon_num >= 0, "A ship's weapon has a nonsense index of %d, but the ship's name is not accessible from this function.  Please report!", weapon_num);
+
 	return MIN((Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 }
 
@@ -6624,6 +6628,8 @@ float ai_get_weapon_speed(ship_weapon *swp)
 		return 100.0f;
 	}
 
+	Assertion(weapon_num >= 0, "A ship's weapon has a nonsense index of %d, but the ship's name is not accessible from this function.  Please report!", weapon_num);
+
 	return Weapon_info[weapon_num].max_speed;
 }
 
@@ -6633,13 +6639,15 @@ weapon_info* ai_get_weapon(ship_weapon *swp)
 
 	bank_num = swp->current_primary_bank;
 	if (bank_num < 0)
-		return NULL;
+		return nullptr;
 
 	weapon_num = swp->primary_bank_weapons[bank_num];
 
 	if (weapon_num == -1) {
-		return NULL;
+		return nullptr;
 	}
+
+	Assertion(weapon_num >= 0, "A ship's weapon has a nonsense index of %d, but the ship's name is not accessible from this function.  Please report!", weapon_num);
 
 	return &Weapon_info[weapon_num];
 }
@@ -6894,6 +6902,8 @@ float ai_endangered_by_weapon(ai_info *aip)
 	if (aip->danger_weapon_objnum == -1) {
 		return -1.0f;
 	}
+
+	Assertion(aip->danger_weapon_objnum >= 0, "%s has a nonsense danger_weapon_objnum of %d. Please report!", Ships[aip->shipnum].ship_name, aip->danger_weapon_objnum);\
 
 	weapon_objp = &Objects[aip->danger_weapon_objnum];
 
@@ -7544,7 +7554,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	vec3d	new_pos;
 
 	start_bank = Ships[aip->shipnum].weapons.current_primary_bank;
-	if (po->n_guns && start_bank != -1 ) {
+	if (po->n_guns && start_bank != -1 && !(The_mission.ai_profile->flags[AI::Profile_Flags::Ai_aims_from_ship_center])) {
 		rel_pos = &po->gun_banks[start_bank].pnt[0];
 	} else
 		rel_pos = NULL;
@@ -7677,6 +7687,8 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 	// in terms of goals).  So, bail if we don't have a valid target.
 	if ( aip->target_objnum == -1 )
 		return 0;
+
+	Assertion(aip->target_objnum >= 0, "The target_objnum for %s has become a nonsense value of %d. Please report!",attacker_shipp->ship_name ,aip->target_objnum);
 
 	attacked_objp = &Objects[aip->target_objnum];
 	shipp = &Ships[attacked_objp->instance];		//  need to get our target's ship pointer!!!
@@ -7933,6 +7945,8 @@ void ai_chase_fly_away(object *objp, ai_info *aip)
 	} else {
 		vec3d	v2e;
 		float		dot;
+		
+		Assertion(aip->target_objnum >= 0, "This ship's target objnum is nonsense. It is %d instead of a positive number or -1.", aip->target_objnum);
 
 		vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, &objp->pos);
 
@@ -12295,6 +12309,8 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 		if (support_objnum == -1)
 			return;
 
+		Assertion(support_objnum >= 0, "The support ship objnum is nonsense. It is %d instead of a positive number or -1.", support_objnum);
+
 		//	Curious -- object numbers match, but signatures do not.
 		//	Must mean original repair ship died and was replaced by current ship.
 		Assert(Objects[support_objnum].signature == aip->support_ship_signature);
@@ -12894,7 +12910,9 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pnode		*pnp;
 	vec3d		*next_point;
 
+	Assertion(pl_objp->instance >= 0, "Arriving ship does not have a valid ship number.  Has %d instead. Please report!", pl_objp->instance);
 	ship *shipp = &Ships[pl_objp->instance];
+	Assertion(shipp->ai_index >= 0, "Arriving ship does not have a valid ai index.  Has %d instead. Please report!", shipp->ai_index);
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	if ( parent_objnum == -1 ) {
@@ -12902,6 +12920,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 		return -1;
 	}
 
+	Assertion(parent_objnum >= 0, "Arriving ship does not have a parent object number.  Has %d instead. Please report!", parent_objnum);
 	object *parent_objp = &Objects[parent_objnum];
 	ship *parent_shipp = &Ships[parent_objp->instance];
 
@@ -15278,6 +15297,11 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		if ( hit_objp->parent_sig != Objects[hit_objp->parent].signature ){
 			return;
 		}
+
+		weapon_info* wip = hit_objp->type == OBJ_WEAPON ? &Weapon_info[Weapons[hit_objp->instance].weapon_info_index] :
+			&Weapon_info[Beams[hit_objp->instance].weapon_info_index];
+		if (wip->wi_flags[Weapon::Info_Flags::Heals])
+			return;
 		
 		hitter_objnum = hit_objp->parent;
 		Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));

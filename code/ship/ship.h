@@ -1565,7 +1565,6 @@ extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
 //	It is specifically used for targeting.
-//	It only returns a subsystem position if it has shields.
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);

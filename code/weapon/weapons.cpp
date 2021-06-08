@@ -34,6 +34,7 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/objectdock.h"
+#include "object/objectsnd.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -183,6 +184,8 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no impact spew",					Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
+	{ "heals",							Weapon::Info_Flags::Heals,						        true, false },
+	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -688,11 +691,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
     if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
     {
         Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
-    }
-
-    if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
-    {
-        Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
     }
 
     if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
@@ -1607,6 +1605,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Homing Auto-Target Method:"))
+	{
+		char	temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		if (!stricmp(temp, NOX("CLOSEST")))
+			wip->auto_target_method = HomingAcquisitionType::CLOSEST;
+		else if (!stricmp(temp, NOX("RANDOM")))
+			wip->auto_target_method = HomingAcquisitionType::RANDOM;
+		else
+			Warning(LOCATION, "Homing weapon %s has an unrecognized Homing Auto-Target Method %s", wip->name, temp);
+	}
+
 	// swarm missiles
 	int s_count;
 
@@ -1687,6 +1697,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
 
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
+
+	parse_game_sound("$AmbientSnd:", &wip->ambient_snd);
 
 	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd);
 	
@@ -3889,6 +3901,16 @@ void weapon_generate_indexes_for_substitution() {
 								  -1);
 						break;
 					}
+
+					if (Weapon_info[weapon_index].wi_flags[Weapon::Info_Flags::Beam] != wip->wi_flags[Weapon::Info_Flags::Beam]) {
+						// Check to make sure beams and non-beams aren't being mixed
+						Warning(LOCATION, "Beams and non-beams cannot be mixed in substitution for weapon '%s'.", wip->name);
+						wip->num_substitution_patterns = 0;
+						std::fill(std::begin(wip->weapon_substitution_pattern),
+							std::end(wip->weapon_substitution_pattern),
+							-1);
+						break;
+					}
 				}
 
 				wip->weapon_substitution_pattern[j] = weapon_index;
@@ -4256,32 +4278,25 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
  */
 void find_homing_object(object *weapon_objp, int num)
 {
-	object      *objp, *old_homing_objp;
-	weapon_info *wip;
-	weapon      *wp;
-    ship        *sp;
-    ship_info   *sip;
-	float       best_dist;
-    int         homing_object_team;
-    float       dist;
-    float       dot;
-    vec3d       vec_to_object;
     ship_subsys *target_engines = NULL;
 
-	wp = &Weapons[num];
+	weapon* wp = &Weapons[num];
 
-	wip = &Weapon_info[Weapons[num].weapon_info_index];
+	weapon_info* wip = &Weapon_info[Weapons[num].weapon_info_index];
 
-	best_dist = 99999.9f;
+	float best_dist = 99999.9f;
 
 	// save the old homing object so that multiplayer servers can give the right information
 	// to clients if the object changes
-	old_homing_objp = wp->homing_object;
+	object* old_homing_objp = wp->homing_object;
 
 	wp->homing_object = &obj_used_list;
 
+	// only for random acquisition, accrue targets to later pick from randomly
+	SCP_vector<object*> prospective_targets;
+
 	//	Scan all objects, find a weapon to home on.
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for ( object* objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ((objp->type == OBJ_SHIP) || ((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])))
 		{
 			//WMC - Spawn weapons shouldn't go for protected ships
@@ -4294,14 +4309,14 @@ void find_homing_object(object *weapon_objp, int num)
 			if ((wp->weapon_flags[Weapon::Weapon_Flags::Spawned]) && (objp == &Objects[weapon_objp->parent]))
 				continue; 
 
-			homing_object_team = obj_team(objp);
+			int homing_object_team = obj_team(objp);
 			bool can_attack = weapon_has_iff_restrictions(wip) || iff_x_attacks_y(wp->team, homing_object_team);
 			if (weapon_target_satisfies_lock_restrictions(wip, objp) && can_attack)
 			{
 				if ( objp->type == OBJ_SHIP )
                 {
-                    sp  = &Ships[objp->instance];
-                    sip = &Ship_info[sp->ship_info_index];
+                    ship* sp  = &Ships[objp->instance];
+                    ship_info* sip = &Ship_info[sp->ship_info_index];
 
                     //if the homing weapon is a huge weapon and the ship that is being
                     //looked at is not huge, then don't home
@@ -4334,7 +4349,7 @@ void find_homing_object(object *weapon_objp, int num)
 					//	If this is a player object, make sure there aren't already too many homers.
 					//	Only in single player.  In multiplayer, we don't want to restrict it in dogfight on team vs. team.
 					//	For co-op, it's probably also OK.
-					if (!( Game_mode & GM_MULTIPLAYER )) {
+					if (!( Game_mode & GM_MULTIPLAYER ) && objp == Player_obj) {
 						int	num_homers = compute_num_homing_objects(objp);
 						if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers)
 							continue;
@@ -4351,25 +4366,41 @@ void find_homing_object(object *weapon_objp, int num)
 						continue;
 				}
 
-				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
+				vec3d vec_to_object;
+				float dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
 				if (objp->type == OBJ_WEAPON && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])) {
 					dist *= 0.5f;
 				}
 
-				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
+				float dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
 				if (dot > wip->fov) {
-					if (dist < best_dist) {
+					if (wip->auto_target_method == HomingAcquisitionType::CLOSEST && dist < best_dist) {
 						best_dist = dist;
 						wp->homing_object	= objp;
 						wp->target_sig		= objp->signature;
 						wp->homing_subsys	= target_engines;
 
 						cmeasure_maybe_alert_success(objp);
+					} else { // HomingAcquisitionType::RANDOM
+						prospective_targets.push_back(objp);
 					}
 				}
 			}
+		}
+	}
+
+	if (wip->auto_target_method == HomingAcquisitionType::RANDOM && prospective_targets.size() > 0) {
+		// pick a random target from the valid ones
+		object* target = prospective_targets[Random::next((int)prospective_targets.size())];
+
+		wp->homing_object = target;
+		wp->target_sig = target->signature;
+		wp->homing_subsys = nullptr;
+
+		if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && target->type == OBJ_SHIP) {
+			wp->homing_subsys = ship_get_closest_subsys_in_sight(&Ships[target->instance], SUBSYSTEM_ENGINE, &weapon_objp->pos);
 		}
 	}
 
@@ -5665,9 +5696,10 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, ship* shipp, ship_subsys * src_turret)
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys * src_turret)
 {
-	Assert( shipp != NULL );
+	Assertion(ship_idx >= 0 && ship_idx < MAX_SHIPS, "Invalid ship index in get_pointer_to_weapon_fire_pattern_index()");
+	ship* shipp = &Ships[ship_idx];
 	ship_weapon* ship_weapon_p = &(shipp->weapons);
 	if(src_turret)
 	{
@@ -5731,7 +5763,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		ship* parent_shipp = &(Ships[parent_objp->instance]);
 		Assert( parent_shipp != NULL );
 
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
+		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_objp->instance, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
@@ -5834,8 +5866,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	Weapons_created++;
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
-    default_flags.set(Object::Object_Flags::Collides);
     default_flags.set(Object::Object_Flags::Physics);
+
+	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
+		default_flags.set(Object::Object_Flags::Collides);
 
 	if (wip->wi_flags[Weapon::Info_Flags::Can_damage_shooter])
 		default_flags.set(Object::Object_Flags::Collides_with_parent);
@@ -6184,6 +6218,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			&vmd_zero_vector,
 			&vmd_identity_matrix,
 			model_get(wip->model_num)->detail[0]);
+	}
+
+	if (wip->ambient_snd.isValid()) {
+		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , 1);
 	}
 
 	Script_system.SetHookObject("Weapon", &Objects[objnum]);
@@ -8409,7 +8447,7 @@ void weapon_info::reset()
 	this->cargo_size = 1.0f;
 	this->rearm_rate = 1.0f;
 	this->reloaded_per_batch = -1;
-	this->weapon_range = 999999999.9f;
+	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
 	// *Minimum weapon range, default is 0 -Et1
 	this->WeaponMinRange = 0.0f;
 
@@ -8444,6 +8482,7 @@ void weapon_info::reset()
 	this->ship_restrict_strings.clear();
 	
 	this->acquire_method = WLOCK_PIXEL;
+	this->auto_target_method = HomingAcquisitionType::CLOSEST;
 
 	this->min_lock_time = 0.0f;
 	this->lock_pixels_per_sec = 50;

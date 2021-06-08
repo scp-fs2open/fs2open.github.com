@@ -49,6 +49,12 @@ char Multi_fs_tracker_filter[MAX_PATH] = "";
 short Multi_fs_tracker_game_id = -1;
 SCP_string Multi_fs_tracker_game_name;
 
+enum PROBE_FLAGS {
+	PENDING	= (1<<0),
+	SUCCESS	= (1<<1),
+	FAILURE	= (1<<2)
+};
+
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER FORWARD DECLARATIONS
 //
@@ -1371,6 +1377,56 @@ void multi_fs_tracker_report_stats_results()
 			}
 		}
 	}
+}
+
+// report the status of PXO game probe (firewall check)
+void multi_fs_tracker_report_probe_status(int flags, int next_try)
+{
+	static int last_flags = 0;
+	SCP_string str;
+
+	// if the flags haven't changed since last time then just bail
+	// *except* if the probe failed since we always want that message
+	// (don't & the flag check here, needs to be exact)
+	if ( (flags == last_flags) && (flags != PROBE_FLAGS::FAILURE) ) {
+		return;
+	}
+
+	if (flags & PROBE_FLAGS::PENDING) {
+		// if we've been here before just bail (to avoid log spam)
+		if (last_flags) {
+			last_flags = flags;
+			return;
+		}
+
+		str = "<PXO firewall probe in progress...>";
+	} else if (flags & PROBE_FLAGS::FAILURE) {
+		char t_str[64];
+
+		str = "<PXO firewall probe failed! Next attempt in ";
+
+		if (next_try < 120) {
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d seconds...>", next_try);
+		} else if (next_try < (60*60+1)) {
+			int minutes = next_try / 60;
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d minutes...>", minutes);
+		} else {
+			int hours = next_try / (60*60);
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d hours...>", hours);
+		}
+
+		str += t_str;
+	} else if (flags & PROBE_FLAGS::SUCCESS) {
+		str = "<PXO firewall probe was a success!>";
+	} else {
+		// getting here shouldn't happen, but it's not technically fatal
+		return;
+	}
+
+	last_flags = flags;
+
+	multi_display_chat_msg(str.c_str(), 0, 0);
+	ml_string(str.c_str());
 }
 
 // return an MSW_STATUS_* constant

@@ -605,7 +605,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 			// if I'm the server of the game, find out who this came from			
 			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				np_index = find_player_id(header_info->id);
+				np_index = find_player_index(header_info->id);
 				if(np_index >= 0){
 					sock = Net_players[np_index].reliable_socket;
 				}

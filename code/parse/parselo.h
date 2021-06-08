@@ -19,10 +19,12 @@
 
 #include <cinttypes>
 #include <exception>
+#include <limits.h>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	PARSE_TEXT_SIZE	1000000
 
+extern char Current_filename[MAX_PATH_LEN];
 extern char	*Parse_text;
 extern char	*Parse_text_raw;
 extern char	*Mp;
@@ -264,12 +266,14 @@ int split_str(const char* src,
 			  int* n_chars,
 			  const char** p_str,
 			  int max_lines,
+			  int max_line_length = INT_MAX,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  SCP_vector<int>& n_chars,
 			  SCP_vector<const char*>& p_str,
+			  int max_line_length = INT_MAX,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 

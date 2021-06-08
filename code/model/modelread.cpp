@@ -463,7 +463,7 @@ void get_user_prop_value(char *buf, char *value)
 }
 
 // routine to parse out a vec3d from a user property field of an object
-bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
+bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, char* submodel_name, char* filename)
 {
 	float f1, f2, f3;
 	char closing_bracket = '\0';
@@ -471,6 +471,19 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 
 	pause_parse();
 	Mp = buf;
+	snprintf(Current_filename, sizeof(Current_filename), "submodel %s on %s", submodel_name, filename);
+
+	// Check if there's a missing line break before the next "$".
+	char end_separator = '\0';
+	char* end_pos = buf;
+	while (!iscntrl(*end_pos) && *end_pos != '$')
+		end_pos++;
+
+	// We found a $ before the next line break, remember it and replace it with a line break.
+	if (*end_pos == '$') {
+		end_separator = *end_pos;
+		*end_pos = '\n';
+	}
 
 	// Note that we can't simply return from within this block
 	// because we always need to call unpause_parse before we
@@ -512,6 +525,11 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets)
 		value->xyz = { f1, f2, f3 };
 		success = true;
 	} while (false);
+
+	if (end_separator != '\0') {
+		// Revert the character replacement we did at the start
+		*end_pos = end_separator;
+	}
 
 	unpause_parse();
 	return success;
@@ -1431,7 +1449,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
 					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
-						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true)) {
+						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true, pm->submodel[n].name, pm->filename)) {
 							vm_vec_normalize(&pm->submodel[n].movement_axis);
 						} else {
 							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
@@ -1643,11 +1661,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				if ( (p = strstr(props, "$uvec")) != nullptr ) {
 					matrix submodel_orient;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false)) {
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, pm->submodel[n].name, pm->filename)) {
 
 						if ((p = strstr(props, "$fvec")) != nullptr) {
 
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false)) {
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, pm->submodel[n].name, pm->filename)) {
 
 								vm_vec_normalize(&submodel_orient.vec.uvec);
 								vm_vec_normalize(&submodel_orient.vec.fvec);
