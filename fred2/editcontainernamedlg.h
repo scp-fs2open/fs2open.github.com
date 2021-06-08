@@ -6,6 +6,7 @@
 
 #pragma once
 
+// used for naming new containers and renaming existing ones
 class CEditContainerNameDlg : public CDialog
 {
 public:

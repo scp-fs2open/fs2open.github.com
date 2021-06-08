@@ -86,8 +86,9 @@ private:
 
 	const sexp_tree * const m_p_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
-	// used when m_containers is empty
-	sexp_container m_dummy_container; // used as placeholder when there are no containers
-	SCP_vector<SCP_string> m_lister_keys; // read-only view of list data or map keys
+	// dialog model when m_containers is empty
+	sexp_container m_dummy_container;
+	// read-only view of list data/map keys
+	SCP_vector<SCP_string> m_lister_keys;
 	int			m_current_container = -1;
 };

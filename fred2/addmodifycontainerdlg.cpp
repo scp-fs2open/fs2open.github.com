@@ -140,8 +140,8 @@ void CAddModifyContainerDlg::OnBnClickedStringKeys()
 	auto &container = get_current_container();
 	Assert(container.is_map());
 	Assert(container.empty());
-	if (!(container.type & ContainerType::STRING_KEYS)) {
-		remove_container_type(container.type, ContainerType::NUMBER_KEYS);
+	if (none(container.type & ContainerType::STRING_KEYS)) {
+		container.type &= ~ContainerType::NUMBER_KEYS;
 		container.type |= ContainerType::STRING_KEYS;
 	}
 }
@@ -151,8 +151,8 @@ void CAddModifyContainerDlg::OnBnClickedNumberKeys()
 	auto &container = get_current_container();
 	Assert(container.is_map());
 	Assert(container.empty());
-	if (!(container.type & ContainerType::NUMBER_KEYS)) {
-		remove_container_type(container.type, ContainerType::STRING_KEYS);
+	if (none(container.type & ContainerType::NUMBER_KEYS)) {
+		container.type &= ~ContainerType::STRING_KEYS;
 		container.type |= ContainerType::NUMBER_KEYS;
 	}
 }
@@ -162,7 +162,9 @@ void CAddModifyContainerDlg::OnTypeList()
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_list()) {
-		remove_container_type(container.type, ContainerType::MAP);
+		container.type &= ~ContainerType::MAP;
+		// removing the "*_KEYS" type flag is unnecessary, because save_containers() won't save it
+		// and keeping it improves UX if the user switches back to map later
 		container.type |= ContainerType::LIST;
 		update_controls();
 	}
@@ -173,9 +175,9 @@ void CAddModifyContainerDlg::OnTypeMap()
 	auto &container = get_current_container();
 	Assert(container.empty());
 	if (!container.is_map()) {
-		remove_container_type(container.type, ContainerType::LIST);
+		container.type &= ~ContainerType::LIST;
 		container.type |= ContainerType::MAP;
-		if (!(container.type & ContainerType::NUMBER_KEYS)) {
+		if (none(container.type & ContainerType::NUMBER_KEYS)) {
 			container.type |= ContainerType::STRING_KEYS;
 		}
 
@@ -202,7 +204,7 @@ void CAddModifyContainerDlg::OnTypeNumber()
 {
 	auto &container = get_current_container();
 	Assert(container.empty());
-	remove_container_type(container.type, ContainerType::STRING_DATA);
+	container.type &= ~ContainerType::STRING_DATA;
 	container.type |= ContainerType::NUMBER_DATA;
 	container.opf_type = OPF_NUMBER;
 }
@@ -211,7 +213,7 @@ void CAddModifyContainerDlg::OnTypeString()
 {
 	auto &container = get_current_container();
 	Assert(container.empty());
-	remove_container_type(container.type, ContainerType::NUMBER_DATA);
+	container.type &= ~ContainerType::NUMBER_DATA;
 	container.type |= ContainerType::STRING_DATA;
 	container.opf_type = OPF_ANYTHING;
 }
@@ -222,8 +224,8 @@ void CAddModifyContainerDlg::set_data_type()
 	CButton *button_number = (CButton *) GetDlgItem(IDC_CONTAINER_NUMBER_DATA);
 
 	const auto &container = get_current_container();
-	const bool number_selected = container.type & ContainerType::NUMBER_DATA;
-	const bool string_selected = container.type & ContainerType::STRING_DATA;
+	const bool number_selected = any(container.type & ContainerType::NUMBER_DATA);
+	const bool string_selected = any(container.type & ContainerType::STRING_DATA);
 
 	button_number->SetCheck(number_selected);
 	button_string->SetCheck(string_selected);
@@ -236,8 +238,8 @@ void CAddModifyContainerDlg::set_key_type()
 
 	const auto &container = get_current_container();
 	Assert(container.is_map());
-	const bool number_keys_selected = container.type & ContainerType::NUMBER_KEYS;
- 	const bool string_keys_selected = container.type & ContainerType::STRING_KEYS;
+	const bool number_keys_selected = any(container.type & ContainerType::NUMBER_KEYS);
+ 	const bool string_keys_selected = any(container.type & ContainerType::STRING_KEYS);
 	Assert((int)number_keys_selected ^ (int)string_keys_selected);
 	
 	button_number->SetCheck(number_keys_selected);
@@ -338,16 +340,15 @@ void CAddModifyContainerDlg::OnListerSelectionChange()
 		const SCP_string &key = m_lister_keys[index];
 		update_text_edit_boxes(key, container.map_data.at(key));
 	} else {
-		Assert(false);
+		UNREACHABLE("Unknown container type %d", (int)container.type);
 	}
 }
 
 void CAddModifyContainerDlg::OnPersistNone()
 {
 	auto &container = get_current_container();
-	remove_container_type(container.type,
-		(ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE |
-			ContainerType::SAVE_TO_PLAYER_FILE));
+	container.type &= ~(ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE |
+						ContainerType::SAVE_TO_PLAYER_FILE);
 
 	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
 	button_eternal->SetCheck(FALSE);
@@ -357,7 +358,7 @@ void CAddModifyContainerDlg::OnPersistNone()
 void CAddModifyContainerDlg::OnSaveOnMissionComplete()
 {
 	auto &container = get_current_container();
-	remove_container_type(container.type, ContainerType::SAVE_ON_MISSION_CLOSE);
+	container.type &= ~ContainerType::SAVE_ON_MISSION_CLOSE;
 	container.type |= ContainerType::SAVE_ON_MISSION_PROGRESS;
 
 	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
@@ -369,7 +370,7 @@ void CAddModifyContainerDlg::OnSaveOnMissionComplete()
 void CAddModifyContainerDlg::OnSaveOnMissionClose()
 {
 	auto &container = get_current_container();
-	remove_container_type(container.type, ContainerType::SAVE_ON_MISSION_PROGRESS);
+	container.type &= ~ContainerType::SAVE_ON_MISSION_PROGRESS;
 	container.type |= ContainerType::SAVE_ON_MISSION_CLOSE;
 
 	CButton *button_eternal = (CButton *)GetDlgItem(IDC_CONTAINER_ETERNAL_PERSIST);
@@ -387,7 +388,7 @@ void CAddModifyContainerDlg::OnPersistEternal()
 	if (button_eternal->GetCheck()) {
 		container.type |= ContainerType::SAVE_TO_PLAYER_FILE;
 	} else {
-		remove_container_type(container.type, ContainerType::SAVE_TO_PLAYER_FILE);
+		container.type &= ~ContainerType::SAVE_TO_PLAYER_FILE;
 	}
 }
 
@@ -402,12 +403,12 @@ void CAddModifyContainerDlg::set_persistence_options()
 	if (container.is_persistent()) {
 		button_no_persist->SetCheck(FALSE);
 
-		if (container.type & ContainerType::SAVE_ON_MISSION_PROGRESS) {
-			Assert(!(container.type & ContainerType::SAVE_ON_MISSION_CLOSE));
+		if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
+			Assert(none(container.type & ContainerType::SAVE_ON_MISSION_CLOSE));
 			button_campaign_persist->SetCheck(TRUE);
 			button_player_persist->SetCheck(FALSE);
 		} else {
-			Assert(container.type & ContainerType::SAVE_ON_MISSION_CLOSE);
+			Assert(any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE));
 			button_campaign_persist->SetCheck(FALSE);
 			button_player_persist->SetCheck(TRUE);
 		}
@@ -539,7 +540,7 @@ void CAddModifyContainerDlg::OnContainerUpdate()
 		key_edit->GetWindowText(key_str);
 		container.map_data[SCP_string(key_str)] = data_str;
 	} else {
-		Assert(false);
+		UNREACHABLE("Unknown container type %d", (int)container.type);
 	}
 
 	update_data_lister();
@@ -587,7 +588,7 @@ bool CAddModifyContainerDlg::key_edit_box_has_valid_data(bool dup_ok)
 		}
 	}
 
-	if ((container.type & ContainerType::NUMBER_KEYS) && !is_valid_number(key_str)) {
+	if (any(container.type & ContainerType::NUMBER_KEYS) && !is_valid_number(key_str)) {
 		Assert(container.is_map());
 		MessageBox("This key is not a valid number and this map container uses numeric keys!");
 		return false;
@@ -609,7 +610,7 @@ bool CAddModifyContainerDlg::data_edit_box_has_valid_data()
 		return false;
 	}
 
-	if ((get_current_container().type & ContainerType::NUMBER_DATA) && !is_valid_number(data_str)) {
+	if (any(get_current_container().type & ContainerType::NUMBER_DATA) && !is_valid_number(data_str)) {
 		MessageBox("This data is not a valid number and this container uses numeric data!");
 		return false;
 	}
@@ -684,16 +685,16 @@ void CAddModifyContainerDlg::update_data_lister()
 			m_lister_keys.emplace_back(map_entry.first);
 		}
 
-		if (container.type & ContainerType::STRING_KEYS) {
+		if (any(container.type & ContainerType::STRING_KEYS)) {
 			std::sort(m_lister_keys.begin(), m_lister_keys.end());
-		} else if (container.type & ContainerType::NUMBER_KEYS) {
+		} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 			std::sort(m_lister_keys.begin(),
 				m_lister_keys.end(),
 				[](const SCP_string& str1, const SCP_string& str2) -> bool {
 					return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
 				});
 		} else {
-			Assert(false);
+			UNREACHABLE("Unknown container type %d", (int)container.type);
 		}
 
 		for (const auto &key : m_lister_keys) {
@@ -701,7 +702,7 @@ void CAddModifyContainerDlg::update_data_lister()
 			m_container_data_lister.AddString(lister_entry.c_str());
 		}
 	} else {
-		Assert(false);
+		UNREACHABLE("Unknown container type %d", (int)container.type);
 	}
 
 	m_container_data_lister.EnableWindow(m_container_data_lister.GetCount() > 0);
