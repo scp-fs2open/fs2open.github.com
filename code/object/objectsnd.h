@@ -12,6 +12,8 @@
 #ifndef __OBJECTSNDS_H__
 #define __OBJECTSNDS_H__
 
+#include "gamesnd/gamesnd.h"
+
 #define	OS_USED					(1<<0)
 #define	OS_DS3D					(1<<1)
 #define OS_MAIN					(1<<2)		// "main" sound. attentuation does not apply until outside the radius of the object
