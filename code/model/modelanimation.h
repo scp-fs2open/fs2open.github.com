@@ -130,9 +130,9 @@ namespace animation {
 
 
 	class ModelAnimationSubmodel {
-		SCP_string m_submodelName;
+		SCP_string m_name;
 		optional<int> m_submodel;
-		optional<int*> m_submodelPointer;
+		optional<bool> m_findBarrel;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
 		std::map<ship*, ModelAnimationData<>> m_initialData;
 		std::map <ship*, ModelAnimationData<>> m_lastFrame;
@@ -140,7 +140,7 @@ namespace animation {
 		friend class ModelAnimation;
 	public:
 		ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
-		ModelAnimationSubmodel(int* submodel, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(const SCP_string& subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		void play(float frametime, ship* ship);
 		void reset(ship* ship);
 

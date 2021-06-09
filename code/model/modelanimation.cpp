@@ -177,9 +177,9 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelName(submodelName), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(submodelName), m_mainSegment(std::move(mainSegment)) { }
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(int* submodel, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_submodelPointer(submodel), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(subsystemName), m_findBarrel(findBarrel), m_mainSegment(std::move(mainSegment)) { }
 
 	void ModelAnimationSubmodel::play(float frametime, ship* ship) {
 		auto dataIt = m_initialData.find(ship);
@@ -245,13 +245,25 @@ namespace animation {
 
 		polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
 
-		if (m_submodelPointer.has())
-			submodelNumber = *m_submodelPointer;
-		else if (m_submodel.has())
+		if (m_submodel.has())
 			submodelNumber = m_submodel;
+		else if (m_findBarrel.has()) {
+			ship_info* sip = &Ship_info[ship->ship_info_index];
+			for (int i = 0; i < sip->n_subsystems; i++) {
+				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
+					if((bool) m_findBarrel)
+						submodelNumber = sip->subsystems[i].turret_gun_sobj;
+					else
+						submodelNumber = sip->subsystems[i].subobj_num;
+					break;
+				}
+			}
+
+			m_submodel = submodelNumber;
+		}
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
-				if (!subsystem_stricmp(pm->submodel[i].name, m_submodelName.c_str())) {
+				if (!subsystem_stricmp(pm->submodel[i].name, m_name.c_str())) {
 					submodelNumber = i;
 					break;
 				}
@@ -260,7 +272,7 @@ namespace animation {
 			m_submodel = submodelNumber;
 		}
 
-		if (submodelNumber < 0)
+		if (submodelNumber < 0 || submodelNumber >= pm->n_models)
 			return { nullptr, nullptr };
 
 		polymodel_instance* pmi = model_get_instance(ship->model_instance_num);

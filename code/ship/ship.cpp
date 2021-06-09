@@ -5046,13 +5046,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 						std::shared_ptr<animation::ModelAnimation> anim = std::make_shared<animation::ModelAnimation>();
 
-						if (sp->type == SUBSYSTEM_TURRET) {
+						char namelower[MAX_NAME_LEN];
+						strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
+						strlwr(namelower);
+						//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
+						//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
+						if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
 							std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBase = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.p);
-							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBase = std::make_unique<animation::ModelAnimationSubmodel>(&sp->subobj_num, std::move(rotBase));
+							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBase = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, false, std::move(rotBase));
 							anim->addSubsystemAnimation(std::move(subsysBase));
 
 							std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBarrel = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.h);
-							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBarrel = std::make_unique<animation::ModelAnimationSubmodel>(&sp->turret_gun_sobj, std::move(rotBarrel));
+							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBarrel = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, true, std::move(rotBarrel));
 							anim->addSubsystemAnimation(std::move(subsysBarrel));
 						}
 						else {
