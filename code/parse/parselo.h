@@ -200,6 +200,7 @@ void stuff_flagset(T *dest) {
 
 extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
+extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);

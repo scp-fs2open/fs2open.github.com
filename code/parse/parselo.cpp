@@ -3019,13 +3019,22 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 	}, get_lookup_type_name(lookup_type));
 }
 
-//Stuffs an integer list like stuff_int_list.
+//Stuffs an float list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
 	}, "float");
+}
+
+// ditto the above, but a vector of floats...
+void stuff_float_list(SCP_vector<float>& flp)
+{
+	stuff_token_list(flp, [](float* buf)->bool {
+		stuff_float(buf);
+		return true;
+		}, "float");
 }
 
 //	Stuff a vec3d struct, which is 3 floats.

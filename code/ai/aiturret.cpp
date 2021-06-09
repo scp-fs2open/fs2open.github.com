@@ -1788,8 +1788,19 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 		vm_vector_2_matrix(&turret_orient, firing_vec, nullptr, nullptr);
 
-		// set next fire timestamp for the turret
+		// grab and set some burst data before turret_set_next_fire_timestamp wipes it
 		int old_burst_seed = swp->burst_seed[weapon_num];
+		int old_burst_counter = swp->burst_counter[weapon_num];
+		// only used by type 5 beams
+		if (turret->weapons.burst_counter[weapon_num] == 0) {
+			swp->per_burst_rot += wip->b_info.t5info.per_burst_rot;
+			if (swp->per_burst_rot > PI2)
+				swp->per_burst_rot -= PI2;
+			else if (swp->per_burst_rot < -PI2)
+				swp->per_burst_rot += PI2;
+		}
+
+		// set next fire timestamp for the turret
 		if (last_shot_in_salvo)
 			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
@@ -1815,6 +1826,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.turret = turret;
 			fire_info.burst_seed = old_burst_seed;
 			fire_info.fire_method = BFM_TURRET_FIRED;
+			fire_info.per_burst_rotation = swp->per_burst_rot;
+			fire_info.burst_index = old_burst_counter;
 
 			// fire a beam weapon
 			weapon_objnum = beam_fire(&fire_info);

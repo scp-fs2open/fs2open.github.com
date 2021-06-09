@@ -400,35 +400,45 @@ void ssm_process()
 				if(moveup->fireballs[idx] >= 0){
 					if ((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= moveup->sinfo.duration) {
 						weapon_info *wip = &Weapon_info[si->weapon_info_index];
+
+						// get an orientation
+						vec3d temp;
+						matrix orient;
+
+						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+						vm_vec_normalize(&temp);
+						vm_vector_2_matrix(&orient, &temp, nullptr, nullptr);
+
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-							beam_fire_info fire_info;
-							memset(&fire_info, 0, sizeof(beam_fire_info));
+							int num_beams = wip->b_info.beam_type == 5 && (int)wip->b_info.t5info.burst_rot_pattern.size() > 1 ?
+								(int)wip->b_info.t5info.burst_rot_pattern.size() : 1;
+							for (int i = 0; i < num_beams; i++) {
+								beam_fire_info fire_info;
+								memset(&fire_info, 0, sizeof(beam_fire_info));
 
-							fire_info.accuracy = 0.000001f;		// this will guarantee a hit
-							fire_info.shooter = NULL;
-							fire_info.turret = NULL;
-							fire_info.target = moveup->sinfo.target;
-							fire_info.target_subsys = NULL;
-							fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
-							fire_info.starting_pos = moveup->sinfo.start_pos[idx];
-							fire_info.beam_info_index = si->weapon_info_index;
-							fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
-							fire_info.fire_method = BFM_SUBSPACE_STRIKE;
+								fire_info.accuracy = 0.000001f;		// this will guarantee a hit
+								fire_info.shooter = nullptr;
+								fire_info.turret = nullptr;
+								fire_info.target = moveup->sinfo.target;
+								fire_info.target_subsys = nullptr;
+								fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
+								fire_info.starting_pos = moveup->sinfo.start_pos[idx];
+								fire_info.beam_info_index = si->weapon_info_index;
+								fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
+								fire_info.fire_method = BFM_SUBSPACE_STRIKE;
+								fire_info.burst_index = i;
 
-							// fire the beam
-							beam_fire(&fire_info);
+								// Fill target_pos but DONT turn on BFIF_TARGETING_COORDS
+								// It would mess up normal beams but type 5s can still make use of this
+								fire_info.target_pos1 = orient.vec.fvec + fire_info.starting_pos;
 
-							moveup->done_flags[idx] = true;
+								// fire the beam
+								beam_fire(&fire_info);
+
+								moveup->done_flags[idx] = true;
+							}
 						} else {
-							// get an orientation
-							vec3d temp;
-							matrix orient;
-
-							vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-							vm_vec_normalize(&temp);
-							vm_vector_2_matrix(&orient, &temp, NULL, NULL);
-
 							// fire the missile and flash the screen
 							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 
