@@ -2724,7 +2724,7 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, 1);
+				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, OS_MAIN);
 			} else {				
 				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}

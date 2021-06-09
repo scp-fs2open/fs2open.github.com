@@ -6147,7 +6147,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if (wip->ambient_snd.isValid()) {
-		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , 1);
+		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
 	}
 
 	Script_system.SetHookObject("Weapon", &Objects[objnum]);
