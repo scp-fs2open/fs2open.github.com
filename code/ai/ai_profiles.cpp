@@ -581,7 +581,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					}
 				}
 
-				set_flag(profile, "$all ships take hull damage in collisions:", AI::Profile_Flags::All_ships_take_hull_damage_from_collisions);
+				set_flag(profile, "$no shield damage from ship collisions:", AI::Profile_Flags::No_shield_damage_from_ship_collisions);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))

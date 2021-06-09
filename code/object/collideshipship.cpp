@@ -1376,7 +1376,7 @@ int collide_ship_ship( obj_pair * pair )
 					float dam2 = (100.0f * damage/LightOne->phys_info.mass);
 
 					int	quadrant_num = -1;					
-					if (!The_mission.ai_profile->flags[AI::Profile_Flags::All_ships_take_hull_damage_from_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
+					if (!The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
 						quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
 						if (!ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num))
 							quadrant_num = -1;
