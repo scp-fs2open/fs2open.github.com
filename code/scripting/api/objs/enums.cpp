@@ -1,6 +1,7 @@
 
 #include "enums.h"
 
+#include "object/objectsnd.h"
 #include "scripting/ade.h"
 
 namespace scripting {
@@ -102,7 +103,18 @@ flag_def_list Enumerations[] = {
 	{"CONTEXT_INVALID", LE_CONTEXT_INVALID, 0},
 	{"FIREBALL_MEDIUM_EXPLOSION", LE_FIREBALL_MEDIUM_EXPLOSION, 0},
 	{"FIREBALL_LARGE_EXPLOSION", LE_FIREBALL_LARGE_EXPLOSION, 0},
-	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0}
+	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0},
+	// the following OS_ definitions use bitfield values, not the indexes in enums.h
+	{"OS_USED", OS_USED, 0},
+	{"OS_DS3D", OS_DS3D, 0},
+	{"OS_MAIN", OS_MAIN, 0},
+	{"OS_TURRET_BASE_ROTATION", OS_TURRET_BASE_ROTATION, 0},
+	{"OS_TURRET_GUN_ROTATION", OS_TURRET_GUN_ROTATION, 0},
+	{"OS_SUBSYS_ALIVE", OS_SUBSYS_ALIVE, 0},
+	{"OS_SUBSYS_DEAD", OS_SUBSYS_DEAD, 0},
+	{"OS_SUBSYS_DAMAGED", OS_SUBSYS_DAMAGED, 0},
+	{"OS_SUBSYS_ROTATION", OS_SUBSYS_ROTATION, 0},
+	// end of OS_ definitions
 };
 // clang-format on
 

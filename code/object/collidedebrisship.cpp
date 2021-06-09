@@ -115,14 +115,15 @@ int collide_debris_ship( obj_pair * pair )
 
 				// apply damage to debris
 				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage);		// speed => damage
-				int quadrant_num, apply_ship_damage;
+				int apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
 				apply_ship_damage = (ship_objp->signature != debris_objp->parent_sig);
 
-				if ( debris_hit_info.heavy == ship_objp ) {
-					quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
-					if ((ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
+				if ( debris_hit_info.heavy == ship_objp) {
+					int quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
+						(ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					if (apply_ship_damage) {
@@ -293,10 +294,10 @@ int collide_asteroid_ship( obj_pair * pair )
 
 				int ast_damage_type = Asteroid_info[Asteroids[asteroid_objp->instance].asteroid_type].damage_type_idx;
 
-				int quadrant_num;
-				if ( asteroid_hit_info.heavy == ship_objp ) {
-					quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
-					if ((ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
+				if ( asteroid_hit_info.heavy == ship_objp) {
+					int quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
+						(ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, ast_damage_type, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);

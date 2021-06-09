@@ -138,6 +138,7 @@ namespace AI {
 		Friendlies_use_countermeasure_firechance,
 		Improved_subsystem_attack_pathing,
 		Fixed_ship_weapon_collision,
+		No_shield_damage_from_ship_collisions,
 
 		NUM_VALUES
 	};

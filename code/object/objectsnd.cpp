@@ -684,7 +684,7 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flags, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags, ship_subsys *associated_sub)
 {
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
@@ -726,10 +726,6 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flag
 	}
 	snd = &Objsnds[objp->objsnd_num[sound_index]];
 	snd->flags = OS_USED;
-
-	if(main){
-		snd->flags |= OS_MAIN;
-	}
 
 	if(flags > 0){
 		snd->flags |= flags;

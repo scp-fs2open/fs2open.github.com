@@ -1373,9 +1373,11 @@ int collide_ship_ship( obj_pair * pair )
 						}
 					}					
 
-					int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-					if ((ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
-						quadrant_num = -1;
+					int	quadrant_num = -1;					
+					if (!The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
+						quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
+						if (!ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num))
+							quadrant_num = -1;
 					}
 
 					float damage_heavy = (100.0f * damage / HeavyOne->phys_info.mass);
