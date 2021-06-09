@@ -251,8 +251,13 @@ namespace animation {
 			ship_info* sip = &Ship_info[ship->ship_info_index];
 			for (int i = 0; i < sip->n_subsystems; i++) {
 				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
-					if((bool) m_findBarrel)
-						submodelNumber = sip->subsystems[i].turret_gun_sobj;
+					if ((bool)m_findBarrel) {
+						//Check if the barrel subobj is a dedicated existing subobj or just the base turret.
+						if (sip->subsystems[i].turret_gun_sobj != sip->subsystems[i].subobj_num)
+							submodelNumber = sip->subsystems[i].turret_gun_sobj;
+						else
+							submodelNumber = -1;
+					}
 					else
 						submodelNumber = sip->subsystems[i].subobj_num;
 					break;
