@@ -113,7 +113,7 @@ namespace animation {
 
 	class ModelAnimationSegment {
 	protected:
-		float m_duration;
+		float m_duration = 0.0f;
 
 	public:
 		virtual ~ModelAnimationSegment() = default;
@@ -145,7 +145,7 @@ namespace animation {
 		void reset(ship* ship);
 
 	private:
-		void saveCurrentAsBase(ship* ship);
+		float saveCurrentAsBase(ship* ship);
 		void copyToSubsystem(const ModelAnimationData<>& data, ship* ship);
 		std::pair<submodel_instance*, bsp_info*> findSubmodel(ship* ship);
 	};
@@ -155,10 +155,10 @@ namespace animation {
 		static std::multimap<ship*, std::shared_ptr<ModelAnimation>> s_runningAnimations;
 
 		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
-		float m_duration;
+		float m_duration = 0.0f;
 
 		ModelAnimationState m_state = ModelAnimationState::UNTRIGGERED;
-		float m_time;
+		float m_time = 0.0f;
 		ModelAnimationState play(float frametime, ship* ship);
 
 		static void cleanRunning();

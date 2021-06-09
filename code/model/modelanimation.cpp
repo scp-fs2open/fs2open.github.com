@@ -11,7 +11,9 @@ namespace animation {
 
 		switch (m_state) {
 		case ModelAnimationState::UNTRIGGERED:
+
 			s_runningAnimations.emplace(ship, shared_from_this());
+			m_duration = 0.0f;
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
 			for (const auto& animation : m_submodelAnimation) {
 				//We need to make sure that we have the submodel index cached before we check if other animations have the same index
@@ -38,7 +40,9 @@ namespace animation {
 					}
 				}
 
-				animation->saveCurrentAsBase(ship);
+				float duration = animation->saveCurrentAsBase(ship);
+				if (duration > m_duration)
+					m_duration = duration;
 			}
 
 			m_state = ModelAnimationState::RUNNING_FWD;
@@ -217,10 +221,10 @@ namespace animation {
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
-	void ModelAnimationSubmodel::saveCurrentAsBase(ship* ship) {
+	float ModelAnimationSubmodel::saveCurrentAsBase(ship* ship) {
 		auto submodel = findSubmodel(ship);
 		if (!submodel.first || !submodel.second)
-			return;
+			return 0;
 
 		ModelAnimationData<>& data = m_initialData[ship];
 		data.orientation = submodel.first->canonical_orient;
@@ -229,6 +233,7 @@ namespace animation {
 		
 		m_lastFrame[ship] = data;
 		m_mainSegment->recalculate(submodel.first, submodel.second, data);
+		return m_mainSegment->getDuration();
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(ship* ship) {
