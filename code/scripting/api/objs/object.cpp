@@ -1,13 +1,14 @@
 //
 //
 
+#include "enums.h"
+#include "mc_info.h"
 #include "object.h"
-#include "vecmath.h"
 #include "physics_info.h"
 #include "shields.h"
-#include "mc_info.h"
 #include "sound.h"
 #include "subsystem.h"
+#include "vecmath.h"
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
@@ -517,7 +518,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, number Flags=0, subsystem Subsys=nil]",
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
 	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
@@ -525,10 +526,11 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, number 
 	object_h* objh = nullptr;
 	sound_entry_h *seh = nullptr;
 	vec3d *offset = nullptr;
+	enum_h enum_flags;
 	int flags = 0;
 	ship_subsys_h *tgsh = nullptr;
 
-	if (!ade_get_args(L, "oo|oio", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), &flags, l_Subsystem.GetPtr(&tgsh)))
+	if (!ade_get_args(L, "oo|oio", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
 		return ade_set_error(L, "i", -1);
 
 	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
@@ -537,6 +539,16 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, number 
 	auto objp = objh->objp;
 	auto gs_id = seh->idx;
 	auto subsys = tgsh ? tgsh->ss : nullptr;
+	if (enum_flags.IsValid())
+	{
+		flags = enum_flags.index;
+
+		if (flags < 0 || flags > OS_SUBSYS_ROTATION)
+		{
+			LuaError(L, "Flags parameter %d is out of range for object %d!", flags, OBJ_INDEX(objp));
+			return ADE_RETURN_NIL;
+		}
+	}
 
 	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
 
