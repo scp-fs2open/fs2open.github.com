@@ -1,6 +1,7 @@
 
 #include "enums.h"
 
+#include "object/objectsnd.h"
 #include "scripting/ade.h"
 
 namespace scripting {
