@@ -14678,8 +14678,8 @@ void ship_assign_sound(ship *sp)
 {
 	ship_info	*sip;	
 	object *objp;
-	vec3d engine_pos;
 	ship_subsys *moveup;
+	bool has_engine = false;
 
 	Assert( sp->objnum >= 0 );
 	if(sp->objnum < 0){
@@ -14689,15 +14689,13 @@ void ship_assign_sound(ship *sp)
 	objp = &Objects[sp->objnum];
 	sip = &Ship_info[sp->ship_info_index];
 
-	if ( sip->engine_snd.isValid() ) {
-		vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius/2.0f);		
-		
-		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
-	}
-
 	// Do subsystem sounds	
 	moveup = GET_FIRST(&sp->subsys_list);
-	while(moveup != END_OF_LIST(&sp->subsys_list)){
+	while(moveup != END_OF_LIST(&sp->subsys_list)) {
+		if (!strnicmp(moveup->system_info->name, "engine", 6)) {
+			has_engine = true;
+		}
+
 		// Check for any engine sounds		
 		if(strstr(moveup->system_info->name, "enginelarge")){
 			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_LARGE, &moveup->system_info->pnt);
@@ -14740,7 +14738,20 @@ void ship_assign_sound(ship *sp)
 
 		// next
 		moveup = GET_NEXT(moveup);
-	}	
+	}
+
+	if (sip->engine_snd.isValid()) {
+		vec3d engine_pos;
+
+		// Only put the engine sound near the back of the ship if it has an engine.  Otherwise put it in the center.
+		if (has_engine) {
+			vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius / 2.0f);
+		} else {
+			engine_pos = vmd_zero_vector;
+		}
+
+		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
+	}
 }
 
 /**
