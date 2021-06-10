@@ -61,7 +61,7 @@ void multi_pxo_help_do();
 void multi_pxo_help_close();
 
 // open up a URL
-void multi_pxo_url(char *url);
+void multi_pxo_url(const char *url);
 
 // called from the game tracker API - server count update for a channel
 void multi_pxo_channel_count_update(char *name,int count);
