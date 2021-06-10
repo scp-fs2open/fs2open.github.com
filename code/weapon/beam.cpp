@@ -3846,7 +3846,7 @@ void beam_handle_collisions(beam *b)
 				//only apply damage if the collision is not an exit collision.  this prevents twice the damage from being done, although it probably be more realistic since two holes are being punched in the ship instead of one.
 				if (!b->f_collisions[idx].is_exit_collision) {
 					real_damage = beam_get_ship_damage(b, &Objects[target]) * damage_time_mod;
-					ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, real_damage, b->f_collisions[idx].quadrant);
+					ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, real_damage, wi->damage_type_idx, b->f_collisions[idx].quadrant);
 				}
 				// if this is the first hit on the player ship. whack him
 				if(apply_beam_physics)

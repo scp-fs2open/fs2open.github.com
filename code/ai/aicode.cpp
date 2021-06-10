@@ -14116,7 +14116,7 @@ void ai_maybe_self_destruct(object *objp, ai_info *aip)
 		}
 
 		if (timestamp_elapsed(aip->self_destruct_timestamp)) {
-			ship_apply_local_damage( objp, objp, &objp->pos, objp->hull_strength*flFrametime + 1.0f, MISS_SHIELDS);
+			ship_apply_local_damage( objp, objp, &objp->pos, objp->hull_strength*flFrametime + 1.0f, -1, MISS_SHIELDS);
 		}
 	}
 }

@@ -6850,7 +6850,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
-			ship_apply_global_damage(objp, wobjp, pos, damage);
+			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;
 		case OBJ_ASTEROID:
@@ -6859,7 +6859,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		case OBJ_WEAPON:
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
-				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->damage_type_idx, 1.0f);
+				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f);
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {

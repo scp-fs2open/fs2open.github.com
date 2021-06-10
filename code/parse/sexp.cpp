@@ -12374,7 +12374,7 @@ void sexp_explosion_effect(int n)
 				switch ( objp->type )
 				{
 					case OBJ_SHIP:
-						ship_apply_global_damage( objp, nullptr, &origin, t_damage );
+						ship_apply_global_damage( objp, nullptr, &origin, t_damage, -1 );
 						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {

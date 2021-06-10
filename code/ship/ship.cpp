@@ -8220,7 +8220,7 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 
 			switch ( objp->type ) {
 			case OBJ_SHIP:
-				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage );
+				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
 				vec3d force, vec_ship_to_impact;
 				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
 				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
@@ -8279,7 +8279,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
-		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage);
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1);
 
 		// do physics
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
@@ -9092,7 +9092,7 @@ static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 		if ( (p->flags & PLAYER_FLAGS_DIST_TO_BE_KILLED) && (timestamp_until(p->distance_warning_time) < 0) ) {
 			p->flags |= PLAYER_FLAGS_FORCE_MISSION_OVER;
 			float damage = 10.0f * Objects[p->objnum].hull_strength;
-			ship_apply_global_damage(&Objects[p->objnum], &Objects[p->objnum], NULL, damage);
+			ship_apply_global_damage(&Objects[p->objnum], &Objects[p->objnum], NULL, damage, -1);
 		}
 	}
 
