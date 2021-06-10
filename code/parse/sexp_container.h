@@ -154,3 +154,7 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  * Return pointer to a sexp_container by its name, or nullptr if not found
  */
 sexp_container *get_sexp_container(const char *name);
+
+// text replacement
+bool sexp_container_replace_refs_with_values(SCP_string &text);
+bool sexp_container_replace_refs_with_values(char *text, size_t max_len);

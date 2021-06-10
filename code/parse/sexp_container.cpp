@@ -11,6 +11,7 @@
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
+#include "utils/Random.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
 static SCP_unordered_map<SCP_string, sexp_container*, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
@@ -261,4 +262,236 @@ sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_
 
 	// not found
 	return nullptr;
+}
+
+/**
+* Helper function for sexp_replace_container_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
+**/
+bool get_replace_text_for_modifier(const SCP_string& text,
+	sexp_container& container,
+	const size_t lookHere,
+	SCP_string& replacement_text,
+	size_t& num_chars_to_replace)
+{
+	// for map containers, check if this matches a map key
+	if (container.is_map()) {
+		if (container.map_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty map container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const size_t key_ends_here = text.find('&', lookHere);
+		if (key_ends_here == SCP_string::npos) {
+			Warning(LOCATION,
+				"sexp_replace_container_refs_with_values() found a map container called %s to replace but the key is "
+				"missing a final '&'",
+				container.container_name.c_str());
+			return false;
+		}
+
+		const SCP_string key = text.substr(lookHere, key_ends_here - lookHere);
+		const auto iter = container.map_data.find(key);
+
+		if (iter == container.map_data.end()) {
+			Warning(LOCATION,
+				"sexp_replace_container_refs_with_values() found a map container called %s but the key %s is not found",
+				container.container_name.c_str(),
+				key.c_str());
+			return false;
+		}
+
+		replacement_text = iter->second;
+
+		num_chars_to_replace += key.length();
+	} else {
+		// for list containers, check if this matches a list modifier
+		Assert(container.is_list());
+
+		if (container.list_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty list container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const list_modifier *modifier_to_use = nullptr;
+
+		for (const auto &modifier : List_modifiers) {
+			if (str_prefix(modifier.name, text.c_str() + lookHere)) {
+				modifier_to_use = &modifier;
+				break;
+			}
+		}
+
+		if (!modifier_to_use) {
+			Warning(LOCATION,
+				"sexp_container_replace_refs_with_values() found a list container called %s to replace but the modifer "
+				"is not recognised",
+				container.container_name.c_str());
+			return false;
+		}
+
+		int data_index = 0;
+		size_t number_length = 0;
+		SCP_string number_string;
+		auto &list_data = container.list_data;
+		auto list_it = list_data.begin();
+
+		switch (modifier_to_use->modifier) {
+		case ListModifier::GET_FIRST:
+			replacement_text = list_data.front();
+			break;
+
+		case ListModifier::GET_LAST:
+			replacement_text = list_data.back();
+			break;
+
+		case ListModifier::REMOVE_FIRST:
+			replacement_text = list_data.front();
+			list_data.pop_front();
+			break;
+
+		case ListModifier::REMOVE_LAST:
+			replacement_text = list_data.back();
+			list_data.pop_back();
+			break;
+
+		case ListModifier::GET_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			replacement_text = *std::next(list_it, data_index);
+			break;
+
+		case ListModifier::REMOVE_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			std::advance(list_it, data_index);
+			replacement_text = *list_it;
+			list_data.erase(list_it);
+			break;
+
+		case ListModifier::AT_INDEX:
+			number_string = text.substr(lookHere + strlen(modifier_to_use->name));
+			Assert(!number_string.empty());
+			data_index = atoi(number_string.c_str());
+			if (data_index < 0 || data_index >= (int)list_data.size()) {
+				// TODO: warning
+				return false;
+			}
+			replacement_text = *std::next(list_it, data_index);
+
+			// include spaces, in case the FREDder put one between "At" and the index
+			number_length = strspn(number_string.c_str(), " 0123456789");
+			break;
+
+		default:
+			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", container.container_name.c_str());
+			return false;
+		}
+
+		num_chars_to_replace += strlen(modifier_to_use->name);
+
+		// for the "At" modifier, we need to include the chars used by the index
+		if (modifier_to_use->modifier == ListModifier::AT_INDEX) {
+			num_chars_to_replace += number_length;
+		}
+
+		// TODO: verify that the char we're about to skip below is a '&'
+	}
+
+	// account for the final '&'
+	++num_chars_to_replace;
+
+	return true;
+}
+
+// inspired by sexp_replace_variable_names_with_values()
+/**
+* Replace container references in a string with their values
+**/
+bool sexp_container_replace_refs_with_values(SCP_string& text)
+{
+	bool replaced_anything = false;
+	size_t lookHere = 0;
+	int num_replacements = 0;
+
+	while (lookHere < text.length()) {
+		// look for the meta-character
+		size_t foundHere = text.find('&', lookHere);
+
+		// found?
+		if (foundHere != SCP_string::npos && foundHere != text.length() - 1) {
+			// see if a container starts at the next char
+			auto* p_container = get_sexp_container_special(text, foundHere + 1);
+			if (p_container != nullptr) {
+				// we want to replace either &list_container&list_modifier& or &map_container&map_key&
+
+				// + 2 for the enclosing '&' chars around the container name
+				size_t num_chars_to_replace = p_container->container_name.length() + 2;
+
+				// make sure the enclosing '&' appears after the container name
+				size_t expected_amp_pos = foundHere + num_chars_to_replace - 1;
+				if (expected_amp_pos >= text.length() || text[expected_amp_pos] != '&') {
+					// no modifier/key specified - ignore this matching container name, as the replacement is malformed
+					lookHere = foundHere + 1;
+					Warning(LOCATION,
+						"sexp_replace_container_refs_with_values() found a container called %s to replace but there is "
+						"no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This "
+						"format is expected for maps &Container_Name&Key&",
+						p_container->container_name.c_str());
+					continue;
+				}
+
+				size_t modifierLookHere = foundHere + num_chars_to_replace;
+
+				SCP_string replacement_text;
+
+				if (!get_replace_text_for_modifier(text, *p_container, modifierLookHere, replacement_text, num_chars_to_replace)) {
+					// list modifier/map key was invalid
+					// skip past the text we were unable to replace
+					lookHere = foundHere + num_chars_to_replace;
+					continue;
+				}
+
+				// perform the replacement
+				text.replace(foundHere, num_chars_to_replace, replacement_text);
+				replaced_anything = true;
+
+				++num_replacements;
+				// avoid potential infinite loops
+				if (num_replacements >= 50) {
+					Warning(LOCATION,
+						"sexp_container_replace_refs_with_values() found potential multidimensionality infinite loop "
+						"in '%s' at position %d.",
+						text.c_str(),
+						(int)lookHere);
+					break;
+				}
+
+				// don't go past the replacement point, because if container multidimensionality
+				// is being used, then the resulting text will contain another container ref
+				lookHere = foundHere;
+			} else { // no container name found 
+				lookHere = foundHere + 1;
+			}
+		} else {
+			// no potential metacharacter found, so we're done replacing
+			break;
+		}
+	}
+
+	return replaced_anything;
+}
+
+bool sexp_container_replace_refs_with_values(char* text, size_t max_len)
+{
+	Assert(text != nullptr);
+
+	SCP_string text_str = text;
+
+	bool replaced_anything = sexp_container_replace_refs_with_values(text_str);
+
+	if (replaced_anything) {
+		Assert(max_len > 0);
+		strncpy(text, text_str.c_str(), max_len - 1);
+		text[max_len - 1] = 0;
+	}
+
+	return replaced_anything;
 }
