@@ -812,7 +812,13 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 	// if it's in the list already just remove it
 	for (auto it = Escort_ships.begin(); it != Escort_ships.end(); ++it) {
 		if (it->obj_signature == Objects[objnum].signature) {
+			if ( (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) ) {
+				Ships[Objects[objnum].instance].flags.remove(Ship::Ship_Flags::Escort);
+			}
+
 			Escort_ships.erase(it);
+
+			hud_gauge_popup_start(HUD_ESCORT_VIEW);
 
 			return;
 		}
