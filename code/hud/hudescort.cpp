@@ -718,6 +718,24 @@ void hud_escort_view_toggle()
 // try to add a ship to the escort list, if slot available
 void hud_add_ship_to_escort(int objnum, int supress_feedback)
 {
+	// no ships on the escort list in multiplayer dogfight
+	if (MULTI_DOGFIGHT) {
+		return;
+	}
+
+	if (objnum < 0) {
+		UNREACHABLE("Invalid objnum passed to hud_add_ship_to_escort()!");
+		return;
+	}
+
+	if (Objects[objnum].type != OBJ_SHIP) {
+		if ( !supress_feedback ) {
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
+
+		return;
+	}
+
 	// check if ship is already on complete escort list
 	bool found = false;
 
