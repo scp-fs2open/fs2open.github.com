@@ -530,7 +530,7 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	int flags = 0;
 	ship_subsys_h *tgsh = nullptr;
 
-	if (!ade_get_args(L, "oo|oio", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
+	if (!ade_get_args(L, "oo|ooo", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
 		return ade_set_error(L, "i", -1);
 
 	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
