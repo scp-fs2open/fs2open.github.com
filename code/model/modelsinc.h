@@ -14,7 +14,7 @@
 class polymodel;
 
 #ifndef MODEL_LIB 
-#error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
+#pragma message ("This should only be used internally by the model library.  See John if you think you need to include this elsewhere.")
 #endif
 
 #define OP_EOF 			0
@@ -63,6 +63,7 @@ class polymodel;
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
 #define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
+#define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
