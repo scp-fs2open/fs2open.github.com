@@ -4,6 +4,7 @@
 
 namespace animation {
 
+	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
 
@@ -16,6 +17,7 @@ namespace animation {
 
 	};
 
+	//This segment handles multiple generic segments executing in parallel
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
 		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
 
@@ -28,6 +30,7 @@ namespace animation {
 
 	};
 
+	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/) override { };
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override { return ModelAnimationData<true>(); };
@@ -38,6 +41,7 @@ namespace animation {
 
 	};
 
+	//This segment changes or sets a submodels orientation to a defined Pitch Heading and Bank angle.
 	class ModelAnimationSegmentSetPHB : public ModelAnimationSegment {
 		angles m_targetAngle;
 		bool m_isAngleRelative;
@@ -52,6 +56,7 @@ namespace animation {
 
 	};
 
+	//This segment rotates a submodels orientation by a certain amount around it's defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
 		float m_angle;
 		matrix m_rot;

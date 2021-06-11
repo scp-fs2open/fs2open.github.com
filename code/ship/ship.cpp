@@ -5003,6 +5003,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 						//the only thing initial animation type needs is the angle, 
 						//so to save space lets just make everything optional in this case
 
+						//Most of these properties were read and allowed, but never actually used for anything.
+						//Hence, still allow them in tables, but now just skip reading them
+
 						angles angle;
 						bool isRelative;
 

@@ -6,6 +6,7 @@ namespace animation {
 		ModelAnimationData<true> data = base;
 		for (size_t i = 0; i < m_segments.size(); i++) {
 			m_segments[i]->recalculate(submodel_instance, submodel, data);
+			//To properly recalculate, we actually need to fully calculate the previous' segment's final delta
 			data.applyDelta(m_segments[i]->calculateAnimation(data, base, m_segments[i]->getDuration()));
 		}
 	}
@@ -17,6 +18,7 @@ namespace animation {
 		size_t animationCnt = 0;
 		while (time > 0.0f && animationCnt < m_segments.size()) {
 			float timeLocal = time;
+			//Make sure that each segment actually stops at it's end
 			if (timeLocal > m_segments[animationCnt]->getDuration())
 				timeLocal = m_segments[animationCnt]->getDuration();
 			ModelAnimationData<true> deltaLocal = m_segments[animationCnt]->calculateAnimation(absoluteState, lastState, timeLocal);
@@ -58,6 +60,7 @@ namespace animation {
 
 		for (size_t i = 0; i < m_segments.size(); i++) {
 			float timeLocal = time;
+			//Make sure that no segment runs over it's length
 			if (timeLocal > m_segments[i]->getDuration())
 				timeLocal = m_segments[i]->getDuration();
 			
@@ -77,6 +80,7 @@ namespace animation {
 
 	void ModelAnimationSegmentParallel::addSegment(std::unique_ptr<ModelAnimationSegment> segment) {
 		float newDur = segment->getDuration();
+		//recalculate total duration if necessary
 		m_duration = newDur > m_duration ? newDur : m_duration;
 		m_segments.push_back(std::move(segment));
 	}
@@ -95,6 +99,7 @@ namespace animation {
 			vm_angles_2_matrix(&m_rot, &m_targetAngle);
 		}
 		else {
+			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
 			vm_copy_transpose(&unrotate, &base.orientation);
 			vm_angles_2_matrix(&target, &m_targetAngle);

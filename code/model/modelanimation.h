@@ -15,7 +15,7 @@
 //Only needed for the trigger type, will eventually disappear
 #include "model/modelanim.h"
 
-//TODO: Move, make pretty, whatever
+//Since we don't have C++17, this is a small (actually not std conform) implementation of an optional that works for objects with complex constructors
 template<typename T>
 class optional {
 	union data {
@@ -139,14 +139,20 @@ namespace animation {
 
 		friend class ModelAnimation;
 	public:
+		//Create a submodel animation based on the name of the submodel
 		ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		//Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel
 		ModelAnimationSubmodel(const SCP_string& subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment);
-		void play(float frametime, ship* ship);
+
+		//Sets the animation to the specified time and applies it to the submodel
+		void play(float time, ship* ship);
 		void reset(ship* ship);
 
 	private:
+		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
 		float saveCurrentAsBase(ship* ship);
-		void copyToSubsystem(const ModelAnimationData<>& data, ship* ship);
+		//Reapply the calculated animation state to the submodel
+		void copyToSubmodel(const ModelAnimationData<>& data, ship* ship);
 		std::pair<submodel_instance*, bsp_info*> findSubmodel(ship* ship);
 	};
 
@@ -165,10 +171,13 @@ namespace animation {
 	public:
 		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
 
+		//Start playing the animation. Will stop other animations that have components running on the same submodels
 		void start(ship* ship, bool reverse);
-		void stop(ship* ship, bool cleanup = false);
+		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
+		void stop(ship* ship, bool cleanup = true);
 
 		static void stepAnimations(float frametime);
+		//Find animations in the running animations list that are fully reset and need to be removed
 		static void clearAnimations();
 		//static std::shared_ptr<ModelAnimation> parseAnimationTable();
 	};

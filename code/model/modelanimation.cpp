@@ -11,7 +11,7 @@ namespace animation {
 
 		switch (m_state) {
 		case ModelAnimationState::UNTRIGGERED:
-
+			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
 			s_runningAnimations.emplace(ship, shared_from_this());
 			m_duration = 0.0f;
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
@@ -21,13 +21,14 @@ namespace animation {
 
 				auto animIterRange = s_runningAnimations.equal_range(ship);
 				for (auto animIter = animIterRange.first; animIter != animIterRange.second; animIter++) {
-					//Don't stop this animation
+					//Don't stop this animation, even though it (obviously) runs on the same submodels
 					if (animIter->second == shared_from_this())
 						continue;
 
 					const auto& otherAnims = animIter->second->m_submodelAnimation;
 					bool needStop = false;
 
+					//See if we can find a submodel that must be reset. In case the other submodel has not been cached, it cannot have been running, so it is fine to miss these here
 					for (const auto& otherAnim : otherAnims) {
 						if (otherAnim->m_submodel == animation->m_submodel) {
 							needStop = true;
@@ -36,11 +37,14 @@ namespace animation {
 					}
 					
 					if (needStop) {
-						animIter->second->stop(animIter->first);
+						animIter->second->stop(animIter->first, false);
 					}
 				}
 
+				//Store the submodels current data as the base for this animation and calculate this animations parameters
 				float duration = animation->saveCurrentAsBase(ship);
+
+				//Update this animations duration based on all the submodel animations (note that these could differ in multiple executions of the same animation, for example in case of absolute angles)
 				if (duration > m_duration)
 					m_duration = duration;
 			}
@@ -49,6 +53,7 @@ namespace animation {
 		case ModelAnimationState::RUNNING_FWD:
 			m_time += frametime;
 
+			//Cap time if needed
 			if (m_time > m_duration) {
 				m_time = m_duration;
 				m_state = ModelAnimationState::COMPLETED;
@@ -60,12 +65,14 @@ namespace animation {
 			break;
 
 		case ModelAnimationState::COMPLETED:
+			//This means someone requested to start once we were complete, so start moving backwards.
 			m_state = ModelAnimationState::RUNNING_RWD;
 		case ModelAnimationState::RUNNING_RWD:
 			m_time -= frametime;
 
+			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
 			if (m_time < 0) {
-				stop(ship);
+				stop(ship, false);
 				break;
 			}
 
@@ -122,6 +129,7 @@ namespace animation {
 			}
 		}
 		
+		//Play them once without changing their set time, this will make sure they stop other conflicting animations and set up properly.
 		play(0, ship);
 		//In case this stopped some other animations, we need to remove them from the playing buffer
 		cleanRunning();
@@ -160,12 +168,13 @@ namespace animation {
 
 		}
 
+		//Clear Animations that might have completed this frame.
 		cleanRunning();
 	}
 
 	void ModelAnimation::clearAnimations() {
 		for (const auto& anim : s_runningAnimations) {
-			anim.second->stop(anim.first);
+			anim.second->stop(anim.first, false);
 		}
 
 		s_runningAnimations.clear();
@@ -173,6 +182,7 @@ namespace animation {
 
 	/*std::shared_ptr<ModelAnimation> ModelAnimation::parseAnimationTable() {
 		//TODO. This is not the function to parse the legacy table, that is still part of modelread.cpp
+		//This will eventually be the function to parse the new animation table
 		return std::make_shared<ModelAnimation>(nullptr);
 	}*/
 
@@ -189,17 +199,21 @@ namespace animation {
 		if (dataIt == m_initialData.end() || lastDataIt == m_lastFrame.end())
 			return;
 
+		//Cap the frametime at this submodels duration
 		if (frametime > m_mainSegment->getDuration())
 			frametime = m_mainSegment->getDuration();
 
 		ModelAnimationData<> currentFrame = dataIt->second;
+		//Calculate the submodels data (or it's delta from the data stored at the animation's start)
 		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(currentFrame, lastDataIt->second, frametime);
 		
 		currentFrame.applyDelta(delta);
 
+		//Execute stuff of the animation that doesn't modify this delta (stuff like sounds / particles)
 		m_mainSegment->executeAnimation(currentFrame, frametime);
 
-		copyToSubsystem(currentFrame, ship);
+		//Actually apply the result to the submodel
+		copyToSubmodel(currentFrame, ship);
 		m_lastFrame[ship] = currentFrame;
 	}
 
@@ -208,10 +222,11 @@ namespace animation {
 		if (dataIt == m_initialData.end())
 			return;
 
-		copyToSubsystem(dataIt->second, ship);
+		//Since resetting the submodel animation also has to happen for the submodel itself, copy it's state at the animation's start back to the submodel
+		copyToSubmodel(dataIt->second, ship);
 	}
 
-	void ModelAnimationSubmodel::copyToSubsystem(const ModelAnimationData<>& data, ship* ship) {
+	void ModelAnimationSubmodel::copyToSubmodel(const ModelAnimationData<>& data, ship* ship) {
 		submodel_instance* submodel = findSubmodel(ship).first;
 		if (!submodel)
 			return;
@@ -245,8 +260,10 @@ namespace animation {
 
 		polymodel* pm = model_get(Ship_info[ship->ship_info_index].model_num);
 
+		//Do we have a submodel number already cached?
 		if (m_submodel.has())
 			submodelNumber = m_submodel;
+		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else if (m_findBarrel.has()) {
 			ship_info* sip = &Ship_info[ship->ship_info_index];
 			for (int i = 0; i < sip->n_subsystems; i++) {
@@ -266,6 +283,7 @@ namespace animation {
 
 			m_submodel = submodelNumber;
 		}
+		//We seem to have a submodel name
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
 				if (!subsystem_stricmp(pm->submodel[i].name, m_name.c_str())) {
@@ -277,6 +295,8 @@ namespace animation {
 			m_submodel = submodelNumber;
 		}
 
+		//If the model does not exist, return null. The system is expected to just silently tolerate this,
+		//as this needs to be the case to be able to handle turrets whose barrels may or may not exist, depending on the pof which is not loaded at table parse time
 		if (submodelNumber < 0 || submodelNumber >= pm->n_models)
 			return { nullptr, nullptr };
 
