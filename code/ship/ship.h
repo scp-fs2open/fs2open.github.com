@@ -469,22 +469,34 @@ struct reload_pct
 		_points_per_bank = points_per_bank;
 		_buffer.clear();
 		_buffer.resize(num_banks * points_per_bank, value);
+		_value = value;
 	}
 
 	T& get(int bank, int point)
 	{
 		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return _value;
+
 		return _buffer[pos];
 	}
 
 	void set(int bank, int point, T value)
 	{
 		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return;
+
 		_buffer[pos] = value;
 	}
 
 private:
 	int _points_per_bank = 0;
+	T _value;
 	SCP_vector<T> _buffer;
 };
 
