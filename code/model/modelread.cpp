@@ -1195,7 +1195,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
 		return 0;
 	}
-	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION || version > PM_LATEST_ALIGNED_VERSION) {
+	if ((version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) || (version > PM_LATEST_ALIGNED_VERSION)) {
 		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, version >= PM_FIRST_ALIGNED_VERSION ? PM_LATEST_ALIGNED_VERSION : PM_LATEST_LEGACY_VERSION);
 	}
 
