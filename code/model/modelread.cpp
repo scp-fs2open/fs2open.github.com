@@ -80,6 +80,12 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 21.17 adds support for engine thruster banks linked to specific engine subsystems.
+// FreeSpace 2 shipped at POF version 21.17
+// Descent: FreeSpace shipped at POF version 20.14
+// See also https://wiki.hard-light.net/index.php/POF_data_structure
+#define PM_LATEST_VERSION	2117
+
 static int Model_signature = 0;
 
 void interp_configure_vertex_buffers(polymodel*, int);
@@ -1182,6 +1188,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
 		return 0;
+	}
+	if (version > PM_LATEST_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_VERSION);
 	}
 
 	pm->version = version;
