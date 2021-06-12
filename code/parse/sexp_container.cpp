@@ -406,7 +406,7 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 /**
 * Replace container references in a string with their values
 **/
-bool sexp_container_replace_refs_with_values(SCP_string& text)
+bool sexp_container_replace_refs_with_values(SCP_string &text)
 {
 	bool replaced_anything = false;
 	size_t lookHere = 0;
