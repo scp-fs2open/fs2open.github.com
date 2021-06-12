@@ -122,7 +122,6 @@ struct sexp_container
 struct list_modifier {
 	enum class Modifier
 	{
-		INVALID = 0,
 		GET_FIRST,
 		GET_LAST,
 		REMOVE_FIRST,
