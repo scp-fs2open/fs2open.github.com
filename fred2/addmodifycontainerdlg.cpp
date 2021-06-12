@@ -130,7 +130,12 @@ void CAddModifyContainerDlg::set_selected_container()
 void CAddModifyContainerDlg::OnOK() 
 {
 	update_sexp_containers(m_containers);
-	// TODO: reset dialog's vars? Is there a chance the dialog will get re-used?
+
+	// TODO: add this once SEXP tree nodes support containers
+	//if (!m_old_to_new_names.empty()) {
+	//	// TODO: rename nodes in Sexp_nodes
+	//	// TODO: rename nodes in sexp_tree::tree_nodes
+	//}
 
 	CDialog::OnOK();
 }
@@ -768,8 +773,20 @@ void CAddModifyContainerDlg::OnBnClickedRenameContainer()
 
 	CString new_name = dlg.new_container_name();
 	if (is_container_name_valid(new_name, true)) {
-		// FIXME TODO: replace uses of old container name in SEXP tree, but only when user clicks OK?
-		// How does var renaming handle this issue?
+		// update renaming maps
+		SCP_string new_name_str = new_name;
+		SCP_string curr_name = get_current_container().container_name;
+		auto prev_name_it = m_new_to_old_names.find(curr_name);
+		if (prev_name_it != m_new_to_old_names.end()) {
+			SCP_string orig_name = prev_name_it->second;
+			m_new_to_old_names.erase(prev_name_it);
+			m_old_to_new_names[orig_name] = new_name_str;
+			m_new_to_old_names[new_name_str] = orig_name;
+		} else {
+			m_old_to_new_names[curr_name] = new_name_str;
+			m_new_to_old_names[new_name_str] = curr_name;
+		}
+
 		container.container_name = new_name;
 		cbox->DeleteString((UINT)m_current_container);
 		cbox->InsertString(m_current_container, container.container_name.c_str());
@@ -800,6 +817,13 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 
 	if (ret == IDCANCEL) {
 		return;
+	}
+
+	// update renaming maps
+	auto prev_name_it = m_new_to_old_names.find(get_current_container().container_name);
+	if (prev_name_it != m_new_to_old_names.end()) {
+		m_old_to_new_names.erase(prev_name_it->second);
+		m_new_to_old_names.erase(prev_name_it);
 	}
 
 	// prevent sudden change in type selection buttons
