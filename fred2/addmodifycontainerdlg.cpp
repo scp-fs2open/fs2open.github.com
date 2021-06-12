@@ -294,13 +294,13 @@ bool CAddModifyContainerDlg::is_container_name_valid(CString &new_name, bool is_
 	}
 
 	// handle & chars
-	if (strchr(new_name, '&') != nullptr) {
+	if (strchr(new_name, sexp_container::DELIM) != nullptr) {
 		if (is_rename) {
 			MessageBox("Container names cannot contain &.");
 			return false;
 		} else {
 			MessageBox("Container names cannot contain &. Replacing with hyphens.");
-			new_name.Replace((TCHAR)'&', (TCHAR)'-');
+			new_name.Replace((TCHAR)sexp_container::DELIM, (TCHAR)'-');
 		}
 	}
 
