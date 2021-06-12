@@ -265,13 +265,13 @@ sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_
 }
 
 /**
-* Helper function for sexp_replace_container_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
+* Helper function for sexp_container_replace_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
 **/
-bool get_replace_text_for_modifier(const SCP_string& text,
-	sexp_container& container,
+bool get_replace_text_for_modifier(const SCP_string &text,
+	sexp_container &container,
 	const size_t lookHere,
-	SCP_string& replacement_text,
-	size_t& num_chars_to_replace)
+	SCP_string &replacement_text,
+	size_t &num_chars_to_replace)
 {
 	// for map containers, check if this matches a map key
 	if (container.is_map()) {
@@ -280,10 +280,10 @@ bool get_replace_text_for_modifier(const SCP_string& text,
 			return false;
 		}
 
-		const size_t key_ends_here = text.find('&', lookHere);
+		const size_t key_ends_here = text.find(sexp_container::DELIM, lookHere);
 		if (key_ends_here == SCP_string::npos) {
 			Warning(LOCATION,
-				"sexp_replace_container_refs_with_values() found a map container called %s to replace but the key is "
+				"sexp_container_replace_refs_with_values() found a map container called %s to replace but the key is "
 				"missing a final '&'",
 				container.container_name.c_str());
 			return false;
@@ -294,7 +294,7 @@ bool get_replace_text_for_modifier(const SCP_string& text,
 
 		if (iter == container.map_data.end()) {
 			Warning(LOCATION,
-				"sexp_replace_container_refs_with_values() found a map container called %s but the key %s is not found",
+				"sexp_container_replace_refs_with_values() found a map container called %s but the key %s is not found",
 				container.container_name.c_str(),
 				key.c_str());
 			return false;
@@ -371,7 +371,10 @@ bool get_replace_text_for_modifier(const SCP_string& text,
 			Assert(!number_string.empty());
 			data_index = atoi(number_string.c_str());
 			if (data_index < 0 || data_index >= (int)list_data.size()) {
-				// TODO: warning
+				Warning(LOCATION,
+					"sexp_container_replace_refs_with_values() found invalid index '%s' into list container %s",
+					number_string.c_str(),
+					container.container_name.c_str());
 				return false;
 			}
 			replacement_text = *std::next(list_it, data_index);
@@ -381,7 +384,7 @@ bool get_replace_text_for_modifier(const SCP_string& text,
 			break;
 
 		default:
-			Warning(LOCATION, "sexp_replace_container_refs_with_values() found a container called %s to replace but the modifer is not recognised", container.container_name.c_str());
+			Warning(LOCATION, "sexp_container_replace_refs_with_values() found a container called %s to replace but the modifer is not recognised", container.container_name.c_str());
 			return false;
 		}
 
@@ -391,8 +394,6 @@ bool get_replace_text_for_modifier(const SCP_string& text,
 		if (modifier_to_use->modifier == ListModifier::AT_INDEX) {
 			num_chars_to_replace += number_length;
 		}
-
-		// TODO: verify that the char we're about to skip below is a '&'
 	}
 
 	// account for the final '&'
@@ -413,7 +414,7 @@ bool sexp_container_replace_refs_with_values(SCP_string& text)
 
 	while (lookHere < text.length()) {
 		// look for the meta-character
-		size_t foundHere = text.find('&', lookHere);
+		size_t foundHere = text.find(sexp_container::DELIM, lookHere);
 
 		// found?
 		if (foundHere != SCP_string::npos && foundHere != text.length() - 1) {
@@ -427,11 +428,11 @@ bool sexp_container_replace_refs_with_values(SCP_string& text)
 
 				// make sure the enclosing '&' appears after the container name
 				size_t expected_amp_pos = foundHere + num_chars_to_replace - 1;
-				if (expected_amp_pos >= text.length() || text[expected_amp_pos] != '&') {
+				if (expected_amp_pos >= text.length() || text[expected_amp_pos] != sexp_container::DELIM) {
 					// no modifier/key specified - ignore this matching container name, as the replacement is malformed
 					lookHere = foundHere + 1;
 					Warning(LOCATION,
-						"sexp_replace_container_refs_with_values() found a container called %s to replace but there is "
+						"sexp_container_replace_refs_with_values() found a container called %s to replace but there is "
 						"no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This "
 						"format is expected for maps &Container_Name&Key&",
 						p_container->container_name.c_str());
