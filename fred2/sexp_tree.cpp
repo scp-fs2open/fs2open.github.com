@@ -6490,17 +6490,13 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 int sexp_tree::get_container_usage_count(const char* container_name) const
 {
-	SCP_string container_name_lower = container_name;
-	SCP_tolower(container_name_lower);
+	const SCP_string container_name_str = sexp_container::DELIM + container_name + sexp_container::DELIM;
 
 	int count = 0;
 
 	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
-		// DISCUSSME: should nodes not marked SEXPT_VALID also be counted?
 		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
-			SCP_string tree_node_text_lower = tree_nodes[idx].text;
-			SCP_tolower(tree_node_text_lower);
-			if (strstr(tree_node_text_lower.c_str(), container_name_lower.c_str())) {
+			if (!stricmp(tree_nodes[idx].text, container_name_str.c_str())) {
 				count++;
 			}
 		}
