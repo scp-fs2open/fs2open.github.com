@@ -961,6 +961,7 @@ void multi_sexp_modify_variable();
 // event log stuff
 SCP_vector<SCP_string> *Current_event_log_buffer;
 SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+SCP_vector<SCP_string> *Current_event_log_container_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
@@ -1927,6 +1928,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
+
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			// for now we'll completely ignore SEXP containers
+			node = Sexp_nodes[node].rest;
+			argnum++;
+			continue;
 
 		} else {
 			Assert(0);
@@ -3546,6 +3553,33 @@ int get_sexp()
 			// bump past closing \" by 1 char
 			Mp += (len + 2);
 
+		}
+
+		// Sexp container
+		else if (*Mp == sexp_container::DELIM) {
+			Mp++;
+
+			char container_name[TOKEN_LENGTH];
+			const SCP_string container_delim = "" + sexp_container::DELIM;
+			stuff_string(container_name, F_NAME, TOKEN_LENGTH, container_delim.c_str());
+
+			// bump past closing '&'
+			Mp += 2;
+
+			if (get_sexp_container(container_name) == nullptr) {
+				Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
+				return -1;
+			}
+
+			// advance to the control options, since we'll read them when calling get_sexp() below
+			while (*Mp != '(') {
+				Mp++;
+			}
+			Mp++;
+
+			node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER, get_sexp(), -1);
+
+			ignore_white_space();
 		}
 
 		// Sexp operator or number
@@ -23548,6 +23582,7 @@ void add_to_event_log_buffer(int op_num, int result)
 {
 	Assertion ((Current_event_log_buffer != nullptr) &&
 				(Current_event_log_variable_buffer != nullptr)&& 
+				(Current_event_log_container_buffer != nullptr) &&
 				(Current_event_log_argument_buffer != nullptr), "Attempting to write to a non-existent log buffer");
 
 	if (op_num == -1) {
@@ -23591,6 +23626,14 @@ void add_to_event_log_buffer(int op_num, int result)
 			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
+		}
+	}
+
+	if (!Current_event_log_container_buffer->empty()) {
+		tmp.append("\nContainers:\n");
+		while (!Current_event_log_container_buffer->empty()) {
+			tmp.append(Current_event_log_container_buffer->back().c_str());
+			Current_event_log_container_buffer->pop_back();
 		}
 	}
 
@@ -29957,6 +30000,10 @@ const char *CTEXT(int n)
 		}
 
 		return Sexp_variables[sexp_variable_index].text;
+	}
+	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)
+	{
+		return sexp_container_CTEXT(n);
 	}
 	else
 	{

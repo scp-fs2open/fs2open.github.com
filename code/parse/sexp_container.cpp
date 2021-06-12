@@ -5,12 +5,17 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <iterator>
 
+#include "gamesequence/gamesequence.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/toolchain.h"
+#include "mission/missiongoals.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
+#include "utils/Random.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
 static SCP_unordered_map<SCP_string, sexp_container*, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
@@ -36,6 +41,16 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 {
 	return List_modifiers;
 }
+
+// CTEXT()-related data
+namespace {
+	const char *Empty_str = "";
+	// Probably way too many now.I suspect someone will want to bump this later.Go ahead if you do, the choice was fairly arbitrary.
+	constexpr size_t NUM_CTEXT_RETURN_STRINGS = 100;
+	std::array<char[TOKEN_LENGTH], NUM_CTEXT_RETURN_STRINGS> Ctext_strings;
+	int Ctext_strings_last_index = 0;
+} // namespace
+
 
 // sexp_container functions
 
@@ -261,4 +276,218 @@ sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_
 
 	// not found
 	return nullptr;
+}
+
+// Containers should not be modified if the game is simply checking the syntax. 
+bool are_containers_modifiable()
+{
+	// can always modify containers during the mission itself
+	if (Game_mode & GM_IN_MISSION) {
+		return true;
+	}
+
+	// can also modify if we are calling the sexp from a script or if we are briefing / debriefing, etc.
+	switch (gameseq_get_state()) {
+	case GS_STATE_BRIEFING:
+	case GS_STATE_DEBRIEF:
+	case GS_STATE_CMD_BRIEF:
+	case GS_STATE_FICTION_VIEWER:
+	case GS_STATE_SCRIPTING:
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+// TODO: see if this code can be combined with similar code for text replacement
+bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_string &result)
+{
+	if (container.is_map()) {
+		if (container.map_data.empty()) {
+			Warning(LOCATION, "Attempt to retrieve data from empty map container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const char *key = CTEXT(node);
+		const auto value_it = container.map_data.find(SCP_string(key));
+
+		if (value_it != container.map_data.end()) {
+			result = value_it->second;
+			return true;
+		} else {
+			if (Log_event) {
+				SCP_string log_string = container.container_name;
+				log_string.append(" map container returned nothing when searched for key ");
+				log_string.append(key);
+				Current_event_log_container_buffer->emplace_back(log_string);
+			}
+			return false;
+		}
+	} else if (container.is_list()) {
+		if (container.list_data.empty()) {
+			Warning(LOCATION, "Attempt to retrieve data from empty list container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const char* modifier_text = CTEXT(node);
+
+		const list_modifier *modifier_to_use = nullptr;
+		for (const auto &modifier : List_modifiers) {
+			if (!stricmp(modifier_text, modifier.name)) {
+				modifier_to_use = &modifier;
+				break;
+			}
+		}
+
+		if (!modifier_to_use) {
+			const SCP_string& container_name = container.container_name;
+			Warning(LOCATION,
+				"Illegal operation attempted on %s container. There is no modifier called %s.",
+				container_name.c_str(),
+				modifier_text);
+			log_printf(LOGFILE_EVENT_LOG,
+				"Illegal operation attempted on %s container. There is no modifier called %s.",
+				container_name.c_str(),
+				modifier_text);
+			return false;
+		}
+
+		int data_index;
+		auto& list_data = container.list_data;
+		auto list_it = list_data.begin();
+
+		switch (modifier_to_use->modifier) {
+		case ListModifier::GET_FIRST:
+			result = list_data.front();
+			return true;
+
+		case ListModifier::GET_LAST:
+			result = list_data.back();
+			return true;
+
+		case ListModifier::REMOVE_FIRST:
+			result = list_data.front();
+			if (are_containers_modifiable()) {
+				list_data.pop_front();
+			}
+			return true;
+
+		case ListModifier::REMOVE_LAST:
+			result = list_data.back();
+			if (are_containers_modifiable()) {
+				list_data.pop_back();
+			}
+			return true;
+
+		case ListModifier::GET_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			result = *std::next(list_it, data_index);
+			return true;
+
+		case ListModifier::REMOVE_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			std::advance(list_it, data_index);
+			result = *list_it;
+			if (are_containers_modifiable()) {
+				list_data.erase(list_it);
+			}
+			return true;
+
+		case ListModifier::AT_INDEX:
+			node = CDR(node);
+			if (node == -1) {
+				return false;
+			}
+			bool is_nan, is_nan_forever;
+			data_index = eval_num(node, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever) {
+				return false;
+			}
+			Assert(data_index >= 0);
+			Assert(data_index < (int)list_data.size());
+			result = *std::next(list_it, data_index);
+			return true;
+
+		default:
+			Error(LOCATION, "Unknown modifier type found in container");
+			break;
+		}
+	}
+
+	return false;
+}
+
+int container_push_return_string(const SCP_string& result)
+{
+	Assert(Ctext_strings_last_index >= 0);
+
+	// maybe reset if we've already used all the slots
+	if (Ctext_strings_last_index >= NUM_CTEXT_RETURN_STRINGS) {
+		Ctext_strings_last_index = 0;
+	}
+
+	strcpy_s(Ctext_strings[Ctext_strings_last_index], result.c_str());
+
+	// remember to increment the index so that next time the function is called it uses an empty slot. 
+	return Ctext_strings_last_index++;
+}
+
+const char *sexp_container_CTEXT(int node)
+{
+	auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+
+	if (!p_container) {
+		Warning(LOCATION, "ctext_for_containers() called for %s, a container which does not exist!", Sexp_nodes[node].text);
+		log_printf(LOGFILE_EVENT_LOG, "ctext_for_containers called for %s, a container which does not exist!", Sexp_nodes[node].text);
+		return Empty_str;
+	}
+
+	node = CAR(node);
+
+	SCP_string result;
+
+	for (int sanity = 0; sanity < 20; ++sanity) {
+		auto &container = *p_container;
+		bool success = sexp_container_CTEXT_helper(node, container, result);
+
+		if (Log_event) {
+			SCP_string log_string = container.container_name;
+			if (success) {
+				log_string += " container returned ";
+				log_string += result;
+			} else {
+				log_string += " container lookup failed";
+			}
+			Current_event_log_container_buffer->emplace_back(log_string);
+		}
+
+		if (!success || result.empty()) {
+			return Empty_str;
+		}
+
+		if (result.front() != sexp_container::DELIM) {
+			// FIXME: ugh. Instead of this hackishness, store the resulting string as cached data on the Sexp node in question
+			// if the node already has cached data attached, reuse the cached_data object
+			int result_index = container_push_return_string(result);
+			return Ctext_strings[result_index];
+		} else {
+			// we're dealing with a multidimentional container
+			node = CDR(node);
+
+			// "- 2" because we're skipping the first and last chars, which are/should both be &
+			auto *p_next_container = get_sexp_container(result.substr(1, (result.length() - 2)).c_str());
+
+			if (p_next_container != nullptr) {
+				p_container = p_next_container;
+				result.clear();
+			} else {
+				Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
+				return Empty_str;
+			}
+		}
+	}
+
+	// we've hit sanity limit; give up
+	return Empty_str;
 }

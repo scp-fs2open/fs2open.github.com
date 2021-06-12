@@ -154,3 +154,5 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  * Return pointer to a sexp_container by its name, or nullptr if not found
  */
 sexp_container *get_sexp_container(const char *name);
+
+const char* sexp_container_CTEXT(int node);

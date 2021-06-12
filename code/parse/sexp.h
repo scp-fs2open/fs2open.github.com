@@ -1186,6 +1186,7 @@ extern SCP_vector<int> Current_sexp_operator;
 // event log stuff
 extern SCP_vector<SCP_string> *Current_event_log_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 extern void init_sexp();
