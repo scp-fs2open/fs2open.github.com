@@ -630,7 +630,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		else {
 			// playing forwards
 			ga->anim_time += frametime;
-			if(ga->anim_time >= ga->total_time && ga->png.anim->current_frame >= ga->png.anim->nframes-1) {
+			if(ga->anim_time >= ga->total_time && ga->png.anim->current_frame >= ga->png.anim->nframes) {
 				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
 					ga->anim_time = ga->total_time;  // stop on last frame when playing
 				}
@@ -660,7 +660,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		}
 		else {
 			if (ga->anim_time >= ga->png.previous_frame_time + ga->png.anim->frame.delay &&
-					ga->png.anim->current_frame < ga->png.anim->nframes-1) {
+					ga->png.anim->current_frame < ga->png.anim->nframes) {
 				ga->png.previous_frame_time += ga->png.anim->frame.delay;
 				ga->current_frame++;
 			}
@@ -723,5 +723,19 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 				gr_bitmap_uv(x, y, ge->width, ge->height, ge->u0, ge->v0, ge->u1, ge->v1, GR_RESIZE_NONE);
 			}
 		}
+	}
+}
+
+/*
+ * @brief reset an animation back to the start
+ *
+ * @param [in] *ga  animation data
+ */
+void generic_anim_reset(generic_anim *ga) {
+	ga->anim_time = 0.0f;
+	ga->current_frame = 0;
+	if (ga->type == BM_TYPE_PNG) {
+		ga->png.previous_frame_time = 0.0f;
+		ga->png.anim->goto_start();
 	}
 }

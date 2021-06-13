@@ -736,6 +736,7 @@ void main_hall_do(float frametime)
 								Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 						}
 
+						// TODO: generic_anim_skip_to(cur_frame, anim_time);
 						Main_hall_misc_anim.at(idx).current_frame = cur_frame;
 						Main_hall_misc_anim.at(idx).anim_time = anim_time;
 
@@ -764,6 +765,7 @@ void main_hall_do(float frametime)
 								Main_hall_door_anim.at(idx).direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 							}
 
+							// TODO: generic_anim_skip_to(cur_frame, anim_time);
 							Main_hall_door_anim.at(idx).current_frame = cur_frame;
 							Main_hall_door_anim.at(idx).anim_time = anim_time;
 
@@ -1251,8 +1253,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay.at(idx).at(0))) {
 					Main_hall->misc_anim_paused.at(idx) = false;
-					Main_hall_misc_anim.at(idx).current_frame = 0;
-					Main_hall_misc_anim.at(idx).anim_time = 0.0;
+					generic_anim_reset(&Main_hall_misc_anim.at(idx));
 
 					// kill the timestamp
 					Main_hall->misc_anim_delay.at(idx).at(0) = -1;
@@ -1417,12 +1418,14 @@ void main_hall_mouse_release_region(int region)
 			sound_pair->second = snd_play(sound_pair->first, Main_hall->door_sound_pan.at(region));
 		}
 
-		// TODO: track current frame
-		snd_set_pos(sound_pair->second,
-					(float) ((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe :
-							 Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame)
-						/ (float) Main_hall_door_anim.at(region).num_frames,
-					1);
+		// start the sound playing at the right spot relative to the completion of the animation
+		if ( Main_hall_door_anim.at(region).current_frame != -1 ) {
+			snd_set_pos(sound_pair->second,
+						(float) ((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe :
+								 Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame)
+							/ (float) Main_hall_door_anim.at(region).num_frames,
+						1);
+		}
 	}
 }
 
