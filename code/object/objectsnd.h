@@ -38,7 +38,7 @@ void	obj_snd_do_frame();
 // model coords of the location of the engine
 // by passing vmd_zero_vector here, you get a sound centered directly on the object
 // This function used to have a "main" argument, but that is equivalent to including OS_MAIN as one of the flags
-int	obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags=0, ship_subsys *associated_sub=NULL);
+int	obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags = 0, const ship_subsys *associated_sub = nullptr);
 
 //Delete specific persistent sound on object
 void obj_snd_delete(int objnum, int index);

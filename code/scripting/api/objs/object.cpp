@@ -539,6 +539,8 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	auto objp = objh->objp;
 	auto gs_id = seh->idx;
 	auto subsys = tgsh ? tgsh->ss : nullptr;
+	if (!offset)
+		offset = &vmd_zero_vector;
 	if (enum_flags.IsValid())
 	{
 		flags = enum_flags.index;
