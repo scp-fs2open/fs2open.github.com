@@ -323,20 +323,10 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
-             <widget class="QScrollArea" name="scrBranches">
-              <property name="widgetResizable">
-               <bool>true</bool>
+             <widget class="fso::fred::sexp_tree" name="sxtBranches">
+              <property name="enabled">
+               <bool>false</bool>
               </property>
-              <widget class="QWidget" name="sexpView">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>309</width>
-                 <height>179</height>
-                </rect>
-               </property>
-              </widget>
              </widget>
             </item>
             <item>
@@ -349,6 +339,9 @@
                 <layout class="QVBoxLayout" name="verticalLayout">
                  <item>
                   <widget class="QPushButton" name="btnBranchUp">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
                     <string>Move Up</string>
                    </property>
@@ -356,6 +349,9 @@
                  </item>
                  <item>
                   <widget class="QPushButton" name="btnBranchDown">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
                     <string>Move Down</string>
                    </property>
@@ -363,6 +359,9 @@
                  </item>
                  <item>
                   <widget class="QPushButton" name="btnBranchLoop">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
                     <string>Toggle Loop</string>
                    </property>
@@ -540,9 +539,15 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>lstMissions</tabstop>
-  <tabstop>scrBranches</tabstop>
   <tabstop>btnBranchUp</tabstop>
   <tabstop>btnBranchDown</tabstop>
   <tabstop>btnBranchLoop</tabstop>

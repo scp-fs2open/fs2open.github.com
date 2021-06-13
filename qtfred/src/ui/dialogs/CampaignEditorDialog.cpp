@@ -25,6 +25,8 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	p.setColor(QPalette::WindowText, Qt::red);
 	ui->lblMissionDescr2->setPalette(p);
 
+	ui->sxtBranches->initializeEditor(nullptr, this);
+
 	setModel();
 
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
@@ -84,7 +86,7 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
-	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
+	/*connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
 		model->setCurBrIsLoop(checked);
 	});
 	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
@@ -92,7 +94,7 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
 	});
 	connect(ui->txtLoopAnim, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
-	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
+	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);*/
 
 	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 }
@@ -131,15 +133,18 @@ void CampaignEditorDialog::updateUI() {
 	ui->cmbMainhall->setEnabled(included);
 	ui->cmbDebriefingPersona->setEnabled(included);
 
+
+	createTree(included);
+
 	//ui->btnBranchUp->setEnabled()
 	//ui->btnBranchDown->setEnabled()
 	//ui->btnBranchLoop->setEnabled()
 
-	ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
+	/*ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
 	ui->txtLoopAnim->setText(model->getCurLoopAnim());
-	//ui->btnBrLoopAnim->setEnabled()
+	ui->btnBrLoopAnim->setEnabled()
 	ui->txtLoopVoice->setText(model->getCurLoopVoice());
-	//ui->btnBrLoopVoice->setEnabled()
+	ui->btnBrLoopVoice->setEnabled()*/
 
 	//ui->btnErrorChecker->setEnabled()
 	//ui->btnRealign->setEnabled()
@@ -221,6 +226,27 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 		return;
 
 	model->saveTo(pathName);
+}
+
+void CampaignEditorDialog::createTree(bool enabled) {
+	using Branch = CampaignEditorDialogModel::CampaignBranchData;
+	sexp_tree &sxt = *ui->sxtBranches;
+
+	sxt.setEnabled(enabled);
+	sxt.clear_tree("");
+	if (enabled)
+		for (const Branch& br : model->getCurMnBranches()) {
+			NodeImage img;
+			if (br.type == Branch::NEXT_NOT_FOUND)
+				img = NodeImage::ROOT_DIRECTIVE;
+			else if (br.loopData)
+				img = NodeImage::ROOT;
+			else
+				img = NodeImage::BLACK_DOT;
+			QTreeWidgetItem *h = sxt.insert(Branch::branchTexts.at(br.type) + br.next, img);
+
+			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
+		}
 }
 
 void CampaignEditorDialog::btnBranchUpClicked() {

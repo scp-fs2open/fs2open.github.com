@@ -88,21 +88,53 @@ static inline bool isCampaignCompatible(const mission &fsoMission){
 			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
 }
 
+const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString> CampaignEditorDialogModel::CampaignBranchData::branchTexts{
+	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
+};
+
+CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const int &sexp_branch, const QString &from) :
+	sexp(CAR(sexp_branch))
+{
+	int node_next = CADR(sexp_branch);
+	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
+		type = END;
+	} else if (!stricmp(CTEXT(node_next), "next-mission")) {
+		next = CTEXT(CDR(node_next));
+		type = (from == next) ? REPEAT : NEXT_NOT_FOUND;
+	}
+}
+
+void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_vector<const std::unique_ptr<CampaignMissionData>*>& missions) {
+	if (std::find_if(missions.cbegin(), missions.cend(),
+					 [&](const std::unique_ptr<CampaignMissionData>* mn){
+						return next == (*mn)->filename; })
+			== missions.cend())
+		type = NEXT_NOT_FOUND;
+	else
+		type = NEXT;
+}
+
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file, const cmission &cm) :
 	filename(file),
 	briefingCutscene(cm.briefing_cutscene),
 	mainhall(cm.main_hall.c_str()),
 	debriefingPersona(QString::number(cm.debrief_persona_index))
 {
-	branches.emplace_back();
+	if ( cm.formula < 0 || stricmp(CTEXT(cm.formula), "cond"))
+		return;
+
+	for (int it_cond_arm = CDR(cm.formula);
+		 it_cond_arm != -1;
+		 it_cond_arm = CDR(it_cond_arm) )
+		branches.emplace_back(CAR(it_cond_arm), filename);
+
 	it_branches = branches.begin();
 }
 
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
 	filename(file)
 {
-	branches.emplace_back();
-	it_branches = branches.begin();
+
 }
 
 CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionData>>::RowData
@@ -156,12 +188,15 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 			missionData.addRow(Campaign.missions[i].name, ptr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
+	connectBranches();
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::modelChanged);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
+
+	connect(this, &CampaignEditorDialogModel::modelChanged, this, &CampaignEditorDialogModel::connectBranches);
 }
 
 bool CampaignEditorDialogModel::apply() {
@@ -201,6 +236,14 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 			droppedMissions.append(missionData.data(idx).toString());
 		}
 	}
+}
+
+void CampaignEditorDialogModel::connectBranches() {
+	auto missions = missionData.getCheckedData();
+	for (auto& mn: missions)
+		for (auto& br: (*mn)->branches)
+			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
+				br.connect(missions);
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {

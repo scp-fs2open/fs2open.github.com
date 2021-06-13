@@ -9,6 +9,7 @@
 #include <memory>
 
 #include <mission/dialogs/CampaignEditorDialogModel.h>
+#include <ui/widgets/sexp_tree.h>
 
 namespace fso {
 namespace fred {
@@ -20,13 +21,15 @@ namespace Ui {
 
 class CampaignEditorDialogModel;
 
-class CampaignEditorDialog : public QDialog
+class CampaignEditorDialog : public QDialog, public SexpTreeEditorInterface
 {
 	Q_OBJECT
 
 public:
 	explicit CampaignEditorDialog(QWidget *parent, EditorViewport *viewport);
 	~CampaignEditorDialog();
+
+	bool requireCampaignOperators() const override {return true;}
 
 private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
@@ -49,6 +52,8 @@ private slots:
 	bool fileSave();
 	bool fileSaveAs();
 	void fileSaveCopyAs();
+
+	void createTree(bool enabled = true);
 
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();

@@ -15,8 +15,32 @@ class CampaignEditorDialog;
 
 class CampaignEditorDialogModel : public AbstractDialogModel
 {
+	struct CampaignMissionData;
 	Q_OBJECT
 public:
+	struct CampaignLoopData	{
+
+		QString descr;
+		QString anim;
+		QString voice;
+	};
+
+	struct CampaignBranchData {  //noUIu
+		CampaignBranchData() = delete;
+		CampaignBranchData(const int &sexp_branch, const QString &from);
+
+		void connect(const SCP_vector<const std::unique_ptr<CampaignMissionData>*>& missions);
+
+		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
+		static const SCP_map<BranchType, QString> branchTexts;
+
+		BranchType type{INVALID};
+		int sexp{-1};
+
+		QString next;
+
+		std::unique_ptr<CampaignLoopData> loopData{nullptr};
+	};
 
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
 	~CampaignEditorDialogModel() override = default;
@@ -51,15 +75,17 @@ public:
 	inline const QString& getCurMnMainhall() const { return getCurMn().mainhall; }
 	inline const QString& getCurMnDebriefingPersona() const { return getCurMn().debriefingPersona; }
 
-	inline bool getCurBrIsLoop() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->isLoop; }
+	inline const SCP_vector<CampaignBranchData>& getCurMnBranches() const {	return getCurMn().branches;	}
 
-	inline const QString& getCurLoopDescr() const {
+	inline bool getCurBrIsLoop() const {
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.get(); }
+
+	/*inline const QString& getCurLoopDescr() const {
 		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.descr; }
 	inline const QString& getCurLoopAnim() const {
 		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.anim; }
 	inline const QString& getCurLoopVoice() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.voice; }
+		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.voice; }*/
 
 	bool saveTo(const QString &file);
 
@@ -69,6 +95,7 @@ public:
 private slots:
 	inline void flagModified() { modified = true; }
 	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+	void connectBranches();
 public slots:
 
 	inline void setCampaignName(const QString &campaignName) {
@@ -90,10 +117,9 @@ public slots:
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
-	inline void setCurBrIsLoop(bool isLoop) {
+	/*inline void setCurBrIsLoop(bool isLoop) {
 		if (! mnData_it) return;
 		modify<bool>(mnData_it->it_branches->isLoop, isLoop);}
-
 	inline void setCurLoopDescr(const QString &descr) {
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->it_branches->loopData.descr, descr); }
@@ -102,7 +128,7 @@ public slots:
 		modify<QString>(mnData_it->it_branches->loopData.anim, anim); }
 	inline void setCurLoopVoice(const QString &voice) {
 		if (! mnData_it) return;
-		modify<QString>(mnData_it->it_branches->loopData.voice, voice); }
+		modify<QString>(mnData_it->it_branches->loopData.voice, voice); }*/
 
 private:
 	bool _saveTo(QString file);
@@ -117,19 +143,6 @@ private:
 				flagModified();
 		}
 	}
-
-	struct CampaignLoopData	{
-
-		QString descr;
-		QString anim;
-		QString voice;
-	};
-
-	struct CampaignBranchData {  //noUIu
-
-		bool isLoop{false};
-		CampaignLoopData loopData;
-	};
 
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
