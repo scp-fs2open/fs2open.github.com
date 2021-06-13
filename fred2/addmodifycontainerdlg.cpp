@@ -33,7 +33,7 @@ CAddModifyContainerDlg::CAddModifyContainerDlg(sexp_tree *p_sexp_tree, CWnd *pPa
 {
 }
 
-void CAddModifyContainerDlg::DoDataExchange(CDataExchange* pDX)
+void CAddModifyContainerDlg::DoDataExchange(CDataExchange *pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CONTAINER_DATA_LISTER, m_container_data_lister);
@@ -110,7 +110,7 @@ BOOL CAddModifyContainerDlg::OnInitDialog()
 void CAddModifyContainerDlg::set_selected_container()
 {
 	if (m_current_container != -1) {
-		CComboBox* cbox = (CComboBox*)GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
+		CComboBox *cbox = (CComboBox*)GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 		Assert(has_containers());
 		Assert(cbox->GetCount() == num_containers());
 		Assert(m_current_container < cbox->GetCount());
@@ -336,7 +336,7 @@ void CAddModifyContainerDlg::OnListerSelectionChange()
 	Assert(m_container_data_lister.GetCount() > 0);
 	Assert(index >= 0 && index < get_current_container().size());
 
-	const auto& container = get_current_container();
+	const auto &container = get_current_container();
 	Assert(!container.empty());
 
 	if (container.is_list()) {
@@ -504,7 +504,7 @@ void CAddModifyContainerDlg::OnContainerRemove()
 	if (container.is_list()) {
 		container.list_data.erase(std::next(container.list_data.begin(), index));
 	} else if (container.is_map()) {
-		const auto& key = m_lister_keys[index];
+		const auto &key = m_lister_keys[index];
 		container.map_data.erase(key);
 	}
 
@@ -567,7 +567,7 @@ bool CAddModifyContainerDlg::key_edit_box_has_valid_data(bool dup_ok)
 {
 	Assert(has_containers());
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
-	const auto& container = get_current_container();
+	const auto &container = get_current_container();
 	Assert(container.is_map());
 
 	CEdit *key_edit = (CEdit *) GetDlgItem(IDC_CONTAINER_KEY);
@@ -583,7 +583,7 @@ bool CAddModifyContainerDlg::key_edit_box_has_valid_data(bool dup_ok)
 		const auto &map_data = container.map_data;
 		const auto count = std::count_if(map_data.cbegin(),
 			map_data.cend(),
-			[key_str](const std::pair<SCP_string, SCP_string>& map_entry) -> bool {
+			[key_str](const std::pair<SCP_string, SCP_string> &map_entry) -> bool {
 				return !stricmp(map_entry.first.c_str(), key_str);
 			});
 
@@ -633,7 +633,7 @@ void CAddModifyContainerDlg::update_controls()
 
 void CAddModifyContainerDlg::update_type_controls()
 {
-	const auto& container = get_current_container();
+	const auto &container = get_current_container();
 	const bool container_empty = container.empty();
 	const bool map_selected = container.is_map();
 
@@ -686,7 +686,7 @@ void CAddModifyContainerDlg::update_data_lister()
 			m_container_data_lister.AddString(list_entry.c_str());
 		}
 	} else if (container.is_map()) {
-		for (const auto& map_entry : container.map_data) {
+		for (const auto &map_entry : container.map_data) {
 			m_lister_keys.emplace_back(map_entry.first);
 		}
 
@@ -695,7 +695,7 @@ void CAddModifyContainerDlg::update_data_lister()
 		} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 			std::sort(m_lister_keys.begin(),
 				m_lister_keys.end(),
-				[](const SCP_string& str1, const SCP_string& str2) -> bool {
+				[](const SCP_string &str1, const SCP_string &str2) -> bool {
 					return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
 				});
 		} else {

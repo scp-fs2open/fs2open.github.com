@@ -22,7 +22,7 @@ public:
 	CListBox	m_container_data_lister;
 
 protected:
-	void DoDataExchange(CDataExchange* pDX) override; // DDX/DDV support
+	void DoDataExchange(CDataExchange *pDX) override; // DDX/DDV support
 
 	void OnOK() override;
 	BOOL OnInitDialog() override;

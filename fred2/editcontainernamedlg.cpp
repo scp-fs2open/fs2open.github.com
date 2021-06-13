@@ -18,12 +18,12 @@ static char THIS_FILE[] = __FILE__;
 #define NO_RESET_FOCUS	0
 #define RESET_FOCUS		1
 
-CEditContainerNameDlg::CEditContainerNameDlg(const SCP_string& window_title, const SCP_string& old_name, CWnd* pParent)
+CEditContainerNameDlg::CEditContainerNameDlg(const SCP_string &window_title, const SCP_string &old_name, CWnd *pParent)
 	: CDialog(CEditContainerNameDlg::IDD, pParent), m_window_title(window_title.c_str()), m_new_container_name(old_name.c_str()), m_cancelled(true)
 {
 }
 
-void CEditContainerNameDlg::DoDataExchange(CDataExchange* pDX)
+void CEditContainerNameDlg::DoDataExchange(CDataExchange *pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_NEW_CONTAINER_NAME, m_new_container_name);

@@ -20,7 +20,7 @@ public:
 	const char *new_container_name() const { return m_new_container_name; }
 
 protected:
-	void DoDataExchange(CDataExchange* pDX) override;
+	void DoDataExchange(CDataExchange *pDX) override;
 
 	void OnOK() override;
 	BOOL OnInitDialog() override;
