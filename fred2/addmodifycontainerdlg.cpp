@@ -774,12 +774,12 @@ void CAddModifyContainerDlg::OnBnClickedRenameContainer()
 	CString new_name = dlg.new_container_name();
 	if (is_container_name_valid(new_name, true)) {
 		// update renaming maps
-		SCP_string new_name_str = new_name;
-		SCP_string curr_name = get_current_container().container_name;
-		auto prev_name_it = m_new_to_old_names.find(curr_name);
+		const SCP_string new_name_str = new_name;
+		const SCP_string curr_name = get_current_container().container_name;
+		const auto prev_name_it = m_new_to_old_names.find(curr_name);
 		if (prev_name_it != m_new_to_old_names.end()) {
 			SCP_string orig_name = prev_name_it->second;
-			m_new_to_old_names.erase(prev_name_it);
+			m_new_to_old_names.erase(curr_name);
 			m_old_to_new_names[orig_name] = new_name_str;
 			m_new_to_old_names[new_name_str] = orig_name;
 		} else {
@@ -799,31 +799,47 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 	Assert(has_containers()); 
 	Assert(m_current_container >= 0 && m_current_container < num_containers());
 
-	char buffer[256]; 
+	char buffer[256];
 
-	const int times_used = m_p_sexp_tree->get_container_usage_count(m_containers[m_current_container].container_name.c_str());
+	// if the container has been renamed, search using the original name
+	const SCP_string curr_name = get_current_container().container_name;
+	SCP_string orig_name;
+	SCP_string name_to_check;
+	const auto prev_name_it = m_new_to_old_names.find(curr_name);
+	if (prev_name_it != m_new_to_old_names.end()) {
+		orig_name = prev_name_it->second;
+		name_to_check = orig_name;
+	} else {
+		name_to_check = curr_name;
+	}
+
+	const int times_used = m_p_sexp_tree->get_container_usage_count(name_to_check.c_str());
+	Assert(times_used >= 0);
+
 	if (times_used > 0) {
+		SCP_string container_name_str = "'" + curr_name + "'";
+		if (!orig_name.empty()) {
+			container_name_str += " (previously '" + orig_name + "')";
+		}
 		sprintf(buffer,
-			"Container %s is used in %d events. Please remove those uses before deleting the container.",
-			m_containers[m_current_container].container_name.c_str(),
+			"Container %s is currently used %d times. Remove those uses before deleting the container.",
+			container_name_str.c_str(),
 			times_used);
 		MessageBox(buffer);
 		return;
 	}
 
-	sprintf(buffer, "Delete SEXP container '%s'?", m_containers[m_current_container].container_name.c_str());
+	sprintf(buffer, "Delete SEXP container '%s'?", curr_name.c_str());
 
 	const int ret = MessageBox(buffer, "Delete?", MB_OKCANCEL | MB_ICONEXCLAMATION);
-
 	if (ret == IDCANCEL) {
 		return;
 	}
 
-	// update renaming maps
-	auto prev_name_it = m_new_to_old_names.find(get_current_container().container_name);
-	if (prev_name_it != m_new_to_old_names.end()) {
-		m_old_to_new_names.erase(prev_name_it->second);
-		m_new_to_old_names.erase(prev_name_it);
+	// update renaming maps if needed
+	if (!orig_name.empty()) {
+		m_old_to_new_names.erase(orig_name);
+		m_new_to_old_names.erase(curr_name);
 	}
 
 	// prevent sudden change in type selection buttons
