@@ -13,6 +13,8 @@ set(FRED2_SOURCES
 	fictionviewerdlg.h
 	addvariabledlg.cpp
 	addvariabledlg.h
+	addmodifycontainerdlg.cpp
+	addmodifycontainerdlg.h
 	adjustgriddlg.cpp
 	adjustgriddlg.h
 	asteroideditordlg.cpp
@@ -43,6 +45,8 @@ set(FRED2_SOURCES
 	dialog1.h
 	dumpstats.cpp
 	dumpstats.h
+	editcontainernamedlg.cpp
+	editcontainernamedlg.h
 	editor.h
 	eventeditor.cpp
 	eventeditor.h
