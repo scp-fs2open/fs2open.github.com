@@ -4420,6 +4420,13 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])));
 
 	float waypoint_turnrate = 1 / (3.0f * scale);
+
+	// for retail compatability reasons, have to take into account rotdamp so that ships with less than 1 rotdamp have increased waypoint turnrate
+	// please see PR #2740 and #3494 for more information
+	if (Pl_objp->phys_info.rotdamp < 1.0f )
+		// start increasing the turnrate to 2x at 0.5 rotdamp and 3x at 0
+		waypoint_turnrate *= (3 - 2 * Pl_objp->phys_info.rotdamp);
+
 	vec3d turnrate_mod;
 	vm_vec_make(&turnrate_mod, waypoint_turnrate, waypoint_turnrate, waypoint_turnrate);
 
